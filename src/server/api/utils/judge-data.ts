@@ -5,6 +5,7 @@ import {
   buildComparison,
 } from "~/server/api/utils/judge-comparison";
 import { db } from "~/server/db";
+import { getMyStops } from "~/server/judging/reads";
 import { teamMarks, teams } from "~/server/db/schema";
 
 export interface JudgeTableRow {
@@ -118,10 +119,32 @@ export async function loadJudgeData(
   };
 }
 
-// Not wired up: this used to read the old judgingQueue / judgingSkips tables,
-// which #1155 removed. Returns no queue until it reads the new stops.
-function loadQueueTeams(_judgeId: string): Promise<QueueTeam[]> {
-  return Promise.resolve([]);
+/** The teams at the judge's stops still to do, in walking order. */
+async function loadQueueTeams(judgeId: string): Promise<QueueTeam[]> {
+  const { stops } = await getMyStops(judgeId);
+  const pending = stops.flatMap((s) =>
+    (s.status === "assigned" || s.status === "in_progress") && s.team
+      ? [s.team]
+      : [],
+  );
+  if (pending.length === 0) return [];
+
+  const rows = await db.query.teams.findMany({
+    where: inArray(
+      teams.id,
+      pending.map((t) => t.id),
+    ),
+    columns: { id: true },
+    with: { members: { columns: { name: true } } },
+  });
+  const membersById = new Map(rows.map((t) => [t.id, t.members]));
+  return pending.map((t) => ({
+    id: t.id,
+    name: t.name,
+    members: (membersById.get(t.id) ?? [])
+      .map((m) => m.name?.trim() ?? "")
+      .filter((n) => n !== ""),
+  }));
 }
 
 /**
