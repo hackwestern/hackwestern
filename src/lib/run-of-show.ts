@@ -184,15 +184,26 @@ export function locationFor(location: string, sponsor: string): string {
  * What one sponsor may see of a location. A per-sponsor list ("Scotiabank:
  * Rm 2110, Canada Life: Rm 2230", two or more "name: room" parts) becomes
  * that sponsor's room only, or null when they aren't in it, so another
- * sponsor's room never reaches them. Anything else is returned as is.
+ * sponsor's room never reaches them. A single part labelled with another
+ * known sponsor ("Scotiabank: Rm 2110") is foreign too. Anything else (a
+ * place such as "SEB: 2nd floor") is returned as is.
  */
-export function ownLocation(location: string, sponsor: string): string | null {
+export function ownLocation(
+  location: string,
+  sponsor: string,
+  knownSponsors: readonly string[] = [],
+): string | null {
+  const norm = (v: string) => v.toLowerCase().replace(/\s+/g, "");
   const parts = location
     .split(/[,\n]/)
     .map((p) => p.trim())
     .filter(Boolean);
   const labelled = parts.filter((p) => /^[^:]+:\s*\S/.test(p));
-  if (labelled.length < 2) return location;
+  const known = new Set(knownSponsors.map(norm));
+  const namesSponsor = labelled.some((p) =>
+    known.has(norm(p.split(":")[0] ?? "")),
+  );
+  if (labelled.length < 2 && !namesSponsor) return location;
   const own = locationFor(location, sponsor);
   return own === location ? null : own;
 }

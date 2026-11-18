@@ -104,7 +104,13 @@ export const sponsorScheduleRouter = createTRPCRouter({
           // (judging rooms too, even when this sponsor isn't in the list).
           .map((item) => ({
             ...item,
-            location: item.location ? ownLocation(item.location, name) : null,
+            location: item.location
+              ? ownLocation(
+                  item.location,
+                  name,
+                  sponsors.map((s) => s.name),
+                )
+              : null,
             sponsors:
               item.sponsors.length > 1
                 ? item.sponsors.filter((n) => n === name)
