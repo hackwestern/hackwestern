@@ -3,7 +3,7 @@ import { useState } from "react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
-import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-rooms";
+import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-fields";
 import { sponsorMapCopy as copy } from "~/content/sponsor-map";
 import type { CompanyLocations, RunOfShowDay } from "~/lib/run-of-show";
 import { runOfShowInstant } from "~/lib/run-of-show-time";

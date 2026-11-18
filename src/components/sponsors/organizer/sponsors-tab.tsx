@@ -1,20 +1,30 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import {
   ArrowRight,
+  CalendarDays,
   Check,
   ChevronDown,
+  Coffee,
   Copy,
   ExternalLink,
+  LifeBuoy,
   RefreshCw,
   Search,
+  TriangleAlert,
   X,
 } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { hover, press } from "~/components/internals/interaction";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
-import { SponsorStrip } from "~/components/sponsors/organizer/sponsor-strip";
+import {
+  SponsorRoomSelect,
+  WatcherInput,
+} from "~/components/sponsors/coffee-chat-fields";
+import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
+import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
 import {
   addInFlight,
   removeInFlight,
@@ -23,16 +33,30 @@ import {
   withSponsorStatus,
 } from "~/components/sponsors/organizer/status-writes";
 import { sponsorOrganizerCopy } from "~/content/sponsor-organizer";
+import { COFFEE_CHAT_ROOMS } from "~/lib/coffee-chat-requests";
+import { formatClock } from "~/lib/run-of-show";
+import {
+  sponsorColor,
+  sponsorColorIndexes,
+  type SponsorColor,
+} from "~/lib/sponsor-colors";
 import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
-import { sponsorRowId, type SponsorSummary } from "~/lib/sponsor-organizer";
+import {
+  organizerHomeHref,
+  sponsorRowId,
+  summaryTotals,
+  type SponsorSummary,
+} from "~/lib/sponsor-organizer";
 import { cn } from "~/lib/utils";
 import { api, type RouterOutputs } from "~/utils/api";
 
 // Lucas's sponsor board (status, rooms, judging picks, private links), now
-// the Sponsors tab of /internal/sponsors. Each sponsor also gets a strip with
-// its coffee chats and help (SponsorStrip) linking into the other tabs, and
-// a row anchor (#sponsor-<id>) those tabs link back to. A table on wide
-// screens, one card per sponsor on phones.
+// the Sponsors tab of /internal/sponsors, merged with each sponsor's coffee
+// chats, room holds and help (sponsorOrganizer.summary) into one table. A
+// row opens to its chats, holds, chat room and watcher (editable) and the
+// rest of Lucas's details; a totals row sums what the filter shows. Each
+// row has an anchor (#sponsor-<id>) the other tabs link back to. One
+// compact card per sponsor under 640px.
 
 const copy = sponsorOrganizerCopy.board;
 
@@ -69,6 +93,13 @@ const STATUS_STYLE: Record<SponsorStatus, { badge: string; dot: string }> = {
     dot: "bg-dashboard-border-muted",
   },
 };
+
+/**
+ * Icon-only buttons: DashboardButton "small", square at the touch and
+ * desktop heights (44px / 36px). Not internals/icon-button.tsx: that is the
+ * promo site's grey button and can't take aria-label or aria-expanded.
+ */
+const iconButton = "size-11 shrink-0 px-0 md:size-9";
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1";
@@ -239,8 +270,11 @@ function NotOnMaster() {
   );
 }
 
-/** The row a #sponsor-<id> hash points at, scrolled to and highlighted. */
-function useTargetRow(ready: boolean): string | null {
+/**
+ * The row a #sponsor-<id> hash points at, scrolled to, highlighted and
+ * opened, plus a way to let it go (when the organizer closes it).
+ */
+function useTargetRow(ready: boolean): [string | null, () => void] {
   const router = useRouter();
   const [target, setTarget] = useState<string | null>(null);
   useEffect(() => {
@@ -259,7 +293,7 @@ function useTargetRow(ready: boolean): string | null {
       block: "center",
     });
   }, [target, ready]);
-  return target;
+  return [target, () => setTarget(null)];
 }
 
 type Note = { tone: "ok" | "error"; text: string };
@@ -373,6 +407,14 @@ export function SponsorsTab({
     });
   }, [sponsors, statusFilter, query]);
 
+  const totals = summaryTotals(
+    filtered.flatMap((s) => {
+      const summary = s.sponsorId
+        ? summaries.get(s.sponsorId.toLowerCase())
+        : undefined;
+      return summary ? [summary] : [];
+    }),
+  );
   const updatedAt = sponsorsQ.dataUpdatedAt;
   const failed = sponsorsQ.error;
   const stats = [
@@ -393,21 +435,43 @@ export function SponsorsTab({
       warn: true,
     },
   ];
-  const target = useTargetRow(sponsors.length > 0);
-  const strip = (sponsor: Sponsor, className?: string) => (
-    <SponsorStrip
-      sponsorId={sponsor.sponsorId}
-      name={sponsor.name}
-      summary={
-        sponsor.sponsorId
-          ? summaries.get(sponsor.sponsorId.toLowerCase())
-          : undefined
-      }
-      loading={summaryLoading}
-      now={now}
-      className={className}
-    />
+  const [target, clearTarget] = useTargetRow(sponsors.length > 0);
+  const summaryOf = (sponsor: Sponsor) =>
+    sponsor.sponsorId
+      ? summaries.get(sponsor.sponsorId.toLowerCase())
+      : undefined;
+  // Colours are assigned over every registered sponsor, the same set the
+  // Coffee chats tab uses, so a sponsor has one colour everywhere.
+  const colorIndexes = useMemo(
+    () => sponsorColorIndexes([...summaries.values()].map((s) => s.name)),
+    [summaries],
   );
+  const colorOf = (sponsor: Sponsor) =>
+    sponsorColor(colorIndexes, sponsor.name);
+  const rowKey = (sponsor: Sponsor) => sponsor.sponsorId ?? sponsor.name;
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+  const isOpen = (sponsor: Sponsor) =>
+    expanded.has(rowKey(sponsor)) ||
+    (!!sponsor.sponsorId && sponsorRowId(sponsor.sponsorId) === target);
+  const toggle = (sponsor: Sponsor) => {
+    const key = rowKey(sponsor);
+    const open = isOpen(sponsor);
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (open) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+    // A linked (#sponsor-) row stays open until toggled; drop the hash.
+    if (
+      open &&
+      sponsor.sponsorId &&
+      sponsorRowId(sponsor.sponsorId) === target
+    ) {
+      clearTarget();
+    }
+  };
+  const chatRooms: readonly string[] = COFFEE_CHAT_ROOMS;
   const rowAttrs = (sponsor: Sponsor) => {
     const id = sponsor.sponsorId ? sponsorRowId(sponsor.sponsorId) : undefined;
     return { dataRow: id, targeted: !!id && id === target };
@@ -496,18 +560,14 @@ export function SponsorsTab({
           )}
         >
           <span>{note.text}</span>
-          <button
-            type="button"
+          <DashboardButton
+            variant="small"
             onClick={() => setNote(null)}
             aria-label={copy.dismiss}
-            className={cn(
-              "inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-md",
-              hover.surface,
-              focusRing,
-            )}
+            className={iconButton}
           >
-            <X aria-hidden className="size-4" />
-          </button>
+            <X aria-hidden />
+          </DashboardButton>
         </div>
       )}
 
@@ -643,14 +703,19 @@ export function SponsorsTab({
 
       {emptyState && <DashboardPanel>{emptyState}</DashboardPanel>}
 
-      {/* Phones: one card per sponsor. */}
+      {/* Phones (under 640px): one compact card per sponsor; tap to open
+          its chats and details. */}
       {filtered.length > 0 && (
-        <ul className="m-0 flex list-none flex-col gap-3 p-0 md:hidden">
+        <ul className="m-0 flex list-none flex-col gap-3 p-0 sm:hidden">
           {filtered.map((sponsor) => {
             const row = rowAttrs(sponsor);
+            const key = rowKey(sponsor);
+            const summary = summaryOf(sponsor);
+            const open = isOpen(sponsor);
+            const panelId = `sponsor-details-m-${key}`;
             return (
               <li
-                key={sponsor.sponsorId ?? sponsor.name}
+                key={key}
                 data-row={row.dataRow}
                 className={cn(
                   "flex scroll-mt-4 flex-col gap-3 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card",
@@ -658,82 +723,98 @@ export function SponsorsTab({
                     "ring-2 ring-dashboard-action-primary ring-offset-2 ring-offset-dashboard-bg-page",
                 )}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <h2 className="m-0 break-words text-base font-semibold leading-snug">
-                      {sponsor.name}
-                    </h2>
-                    {!sponsor.onMasterSheet && <NotOnMaster />}
-                  </div>
-                  {sponsor.tier && (
-                    <DashboardTag className="shrink-0">
-                      {sponsor.tier}
-                    </DashboardTag>
+                <button
+                  type="button"
+                  aria-expanded={open}
+                  aria-controls={panelId}
+                  onClick={() => toggle(sponsor)}
+                  className={cn(
+                    "-m-2 flex items-start justify-between gap-3 rounded-dashboard-md p-2 text-left",
+                    press,
+                    focusRing,
                   )}
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  {statusPicker(sponsor)}
-                  <RoomBadge roomNumber={sponsor.roomNumber} />
-                </div>
-
-                <dl className="m-0 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-dashboard-border-subtle pt-3 text-sm">
-                  <Detail label={copy.columns.booth}>
-                    {sponsor.boothLocation || copy.boothTbd}
-                  </Detail>
-                  <Detail label={copy.columns.hwContact}>
-                    {sponsor.hwContact || copy.none}
-                  </Detail>
-                  <Detail label={copy.columns.companyContact}>
-                    {sponsor.companyContact || copy.none}
-                  </Detail>
-                  <Detail label={copy.columns.picks}>
-                    <Picks n={sponsor.teamIds.length} long />
-                  </Detail>
-                </dl>
-
-                {sponsor.notes && (
-                  <p className="m-0 break-words rounded-dashboard-md bg-dashboard-bg-inset px-3 py-2 text-sm text-dashboard-text-medium">
-                    {sponsor.notes}
-                  </p>
-                )}
-
-                {strip(sponsor, "border-t border-dashboard-border-subtle pt-3")}
-
-                <div className="flex items-center justify-between gap-2 border-t border-dashboard-border-subtle pt-3">
-                  <span className="text-xs text-dashboard-text-light">
-                    {copy.columns.page}
+                >
+                  <span className="flex min-w-0 flex-col gap-1">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <ColorDot name={sponsor.name} color={colorOf(sponsor)} />
+                      <span className="min-w-0 break-words text-base font-semibold leading-snug">
+                        {sponsor.name}
+                      </span>
+                    </span>
+                    <span className="text-sm text-dashboard-text-medium">
+                      {summary
+                        ? copy.chatsCell(summary.accepted, summary.pending)
+                        : copy.notRegistered}
+                    </span>
+                    {summary && summary.needsHacker > 0 && (
+                      <NeedsHackerPill n={summary.needsHacker} />
+                    )}
                   </span>
-                  <CopyLinkButton
-                    sponsorId={sponsor.sponsorId}
-                    name={sponsor.name}
+                  <ChevronDown
+                    aria-hidden
+                    className={cn(
+                      "mt-1 size-5 shrink-0 text-dashboard-text-light transition-transform duration-150 ease-out motion-reduce:transition-none",
+                      open && "rotate-180",
+                    )}
                   />
+                  <span className="sr-only">
+                    {open
+                      ? copy.collapse(sponsor.name)
+                      : copy.expand(sponsor.name)}
+                  </span>
+                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {statusPicker(sponsor)}
+                  {summary?.help && <HelpCell summary={summary} />}
                 </div>
+                {open && (
+                  <div
+                    id={panelId}
+                    className="border-t border-dashboard-border-subtle pt-3"
+                  >
+                    <SponsorDetails
+                      sponsor={sponsor}
+                      summary={summary}
+                      rooms={chatRooms}
+                      idPrefix="m"
+                    />
+                  </div>
+                )}
               </li>
             );
           })}
         </ul>
       )}
 
-      {/* Wider screens: a table, with each sponsor's chats and help strip
-          on a second line under its row. */}
+      {/* 640px and up: one table, sponsor column pinned while it scrolls
+          sideways inside its own box. A row opens to that sponsor's chats,
+          holds and details; the totals row sums what the filter shows. */}
       {filtered.length > 0 && (
-        <div className="hidden overflow-x-auto rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card md:block">
-          <table className="w-full border-collapse text-left text-sm">
+        <div className="hidden overflow-x-auto rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card sm:block">
+          <table className="w-full min-w-max border-separate border-spacing-0 text-left text-sm">
             <caption className="sr-only">{copy.tableLabel}</caption>
             <thead>
-              <tr className="border-b border-dashboard-border-subtle text-xs font-semibold text-dashboard-text-light">
+              <tr className="text-xs font-semibold text-dashboard-text-light">
                 {[
-                  copy.columns.company,
+                  copy.chatColumns.sponsor,
                   copy.columns.status,
-                  copy.columns.room,
                   copy.columns.booth,
                   copy.columns.tier,
                   copy.columns.hwContact,
-                  copy.columns.picks,
-                  copy.columns.page,
-                ].map((h) => (
-                  <th key={h} scope="col" className="px-4 py-3 font-semibold">
+                  copy.chatColumns.chatType,
+                  copy.chatColumns.chatRoom,
+                  copy.chatColumns.chats,
+                  copy.chatColumns.needsHacker,
+                  copy.chatColumns.help,
+                ].map((h, i) => (
+                  <th
+                    key={h}
+                    scope="col"
+                    className={cn(
+                      "border-b border-dashboard-border-subtle bg-dashboard-bg-surface px-3 py-3 font-semibold",
+                      i === 0 && "sticky left-0 z-10 min-w-56",
+                    )}
+                  >
                     {h}
                   </th>
                 ))}
@@ -742,62 +823,128 @@ export function SponsorsTab({
             <tbody>
               {filtered.map((sponsor) => {
                 const row = rowAttrs(sponsor);
+                const key = rowKey(sponsor);
+                const summary = summaryOf(sponsor);
+                const open = isOpen(sponsor);
+                const panelId = `sponsor-details-${key}`;
+                const cell = cn(
+                  "border-b border-dashboard-border-subtle px-3 py-2.5 align-middle",
+                  open && "border-b-0",
+                  row.targeted && "bg-dashboard-bg-highlight",
+                );
                 return (
-                  <Fragment key={sponsor.sponsorId ?? sponsor.name}>
-                    <tr
-                      data-row={row.dataRow}
-                      className={cn(
-                        "scroll-mt-4 align-middle",
-                        !sponsor.sponsorId &&
-                          "border-b border-dashboard-border-subtle last:border-0",
-                        row.targeted && "bg-dashboard-bg-highlight",
-                      )}
-                    >
+                  <Fragment key={key}>
+                    <tr data-row={row.dataRow} className="scroll-mt-4">
                       <th
                         scope="row"
-                        className="max-w-xs px-4 pb-2 pt-3 text-left font-semibold"
-                      >
-                        <span className="flex flex-col gap-1">
-                          <span className="break-words">{sponsor.name}</span>
-                          {!sponsor.onMasterSheet && <NotOnMaster />}
-                        </span>
-                      </th>
-                      <td className="px-4 pb-2 pt-3">
-                        {statusPicker(sponsor)}
-                      </td>
-                      <td className="px-4 pb-2 pt-3">
-                        <RoomBadge roomNumber={sponsor.roomNumber} />
-                      </td>
-                      <td className="px-4 pb-2 pt-3 text-dashboard-text-medium">
-                        {sponsor.boothLocation || copy.boothTbd}
-                      </td>
-                      <td className="px-4 pb-2 pt-3 text-dashboard-text-medium">
-                        {sponsor.tier || copy.none}
-                      </td>
-                      <td className="px-4 pb-2 pt-3 text-dashboard-text-medium">
-                        {sponsor.hwContact ||
-                          sponsor.companyContact ||
-                          copy.none}
-                      </td>
-                      <td className="px-4 pb-2 pt-3">
-                        <Picks n={sponsor.teamIds.length} />
-                      </td>
-                      <td className="px-4 pb-2 pt-3">
-                        <CopyLinkButton
-                          sponsorId={sponsor.sponsorId}
-                          name={sponsor.name}
-                        />
-                      </td>
-                    </tr>
-                    {sponsor.sponsorId && (
-                      <tr
                         className={cn(
-                          "border-b border-dashboard-border-subtle last:border-0",
+                          cell,
+                          "sticky left-0 z-10 bg-dashboard-bg-surface text-left font-semibold",
                           row.targeted && "bg-dashboard-bg-highlight",
                         )}
                       >
-                        <td colSpan={8} className="px-4 pb-3 pt-0">
-                          {strip(sponsor)}
+                        <span className="flex items-center gap-1">
+                          <DashboardButton
+                            variant="small"
+                            aria-expanded={open}
+                            aria-controls={panelId}
+                            aria-label={
+                              open
+                                ? copy.collapse(sponsor.name)
+                                : copy.expand(sponsor.name)
+                            }
+                            onClick={() => toggle(sponsor)}
+                            className={iconButton}
+                          >
+                            <ChevronDown
+                              aria-hidden
+                              className={cn(
+                                "size-4 transition-transform duration-150 ease-out motion-reduce:transition-none",
+                                open && "rotate-180",
+                              )}
+                            />
+                          </DashboardButton>
+                          <SponsorName
+                            sponsor={sponsor}
+                            color={colorOf(sponsor)}
+                          />
+                        </span>
+                      </th>
+                      <td className={cell}>{statusPicker(sponsor)}</td>
+                      <td className={cn(cell, "text-dashboard-text-medium")}>
+                        {sponsor.boothLocation || copy.boothTbd}
+                      </td>
+                      <td className={cn(cell, "text-dashboard-text-medium")}>
+                        {sponsor.tier || copy.none}
+                      </td>
+                      <td className={cn(cell, "text-dashboard-text-medium")}>
+                        {sponsor.hwContact || copy.none}
+                      </td>
+                      <td className={cn(cell, "text-dashboard-text-medium")}>
+                        {summaryLoading && sponsor.sponsorId ? (
+                          <CellSkeleton />
+                        ) : summary?.format ? (
+                          copy.chatType(
+                            summary.format.durationMinutes,
+                            summary.format.groupSize,
+                            summary.reps,
+                          )
+                        ) : (
+                          <span className="text-dashboard-text-light">
+                            {summary ? copy.noChatType : copy.none}
+                          </span>
+                        )}
+                      </td>
+                      <td className={cell}>
+                        {summary ? (
+                          summary.rooms.length > 0 ? (
+                            <span className="font-semibold">
+                              {summary.rooms.join(", ")}
+                            </span>
+                          ) : (
+                            <span className="text-dashboard-text-light">
+                              {copy.unassigned}
+                            </span>
+                          )
+                        ) : (
+                          copy.none
+                        )}
+                      </td>
+                      <td
+                        className={cn(cell, "whitespace-nowrap tabular-nums")}
+                      >
+                        {summary
+                          ? copy.chatsCell(summary.accepted, summary.pending)
+                          : copy.none}
+                      </td>
+                      <td className={cell}>
+                        {summary && summary.needsHacker > 0 ? (
+                          <NeedsHackerPill n={summary.needsHacker} />
+                        ) : (
+                          <span className="text-dashboard-text-light">
+                            {summary ? copy.needsHackerCell(0) : copy.none}
+                          </span>
+                        )}
+                      </td>
+                      <td className={cell}>
+                        <HelpCell summary={summary} />
+                      </td>
+                    </tr>
+                    {open && (
+                      <tr id={panelId}>
+                        <td
+                          colSpan={10}
+                          className={cn(
+                            "border-b border-dashboard-border-subtle px-4 pb-4 pt-1",
+                            row.targeted && "bg-dashboard-bg-highlight",
+                          )}
+                        >
+                          <SponsorDetails
+                            sponsor={sponsor}
+                            summary={summary}
+                            rooms={chatRooms}
+                            idPrefix="d"
+                          />
                         </td>
                       </tr>
                     )}
@@ -805,8 +952,65 @@ export function SponsorsTab({
                 );
               })}
             </tbody>
+            <tfoot>
+              <tr className="font-semibold">
+                <th
+                  scope="row"
+                  colSpan={5}
+                  className="sticky left-0 bg-dashboard-bg-inset px-3 py-3 text-left"
+                >
+                  {copy.totalsLabel(filtered.length)}
+                </th>
+                <td
+                  colSpan={2}
+                  className="bg-dashboard-bg-inset px-3 py-3 tabular-nums"
+                >
+                  {copy.seatsLeft(totals.seatsLeft)}
+                </td>
+                <td className="whitespace-nowrap bg-dashboard-bg-inset px-3 py-3 tabular-nums">
+                  {copy.chatsCell(totals.accepted, totals.pending)}
+                </td>
+                <td
+                  className={cn(
+                    "bg-dashboard-bg-inset px-3 py-3 tabular-nums",
+                    totals.needsHacker > 0 && "text-dashboard-text-warning",
+                  )}
+                >
+                  {totals.needsHacker}
+                </td>
+                <td
+                  className={cn(
+                    "bg-dashboard-bg-inset px-3 py-3 tabular-nums",
+                    totals.openHelp > 0 && "text-dashboard-text-warning",
+                  )}
+                >
+                  {copy.openHelp(totals.openHelp)}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
+      )}
+
+      {/* Phones: the totals as one line under the cards. */}
+      {filtered.length > 0 && (
+        <dl
+          aria-label={copy.totalsLabel(filtered.length)}
+          className="m-0 grid grid-cols-2 gap-2 rounded-dashboard-lg bg-dashboard-bg-inset p-3 text-sm sm:hidden"
+        >
+          <Detail label={copy.chatColumns.chats}>
+            {copy.chatsCell(totals.accepted, totals.pending)}
+          </Detail>
+          <Detail label={copy.seatsLabel}>
+            {copy.seatsLeft(totals.seatsLeft)}
+          </Detail>
+          <Detail label={copy.chatColumns.needsHacker}>
+            {totals.needsHacker}
+          </Detail>
+          <Detail label={copy.chatColumns.help}>
+            {copy.openHelp(totals.openHelp)}
+          </Detail>
+        </dl>
       )}
     </div>
   );
@@ -839,5 +1043,260 @@ function Picks({ n, long = false }: { n: number; long?: boolean }) {
     >
       {long ? (n > 0 ? copy.picks(n) : copy.noPicks) : n}
     </span>
+  );
+}
+
+function ColorDot({ name, color }: { name: string; color: SponsorColor }) {
+  return <SponsorBadge name={name} color={color} />;
+}
+
+// The sponsor's name and colour dot. Registered sponsors link to the
+// Coffee chats tab with their cells highlighted in the rooms table.
+function SponsorName({
+  sponsor,
+  color,
+}: {
+  sponsor: Sponsor;
+  color: SponsorColor;
+}) {
+  const name = (
+    <span className="flex min-w-0 flex-col gap-1">
+      <span className="flex min-w-0 items-center gap-2">
+        <ColorDot name={sponsor.name} color={color} />
+        <span className="break-words">{sponsor.name}</span>
+      </span>
+      {!sponsor.onMasterSheet && <NotOnMaster />}
+    </span>
+  );
+  if (!sponsor.sponsorId) return name;
+  return (
+    <Link
+      href={organizerHomeHref({ tab: "coffee", sponsor: sponsor.sponsorId })}
+      shallow
+      scroll={false}
+      aria-label={copy.highlight(sponsor.name)}
+      className={cn(
+        "-mx-1 min-w-0 rounded-dashboard-sm px-1 py-1 [@media(hover:hover)]:hover:underline",
+        focusRing,
+      )}
+    >
+      {name}
+    </Link>
+  );
+}
+
+function NeedsHackerPill({ n }: { n: number }) {
+  return (
+    <span className="inline-flex w-fit items-center gap-1 whitespace-nowrap rounded-dashboard-sm bg-dashboard-status-iconBadge px-2 py-0.5 text-xs font-semibold leading-5 text-dashboard-text-warning">
+      <TriangleAlert aria-hidden className="size-3.5" />
+      {sponsorOrganizerCopy.strip.needsHacker(n)}
+    </span>
+  );
+}
+
+function HelpCell({ summary }: { summary: SponsorSummary | undefined }) {
+  const help = summary?.help;
+  if (!summary) return <span>{copy.none}</span>;
+  if (!help) {
+    return <span className="text-dashboard-text-light">{copy.noHelp}</span>;
+  }
+  return (
+    <span
+      className={cn(
+        "inline-flex w-fit items-center gap-1 whitespace-nowrap rounded-dashboard-sm px-2 py-0.5 text-xs font-semibold leading-5",
+        help.status === "open"
+          ? "bg-dashboard-status-iconBadge text-dashboard-text-warning"
+          : "bg-dashboard-bg-highlight text-dashboard-text-active",
+      )}
+    >
+      <LifeBuoy aria-hidden className="size-3.5" />
+      {help.status === "open"
+        ? copy.helpOpen
+        : (help.claimedByName ?? copy.helpClaimed)}
+    </span>
+  );
+}
+
+function CellSkeleton() {
+  return (
+    <span
+      aria-hidden
+      className="block h-4 w-24 rounded-dashboard-xs bg-dashboard-bg-inset motion-safe:animate-pulse"
+    />
+  );
+}
+
+const detailCopy = copy.details;
+
+// A sponsor's opened row: chat times with each hacker (photo and full
+// name only when they agreed to share), room holds, the chat room and
+// watcher (editable, same Save flows as the Coffee chats board), then
+// Lucas's details and the links into the other tabs.
+function SponsorDetails({
+  sponsor,
+  summary,
+  rooms,
+  idPrefix,
+}: {
+  sponsor: Sponsor;
+  summary: SponsorSummary | undefined;
+  rooms: readonly string[];
+  idPrefix: string;
+}) {
+  // Help requests live on the Task pings tab (scrolled to help).
+  const link = (tab: "schedule" | "coffee" | "help") =>
+    tab === "help"
+      ? organizerHomeHref({
+          tab: "pings",
+          sponsor: sponsor.sponsorId,
+          help: true,
+        })
+      : organizerHomeHref({ tab, sponsor: sponsor.sponsorId });
+  return (
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <section className="flex min-w-0 flex-col gap-3">
+        <h3 className="m-0 text-sm font-semibold text-dashboard-text-heavy">
+          {detailCopy.chatsHeading}
+        </h3>
+        {!summary || !sponsor.sponsorId ? (
+          <p className="m-0 text-sm text-dashboard-text-medium">
+            {detailCopy.notRegistered}
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <SponsorRoomSelect
+                sponsorId={sponsor.sponsorId}
+                assignedRoom={summary.assignedRoom}
+                sheetRoom={summary.sheetRoom}
+                rooms={rooms}
+                idPrefix={`${idPrefix}-room`}
+              />
+              <WatcherInput
+                key={summary.watcher ?? ""}
+                sponsorId={sponsor.sponsorId}
+                watcher={summary.watcher}
+                idPrefix={`${idPrefix}-watcher`}
+              />
+            </div>
+            {summary.chats.length === 0 ? (
+              <p className="m-0 text-sm text-dashboard-text-medium">
+                {detailCopy.noChats}
+              </p>
+            ) : (
+              <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+                {summary.chats.map((c) => (
+                  <li
+                    key={c.chatId}
+                    className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"
+                  >
+                    <span className="shrink-0 whitespace-nowrap font-semibold tabular-nums text-dashboard-text-medium">
+                      {detailCopy.chat(formatClock(c.slotTime), c.room)}
+                    </span>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <HackerAvatar name={c.name} github={c.github} size="sm" />
+                      <span className="min-w-0 break-words">{c.name}</span>
+                    </span>
+                    <span
+                      className={cn(
+                        "rounded-dashboard-sm px-1.5 py-0.5 text-xs font-semibold",
+                        c.status === "accepted"
+                          ? "bg-dashboard-bg-highlight text-dashboard-text-active"
+                          : "bg-dashboard-bg-nav text-dashboard-text-heavy",
+                      )}
+                    >
+                      {detailCopy.status[c.status]}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {summary.holds.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <h4 className="m-0 text-xs font-semibold text-dashboard-text-light">
+                  {detailCopy.holdsHeading}
+                </h4>
+                <ul className="m-0 flex list-none flex-col gap-1 p-0">
+                  {summary.holds.map((h) => (
+                    <li
+                      key={h.holdId}
+                      className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm"
+                    >
+                      <span className="font-semibold tabular-nums">
+                        {detailCopy.hold(
+                          h.room,
+                          formatClock(h.startTime),
+                          formatClock(h.endTime),
+                        )}
+                      </span>
+                      {h.needsHacker ? (
+                        <NeedsHackerPill n={1} />
+                      ) : (
+                        <span className="text-dashboard-text-medium">
+                          {detailCopy.holdBooked}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
+      <section className="flex min-w-0 flex-col gap-3">
+        <h3 className="m-0 text-sm font-semibold text-dashboard-text-heavy">
+          {detailCopy.detailsHeading}
+        </h3>
+        <dl className="m-0 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+          <Detail label={detailCopy.roomLabel}>
+            <RoomBadge roomNumber={sponsor.roomNumber} />
+          </Detail>
+          <Detail label={copy.columns.companyContact}>
+            {sponsor.companyContact || copy.none}
+          </Detail>
+          <Detail label={copy.columns.picks}>
+            <Picks n={sponsor.teamIds.length} long />
+          </Detail>
+          <Detail label={copy.columns.page}>
+            <CopyLinkButton sponsorId={sponsor.sponsorId} name={sponsor.name} />
+          </Detail>
+        </dl>
+        {sponsor.notes && (
+          <p className="m-0 break-words rounded-dashboard-md bg-dashboard-bg-inset px-3 py-2 text-sm text-dashboard-text-medium">
+            {sponsor.notes}
+          </p>
+        )}
+        {sponsor.sponsorId && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(
+              [
+                [
+                  "schedule",
+                  CalendarDays,
+                  sponsorOrganizerCopy.strip.viewSchedule,
+                ],
+                ["coffee", Coffee, sponsorOrganizerCopy.strip.coffeeChats],
+                ["help", LifeBuoy, sponsorOrganizerCopy.strip.help],
+              ] as const
+            ).map(([tab, Icon, label]) => (
+              <DashboardButton
+                key={tab}
+                variant="link"
+                asChild
+                className="border border-transparent text-xs"
+              >
+                <Link href={link(tab)} shallow scroll={false}>
+                  <Icon aria-hidden />
+                  {label}
+                  <span className="sr-only"> {sponsor.name}</span>
+                </Link>
+              </DashboardButton>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }

@@ -1,18 +1,30 @@
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Lock, Plus, X } from "lucide-react";
+import { Lock, Plus, TriangleAlert, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { hover, press } from "~/components/internals/interaction";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { AddChatHere } from "~/components/sponsors/coffee-chat-board";
-import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-rooms";
+import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-fields";
+import {
+  HoldRoomForm,
+  HoldsHere,
+  NeedsHackerBadge,
+} from "~/components/sponsors/room-holds";
 import { LoadError } from "~/components/sponsors/schedule-states";
+import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
 import type { SponsorSelection } from "~/components/sponsors/sponsor-filter";
 import { useNow } from "~/components/sponsors/use-now";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { buildRoomTable, type RoomCell } from "~/lib/coffee-chat-room-table";
+import { holdCovers } from "~/lib/coffee-chat-holds";
 import { coffeeChatRoomOf } from "~/lib/coffee-chat-requests";
 import { formatClock } from "~/lib/run-of-show";
+import {
+  SPONSOR_PALETTE,
+  sponsorColor,
+  sponsorColorIndexes,
+} from "~/lib/sponsor-colors";
 import { cn } from "~/lib/utils";
 import type {
   BoardSponsor,
@@ -35,21 +47,67 @@ export function useLiveChatBoard() {
   });
 }
 
+/** Stable palette indexes for these sponsor names (sponsor-colors). */
+export function useSponsorColors(
+  names: readonly string[],
+): ReadonlyMap<string, number> {
+  const key = names.join("\u0000");
+  // Keyed by content so a refetch with the same names keeps the map.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => sponsorColorIndexes(names), [key]);
+}
+
 type Picked = { room: string; slotTime: string };
 
 // Coffee chats as a room booking table: one column per room, a row per
-// 15-minute slot. Available cells are blue; taken cells are grey with who
-// has the room and how full it is (hackers plus reps out of the room's
-// capacity). Picking a cell opens booking for that room and time.
+// 15-minute slot. Available cells are neutral grey; taken cells carry the
+// sponsor's colour with who has the room and how full it is (hackers plus
+// reps out of the room's capacity). Picking a cell opens booking for that
+// room and time. `highlight` (a sponsor name) rings that sponsor's cells,
+// dims everyone else's and scrolls to their first one; Escape clears it.
 export function CoffeeChatRoomTable({
   selection,
+  colors,
+  highlight = null,
+  onClearHighlight,
 }: {
   selection: SponsorSelection;
+  colors?: ReadonlyMap<string, number>;
+  highlight?: string | null;
+  onClearHighlight?: () => void;
 }) {
   const q = useLiveChatBoard();
   const now = useNow(30_000);
   const [picked, setPicked] = useState<Picked | null>(null);
   const opener = useRef<HTMLButtonElement | null>(null);
+  const region = useRef<HTMLDivElement>(null);
+  const ownColors = useSponsorColors(q.data?.colorNames ?? NO_NAMES);
+  const palette = colors ?? ownColors;
+  const ready = Boolean(q.data);
+
+  // Escape clears the highlight (unless a dialog is open; it closes first).
+  useEffect(() => {
+    if (!highlight || !onClearHighlight) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !picked) onClearHighlight();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [highlight, onClearHighlight, picked]);
+
+  // Bring the highlighted sponsor's first booking into view.
+  useEffect(() => {
+    if (!highlight || !ready) return;
+    const first = region.current?.querySelector<HTMLElement>(
+      '[data-highlighted="true"]',
+    );
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    first?.scrollIntoView({
+      behavior: reduce.matches ? "auto" : "smooth",
+      block: "nearest",
+      inline: "nearest",
+    });
+  }, [highlight, ready]);
 
   if (q.isLoading) {
     return (
@@ -82,6 +140,7 @@ export function CoffeeChatRoomTable({
         role="region"
         aria-label={copy.tableLabel}
         tabIndex={0}
+        ref={region}
         className="max-h-[70vh] min-w-0 overflow-auto rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
       >
         <table className="w-full min-w-[480px] border-separate border-spacing-0 text-sm">
@@ -121,6 +180,8 @@ export function CoffeeChatRoomTable({
                   >
                     <CellButton
                       cell={cell}
+                      colors={palette}
+                      highlight={highlight}
                       onOpen={(button) => {
                         opener.current = button;
                         setPicked({ room: cell.room, slotTime: cell.slotTime });
@@ -144,22 +205,33 @@ export function CoffeeChatRoomTable({
   );
 }
 
+/** One opacity for everything dimmed (cells and the legend swatch). */
+const DIMMED = "opacity-40";
+
+// Free: white with a dashed neutral edge and "+ Free", unlike any sponsor
+// fill (sponsor cells are tinted with a solid strong left edge).
+const FREE_CELL =
+  "border-dashed border-dashboard-border-default bg-dashboard-bg-surface";
+// Over capacity: solid warning edge on white with an icon and "Over";
+// no sponsor colour uses the warning orange.
+const OVER_CELL =
+  "border-2 border-dashboard-status-warning bg-dashboard-bg-surface text-dashboard-text-warning";
+const HELD_EDGE = "border-2 border-dashed border-dashboard-status-warning";
+
 function Legend() {
+  const sample = SPONSOR_PALETTE[0]!;
+  const sponsorCell = cn(
+    "border-dashboard-border-subtle border-l-4",
+    sample.fill,
+    sample.edge,
+  );
   const items = [
-    [
-      "free",
-      "border-dashed bg-dashboard-bg-surface border-dashboard-border-outline",
-    ],
-    ["booked", "bg-dashboard-bg-inset border-dashboard-border-control"],
-    [
-      "full",
-      "bg-dashboard-bg-navSelected border-dashboard-action-primary ring-1 ring-inset ring-dashboard-action-primary",
-    ],
-    ["over", "bg-dashboard-status-iconBadge border-dashboard-status-warning"],
-    [
-      "dimmed",
-      "bg-dashboard-bg-inset border-dashboard-border-control opacity-40",
-    ],
+    ["free", FREE_CELL],
+    ["booked", sponsorCell],
+    ["full", cn(sponsorCell, "ring-1 ring-inset ring-dashboard-border-strong")],
+    ["over", OVER_CELL],
+    ["held", cn(sample.fill, HELD_EDGE)],
+    ["dimmed", cn(sponsorCell, DIMMED)],
   ] as const;
   return (
     <ul
@@ -181,17 +253,42 @@ function Legend() {
 
 function CellButton({
   cell,
+  colors,
+  highlight,
   onOpen,
 }: {
   cell: RoomCell;
+  colors: ReadonlyMap<string, number>;
+  highlight: string | null;
   onOpen: (button: HTMLButtonElement) => void;
 }) {
   const time = formatClock(cell.slotTime);
   const who = cell.occupants.map((o) => o.sponsor).join(", ") || null;
+  const occupied = cell.occupants.length > 0;
+  const highlighted =
+    highlight !== null && cell.occupants.some((o) => o.sponsor === highlight);
+  // Dim only other sponsors' bookings: free cells never dim.
   const dimmed =
-    cell.occupants.length > 0 && cell.occupants.every((o) => !o.selected);
+    occupied &&
+    (cell.occupants.every((o) => !o.selected) ||
+      (highlight !== null && !highlighted));
+  // The sponsor the cell is about: the highlighted one, else the first
+  // shown, else the first.
+  const lead =
+    cell.occupants.find((o) => o.sponsor === highlight) ??
+    cell.occupants.find((o) => o.selected) ??
+    cell.occupants[0];
+  const color = lead ? sponsorColor(colors, lead.sponsor) : null;
   const hackers = cell.occupants.reduce((n, o) => n + o.hackers, 0);
   const fill = Math.min(1, cell.used / cell.capacity);
+  const over = cell.state === "over";
+  const warning = over
+    ? copy.overWarning
+    : cell.clash
+      ? copy.clash
+      : cell.needsHacker
+        ? copy.needsHacker
+        : null;
   return (
     <button
       type="button"
@@ -199,32 +296,42 @@ function CellButton({
       aria-label={copy.cellLabel(
         cell.room,
         time,
-        cell.state === "free" ? null : (who ?? copy.overWarning),
+        cell.state === "free"
+          ? null
+          : warning
+            ? `${who ?? ""}, ${warning}`
+            : (who ?? copy.overWarning),
         cell.used,
         cell.capacity,
       )}
       onClick={(e) => onOpen(e.currentTarget)}
+      data-highlighted={highlighted ? "true" : undefined}
       className={cn(
         "flex min-h-14 w-full flex-col items-stretch gap-1 rounded-dashboard-sm border px-2 py-1.5 text-left text-xs leading-4",
+        "transition-opacity duration-150 ease-out motion-reduce:transition-none",
         press,
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1",
         cell.state === "free" &&
           cn(
-            "border-dashed border-dashboard-border-outline bg-dashboard-bg-surface font-semibold text-dashboard-text-link",
-            hover.solidBorder,
+            FREE_CELL,
+            "font-semibold text-dashboard-text-light",
             hover.highlight,
           ),
-        cell.state === "booked" &&
+        // Booked and full: the sponsor's tint with a strong left edge.
+        (cell.state === "booked" || cell.state === "full") &&
           cn(
-            "border-dashboard-border-control bg-dashboard-bg-inset text-dashboard-text-heavy",
-            hover.nav,
+            "border-l-4 border-dashboard-border-subtle text-dashboard-text-heavy",
+            color?.fill,
+            color?.edge,
           ),
-        // Full: a solid blue double edge and a lock, apart from grey booked.
         cell.state === "full" &&
-          "border-dashboard-action-primary bg-dashboard-bg-navSelected text-dashboard-text-active ring-1 ring-inset ring-dashboard-action-primary",
-        cell.state === "over" &&
-          "border-2 border-dashboard-status-warning bg-dashboard-status-iconBadge text-dashboard-text-warning",
-        dimmed && "opacity-40",
+          "ring-1 ring-inset ring-dashboard-border-strong",
+        over && OVER_CELL,
+        // A hold with no hacker yet: dashed warning edge, apart from over.
+        cell.needsHacker && !over && HELD_EDGE,
+        highlighted &&
+          "ring-2 ring-dashboard-text-heavy ring-offset-1 ring-offset-dashboard-bg-surface",
+        dimmed && DIMMED,
       )}
     >
       {cell.state === "free" ? (
@@ -234,17 +341,40 @@ function CellButton({
         </span>
       ) : (
         <>
-          <span className="flex items-baseline justify-between gap-2">
-            <span className="min-w-0 truncate font-semibold">
-              {who ?? copy.overWarning}
+          <span className="flex items-center justify-between gap-2">
+            <span className="flex min-w-0 items-center gap-1.5">
+              {lead && (
+                <SponsorBadge
+                  name={lead.sponsor}
+                  color={color ?? undefined}
+                  className="size-5"
+                />
+              )}
+              <span className="min-w-0 truncate font-semibold">
+                {who ?? copy.overWarning}
+              </span>
             </span>
             <span className="flex shrink-0 items-center gap-1 font-semibold tabular-nums">
-              {cell.state === "full" && <Lock aria-hidden className="size-3" />}
+              {cell.state === "full" && (
+                <>
+                  <Lock aria-hidden className="size-3" />
+                  <span>{copy.full}</span>
+                </>
+              )}
               {copy.used(cell.used, cell.capacity)}
             </span>
           </span>
           <span className="truncate text-dashboard-text-medium">
-            {cell.state === "over" ? copy.overWarning : copy.hackers(hackers)}
+            {over || cell.clash ? (
+              <span className="inline-flex items-center gap-1 font-semibold text-dashboard-text-warning">
+                <TriangleAlert aria-hidden className="size-3.5 shrink-0" />
+                {over ? copy.over : copy.clash}
+              </span>
+            ) : cell.needsHacker ? (
+              <NeedsHackerBadge />
+            ) : (
+              copy.hackers(hackers)
+            )}
           </span>
           <span
             aria-hidden
@@ -253,7 +383,7 @@ function CellButton({
             <span
               className={cn(
                 "block h-full rounded-full",
-                cell.state === "over"
+                over
                   ? "bg-dashboard-status-warning"
                   : "bg-dashboard-action-primary",
               )}
@@ -265,6 +395,8 @@ function CellButton({
     </button>
   );
 }
+
+const NO_NAMES: string[] = [];
 
 // Who has the room at this time, and booking: pick a sponsor with an open
 // start here; when their chats are in another room, move them here first
@@ -320,16 +452,24 @@ function DialogBody({
   now: Date;
 }) {
   const time = formatClock(cell.slotTime);
+  // A sponsor is in this room when it's theirs or they hold it now.
+  const inRoom = (s: BoardSponsor) =>
+    sameRoom(s.room, cell.room) ||
+    board.holds.some(
+      (h) =>
+        h.sponsorId === s.sponsorId &&
+        sameRoom(h.room, cell.room) &&
+        holdCovers(h, { slotTime: cell.slotTime }),
+    );
   // Sponsors who can take a chat starting now-ish here: an offerable start
-  // at this slot. People already in the room come first.
+  // at this slot. People already in the room (or holding it) come first.
   const bookable = board.sponsors
     .filter((s) =>
       s.cells.some((c) => c.slotTime === cell.slotTime && c.offerable),
     )
     .sort(
       (a, b) =>
-        Number(sameRoom(b.room, cell.room)) -
-          Number(sameRoom(a.room, cell.room)) ||
+        Number(inRoom(b)) - Number(inRoom(a)) ||
         a.sponsor.localeCompare(b.sponsor),
     );
   const [sponsorName, setSponsorName] = useState(
@@ -339,6 +479,11 @@ function DialogBody({
       "",
   );
   const sponsor = bookable.find((s) => s.sponsor === sponsorName);
+  // Holds in this room covering this slot.
+  const holdsHere = board.holds.filter(
+    (h) =>
+      sameRoom(h.room, cell.room) && holdCovers(h, { slotTime: cell.slotTime }),
+  );
   const sponsorCell = sponsor?.cells.find((c) => c.slotTime === cell.slotTime);
   const selectId = `room-book-${cell.room}-${cell.slotTime}`;
 
@@ -414,7 +559,7 @@ function DialogBody({
         )}
         {sponsor && sponsorCell && (
           <>
-            {sameRoom(sponsor.room, cell.room) ? (
+            {inRoom(sponsor) ? (
               <AddChatHere sponsor={sponsor} cell={sponsorCell} now={now} />
             ) : (
               <MoveHere sponsor={sponsor} room={cell.room} />
@@ -422,6 +567,9 @@ function DialogBody({
           </>
         )}
       </section>
+
+      <HoldsHere holds={holdsHere} slots={board.slots} />
+      <HoldRoomForm board={board} room={cell.room} slotTime={cell.slotTime} />
     </>
   );
 }
