@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { hover } from "~/components/internals/interaction";
+import { cn } from "~/lib/utils";
 import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-rooms";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { formatClock } from "~/lib/run-of-show";
@@ -271,7 +273,10 @@ export function HackerMatches({
                 <button
                   type="button"
                   onClick={() => onPick(m)}
-                  className="flex min-h-11 w-full flex-col items-start rounded-dashboard-md px-3 py-2 text-left [@media(hover:hover)]:hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+                  className={cn(
+                    "flex min-h-11 w-full flex-col items-start rounded-dashboard-md px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                    hover.highlight,
+                  )}
                 >
                   <span className="font-semibold">{m.name}</span>
                   <span className="break-all text-dashboard-text-light">

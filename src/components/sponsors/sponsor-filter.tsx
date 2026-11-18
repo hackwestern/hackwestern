@@ -1,6 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { Check } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { DashboardCheckbox } from "~/components/internals/dashboard-checkbox";
+import { hover } from "~/components/internals/interaction";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { cn } from "~/lib/utils";
 
@@ -125,16 +126,14 @@ export function SponsorFilter({
         </span>
         <div className="-mr-2 flex">
           <DashboardButton
-            variant="tertiary"
-            className="min-h-11 px-2 text-sm text-dashboard-text-link disabled:text-dashboard-text-disabled md:min-h-9 md:text-sm"
+            variant="link"
             disabled={selection.selected === null}
             onClick={selection.showAll}
           >
             {copy.all}
           </DashboardButton>
           <DashboardButton
-            variant="tertiary"
-            className="min-h-11 px-2 text-sm text-dashboard-text-link disabled:text-dashboard-text-disabled md:min-h-9 md:text-sm"
+            variant="link"
             disabled={shown === 0}
             onClick={selection.clear}
           >
@@ -142,7 +141,7 @@ export function SponsorFilter({
           </DashboardButton>
         </div>
       </div>
-      <div className="-mx-2 flex flex-wrap">
+      <div className="-mx-1 flex flex-wrap">
         {names.map((name) => (
           <SponsorCheck
             key={name}
@@ -160,8 +159,8 @@ export function SponsorFilter({
 }
 
 // One sponsor: the whole label is the hit area (44px tall on touch, 36px on
-// desktop); the circle fills blue with a white check when shown. Only colour
-// and the check's opacity change, so nothing shifts when toggling.
+// desktop) around a round DashboardCheckbox. Only colour and the check's
+// opacity change, so nothing shifts when toggling.
 function SponsorCheck({
   name,
   checked,
@@ -172,32 +171,13 @@ function SponsorCheck({
   onToggle: () => void;
 }) {
   return (
-    <label className="group flex min-h-11 min-w-0 max-w-full cursor-pixel-hover items-center gap-2 rounded-dashboard-md px-2 text-sm text-dashboard-text-heavy md:min-h-9 [@media(hover:hover)]:hover:bg-dashboard-bg-highlight">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onToggle}
-        className="peer sr-only"
-      />
-      <span
-        aria-hidden
-        className={cn(
-          "inline-flex size-4 shrink-0 items-center justify-center rounded-full border-[1.5px]",
-          "motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out",
-          "peer-focus-visible:ring-2 peer-focus-visible:ring-dashboard-action-primary peer-focus-visible:ring-offset-2",
-          checked
-            ? "border-dashboard-action-primary bg-dashboard-action-primary"
-            : "border-dashboard-border-strong bg-dashboard-bg-surface",
-        )}
-      >
-        <Check
-          strokeWidth={3}
-          className={cn(
-            "size-2.5 text-dashboard-text-inverse motion-safe:transition-opacity motion-safe:duration-150 motion-safe:ease-out",
-            checked ? "opacity-100" : "opacity-0",
-          )}
-        />
-      </span>
+    <label
+      className={cn(
+        "flex min-h-11 min-w-0 max-w-full cursor-pixel-hover items-center gap-1 rounded-dashboard-md pr-2 text-sm text-dashboard-text-heavy md:min-h-9",
+        hover.highlight,
+      )}
+    >
+      <DashboardCheckbox round checked={checked} onCheckedChange={onToggle} />
       <span className="min-w-0 break-words">{name}</span>
     </label>
   );

@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { hover } from "~/components/internals/interaction";
 import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import {
@@ -594,7 +595,8 @@ function BoardCellView({
         data-cell={cellId}
         className={cn(
           "flex h-full min-h-14 w-full flex-col items-stretch gap-1.5 px-2.5 py-2 text-left transition-colors",
-          "[@media(hover:hover)]:hover:bg-dashboard-bg-highlightSubtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary",
+          hover.highlightSubtle,
         )}
       >
         <span className="sr-only">{copy.cellLabel(s.sponsor, time)}: </span>
@@ -690,7 +692,10 @@ function CellPanel({
                 </div>
                 <Dialog.Close
                   aria-label={copy.panel.close}
-                  className="-mr-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium [@media(hover:hover)]:hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+                  className={cn(
+                    "-mr-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                    hover.highlight,
+                  )}
                 >
                   <X aria-hidden className="size-5" />
                 </Dialog.Close>

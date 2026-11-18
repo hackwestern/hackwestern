@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { CheckCircle2, MapPin, Phone, User } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { hover } from "~/components/internals/interaction";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { formatHelpTime } from "~/components/sponsors/help-status";
@@ -139,7 +140,10 @@ export function HelpQueue({
                     {sponsorHref ? (
                       <Link
                         href={sponsorHref(r.sponsorId)}
-                        className="rounded-dashboard-sm text-dashboard-text-heavy underline-offset-4 [@media(hover:hover)]:hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+                        className={cn(
+                          "rounded-dashboard-sm text-dashboard-text-heavy underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                          hover.underline,
+                        )}
                       >
                         {r.sponsorName}
                       </Link>
