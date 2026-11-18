@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coffee chats · Sun Life (mock B)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* dashboard tokens (src/lib/tokens.ts -> dashboardColors etc.) */
+  :root{
+    --t-heavy:#0b2b4a; --t-medium:#1c3550; --t-light:#516476; --t-placeholder:rgba(81,100,118,0.7);
+    --t-inverse:#fff; --t-link:#0b6bc4; --t-active:#08559c; --t-warning:#8a4300;
+    --bg-page:#f3f7fc; --bg-surface:#fff; --bg-nav:#dbe7f5; --bg-navSel:#b9d3f0; --bg-inset:#edf3fa;
+    --bg-highlight:#e1effb; --bg-task:#ffefb8;
+    --primary:#0b6bc4;
+    --b-default:#cdddeb; --b-subtle:#e0eaf3; --b-card:#d6e3ef; --b-control:#b9cbe0; --b-outline:#accae5;
+    --b-muted:rgba(81,100,118,0.2); --b-medium:rgba(81,100,118,0.5);
+    --live:#16803c; --warn:#a34a00; --iconBadge:#fbdac4;
+    --s-pink:rgba(250,104,235,0.15); --s-blue:rgba(37,130,254,0.15); --s-green:rgba(104,250,109,0.15); --s-orange:rgba(254,145,37,0.15);
+    --r-sm:4px; --r-md:6px; --r-lg:8px; --r-xl:10px; --r-2xl:12px; --r-3xl:20px; --r-full:999px;
+    --sh-card:0px 1px 2px 0px rgba(11,43,74,0.06),0px 1px 4px 0px rgba(11,43,74,0.05);
+    --sh-primary:0px 2px 4px 0px rgba(11,43,74,0.2);
+    --sh-secondary:0px 2px 8px 0px rgba(0,0,0,0.12);
+    --ease-out:cubic-bezier(0.23,1,0.32,1);
+    --ease-drawer:cubic-bezier(0.32,0.72,0,1);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg-page);color:var(--t-heavy);font-family:Figtree,system-ui,sans-serif;font-weight:500;line-height:1.2;-webkit-tap-highlight-color:transparent}
+  button{font:inherit;color:inherit;cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+  button:focus-visible,a:focus-visible,input:focus-visible{outline:none;box-shadow:0 0 0 2px var(--bg-surface),0 0 0 4px var(--primary)}
+  .press{transition:transform 160ms var(--ease-out),background-color 160ms var(--ease-out),border-color 160ms var(--ease-out)}
+  .press:active{transform:scale(0.97)}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  .page{min-height:100dvh;padding:16px 16px max(48px,env(safe-area-inset-bottom))}
+  .col{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+  @media (min-width:640px){.page{padding:24px 20px 48px}}
+
+  /* header */
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+  .back{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-left:-8px;padding:0 8px;border-radius:var(--r-lg);font-size:14px;font-weight:600;color:var(--t-medium);text-decoration:none}
+  .brand{display:none;font-size:14px;font-weight:600;color:var(--t-light)}
+  @media (min-width:640px){.brand{display:inline}}
+  .top-r{display:flex;align-items:center;gap:12px}
+  .map-pill{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:0;border-radius:var(--r-full);background:var(--primary);color:var(--t-inverse);font-size:14px;font-weight:600;box-shadow:var(--sh-primary)}
+
+  /* title */
+  .title{display:flex;align-items:center;gap:14px}
+  .logo{flex:none;display:inline-flex;align-items:center;height:48px;padding:8px 12px;background:var(--bg-surface);border-radius:var(--r-lg);box-shadow:var(--sh-card)}
+  .logo img{height:100%;width:auto;max-width:120px;object-fit:contain}
+  h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em}
+  @media (min-width:640px){h1{font-size:32px}}
+  .sub{margin:4px 0 0;font-size:14px;color:var(--t-light)}
+
+  .label{margin:0;font-size:12px;font-weight:600;letter-spacing:-0.02em;text-transform:uppercase;color:var(--t-light)}
+
+  /* setup bar */
+  .setup{background:var(--bg-surface);border-radius:var(--r-2xl);box-shadow:var(--sh-card);padding:12px 12px 12px 16px}
+  .setup-row{display:flex;align-items:center;gap:12px}
+  .setup-sum{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+  .setup-main{font-size:16px;font-weight:600}
+  .setup-meta{font-size:13px;color:var(--t-light);line-height:1.4}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border-radius:var(--r-lg);font-size:14px;font-weight:600;white-space:nowrap}
+  .btn-sec{background:var(--bg-surface);border:1px solid var(--b-default);color:var(--t-medium);box-shadow:var(--sh-secondary)}
+  .btn-pri{background:var(--primary);border:0;color:var(--t-inverse);box-shadow:var(--sh-primary)}
+  .btn-pri:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .btn-ghost{background:transparent;border:0;color:var(--t-link);padding:0 8px}
+  @media (hover:hover){
+    .btn-sec:hover{background:var(--bg-inset)}
+    .btn-pri:not(:disabled):hover{background:var(--t-active)}
+    .btn-ghost:hover{text-decoration:underline}
+    .back:hover{color:var(--t-heavy)}
+    .map-pill:hover{background:var(--t-active)}
+  }
+  .editor{display:grid;grid-template-rows:0fr;transition:grid-template-rows 240ms var(--ease-out)}
+  .editor.open{grid-template-rows:1fr}
+  .editor>div{overflow:hidden}
+  .editor-in{padding-top:12px;margin-top:12px;border-top:1px solid var(--b-subtle);display:flex;flex-direction:column;gap:8px}
+  .opt{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:12px;border:1.5px solid var(--b-subtle);border-radius:var(--r-xl);background:var(--bg-surface);font-size:15px;text-align:left;width:100%}
+  .opt[aria-checked="true"]{border-color:var(--primary);background:var(--bg-highlight)}
+  .radio{flex:none;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--b-medium);display:grid;place-items:center}
+  .opt[aria-checked="true"] .radio{border-color:var(--primary)}
+  .opt[aria-checked="true"] .radio::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--primary)}
+  .num{width:52px;min-height:36px;padding:0 6px;border:1px solid var(--b-control);border-radius:var(--r-md);font:inherit;font-size:16px;font-weight:600;text-align:center;color:var(--t-heavy);background:var(--bg-surface)}
+  .editor-foot{display:flex;justify-content:flex-end;gap:8px;padding-top:4px}
+  .hint{font-size:13px;color:var(--t-light);line-height:1.4;margin:0}
+
+  /* progress */
+  .prog{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .prog-num{font-size:14px;color:var(--t-medium)}
+  .prog-num b{color:var(--t-heavy);font-weight:700}
+  .bar{height:6px;border-radius:var(--r-full);background:var(--bg-nav);overflow:hidden;margin-top:8px}
+  .bar i{display:block;height:100%;background:var(--primary);border-radius:inherit;transition:width 300ms var(--ease-out)}
+
+  /* timeline */
+  .timeline{position:relative;display:flex;flex-direction:column;gap:14px}
+  .timeline::before{content:"";position:absolute;left:46px;top:8px;bottom:8px;width:2px;background:var(--b-subtle);border-radius:2px}
+  .gap{position:relative;margin-left:60px;padding:6px 0;font-size:13px;color:var(--t-light);font-style:italic}
+  .gap::before{content:"";position:absolute;left:-17px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--bg-page);border:2px solid var(--b-default)}
+  .block{position:relative;margin-left:60px;background:var(--bg-surface);border-radius:var(--r-2xl);box-shadow:var(--sh-card);border-left:4px solid var(--primary)}
+  .block-h{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:12px 12px 10px 14px;border-bottom:1px solid var(--b-subtle)}
+  .room{font-size:16px;font-weight:700}
+  .room-meta{font-size:13px;color:var(--t-light);margin-top:3px}
+  .block-acts{display:flex;gap:6px;width:100%}
+  .block-acts .btn{flex:1;padding:0 8px}
+  @media (min-width:640px){.block-acts{width:auto}.block-acts .btn{flex:none;padding:0 10px}}
+  .slot [data-fewer]{margin-left:auto}
+  .btn-sm{min-height:36px;padding:0 10px;font-size:13px}
+  .slot{position:relative;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px 10px 14px;min-height:60px}
+  .slot+.slot{border-top:1px solid var(--b-subtle)}
+  .slot.zero{background:var(--bg-inset)}
+  .time{position:absolute;left:-60px;top:30px;transform:translateY(-50%);width:40px;text-align:right;font-size:12px;font-weight:600;color:var(--t-light);font-variant-numeric:tabular-nums;line-height:1.1}
+  .time::after{content:"";position:absolute;right:-13px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--bg-surface);border:2px solid var(--b-outline)}
+  .slot.open .time::after{border-color:var(--primary);background:var(--primary)}
+  .seats{display:flex;gap:6px;flex:none}
+  .seat{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;border:0;padding:0;position:relative}
+  .seat.empty{background:transparent;border:1.5px dashed var(--b-medium);color:var(--t-light)}
+  @media (hover:hover){.seat.empty:hover{border-color:var(--primary);color:var(--primary);background:var(--bg-highlight)}}
+  .seat.offered{box-shadow:0 0 0 2px var(--bg-surface),0 0 0 3.5px var(--warn)}
+  .seat.offered::after{content:"";position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;background:var(--warn);border:2px solid var(--bg-surface)}
+  .seat.pop{animation:pop 260ms var(--ease-out)}
+  @keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+  .slot-info{flex:1;min-width:96px;display:flex;flex-direction:column;gap:2px}
+  .count{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+  .count.full{color:var(--live)}
+  .note{font-size:12px;color:var(--t-light)}
+  .note.warn{color:var(--t-warning)}
+  .fewer-ctl{display:flex;align-items:center;gap:6px;width:100%;padding:8px 10px;background:var(--bg-inset);border-radius:var(--r-lg);font-size:13px;color:var(--t-medium);flex-wrap:wrap}
+  .step{width:36px;height:36px;border-radius:var(--r-lg);border:1px solid var(--b-control);background:var(--bg-surface);font-size:18px;font-weight:600;display:grid;place-items:center;padding:0}
+  .step:disabled{opacity:.45;cursor:not-allowed}
+  .step-v{min-width:24px;text-align:center;font-size:16px;font-weight:700;color:var(--t-heavy);font-variant-numeric:tabular-nums}
+
+  /* avatars */
+  .av{flex:none;border-radius:50%;display:grid;place-items:center;font-weight:700;color:var(--t-heavy)}
+  .c0{background:#c4e0fc}.c1{background:var(--iconBadge)}.c2{background:var(--bg-task)}.c3{background:var(--bg-navSel)}
+  .c4{background:#d9f3d6}.c5{background:#f5dcf2}.c6{background:#fde3c8}.c7{background:#dbe7f5}
+  /* c4-c6 = schedule green/pink/orange tints flattened onto white */
+
+  /* drawer */
+  .scrim{position:fixed;inset:0;background:rgba(11,43,74,0.32);opacity:0;pointer-events:none;transition:opacity 240ms var(--ease-out);z-index:40}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;z-index:50;background:var(--bg-surface);display:flex;flex-direction:column;box-shadow:0 -4px 24px rgba(11,43,74,0.14);
+    left:0;right:0;bottom:0;max-height:88dvh;border-radius:var(--r-3xl) var(--r-3xl) 0 0;transform:translateY(100%);transition:transform 320ms var(--ease-drawer);visibility:hidden}
+  .drawer.on{transform:none;visibility:visible}
+  .grab{width:36px;height:4px;border-radius:2px;background:var(--b-default);margin:8px auto 0;flex:none}
+  @media (min-width:900px){
+    .drawer{left:auto;top:0;bottom:0;width:420px;max-height:none;border-radius:var(--r-3xl) 0 0 var(--r-3xl);transform:translateX(100%);box-shadow:-4px 0 24px rgba(11,43,74,0.14)}
+    .grab{display:none}
+  }
+  .d-head{padding:12px 16px 12px;border-bottom:1px solid var(--b-subtle);flex:none}
+  .d-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .d-title{margin:0;font-size:18px;font-weight:600}
+  .d-sub{margin:4px 0 0;font-size:13px;color:var(--t-light)}
+  .x{width:40px;height:40px;border-radius:var(--r-lg);border:0;background:var(--bg-inset);display:grid;place-items:center;flex:none;margin:-4px -4px 0 0}
+  .pills{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:var(--r-full);border:0;background:var(--bg-nav);color:var(--t-medium);font-size:13px;font-weight:600}
+  .pill .n{font-variant-numeric:tabular-nums;opacity:.75}
+  .pill[aria-pressed="true"]{background:var(--primary);color:var(--t-inverse)}
+  .pill[aria-pressed="true"] .n{opacity:.9}
+  @media (hover:hover){.pill[aria-pressed="false"]:hover{background:var(--bg-navSel)}}
+  .list{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:8px 8px 12px;margin:0;list-style:none}
+  .cand{width:100%;display:flex;gap:12px;align-items:flex-start;text-align:left;padding:12px 10px;border:1.5px solid transparent;border-radius:var(--r-xl);background:transparent}
+  @media (hover:hover){.cand:not(:disabled):hover{background:var(--bg-inset)}}
+  .cand[aria-checked="true"]{border-color:var(--primary);background:var(--bg-highlight)}
+  .cand:disabled{opacity:.5;cursor:not-allowed}
+  .cand .av{width:40px;height:40px;font-size:14px}
+  .c-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+  .c-line{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .c-name{font-size:15px;font-weight:600}
+  .c-school{font-size:13px;color:var(--t-light);line-height:1.35}
+  .c-note{font-size:13px;color:var(--t-medium);line-height:1.4}
+  .tags{display:flex;gap:4px;flex-wrap:wrap}
+  .tag{font-size:12px;font-weight:600;padding:3px 8px;border-radius:var(--r-sm);background:var(--bg-highlight);color:var(--t-active)}
+  .st{flex:none;font-size:11px;font-weight:600;padding:3px 8px;border-radius:var(--r-full);white-space:nowrap}
+  .st-short{background:var(--bg-highlight);color:var(--t-active)}
+  .st-not{background:var(--bg-inset);color:var(--t-light)}
+  .st-booked{background:#d9f3d6;color:var(--live)}
+  .st-offered{background:var(--iconBadge);color:var(--t-warning)}
+  .d-foot{flex:none;display:flex;align-items:center;gap:10px;padding:12px 16px max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--b-subtle);background:var(--bg-surface)}
+  .d-foot .pick{flex:1;min-width:0;font-size:13px;color:var(--t-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .d-foot .pick b{color:var(--t-heavy)}
+  .d-foot .btn{min-height:44px}
+  .empty-st{padding:32px 16px;text-align:center;font-size:14px;font-style:italic;color:var(--t-light)}
+
+  /* toast + mock badge */
+  .toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translate(-50%,16px);opacity:0;z-index:60;background:var(--t-heavy);color:var(--t-inverse);font-size:14px;font-weight:600;padding:12px 16px;border-radius:var(--r-xl);box-shadow:var(--sh-secondary);transition:opacity 200ms var(--ease-out),transform 200ms var(--ease-out);pointer-events:none;max-width:calc(100vw - 32px)}
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+  .mock{position:fixed;top:4px;left:50%;transform:translateX(-50%);white-space:nowrap;z-index:70;font-size:10px;font-weight:700;letter-spacing:.04em;padding:4px 8px;border-radius:var(--r-full);background:var(--bg-task);color:var(--t-warning);border:1px solid #c78a00;pointer-events:none}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{transition-duration:1ms!important;animation:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="mock" aria-hidden="true">MOCK · fake data</div>
+
+<div class="page">
+  <div class="col">
+    <header class="top">
+      <a class="back press" href="#">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to your portal
+      </a>
+      <div class="top-r">
+        <span class="brand">Hack Western 13</span>
+        <button class="map-pill press" type="button" id="mapBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>
+          Map
+        </button>
+      </div>
+    </header>
+
+    <div class="title">
+      <span class="logo"><img src="../../public/shared/sponsors/sunlife.png" alt="Sun Life"></span>
+      <div>
+        <h1>Coffee chats</h1>
+        <p class="sub">Your rooms and who's sitting with you, slot by slot.</p>
+      </div>
+    </div>
+
+    <!-- Chat setup: compact bar -->
+    <section class="setup" aria-labelledby="setupLabel">
+      <h2 class="sr-only" id="setupLabel">Your chat setup</h2>
+      <div class="setup-row">
+        <div class="setup-sum">
+          <span class="label">Your chat setup</span>
+          <span class="setup-main" id="setupMain">One group chat with 3 hackers</span>
+          <span class="setup-meta" id="setupMeta">30 min · 10:00 AM–4:00 PM · 3 chatting hours · target 36 hackers</span>
+        </div>
+        <button class="btn btn-sec press" type="button" id="editBtn" aria-expanded="false" aria-controls="editor">Edit</button>
+      </div>
+      <div class="editor" id="editor">
+        <div>
+          <div class="editor-in" role="radiogroup" aria-label="How you run chats">
+            <div class="opt press" role="radio" tabindex="0" aria-checked="false" data-mode="one">
+              <span class="radio" aria-hidden="true"></span>
+              1-on-1: we have <input class="num" type="number" inputmode="numeric" min="1" max="9" value="3" id="repsIn" aria-label="Number of reps"> reps
+            </div>
+            <div class="opt press" role="radio" tabindex="-1" aria-checked="true" data-mode="group">
+              <span class="radio" aria-hidden="true"></span>
+              One group chat with <input class="num" type="number" inputmode="numeric" min="1" max="9" value="3" id="groupIn" aria-label="Hackers per group chat"> hackers
+            </div>
+            <p class="hint">Length and hours come from your sponsor sheet. Ask us on Slack to change them.</p>
+            <div class="editor-foot">
+              <button class="btn btn-ghost press" type="button" id="cancelEdit">Cancel</button>
+              <button class="btn btn-pri press" type="button" id="saveEdit">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Rooms timeline: the hero -->
+    <section aria-labelledby="roomsLabel" style="display:flex;flex-direction:column;gap:12px">
+      <div class="prog">
+        <h2 class="label" id="roomsLabel">Your rooms today</h2>
+        <span class="prog-num" id="progNum"></span>
+      </div>
+      <div class="bar" aria-hidden="true"><i id="progBar" style="width:0"></i></div>
+      <div class="timeline" id="timeline"></div>
+    </section>
+  </div>
+</div>
+
+<!-- Candidates drawer -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle" aria-hidden="true">
+  <div class="grab" aria-hidden="true"></div>
+  <div class="d-head">
+    <div class="d-top">
+      <div>
+        <h2 class="d-title" id="dTitle">Candidates</h2>
+        <p class="d-sub" id="dSub"></p>
+      </div>
+      <button class="x press" type="button" id="closeD" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="pills" role="group" aria-label="Filter candidates" id="pills"></div>
+  </div>
+  <ul class="list" id="list" role="radiogroup" aria-label="Pick a hacker"></ul>
+  <div class="d-foot">
+    <span class="pick" id="pickTxt">Pick a hacker</span>
+    <button class="btn btn-pri press" type="button" id="offerBtn" disabled>Offer this slot</button>
+  </div>
+</aside>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------- FAKE data: fictional hackers, not real people ---------- */
+const RAW = [
+ ["Avery","K","Western University","Computer Science","Y3",["Python","Data viz","SQL"],"Wants to hear how actuaries use ML.",1],
+ ["Noor","H","University of Waterloo","Statistics","Y2",["R","Pandas"],"Curious about pricing models in insurance.",1],
+ ["Mateo","R","McMaster University","Software Eng","Y4",["Go","Kubernetes","AWS"],"Looking for a platform eng internship.",1],
+ ["Priya","S","University of Toronto","Math & Econ","Y3",["Excel","Python","Tableau"],"Building a retirement-savings calculator.",1],
+ ["Jonah","W","Queen's University","Commerce","Y2",["Figma","Notion"],"Interested in product roles at fintechs.",0],
+ ["Lin","Z","Western University","Software Eng","Y1",["JavaScript","React"],"First hackathon, wants general advice.",0],
+ ["Kofi","A","York University","Information Tech","Y3",["Java","Spring"],"Asked about backend teams.",1],
+ ["Sofia","M","Toronto Metropolitan U","Computer Eng","Y4",["C++","Embedded"],"Exploring wearables for health data.",0],
+ ["Ravi","P","University of Ottawa","Computer Science","Y2",["TypeScript","Next.js","Tailwind"],"Wants feedback on a budgeting app.",1],
+ ["Elodie","B","McGill University","Cognitive Science","Y3",["UX research","Figma"],"Studying how people read benefit plans.",1],
+ ["Theo","N","Western University","Ivey HBA","Y4",["Excel","SQL"],"Recruiting for analyst roles.",0],
+ ["Amara","O","University of Waterloo","Computer Science","Y3",["Rust","Python","LLMs"],"Wants to talk about AI in claims.",1],
+ ["Haruto","T","University of Guelph","Bioinformatics","Y2",["Python","Biopython"],"Health data and privacy questions.",0],
+ ["Isla","F","Carleton University","Cybersecurity","Y3",["Networking","Linux"],"Curious about security at a big insurer.",1],
+ ["Diego","L","Western University","Electrical Eng","Y2",["Arduino","C"],"Prototype hardware team lead.",0],
+ ["Mei","C","University of Toronto","Data Science","Y4",["Spark","Python","SQL"],"Graduating in May, open to new grad.",1],
+ ["Yusuf","E","Wilfrid Laurier","Business Tech","Y3",["Power BI","Excel"],"Wants to learn about rotational programs.",0],
+ ["Clara","V","Queen's University","Computing","Y1",["Python","HTML/CSS"],"Exploring careers in tech.",0],
+ ["Arjun","D","McMaster University","Computer Science","Y3",["Swift","iOS"],"Building a mobile wellness app.",1],
+ ["Zoe","G","Western University","Media & IT","Y2",["Figma","Motion"],"Design portfolio review, please.",0],
+ ["Omar","S","University of Windsor","Computer Science","Y4",["Java","Android"],"Asked about mobile teams.",0],
+ ["Hana","Y","University of Waterloo","Mathematics","Y2",["R","Actuarial"],"Writing actuarial exams this year.",1],
+ ["Felix","J","University of Ottawa","Software Eng","Y3",["C#",".NET","Azure"],"Interested in cloud migration work.",0],
+ ["Leila","R","York University","Computer Science","Y2",["Python","Flask"],"Wants to know what interns ship.",0],
+ ["Ben","Q","Western University","Computer Science","Y4",["Go","Postgres","Docker"],"Built a claims-tracker side project.",1],
+ ["Ines","P","Université de Montréal","Informatique","Y3",["Python","NLP"],"French-language chatbot for forms.",1],
+ ["Kai","L","Simon Fraser University","Interactive Arts","Y2",["Unity","Blender"],"Game-like financial literacy idea.",0],
+ ["Grace","H","University of Toronto","Engineering Sci","Y3",["MATLAB","Python"],"Risk modelling, wants mentorship.",1],
+ ["Samir","K","Toronto Metropolitan U","Business Analytics","Y4",["SQL","Looker"],"Analytics roles in Waterloo office.",0],
+ ["Nina","W","Western University","Health Sciences","Y3",["Excel","Research"],"Bridging health and tech.",0],
+ ["Oscar","T","University of Guelph","Computer Science","Y1",["Python"],"Just wants to say hi.",0],
+ ["Freya","D","Queen's University","Mechanical Eng","Y4",["CAD","Python"],"Switching into software.",0],
+ ["Tariq","M","McMaster University","Computer Science","Y2",["JavaScript","Node"],"Hackathon team: savings nudges.",0],
+ ["Lucia","A","University of Waterloo","Systems Design","Y3",["Figma","React"],"Interested in design systems.",0],
+ ["Ezra","B","Carleton University","Computer Science","Y3",["Kotlin","Android"],"Accessibility in mobile apps.",0],
+ ["Aiko","S","Western University","Computer Science","Y2",["Python","FastAPI"],"Wants an API design chat.",1],
+ ["Marcus","F","Wilfrid Laurier","Computer Science","Y4",["Java","AWS"],"Open to full-time in Toronto.",0],
+ ["Tessa","I","University of Toronto","Statistics","Y3",["R","Stan"],"Bayesian stats in insurance?",1],
+ ["Rohan","C","University of Windsor","Computer Eng","Y2",["C","FPGA"],"Low-level systems curiosity.",0],
+ ["Wren","E","McGill University","Software Eng","Y3",["TypeScript","GraphQL"],"Asked about internal dev tools.",0],
+];
+const HACKERS = RAW.map((r,i)=>({id:i,first:r[0],last:r[1],school:r[2],prog:r[3],year:r[4],tags:r[5],note:r[6],short:!!r[7],c:i%8}));
+const initials = h => h.first[0]+h.last;
+const nm = h => `${h.first} ${h.last}.`;
+
+/* ---------- rooms: 12 × 30-min slots, 10:00–4:00 ---------- */
+let perSlot = 3;
+const fmt = m => { const h=Math.floor(m/60), mm=m%60; return `${((h+11)%12)+1}:${String(mm).padStart(2,"0")}`; };
+const ap = m => m>=720?"PM":"AM";
+function mkBlock(room,start,n){return {room,start,slots:Array.from({length:n},(_,i)=>({t:start+i*30,asked:null,seats:[]}))};}
+// Rooms are given to the sponsor per stretch: different rooms at different times
+const BLOCKS=[mkBlock("Rm 2243",600,4),mkBlock("Rm 2241",720,4),mkBlock("Rm 2242",840,4)];
+// seed: booked (b) and offered (o)
+const seed=[[0,0,[[0,"b"],[3,"b"],[11,"b"]]],[0,1,[[1,"b"],[2,"b"],[15,"b"]]],[0,2,[[6,"b"],[8,"o"]]],[0,3,[[9,"b"]]],
+  [1,0,[[18,"b"],[21,"b"],[24,"b"]]],[1,1,[[4,"b"]]],[1,2,[]],[1,3,[[12,"b"],[30,"o"]]],
+  [2,0,[[16,"b"],[10,"b"]]],[2,1,[[19,"b"],[22,"b"],[33,"b"]]],[2,2,[[5,"b"]]],[2,3,[]]];
+seed.forEach(([b,s,arr])=>BLOCKS[b].slots[s].seats=arr.map(([id,st])=>({id,st})));
+BLOCKS[0].slots[3].asked=2;   // a rep leaves early
+BLOCKS[2].slots[3].asked=0;   // no chat at 3:30
+
+const asked = s => s.asked==null?perSlot:s.asked;
+const where = new Map(); // hackerId -> {st,t}
+function reindex(){where.clear();BLOCKS.forEach(b=>b.slots.forEach(s=>s.seats.forEach(x=>where.set(x.id,{st:x.st,t:s.t}))));}
+
+/* ---------- render timeline ---------- */
+const tl=document.getElementById("timeline");
+let openFewer=null; // "b-s"
+function render(){
+  reindex();
+  let booked=0,offered=0,target=0;
+  tl.innerHTML="";
+  BLOCKS.forEach((b,bi)=>{
+    if(bi>0){const prevEnd=BLOCKS[bi-1].start+BLOCKS[bi-1].slots.length*30; if(b.start>prevEnd){const g=document.createElement("div");g.className="gap";g.textContent=`${fmt(prevEnd)}–${fmt(b.start)} · no room`;tl.appendChild(g);}}
+    const end=b.start+b.slots.length*30;
+    const filled=b.slots.reduce((a,s)=>a+s.seats.length,0), cap=b.slots.reduce((a,s)=>a+asked(s),0);
+    const el=document.createElement("article");el.className="block";
+    el.setAttribute("aria-label",`${b.room}, ${fmt(b.start)} to ${fmt(end)} ${ap(end)}`);
+    el.innerHTML=`<div class="block-h"><div><div class="room">${b.room}</div><div class="room-meta">${fmt(b.start)}–${fmt(end)} ${ap(end)} · ${filled} of ${cap} chats filled</div></div>
+      <div class="block-acts"><button class="btn btn-sec btn-sm press" data-pick="${bi}" ${filled>=cap?"disabled":""}>Pick from candidates</button><button class="btn btn-sec btn-sm press" data-scan="${bi}">Scan a badge</button></div></div>`;
+    b.slots.forEach((s,si)=>{
+      const a=asked(s), n=s.seats.length, open=a-n;
+      booked+=s.seats.filter(x=>x.st==="b").length; offered+=s.seats.filter(x=>x.st==="o").length; target+=a;
+      const row=document.createElement("div");row.className="slot"+(a===0?" zero":"")+(open>0?" open":"");
+      let seats="";
+      s.seats.forEach(x=>{const h=HACKERS[x.id];seats+=`<span class="seat av c${h.c}${x.st==="o"?" offered":""}${x.fresh?" pop":""}" title="${nm(h)}${x.st==="o"?" (offered, waiting)":""}" role="img" aria-label="${nm(h)}, ${x.st==="o"?"offered":"booked"}">${initials(h)}</span>`;delete x.fresh;});
+      for(let k=0;k<open;k++) seats+=`<button class="seat empty press" data-seat="${bi}-${si}" aria-label="Fill open seat at ${fmt(s.t)}">+</button>`;
+      const off=s.seats.filter(x=>x.st==="o").length;
+      let note = a===0?"No chat this slot": open>0?`Needs ${open} hacker${open>1?"s":""}`:"";
+      if(off) note += (note?" · ":"")+`${off} offered, waiting`;
+      const lowered = s.asked!=null && s.asked<perSlot && a>0 ? `<span class="note warn">You asked for ${a}</span>`:"";
+      const isOpen=openFewer===`${bi}-${si}`;
+      row.innerHTML=`<span class="time">${fmt(s.t)}</span>
+        <div class="seats">${seats||""}</div>
+        <div class="slot-info"><span class="count ${a>0&&open===0?"full":""}">${a===0?"0 / 0":(open===0?"Full · ":"")+n+" / "+a}</span>${note?`<span class="note">${note}</span>`:""}${lowered}</div>
+        <button class="btn btn-ghost btn-sm press" data-fewer="${bi}-${si}" aria-expanded="${isOpen}">${isOpen?"Done":"Ask for fewer"}</button>
+        ${isOpen?`<div class="fewer-ctl"><span>Hackers at ${fmt(s.t)}:</span>
+          <button class="step press" data-dec="${bi}-${si}" aria-label="Fewer" ${a<=n?"disabled":""}>−</button>
+          <span class="step-v" aria-live="polite">${a}</span>
+          <button class="step press" data-inc="${bi}-${si}" aria-label="More" ${a>=perSlot?"disabled":""}>+</button>
+          <span class="note" style="flex-basis:100%">${a<=n&&n>0?"Cancel a chat to go lower. ":""}0 means no chat then. Organizers see this right away.</span></div>`:""}`;
+      el.appendChild(row);
+    });
+    tl.appendChild(el);
+  });
+  const filledAll=booked+offered;
+  document.getElementById("progNum").innerHTML=`<b>${booked}</b> booked · ${offered} offered · of ${target}`;
+  document.getElementById("progBar").style.width=(target?Math.round(filledAll/target*100):0)+"%";
+}
+
+tl.addEventListener("click",e=>{
+  const t=e.target.closest("button"); if(!t) return;
+  if(t.dataset.seat){const [b,s]=t.dataset.seat.split("-").map(Number);openDrawer(b,s,t);}
+  else if(t.dataset.pick){const b=+t.dataset.pick;const s=BLOCKS[b].slots.findIndex(x=>asked(x)>x.seats.length);if(s>=0)openDrawer(b,s,t);}
+  else if(t.dataset.scan){toast("Opens the badge scanner for "+BLOCKS[+t.dataset.scan].room);}
+  else if(t.dataset.fewer){openFewer=openFewer===t.dataset.fewer?null:t.dataset.fewer;render();focusSel(`[data-fewer="${t.dataset.fewer}"]`);}
+  else if(t.dataset.dec||t.dataset.inc){const k=t.dataset.dec||t.dataset.inc;const [b,s]=k.split("-").map(Number);const sl=BLOCKS[b].slots[s];
+    sl.asked=Math.max(sl.seats.length,Math.min(perSlot,asked(sl)+(t.dataset.dec?-1:1)));if(sl.asked===perSlot)sl.asked=null;render();focusSel(t.dataset.dec?`[data-dec="${k}"]`:`[data-inc="${k}"]`);}
+});
+function focusSel(sel){const el=tl.querySelector(sel);if(el&&!el.disabled)el.focus();}
+
+/* ---------- drawer ---------- */
+const drawer=document.getElementById("drawer"),scrim=document.getElementById("scrim"),list=document.getElementById("list"),pills=document.getElementById("pills");
+const offerBtn=document.getElementById("offerBtn"),pickTxt=document.getElementById("pickTxt");
+let ctx=null, filter="all", picked=null, lastFocus=null;
+function openDrawer(b,s,from){
+  ctx={b,s};picked=null;lastFocus=from;
+  const sl=BLOCKS[b].slots[s], open=asked(sl)-sl.seats.length;
+  document.getElementById("dTitle").textContent=`Offer ${fmt(sl.t)} ${ap(sl.t)}`;
+  document.getElementById("dSub").textContent=`${BLOCKS[b].room} · 30 min · ${open} seat${open>1?"s":""} open`;
+  renderList();
+  drawer.classList.add("on");scrim.classList.add("on");drawer.setAttribute("aria-hidden","false");
+  document.body.style.overflow="hidden";
+  setTimeout(()=>pills.querySelector('[aria-pressed="true"]').focus(),50);
+}
+function closeDrawer(){drawer.classList.remove("on");scrim.classList.remove("on");drawer.setAttribute("aria-hidden","true");document.body.style.overflow="";ctx=null;if(lastFocus&&document.contains(lastFocus))lastFocus.focus();}
+function renderPills(){
+  const s=HACKERS.filter(h=>h.short).length;
+  const defs=[["all","All",HACKERS.length],["short","Shortlisted",s],["not","Not shortlisted",HACKERS.length-s]];
+  pills.innerHTML=defs.map(([k,l,n])=>`<button class="pill press" type="button" data-f="${k}" aria-pressed="${filter===k}">${l} <span class="n">${n}</span></button>`).join("");
+}
+function statusOf(h){const w=where.get(h.id);if(w)return w.st==="b"?[`Booked ${fmt(w.t)}`,"st-booked"]:[`Offered ${fmt(w.t)}`,"st-offered"];return h.short?["Shortlisted","st-short"]:["Not shortlisted","st-not"];}
+function renderList(){
+  renderPills();
+  const rows=HACKERS.filter(h=>filter==="all"||(filter==="short"?h.short:!h.short))
+    .sort((a,b)=>(where.has(a.id)-where.has(b.id))||(b.short-a.short));
+  if(!rows.length){list.innerHTML=`<li class="empty-st">No hackers here yet.</li>`;return;}
+  list.innerHTML=rows.map(h=>{const [st,cls]=statusOf(h);const busy=where.has(h.id);
+    return `<li><button class="cand press" type="button" role="radio" aria-checked="${picked===h.id}" data-h="${h.id}" ${busy?"disabled":""}>
+      <span class="av c${h.c}" aria-hidden="true">${initials(h)}</span>
+      <span class="c-body"><span class="c-line"><span class="c-name">${nm(h)}</span><span class="st ${cls}">${st}</span></span>
+      <span class="c-school">${h.school} · ${h.prog} ${h.year}</span>
+      <span class="tags">${h.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</span>
+      <span class="c-note">${h.note}</span></span></button></li>`;}).join("");
+  updateFoot();
+}
+function updateFoot(){offerBtn.disabled=picked==null;pickTxt.innerHTML=picked==null?"Pick a hacker":`<b>${nm(HACKERS[picked])}</b> · ${HACKERS[picked].school}`;}
+pills.addEventListener("click",e=>{const p=e.target.closest("[data-f]");if(!p)return;filter=p.dataset.f;renderList();pills.querySelector(`[data-f="${filter}"]`).focus();list.scrollTop=0;});
+list.addEventListener("click",e=>{const c=e.target.closest("[data-h]");if(!c||c.disabled)return;picked=+c.dataset.h;
+  list.querySelectorAll("[data-h]").forEach(x=>x.setAttribute("aria-checked",String(+x.dataset.h===picked)));updateFoot();});
+offerBtn.addEventListener("click",()=>{if(picked==null||!ctx)return;const sl=BLOCKS[ctx.b].slots[ctx.s];const h=HACKERS[picked];
+  sl.seats.push({id:picked,st:"o",fresh:true});const t=sl.t;closeDrawer();render();toast(`Offered ${fmt(t)} to ${nm(h)}. They have 15 min to accept.`);});
+document.getElementById("closeD").addEventListener("click",closeDrawer);
+scrim.addEventListener("click",closeDrawer);
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&ctx)closeDrawer();
+  if(e.key==="Tab"&&ctx){const f=[...drawer.querySelectorAll("button:not(:disabled)")];if(!f.length)return;const first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}
+});
+
+/* ---------- setup editor ---------- */
+const editor=document.getElementById("editor"),editBtn=document.getElementById("editBtn");
+let mode="group";
+const opts=[...document.querySelectorAll(".opt")];
+function setMode(m){mode=m;opts.forEach(o=>{const on=o.dataset.mode===m;o.setAttribute("aria-checked",on);o.tabIndex=on?0:-1;});}
+opts.forEach(o=>{o.addEventListener("click",()=>setMode(o.dataset.mode));o.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter"){if(e.target.tagName!=="INPUT"){e.preventDefault();setMode(o.dataset.mode);}}});});
+function toggleEdit(on){editor.classList.toggle("open",on);editBtn.setAttribute("aria-expanded",on);editBtn.textContent=on?"Close":"Edit";}
+editBtn.addEventListener("click",()=>toggleEdit(!editor.classList.contains("open")));
+document.getElementById("cancelEdit").addEventListener("click",()=>toggleEdit(false));
+document.getElementById("saveEdit").addEventListener("click",()=>{
+  const clamp=v=>Math.max(1,Math.min(9,parseInt(v,10)||1));
+  const r=clamp(document.getElementById("repsIn").value),g=clamp(document.getElementById("groupIn").value);
+  perSlot=mode==="one"?r:g;
+  document.getElementById("setupMain").textContent=mode==="one"?`1-on-1: we have ${r} reps`:`One group chat with ${g} hackers`;
+  const slots=BLOCKS.reduce((a,b)=>a+b.slots.length,0);
+  document.getElementById("setupMeta").textContent=`30 min · 10:00 AM–4:00 PM · 3 chatting hours · target ${slots*perSlot} hackers`;
+  toggleEdit(false);render();toast("Saved. Organizers see your new setup.");
+});
+
+/* ---------- misc ---------- */
+let tt;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),2600);}
+document.getElementById("mapBtn").addEventListener("click",()=>toast("Opens the venue map"));
+render();
+</script>
+</body>
+</html>

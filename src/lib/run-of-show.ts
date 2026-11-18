@@ -6,6 +6,7 @@
  * src/server/api/utils/run-of-show-sheet.ts; pages consume these types.
  * Dependency-free so client components can import it.
  */
+import type { SponAvailability } from "~/lib/spon-availability";
 
 export const RUN_OF_SHOW_DAYS = ["Friday", "Saturday", "Sunday"] as const;
 export type RunOfShowDay = (typeof RUN_OF_SHOW_DAYS)[number];
@@ -149,6 +150,8 @@ export type OrganizerRunOfShow = {
   coffeeChats: CoffeeChatSetup[];
   ceremonies: CeremonySegment[];
   workshops: WorkshopInfo[];
+  /** The sponsor team's availability (organizers only). */
+  availability: SponAvailability;
 };
 
 /** "13:30" -> "1:30 PM". */

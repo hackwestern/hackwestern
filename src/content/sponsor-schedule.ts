@@ -53,6 +53,21 @@ export const scheduleCopy = {
   timeline: {
     dayHeading: (day: string, date: number) => `${day}, November ${date}`,
     showHackathon: "Show hackathon events",
+    showOrganizers: "Organizers",
+    // The grid's narrow "who's around" column (organizers only).
+    organizers: {
+      header: "Organizers",
+      nobody: "No one",
+      onCall: (names: string) => `On call: ${names}`,
+      sr: (start: string, end: string, present: string, onCall: string) =>
+        [
+          `${start} to ${end}`,
+          present ? `here: ${present}` : "no one here",
+          onCall ? `on call: ${onCall}` : null,
+        ]
+          .filter(Boolean)
+          .join(", "),
+    },
     srYours: "Yours",
     srHackathon: "Hackathon event",
     srTime: (start: string, end: string) => `${start} to ${end}`,
@@ -92,6 +107,9 @@ export const scheduleCopy = {
       other: "Other events",
       tasks: "Team tasks",
     },
+    // Fold the schedule to its header (Jazz, 2026-11-18).
+    // Labels for the icon-only button (screen readers + tooltip).
+    collapse: { collapse: "Minimize schedule", expand: "Show schedule" },
     focus: {
       focusColumn: (column: string) => `Focus on ${column}`,
       showAll: "Show all columns",
@@ -251,6 +269,20 @@ export const scheduleCopy = {
     },
     owner: (owner: string) => `Owner: ${owner}`,
     unowned: "No owner",
+    // "Spon team availability" timetable under the run of show.
+    availability: {
+      heading: "Spon team availability",
+      everyone: "Everyone",
+      onCall: "On call",
+      away: (start: string, end: string) => `Out ${start} to ${end}`,
+      notAround: "Not around",
+      srFree: (start: string, end: string) => `Free ${start} to ${end}`,
+      srShift: (start: string, end: string) => `On shift ${start} to ${end}`,
+      srOnCall: (start: string, end: string) => `On call ${start} to ${end}`,
+      srRequired: (start: string, end: string) =>
+        `Everyone needed ${start} to ${end}`,
+      generalNotes: (notes: string) => `Notes: ${notes}`,
+    },
     coffeeTable: {
       sponsor: "Sponsor",
       window: "Window",

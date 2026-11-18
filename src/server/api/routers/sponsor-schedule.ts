@@ -56,7 +56,12 @@ async function readSheet(sponsors: { name: string }[]) {
       snapshot,
       sponsors.map((s) => s.name),
     );
-    return { readAt: snapshot.readAt, ...sheet };
+    return {
+      readAt: snapshot.readAt,
+      // Organizer-only: the sponsor `get` below never copies it out.
+      availability: snapshot.availability,
+      ...sheet,
+    };
   } catch (error) {
     console.error("run-of-show sheet read failed", error);
     throw new TRPCError({
@@ -149,6 +154,7 @@ export const sponsorScheduleRouter = createTRPCRouter({
         coffeeChats: sheet.coffeeChats,
         ceremonies: sheet.ceremonies,
         workshops: sheet.workshops,
+        availability: sheet.availability,
       };
     },
   ),

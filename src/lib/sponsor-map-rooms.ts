@@ -69,12 +69,13 @@ export const SPONSOR_MAP_ROOMS: SponsorMapRoom[] = [
 
   // Floor 2
   {
+    // Sponsor lounge (Jazz, 2026-11-18). Also a judging room on Sunday.
     id: "2110",
-    label: "2110",
+    label: "Sponsor Lounge",
     floor: "floor2",
     x: 84,
     y: 43,
-    aliases: ["alumni commons"],
+    aliases: ["alumni commons", "sponsor lounge"],
   },
   { id: "2230", label: "2230", floor: "floor2", x: 39.5, y: 37 },
   { id: "2235", label: "2235", floor: "floor2", x: 32, y: 40 },
@@ -83,12 +84,13 @@ export const SPONSOR_MAP_ROOMS: SponsorMapRoom[] = [
   { id: "2242", label: "2242", floor: "floor2", x: 28, y: 47 },
   { id: "2241", label: "2241", floor: "floor2", x: 30.5, y: 50.5 },
   {
+    // Where sponsors leave their things overnight (Jazz, 2026-11-18).
     id: "2244",
-    label: "2244",
+    label: "Belongings",
     floor: "floor2",
     x: 17.5,
     y: 50,
-    aliases: ["sponsor lounge"],
+    aliases: ["belongings", "storage"],
   },
 ];
 
