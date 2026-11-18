@@ -113,6 +113,10 @@ export const sponsorJudgingCopy = {
     submitting: "Submitting…",
     submittedAt: (time: string) => `Submitted ${time}`,
     changed: "Your ranking has changed since you submitted.",
+    teamGone: (n: number) =>
+      n === 1
+        ? "A team you submitted can no longer be judged. Rank a replacement and resubmit."
+        : `${n} teams you submitted can no longer be judged. Rank replacements and resubmit.`,
     sheetPending:
       "Saved, but the judging sheet didn't update. Submit again to retry, or tell your Hack Western contact.",
     failed: "Couldn't submit. Check your connection and try again.",
@@ -141,6 +145,11 @@ export const sponsorJudgingCopy = {
     submittedAt: (time: string) => `Submitted ${time}`,
     notYet: "Not submitted yet",
     sheetPending: "Sheet not updated",
+    unsynced: (n: number) =>
+      n === 1
+        ? "1 sponsor's ranking isn't in the judging sheet yet. It retries when they open Judging again, or they can resubmit."
+        : `${n} sponsors' rankings aren't in the judging sheet yet. Each retries when that sponsor opens Judging again, or they can resubmit.`,
+    ineligible: "No longer eligible",
     scored: (n: number) => plural(n, "scored", "scored"),
     shortlisted: (n: number) => plural(n, "shortlisted", "shortlisted"),
     noScore: "No score",

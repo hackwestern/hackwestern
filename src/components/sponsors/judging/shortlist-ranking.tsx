@@ -286,10 +286,17 @@ export function ShortlistRanking({
                   {copy.submit.sheetPending}
                 </span>
               )}
-              {data.final && !matchesSubmitted && (
-                <span className="text-sm font-medium text-dashboard-text-medium">
-                  {copy.submit.changed}
+              {data.final && data.final.ineligibleCount > 0 ? (
+                <span className="text-sm font-medium text-dashboard-status-warning">
+                  {copy.submit.teamGone(data.final.ineligibleCount)}
                 </span>
+              ) : (
+                data.final &&
+                !matchesSubmitted && (
+                  <span className="text-sm font-medium text-dashboard-text-medium">
+                    {copy.submit.changed}
+                  </span>
+                )
               )}
               {order.length < top && (
                 <span className="text-sm font-medium text-dashboard-text-medium">
