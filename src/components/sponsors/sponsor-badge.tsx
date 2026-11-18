@@ -25,31 +25,24 @@ export function SponsorBadge({
 }) {
   const c = color ?? sponsorColor(colors ?? new Map(), name);
   const logo = sponsorLogo(name);
-  // The real logo on white, inside a thin ring of the sponsor's colour so
-  // it still matches their cells in the room table (Jazz, 2026-11-18).
+  // Just the real logo, no circle or frame, at a fixed height so wide and
+  // square logos both read clearly (Jazz, 2026-11-18). A plain <img>: a
+  // small static logo gains nothing from next/image.
   if (logo) {
+    // eslint-disable-next-line @next/next/no-img-element
     return (
-      <span
+      <img
+        src={logo}
+        alt=""
         aria-hidden
+        width={64}
+        height={20}
+        loading="lazy"
         className={cn(
-          "inline-flex size-6 shrink-0 rounded-full p-0.5",
-          c.badge,
+          "h-5 w-auto max-w-16 shrink-0 object-contain object-left",
           className,
         )}
-      >
-        <span className="flex size-full items-center justify-center overflow-hidden rounded-full bg-dashboard-bg-surface p-0.5">
-          {/* eslint-disable-next-line @next/next/no-img-element -- tiny
-              static logo; next/image adds nothing at this size */}
-          <img
-            src={logo}
-            alt=""
-            width={20}
-            height={20}
-            loading="lazy"
-            className="size-full object-contain"
-          />
-        </span>
-      </span>
+      />
     );
   }
   return (

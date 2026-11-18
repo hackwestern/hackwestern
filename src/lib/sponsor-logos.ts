@@ -9,7 +9,7 @@ const LOGOS: Record<string, string> = {
   commure: "/shared/sponsors/commure.svg",
   cse: "/shared/sponsors/cse-trimmed.png",
   manulife: "/shared/sponsors/manulife.svg",
-  scotiabank: "/shared/sponsors/scotiabank.svg",
+  scotiabank: "/shared/sponsors/scotiabank-trimmed.svg",
   startech: "/shared/sponsors/startech.svg",
   sunlife: "/shared/sponsors/sunlife.png",
 };
