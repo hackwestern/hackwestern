@@ -21,8 +21,12 @@ export const sponsorPresentationsCopy = {
     schedule: "Schedule presentations",
     reschedule: "Schedule again",
     scheduling: "Scheduling…",
-    rescheduleConfirm:
-      "This replaces the current schedule. Hackers already notified keep their old times until you notify them again.",
+    checking: "Checking…",
+    /** `changed`: hackers who have their times and would get new ones. */
+    rescheduleConfirm: (changed: number) =>
+      changed > 0
+        ? `This replaces the current schedule. ${plural(changed, "hacker who already has their times gets", "hackers who already have their times get")} new ones; notify them after.`
+        : "This replaces the current schedule. No hacker who already has their times would get new ones.",
     confirm: "Replace schedule",
     cancel: "Cancel",
     nothingSent: "No sponsor has sent a shortlist yet.",
@@ -30,13 +34,25 @@ export const sponsorPresentationsCopy = {
       `Scheduled ${time} · ${plural(placed, "slot", "slots")}`,
     notScheduled: "Not scheduled yet.",
     notify: "Notify hackers",
+    /** Only members who don't have their current times yet. */
+    notifyRest: (n: number) => `Notify ${plural(n, "hacker", "hackers")}`,
     notifyAgain: "Notify again",
+    resendConfirm: (n: number) =>
+      `Send every scheduled hacker their times again? ${plural(n, "hacker already has", "hackers already have")} them.`,
+    resendButton: "Send again",
     notifying: "Sending…",
-    notifiedAt: (time: string) => `Hackers notified ${time}`,
+    notified: (reached: number, members: number, time: string) =>
+      `${reached}/${members} hackers have their times · last sent ${time}`,
     notNotified: "Hackers not notified yet",
-    notifyResult: (sent: number, missing: number, failed: number) =>
+    notifyResult: (
+      sent: number,
+      missing: number,
+      failed: number,
+      skipped: number,
+    ) =>
       [
         `Sent ${plural(sent, "DM", "DMs")}.`,
+        skipped > 0 ? `${skipped} already had their times.` : "",
         missing > 0
           ? `${plural(missing, "member", "members")} not on Slack.`
           : "",
@@ -45,6 +61,15 @@ export const sponsorPresentationsCopy = {
         .filter(Boolean)
         .join(" "),
     notOnSlack: (names: string) => `Not on Slack: ${names}`,
+    notReached: (n: number) =>
+      `${plural(n, "member hasn't", "members haven't")} been reached`,
+    notReachedReasons: {
+      "not-on-slack": "Not on Slack",
+      failed: "DM failed",
+      "not-sent": "Not sent yet",
+    },
+    memberOf: (name: string, team: string, reason: string) =>
+      `${name} · ${team} · ${reason}`,
     views: { rooms: "By room", teams: "By team" },
     viewsLabel: "Schedule view",
     flagged: (n: number) =>
