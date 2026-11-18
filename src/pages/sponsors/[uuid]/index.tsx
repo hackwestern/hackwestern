@@ -31,6 +31,7 @@ import {
 import { sponsorPortalCopy as copy } from "~/content/sponsor-portal";
 import { SponsorHelp } from "~/components/sponsors/help-button";
 import { pressable } from "~/components/sponsors/sponsor-shell";
+import { sponsorLogo } from "~/lib/sponsor-logos";
 import { cn } from "~/lib/utils";
 
 export default function SponsorHubPage() {
@@ -83,6 +84,7 @@ export default function SponsorHubPage() {
   }
 
   const sponsorName = data?.sponsorName ?? copy.welcome.fallbackName;
+  const logo = data?.sponsorName ? sponsorLogo(data.sponsorName) : null;
   const roomNumber = data?.roomNumber ?? "TBD";
   const boothLocation = data?.boothLocation ?? "TBD";
   const hwContact =
@@ -107,6 +109,20 @@ export default function SponsorHubPage() {
       <div className="flex flex-col gap-5">
         {/* Welcome */}
         <section className="flex flex-col gap-2 rounded-dashboard-2xl bg-dashboard-action-primary p-5 text-dashboard-text-inverse shadow-dashboard-card sm:p-7">
+          {/* The sponsor's own logo, on white so any logo colour reads on
+              the blue card (Jazz, 2026-11-18). */}
+          {logo && (
+            <span className="mb-2 inline-flex h-14 w-fit items-center rounded-dashboard-lg bg-dashboard-bg-surface px-4 py-2.5 shadow-dashboard-card">
+              {/* eslint-disable-next-line @next/next/no-img-element -- small static logo */}
+              <img
+                src={logo}
+                alt={copy.welcome.logoAlt(sponsorName)}
+                width={160}
+                height={36}
+                className="h-full w-auto max-w-[200px] object-contain"
+              />
+            </span>
+          )}
           <h1 className="m-0 break-words text-2xl font-bold leading-default tracking-tight sm:text-3xl">
             {copy.welcome.title(sponsorName)}
           </h1>
