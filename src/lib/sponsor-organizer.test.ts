@@ -151,8 +151,8 @@ describe("sponsorNameForParam", () => {
 
 describe("buildSponsorSummaries", () => {
   const sponsors = [
-    { id: B, name: "Beta", coffeeChatRoom: null },
-    { id: A, name: "Acme", coffeeChatRoom: "Rm 2241" },
+    { id: B, name: "Beta" },
+    { id: A, name: "Acme" },
   ];
   // Well before Saturday's chats, so nothing pending has expired yet.
   const early = new Date("2026-11-20T12:00:00-05:00");
@@ -204,8 +204,8 @@ describe("buildSponsorSummaries", () => {
     expect(r.sponsors.find((s) => s.sponsorId === B)?.pending).toBe(0);
   });
 
-  it("picks the room: assignment, then the sheet, then the first chat's", () => {
-    const withSheet = buildSponsorSummaries({
+  it("rooms come from blocks and live chats, not a per-sponsor room", () => {
+    const r = buildSponsorSummaries({
       sponsors,
       setups: [{ sponsor: "Beta", room: "Rm 2243" }],
       chats: [
@@ -217,33 +217,12 @@ describe("buildSponsorSummaries", () => {
         },
       ],
       help: [],
-      now: early,
-    });
-    expect(withSheet.sponsors.map((s) => s.room)).toEqual([
-      "Rm 2241",
-      "Rm 2243",
-    ]);
-    const fromChats = buildSponsorSummaries({
-      sponsors,
-      setups: [],
-      chats: [
-        {
-          sponsorId: B,
-          room: "Rm 2242",
-          slotTime: "14:00",
-          status: "accepted",
-        },
-        {
-          sponsorId: B,
-          room: "Rm 2243",
-          slotTime: "13:00",
-          status: "accepted",
-        },
+      holds: [
+        { sponsorId: A, room: "Rm 2241", startTime: "10:00", endTime: "10:30" },
       ],
-      help: [],
       now: early,
     });
-    expect(fromChats.sponsors[1]?.room).toBe("Rm 2243");
+    expect(r.sponsors.map((s) => s.rooms)).toEqual([["Rm 2241"], ["Rm 2242"]]);
   });
 
   it("attaches the oldest live help request and counts open ones", () => {
@@ -295,11 +274,10 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
       {
         id: "a",
         name: "Acme",
-        coffeeChatRoom: "Rm 2241",
         coffeeChatReps: 2,
         coffeeChatWatcher: "Sam",
       },
-      { id: "b", name: "Beta", coffeeChatRoom: null },
+      { id: "b", name: "Beta" },
     ],
     setups: [
       {
@@ -357,6 +335,13 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
     ],
     holds: [
       {
+        holdId: "acme",
+        sponsorId: "a",
+        room: "Rm 2241",
+        startTime: "10:00",
+        endTime: "10:30",
+      },
+      {
         holdId: "x",
         sponsorId: "b",
         room: "Rm 2243",
@@ -374,7 +359,7 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
       reps: 2,
       watcher: "Sam",
       rooms: ["Rm 2241"],
-      assignedRoom: "Rm 2241",
+      needsHacker: 1,
     });
     // Declined chats aren't listed; names follow the share consent.
     expect(acme!.chats.map((c) => [c.name, c.github, c.status])).toEqual([
@@ -388,10 +373,11 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
     });
   });
 
-  it("seats left: window and hold start times, minus live chats", () => {
-    // Acme: 2 reps x 1-on-1 = 2 seats at 10:00 and 10:15; 1 used each.
+  it("seats left: block slot starts, minus live chats", () => {
+    // Acme: block 10:00-10:30, 2 reps x 1-on-1 = 2 seats at 10:00 and
+    // 10:15; 1 used each. The sheet window alone adds nothing.
     expect(acme!.seatsLeft).toBe(2);
-    // Beta: hold 13:00-13:30, default 1-on-1 15 min, 1 rep: 2 starts.
+    // Beta: block 13:00-13:30, default 1-on-1 15 min, 1 rep: 2 starts.
     expect(beta!.seatsLeft).toBe(2);
   });
 
@@ -400,7 +386,7 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
       accepted: 1,
       pending: 1,
       seatsLeft: 4,
-      needsHacker: 1,
+      needsHacker: 2,
       openHelp: 1,
       missingRooms: 0,
     });
@@ -408,7 +394,7 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
       accepted: 1,
       pending: 1,
       seatsLeft: 2,
-      needsHacker: 0,
+      needsHacker: 1,
       openHelp: 0,
       missingRooms: 0,
     });
@@ -425,8 +411,8 @@ describe("buildSponsorSummaries, combined sponsor table", () => {
   it("carries each sponsor's judging row and counts missing rooms", () => {
     const judged = buildSponsorSummaries({
       sponsors: [
-        { id: "a", name: "Acme", coffeeChatRoom: null },
-        { id: "b", name: "Bolt", coffeeChatRoom: null },
+        { id: "a", name: "Acme" },
+        { id: "b", name: "Bolt" },
       ],
       setups: [],
       chats: [],

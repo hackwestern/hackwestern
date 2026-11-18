@@ -35,30 +35,6 @@ export type OfferProblem =
   | "roomTaken";
 
 /**
- * Start times a sponsor offers, earliest first: from the window start, one
- * chat length apart, each ending by the window end. 15-min chats land on
- * every quarter hour; 30-min groups on every half hour from the start.
- */
-export function coffeeChatStartTimes(
-  setup: Pick<CoffeeChatSetup, "windowStart" | "windowEnd" | "durationMinutes">,
-): string[] {
-  const start = setup.windowStart
-    ? coffeeChatMinutesOf(setup.windowStart)
-    : null;
-  const end = setup.windowEnd ? coffeeChatMinutesOf(setup.windowEnd) : null;
-  if (start === null || end === null) return [];
-  const times: string[] = [];
-  for (
-    let t = start;
-    t + setup.durationMinutes <= end;
-    t += setup.durationMinutes
-  ) {
-    times.push(coffeeChatTimeOf(t));
-  }
-  return times;
-}
-
-/**
  * Most hackers the sponsor has in their room at any moment of `slot`. Checks
  * each quarter hour, so chats that start off the usual grid still count.
  */
