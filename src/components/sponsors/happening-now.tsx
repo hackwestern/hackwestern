@@ -1,27 +1,23 @@
 import { Radio } from "lucide-react";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { scheduleCopy } from "~/content/sponsor-schedule";
-import {
-  easternClock,
-  eventDayAt,
-  happeningNow,
-} from "~/lib/happening-now";
+import { easternClock, eventDayAt, happeningNow } from "~/lib/happening-now";
 import {
   formatClock,
   locationFor,
   type RunOfShowItem,
   type RunOfShowTask,
 } from "~/lib/run-of-show";
+import { cn } from "~/lib/utils";
 
 const copy = scheduleCopy.happening;
 
-function titleWithRoom(item: RunOfShowItem, sponsorName?: string): string {
-  const room = item.location
+function roomOf(item: RunOfShowItem, sponsorName?: string): string | null {
+  return item.location
     ? sponsorName
       ? locationFor(item.location, sponsorName)
       : item.location
     : null;
-  return room ? copy.inRoom(item.title, room) : item.title;
 }
 
 /**
@@ -50,7 +46,7 @@ export function HappeningNowBanner({
     `${day === today ? "" : `${day.slice(0, 3)} `}${formatClock(start)}`;
 
   const nextLine = next
-    ? copy.upNext(
+    ? copy.upNextItems(
         r.next.length > 2
           ? `${r.next
               .slice(0, 2)
@@ -66,7 +62,15 @@ export function HappeningNowBanner({
   return (
     <DashboardPanel className="gap-2 border-l-4 border-dashboard-action-primary p-4 sm:p-5">
       <p className="m-0 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
-        <Radio aria-hidden className="size-4" strokeWidth={1.67} />
+        {/* Green while something is on (no pulse: it's on screen all day). */}
+        <Radio
+          aria-hidden
+          className={cn(
+            "size-4",
+            r.phase === "during" && live && "text-dashboard-status-live",
+          )}
+          strokeWidth={1.67}
+        />
         {r.phase === "during"
           ? copy.now(formatClock(easternClock(now)))
           : copy.heading}
@@ -87,15 +91,23 @@ export function HappeningNowBanner({
         {r.phase === "during" && (
           <>
             {live ? (
-              <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-lg font-semibold text-dashboard-text-heavy">
-                {r.items.map((i) => (
-                  <li key={i.id} className="break-words">
-                    {titleWithRoom(i, sponsorName)}
-                  </li>
-                ))}
+              <ul className="m-0 flex list-none flex-col gap-1 p-0 text-base font-semibold leading-snug text-dashboard-text-heavy sm:text-lg">
+                {r.items.map((i) => {
+                  const room = roomOf(i, sponsorName);
+                  return (
+                    <li key={i.id} className="break-words">
+                      {i.title}
+                      {room && (
+                        <span className="font-medium text-dashboard-text-medium">
+                          {copy.roomSuffix(room)}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
-              <p className="m-0 text-lg font-semibold text-dashboard-text-heavy">
+              <p className="m-0 text-base font-semibold text-dashboard-text-heavy sm:text-lg">
                 {copy.nothing}
               </p>
             )}
@@ -112,7 +124,10 @@ export function HappeningNowBanner({
               </ul>
             )}
             {nextLine && (
-              <p className="m-0 text-sm text-dashboard-text-medium">
+              <p className="m-0 mt-1 break-words border-t border-dashboard-border-subtle pt-2 text-sm text-dashboard-text-medium">
+                <span className="font-semibold text-dashboard-text-heavy">
+                  {copy.upNextLabel}
+                </span>{" "}
                 {nextLine}
               </p>
             )}

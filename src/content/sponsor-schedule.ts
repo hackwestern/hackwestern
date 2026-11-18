@@ -10,18 +10,22 @@ export const scheduleCopy = {
     nothing: "Nothing scheduled right now",
     notStarted: (when: string) => `Hack Western starts ${when}`,
     over: "Event over",
-    upNext: (titles: string, when: string) => `Up next: ${titles} at ${when}`,
     more: (n: number) => `+${n} more`,
     tasksLabel: "Team tasks now",
     task: (task: string, owner: string | null) =>
       owner ? `${task} (${owner})` : `${task} (no owner)`,
     inRoom: (title: string, room: string) => `${title} · ${room}`,
+    /** The room after an item's title, in lighter type. */
+    roomSuffix: (room: string) => ` · ${room}`,
+    upNextLabel: "Up next",
+    upNextItems: (titles: string, when: string) => `${titles} at ${when}`,
   },
   back: "Back to your portal",
   readAt: (time: string) => `Updated from the run of show at ${time}`,
   loadError:
     "We couldn't load the schedule right now. Try again in a minute, or ask your Hack Western contact.",
   retry: "Try again",
+  loading: "Loading the schedule",
   invalidLink: {
     title: "Link not recognised",
     body: "This private link isn't valid. Please reach out to your Hack Western organizer contact.",
