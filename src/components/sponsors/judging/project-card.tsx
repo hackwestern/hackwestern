@@ -57,8 +57,8 @@ export function ProjectLinks({ team }: { team: JudgingTeam }) {
 /**
  * One project on the Browse step: who built it, its tracks and links, a
  * 1-10 score, Save to shortlist and an optional private note. Every change
- * autosaves; the status line under the controls says when it's saved or
- * failed (and is announced politely).
+ * autosaves; the status at the end of the action row says when it's
+ * saved or failed (and is announced politely).
  */
 export function ProjectCard({
   team,
@@ -90,7 +90,7 @@ export function ProjectCard({
     <article
       aria-labelledby={`${noteId}-name`}
       className={cn(
-        "flex flex-col gap-4 rounded-dashboard-2xl border-[1.5px] bg-dashboard-bg-surface p-4 shadow-dashboard-card motion-safe:transition-colors motion-safe:duration-150 sm:p-5",
+        "flex flex-col gap-4 rounded-dashboard-2xl border-2 bg-dashboard-bg-surface p-4 shadow-dashboard-card motion-safe:transition-colors motion-safe:duration-150 sm:p-5",
         shortlisted ? "border-dashboard-action-primary" : "border-transparent",
       )}
     >
@@ -179,6 +179,23 @@ export function ProjectCard({
             {copy.note.add}
           </button>
         )}
+        <p
+          aria-live="polite"
+          className={cn(
+            "m-0 ml-auto text-sm font-medium",
+            saveState === "error"
+              ? "text-dashboard-status-warning"
+              : "text-dashboard-text-light",
+          )}
+        >
+          {saveState === "saving"
+            ? copy.saving
+            : saveState === "saved"
+              ? copy.saved
+              : saveState === "error"
+                ? copy.saveFailed
+                : ""}
+        </p>
       </div>
 
       {noteOpen && (
@@ -205,24 +222,6 @@ export function ProjectCard({
           </span>
         </div>
       )}
-
-      <p
-        aria-live="polite"
-        className={cn(
-          "m-0 -mt-2 min-h-5 text-sm font-medium",
-          saveState === "error"
-            ? "text-dashboard-status-warning"
-            : "text-dashboard-text-light",
-        )}
-      >
-        {saveState === "saving"
-          ? copy.saving
-          : saveState === "saved"
-            ? copy.saved
-            : saveState === "error"
-              ? copy.saveFailed
-              : ""}
-      </p>
     </article>
   );
 }
