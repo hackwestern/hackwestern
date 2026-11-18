@@ -125,4 +125,4 @@ export const SPONSOR_TIERS: SponsorTier[] = [
 ];
 
 export const SPONSOR_THANK_YOU_TEXT =
-  "Thank you to our Sponsors! Hack Western 12 would not be possible without the generous donation of all our sponsors and partners.";
+  "Thank you to our Sponsors! Hack Western 13 would not be possible without the generous donation of all our sponsors and partners.";

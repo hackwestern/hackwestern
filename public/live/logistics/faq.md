@@ -16,9 +16,7 @@ Hacking begins at 9pm on Friday, November 20th, 2026 and ends at 9am on Sunday, 
 A hackathon is an event designed for students to experiment with tech and bring a project idea to life. At Hack Western, participants will collaborate in teams of up to four to build web, mobile, and hardware projects. Students will get the opportunity to receive mentorship from industry professionals, connect with sponsors and recruiters, and compete for some cool prizes!
 
 # Who can participate?
-Hack Western applications are open to post-secondary students from across the world. Whether you are a freshman or completing your Ph.D., we want you to apply! Unfortunately, we will not be accepting high school students at this time.
-
-Each application is reviewed from the Hack Western organizing team, and decisions will be sent out on a rolling basis.
+Hack Western is open to post-secondary students from across the world, from first-years to Ph.D. students. Applications for Hack Western 13 are now closed.
 
 # Can I start working on my hack before the event?
 We follow the Major League Hacking guidelines, which prohibits students from bringing and continuing a project that they have already worked on. Your final project should be new and only built during the weekend of Hack Western.
@@ -26,10 +24,7 @@ We follow the Major League Hacking guidelines, which prohibits students from bri
 # How much does it cost to attend Hack Western?
 Hack Western is completely free to attend, including free food and swag! Participants travelling to the event outside of Western and provided bus routes however may incur additional costs.
 
-# How many people can be on my team?
-Your team cannot exceed more than four members. You can also work on a project by yourself, but we believe that hacking is more fun with friends. The more, the merrier!
-
-# Will there be food and drinks??
+# Will there be food and drinks?
 All meals, snacks, and drinks will be provided throughout the hackathon to keep you fueled and hydrated.
 
 # Are there travel reimbursements?
