@@ -52,6 +52,11 @@ vi.mock("~/server/mail-mailjet", () => ({
   })),
 }));
 
+// The sheet mirror writes to the real run-of-show sheet: never from a test.
+vi.mock("~/server/api/utils/coffee-chat-sheet-mirror", () => ({
+  mirrorCoffeeChats: vi.fn(async () => undefined),
+}));
+
 const setups: CoffeeChatSetup[] = [];
 vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => {
   const original = await importOriginal<typeof RunOfShowSheet>();

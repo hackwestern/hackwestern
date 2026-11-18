@@ -41,7 +41,10 @@ export type CoffeeChatEvent =
 export type CoffeeChatNotice = {
   chatId: string;
   sponsorName: string;
+  /** The email they applied with: the Slack fallback and the email's To. */
   hackerEmail: string | null;
+  /** The email they said they use on Slack; tried on Slack first. */
+  hackerSlackEmail: string | null;
   hackerFirstName: string;
   /** Accepted or confirmed (src/lib/admission.ts) right now. */
   admitted: boolean;
@@ -59,6 +62,7 @@ export async function loadCoffeeChatNotice(
       chatId: coffeeChats.id,
       sponsorName: sponsorJudgingSponsors.name,
       email: users.email,
+      slackEmail: users.slackEmail,
       userName: users.name,
       userType: users.type,
       firstName: applications.firstName,
@@ -85,6 +89,7 @@ export async function loadCoffeeChatNotice(
     chatId: row.chatId,
     sponsorName: row.sponsorName,
     hackerEmail: row.email,
+    hackerSlackEmail: row.slackEmail,
     hackerFirstName,
     admitted: row.userType === "hacker" && isAdmittedStatus(row.appStatus),
     slotTime: row.slotTime,

@@ -7,7 +7,7 @@ import {
 } from "~/server/api/utils/coffee-chat-change-text";
 import type { CoffeeChatNotice } from "~/server/api/utils/coffee-chat-notify";
 import { escapeSlackText } from "~/server/slack/client";
-import { dmByEmail } from "~/server/slack/dm";
+import { dmHacker } from "~/server/slack/dm";
 
 /**
  * Slack DM to a hacker when a sponsor offers a coffee chat (T22), with
@@ -117,9 +117,10 @@ async function deliverDm(
   event: "offered" | CoffeeChatChangeEvent,
 ): Promise<CoffeeChatDmResult> {
   if (!chat.hackerEmail) return "not-found";
-  return dmByEmail(
+  // Their Slack email first, then the one they applied with.
+  return dmHacker(
     token,
-    chat.hackerEmail,
+    { slackEmail: chat.hackerSlackEmail, email: chat.hackerEmail },
     // The offer DM's ts isn't stored, so a change is a new plain DM.
     event === "offered"
       ? coffeeChatDmMessage(chat)

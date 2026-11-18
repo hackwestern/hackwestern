@@ -372,6 +372,13 @@
       "when": 1794996122165,
       "tag": "0053_coffee_chat_request",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1795028104016,
+      "tag": "0056_notification_center",
+      "breakpoints": true
     }
   ]
 }
