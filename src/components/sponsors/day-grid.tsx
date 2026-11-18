@@ -24,6 +24,7 @@ import {
   fluidColumnMinWidth,
   formatMinutes,
   GRID_SIZES,
+  isAlwaysShown,
   layoutGrid,
   minutesIntoDay,
   type GridColumn,
@@ -574,7 +575,9 @@ function GridBlock({
 }) {
   const isTask = entry.kind === "task";
   const booking = entry.booking ?? null;
-  const strong = entry.kind !== "hackathon";
+  // Meals and ceremonies matter to sponsors too: drawn full strength, not
+  // greyed with the other hackathon events (Jazz, 2026-11-18).
+  const strong = entry.kind !== "hackathon" || isAlwaysShown(entry);
   const live =
     entry.kind === "yours" && nowMinute >= entry.start && nowMinute < entry.end;
   const mine =
