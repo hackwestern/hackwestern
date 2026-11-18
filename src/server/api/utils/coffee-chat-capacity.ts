@@ -9,7 +9,6 @@ import {
 import {
   coffeeChatOfferRoom,
   holdStartTimes,
-  ownHoldAt,
   type HoldSpan,
 } from "~/lib/coffee-chat-holds";
 import type { CoffeeChatSetup } from "~/lib/run-of-show";
@@ -28,7 +27,7 @@ export type RoomChat = ChatTime & { sponsorId: string; room: string | null };
 export type SponsorChat = ChatTime & { room?: string | null };
 
 export type OfferProblem =
-  | "notSetUp"
+  | "noBlock"
   | "notInWindow"
   | "tooLate"
   | "full"
@@ -131,46 +130,19 @@ export function hackerBusy(hackerChats: ChatTime[], slot: ChatTime): boolean {
 }
 
 /**
- * The sponsor's room at `slot`: where their live chats overlapping it are
- * (an organizer may have moved that slot with Move room), else the room in
- * their Coffee Chats sheet row.
- */
-export function sponsorRoomAt(
-  sponsorChats: SponsorChat[],
-  sheetRoom: string | null,
-  slot: ChatTime,
-): string | null {
-  const moved = sponsorChats.find(
-    (c) => normalizeRoom(c.room) && coffeeChatsOverlap(c, slot),
-  );
-  return moved?.room ?? sheetRoom;
-}
-
-/**
- * The room a chat at `slot` goes in, holds included: the sponsor's own hold
- * covering it, else sponsorRoomAt (moved chats, else the sponsor's room).
- * See coffeeChatOfferRoom for the full precedence.
+ * The room a chat at `slot` goes in: the sponsor's own block covering its
+ * start, else null (and then it can't be offered).
  */
 export function offerRoomAt(input: {
   sponsorId: string;
-  sponsorChats: SponsorChat[];
-  setupRoom: string | null;
   holds?: readonly HoldSpan[];
-  slot: ChatTime;
+  slot: Pick<ChatTime, "slotTime">;
 }): string | null {
-  const hold = ownHoldAt(input.holds ?? [], input.sponsorId, input.slot);
-  const moved = input.sponsorChats.find(
-    (c) => normalizeRoom(c.room) && coffeeChatsOverlap(c, input.slot),
-  );
-  return coffeeChatOfferRoom({
-    holdRoom: hold?.room,
-    movedRoom: moved?.room,
-    assignedRoom: input.setupRoom,
-  });
+  return coffeeChatOfferRoom(input.holds ?? [], input.sponsorId, input.slot);
 }
 
-/** Chat length and group size, with 1-on-1 15-min defaults (holds only). */
-function formatOf(setup: CoffeeChatSetup | null) {
+/** Chat length and group size, with 1-on-1 15-min defaults. */
+export function formatOf(setup: CoffeeChatSetup | null) {
   return {
     durationMinutes: setup?.durationMinutes ?? 15,
     groupSize: setup?.groupSize ?? 1,
@@ -178,15 +150,15 @@ function formatOf(setup: CoffeeChatSetup | null) {
 }
 
 /**
- * Every start time the sponsor offers, earliest first: their sheet window's
- * start times plus those of their own room holds.
+ * Every start time the sponsor offers, earliest first: the slot starts of
+ * their own room blocks. The sheet window alone offers nothing.
  */
 export function offerStartTimes(
   setup: CoffeeChatSetup | null,
   holds: readonly HoldSpan[] = [],
 ): string[] {
   const { durationMinutes } = formatOf(setup);
-  const times = new Set(setup ? coffeeChatStartTimes(setup) : []);
+  const times = new Set<string>();
   for (const hold of holds) {
     for (const t of holdStartTimes(hold, durationMinutes)) times.add(t);
   }
@@ -194,11 +166,11 @@ export function offerStartTimes(
 }
 
 /**
- * Why an offer can't be made, or null when it can. Checks, in order: the
- * sponsor has a window or a room hold, the time is one of their start times
- * (window or hold), it isn't already past the reply cutoff, a seat is free,
- * the hacker is free, and no other sponsor is in the room (chats and holds,
- * passed in `roomChats`). `holds` are the sponsor's own holds.
+ * Why an offer can't be made, or null when it can. Checks, in order: one
+ * of the sponsor's own blocks (`holds`) covers the start, the time is one
+ * of that block's slot starts, it isn't past the reply cutoff, a seat is
+ * free, the hacker is free, and no other sponsor is in the room (chats and
+ * blocks, passed in `roomChats`).
  */
 export function offerProblem(input: {
   setup: CoffeeChatSetup | null;
@@ -212,9 +184,15 @@ export function offerProblem(input: {
   now: Date;
 }): OfferProblem | null {
   const { setup } = input;
-  const starts = offerStartTimes(setup, input.holds);
-  if (starts.length === 0) return "notSetUp";
-  if (!starts.includes(input.slotTime)) return "notInWindow";
+  const room = offerRoomAt({
+    sponsorId: input.sponsorId,
+    holds: input.holds,
+    slot: input,
+  });
+  if (!room) return "noBlock";
+  if (!offerStartTimes(setup, input.holds).includes(input.slotTime)) {
+    return "notInWindow";
+  }
   if (input.now >= coffeeChatExpiresAt(input.slotTime)) return "tooLate";
   const { durationMinutes, groupSize } = formatOf(setup);
   const slot = { slotTime: input.slotTime, durationMinutes };
@@ -222,13 +200,6 @@ export function offerProblem(input: {
     return "full";
   }
   if (hackerBusy(input.hackerChats, slot)) return "hackerBusy";
-  const room = offerRoomAt({
-    sponsorId: input.sponsorId,
-    sponsorChats: input.sponsorChats,
-    setupRoom: setup?.room ?? null,
-    holds: input.holds,
-    slot,
-  });
   if (roomTakenByOtherSponsor(input.roomChats, input.sponsorId, room, slot)) {
     return "roomTaken";
   }
@@ -236,9 +207,9 @@ export function offerProblem(input: {
 }
 
 /**
- * Open start times for a sponsor (window and own holds), earliest first,
- * with seats left. Leaves out times past the reply cutoff, and, when a
- * hacker's chats are given, times that clash with them.
+ * Open slot starts in the sponsor's own blocks, earliest first, with seats
+ * left. Leaves out times past the reply cutoff, and, when a hacker's chats
+ * are given, times that clash with them.
  */
 export function freeStartTimes(input: {
   setup: CoffeeChatSetup | null;
@@ -257,12 +228,11 @@ export function freeStartTimes(input: {
     const left = seatsLeft(input.sponsorChats, slot, input.reps, groupSize);
     const room = offerRoomAt({
       sponsorId: input.sponsorId,
-      sponsorChats: input.sponsorChats,
-      setupRoom: setup?.room ?? null,
       holds: input.holds,
       slot,
     });
     const open =
+      room !== null &&
       left > 0 &&
       input.now < coffeeChatExpiresAt(slotTime) &&
       !hackerBusy(input.hackerChats ?? [], slot) &&
