@@ -12,6 +12,7 @@ import { createInnerTRPCContext } from "~/server/api/trpc";
 import { db } from "~/server/db";
 import {
   applications,
+  coffeeChatHolds,
   sponsorJudgingSponsors,
   users,
 } from "~/server/db/schema";
@@ -39,6 +40,7 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => {
 });
 
 const caller = createCaller(createInnerTRPCContext({ session: null }));
+const errors = coffeeChatCopy.errors;
 
 // Saturday morning before chats start (only Date is faked, so PGlite's
 // timers keep working).
@@ -57,7 +59,7 @@ async function makeSponsor(reps: number, setup: Partial<CoffeeChatSetup> = {}) {
     .insert(sponsorJudgingSponsors)
     .values({ name, coffeeChatReps: reps })
     .returning();
-  setups.push({
+  const full: CoffeeChatSetup = {
     sponsor: name,
     windowStart: "10:00",
     windowEnd: "12:00",
@@ -68,7 +70,18 @@ async function makeSponsor(reps: number, setup: Partial<CoffeeChatSetup> = {}) {
     format: "Individual (15 mins)",
     room: `Rm ${2240 + n}`,
     ...setup,
-  });
+  };
+  setups.push(full);
+  // Offers need a room block: one over the sheet window, in the sheet's
+  // room (written directly, so test rooms needn't be 2241-2243).
+  if (full.room && full.windowStart && full.windowEnd) {
+    await db.insert(coffeeChatHolds).values({
+      sponsorId: row!.id,
+      room: full.room,
+      startTime: full.windowStart,
+      endTime: full.windowEnd,
+    });
+  }
   return row!.id;
 }
 
@@ -220,7 +233,7 @@ describe("coffeeChatRequests: scanned badge", () => {
 });
 
 describe("coffeeChatRequests.offer: rules", () => {
-  test("seats used never pass coffeeChatSeats(reps, group size)", async () => {
+  test("seats used never pass hackersPerSlot (chat type x reps)", async () => {
     // 2 reps of 1-on-1s: 2 seats per start time.
     const sponsor = await makeSponsor(2);
     const [a, b, c] = [
@@ -247,11 +260,12 @@ describe("coffeeChatRequests.offer: rules", () => {
     );
     expect(error.code).toBe("CONFLICT");
 
-    // 10 reps still cap at 3 parallel 1-on-1s: the room fits 6 people.
-    const big = await makeSponsor(10);
+    // 4 reps of 1-on-1s: 4 hackers per slot, past the room's 6 people
+    // (only a note in the organizer's block dialog, never a refusal).
+    const big = await makeSponsor(4);
     const hackers = [];
-    for (let i = 0; i < 4; i++) hackers.push(await makeHacker());
-    for (const userId of hackers.slice(0, 3)) {
+    for (let i = 0; i < 5; i++) hackers.push(await makeHacker());
+    for (const userId of hackers.slice(0, 4)) {
       await caller.coffeeChatRequests.offer({
         sponsor: big,
         userId,
@@ -263,7 +277,7 @@ describe("coffeeChatRequests.offer: rules", () => {
         await codeOf(
           caller.coffeeChatRequests.offer({
             sponsor: big,
-            userId: hackers[3]!,
+            userId: hackers[4]!,
             slotTime: "10:00",
           }),
         )
@@ -416,35 +430,17 @@ describe("coffeeChatRequests.offer: rules", () => {
     }
   });
 
-  test("another sponsor in the same room at that time blocks the offer", async () => {
-    const first = await makeSponsor(1, { room: "Rm Shared" });
-    const second = await makeSponsor(1, { room: "rm  shared" });
-    await caller.coffeeChatRequests.offer({
-      sponsor: first,
-      userId: await makeHacker(),
-      slotTime: "10:00",
-    });
-    expect(
-      (
-        await codeOf(
-          caller.coffeeChatRequests.offer({
-            sponsor: second,
-            userId: await makeHacker(),
-            slotTime: "10:00",
-          }),
-        )
-      ).code,
-    ).toBe("CONFLICT");
-  });
-
-  test("room comes from the sheet row and may be unassigned", async () => {
+  test("room comes from the block; no block, no offer", async () => {
     const sponsor = await makeSponsor(1, { room: null });
-    const offer = await caller.coffeeChatRequests.offer({
-      sponsor,
-      userId: await makeHacker(),
-      slotTime: "10:00",
-    });
-    expect(offer.room).toBeNull();
+    const error = await codeOf(
+      caller.coffeeChatRequests.offer({
+        sponsor,
+        userId: await makeHacker(),
+        slotTime: "10:00",
+      }),
+    );
+    expect(error.code).toBe("BAD_REQUEST");
+    expect(error.message).toBe(errors.noBlock);
   });
 });
 
@@ -685,20 +681,22 @@ describe("coffeeChatRequests organizer actions (T26)", () => {
 
   test("move room follows the same room rules as offers", async () => {
     const organizer = await organizerCaller();
-    const mover = await makeSponsor(1, { room: "Rm 2241" });
-    const neighbour = await makeSponsor(1, { room: "Rm 2242" });
+    // Evening, so morning blocks of other tests aren't in these rooms.
+    const evening = { windowStart: "20:00", windowEnd: "21:00" };
+    const mover = await makeSponsor(1, { ...evening, room: "Rm 2241" });
+    const neighbour = await makeSponsor(1, { ...evening, room: "Rm 2242" });
     const { chatId } = await caller.coffeeChatRequests.offer({
       sponsor: mover,
       userId: await makeHacker(),
-      slotTime: "10:00",
+      slotTime: "20:00",
     });
     await caller.coffeeChatRequests.offer({
       sponsor: neighbour,
       userId: await makeHacker(),
-      slotTime: "10:00",
+      slotTime: "20:00",
     });
 
-    // Another sponsor is in Rm 2242 at 10:00.
+    // Another sponsor has Rm 2242 at 20:00.
     expect(
       (
         await codeOf(
@@ -714,7 +712,8 @@ describe("coffeeChatRequests organizer actions (T26)", () => {
         )
       ).code,
     ).toBe("BAD_REQUEST");
-    // A free room works, matched to its listed spelling.
+    // A free room works, matched to its listed spelling; the chat's
+    // block moves with it.
     await expect(
       organizer.coffeeChatRequests.moveRoom({ chatId, room: " rm 2243 " }),
     ).resolves.toEqual({ chatIds: [chatId], room: "Rm 2243" });
@@ -725,6 +724,10 @@ describe("coffeeChatRequests organizer actions (T26)", () => {
       expect.arrayContaining(["Rm 2241", "Rm 2242", "Rm 2243"]),
     );
     const moved = chats.find((c) => c.chatId === chatId);
+    const board = await organizer.coffeeChatRequests.organizerChatBoard();
+    expect(board.holds.find((h) => h.sponsorId === mover)?.room).toBe(
+      "Rm 2243",
+    );
     expect(moved).toMatchObject({
       room: "Rm 2243",
       status: "pending",
@@ -840,7 +843,7 @@ describe("coffeeChatRequests.sponsorChats (T19)", () => {
   });
 });
 
-describe("coffee chat rooms: lock and moving a sponsor's slot", () => {
+describe("coffee chat rooms: lock and moving a block", () => {
   async function organizer() {
     const id = `room-organizer-${++n}`;
     await db
@@ -850,24 +853,25 @@ describe("coffee chat rooms: lock and moving a sponsor's slot", () => {
   }
 
   test("two sponsors racing for one room at one time: exactly one wins", async () => {
-    // Sheet mistake: both sponsors listed in the same room. Their sponsor
-    // row locks don't cover each other; the room lock (and room check) does.
-    // PGlite runs one transaction at a time, so this is a sequential
-    // simulation of the race.
-    const first = await makeSponsor(1, { room: "Rm Race" });
-    const second = await makeSponsor(1, { room: "rm race" });
-    const results = await Promise.allSettled([
-      caller.coffeeChatRequests.offer({
-        sponsor: first,
-        userId: await makeHacker(),
-        slotTime: "10:00",
-      }),
-      caller.coffeeChatRequests.offer({
-        sponsor: second,
-        userId: await makeHacker(),
-        slotTime: "10:00",
-      }),
-    ]);
+    // Their sponsor row locks don't cover each other; the room lock (and
+    // room check) does. PGlite runs one transaction at a time, so this is
+    // a sequential simulation of the race.
+    const org = await organizer();
+    const late = { windowStart: "21:00", windowEnd: "21:30", room: null };
+    const [first, second] = [
+      await makeSponsor(1, late),
+      await makeSponsor(1, late),
+    ];
+    const results = await Promise.allSettled(
+      [first, second].map((sponsorId) =>
+        org.coffeeChatRequests.createHold({
+          sponsorId,
+          room: "Rm 2243",
+          startTime: "21:00",
+          endTime: "21:30",
+        }),
+      ),
+    );
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
     const rejected = results.find((r) => r.status === "rejected");
     expect(rejected?.status === "rejected" && rejected.reason).toMatchObject({
@@ -875,92 +879,74 @@ describe("coffee chat rooms: lock and moving a sponsor's slot", () => {
     });
   });
 
-  test("move room moves every chat of the sponsor at that slot, and later offers follow", async () => {
+  test("move room moves the chat's whole block, and later offers follow", async () => {
     const org = await organizer();
-    const sponsor = await makeSponsor(3, { room: "Rm Move A" });
-    const other = await makeSponsor(1, { room: "Rm Move B" });
-    const at10 = [
+    const late = { windowStart: "21:30", windowEnd: "23:00", room: null };
+    const sponsor = await makeSponsor(3, late);
+    const other = await makeSponsor(1, late);
+    await org.coffeeChatRequests.createHold({
+      sponsorId: sponsor,
+      room: "Rm 2241",
+      startTime: "21:30",
+      endTime: "22:30",
+    });
+    await org.coffeeChatRequests.createHold({
+      sponsorId: other,
+      room: "Rm 2243",
+      startTime: "22:15",
+      endTime: "22:45",
+    });
+    const booked = [
       await caller.coffeeChatRequests.offer({
         sponsor,
         userId: await makeHacker(),
-        slotTime: "10:00",
+        slotTime: "21:30",
       }),
       await caller.coffeeChatRequests.offer({
         sponsor,
         userId: await makeHacker(),
-        slotTime: "10:00",
+        slotTime: "21:30",
+      }),
+      await caller.coffeeChatRequests.offer({
+        sponsor,
+        userId: await makeHacker(),
+        slotTime: "21:45",
       }),
     ];
-    const at1015 = await caller.coffeeChatRequests.offer({
-      sponsor,
-      userId: await makeHacker(),
-      slotTime: "10:15",
-    });
 
-    // Rm Move B is the other sponsor's room, free at 10:00.
-    const moved = await org.coffeeChatRequests.moveRoom({
-      chatId: at10[0]!.chatId,
-      room: "Rm Move B",
-    });
-    expect(moved.room).toBe("Rm Move B");
-    expect([...moved.chatIds].sort()).toEqual(at10.map((o) => o.chatId).sort());
-
-    const { chats } = await org.coffeeChatRequests.organizerChats();
-    const roomOf = (id: string) => chats.find((c) => c.chatId === id)?.room;
-    expect(at10.map((o) => roomOf(o.chatId))).toEqual([
-      "Rm Move B",
-      "Rm Move B",
-    ]);
-    expect(roomOf(at1015.chatId)).toBe("Rm Move A");
-
-    // A later offer at 10:00 joins the moved room, not the sheet room.
-    const third = await caller.coffeeChatRequests.offer({
-      sponsor,
-      userId: await makeHacker(),
-      slotTime: "10:00",
-    });
-    expect(third.room).toBe("Rm Move B");
-    const free = await caller.coffeeChatRequests.freeTimes({ sponsor });
-    expect(free.times.find((t) => t.slotTime === "10:15")).toMatchObject({
-      room: "Rm Move A",
-    });
-
-    // The other sponsor can't use their room at 10:00 now, but can at 10:30.
-    expect(
-      (
-        await codeOf(
-          caller.coffeeChatRequests.offer({
-            sponsor: other,
-            userId: await makeHacker(),
-            slotTime: "10:00",
-          }),
-        )
-      ).code,
-    ).toBe("CONFLICT");
-    await expect(
-      caller.coffeeChatRequests.offer({
-        sponsor: other,
-        userId: await makeHacker(),
-        slotTime: "10:30",
-      }),
-    ).resolves.toMatchObject({ room: "Rm Move B" });
-
-    // Moving the 10:30 slot of the sponsor into Rm Move B is refused.
-    const at1030 = await caller.coffeeChatRequests.offer({
-      sponsor,
-      userId: await makeHacker(),
-      slotTime: "10:30",
-    });
+    // Rm 2243 is the other sponsor's from 22:15, inside this block.
     expect(
       (
         await codeOf(
           org.coffeeChatRequests.moveRoom({
-            chatId: at1030.chatId,
-            room: "Rm Move B",
+            chatId: booked[0]!.chatId,
+            room: "Rm 2243",
           }),
         )
       ).code,
     ).toBe("CONFLICT");
+
+    const moved = await org.coffeeChatRequests.moveRoom({
+      chatId: booked[0]!.chatId,
+      room: "Rm 2242",
+    });
+    expect(moved.room).toBe("Rm 2242");
+    expect([...moved.chatIds].sort()).toEqual(
+      booked.map((o) => o.chatId).sort(),
+    );
+    const { chats } = await org.coffeeChatRequests.organizerChats();
+    expect(
+      booked.map((o) => chats.find((c) => c.chatId === o.chatId)?.room),
+    ).toEqual(["Rm 2242", "Rm 2242", "Rm 2242"]);
+
+    // A later offer in the block joins the moved room.
+    await expect(
+      caller.coffeeChatRequests.offer({
+        sponsor,
+        userId: await makeHacker(),
+        slotTime: "22:00",
+      }),
+    ).resolves.toMatchObject({ room: "Rm 2242" });
   });
 });
 
@@ -1049,206 +1035,214 @@ describe("coffeeChatRequests.myHackerId (T36)", () => {
   });
 });
 
-describe("coffeeChatRequests.assignCoffeeChatRoom (T41)", () => {
+describe("coffeeChatRequests room blocks", () => {
   async function organizer() {
-    const id = `assign-organizer-${++n}`;
+    const id = `block-organizer-${++n}`;
     await db
       .insert(users)
       .values({ id, email: `${id}@example.com`, type: "organizer" });
     return hackerCaller(id);
   }
-  // Afternoon windows, so no chat from the earlier (morning) tests is in
-  // the way. Each test uses its own hour so assignments don't clash.
+  // Afternoon, no sheet room: no block until a test gives one. Each test
+  // uses its own hour so blocks from other tests aren't in the way.
   const afternoon = (start: string, end: string) => ({
     windowStart: start,
     windowEnd: end,
     room: null,
   });
 
-  test("organizers only; the room must be 2241-2243", async () => {
+  test("organizers only; a coffee chat room, 15 min to 1 hr 30", async () => {
     const sponsorId = await makeSponsor(1, afternoon("13:00", "14:00"));
+    const give = { sponsorId, room: "Rm 2241", startTime: "13:00" };
     expect(
       (
         await codeOf(
-          caller.coffeeChatRequests.assignCoffeeChatRoom({
-            sponsorId,
-            room: "Rm 2241",
-          }),
+          caller.coffeeChatRequests.createHold({ ...give, endTime: "13:30" }),
         )
       ).code,
     ).toBe("UNAUTHORIZED");
     const org = await organizer();
-    for (const room of ["Rm 2230", "2241", "Rm 9999"]) {
+    for (const room of ["Rm 2230", "2241"]) {
       expect(
         (
           await codeOf(
-            org.coffeeChatRequests.assignCoffeeChatRoom({ sponsorId, room }),
+            org.coffeeChatRequests.createHold({
+              ...give,
+              room,
+              endTime: "13:30",
+            }),
           )
         ).code,
       ).toBe("BAD_REQUEST");
     }
-    // Any spacing or case is accepted and stored canonically.
+    expect(
+      (
+        await codeOf(
+          org.coffeeChatRequests.createHold({ ...give, endTime: "14:45" }),
+        )
+      ).message,
+    ).toBe(errors.holdTimes);
     await expect(
-      org.coffeeChatRequests.assignCoffeeChatRoom({
-        sponsorId,
+      org.coffeeChatRequests.createHold({
+        ...give,
         room: " rm  2241 ",
+        endTime: "14:30",
       }),
-    ).resolves.toMatchObject({ room: "Rm 2241" });
-    await expect(
-      org.coffeeChatRequests.assignCoffeeChatRoom({ sponsorId, room: null }),
-    ).resolves.toMatchObject({ room: null });
+    ).resolves.toMatchObject({ chatIds: [] });
   });
 
-  test("refused when another sponsor has the room in an overlapping window", async () => {
+  test("two sponsors never overlap a room; a sponsor is in one room at a time", async () => {
     const org = await organizer();
-    const first = await makeSponsor(1, afternoon("14:00", "15:00"));
-    const overlapping = await makeSponsor(1, afternoon("14:30", "15:30"));
-    const after = await makeSponsor(1, afternoon("15:00", "16:00"));
-    await org.coffeeChatRequests.assignCoffeeChatRoom({
+    const first = await makeSponsor(1, afternoon("15:00", "16:00"));
+    const second = await makeSponsor(1, afternoon("15:00", "16:00"));
+    await org.coffeeChatRequests.createHold({
       sponsorId: first,
       room: "Rm 2242",
+      startTime: "15:00",
+      endTime: "15:30",
     });
-
     const clash = await codeOf(
-      org.coffeeChatRequests.assignCoffeeChatRoom({
-        sponsorId: overlapping,
+      org.coffeeChatRequests.createHold({
+        sponsorId: second,
         room: "Rm 2242",
+        startTime: "15:15",
+        endTime: "15:45",
       }),
     );
     expect(clash.code).toBe("CONFLICT");
     expect(clash.message).toContain("Rm 2242");
-
-    // Back to back (14:00-15:00, then 15:00-16:00) is fine.
-    await expect(
-      org.coffeeChatRequests.assignCoffeeChatRoom({
-        sponsorId: after,
-        room: "Rm 2242",
-      }),
-    ).resolves.toMatchObject({ room: "Rm 2242" });
-    // Another room is fine too.
-    await expect(
-      org.coffeeChatRequests.assignCoffeeChatRoom({
-        sponsorId: overlapping,
-        room: "Rm 2243",
-      }),
-    ).resolves.toMatchObject({ room: "Rm 2243" });
-
-    const { sponsors } = await org.coffeeChatRequests.organizerRooms();
-    const roomOf = (id: string) =>
-      sponsors.find((s) => s.sponsorId === id)?.assignedRoom;
-    expect([roomOf(first), roomOf(overlapping), roomOf(after)]).toEqual([
-      "Rm 2242",
-      "Rm 2243",
-      "Rm 2242",
-    ]);
+    // Back to back is fine; so is another room.
+    await org.coffeeChatRequests.createHold({
+      sponsorId: second,
+      room: "Rm 2242",
+      startTime: "15:30",
+      endTime: "16:00",
+    });
+    // The first sponsor can't be in Rm 2243 while they're in Rm 2242.
+    expect(
+      (
+        await codeOf(
+          org.coffeeChatRequests.createHold({
+            sponsorId: first,
+            room: "Rm 2243",
+            startTime: "15:15",
+            endTime: "15:45",
+          }),
+        )
+      ).message,
+    ).toBe(errors.ownBlockOverlap);
   });
 
-  test("offers and free times pick up the assigned room over the sheet's", async () => {
+  test("a block must fit one of the sponsor's chats", async () => {
     const org = await organizer();
-    const sponsor = await makeSponsor(1, {
-      windowStart: "16:00",
-      windowEnd: "17:00",
-      room: "Rm Sheet",
+    const groups = await makeSponsor(1, {
+      ...afternoon("16:00", "17:00"),
+      durationMinutes: 30,
+      groupSize: 3,
     });
-    expect((await caller.coffeeChatRequests.freeTimes({ sponsor })).room).toBe(
-      "Rm Sheet",
-    );
-    await org.coffeeChatRequests.assignCoffeeChatRoom({
-      sponsorId: sponsor,
-      room: "Rm 2241",
-    });
-    const free = await caller.coffeeChatRequests.freeTimes({ sponsor });
-    expect(free.room).toBe("Rm 2241");
-    expect(free.times[0]).toMatchObject({ room: "Rm 2241" });
-    const hacker = await makeHacker();
-    const offer = await caller.coffeeChatRequests.offer({
-      sponsor,
-      userId: hacker,
-      slotTime: "16:00",
-    });
-    expect(offer.room).toBe("Rm 2241");
-    const [mine] = await hackerCaller(hacker).coffeeChatRequests.mine();
-    expect(mine?.room).toBe("Rm 2241");
+    expect(
+      (
+        await codeOf(
+          org.coffeeChatRequests.createHold({
+            sponsorId: groups,
+            room: "Rm 2243",
+            startTime: "16:00",
+            endTime: "16:15",
+          }),
+        )
+      ).message,
+    ).toBe(errors.blockTooShort(30));
   });
 
-  test("reassigning moves the sponsor's live chats and tells each hacker", async () => {
+  test("offers land in the block; no block = ask the sponsor team", async () => {
     const org = await organizer();
     const sponsor = await makeSponsor(3, afternoon("17:00", "18:00"));
-    await org.coffeeChatRequests.assignCoffeeChatRoom({
-      sponsorId: sponsor,
-      room: "Rm 2242",
-    });
-    const offers = [
-      await caller.coffeeChatRequests.offer({
+    const [a, b] = [await makeHacker(), await makeHacker()];
+    const noBlock = await codeOf(
+      caller.coffeeChatRequests.offer({
         sponsor,
-        userId: await makeHacker(),
+        userId: a,
         slotTime: "17:00",
       }),
-      await caller.coffeeChatRequests.offer({
-        sponsor,
-        userId: await makeHacker(),
-        slotTime: "17:30",
-      }),
-    ];
-    const declinedHacker = await makeHacker();
-    const declined = await caller.coffeeChatRequests.offer({
+    );
+    expect(noBlock.message).toBe(errors.noBlock);
+
+    const { holdId } = await org.coffeeChatRequests.createHold({
+      sponsorId: sponsor,
+      room: "Rm 2241",
+      startTime: "17:00",
+      endTime: "17:30",
+    });
+    const offer = await caller.coffeeChatRequests.offer({
       sponsor,
-      userId: declinedHacker,
+      userId: a,
       slotTime: "17:15",
     });
-    await hackerCaller(declinedHacker).coffeeChatRequests.respond({
-      chatId: declined.chatId,
-      answer: "decline",
+    expect(offer.room).toBe("Rm 2241");
+    await caller.coffeeChatRequests.offer({
+      sponsor,
+      userId: b,
+      slotTime: "17:15",
     });
 
-    const notify = vi.mocked(notifyCoffeeChat);
-    notify.mockClear();
-    const result = await org.coffeeChatRequests.assignCoffeeChatRoom({
-      sponsorId: sponsor,
-      room: "Rm 2243",
-    });
-    expect([...result.chatIds].sort()).toEqual(
-      offers.map((o) => o.chatId).sort(),
-    );
-    expect(notify.mock.calls.map(([event]) => event)).toEqual([
-      "roomMoved",
-      "roomMoved",
+    // 1-on-1 with 3 reps: each slot needs 3 hackers (0/3), not people / 6.
+    const board = await org.coffeeChatRequests.organizerChatBoard();
+    const block = board.holds.find((h) => h.holdId === holdId)!;
+    expect(block.slots.map((s) => [s.slotTime, s.booked, s.needed])).toEqual([
+      ["17:00", 0, 3],
+      ["17:15", 2, 3],
     ]);
+    expect(block.needsHacker).toBe(true);
 
-    const { chats } = await org.coffeeChatRequests.organizerChats();
-    const roomOf = (id: string) => chats.find((c) => c.chatId === id)?.room;
-    expect(offers.map((o) => roomOf(o.chatId))).toEqual(["Rm 2243", "Rm 2243"]);
-    // Declined chats stay where they were.
-    expect(roomOf(declined.chatId)).toBe("Rm 2242");
-
-    // Unassigning falls back to the sheet room (none here): chats follow.
-    await org.coffeeChatRequests.assignCoffeeChatRoom({
-      sponsorId: sponsor,
-      room: null,
+    // The sponsor sees their block filling up.
+    const mine = await caller.coffeeChatRequests.sponsorChats({ sponsor });
+    expect(mine.holds[0]).toMatchObject({
+      room: "Rm 2241",
+      filled: 2,
+      total: 6,
+      firstOpen: "17:00",
     });
-    const after = await org.coffeeChatRequests.organizerChats();
+
+    // Cutting the booked slot off, or releasing the room, is refused.
     expect(
-      offers.map(
-        (o) => after.chats.find((c) => c.chatId === o.chatId)?.room ?? null,
-      ),
-    ).toEqual([null, null]);
+      (
+        await codeOf(
+          org.coffeeChatRequests.moveHold({
+            holdId,
+            room: "Rm 2241",
+            startTime: "17:00",
+            endTime: "17:15",
+          }),
+        )
+      ).message,
+    ).toBe(errors.blockDropsChats);
+    expect(
+      (await codeOf(org.coffeeChatRequests.deleteHold({ holdId }))).message,
+    ).toBe(errors.blockHasChats);
+    // Longer is fine.
+    await org.coffeeChatRequests.moveHold({
+      holdId,
+      room: "Rm 2241",
+      startTime: "17:00",
+      endTime: "17:45",
+    });
   });
 
-  test("a sponsor whose sheet ROOM is that room counts as in it", async () => {
+  test("an empty block can be released", async () => {
     const org = await organizer();
-    await makeSponsor(1, {
-      windowStart: "18:00",
-      windowEnd: "19:00",
+    const sponsor = await makeSponsor(1, afternoon("18:00", "19:00"));
+    const { holdId } = await org.coffeeChatRequests.createHold({
+      sponsorId: sponsor,
       room: "Rm 2243",
+      startTime: "18:00",
+      endTime: "18:30",
     });
-    const other = await makeSponsor(1, afternoon("18:30", "19:30"));
-    const clash = await codeOf(
-      org.coffeeChatRequests.assignCoffeeChatRoom({
-        sponsorId: other,
-        room: "Rm 2243",
-      }),
-    );
-    expect(clash.code).toBe("CONFLICT");
+    await expect(
+      org.coffeeChatRequests.deleteHold({ holdId }),
+    ).resolves.toEqual({ holdId });
+    expect(
+      (await codeOf(org.coffeeChatRequests.deleteHold({ holdId }))).code,
+    ).toBe("NOT_FOUND");
   });
 });
 
@@ -1260,7 +1254,12 @@ describe("coffeeChatRequests organizer ad hoc chats (T43)", () => {
       .values({ id, email: `${id}@example.com`, type: "organizer" });
     return hackerCaller(id);
   }
-  const evening = { windowStart: "19:00", windowEnd: "20:00", room: null };
+  // A block 19:00-20:00 in a test-only room (see makeSponsor).
+  const evening = {
+    windowStart: "19:00",
+    windowEnd: "20:00",
+    room: "Rm Evening",
+  };
 
   test("search finds admitted hackers by name, email or hacker ID", async () => {
     const org = await organizer();
@@ -1334,16 +1333,14 @@ describe("coffeeChatRequests organizer ad hoc chats (T43)", () => {
     expect(mine).toMatchObject({ chatId: chat.chatId, repName: "Priya" });
 
     // Same rules as the sponsor's offer: one rep -> the slot is full,
-    // outside the window is refused, the hacker can't be double booked.
+    // outside a block is refused, the hacker can't be double booked.
     const other = await makeHacker();
     const rule = (slotTime: string, userId = other) =>
       codeOf(
         org.coffeeChatRequests.organizerOffer({ sponsorId, userId, slotTime }),
       );
     expect((await rule("19:00")).message).toBe(coffeeChatCopy.errors.full);
-    expect((await rule("20:30")).message).toBe(
-      coffeeChatCopy.errors.notInWindow,
-    );
+    expect((await rule("20:30")).message).toBe(coffeeChatCopy.errors.noBlock);
     const second = await makeSponsor(1, evening);
     expect(
       (
@@ -1458,7 +1455,7 @@ describe("coffeeChatRequests.organizerChatBoard (T48)", () => {
       windowEnd: "14:00",
       durationMinutes: 30,
       groupSize: 3,
-      room: null,
+      room: "Rm Board",
     });
     const hacker = await makeHacker({ firstName: "Boardy" });
     await db
