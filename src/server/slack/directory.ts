@@ -1,4 +1,8 @@
-import { slackApi, type SlackResponse } from "~/server/slack/client";
+import {
+  SlackApiError,
+  slackApi,
+  type SlackResponse,
+} from "~/server/slack/client";
 
 /**
  * The Slack workspace's people (users.list, needs users:read), so a task
@@ -28,6 +32,8 @@ type SlackMember = {
 };
 
 export const DIRECTORY_TTL_MS = 10 * 60_000;
+/** A rate-limited page is retried once if Slack asks for at most this. */
+export const MAX_RETRY_AFTER_S = 5;
 const PAGE_LIMIT = 200;
 const MAX_PAGES = 50;
 
@@ -37,10 +43,17 @@ const norm = (name: string | undefined) =>
 /** A member's matchable names; null for bots, deactivated users and guests. */
 export function directoryEntry(m: SlackMember): SlackDirectoryUser | null {
   if (!m.id || m.id === "USLACKBOT") return null;
-  if (m.deleted || m.is_bot || m.is_app_user) return null;
-  if (m.is_restricted || m.is_ultra_restricted) return null;
+  const skip = [
+    m.deleted,
+    m.is_bot,
+    m.is_app_user,
+    m.is_restricted,
+    m.is_ultra_restricted,
+  ];
+  if (skip.some((flag) => flag === true)) return null;
   const real = norm(m.profile?.real_name ?? m.real_name);
-  const first = norm(m.profile?.first_name) || real.split(" ")[0] || "";
+  const firstName = norm(m.profile?.first_name);
+  const first = firstName.length > 0 ? firstName : (real.split(" ")[0] ?? "");
   const names = new Set(
     [first, real, norm(m.real_name), norm(m.profile?.display_name)].filter(
       Boolean,
@@ -49,31 +62,53 @@ export function directoryEntry(m: SlackMember): SlackDirectoryUser | null {
   return names.size > 0 ? { id: m.id, names: [...names] } : null;
 }
 
-/** Every page of users.list. Throws a SlackApiError when Slack refuses. */
+type UsersListPage = SlackResponse & {
+  members?: SlackMember[];
+  response_metadata?: { next_cursor?: string };
+};
+
+const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * Every page of users.list. A rate-limited page (429) is retried once when
+ * Slack's Retry-After is short. Throws a SlackApiError when Slack refuses.
+ */
 export async function fetchSlackDirectory(
   token: string,
   fetchImpl: typeof fetch = fetch,
+  sleep: (ms: number) => Promise<void> = wait,
 ): Promise<SlackDirectoryUser[]> {
   const users: SlackDirectoryUser[] = [];
   let cursor: string | undefined;
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const res = await slackApi<
-      SlackResponse & {
-        members?: SlackMember[];
-        response_metadata?: { next_cursor?: string };
-      }
-    >(
+  let retried = false;
+  const page = (c: string | undefined) =>
+    slackApi<UsersListPage>(
       token,
       "users.list",
-      { limit: String(PAGE_LIMIT), cursor },
+      { limit: String(PAGE_LIMIT), cursor: c },
       fetchImpl,
       5000,
     );
+  for (let n = 0; n < MAX_PAGES; n++) {
+    let res: UsersListPage;
+    try {
+      res = await page(cursor);
+    } catch (error) {
+      const after =
+        error instanceof SlackApiError && error.code === "http_429"
+          ? error.retryAfter
+          : null;
+      if (retried || after === null || after > MAX_RETRY_AFTER_S) throw error;
+      retried = true;
+      await sleep(after * 1000);
+      res = await page(cursor);
+    }
     for (const m of res.members ?? []) {
       const entry = directoryEntry(m);
       if (entry) users.push(entry);
     }
-    cursor = res.response_metadata?.next_cursor || undefined;
+    const next = res.response_metadata?.next_cursor;
+    cursor = next?.length ? next : undefined;
     if (!cursor) break;
   }
   return users;
@@ -87,18 +122,28 @@ export function resetSlackDirectoryCache(): void {
   cache = null;
 }
 
-/** The directory, from the 10-minute cache when fresh. */
+/**
+ * The directory, from the 10-minute cache when fresh. When Slack fails, an
+ * expired copy is better than nothing (people rarely leave mid-event); with
+ * no copy at all the error is thrown.
+ */
 export async function getSlackDirectory(
   token: string,
   fetchImpl: typeof fetch = fetch,
   now: number = Date.now(),
+  sleep?: (ms: number) => Promise<void>,
 ): Promise<SlackDirectoryUser[]> {
-  if (cache?.token === token && now - cache.at < DIRECTORY_TTL_MS) {
-    return cache.users;
+  const cached = cache?.token === token ? cache : null;
+  if (cached && now - cached.at < DIRECTORY_TTL_MS) return cached.users;
+  try {
+    const users = await fetchSlackDirectory(token, fetchImpl, sleep);
+    cache = { token, at: now, users };
+    return users;
+  } catch (error) {
+    if (!cached) throw error;
+    console.error("slack directory: refresh failed, using the old copy", error);
+    return cached.users;
   }
-  const users = await fetchSlackDirectory(token, fetchImpl);
-  cache = { token, at: now, users };
-  return users;
 }
 
 export type DirectoryMatch =

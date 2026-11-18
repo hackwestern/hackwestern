@@ -95,6 +95,62 @@ describe("getSlackDirectory", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
+  test("a failed refresh serves the expired copy", async () => {
+    const good = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({ ok: true, members: [{ id: "U1", real_name: "Noah" }] }),
+        ),
+    ) as unknown as typeof fetch;
+    await getSlackDirectory("t", good, 0);
+    const bad = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ ok: false, error: "internal_error" })),
+    ) as unknown as typeof fetch;
+    const users = await getSlackDirectory("t", bad, DIRECTORY_TTL_MS + 1);
+    expect(users.map((u) => u.id)).toEqual(["U1"]);
+    expect(bad).toHaveBeenCalledTimes(1);
+    // Another token's copy is never used.
+    await expect(getSlackDirectory("other", bad, 0)).rejects.toMatchObject({
+      code: "internal_error",
+    });
+  });
+
+  test("a 429 with a short Retry-After is retried once", async () => {
+    let n = 0;
+    const fetchImpl = vi.fn(async () =>
+      ++n === 1
+        ? new Response("", { status: 429, headers: { "Retry-After": "2" } })
+        : new Response(
+            JSON.stringify({ ok: true, members: [{ id: "U1", real_name: "Noah" }] }),
+          ),
+    ) as unknown as typeof fetch;
+    const sleep = vi.fn(async () => undefined);
+    const users = await getSlackDirectory("t", fetchImpl, 0, sleep);
+    expect(users.map((u) => u.id)).toEqual(["U1"]);
+    expect(sleep).toHaveBeenCalledWith(2000);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  test("a 429 with a long Retry-After, or twice, gives up", async () => {
+    const limited = (after: string) =>
+      vi.fn(
+        async () =>
+          new Response("", { status: 429, headers: { "Retry-After": after } }),
+      ) as unknown as typeof fetch;
+    const sleep = vi.fn(async () => undefined);
+    const long = limited("30");
+    await expect(getSlackDirectory("t", long, 0, sleep)).rejects.toMatchObject({
+      code: "http_429",
+    });
+    expect(sleep).not.toHaveBeenCalled();
+    const twice = limited("1");
+    await expect(getSlackDirectory("t", twice, 0, sleep)).rejects.toMatchObject({
+      code: "http_429",
+    });
+    expect(twice).toHaveBeenCalledTimes(2);
+  });
+
   test("a Slack error throws", async () => {
     const fetchImpl = vi.fn(
       async () =>

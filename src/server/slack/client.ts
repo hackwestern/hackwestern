@@ -13,6 +13,8 @@ export class SlackApiError extends Error {
   constructor(
     readonly method: string,
     readonly code: string,
+    /** Seconds Slack asked us to wait (Retry-After on a 429). */
+    readonly retryAfter: number | null = null,
   ) {
     super(`Slack ${method} failed: ${code}`);
     this.name = "SlackApiError";
@@ -47,7 +49,14 @@ export async function slackApi<T extends SlackResponse = SlackResponse>(
     body: body.toString(),
     signal: AbortSignal.timeout(timeoutMs),
   });
-  if (!response.ok) throw new SlackApiError(method, `http_${response.status}`);
+  if (!response.ok) {
+    const wait = Number(response.headers.get("retry-after"));
+    throw new SlackApiError(
+      method,
+      `http_${response.status}`,
+      Number.isFinite(wait) && wait >= 0 ? wait : null,
+    );
+  }
   const data = (await response.json()) as T;
   if (!data.ok) throw new SlackApiError(method, data.error ?? "unknown_error");
   return data;

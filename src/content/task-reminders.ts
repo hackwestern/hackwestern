@@ -30,8 +30,9 @@ export const taskRemindersCopy = {
 
   /** The organizer home's Task pings tab (?tab=pings). */
   tab: {
-    intro:
-      "Task owners get a Slack DM when their task starts. Tasks without a clear owner go to the team channel with @here, and so do sponsors' help requests.",
+    /** `mention` is the readable channel mention ("@here"), or null. */
+    intro: (mention: string | null) =>
+      `Task owners get a Slack DM when their task starts. Tasks without a clear owner go to the team channel${mention ? ` with ${mention}` : ""}, and so do sponsors' help requests.`,
 
     helpHeading: "Sponsor help requests",
     resolvedHeading: "Recently resolved",
@@ -42,7 +43,8 @@ export const taskRemindersCopy = {
     upNextEmpty: "No task pings waiting.",
     upNextNoSlack: "Slack isn't connected, so no task pings are scheduled.",
     dm: (name: string) => `DM ${name}`,
-    channel: "Channel @here",
+    channel: (mention: string | null) =>
+      mention ? `Team channel (${mention})` : "Team channel",
 
     logHeading: "Ping log",
     logNote:
