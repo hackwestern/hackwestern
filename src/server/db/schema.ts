@@ -583,6 +583,92 @@ export const sponsorFinalPicks = pgTable("sponsor_final_pick", {
   sheetSyncedAt: timestamp("sheet_synced_at", { mode: "date", precision: 3 }),
 });
 
+// The shortlist a sponsor sent at the end of round 1: a snapshot of the
+// shortlisted team ids, so later shortlist edits don't move the schedule
+// until the sponsor sends again. Sending again replaces it
+// (docs/flows/sponsor-judging.md).
+export const sponsorShortlistSends = pgTable("sponsor_shortlist_send", {
+  sponsorId: uuid("sponsor_id")
+    .primaryKey()
+    .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+  teamIds: varchar("team_ids", { length: 12 }).array().notNull(),
+  sentAt: timestamp("sent_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
+
+// The Sunday presentation schedule (src/lib/sponsor-presentations.ts): one
+// row per (sponsor, sent-shortlist team). startMinute is minutes after
+// midnight Eastern on judging day; null = couldn't fit (room set) or the
+// sponsor had no room (room null). "Schedule presentations" replaces every
+// row; who was told which times lives in sponsor_presentation_notice.
+export const sponsorPresentations = pgTable(
+  "sponsor_presentation",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 12 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    room: varchar("room", { length: 64 }),
+    startMinute: smallint("start_minute"),
+    scheduledAt: timestamp("scheduled_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sponsorId, t.teamId] }),
+    index("sponsor_presentation_team_idx").on(t.teamId),
+  ],
+);
+
+// One row per team member DM'd or emailed (or tried) about presentations.
+// A notify claims the row atomically (status "sending") before sending, so
+// a double click or retry can't message twice. A member Slack can't find
+// is emailed instead (status "emailed"). slotsKey (slotsKey() in
+// src/lib/sponsor-presentations.ts) is the set of times the member was
+// sent: a member is up to date while it matches their team's slots, so
+// rescheduling a team without changing its times keeps them notified.
+export const sponsorPresentationNotices = pgTable(
+  "sponsor_presentation_notice",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 12 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    // "sending" | "sent" (Slack) | "emailed" | "not-found" | "failed"
+    status: varchar("status", { length: 16 }).notNull(),
+    slotsKey: text("slots_key").notNull(),
+    claimedAt: timestamp("claimed_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    /** Last successful DM or email; null = never reached. */
+    sentAt: timestamp("sent_at", { mode: "date", precision: 3 }),
+  },
+  (t) => [index("sponsor_presentation_notice_team_idx").on(t.teamId)],
+);
+
+// Sunday judging switches organizers flip (docs/flows/sponsor-judging.md).
+// One row (id 1). round2OpenedAt set = round 2 is open: sponsors with a
+// presentation slot rank the teams that presented and submit a top 5.
+export const sponsorJudgingSettings = pgTable(
+  "sponsor_judging_setting",
+  {
+    id: smallint("id").primaryKey().default(1),
+    round2OpenedAt: timestamp("round2_opened_at", {
+      mode: "date",
+      precision: 3,
+    }),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [check("sponsor_judging_setting_single_row", sql`${t.id} = 1`)],
+);
+
 export const sponsorHelpStatusEnum = pgEnum("sponsor_help_status", [
   "open",
   "claimed",

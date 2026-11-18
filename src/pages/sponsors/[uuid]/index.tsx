@@ -1,13 +1,18 @@
+import { useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import {
   ChevronRight,
   Clock,
   Coffee,
+  Lock,
+  Luggage,
   MapPin,
   Phone,
   Presentation,
   ScanLine,
+  Siren,
+  Sofa,
   Trophy,
   type LucideIcon,
 } from "lucide-react";
@@ -16,9 +21,18 @@ import { uuidRegex } from "~/utils/urls";
 import { api } from "~/utils/api";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
+import { judgingUnlocked } from "~/lib/sponsor-judging-unlock";
+import { useNow } from "~/components/sponsors/use-now";
+import { sponsorVenueCopy as venue } from "~/content/sponsor-venue";
+import {
+  VenueMapButton,
+  VenueMapDialog,
+} from "~/components/sponsors/venue-map";
 import { sponsorPortalCopy as copy } from "~/content/sponsor-portal";
 import { SponsorHelp } from "~/components/sponsors/help-button";
 import { pressable } from "~/components/sponsors/sponsor-shell";
+import { sponsorLogo } from "~/lib/sponsor-logos";
+import { BoothLayout } from "~/components/sponsors/booth-layout";
 import { cn } from "~/lib/utils";
 
 export default function SponsorHubPage() {
@@ -36,6 +50,7 @@ export default function SponsorHubPage() {
   );
 
   const data = sponsorQ.data;
+  const now = useNow();
 
   if (!router.isReady) {
     return (
@@ -70,6 +85,7 @@ export default function SponsorHubPage() {
   }
 
   const sponsorName = data?.sponsorName ?? copy.welcome.fallbackName;
+  const logo = data?.sponsorName ? sponsorLogo(data.sponsorName) : null;
   const roomNumber = data?.roomNumber ?? "TBD";
   const boothLocation = data?.boothLocation ?? "TBD";
   const hwContact =
@@ -84,7 +100,13 @@ export default function SponsorHubPage() {
   // Unassigned booth/room ("TBD" from the sheet) hides the row entirely.
   const hasBoothLocation = boothLocation !== "TBD";
   const hasJudgingRoom = roomNumber !== "TBD";
-  const judgingApplies = data?.judgingApplies ?? false;
+  // The Judging tile always shows: locked until round 1 opens, so sponsors
+  // know it's coming (Jazz, 2026-11-18).
+  // `?preview=judging` opens the tile early so the team can walk through
+  // the flow before Sunday (Jazz, 2026-11-18). The picks page itself was
+  // never time-gated, so this exposes nothing new.
+  const judgingOpen =
+    router.query.preview === "judging" || judgingUnlocked(now);
   const actions = copy.actions;
 
   return (
@@ -92,6 +114,20 @@ export default function SponsorHubPage() {
       <div className="flex flex-col gap-5">
         {/* Welcome */}
         <section className="flex flex-col gap-2 rounded-dashboard-2xl bg-dashboard-action-primary p-5 text-dashboard-text-inverse shadow-dashboard-card sm:p-7">
+          {/* The sponsor's own logo, on white so any logo colour reads on
+              the blue card (Jazz, 2026-11-18). */}
+          {logo && (
+            <span className="mb-2 inline-flex h-14 w-fit items-center rounded-dashboard-lg bg-dashboard-bg-surface px-4 py-2.5 shadow-dashboard-card">
+              {/* eslint-disable-next-line @next/next/no-img-element -- small static logo */}
+              <img
+                src={logo}
+                alt={copy.welcome.logoAlt(sponsorName)}
+                width={160}
+                height={36}
+                className="h-full w-auto max-w-[200px] object-contain"
+              />
+            </span>
+          )}
           <h1 className="m-0 break-words text-2xl font-bold leading-default tracking-tight sm:text-3xl">
             {copy.welcome.title(sponsorName)}
           </h1>
@@ -131,10 +167,8 @@ export default function SponsorHubPage() {
                 body={actions.schedule.body}
               />
             </li>
-            {/* Judging: shown whenever judging applies to this sponsor (a
-                prize track, a judging room, or picks already in). */}
-            {judgingApplies && (
-              <li className="col-span-2">
+            <li className="col-span-2">
+              {judgingOpen ? (
                 <ActionTile
                   href={`/sponsors/${id}/picks`}
                   icon={Trophy}
@@ -146,10 +180,101 @@ export default function SponsorHubPage() {
                       : actions.picks.pending
                   }
                 />
-              </li>
-            )}
+              ) : (
+                <LockedTile
+                  icon={Trophy}
+                  title={actions.picks.title}
+                  body={actions.picks.body(SPONSOR_FINAL_TOP)}
+                  badge={venue.judgingLocked.badge}
+                  message={venue.judgingLocked.message}
+                />
+              )}
+            </li>
           </ul>
         </nav>
+
+        {/* Important things to remember */}
+        <section
+          aria-labelledby="important-heading"
+          className="flex flex-col gap-3"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <h2
+              id="important-heading"
+              className="dashboard-section-label m-0 text-dashboard-text-light"
+            >
+              {venue.important.heading}
+            </h2>
+            <VenueMapDialog
+              trigger={
+                <button
+                  type="button"
+                  className="inline-flex min-h-11 items-center text-sm font-semibold text-dashboard-text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:underline"
+                >
+                  {venue.important.openMap}
+                </button>
+              }
+            />
+          </div>
+          <dl className="m-0 flex flex-col divide-y divide-dashboard-border-subtle rounded-dashboard-2xl bg-dashboard-bg-surface px-4 shadow-dashboard-card sm:px-5">
+            <DetailRow
+              icon={Sofa}
+              label={venue.important.lounge.label}
+              value={venue.important.lounge.value}
+              hint={venue.important.lounge.hint}
+            />
+            <DetailRow
+              icon={Luggage}
+              label={venue.important.belongings.label}
+              value={venue.important.belongings.value}
+              hint={venue.important.belongings.hint}
+            />
+            <div className="flex items-center gap-3 py-4">
+              <DetailIcon icon={Siren} />
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <dt className="text-sm font-medium text-dashboard-text-light">
+                  {venue.important.emergency.label}
+                </dt>
+                <dd className="m-0 break-words text-base font-semibold text-dashboard-text-heavy">
+                  {venue.important.emergency.name}
+                </dd>
+              </div>
+              {venue.important.emergency.phone ? (
+                <a
+                  href={`tel:${venue.important.emergency.phone.replace(/[^\d+]/g, "")}`}
+                  aria-label={venue.important.emergency.call(
+                    venue.important.emergency.phone,
+                  )}
+                  className={cn(
+                    "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm font-semibold text-dashboard-text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
+                    pressable,
+                  )}
+                >
+                  <Phone aria-hidden className="size-4" />
+                  {venue.important.emergency.phone}
+                </a>
+              ) : (
+                <span className="shrink-0 rounded-dashboard-sm bg-dashboard-bg-nav px-2 py-1 text-xs font-medium text-dashboard-text-light">
+                  {venue.important.emergency.phonePlaceholder}
+                </span>
+              )}
+            </div>
+          </dl>
+        </section>
+
+        {/* Sponsor Bay layout: booths around the projector screen */}
+        <section
+          aria-labelledby="booths-heading"
+          className="flex flex-col gap-3"
+        >
+          <h2
+            id="booths-heading"
+            className="dashboard-section-label m-0 text-dashboard-text-light"
+          >
+            {venue.booths.heading}
+          </h2>
+          <BoothLayout sponsorName={data?.sponsorName} />
+        </section>
 
         {/* Event details */}
         <section
@@ -296,6 +421,67 @@ function ActionTile({
   );
 }
 
+/**
+ * A tile for something that isn't open yet: greyed, with a lock. Tapping it
+ * says when it opens instead of going anywhere.
+ */
+function LockedTile({
+  icon: Icon,
+  title,
+  body,
+  badge,
+  message,
+}: {
+  icon: LucideIcon;
+  title: string;
+  body: string;
+  badge: string;
+  message: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="flex flex-col gap-2">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="locked-tile-message"
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          "flex min-h-11 w-full items-center gap-3 rounded-dashboard-2xl border border-dashed border-dashboard-border-control bg-dashboard-bg-inset p-4 text-left text-dashboard-text-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
+          pressable,
+        )}
+      >
+        <span
+          aria-hidden
+          className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-nav text-dashboard-text-light"
+        >
+          <Icon className="size-5" strokeWidth={1.75} />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-semibold text-dashboard-text-medium">
+            {title}
+            <span className="rounded-dashboard-sm bg-dashboard-bg-nav px-2 py-0.5 text-xs font-medium text-dashboard-text-light">
+              {badge}
+            </span>
+          </span>
+          <span className="text-sm font-medium">{body}</span>
+        </span>
+        <Lock aria-hidden className="size-5 shrink-0" />
+      </button>
+      <p
+        id="locked-tile-message"
+        role="status"
+        className={cn(
+          "m-0 rounded-dashboard-lg bg-dashboard-bg-highlight px-4 py-3 text-sm font-medium text-dashboard-text-active",
+          !open && "hidden",
+        )}
+      >
+        {open ? message : ""}
+      </p>
+    </div>
+  );
+}
+
 function DetailIcon({ icon: Icon }: { icon: LucideIcon }) {
   return (
     <span
@@ -348,6 +534,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             <span className="text-sm font-semibold tracking-tight text-dashboard-text-light">
               {copy.brand}
             </span>
+            <VenueMapButton />
           </header>
           {children}
         </div>

@@ -1,9 +1,10 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { env } from "~/env";
+import { judgingRound } from "~/lib/sponsor-presentations";
 import {
   NOTE_MAX,
   SCORE_MAX,
@@ -26,12 +27,16 @@ import {
   fetchSponsorTracks,
   isEligibleTeam,
   listEligibleTeams,
+  membersByTeam,
   writeChosenTeams,
 } from "~/server/api/utils/sponsor-judging-teams";
+import { round2OpenedAt } from "~/server/api/utils/sponsor-judging-settings";
 import { db } from "~/server/db";
 import {
   sponsorFinalPicks,
   sponsorJudgingSponsors,
+  sponsorPresentations,
+  sponsorShortlistSends,
   sponsorTeamReviews,
   teams,
 } from "~/server/db/schema";
@@ -84,6 +89,48 @@ async function reviewsFor(sponsorId: string): Promise<TeamReview[]> {
 }
 
 /**
+ * Round state for one sponsor: their sent shortlist, whether any schedule
+ * exists, their presentation slots (placed only), and whether organizers
+ * have opened round 2. Once round 2 is open AND this sponsor has a placed
+ * slot, round 2 ranks only those teams (judgingRound). A sponsor with no
+ * slot is never locked out: once round 2 opens they rank their shortlist.
+ */
+async function roundFor(sponsorId: string) {
+  const [sent, anySlot, slots, openedAt] = await Promise.all([
+    db.query.sponsorShortlistSends.findFirst({
+      where: eq(sponsorShortlistSends.sponsorId, sponsorId),
+    }),
+    db.query.sponsorPresentations.findFirst({
+      columns: { scheduledAt: true },
+    }),
+    db
+      .select({
+        teamId: sponsorPresentations.teamId,
+        room: sponsorPresentations.room,
+        start: sponsorPresentations.startMinute,
+      })
+      .from(sponsorPresentations)
+      .where(
+        and(
+          eq(sponsorPresentations.sponsorId, sponsorId),
+          isNotNull(sponsorPresentations.startMinute),
+        ),
+      ),
+    round2OpenedAt(),
+  ]);
+  return {
+    shortlistSent: sent ? { sentAt: sent.sentAt, teamIds: sent.teamIds } : null,
+    /** When the current schedule was made; null = not scheduled yet. */
+    scheduledAt: anySlot?.scheduledAt ?? null,
+    slots: slots
+      .map((r) => ({ teamId: r.teamId, room: r.room ?? "", start: r.start! }))
+      .sort((a, b) => a.start - b.start),
+    /** Organizers opened round 2 (after presentations). */
+    round2Open: openedAt !== null,
+  };
+}
+
+/**
  * Write a saved submission to Lucas's judging sheet and mark it synced.
  * The mark only lands if `submittedAt` is still the sponsor's latest
  * submission, so a slow write for an older ranking never marks a newer one
@@ -133,12 +180,13 @@ export const sponsorScoringRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const sponsor = await findSponsor(input.sponsor);
       const track = await fetchSponsorTrack(sponsor.name);
-      const [eligible, reviews, final] = await Promise.all([
+      const [eligible, reviews, final, round] = await Promise.all([
         listEligibleTeams(track),
         reviewsFor(sponsor.id),
         db.query.sponsorFinalPicks.findFirst({
           where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
         }),
+        roundFor(sponsor.id),
       ]);
       // Reviews of teams that have since left the sponsor's list (track
       // changed, submission withdrawn) stay stored but aren't shown, and
@@ -156,6 +204,10 @@ export const sponsorScoringRouter = createTRPCRouter({
         open: isOpen(),
         teams: eligible,
         reviews: reviews.filter((r) => visible.has(r.teamId)),
+        round: {
+          ...round,
+          slots: round.slots.filter((s) => visible.has(s.teamId)),
+        },
         final: final
           ? {
               teamIds: finalIds,
@@ -219,8 +271,54 @@ export const sponsorScoringRouter = createTRPCRouter({
     }),
 
   /**
+   * End round 1: snapshot the sponsor's current shortlist (eligible teams
+   * only) as the one organizers schedule from. Sending again replaces it;
+   * the schedule only changes when organizers schedule again.
+   */
+  sendShortlist: publicProcedure
+    .input(z.object({ sponsor: sponsorInput }))
+    .mutation(async ({ input }) => {
+      assertOpen();
+      const sponsor = await findSponsor(input.sponsor);
+      const track = await fetchSponsorTrack(sponsor.name);
+      const rows = await db
+        .select({ teamId: sponsorTeamReviews.teamId })
+        .from(sponsorTeamReviews)
+        .where(
+          and(
+            eq(sponsorTeamReviews.sponsorId, sponsor.id),
+            eq(sponsorTeamReviews.shortlisted, true),
+          ),
+        );
+      const eligible = await eligibleTeamIds(
+        track,
+        rows.map((r) => r.teamId),
+      );
+      const teamIds = rows
+        .map((r) => r.teamId)
+        .filter((id) => eligible.has(id))
+        .sort();
+      if (teamIds.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: errors.emptyShortlist,
+        });
+      }
+      const sentAt = new Date();
+      await db
+        .insert(sponsorShortlistSends)
+        .values({ sponsorId: sponsor.id, teamIds, sentAt })
+        .onConflictDoUpdate({
+          target: sponsorShortlistSends.sponsorId,
+          set: { teamIds, sentAt },
+        });
+      return { sentAt, teamIds };
+    }),
+
+  /**
    * Submit the ranked top SPONSOR_FINAL_TOP: exactly that many, no repeats,
-   * all on this sponsor's shortlist and still eligible. Resubmitting
+   * all on this sponsor's shortlist and still eligible. Only once
+   * organizers have opened round 2. Resubmitting
    * replaces the last one while judging is open. Saved here first, then
    * written to Lucas's judging sheet; if the sheet write fails the
    * submission still counts and `sheetSynced` is false (the next `get`
@@ -239,7 +337,7 @@ export const sponsorScoringRouter = createTRPCRouter({
       assertOpen();
       const sponsor = await findSponsor(input.sponsor);
       const track = await fetchSponsorTrack(sponsor.name);
-      const [shortlistRows, eligible] = await Promise.all([
+      const [shortlistRows, eligible, round] = await Promise.all([
         db
           .select({ teamId: sponsorTeamReviews.teamId })
           .from(sponsorTeamReviews)
@@ -250,15 +348,30 @@ export const sponsorScoringRouter = createTRPCRouter({
             ),
           ),
         eligibleTeamIds(track, input.teamIds),
+        roundFor(sponsor.id),
       ]);
-      const shortlisted = new Set(
-        shortlistRows.map((r) => r.teamId).filter((id) => eligible.has(id)),
-      );
-      const problem = rankingError(input.teamIds, shortlisted);
+      if (!round.round2Open) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: errors.round2Closed,
+        });
+      }
+      // Round 2 (this sponsor has a placed slot): only teams that presented
+      // to them. Otherwise, including a schedule with no slot for them
+      // (sent late, no room, none fit), their shortlist.
+      const scheduled = judgingRound(round) === "rank";
+      const pool = scheduled
+        ? round.slots.map((s) => s.teamId)
+        : shortlistRows.map((r) => r.teamId);
+      const allowed = new Set(pool.filter((id) => eligible.has(id)));
+      const problem = rankingError(input.teamIds, allowed);
       if (problem) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: errors.ranking[problem](SPONSOR_FINAL_TOP),
+          message:
+            problem === "notShortlisted" && scheduled
+              ? errors.ranking.notPresented()
+              : errors.ranking[problem](SPONSOR_FINAL_TOP),
         });
       }
 
@@ -290,7 +403,8 @@ export const sponsorScoringRouter = createTRPCRouter({
     }),
 
   /**
-   * Organizers: every sponsor's progress and submitted ranking, plus all
+   * Organizers: every sponsor's progress and submitted ranking (final
+   * results: teams in rank order with their hackers), plus all
    * teams ranked by how many sponsors put them in a top list and their
    * average score. Only teams a sponsor can still judge (submitted, in
    * their track) count toward progress and tallies; a withdrawn team stays
@@ -337,6 +451,10 @@ export const sponsorScoringRouter = createTRPCRouter({
             .from(teams)
             .where(inArray(teams.id, teamIds))
         : [];
+    // Final results show each submitted team's hackers.
+    const members = await membersByTeam([
+      ...new Set(finals.flatMap((f) => f.teamIds)),
+    ]);
     const teamById = new Map(
       teamRows.map((t) => [
         t.id,
@@ -392,6 +510,7 @@ export const sponsorScoringRouter = createTRPCRouter({
                 devpostUrl: teamById.get(teamId)?.devpostUrl ?? null,
                 score: s.scoreOf.get(teamId) ?? null,
                 eligible: s.canJudge(teamId),
+                members: members.get(teamId) ?? [],
               })),
             }
           : null,

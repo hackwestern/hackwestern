@@ -6,12 +6,8 @@ import {
   type CoffeeChatChangeEvent,
 } from "~/server/api/utils/coffee-chat-change-text";
 import type { CoffeeChatNotice } from "~/server/api/utils/coffee-chat-notify";
-import {
-  SlackApiError,
-  escapeSlackText,
-  slackApi,
-  type SlackResponse,
-} from "~/server/slack/client";
+import { escapeSlackText } from "~/server/slack/client";
+import { dmByEmail } from "~/server/slack/dm";
 
 /**
  * Slack DM to a hacker when a sponsor offers a coffee chat (T22), with
@@ -90,9 +86,6 @@ export function coffeeChatDmMessage(chat: ChatDetails) {
   };
 }
 
-type LookupResponse = SlackResponse & { user?: { id?: string } };
-type OpenResponse = SlackResponse & { channel?: { id?: string } };
-
 /**
  * Send the offer DM and say what happened; never throws. "not-found" also
  * covers a hacker who isn't admitted or has no email (nobody to DM).
@@ -124,44 +117,13 @@ async function deliverDm(
   event: "offered" | CoffeeChatChangeEvent,
 ): Promise<CoffeeChatDmResult> {
   if (!chat.hackerEmail) return "not-found";
-
-  let slackUserId: string | undefined;
-  try {
-    const found = await slackApi<LookupResponse>(
-      token,
-      "users.lookupByEmail",
-      { email: chat.hackerEmail },
-      fetchImpl,
-    );
-    slackUserId = found.user?.id;
-  } catch (error) {
-    if (error instanceof SlackApiError && error.code === "users_not_found") {
-      return "not-found";
-    }
-    throw error;
-  }
-  if (!slackUserId) return "not-found";
-
-  const opened = await slackApi<OpenResponse>(
+  return dmByEmail(
     token,
-    "conversations.open",
-    { users: slackUserId },
+    chat.hackerEmail,
+    // The offer DM's ts isn't stored, so a change is a new plain DM.
+    event === "offered"
+      ? coffeeChatDmMessage(chat)
+      : { text: coffeeChatChangeText(event, chat, escapeSlackText) },
     fetchImpl,
   );
-  const channel = opened.channel?.id;
-  if (!channel) throw new SlackApiError("conversations.open", "no_channel");
-
-  await slackApi(
-    token,
-    "chat.postMessage",
-    {
-      channel,
-      // The offer DM's ts isn't stored, so a change is a new plain DM.
-      ...(event === "offered"
-        ? coffeeChatDmMessage(chat)
-        : { text: coffeeChatChangeText(event, chat, escapeSlackText) }),
-    },
-    fetchImpl,
-  );
-  return "sent";
 }

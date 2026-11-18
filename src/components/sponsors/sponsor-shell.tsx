@@ -2,21 +2,11 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import SEO from "~/components/seo";
 import { scheduleCopy } from "~/content/sponsor-schedule";
+import { VenueMapButton } from "~/components/sponsors/venue-map";
 import { cn } from "~/lib/utils";
+import { pressable } from "./sponsor-shell-styles";
 
-/**
- * Press feedback for anything tappable on the sponsor pages and the hacker
- * coffee chats: a quick 0.97 scale on press (ease-out, 150ms), none when the
- * user asks for reduced motion. Transitions name their properties, never
- * `all`. (A shared token for the curve and scale would replace these
- * arbitrary values; see the redesign report.)
- */
-export const pressable =
-  "transition-[transform,background-color,border-color,color,box-shadow] duration-150 [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:transition-colors motion-reduce:active:scale-100";
-
-/** Hover tint only on devices that really hover, so taps don't stick. */
-export const hoverTint =
-  "[@media(hover:hover)]:hover:bg-dashboard-bg-highlight";
+export { pressable, hoverTint } from "./sponsor-shell-styles";
 
 // Page frame for sponsor sub-pages: same look as the sponsor portal home
 // (phone-first, 640px column), with a way back to the portal. `wide` gives
@@ -57,9 +47,12 @@ export function SponsorShell({
             ) : (
               <span />
             )}
-            <span className="text-sm font-semibold tracking-tight text-dashboard-text-light">
-              {scheduleCopy.brand}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="hidden text-sm font-semibold tracking-tight text-dashboard-text-light sm:inline">
+                {scheduleCopy.brand}
+              </span>
+              <VenueMapButton />
+            </div>
           </header>
           {children}
         </div>

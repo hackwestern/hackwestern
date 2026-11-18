@@ -9,6 +9,11 @@ import {
   type SheetGrid,
   type SheetMerge,
 } from "~/server/api/utils/run-of-show-parse";
+import {
+  parseSponAvailability,
+  runOfShowColumns,
+} from "~/server/api/utils/spon-availability-parse";
+import type { SponAvailability } from "~/lib/spon-availability";
 
 /**
  * The run-of-show Google Sheet is the single source of truth for sponsor
@@ -67,8 +72,14 @@ export const COFFEE_CHATS_TAB = "Coffee Chats";
 export const CEREMONIES_TAB = "Opening + Closing Ceremonies";
 export const WORKSHOPS_TAB = "Workshops";
 
-/** One read of the sheet, parsed. Sponsor names are matched per request. */
-export type RunOfShowSnapshot = ParsedRunOfShow & { readAt: string };
+/**
+ * One read of the sheet, parsed. Sponsor names are matched per request.
+ * `availability` is the sponsor team's own, for organizers only.
+ */
+export type RunOfShowSnapshot = ParsedRunOfShow & {
+  readAt: string;
+  availability: SponAvailability;
+};
 
 type SheetData = sheets_v4.Schema$Sheet;
 
@@ -102,7 +113,7 @@ function mergesOf(sheet: SheetData | undefined): SheetMerge[] {
  * tabs are optional (missing or unreadable -> empty lists).
  */
 const REQUIRED_RANGES = [
-  `'${RUN_OF_SHOW_TAB}'!A1:J200`,
+  `'${RUN_OF_SHOW_TAB}'!A1:X200`,
   `'${COFFEE_CHATS_TAB}'!A1:Z100`,
 ];
 const OPTIONAL_RANGES = [
@@ -146,7 +157,9 @@ export async function fetchRunOfShow(): Promise<RunOfShowSnapshot> {
     return sheet;
   };
   const ros = byTitle(RUN_OF_SHOW_TAB);
-  const { items, tasks } = parseRunOfShowTab(gridOf(ros), mergesOf(ros));
+  const rosGrid = gridOf(ros);
+  const main = runOfShowColumns(rosGrid, mergesOf(ros));
+  const { items, tasks } = parseRunOfShowTab(main.grid, main.merges);
   const coffeeChats = parseCoffeeChatsTab(gridOf(byTitle(COFFEE_CHATS_TAB)));
   const ceremonies = parseCeremoniesTab(gridOf(find(CEREMONIES_TAB)));
   const workshops = parseWorkshopsTab(gridOf(find(WORKSHOPS_TAB)));
@@ -157,6 +170,7 @@ export async function fetchRunOfShow(): Promise<RunOfShowSnapshot> {
     coffeeChats,
     ceremonies,
     workshops,
+    availability: parseSponAvailability(rosGrid),
   };
 }
 

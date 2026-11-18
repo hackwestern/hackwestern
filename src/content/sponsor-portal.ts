@@ -12,6 +12,7 @@ export const sponsorPortalCopy = {
     title: (sponsor: string) => `Welcome, ${sponsor}!`,
     body: "We're thrilled to have you with us this weekend. Use this portal to check your booth and judging details and pick your top projects.",
     fallbackName: "Sponsor",
+    logoAlt: (sponsor: string) => `${sponsor} logo`,
   },
   // The action tiles under the welcome card.
   actions: {
