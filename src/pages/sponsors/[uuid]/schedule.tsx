@@ -31,12 +31,15 @@ import { scheduleCopy } from "~/content/sponsor-schedule";
 import { RUN_OF_SHOW_DAYS, type RunOfShowDay } from "~/lib/run-of-show";
 import { defaultRunOfShowDay } from "~/lib/run-of-show-time";
 import { fetchScheduleData } from "~/lib/schedule";
+import { chatsForSponsor, coffeeChatEntries } from "~/lib/schedule-bookings";
 import { nextOwnEvent } from "~/lib/sponsor-next-event";
 import { buildSponsorTimeline } from "~/lib/sponsor-timeline";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
 const copy = scheduleCopy.schedule;
+/** How often booked coffee chats refresh on the schedule. */
+const LIVE_REFRESH_MS = 15_000;
 
 // A sponsor's own schedule from the run-of-show sheet (read-only; the sheet
 // is the source of truth), laid over the hackathon's public schedule (the
@@ -60,6 +63,16 @@ export default function SponsorSchedulePage() {
     refetchInterval: 60_000,
   });
   const [showHackathon, setShowHackathon] = useShowHackathon();
+  // This sponsor's own booked chats (the server scopes them to the UUID;
+  // first names only, as on scan). Live, like the organizer view.
+  const chats = api.coffeeChatRequests.sponsorChats.useQuery(
+    { sponsor: id },
+    {
+      enabled: validUuid,
+      refetchInterval: LIVE_REFRESH_MS,
+      refetchOnWindowFocus: true,
+    },
+  );
 
   const shell = (children: React.ReactNode) => (
     <SponsorShell
@@ -85,13 +98,26 @@ export default function SponsorSchedulePage() {
     (d) => d.toLowerCase() === String(router.query.day ?? "").toLowerCase(),
   );
   const shownDay = day ?? linkedDay ?? defaultRunOfShowDay(now);
-  const entries = buildSponsorTimeline({
-    day: shownDay,
-    items: data.items,
-    live: live.data,
-    sponsorName: data.sponsorName,
-    showHackathon,
-  });
+  const entries = [
+    ...buildSponsorTimeline({
+      day: shownDay,
+      items: data.items,
+      live: live.data,
+      sponsorName: data.sponsorName,
+      showHackathon,
+    }),
+    ...coffeeChatEntries(
+      shownDay,
+      chatsForSponsor(
+        (chats.data?.chats ?? []).map((c) => ({
+          ...c,
+          sponsorName: chats.data?.sponsorName ?? "",
+          hacker: c.firstName,
+        })),
+        data.sponsorName,
+      ),
+    ),
+  ];
   const nextEvent = nextOwnEvent({
     sponsorName: data.sponsorName,
     items: data.items,

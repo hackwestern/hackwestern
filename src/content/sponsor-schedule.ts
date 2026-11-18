@@ -83,13 +83,34 @@ export const scheduleCopy = {
         `${day}, November ${date} · ${start}`,
     },
     columns: {
-      "big-event": "Main event",
+      hackathon: "Hackathon events",
       "sponsor-workshop": "Workshops",
       food: "Food",
       "spon-booth": "Sponsor Bay",
       "coffee-chats": "Coffee chats",
+      judging: "Judging",
       other: "Other events",
       tasks: "Team tasks",
+    },
+    focus: {
+      focusColumn: (column: string) => `Focus on ${column}`,
+      showAll: "Show all columns",
+      hint: "Tap a column heading to focus on it.",
+      focused: (column: string) =>
+        `Showing ${column}. Press Escape to show all columns.`,
+    },
+    booking: {
+      hackers: (n: number) => (n === 1 ? "1 hacker" : `${n} hackers`),
+      status: (accepted: number, waiting: number) =>
+        [
+          accepted > 0 ? `${accepted} accepted` : null,
+          waiting > 0 ? `${waiting} waiting` : null,
+        ]
+          .filter(Boolean)
+          .join(", "),
+      who: "Hackers",
+      description: "Booked coffee chat details",
+      liveNote: "Booked on the dashboard. Updates live.",
     },
     categories: {
       "big-event": "Main event",
@@ -97,6 +118,7 @@ export const scheduleCopy = {
       food: "Food",
       "spon-booth": "Sponsor Bay",
       "coffee-chats": "Coffee chats",
+      "coffee-chat": "Coffee chat",
       main: "Main event",
       sponsor: "Sponsor workshop",
       workshop: "Workshop",
@@ -117,7 +139,8 @@ export const scheduleCopy = {
   nextEvent: {
     heading: "Your next event",
     none: "Nothing else scheduled",
-    noneBody: "That's everything on your schedule. Thanks for coming to Hack Western!",
+    noneBody:
+      "That's everything on your schedule. Thanks for coming to Hack Western!",
     now: "Now",
     countdown: (minutes: number) => {
       if (minutes >= 24 * 60) {
@@ -163,7 +186,8 @@ export const scheduleCopy = {
   workshops: {
     heading: "Your workshops",
     runBy: "Run by",
-    runnersTbd: "Not listed yet. Tell your Hack Western contact who's running it.",
+    runnersTbd:
+      "Not listed yet. Tell your Hack Western contact who's running it.",
     when: "When",
     room: "Room",
     timeTbd: "Time to be confirmed",

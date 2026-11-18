@@ -36,6 +36,7 @@ import { sponsorHelpCopy } from "~/content/sponsor-help";
 import { formatClock, type RunOfShowDay } from "~/lib/run-of-show";
 import { defaultRunOfShowDay } from "~/lib/run-of-show-time";
 import { fetchScheduleData } from "~/lib/schedule";
+import { coffeeChatEntries } from "~/lib/schedule-bookings";
 import { buildOrganizerTimeline, taskEntries } from "~/lib/sponsor-timeline";
 import type { OrganizerCoffeeChat } from "~/server/api/routers/coffee-chat-requests";
 import { cn } from "~/lib/utils";
@@ -43,6 +44,8 @@ import { api } from "~/utils/api";
 import { authRedirectOrganizer } from "~/utils/redirect";
 
 const copy = scheduleCopy.organizer;
+/** How often booked coffee chats refresh on the schedule. */
+const LIVE_REFRESH_MS = 15_000;
 // Sheet tabs plus the sponsor help queue, which doesn't need the sheet.
 const TAB_LABELS = { ...copy.tabs, help: sponsorHelpCopy.organizer.tab };
 type Tab = keyof typeof TAB_LABELS;
@@ -66,6 +69,12 @@ export default function OrganizerRunOfShowPage() {
   });
   const [showHackathon, setShowHackathon] = useShowHackathon();
   const shownDay = day ?? defaultRunOfShowDay(now);
+  // Booked coffee chats from the DB, live: new, moved and cancelled chats
+  // show up without a reload.
+  const chats = api.coffeeChatRequests.organizerChats.useQuery(undefined, {
+    refetchInterval: LIVE_REFRESH_MS,
+    refetchOnWindowFocus: true,
+  });
 
   return (
     <>
@@ -141,6 +150,13 @@ export default function OrganizerRunOfShowPage() {
                         showHackathon,
                       }),
                       ...taskEntries(shownDay, q.data.tasks),
+                      ...coffeeChatEntries(
+                        shownDay,
+                        (chats.data?.chats ?? []).map((c) => ({
+                          ...c,
+                          hacker: booked.hacker(c.firstName, c.lastName),
+                        })),
+                      ),
                     ]}
                     workshops={q.data.workshops}
                     tasks={q.data.tasks}

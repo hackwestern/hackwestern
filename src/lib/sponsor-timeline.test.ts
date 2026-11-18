@@ -284,7 +284,7 @@ describe("layoutGrid", () => {
         c.entries.map((x) => [x.id, x.lane, x.lanes]),
       ]),
     ).toEqual([
-      ["big-event", [["opening", 0, 1]]],
+      ["hackathon", [["opening", 0, 1]]],
       [
         "sponsor-workshop",
         [
@@ -292,22 +292,52 @@ describe("layoutGrid", () => {
           ["git", 1, 2],
         ],
       ],
-      ["food", []],
       ["spon-booth", [["bay", 0, 1]]],
       ["coffee-chats", []],
       ["other", [["hunt", 0, 1]]],
     ]);
   });
 
-  it("drops the Other column when it's empty", () => {
+  it("puts every muted hackathon event and Main event item in Hackathon events", () => {
+    const grid = layoutGrid([
+      { ...e("dinner", "food", 1080, 1140), kind: "hackathon" },
+      e("opening", "big-event", 540, 600),
+      e("lunch", "food", 720, 780),
+    ]);
+    expect(grid.map((c) => [c.column, c.entries.map((x) => x.id)])).toEqual([
+      ["hackathon", ["opening", "dinner"]],
+      ["sponsor-workshop", []],
+      ["food", ["lunch"]],
+      ["spon-booth", []],
+      ["coffee-chats", []],
+    ]);
+  });
+
+  it("puts sponsor judging items in their own Judging column", () => {
+    const judging = {
+      ...e("judging", "sponsor-workshop", 600, 720),
+      title: "Sponsor Track Judging",
+      item: {} as TimelineEntry["item"],
+    };
+    const workshop = {
+      ...e("jw", "sponsor-workshop", 540, 600),
+      title: "Sponsor Judging Workshop",
+      item: {} as TimelineEntry["item"],
+    };
+    const grid = layoutGrid([judging, workshop]);
+    expect(
+      grid.find((c) => c.column === "judging")?.entries.map((x) => x.id),
+    ).toEqual(["judging"]);
+    expect(
+      grid
+        .find((c) => c.column === "sponsor-workshop")
+        ?.entries.map((x) => x.id),
+    ).toEqual(["jw"]);
+  });
+
+  it("drops empty columns except Workshops, Sponsor Bay and Coffee chats", () => {
     expect(
       layoutGrid([e("lunch", "food", 720, 780)]).map((c) => c.column),
-    ).toEqual([
-      "big-event",
-      "sponsor-workshop",
-      "food",
-      "spon-booth",
-      "coffee-chats",
-    ]);
+    ).toEqual(["sponsor-workshop", "food", "spon-booth", "coffee-chats"]);
   });
 });
