@@ -593,9 +593,10 @@ export const sponsorPresentations = pgTable(
   ],
 );
 
-// One row per team member DM'd (or tried) about presentations. A notify
-// claims the row atomically (status "sending") before sending, so a double
-// click or retry can't DM twice. slotsKey (slotsKey() in
+// One row per team member DM'd or emailed (or tried) about presentations.
+// A notify claims the row atomically (status "sending") before sending, so
+// a double click or retry can't message twice. A member Slack can't find
+// is emailed instead (status "emailed"). slotsKey (slotsKey() in
 // src/lib/sponsor-presentations.ts) is the set of times the member was
 // sent: a member is up to date while it matches their team's slots, so
 // rescheduling a team without changing its times keeps them notified.
@@ -608,16 +609,34 @@ export const sponsorPresentationNotices = pgTable(
     teamId: varchar("team_id", { length: 12 })
       .notNull()
       .references(() => teams.id, { onDelete: "cascade" }),
-    // "sending" | "sent" | "not-found" | "failed"
+    // "sending" | "sent" (Slack) | "emailed" | "not-found" | "failed"
     status: varchar("status", { length: 16 }).notNull(),
     slotsKey: text("slots_key").notNull(),
     claimedAt: timestamp("claimed_at", { mode: "date", precision: 3 })
       .defaultNow()
       .notNull(),
-    /** Last successful DM; null = never reached. */
+    /** Last successful DM or email; null = never reached. */
     sentAt: timestamp("sent_at", { mode: "date", precision: 3 }),
   },
   (t) => [index("sponsor_presentation_notice_team_idx").on(t.teamId)],
+);
+
+// Sunday judging switches organizers flip (docs/flows/sponsor-judging.md).
+// One row (id 1). round2OpenedAt set = round 2 is open: sponsors with a
+// presentation slot rank the teams that presented and submit a top 5.
+export const sponsorJudgingSettings = pgTable(
+  "sponsor_judging_setting",
+  {
+    id: smallint("id").primaryKey().default(1),
+    round2OpenedAt: timestamp("round2_opened_at", {
+      mode: "date",
+      precision: 3,
+    }),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [check("sponsor_judging_setting_single_row", sql`${t.id} = 1`)],
 );
 
 export const sponsorHelpStatusEnum = pgEnum("sponsor_help_status", [

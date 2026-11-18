@@ -6,6 +6,7 @@ import {
   dashboardButtonVariants,
 } from "~/components/internals/dashboard-button";
 import { DashboardChip } from "~/components/internals/dashboard-chip";
+import { PresentationHackers } from "~/components/sponsors/organizer/presentation-hackers";
 import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
 import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
 import { formatPresentationTime } from "~/lib/sponsor-presentations";
@@ -14,7 +15,7 @@ import { cn } from "~/lib/utils";
 import { api, type RouterOutputs } from "~/utils/api";
 
 const copy = sponsorPresentationsCopy.organizer;
-const VIEWS = ["rooms", "teams"] as const;
+const VIEWS = ["rooms", "teams", "hackers"] as const;
 type View = (typeof VIEWS)[number];
 type Overview = RouterOutputs["sponsorPresentations"]["overview"];
 
@@ -29,10 +30,12 @@ const NOTE = "m-0 text-sm font-medium text-dashboard-text-medium";
  * Organizer presentations on the Sponsor judging tab
  * (docs/flows/sponsor-judging.md): who sent a shortlist, Schedule
  * presentations (re-runnable; replaces the schedule), the schedule by room
- * or by team with teams that couldn't fit flagged, Notify hackers (Slack;
- * only members without their current times, "Notify again" after a
- * confirm) with members not reached listed, and the sponsor top teams for
- * the cheat check.
+ * or by team (or every hacker with how they heard) with teams that
+ * couldn't fit flagged, Notify hackers (Slack,
+ * or email for members not on Slack; only members without their current
+ * times, "Notify again" after a confirm) with members not reached listed, Open round 2 (after a
+ * confirm; sponsors can't submit a top 5 until then), and the sponsor top
+ * teams for the cheat check.
  */
 export function PresentationsPanel({
   colors,
@@ -62,9 +65,18 @@ export function PresentationsPanel({
       refresh();
     },
   });
+  const round2 = api.sponsorPresentations.setRound2.useMutation({
+    onSuccess: () => {
+      setConfirming(null);
+      refresh();
+    },
+  });
   const cheat = api.sponsorPresentations.cheatCheckTopTeams.useMutation();
   const [confirming, setConfirming] = useState<
-    { kind: "schedule"; changed: number } | { kind: "resend" } | null
+    | { kind: "schedule"; changed: number }
+    | { kind: "resend" }
+    | { kind: "round2"; open: boolean }
+    | null
   >(null);
   const [view, setView] = useState<View>("rooms");
   const data = overview.data;
@@ -85,7 +97,12 @@ export function PresentationsPanel({
     e.data?.code === "BAD_REQUEST" || e.data?.code === "PRECONDITION_FAILED"
       ? e.message
       : copy.failed;
-  const busy = schedule.isPending || preview.isPending || notify.isPending;
+  const busy =
+    schedule.isPending ||
+    preview.isPending ||
+    notify.isPending ||
+    round2.isPending;
+  const round2Open = data.round2OpenedAt !== null;
   const scheduleError = schedule.error ?? preview.error;
 
   return (
@@ -149,7 +166,11 @@ export function PresentationsPanel({
             <p className={NOTE}>
               {confirming.kind === "schedule"
                 ? copy.rescheduleConfirm(confirming.changed)
-                : copy.resendConfirm(notices.reached)}
+                : confirming.kind === "round2"
+                  ? confirming.open
+                    ? copy.round2.openConfirm
+                    : copy.round2.closeConfirm
+                  : copy.resendConfirm(notices.reached)}
             </p>
             <div className="flex shrink-0 gap-2">
               <DashboardButton
@@ -166,6 +187,20 @@ export function PresentationsPanel({
                   disabled={busy}
                 >
                   {schedule.isPending ? copy.scheduling : copy.confirm}
+                </DashboardButton>
+              ) : confirming.kind === "round2" ? (
+                <DashboardButton
+                  variant="small"
+                  onClick={() => round2.mutate({ open: confirming.open })}
+                  disabled={busy}
+                >
+                  {round2.isPending
+                    ? confirming.open
+                      ? copy.round2.opening
+                      : copy.round2.closing
+                    : confirming.open
+                      ? copy.round2.open
+                      : copy.round2.close}
                 </DashboardButton>
               ) : (
                 <DashboardButton
@@ -216,6 +251,16 @@ export function PresentationsPanel({
                 {copy.notifyAgain}
               </DashboardButton>
             )}
+            {/* Round 2: opened by hand once presentations are done. */}
+            <DashboardButton
+              variant="small"
+              disabled={(!round2Open && data.slots.length === 0) || busy}
+              onClick={() =>
+                setConfirming({ kind: "round2", open: !round2Open })
+              }
+            >
+              {round2Open ? copy.round2.close : copy.round2.open}
+            </DashboardButton>
           </div>
         )}
         <p className={NOTE} aria-live="polite">
@@ -234,13 +279,31 @@ export function PresentationsPanel({
                 ? copy.notified(
                     notices.reached,
                     notices.members,
+                    notices.emailed,
                     formatSubmittedTime(notices.lastSentAt),
                   )
                 : copy.notNotified}
             </>
           )}
         </p>
+        {scheduled && data.slots.length > 0 && (
+          <p
+            className={cn(
+              NOTE,
+              round2Open && "font-semibold text-dashboard-status-live",
+            )}
+          >
+            {round2Open
+              ? copy.round2.openSince(formatSubmittedTime(data.round2OpenedAt!))
+              : copy.round2.closed}
+          </p>
+        )}
         {scheduleError && <p className={WARN}>{errorOf(scheduleError)}</p>}
+        {round2.isError && (
+          <p role="alert" className={WARN}>
+            {errorOf(round2.error)}
+          </p>
+        )}
         {notify.isError && (
           <p role="alert" className={WARN}>
             <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
@@ -251,6 +314,7 @@ export function PresentationsPanel({
           <p role="status" className={NOTE}>
             {copy.notifyResult(
               notify.data.sent,
+              notify.data.emailed,
               notify.data.notOnSlack.length,
               notify.data.failed,
               notify.data.skipped,
@@ -317,8 +381,10 @@ export function PresentationsPanel({
           </div>
           {view === "rooms" ? (
             <ByRoom data={data} colors={colors} />
-          ) : (
+          ) : view === "teams" ? (
             <ByTeam data={data} />
+          ) : (
+            <PresentationHackers data={data} />
           )}
         </div>
       )}

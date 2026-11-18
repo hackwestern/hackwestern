@@ -57,8 +57,9 @@ export default function SponsorJudgingPage() {
         : [],
     [data, reviews, search, filter, sort],
   );
-  // Round 2 once this sponsor has presentation slots: rank the teams that
-  // presented (team id -> "10:05 AM"). Before that, round 1's shortlist.
+  // Round 2 once organizers open it and this sponsor has presentation
+  // slots: rank the teams that presented (team id -> "10:05 AM"). Before
+  // that, round 1's sent shortlist with a note that round 2 opens later.
   const round = data ? judgingRound(data.round) : "shortlist";
   const presented = useMemo(
     () =>
@@ -316,7 +317,8 @@ export default function SponsorJudgingPage() {
             presented={presented}
           />
         ) : round === "reschedule" ? (
-          // Scheduled, but nothing for this sponsor: never lock them out.
+          // Round 2 is open, but nothing was scheduled for this sponsor:
+          // never lock them out.
           <>
             <ShortlistSend
               sponsor={uuid}

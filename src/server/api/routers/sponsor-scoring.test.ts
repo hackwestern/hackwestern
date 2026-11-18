@@ -11,12 +11,14 @@ import {
   sponsorJudgingSponsors,
   sponsorPresentations,
   teams,
+  users,
 } from "~/server/db/schema";
 import {
   fetchSponsorTrack,
   fetchSponsorTracks,
   writeChosenTeams,
 } from "~/server/api/utils/sponsor-judging-teams";
+import { setRound2Open } from "~/server/api/utils/sponsor-judging-settings";
 
 // SPONSOR_JUDGING_CLOSES_AT, per test (unset = judging never closes).
 let closesAt: string | undefined;
@@ -50,8 +52,10 @@ const writeSheet = vi.mocked(writeChosenTeams);
 // Sponsors aren't logged in: their private UUID is the credential.
 const anon = createCaller(createInnerTRPCContext({ session: null }));
 
-beforeEach(() => {
+beforeEach(async () => {
   closesAt = undefined;
+  // Round 2 open unless a test closes it, so submit tests can submit.
+  await setRound2Open(true);
   track.mockReset().mockResolvedValue(null);
   allTracks.mockReset().mockResolvedValue(new Map());
   writeSheet.mockReset().mockResolvedValue(undefined);
@@ -382,6 +386,11 @@ describe("sponsorScoring.overview", () => {
       teamId: ids[0]!,
       score: 4,
     });
+    const hacker = await mockSession(db);
+    await db
+      .update(users)
+      .set({ teamId: ids[0]!, name: "Ada Lovelace" })
+      .where(eq(users.id, hacker.user.id));
 
     const res = await organizer.sponsorScoring.overview();
     const sa = res.sponsors.find((s) => s.sponsorId === a.id)!;
@@ -389,6 +398,11 @@ describe("sponsorScoring.overview", () => {
     expect(sa.final?.teams.map((t) => t.teamId)).toEqual(ids);
     expect(sa.final?.teams[0]).toMatchObject({ score: 10 });
     expect(sa.final?.teams[0]?.devpostUrl).toContain("devpost.com");
+    // Final results list each team's hackers.
+    expect(sa.final?.teams[0]?.members).toEqual([
+      { userId: hacker.user.id, name: "Ada Lovelace", github: null },
+    ]);
+    expect(sa.final?.teams[1]?.members).toEqual([]);
     expect(res.sponsors.find((s) => s.sponsorId === b.id)).toMatchObject({
       scored: 1,
       shortlisted: 0,
@@ -515,6 +529,40 @@ describe("sponsorScoring round 2", () => {
         teamId: ids[0]!,
         shortlisted: false,
       });
+      await expect(
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+      ).resolves.toMatchObject({ teamIds: ids });
+    } finally {
+      await db.delete(sponsorPresentations);
+    }
+  });
+
+  test("before organizers open round 2, the top 5 can't be submitted", async () => {
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    try {
+      await db.insert(sponsorPresentations).values(
+        ids.map((teamId, i) => ({
+          sponsorId: s.id,
+          teamId,
+          room: "Rm 2110",
+          startMinute: 600 + i * 5,
+        })),
+      );
+      await setRound2Open(false);
+      const res = await anon.sponsorScoring.get({ sponsor: s.id });
+      expect(res.round.round2Open).toBe(false);
+      await expect(
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Round 2 isn't open yet. It opens after presentations.",
+      });
+
+      await setRound2Open(true);
+      expect(
+        (await anon.sponsorScoring.get({ sponsor: s.id })).round.round2Open,
+      ).toBe(true);
       await expect(
         anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
       ).resolves.toMatchObject({ teamIds: ids });
