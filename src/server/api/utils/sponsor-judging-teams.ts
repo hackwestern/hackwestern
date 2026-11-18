@@ -15,9 +15,10 @@ import {
 } from "~/server/api/utils/sponsor-sheets";
 
 // Which teams a sponsor may judge, and the write of their picks to the
-// judging sheet. Shared by Lucas's sponsorJudging router (listAllTeams,
-// setChosenTeams) and the sponsorScoring router, so both apply the same
-// privacy rule and the sheet stays the one place his rotation reads.
+// judging sheet. Shared by Lucas's sponsorJudging router (listAllTeams) and
+// the sponsorScoring router, so both apply the same privacy rule and the
+// sheet stays the one place his rotation reads. Only sponsorScoring.submit
+// (and its sync retry) writes picks.
 
 export type EligibleTeam = {
   id: string;
@@ -164,8 +165,8 @@ export async function eligibleTeamIds(
 }
 
 /**
- * Write a sponsor's picks to column B of the judging sheet (Lucas's
- * setChosenTeams). Overwrites the sponsor's row, or appends one if they
+ * Write a sponsor's picks to column B of the judging sheet (moved here from
+ * Lucas's old setChosenTeams route). Overwrites the sponsor's row, or appends one if they
  * aren't in the sheet yet. An empty list clears the picks.
  */
 export async function writeChosenTeams(

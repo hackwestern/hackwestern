@@ -2,7 +2,6 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "~/lib/sponsor-picks";
 import {
   SHEET_TAB,
   fetchColumnA,
@@ -15,9 +14,11 @@ import {
 import {
   fetchSponsorTrack,
   listEligibleTeams,
-  writeChosenTeams,
 } from "~/server/api/utils/sponsor-judging-teams";
 
+// Picks are written to the sheet only by sponsorScoring.submit, which
+// validates them and records them in sponsor_final_pick first. There is no
+// public sheet writer here.
 export const sponsorJudgingRouter = createTRPCRouter({
   /**
    * Get the team ids a sponsor has selected. Public, keyed by the sponsor's
@@ -54,49 +55,6 @@ export const sponsorJudgingRouter = createTRPCRouter({
             error instanceof Error
               ? error.message
               : "Failed to fetch sponsor's chosen teams",
-        });
-      }
-    }),
-
-  /**
-   * Replace a sponsor's chosen teams. Public. Takes only the sponsor UUID
-   * (the private URL identifier); the resolved name is what gets written to
-   * the sheet. Overwrites column B on the sponsor's existing row, or appends
-   * a new row (name + team ids) if the sponsor isn't in the sheet yet. An
-   * empty teamIds list clears the sponsor's picks.
-   */
-  setChosenTeams: publicProcedure
-    .input(
-      z.object({
-        sponsorId: z.string().uuid(),
-        // Empty list clears the picks; otherwise 5-10 teams, matching the
-        // picks page (constants shared via ~/lib/sponsor-picks).
-        teamIds: z
-          .array(z.string().min(1))
-          .max(MAX_SPONSOR_PICKS)
-          .refine(
-            (teamIds) =>
-              teamIds.length === 0 || teamIds.length >= MIN_SPONSOR_PICKS,
-            {
-              message: `Pick between ${MIN_SPONSOR_PICKS} and ${MAX_SPONSOR_PICKS} teams, or none to clear your picks`,
-            },
-          ),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      try {
-        const sponsorName = await resolveSponsorName(input.sponsorId);
-        // Shared with sponsorScoring.submit (utils/sponsor-judging-teams).
-        await writeChosenTeams(sponsorName, input.teamIds);
-        return { sponsorName, teamIds: input.teamIds };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error
-              ? error.message
-              : "Failed to update sponsor's chosen teams",
         });
       }
     }),
