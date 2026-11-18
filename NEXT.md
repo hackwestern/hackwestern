@@ -12,6 +12,14 @@ Then: review each (code-reviewer + design-reviewer), merge with `--no-ff`, apply
 - **Hacker notification center on the live site.** Hackers see their coffee chat offers/updates and, if a sponsor shortlisted them, their judging presentation rooms + times. Unread count on the existing `NotificationBadge` in `src/components/live/navlinks.tsx`.
 - **Slack bot finds hackers by the Slack email they give us.** Add a "Slack email" field hackers fill in (fallback: account email). Today `src/server/slack/coffee-chat-dm.ts` already DMs via `users.lookupByEmail` with the account email, then falls back to email; reuse that one helper for coffee chats AND judging (Notify hackers in sd-presentations), so one lookup, one place.
 - Every Slack DM also writes a notification row, so the center and Slack always say the same thing.
+- **Admin page (for web team)**, Jazz 2026-11-18. Logistics and system health, not sponsor feedback. Like Vercel's dashboard:
+  - Status tiles: site up, database, Google Sheets read, Slack, email (Mailjet), last cron/task-ping run. Green/amber/red with "last checked".
+  - Notifications: every coffee chat / judging / task message with its platform (Slack DM, email, notification center), status (sent, failed, no Slack match), and a retry button. Counts per platform.
+  - Responses: hackers offered vs accepted / declined / no reply, for coffee chats and judging slots.
+  - Errors: recent server errors (tRPC failures, sheet read failures, Slack API errors) with time and where.
+  - Alerts: when something fails (site down, sheet unreadable, a batch of messages failing), post to a web-team Slack channel. Site-down needs an outside checker (Vercel cron or an uptime service), since a down site can't report itself.
+  - Needs from Jazz: which Slack channel for alerts, who's on the web team (organizer role or a list), and whether an uptime service is OK.
+  - Build after the notification center (they share the notification log table).
 
 ## Where things stand (2026-11-18)
 - Merged: Lucas's #1143 (top-40 candidates), schedule/organizer/sponsor redesigns, sponsor candidates + GitHub avatars, T55 one organizer home (tabs Sponsors | Run of show | Coffee chats | Task pings), room holds + combined Sponsors table + sponsor colours, automatic Slack owner matching + Task pings tab (help merged in), gentle column focus, floor 2 plan image instead of the live map, ceremony/workshop info by day, real sponsor logos (no circle).
