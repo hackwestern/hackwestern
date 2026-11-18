@@ -519,8 +519,13 @@ export const sponsorPresentationsRouter = createTRPCRouter({
             ? sql`not (${inFlight})`
             : sql`not (${inFlight}) and not (${n.sentAt} is not null and ${sameTimes})`,
         })
-        .returning({ userId: n.userId });
+        .returning({ userId: n.userId, claimedAt: n.claimedAt });
       const claimedIds = new Set(claimed.map((c) => c.userId));
+      // now() is fixed for the whole statement, so every row this call
+      // claimed shares one claimedAt. Outcomes are written only to rows
+      // still holding that claim: a call that outlived the stale window and
+      // lost its rows to a newer call can't overwrite the newer outcome.
+      const claimAt = claimed[0]?.claimedAt ?? null;
       const targets = members.filter((m) => claimedIds.has(m.id));
 
       const results = await mapPool(targets, DM_CONCURRENCY, async (m) => {
@@ -543,7 +548,13 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         await db
           .update(n)
           .set(status === "sent" ? { status, sentAt: sql`now()` } : { status })
-          .where(and(inArray(n.userId, ids), eq(n.status, "sending")));
+          .where(
+            and(
+              inArray(n.userId, ids),
+              eq(n.status, "sending"),
+              claimAt ? eq(n.claimedAt, claimAt) : undefined,
+            ),
+          );
       }
       return {
         sent: results.filter((r) => r.result === "sent").length,
