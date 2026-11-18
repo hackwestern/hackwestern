@@ -36,6 +36,10 @@ const AddToWallet = ({
     setLoading(true);
     setError(null);
 
+    // Open the Google Wallet tab now, during the click. A tab opened later,
+    // once the server replies, gets blocked as a popup and nothing happens.
+    const walletTab = window.open("", "_blank");
+
     try {
       generatePass.mutate(
         { walletType },
@@ -44,6 +48,7 @@ const AddToWallet = ({
             console.log("Pass generated:", data);
 
             if (!data) {
+              walletTab?.close();
               setError("No data received from server");
               return;
             }
@@ -63,12 +68,18 @@ const AddToWallet = ({
               typeof data.googleWalletUrl === "string"
             ) {
               setGoogleWalletUrl(data.googleWalletUrl);
-              // Redirect to Google Wallet
-              window.open(data.googleWalletUrl, "_blank");
+              if (walletTab) {
+                walletTab.opener = null;
+                walletTab.location.href = data.googleWalletUrl;
+              } else {
+                // The browser refused the new tab: use this one.
+                window.location.href = data.googleWalletUrl;
+              }
               onAdded?.();
             }
           },
           onError: (err) => {
+            walletTab?.close();
             console.error("Failed to generate pass:", err);
 
             // Don't block the onboarding checklist on a pass we couldn't make

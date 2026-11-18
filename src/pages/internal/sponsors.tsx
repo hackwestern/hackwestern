@@ -463,7 +463,7 @@ export default function SponsorJudgingBoard() {
                     {/* Top: Name & Badges */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex flex-col">
-                        <h2 className="m-0 text-[17px] font-bold leading-snug text-[#0b2238]">
+                        <h2 className="m-0 max-w-[150px] truncate text-[17px] font-bold leading-snug text-[#0b2238]">
                           {sponsor.name}
                         </h2>
                         {!sponsor.onMasterSheet && (
@@ -597,7 +597,12 @@ export default function SponsorJudgingBoard() {
                     className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50"
                   >
                     <td className="px-4 py-3 font-semibold text-[#0b2238]">
-                      {sponsor.name}
+                      <span
+                        className="inline-block max-w-[150px] truncate align-bottom"
+                        title={sponsor.name}
+                      >
+                        {sponsor.name}
+                      </span>
                       {!sponsor.onMasterSheet && (
                         <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                           not on master

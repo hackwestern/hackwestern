@@ -30,17 +30,16 @@ export const sponsorDashboardRouter = createTRPCRouter({
     .input(z.object({ name: z.string().min(1).max(255) }))
     .mutation(async ({ input }) => {
       const name = input.name.trim();
-      const existing = await db.query.sponsorJudgingSponsors.findFirst({
-        where: eq(sponsorJudgingSponsors.name, name),
-      });
-      if (existing) {
-        return existing;
-      }
-      const [row] = await db
+      const [inserted] = await db
         .insert(sponsorJudgingSponsors)
         .values({ name })
+        .onConflictDoNothing({ target: sponsorJudgingSponsors.name })
         .returning();
-      return row;
+      if (inserted) return inserted;
+      // Someone registered this name first; return their row.
+      return db.query.sponsorJudgingSponsors.findFirst({
+        where: eq(sponsorJudgingSponsors.name, name),
+      });
     }),
 
   /**
