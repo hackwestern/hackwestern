@@ -5,16 +5,6 @@ import { authRedirectOrganizer } from "~/utils/redirect";
 
 const PAGES = [
   {
-    href: "/internal/judging",
-    title: "Judging Controls",
-    description: "Queue, judge progress, rankings and sponsor tracks.",
-  },
-  {
-    href: "/internal/judging#manage-judges",
-    title: "Manage Judges",
-    description: "See judges and add new ones.",
-  },
-  {
     href: "/internal/sponsors",
     title: "Sponsors",
     description: "Sponsor roster and check-in status.",

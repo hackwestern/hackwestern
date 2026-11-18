@@ -618,7 +618,7 @@ describe("createSweep / getSweepStatus", () => {
   test("returns null when a sweep is already running", async () => {
     await makeTeam();
     expect(await createSweep("manual")).not.toBeNull();
-    expect(await createSweep("queue_drain")).toBeNull();
+    expect(await createSweep("judging_complete")).toBeNull();
   });
 
   test("completes immediately when no team is eligible", async () => {
