@@ -26,8 +26,8 @@ import { api } from "~/utils/api";
 
 const copy = coffeeChatCopy.organizer.side;
 
-// Beside the run of show (below it on phones, folded): the coffee chat
-// rooms on the floor plan and which sponsor is in each, right now. No time
+// Beside the coffee chat room table (below it on phones, folded): the
+// coffee chat rooms on the floor plan and which sponsor is in each, right now. No time
 // picking: it follows the clock and the live board polling.
 export function CoffeeChatLiveMap({ now }: { now: Date }) {
   const board = useLiveChatBoard();
