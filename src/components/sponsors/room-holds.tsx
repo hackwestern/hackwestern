@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { TriangleAlert } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-rooms";
+import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-fields";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import {
   DEFAULT_HOLD_MINUTES,

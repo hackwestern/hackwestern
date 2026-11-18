@@ -5,9 +5,15 @@
 
 import { holdNeedsHacker, type HoldSpan } from "~/lib/coffee-chat-holds";
 import {
+  coffeeChatExpiresAt,
   effectiveCoffeeChatStatus,
   type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
+import type { CoffeeChatSetup } from "~/lib/run-of-show";
+import {
+  offerStartTimes,
+  seatsLeft,
+} from "~/server/api/utils/coffee-chat-capacity";
 
 export const ORGANIZER_HOME_PATH = "/internal/sponsors";
 
@@ -121,22 +127,65 @@ export function sponsorNameForParam(
 
 export type SponsorHelpState = "open" | "claimed";
 
+/** One live chat (pending or accepted) in a sponsor's expanded row. */
+export type SummaryChat = {
+  chatId: string;
+  slotTime: string;
+  durationMinutes: number;
+  room: string | null;
+  status: "pending" | "accepted";
+  /** Full name when the hacker agreed to share with sponsors, else first. */
+  name: string;
+  /** GitHub link only for hackers who agreed to share (avatar photo). */
+  github: string | null;
+};
+
+/** One organizer room hold in a sponsor's row. */
+export type SummaryHold = HoldSpan & {
+  holdId: string;
+  needsHacker: boolean;
+};
+
 export type SponsorSummary = {
   sponsorId: string;
   name: string;
   /** Coffee chat room: assignment, else the sheet's ROOM, else a chat's. */
   room: string | null;
+  /** Organizer assignment only (for the inline room picker). */
+  assignedRoom: string | null;
+  /** The sheet's ROOM, used when nothing is assigned. */
+  sheetRoom: string | null;
+  /** Every room this sponsor uses: `room` plus hold rooms, sorted. */
+  rooms: string[];
+  /** Chat type from the Coffee Chats sheet row; null without one. */
+  format: { durationMinutes: number; groupSize: number } | null;
+  reps: number;
+  watcher: string | null;
   accepted: number;
   /** Requests the hacker can still answer (past the cutoff they expire). */
   pending: number;
+  /** Open seats at start times (window and holds) still offerable now. */
+  seatsLeft: number;
   /** Organizer room holds with no live chat yet. */
   needsHacker: number;
+  /** Live chats, earliest first. */
+  chats: SummaryChat[];
+  holds: SummaryHold[];
   help: {
     id: string;
     status: SponsorHelpState;
     claimedByName: string | null;
     createdAt: string;
   } | null;
+};
+
+export type SummaryTotals = {
+  accepted: number;
+  pending: number;
+  seatsLeft: number;
+  needsHacker: number;
+  /** Help requests nobody has claimed yet. */
+  openHelp: number;
 };
 
 export type SponsorSummaries = {
@@ -147,12 +196,81 @@ export type SponsorSummaries = {
   openHelp: number;
   /** Room holds across every sponsor with no live chat yet. */
   needsHacker: number;
+  /** The totals row, over every sponsor. */
+  totals: SummaryTotals;
 };
 
 /**
- * One row per registered sponsor with its coffee chat room, accepted and
- * pending chat counts, and its live help request (oldest if somehow more
- * than one). Rows from unknown sponsors are ignored.
+ * The totals row for some sponsors (e.g. the ones a filter shows): chats
+ * accepted and waiting, seats left today, holds needing a hacker, and open
+ * help requests.
+ */
+export function summaryTotals(
+  rows: readonly Pick<
+    SponsorSummary,
+    "accepted" | "pending" | "seatsLeft" | "needsHacker" | "help"
+  >[],
+): SummaryTotals {
+  return rows.reduce<SummaryTotals>(
+    (t, r) => ({
+      accepted: t.accepted + r.accepted,
+      pending: t.pending + r.pending,
+      seatsLeft: t.seatsLeft + r.seatsLeft,
+      needsHacker: t.needsHacker + r.needsHacker,
+      openHelp: t.openHelp + (r.help?.status === "open" ? 1 : 0),
+    }),
+    { accepted: 0, pending: 0, seatsLeft: 0, needsHacker: 0, openHelp: 0 },
+  );
+}
+
+type SetupRow = {
+  sponsor: string;
+  room: string | null;
+  windowStart?: string | null;
+  windowEnd?: string | null;
+  durationMinutes?: number;
+  groupSize?: number;
+};
+
+/** Seats still offerable today: same rules as the organizer board. */
+function seatsLeftToday(
+  setup: SetupRow | undefined,
+  holds: readonly HoldSpan[],
+  live: { slotTime: string; durationMinutes: number }[],
+  reps: number,
+  now: Date,
+): number {
+  const full: CoffeeChatSetup | null =
+    setup?.windowStart && setup.windowEnd
+      ? {
+          sponsor: setup.sponsor,
+          windowStart: setup.windowStart,
+          windowEnd: setup.windowEnd,
+          durationMinutes: setup.durationMinutes === 30 ? 30 : 15,
+          groupSize: setup.groupSize ?? 1,
+          slots: null,
+          hackers: null,
+          format: null,
+          room: setup.room,
+        }
+      : null;
+  const durationMinutes = full?.durationMinutes ?? setup?.durationMinutes ?? 15;
+  const groupSize = full?.groupSize ?? setup?.groupSize ?? 1;
+  return offerStartTimes(full, holds)
+    .filter((t) => now < coffeeChatExpiresAt(t))
+    .reduce(
+      (sum, slotTime) =>
+        sum + seatsLeft(live, { slotTime, durationMinutes }, reps, groupSize),
+      0,
+    );
+}
+
+/**
+ * One row per registered sponsor with its coffee chat room(s), chat type,
+ * reps and watcher, accepted and pending chats (with hackers), seats left,
+ * room holds (and how many still need a hacker) and its live help request
+ * (oldest if somehow more than one). Rows from unknown sponsors are
+ * ignored. Organizer-only data: hacker names follow the share consent.
  */
 export function buildSponsorSummaries({
   sponsors,
@@ -166,19 +284,24 @@ export function buildSponsorSummaries({
     id: string;
     name: string;
     coffeeChatRoom: string | null;
+    coffeeChatReps?: number;
+    coffeeChatWatcher?: string | null;
   }[];
   /** Coffee Chats sheet rows by sponsor name ([] when the sheet failed). */
-  setups: readonly { sponsor: string; room: string | null }[];
+  setups: readonly SetupRow[];
   chats: readonly {
+    chatId?: string;
     sponsorId: string;
     room: string | null;
     slotTime: string;
     /** Defaults to 15 (older callers). */
     durationMinutes?: number;
     status: CoffeeChatStatus;
+    firstName?: string | null;
+    lastName?: string | null;
+    share?: boolean | null;
+    github?: string | null;
   }[];
-  /** Organizer room holds (every sponsor). */
-  holds?: readonly HoldSpan[];
   help: readonly {
     id: string;
     sponsorId: string;
@@ -186,18 +309,36 @@ export function buildSponsorSummaries({
     claimedByName: string | null;
     createdAt: Date;
   }[];
+  /** Organizer room holds (every sponsor). */
+  holds?: readonly (HoldSpan & { holdId?: string })[];
   now: Date;
 }): SponsorSummaries {
   const byId = new Map<string, SponsorSummary>();
   for (const s of sponsors) {
-    const sheetRoom = setups.find((c) => c.sponsor === s.name)?.room ?? null;
+    const setup = setups.find((c) => c.sponsor === s.name);
+    const sheetRoom = setup?.room ?? null;
     byId.set(s.id, {
       sponsorId: s.id,
       name: s.name,
       room: s.coffeeChatRoom ?? sheetRoom,
+      assignedRoom: s.coffeeChatRoom,
+      sheetRoom,
+      rooms: [],
+      format:
+        setup?.windowStart && setup.windowEnd
+          ? {
+              durationMinutes: setup.durationMinutes ?? 15,
+              groupSize: setup.groupSize ?? 1,
+            }
+          : null,
+      reps: s.coffeeChatReps ?? 1,
+      watcher: s.coffeeChatWatcher ?? null,
       accepted: 0,
       pending: 0,
+      seatsLeft: 0,
       needsHacker: 0,
+      chats: [],
+      holds: [],
       help: null,
     });
   }
@@ -205,6 +346,11 @@ export function buildSponsorSummaries({
   const ordered = [...chats].sort((a, b) =>
     a.slotTime.localeCompare(b.slotTime),
   );
+  const live: {
+    sponsorId: string;
+    slotTime: string;
+    durationMinutes: number;
+  }[] = [];
   for (const chat of ordered) {
     const row = byId.get(chat.sponsorId);
     if (!row) continue;
@@ -213,20 +359,60 @@ export function buildSponsorSummaries({
     else if (status === "pending") row.pending += 1;
     else continue;
     row.room ??= chat.room;
+    const durationMinutes = chat.durationMinutes ?? 15;
+    live.push({
+      sponsorId: chat.sponsorId,
+      slotTime: chat.slotTime,
+      durationMinutes,
+    });
+    const first = chat.firstName?.trim() ?? "";
+    const full = [first, chat.lastName?.trim() ?? ""].filter(Boolean).join(" ");
+    row.chats.push({
+      chatId: chat.chatId ?? `${chat.sponsorId}-${chat.slotTime}`,
+      slotTime: chat.slotTime,
+      durationMinutes,
+      room: chat.room,
+      status,
+      name: chat.share ? full || first : first,
+      github: chat.share ? (chat.github ?? null) : null,
+    });
   }
   // A hold needs a hacker until a live chat of its sponsor overlaps it.
-  const live = chats
-    .filter((c) => {
-      const status = effectiveCoffeeChatStatus(c, now);
-      return status === "accepted" || status === "pending";
-    })
-    .map((c) => ({ ...c, durationMinutes: c.durationMinutes ?? 15 }));
   let needsHacker = 0;
-  for (const hold of holds) {
+  const sortedHolds = [...holds].sort((a, b) =>
+    a.startTime.localeCompare(b.startTime),
+  );
+  for (const hold of sortedHolds) {
     const row = byId.get(hold.sponsorId);
-    if (!row || !holdNeedsHacker(hold, live)) continue;
+    if (!row) continue;
+    const needs = holdNeedsHacker(hold, live);
+    row.holds.push({
+      holdId: hold.holdId ?? `${hold.sponsorId}-${hold.startTime}`,
+      sponsorId: hold.sponsorId,
+      room: hold.room,
+      startTime: hold.startTime,
+      endTime: hold.endTime,
+      needsHacker: needs,
+    });
+    if (!needs) continue;
     row.needsHacker += 1;
     needsHacker += 1;
+  }
+  for (const row of byId.values()) {
+    const setup = setups.find((c) => c.sponsor === row.name);
+    row.rooms = [
+      ...new Set([
+        ...(row.room ? [row.room] : []),
+        ...row.holds.map((h) => h.room),
+      ]),
+    ].sort();
+    row.seatsLeft = seatsLeftToday(
+      setup,
+      row.holds,
+      live.filter((c) => c.sponsorId === row.sponsorId),
+      row.reps,
+      now,
+    );
   }
   let liveHelp = 0;
   let openHelp = 0;
@@ -248,10 +434,12 @@ export function buildSponsorSummaries({
       createdAt: h.createdAt.toISOString(),
     };
   }
+  const rows = [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
   return {
-    sponsors: [...byId.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    sponsors: rows,
     liveHelp,
     openHelp,
     needsHacker,
+    totals: summaryTotals(rows),
   };
 }

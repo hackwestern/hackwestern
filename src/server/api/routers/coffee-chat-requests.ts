@@ -1096,6 +1096,8 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       ...board,
       rooms,
       assignableRooms: [...COFFEE_CHAT_ROOMS] as string[],
+      /** Every registered sponsor, for stable sponsor colours. */
+      colorNames: sponsors.map((s) => s.name),
       watchers,
       readAt: now.toISOString(),
     };

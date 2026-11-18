@@ -6,6 +6,7 @@ import {
   organizerHomeHref,
   parseOrganizerLocation,
   sponsorNameForParam,
+  summaryTotals,
 } from "./sponsor-organizer";
 
 const A = "aaaaaaaa-0000-4000-8000-000000000001";
@@ -245,5 +246,137 @@ describe("buildSponsorSummaries", () => {
     expect(r.sponsors[1]?.help).toBeNull();
     expect(r.liveHelp).toBe(2);
     expect(r.openHelp).toBe(1);
+  });
+});
+
+describe("buildSponsorSummaries, combined sponsor table", () => {
+  const early = new Date("2026-11-20T12:00:00-05:00");
+  const r = buildSponsorSummaries({
+    sponsors: [
+      {
+        id: "a",
+        name: "Acme",
+        coffeeChatRoom: "Rm 2241",
+        coffeeChatReps: 2,
+        coffeeChatWatcher: "Sam",
+      },
+      { id: "b", name: "Beta", coffeeChatRoom: null },
+    ],
+    setups: [
+      {
+        sponsor: "Acme",
+        room: null,
+        windowStart: "10:00",
+        windowEnd: "10:30",
+        durationMinutes: 15,
+        groupSize: 1,
+      },
+    ],
+    chats: [
+      {
+        chatId: "c1",
+        sponsorId: "a",
+        room: "Rm 2241",
+        slotTime: "10:00",
+        durationMinutes: 15,
+        status: "accepted",
+        firstName: "Ada",
+        lastName: "Lovelace",
+        share: true,
+        github: "https://github.com/ada",
+      },
+      {
+        chatId: "c2",
+        sponsorId: "a",
+        room: "Rm 2241",
+        slotTime: "10:15",
+        durationMinutes: 15,
+        status: "pending",
+        firstName: "Grace",
+        lastName: "Hopper",
+        share: false,
+        github: "https://github.com/grace",
+      },
+      {
+        chatId: "c3",
+        sponsorId: "a",
+        room: "Rm 2241",
+        slotTime: "10:15",
+        durationMinutes: 15,
+        status: "declined",
+        firstName: "Old",
+      },
+    ],
+    help: [
+      {
+        id: "h1",
+        sponsorId: "b",
+        status: "open",
+        claimedByName: null,
+        createdAt: new Date("2026-11-21T10:00:00Z"),
+      },
+    ],
+    holds: [
+      {
+        holdId: "x",
+        sponsorId: "b",
+        room: "Rm 2243",
+        startTime: "13:00",
+        endTime: "13:30",
+      },
+    ],
+    now: early,
+  });
+  const [acme, beta] = r.sponsors;
+
+  it("adds chat type, reps, watcher, rooms and live chats", () => {
+    expect(acme).toMatchObject({
+      format: { durationMinutes: 15, groupSize: 1 },
+      reps: 2,
+      watcher: "Sam",
+      rooms: ["Rm 2241"],
+      assignedRoom: "Rm 2241",
+    });
+    // Declined chats aren't listed; names follow the share consent.
+    expect(acme!.chats.map((c) => [c.name, c.github, c.status])).toEqual([
+      ["Ada Lovelace", "https://github.com/ada", "accepted"],
+      ["Grace", null, "pending"],
+    ]);
+    expect(beta).toMatchObject({
+      format: null,
+      rooms: ["Rm 2243"],
+      needsHacker: 1,
+    });
+  });
+
+  it("seats left: window and hold start times, minus live chats", () => {
+    // Acme: 2 reps x 1-on-1 = 2 seats at 10:00 and 10:15; 1 used each.
+    expect(acme!.seatsLeft).toBe(2);
+    // Beta: hold 13:00-13:30, default 1-on-1 15 min, 1 rep: 2 starts.
+    expect(beta!.seatsLeft).toBe(2);
+  });
+
+  it("totals row sums the given rows", () => {
+    expect(r.totals).toEqual({
+      accepted: 1,
+      pending: 1,
+      seatsLeft: 4,
+      needsHacker: 1,
+      openHelp: 1,
+    });
+    expect(summaryTotals([acme!])).toEqual({
+      accepted: 1,
+      pending: 1,
+      seatsLeft: 2,
+      needsHacker: 0,
+      openHelp: 0,
+    });
+    expect(summaryTotals([])).toEqual({
+      accepted: 0,
+      pending: 0,
+      seatsLeft: 0,
+      needsHacker: 0,
+      openHelp: 0,
+    });
   });
 });

@@ -1,11 +1,11 @@
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Lock, Plus, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { hover, press } from "~/components/internals/interaction";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { AddChatHere } from "~/components/sponsors/coffee-chat-board";
-import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-rooms";
+import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-fields";
 import {
   HoldRoomForm,
   HoldsHere,
@@ -19,6 +19,7 @@ import { buildRoomTable, type RoomCell } from "~/lib/coffee-chat-room-table";
 import { holdCovers } from "~/lib/coffee-chat-holds";
 import { coffeeChatRoomOf } from "~/lib/coffee-chat-requests";
 import { formatClock } from "~/lib/run-of-show";
+import { sponsorColor, sponsorColorIndexes } from "~/lib/sponsor-colors";
 import { cn } from "~/lib/utils";
 import type {
   BoardSponsor,
@@ -41,21 +42,67 @@ export function useLiveChatBoard() {
   });
 }
 
+/** Stable palette indexes for these sponsor names (sponsor-colors). */
+export function useSponsorColors(
+  names: readonly string[],
+): ReadonlyMap<string, number> {
+  const key = names.join("\u0000");
+  // Keyed by content so a refetch with the same names keeps the map.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => sponsorColorIndexes(names), [key]);
+}
+
 type Picked = { room: string; slotTime: string };
 
 // Coffee chats as a room booking table: one column per room, a row per
-// 15-minute slot. Available cells are blue; taken cells are grey with who
-// has the room and how full it is (hackers plus reps out of the room's
-// capacity). Picking a cell opens booking for that room and time.
+// 15-minute slot. Available cells are neutral grey; taken cells carry the
+// sponsor's colour with who has the room and how full it is (hackers plus
+// reps out of the room's capacity). Picking a cell opens booking for that
+// room and time. `highlight` (a sponsor name) rings that sponsor's cells,
+// dims everyone else's and scrolls to their first one; Escape clears it.
 export function CoffeeChatRoomTable({
   selection,
+  colors,
+  highlight = null,
+  onClearHighlight,
 }: {
   selection: SponsorSelection;
+  colors?: ReadonlyMap<string, number>;
+  highlight?: string | null;
+  onClearHighlight?: () => void;
 }) {
   const q = useLiveChatBoard();
   const now = useNow(30_000);
   const [picked, setPicked] = useState<Picked | null>(null);
   const opener = useRef<HTMLButtonElement | null>(null);
+  const region = useRef<HTMLDivElement>(null);
+  const ownColors = useSponsorColors(q.data?.colorNames ?? NO_NAMES);
+  const palette = colors ?? ownColors;
+  const ready = Boolean(q.data);
+
+  // Escape clears the highlight (unless a dialog is open; it closes first).
+  useEffect(() => {
+    if (!highlight || !onClearHighlight) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !picked) onClearHighlight();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [highlight, onClearHighlight, picked]);
+
+  // Bring the highlighted sponsor's first booking into view.
+  useEffect(() => {
+    if (!highlight || !ready) return;
+    const first = region.current?.querySelector<HTMLElement>(
+      '[data-highlighted="true"]',
+    );
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    first?.scrollIntoView({
+      behavior: reduce.matches ? "auto" : "smooth",
+      block: "nearest",
+      inline: "nearest",
+    });
+  }, [highlight, ready]);
 
   if (q.isLoading) {
     return (
@@ -88,6 +135,7 @@ export function CoffeeChatRoomTable({
         role="region"
         aria-label={copy.tableLabel}
         tabIndex={0}
+        ref={region}
         className="max-h-[70vh] min-w-0 overflow-auto rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
       >
         <table className="w-full min-w-[480px] border-separate border-spacing-0 text-sm">
@@ -127,6 +175,8 @@ export function CoffeeChatRoomTable({
                   >
                     <CellButton
                       cell={cell}
+                      colors={palette}
+                      highlight={highlight}
                       onOpen={(button) => {
                         opener.current = button;
                         setPicked({ room: cell.room, slotTime: cell.slotTime });
@@ -152,14 +202,14 @@ export function CoffeeChatRoomTable({
 
 function Legend() {
   const items = [
+    ["free", "bg-dashboard-bg-inset border-dashboard-border-subtle"],
     [
-      "free",
-      "border-dashed bg-dashboard-bg-surface border-dashboard-border-outline",
+      "booked",
+      "bg-dashboard-schedule-blue border-dashboard-border-subtle border-l-4 border-l-dashboard-action-primary",
     ],
-    ["booked", "bg-dashboard-bg-inset border-dashboard-border-control"],
     [
       "full",
-      "bg-dashboard-bg-navSelected border-dashboard-action-primary ring-1 ring-inset ring-dashboard-action-primary",
+      "bg-dashboard-schedule-blue border-dashboard-border-subtle border-l-4 border-l-dashboard-action-primary ring-1 ring-inset ring-dashboard-border-strong",
     ],
     ["over", "bg-dashboard-status-iconBadge border-dashboard-status-warning"],
     [
@@ -168,7 +218,7 @@ function Legend() {
     ],
     [
       "dimmed",
-      "bg-dashboard-bg-inset border-dashboard-border-control opacity-40",
+      "bg-dashboard-schedule-blue border-dashboard-border-subtle opacity-40",
     ],
   ] as const;
   return (
@@ -191,15 +241,31 @@ function Legend() {
 
 function CellButton({
   cell,
+  colors,
+  highlight,
   onOpen,
 }: {
   cell: RoomCell;
+  colors: ReadonlyMap<string, number>;
+  highlight: string | null;
   onOpen: (button: HTMLButtonElement) => void;
 }) {
   const time = formatClock(cell.slotTime);
   const who = cell.occupants.map((o) => o.sponsor).join(", ") || null;
+  const occupied = cell.occupants.length > 0;
+  const highlighted =
+    highlight !== null && cell.occupants.some((o) => o.sponsor === highlight);
   const dimmed =
-    cell.occupants.length > 0 && cell.occupants.every((o) => !o.selected);
+    occupied &&
+    (cell.occupants.every((o) => !o.selected) ||
+      (highlight !== null && !highlighted));
+  // The colour of the sponsor the cell is about: the highlighted one, else
+  // the first shown, else the first.
+  const lead =
+    cell.occupants.find((o) => o.sponsor === highlight) ??
+    cell.occupants.find((o) => o.selected) ??
+    cell.occupants[0];
+  const color = lead ? sponsorColor(colors, lead.sponsor) : null;
   const hackers = cell.occupants.reduce((n, o) => n + o.hackers, 0);
   const fill = Math.min(1, cell.used / cell.capacity);
   return (
@@ -218,31 +284,37 @@ function CellButton({
         cell.capacity,
       )}
       onClick={(e) => onOpen(e.currentTarget)}
+      data-highlighted={highlighted ? "true" : undefined}
       className={cn(
         "flex min-h-14 w-full flex-col items-stretch gap-1 rounded-dashboard-sm border px-2 py-1.5 text-left text-xs leading-4",
+        "transition-opacity duration-150 ease-out motion-reduce:transition-none",
         press,
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1",
+        // Available: neutral grey, so booked vs free reads at a glance.
         cell.state === "free" &&
           cn(
-            "border-dashed border-dashboard-border-outline bg-dashboard-bg-surface font-semibold text-dashboard-text-link",
-            hover.solidBorder,
+            "border-dashboard-border-subtle bg-dashboard-bg-inset font-semibold text-dashboard-text-light",
             hover.highlight,
           ),
-        cell.state === "booked" &&
+        // Booked and full: the sponsor's colour, with a strong left edge.
+        (cell.state === "booked" || cell.state === "full") &&
           cn(
-            "border-dashboard-border-control bg-dashboard-bg-inset text-dashboard-text-heavy",
-            hover.nav,
+            "border-l-4 border-dashboard-border-subtle text-dashboard-text-heavy",
+            color?.fill,
+            color?.edge,
           ),
-        // Full: a solid blue double edge and a lock, apart from grey booked.
+        // Full: a lock and an inner ring on top of the sponsor colour.
         cell.state === "full" &&
-          "border-dashboard-action-primary bg-dashboard-bg-navSelected text-dashboard-text-active ring-1 ring-inset ring-dashboard-action-primary",
+          "ring-1 ring-inset ring-dashboard-border-strong",
         cell.state === "over" &&
           "border-2 border-dashboard-status-warning bg-dashboard-status-iconBadge text-dashboard-text-warning",
         // A hold with no hacker yet: dashed warning edge, apart from over.
         cell.needsHacker &&
           cell.state !== "over" &&
           "border-2 border-dashed border-dashboard-status-warning",
-        dimmed && "opacity-40",
+        highlighted &&
+          "ring-2 ring-dashboard-text-heavy ring-offset-1 ring-offset-dashboard-bg-surface",
+        dimmed && "opacity-30",
       )}
     >
       {cell.state === "free" ? (
@@ -289,6 +361,8 @@ function CellButton({
     </button>
   );
 }
+
+const NO_NAMES: string[] = [];
 
 // Who has the room at this time, and booking: pick a sponsor with an open
 // start here; when their chats are in another room, move them here first
