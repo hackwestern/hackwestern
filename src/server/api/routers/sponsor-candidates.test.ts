@@ -34,12 +34,16 @@ async function sponsor() {
   return row!;
 }
 
-async function hacker(share: boolean, rankedSponsorId?: string) {
+async function hacker(
+  share: boolean,
+  rankedSponsorId?: string,
+  status: "CONFIRMED" | "DECLINED" = "CONFIRMED",
+) {
   const session = await mockSession(db);
   await db.insert(applications).values({
     ...ApplicationSeeder.createRandomWithoutUser(),
     userId: session.user.id,
-    status: "CONFIRMED",
+    status,
     agreeShareWithSponsors: share,
     firstName: share ? "Shared" : "Private",
     lastName: "Hacker",
@@ -117,6 +121,33 @@ describe("candidates from the interest form", () => {
       sponsorId: mine.id,
     });
     expect(forSponsor.hackers.map((h) => h.userId)).toEqual([candidate.id]);
+  });
+
+  test("drops hackers who aren't admitted, then cuts to 40", async () => {
+    const mine = await sponsor();
+    const declined = await Promise.all(
+      Array.from({ length: 5 }, () => hacker(true, undefined, "DECLINED")),
+    );
+    const admitted = await Promise.all(
+      Array.from({ length: 42 }, () => hacker(true)),
+    );
+    formRanking.mockResolvedValue([
+      ...declined.map((h) => formRow(h.email)),
+      formRow("no-account@example.com"),
+      ...admitted.map((h) => formRow(h.email)),
+    ]);
+
+    const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
+    expect(res.hackers).toHaveLength(40);
+    expect(res.hackers.map((h) => h.userId)).toEqual(
+      admitted.slice(0, 40).map((h) => h.id),
+    );
+    expect(res.hackers.map((h) => h.rank)).toEqual(
+      Array.from({ length: 40 }, (_, i) => i + 1),
+    );
+    await expect(
+      anon.sponsorShortlist.add({ sponsor: mine.id, userId: declined[0]!.id }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   test("falls back to the in-app ranking when the form can't be read", async () => {

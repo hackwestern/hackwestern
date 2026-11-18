@@ -191,14 +191,17 @@ function firstNameOf(profile: CandidateProfile, formName: string) {
 }
 
 /**
- * Turn the interest form ranking into candidates: match each row's email to
- * an account (rows with no account are dropped, since they can't be
- * shortlisted), keep the ranking's order, and trim each profile to what the
- * hacker agreed to share. Pure, so the privacy rules are easy to test.
+ * Turn the (uncapped) interest form ranking into candidates: match each
+ * row's email to an admitted hacker's profile (anyone else is dropped),
+ * keep the ranking's order, number them 1..n, then cap at `limit`. Each
+ * profile is trimmed to what the hacker agreed to share. Pure, so the
+ * privacy rules are easy to test. `profiles` must hold admitted hackers
+ * only (profilesByEmail).
  */
 export function candidatesFromInterestForm(
   ranked: readonly RankedInterestRow[],
   profiles: readonly CandidateProfile[],
+  limit = INTERESTED_HACKER_LIMIT,
 ): SponsorCandidate[] {
   const byEmail = new Map<string, CandidateProfile>();
   for (const profile of profiles) {
@@ -206,51 +209,53 @@ export function candidatesFromInterestForm(
     if (!byEmail.has(email)) byEmail.set(email, profile);
   }
 
-  return ranked.flatMap((row, index): SponsorCandidate[] => {
+  const matched = ranked.flatMap((row) => {
     const profile = byEmail.get(row.email.trim().toLowerCase());
-    if (!profile) return [];
+    return profile ? [{ row, profile }] : [];
+  });
+  return matched.slice(0, limit).map(({ row, profile }, index) => {
     const formResume = safeProfileUrl(row.resumeUrl);
     const extraLink = safeProfileUrl(row.extraLink);
     const base = { userId: profile.userId, rank: index + 1, pick: row.pick };
     if (profile.share !== true) {
-      return [
-        {
-          ...base,
-          hackerId: null,
-          name: firstNameOf(profile, row.name),
-          shared: false,
-          team: null,
-          resume: formResume,
-          github: null,
-          linkedIn: null,
-          devpost: null,
-          extraLink,
-        },
-      ];
-    }
-    return [
-      {
+      return {
         ...base,
-        hackerId: profile.hackerId,
-        name:
-          displayName(profile.firstName, profile.lastName, null) ||
-          row.name.trim() ||
-          (profile.accountName?.trim() ?? ""),
-        shared: true,
-        team: profile.team,
-        resume: formResume ?? safeProfileUrl(profile.resume),
-        github: safeProfileUrl(profile.github),
-        linkedIn: safeProfileUrl(profile.linkedIn),
-        devpost: safeProfileUrl(profile.devpost),
+        hackerId: null,
+        name: firstNameOf(profile, row.name),
+        shared: false,
+        team: null,
+        resume: formResume,
+        github: null,
+        linkedIn: null,
+        devpost: null,
         extraLink,
-      },
-    ];
+      };
+    }
+    return {
+      ...base,
+      hackerId: profile.hackerId,
+      name:
+        displayName(profile.firstName, profile.lastName, null) ||
+        row.name.trim() ||
+        (profile.accountName?.trim() ?? ""),
+      shared: true,
+      team: profile.team,
+      resume: formResume ?? safeProfileUrl(profile.resume),
+      github: safeProfileUrl(profile.github),
+      linkedIn: safeProfileUrl(profile.linkedIn),
+      devpost: safeProfileUrl(profile.devpost),
+      extraLink,
+    };
   });
 }
 
-/** Accounts (and application profile) for these lowercased emails. */
+/**
+ * Admitted hackers' accounts (and application profile) for these lowercased
+ * emails. Anyone not admitted is left out.
+ */
 async function profilesByEmail(
   emails: readonly string[],
+  now: number,
 ): Promise<CandidateProfile[]> {
   if (emails.length === 0) return [];
   const email = sql<string>`lower(trim(${users.email}))`;
@@ -270,9 +275,14 @@ async function profilesByEmail(
       devpost: applications.devpostLink,
     })
     .from(users)
-    .leftJoin(applications, eq(applications.userId, users.id))
+    .innerJoin(applications, eq(applications.userId, users.id))
     .leftJoin(teams, eq(users.teamId, teams.id))
-    .where(inArray(email, [...emails]))
+    .where(
+      and(
+        inArray(email, [...emails]),
+        inArray(applications.status, [...admittedStatuses(now)]),
+      ),
+    )
     .orderBy(asc(users.id));
 }
 
@@ -289,7 +299,8 @@ function cachedRanking(sponsorName: string) {
   const now = Date.now();
   const hit = rankingCache.get(sponsorName);
   if (hit && now - hit.at < RANKING_TTL_MS) return hit.rows;
-  const rows = fetchRankedInterestRows(sponsorName);
+  // Uncapped: the 40 are cut after matching admitted accounts.
+  const rows = fetchRankedInterestRows(sponsorName, { limit: null });
   rankingCache.set(sponsorName, { at: now, rows });
   // Don't keep a failure around: the next call tries again.
   rows.catch(() => {
@@ -322,6 +333,7 @@ export async function sponsorCandidates(
   if (ranked) {
     const profiles = await profilesByEmail(
       ranked.map((row) => row.email.trim().toLowerCase()),
+      now,
     );
     return {
       source: "interestForm",

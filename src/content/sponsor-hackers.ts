@@ -66,6 +66,12 @@ export const sponsorHackersCopy = {
     opensIn: (link: string, name: string) =>
       `${name}'s ${link} (opens in a new tab)`,
   },
+  // Errors the shortlist API returns (shown or announced on the page).
+  errors: {
+    unknownSponsor: "Unknown sponsor id",
+    notCandidate: "That hacker isn't on your candidate list",
+    shortlistFull: (max: number) => `Your shortlist is full (${max})`,
+  },
   loadError:
     "We couldn't load your interested hackers right now. Try again in a minute.",
   retry: "Try again",

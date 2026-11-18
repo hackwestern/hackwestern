@@ -1,6 +1,11 @@
 import { describe, expect, test } from "vitest";
 
+import { mockSession } from "~/server/auth";
+import { db } from "~/server/db";
+import { applications, reviews } from "~/server/db/schema";
+import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import {
+  fetchAdmittedScoredReviews,
   INTERESTED_HACKER_LIMIT,
   rankInterestRows,
   type InterestRow,
@@ -73,5 +78,36 @@ describe("rankInterestRows", () => {
     const ranked = rankInterestRows(rows, reviews);
     expect(ranked).toHaveLength(INTERESTED_HACKER_LIMIT);
     expect(ranked[0]!.email).toBe("h54@x.ca");
+    expect(rankInterestRows(rows, reviews, null)).toHaveLength(55);
+  });
+});
+
+describe("fetchAdmittedScoredReviews", () => {
+  async function applicant(status: "CONFIRMED" | "DECLINED") {
+    const session = await mockSession(db);
+    await db.insert(applications).values({
+      ...ApplicationSeeder.createRandomWithoutUser(),
+      userId: session.user.id,
+      status,
+    });
+    return session.user;
+  }
+
+  test("only admitted applicants' completed reviews count", async () => {
+    const reviewer = (await mockSession(db)).user;
+    const admitted = await applicant("CONFIRMED");
+    const declined = await applicant("DECLINED");
+    await db.insert(reviews).values(
+      [admitted, declined].map((a) => ({
+        reviewerUserId: reviewer.id,
+        applicantUserId: a.id,
+        originalityRating: 5,
+        completed: true,
+      })),
+    );
+
+    const emails = (await fetchAdmittedScoredReviews()).map((r) => r.email);
+    expect(emails).toContain(admitted.email);
+    expect(emails).not.toContain(declined.email);
   });
 });

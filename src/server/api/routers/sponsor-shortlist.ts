@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
+import { sponsorHackersCopy } from "~/content/sponsor-hackers";
 import { COFFEE_CHAT_SHORTLIST_SIZE } from "~/lib/coffee-chat-requests";
 import {
   createTRPCRouter,
@@ -43,6 +44,7 @@ export type ChatPartner = {
   devpost: string | null;
 };
 
+const errors = sponsorHackersCopy.errors;
 const sponsorInput = z.string().uuid();
 const userIdInput = z.string().trim().min(1).max(255);
 
@@ -52,7 +54,7 @@ async function findSponsor(id: string) {
     columns: { id: true, name: true },
   });
   if (!sponsor) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "Unknown sponsor id" });
+    throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownSponsor });
   }
   return sponsor;
 }
@@ -135,7 +137,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
       if (!eligible) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "That hacker isn't on your interested list",
+          message: errors.notCandidate,
         });
       }
       await db.transaction(async (tx) => {
@@ -155,6 +157,8 @@ export const sponsorShortlistRouter = createTRPCRouter({
             ),
           );
         if (already) return;
+        // The cap counts only picks still on the candidate list, so a pick
+        // who has dropped off doesn't hold a place.
         const [total] = await tx
           .select({ n: count() })
           .from(sponsorShortlists)
@@ -170,7 +174,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
         if ((total?.n ?? 0) >= COFFEE_CHAT_SHORTLIST_SIZE) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: `Your shortlist is full (${COFFEE_CHAT_SHORTLIST_SIZE})`,
+            message: errors.shortlistFull(COFFEE_CHAT_SHORTLIST_SIZE),
           });
         }
         await tx

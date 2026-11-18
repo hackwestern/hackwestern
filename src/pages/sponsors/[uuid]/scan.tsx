@@ -46,7 +46,11 @@ export default function SponsorScanPage() {
 
   return shell(
     <>
-      <PageIntro eyebrow={copy.eyebrow} title={copy.title} intro={copy.intro} />
+      <PageIntro
+        eyebrow={copy.eyebrow}
+        title={hacker ? copy.offerTitle : copy.title}
+        intro={hacker ? copy.offerIntro : copy.intro}
+      />
       <BadgeScanner key={hacker ?? ""} sponsor={id} initialCode={hacker} />
     </>,
   );
