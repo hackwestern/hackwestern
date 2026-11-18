@@ -12,6 +12,7 @@
 - Coffee chat page mockups: `mocks/sponsor-coffee-chats-v3/` a-candidate-list, b-rooms-first, c-pipeline (serve with `python -m http.server 3040 --bind 127.0.0.1` from the repo root). Waiting for Jazz's pick.
 - RUNNING `sd-sponsor-tour` (worktree `hackwestern-sd-tour`, port 3033): in-app guided tour for sponsors (Stepshots-style overlay on the live UI) + "How to…" quick flows (offer a coffee chat, ask for help, find your way, judging on Sunday). Coffee chat tour steps may need re-targeting after sd-room-blocks merges.
 - MERGE ORDER (migrations): sd-room-blocks (0053) BEFORE ops-pings (0054); after both, regenerate ops-pings' 0054 snapshot so prevId chains from 0053.
+- RUNNING overnight: **wireframes v1**, 15 HTML files x 10 variants each in `mocks/wireframes-v1/` (brief: `mocks/wireframes-v1/BRIEF.md`; gallery `index.html`; serve with `python -m http.server 3040 --bind 127.0.0.1` from the repo root and open http://127.0.0.1:3040/mocks/wireframes-v1/). Commit them in the morning (mocks stay out of PRs).
 - Waiting on Jazz: where the sponsor booth projector/screen setup info lives (not in the run-of-show sheet).
 - Optional polish offered: portal shows "Welcome, Sponsor!" for a few seconds until the sheet read finishes; could show name + logo from the DB right away.
 - `hackwestern-sd-tester` (branch `sd-tester-sponsor`) has no work and no note: ask Jazz.
