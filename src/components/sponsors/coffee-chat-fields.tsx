@@ -11,7 +11,7 @@ import { api } from "~/utils/api";
 
 /** Text field / select style shared by the organizer coffee chat forms. */
 export const dashboardFieldClass =
-  "h-10 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary";
+  "h-11 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary md:h-10";
 
 const copy = coffeeChatCopy.organizer.board;
 const booked = coffeeChatCopy.organizer;

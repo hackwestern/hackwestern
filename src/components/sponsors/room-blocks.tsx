@@ -15,6 +15,7 @@ import { dashboardFieldClass } from "~/components/sponsors/coffee-chat-fields";
 import { hover } from "~/components/internals/interaction";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
+import { sponsorLogo } from "~/lib/sponsor-logos";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import {
   DEFAULT_HOLD_MINUTES,
@@ -98,25 +99,16 @@ function LengthPills({
 }) {
   return (
     <div role="group" aria-label={label} className="flex flex-wrap gap-1.5">
-      {HOLD_LENGTHS.map((m) =>
-        disabled(m) ? (
-          <span
-            key={m}
-            aria-disabled
-            className="inline-flex items-center rounded-dashboard-lg bg-dashboard-bg-inset px-3 py-2 text-sm text-dashboard-text-light"
-          >
-            {copy.length(m)}
-          </span>
-        ) : (
-          <DashboardChip
-            key={m}
-            selected={value === m}
-            onClick={() => onChange(m)}
-          >
-            {copy.length(m)}
-          </DashboardChip>
-        ),
-      )}
+      {HOLD_LENGTHS.map((m) => (
+        <DashboardChip
+          key={m}
+          selected={value === m && !disabled(m)}
+          disabled={disabled(m)}
+          onClick={() => onChange(m)}
+        >
+          {copy.length(m)}
+        </DashboardChip>
+      ))}
     </div>
   );
 }
@@ -218,9 +210,10 @@ export function GiveRoom({
   );
 }
 
-// A block: one row per slot (hackers with photo, name and status, each
-// with Cancel / Move room; booked / asked for; Add a hacker), then Change
-// length and Release room.
+// Inside a sponsor's block: each slot's status in plain words ("Still
+// missing 2 hackers · 1 waiting on approval"), its hackers with Cancel or
+// Reject, and Invite a hacker. Change length and Release room sit at the
+// bottom as small links. Nothing about giving the room (Jazz, 2026-11-18).
 export function BlockDetails({
   board,
   hold,
@@ -245,6 +238,7 @@ export function BlockDetails({
             const chats = board.chats.filter((c) =>
               slot.chatIds.includes(c.chatId),
             );
+            const waiting = chats.filter((c) => c.status === "pending").length;
             const time = formatClock(slot.slotTime);
             const open =
               slot.booked < slot.needed &&
@@ -252,63 +246,57 @@ export function BlockDetails({
             return (
               <li
                 key={slot.slotTime}
-                className="flex flex-col gap-2 border-b border-dashboard-border-subtle py-2.5 text-sm last:border-b-0"
+                className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-2 gap-y-2 border-b border-dashboard-border-subtle py-3 text-sm last:border-b-0"
               >
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="whitespace-nowrap font-semibold tabular-nums text-dashboard-text-medium">
-                    {time}
+                <span className="font-semibold tabular-nums text-dashboard-text-medium">
+                  {time}
+                </span>
+                <div className="flex min-w-0 flex-col gap-2">
+                  <span className="flex flex-wrap items-baseline justify-between gap-x-3">
+                    <span className="text-dashboard-text-heavy">
+                      {b.slotStatus(slot.needed - slot.booked, waiting)}
+                    </span>
+                    <SlotFill slot={slot} status={false} />
                   </span>
-                  <span className="tabular-nums">
-                    <SlotFill slot={slot} />
-                  </span>
+                  {chats.map((c) => (
+                    <BlockChat key={c.chatId} chat={c} sponsor={hold.sponsor} />
+                  ))}
+                  {open && adding !== slot.slotTime && (
+                    <DashboardButton
+                      variant="small"
+                      aria-label={b.inviteLabel(time)}
+                      onClick={() => setAdding(slot.slotTime)}
+                      className="w-fit"
+                    >
+                      <Plus aria-hidden />
+                      {b.invite}
+                    </DashboardButton>
+                  )}
+                  {open && adding === slot.slotTime && (
+                    <AddHacker
+                      sponsorId={hold.sponsorId}
+                      slotTime={slot.slotTime}
+                      onDone={() => setAdding(null)}
+                    />
+                  )}
                 </div>
-                {chats.length > 0 && (
-                  <div className="ml-[4.75rem] flex min-w-0 flex-col gap-1.5">
-                    {chats.map((c) => (
-                      <BlockChat
-                        key={c.chatId}
-                        chat={c}
-                        sponsor={hold.sponsor}
-                        rooms={board.rooms}
-                      />
-                    ))}
-                  </div>
-                )}
-                {open && adding !== slot.slotTime && (
-                  <DashboardButton
-                    variant="small"
-                    aria-label={b.addLabel(time)}
-                    onClick={() => setAdding(slot.slotTime)}
-                    className="ml-[4.75rem] w-fit"
-                  >
-                    <Plus aria-hidden />
-                    {b.addHacker}
-                  </DashboardButton>
-                )}
-                {open && adding === slot.slotTime && (
-                  <AddHacker
-                    sponsorId={hold.sponsorId}
-                    sponsor={hold.sponsor}
-                    slotTime={slot.slotTime}
-                    onDone={() => setAdding(null)}
-                  />
-                )}
               </li>
             );
           })}
         </ul>
       </section>
 
-      <div className="flex flex-col gap-3 border-t border-dashboard-border-subtle pt-4">
+      <div className="flex flex-col gap-3 border-t border-dashboard-border-subtle pt-3">
         {mode === "idle" && (
-          <div className="flex flex-wrap gap-2">
-            <DashboardButton variant="outline" onClick={() => setMode("length")}>
+          <div className="flex flex-wrap gap-1">
+            <DashboardButton
+              variant="link"
+              onClick={() => setMode("length")}
+              className="-ml-2"
+            >
               {b.changeLength}
             </DashboardButton>
-            <DashboardButton
-              variant="outline"
-              onClick={() => setMode("release")}
-            >
+            <DashboardButton variant="link" onClick={() => setMode("release")}>
               {b.release}
             </DashboardButton>
           </div>
@@ -362,7 +350,7 @@ function ChangeLength({
       />
       <div className="flex flex-wrap gap-2">
         <DashboardButton
-          variant="outline"
+          variant="small"
           disabled={!end || blocked(length) || save.isPending}
           onClick={() =>
             end &&
@@ -408,7 +396,7 @@ function Release({
       <p className="m-0 text-sm">{b.releaseConfirm(hold.sponsor)}</p>
       <div className="flex flex-wrap gap-2">
         <DashboardButton
-          variant="outline"
+          variant="small"
           disabled={release.isPending}
           onClick={() => release.mutate({ holdId: hold.holdId })}
         >
@@ -431,12 +419,10 @@ function Release({
 // notification as a sponsor's offer; they accept on /live).
 function AddHacker({
   sponsorId,
-  sponsor,
   slotTime,
   onDone,
 }: {
   sponsorId: string;
-  sponsor: string;
   slotTime: string;
   onDone: () => void;
 }) {
@@ -454,8 +440,8 @@ function AddHacker({
   const inputId = `add-${sponsorId}-${slotTime}`;
   return (
     <form
-      className="ml-[4.75rem] flex flex-col gap-2"
-      aria-label={copy.block.addLabel(formatClock(slotTime))}
+      className="flex flex-col gap-2"
+      aria-label={copy.block.inviteLabel(formatClock(slotTime))}
       onSubmit={(e) => {
         e.preventDefault();
         if (!hacker || offer.isPending) return;
@@ -473,6 +459,7 @@ function AddHacker({
           <DashboardButton
             type="button"
             variant="tertiary"
+            className="min-h-11 md:min-h-0"
             onClick={() => setHacker(null)}
           >
             {add.change}
@@ -509,7 +496,7 @@ function AddHacker({
           variant="small"
           disabled={!hacker || offer.isPending}
         >
-          {add.submit}
+          {copy.block.sendInvite}
         </DashboardButton>
         <DashboardButton type="button" variant="tertiary" onClick={onDone}>
           {copy.block.cancel}
@@ -524,13 +511,21 @@ function AddHacker({
   );
 }
 
-// "2/3 Needs 1" or "3/3 Full", plus "asked for 2" when the sponsor lowered it.
+// "2/3 Needs 1" or "3/3 Full", plus "asked for 2" when the sponsor lowered
+// it. `compact` (grid cells): only the count below sm, so narrow columns
+// never clip a word. `status={false}` (block dialog, which says it in
+// words) leaves out "Needs N" / "Full".
 export function SlotFill({
   slot,
+  compact = false,
+  status = true,
 }: {
   slot: { booked: number; needed: number; lowered: boolean };
+  compact?: boolean;
+  status?: boolean;
 }) {
   const short = slot.needed - slot.booked;
+  const words = compact ? "hidden sm:inline" : undefined;
   return (
     <span className="flex flex-wrap items-baseline justify-end gap-x-1.5 whitespace-nowrap">
       <span
@@ -539,15 +534,20 @@ export function SlotFill({
       >
         {copy.fill(slot.booked, slot.needed)}
       </span>
-      <span
-        className={
-          short > 0 ? "text-dashboard-text-medium" : "text-dashboard-text-light"
-        }
-      >
-        {short > 0 ? copy.needs(short) : copy.full}
-      </span>
+      {status && (
+        <span
+          className={cn(
+            words,
+            short > 0
+              ? "text-dashboard-text-medium"
+              : "text-dashboard-text-light",
+          )}
+        >
+          {short > 0 ? copy.needs(short) : copy.full}
+        </span>
+      )}
       {slot.lowered && (
-        <span className="text-dashboard-text-light">
+        <span className={cn(words, "text-dashboard-text-light")}>
           {copy.askedFor(slot.needed)}
         </span>
       )}
@@ -555,28 +555,17 @@ export function SlotFill({
   );
 }
 
-// One booked hacker in the block dialog: photo, name, status, and Cancel
-// or Move room (moves the whole block with its chats).
-function BlockChat({
-  chat,
-  sponsor,
-  rooms,
-}: {
-  chat: BoardChat;
-  sponsor: string;
-  rooms: string[];
-}) {
-  const [mode, setMode] = useState<"idle" | "cancel" | "move">("idle");
-  const otherRooms = rooms.filter((r) => r !== chat.room);
-  const [room, setRoom] = useState(otherRooms[0] ?? "");
-  const done = useBlockDone(() => setMode("idle"));
+// One hacker in a block slot: photo, name, status, and Cancel (accepted)
+// or Reject (waiting), each confirmed once.
+function BlockChat({ chat, sponsor }: { chat: BoardChat; sponsor: string }) {
+  const b = copy.block;
+  const [confirming, setConfirming] = useState(false);
+  const done = useBlockDone(() => setConfirming(false));
   const cancel = api.coffeeChatRequests.cancel.useMutation({ onSuccess: done });
-  const move = api.coffeeChatRequests.moveRoom.useMutation({ onSuccess: done });
-  const error = cancel.error ?? move.error;
   const active = chat.status === "pending" || chat.status === "accepted";
+  const waiting = chat.status === "pending";
   const hacker = booked.hacker(chat.firstName, chat.lastName);
   const time = formatClock(chat.slotTime);
-  const selectId = `block-move-${chat.chatId}`;
   return (
     <div className="flex flex-col gap-1.5">
       <span className="flex min-w-0 items-center gap-2">
@@ -584,72 +573,48 @@ function BlockChat({
         <span className="min-w-0 truncate">
           {shortName(chat.firstName, chat.lastName)}
         </span>
-        <span className="text-dashboard-text-light">
-          · {copy.block.status[chat.status]}
+        <span className="shrink-0 text-dashboard-text-light">
+          {b.status[chat.status]}
         </span>
+        {active && !confirming && (
+          <DashboardButton
+            variant="link"
+            aria-label={
+              waiting ? b.rejectLabel(hacker, time) : b.cancelLabel(hacker, time)
+            }
+            onClick={() => setConfirming(true)}
+            className="ml-auto shrink-0"
+          >
+            {waiting ? b.reject : b.cancelChat}
+          </DashboardButton>
+        )}
       </span>
-      {active && mode === "idle" && (
-        <span className="flex flex-wrap gap-1">
-          <DashboardButton variant="link" onClick={() => setMode("move")}>
-            {booked.moveRoom}
+      {active && confirming && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span>
+            {waiting
+              ? b.rejectConfirm(hacker, sponsor, time)
+              : booked.cancelConfirm(hacker, sponsor, time)}
+          </span>
+          <DashboardButton
+            variant="small"
+            disabled={cancel.isPending}
+            onClick={() => cancel.mutate({ chatId: chat.chatId })}
+          >
+            {waiting ? b.confirmReject : booked.confirmCancel}
           </DashboardButton>
-          <DashboardButton variant="link" onClick={() => setMode("cancel")}>
-            {booked.cancel}
+          <DashboardButton
+            variant="tertiary"
+            className="min-h-11 md:min-h-0"
+            onClick={() => setConfirming(false)}
+          >
+            {b.keep}
           </DashboardButton>
-        </span>
-      )}
-      {active && mode === "cancel" && (
-        <div className="flex flex-col gap-2">
-          <p className="m-0">{booked.cancelConfirm(hacker, sponsor, time)}</p>
-          <div className="flex flex-wrap gap-2">
-            <DashboardButton
-              variant="small"
-              disabled={cancel.isPending}
-              onClick={() => cancel.mutate({ chatId: chat.chatId })}
-            >
-              {booked.confirmCancel}
-            </DashboardButton>
-            <DashboardButton variant="tertiary" onClick={() => setMode("idle")}>
-              {booked.close}
-            </DashboardButton>
-          </div>
         </div>
       )}
-      {active && mode === "move" && (
-        <div className="flex flex-col gap-2">
-          <p className="m-0">{booked.moveHint(sponsor, time)}</p>
-          <div className="flex flex-wrap items-end gap-2">
-            <label htmlFor={selectId} className="flex flex-col gap-1">
-              <span className="text-dashboard-text-light">{booked.moveTo}</span>
-              <select
-                id={selectId}
-                value={room}
-                onChange={(e) => setRoom(e.target.value)}
-                className={dashboardFieldClass}
-              >
-                {otherRooms.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <DashboardButton
-              variant="small"
-              disabled={!room || move.isPending}
-              onClick={() => move.mutate({ chatId: chat.chatId, room })}
-            >
-              {booked.move}
-            </DashboardButton>
-            <DashboardButton variant="tertiary" onClick={() => setMode("idle")}>
-              {booked.close}
-            </DashboardButton>
-          </div>
-        </div>
-      )}
-      {error && (
+      {cancel.error && (
         <p role="alert" className="m-0 text-dashboard-text-warning">
-          {error.message || booked.actionError}
+          {cancel.error.message || booked.actionError}
         </p>
       )}
     </div>
@@ -703,13 +668,15 @@ export function SponsorStrip({
                   hover.highlightSubtle,
                 )}
               >
-                <span className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-dashboard-text-heavy">
+                <span className="flex min-h-7 min-w-0 items-center gap-1.5 text-sm font-semibold text-dashboard-text-heavy">
                   <SponsorBadge
                     name={item.sponsor}
                     colors={colors}
-                    className="max-w-20"
+                    className="h-6 max-w-28"
                   />
-                  <span className="truncate">{item.sponsor}</span>
+                  {!sponsorLogo(item.sponsor) && (
+                    <span className="truncate">{item.sponsor}</span>
+                  )}
                 </span>
                 <span className="text-dashboard-text-medium">
                   {item.request.source === "none"
@@ -727,7 +694,7 @@ export function SponsorStrip({
                     )}
                   </span>
                 )}
-                <span className="flex justify-between gap-2 text-dashboard-text-medium">
+                <span className="flex flex-wrap justify-between gap-x-2 text-dashboard-text-medium">
                   <span>
                     {s.hoursBooked(item.blockMinutes, item.sheet.chattingHours)}
                   </span>
