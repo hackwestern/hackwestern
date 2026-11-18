@@ -14,11 +14,6 @@ import {
   mergeCoffeeChatBookings,
   sortCoffeeChatSlots,
 } from "~/lib/coffee-chats";
-import {
-  MAX_COFFEE_CHAT_REPS,
-  MIN_COFFEE_CHAT_REPS,
-} from "~/lib/coffee-chat-requests";
-import { coffeeChatCopy } from "~/content/coffee-chat";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
   fetchAllChosenTeams,
@@ -39,7 +34,7 @@ import {
 } from "~/server/api/utils/sponsor-hw-contacts";
 import { fetchRankedInterestRows } from "~/server/api/utils/hacker-interest";
 import { db } from "~/server/db";
-import { sponsorFinalPicks, sponsorJudgingSponsors } from "~/server/db/schema";
+import { sponsorFinalPicks } from "~/server/db/schema";
 
 export const sponsorPortalRouter = createTRPCRouter({
   /**

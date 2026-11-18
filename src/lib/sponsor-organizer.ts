@@ -17,7 +17,6 @@ import {
   effectiveCoffeeChatStatus,
   type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
-import type { CoffeeChatSetup } from "~/lib/run-of-show";
 import type { JudgingBoard, JudgingRow } from "~/lib/sponsor-judging-rooms";
 import { seatsLeft } from "~/server/api/utils/coffee-chat-capacity";
 
@@ -430,7 +429,6 @@ export function buildSponsorSummaries({
     needsHacker += 1;
   }
   for (const row of byId.values()) {
-    const setup = setups.find((c) => c.sponsor === row.name);
     row.rooms = [
       ...new Set([
         ...row.holds.map((h) => h.room),
