@@ -18,8 +18,12 @@ import {
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
 import { sendPresentationDm } from "~/server/slack/presentation-dm";
 import { presentationDmMessage } from "~/server/slack/presentation-dm";
+import { sendViaMailjet } from "~/server/mail-mailjet";
+import { presentationEmail } from "~/server/api/utils/presentation-email";
 
 let slackToken: string | undefined;
+// Hoisted: the env mock reads it while modules load.
+const mailjet = vi.hoisted(() => ({ configured: true }));
 vi.mock("~/env", async (importOriginal) => {
   const original = await importOriginal<typeof Env>();
   const env = original.env as Record<string | symbol, unknown>;
@@ -27,6 +31,8 @@ vi.mock("~/env", async (importOriginal) => {
     env: new Proxy(env, {
       get(target, prop) {
         if (prop === "SLACK_BOT_TOKEN") return slackToken;
+        if (prop === "MAILJET_API_KEY" || prop === "MAILJET_SECRET_KEY")
+          return mailjet.configured ? "test" : undefined;
         return target[prop];
       },
     }),
@@ -41,6 +47,13 @@ vi.mock("~/server/slack/presentation-dm", async (importOriginal) => ({
   ...(await importOriginal<typeof import("~/server/slack/presentation-dm")>()),
   sendPresentationDm: vi.fn(),
 }));
+// Mocked Mailjet, as in the coffee chat email tests: never a real send.
+vi.mock("~/server/mail-mailjet", () => ({ sendViaMailjet: vi.fn() }));
+const mail = vi.mocked(sendViaMailjet);
+const mailOk = {
+  data: { delivered: [], queued: [], bounced: [] },
+  error: null,
+};
 const rooms = vi.mocked(judgingRoomsById);
 const dm = vi.mocked(sendPresentationDm);
 
@@ -49,6 +62,8 @@ let organizer: ReturnType<typeof createCaller>;
 
 beforeEach(async () => {
   slackToken = undefined;
+  mailjet.configured = true;
+  mail.mockReset().mockResolvedValue(mailOk);
   rooms.mockReset().mockResolvedValue(new Map());
   dm.mockReset().mockResolvedValue("sent");
   await db.delete(sponsorPresentationNotices);
@@ -217,31 +232,87 @@ describe("sponsorPresentations.notify", () => {
     expect(view.notices.lastSentAt).not.toBeNull();
   });
 
-  test("lists members not on Slack and doesn't mark their team", async () => {
+  test("emails members not on Slack, once, and counts them reached", async () => {
     slackToken = "xoxb-test";
     dm.mockResolvedValue("not-found");
-    const s = await sponsor();
-    const t = await team();
-    const member = await mockSession(db);
-    await db
-      .update(users)
-      .set({ teamId: t })
-      .where(eq(users.id, member.user.id));
-    await send(s.id, [t]);
-    rooms.mockResolvedValue(new Map([[s.id, "Rm 2110"]]));
-    await organizer.sponsorPresentations.schedule();
+    const { s, t } = await scheduledTeam("Rm 2110");
+    const hacker = await member(t);
 
     const res = await organizer.sponsorPresentations.notify();
-    expect(res.sent).toBe(0);
-    expect(res.notOnSlack).toHaveLength(1);
+    expect(res).toMatchObject({ sent: 0, emailed: 1, notOnSlack: [] });
+    expect(mail).toHaveBeenCalledTimes(1);
+    const [msg] = mail.mock.calls[0]!;
+    expect(msg.to).toBe(hacker.session.user.email);
+    expect(msg.text).toContain(`10:00 AM: ${s.name}, Rm 2110`);
+    const [notice] = await db
+      .select()
+      .from(sponsorPresentationNotices)
+      .where(eq(sponsorPresentationNotices.userId, hacker.session.user.id));
+    expect(notice).toMatchObject({ status: "emailed" });
+    expect(notice!.sentAt).not.toBeNull();
+
     const { notices } = await organizer.sponsorPresentations.overview();
-    expect(notices.reached).toBe(0);
-    expect(notices.notReached).toEqual([
+    expect(notices).toMatchObject({ reached: 1, emailed: 1, notReached: [] });
+    expect(await hacker.caller.sponsorPresentations.mine()).toHaveLength(1);
+
+    // A retry never emails them twice.
+    expect(await organizer.sponsorPresentations.notify()).toMatchObject({
+      emailed: 0,
+      skipped: 1,
+    });
+    expect(mail).toHaveBeenCalledTimes(1);
+  });
+
+  test("a double click emails a member not on Slack once", async () => {
+    slackToken = "xoxb-test";
+    dm.mockResolvedValue("not-found");
+    const { t } = await scheduledTeam();
+    await member(t);
+    mail.mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve(mailOk), 50)),
+    );
+    const [a, b] = await Promise.all([
+      organizer.sponsorPresentations.notify(),
+      organizer.sponsorPresentations.notify(),
+    ]);
+    expect(a.emailed + b.emailed).toBe(1);
+    expect(mail).toHaveBeenCalledTimes(1);
+  });
+
+  test("records failed when Mailjet isn't set up or rejects; retries send", async () => {
+    slackToken = "xoxb-test";
+    dm.mockResolvedValue("not-found");
+    mailjet.configured = false;
+    const { t } = await scheduledTeam();
+    const hacker = await member(t);
+
+    expect(await organizer.sponsorPresentations.notify()).toMatchObject({
+      emailed: 0,
+      failed: 1,
+    });
+    expect(mail).not.toHaveBeenCalled();
+    let view = await organizer.sponsorPresentations.overview();
+    expect(view.notices.notReached).toEqual([
       expect.objectContaining({
-        userId: member.user.id,
-        reason: "not-on-slack",
+        userId: hacker.session.user.id,
+        reason: "failed",
       }),
     ]);
+
+    // Mailjet set up but rejecting: still failed.
+    mailjet.configured = true;
+    mail.mockResolvedValue({ data: null, error: { message: "nope" } });
+    expect(await organizer.sponsorPresentations.notify()).toMatchObject({
+      failed: 1,
+    });
+
+    // Working again: the retry reaches them.
+    mail.mockResolvedValue(mailOk);
+    expect(await organizer.sponsorPresentations.notify()).toMatchObject({
+      emailed: 1,
+    });
+    view = await organizer.sponsorPresentations.overview();
+    expect(view.notices.notReached).toEqual([]);
   });
 
   test("a second notify sends nothing; resend sends everyone again", async () => {
@@ -296,29 +367,28 @@ describe("sponsorPresentations.notify", () => {
     );
     expect(await organizer.sponsorPresentations.notify()).toMatchObject({
       sent: 1,
+      emailed: 1,
       failed: 1,
-      notOnSlack: [expect.any(String)],
+      notOnSlack: [],
     });
     // One member reached: the team's times are on /live for everyone.
     expect(await flaky.caller.sponsorPresentations.mine()).toHaveLength(1);
     const { notices } = await organizer.sponsorPresentations.overview();
-    expect(notices.reached).toBe(1);
+    // The emailed member counts as reached; only the failed DM is left.
+    expect(notices.reached).toBe(2);
     expect(
       Object.fromEntries(notices.notReached.map((m) => [m.userId, m.reason])),
-    ).toEqual({
-      [missing.session.user.id]: "not-on-slack",
-      [flaky.session.user.id]: "failed",
-    });
+    ).toEqual({ [flaky.session.user.id]: "failed" });
 
     dm.mockClear();
     dm.mockResolvedValue("sent");
     expect(await organizer.sponsorPresentations.notify()).toMatchObject({
-      sent: 2,
-      skipped: 1,
+      sent: 1,
+      skipped: 2,
     });
     const retried = dm.mock.calls.map((c) => c[1].email);
-    expect(retried).not.toContain(ok.session.user.email);
-    expect(retried).toHaveLength(2);
+    expect(retried).toEqual([flaky.session.user.email]);
+    expect(mail).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -409,6 +479,22 @@ describe("sponsorPresentations.setRound2", () => {
     expect(
       (await organizer.sponsorPresentations.overview()).round2OpenedAt,
     ).toBeNull();
+  });
+});
+
+describe("presentationEmail", () => {
+  test("lists times in order, greets by first name, escapes the HTML", () => {
+    const msg = presentationEmail({ name: "Ada Lovelace" }, "A<b>", [
+      { sponsorName: "QNX", room: "Rm 2235", start: 620 },
+      { sponsorName: "Scotia & Co", room: "Rm 2110", start: 600 },
+    ]);
+    expect(msg.subject).toContain("A<b>");
+    expect(msg.text).toContain("Hi Ada,");
+    expect(msg.text.indexOf("10:00 AM")).toBeLessThan(
+      msg.text.indexOf("10:20 AM"),
+    );
+    expect(msg.html).toContain("A&lt;b&gt;");
+    expect(msg.html).toContain("Scotia &amp; Co, Rm 2110");
   });
 });
 
