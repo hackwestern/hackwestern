@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { CheckCircle2, ExternalLink } from "lucide-react";
+import { CheckCircle2, ExternalLink, TriangleAlert } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
@@ -80,6 +80,15 @@ export function JudgingTab({ sponsor }: { sponsor: string | null }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {data.unsyncedCount > 0 && (
+        <p
+          role="status"
+          className="m-0 flex items-start gap-2 rounded-dashboard-lg bg-dashboard-status-iconBadge px-4 py-3 text-sm font-semibold text-dashboard-text-warning"
+        >
+          <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+          {copy.unsynced(data.unsyncedCount)}
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="m-0 text-sm font-medium text-dashboard-text-medium">
           {copy.intro(data.finalTop)}
@@ -190,7 +199,8 @@ function BySponsor({
                         )}
                       </span>
                       {!s.final.sheetSynced && (
-                        <span className="text-dashboard-status-warning">
+                        <span className="inline-flex items-center gap-1 rounded-dashboard-sm bg-dashboard-status-iconBadge px-2 py-0.5 text-xs font-semibold leading-5 text-dashboard-text-warning">
+                          <TriangleAlert aria-hidden className="size-3.5" />
                           {copy.sheetPending}
                         </span>
                       )}
@@ -215,8 +225,22 @@ function BySponsor({
                       <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-highlight text-xs font-bold tabular-nums text-dashboard-text-active">
                         {i + 1}
                       </span>
-                      <span className="min-w-0 flex-1 break-words text-sm font-semibold text-dashboard-text-heavy">
-                        {t.name}
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span
+                          className={cn(
+                            "break-words text-sm font-semibold",
+                            t.eligible
+                              ? "text-dashboard-text-heavy"
+                              : "text-dashboard-text-light line-through",
+                          )}
+                        >
+                          {t.name}
+                        </span>
+                        {!t.eligible && (
+                          <span className="text-xs font-semibold text-dashboard-text-warning">
+                            {copy.ineligible}
+                          </span>
+                        )}
                       </span>
                       <span className="shrink-0 text-sm font-medium tabular-nums text-dashboard-text-light">
                         {t.score === null
