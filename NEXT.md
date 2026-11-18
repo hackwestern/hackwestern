@@ -14,6 +14,18 @@
 - Optional polish offered: portal shows "Welcome, Sponsor!" for a few seconds until the sheet read finishes; could show name + logo from the DB right away.
 - `hackwestern-sd-tester` (branch `sd-tester-sponsor`) has no work and no note: ask Jazz.
 
+## When everything is merged: PRs (Jazz 2026-11-18)
+- **Strip Claude attribution** from the UNPUSHED commits only (214 on `sponsor-dashboard`, plus feature branches): back up first (`git branch backup/sponsor-dashboard-<date>`), then rewrite messages for `sponsor-dashboard --not --remotes` only (never touch commits already on origin: 553 pushed ones stay; rewriting shared history needs a team decision with Luka). No `Co-Authored-By: Claude` and no "Generated with Claude Code" in new commits or PR bodies (memory: no-claude-coauthor).
+- **Separate DRAFT PRs, marked in progress** ("[WIP]" title, GitHub draft), each with screenshots and a plain description of what changed and why, tagging @lucianlavric (Luka's GitHub login, from PR #1137). Stacked on `spon-judging` (#1112), split at the feature merge commits:
+  1. Sponsor dashboard base (organizer home, run of show, portal redesign, room holds, task pings)
+  2. Sunday judging rounds (sd-presentations + sd-judging-round2)
+  3. Spon team availability (sd-availability)
+  4. Sponsor portal: map, important info, booth layout, logos, locked judging tile
+  5. Coffee chats v2 (sd-room-blocks)
+  6. Organizer run-of-show Slack pings (ops-pings), separate PR
+  - Screenshots: take fresh ones from the merged app (organizer + sponsor views, desktop + phone); `mocks/` stays out of the PRs.
+  - Needs Jazz's OK before pushing.
+
 ## To build (queued, Jazz 2026-11-18)
 - **Sponsors tab (organizer first page) changes by day** (Jazz 2026-11-18). Build after sd-room-blocks merges (both touch the Sponsors table).
   - Friday: per sponsor, have they arrived, and have they been given their portal link (organizer ticks; store in DB; show counts "5 of 9 arrived").
