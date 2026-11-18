@@ -280,6 +280,9 @@ export default function SponsorCoffeeChatsPage() {
                 type="button"
                 role="tab"
                 id={`tab-${t}`}
+                data-tour={
+                  t === "candidates" ? "chats-candidates-tab" : "chats-tab"
+                }
                 aria-selected={on}
                 aria-controls={`panel-${t}`}
                 tabIndex={on ? 0 : -1}
@@ -367,6 +370,7 @@ export default function SponsorCoffeeChatsPage() {
 
       <div
         id="panel-candidates"
+        data-tour="chats-candidates"
         role="tabpanel"
         aria-labelledby="tab-candidates"
         hidden={tab !== "candidates"}
