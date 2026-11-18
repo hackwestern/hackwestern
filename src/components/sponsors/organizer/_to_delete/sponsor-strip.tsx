@@ -161,7 +161,15 @@ export function SponsorStrip({
               "border-dashboard-status-iconBadgeIcon text-dashboard-text-warning",
           )}
         >
-          <Link href={link("help")} shallow scroll={false}>
+          <Link
+            href={organizerHomeHref({
+              tab: "pings",
+              sponsor: sponsorId,
+              help: true,
+            })}
+            shallow
+            scroll={false}
+          >
             <LifeBuoy aria-hidden />
             {copy.help}
             <span className="sr-only"> {name}</span>

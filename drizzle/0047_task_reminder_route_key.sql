@@ -1,0 +1,1 @@
+ALTER TABLE "task_reminder" ADD COLUMN "route_key" varchar(64);

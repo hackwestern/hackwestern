@@ -5,11 +5,10 @@ import {
   createTRPCRouter,
   protectedOrganizerProcedure,
 } from "~/server/api/trpc";
+import { PING_LOG_MAX, PING_LOG_PAGE } from "~/lib/task-pings";
 import {
+  getTaskPingActivity,
   getTaskReminderStatus,
-  listTaskOwners,
-  normalizeOwner,
-  setTaskOwnerEmail,
   syncTaskReminders,
 } from "~/server/api/utils/task-reminders";
 
@@ -20,22 +19,16 @@ import {
 export const taskRemindersRouter = createTRPCRouter({
   status: protectedOrganizerProcedure.query(() => getTaskReminderStatus()),
 
-  owners: protectedOrganizerProcedure.query(() => listTaskOwners()),
-
-  /** Save or clear an owner's Slack email; the next sync applies it. */
-  setOwnerEmail: protectedOrganizerProcedure
+  /** Task pings tab: next pings, recently resolved help, the ping log. */
+  activity: protectedOrganizerProcedure
     .input(
-      z.object({
-        ownerName: z.string().trim().min(1).max(255),
-        slackEmail: z.string().trim().email().max(255).nullable(),
-      }),
+      z
+        .object({
+          limit: z.number().int().min(1).max(PING_LOG_MAX).default(PING_LOG_PAGE),
+        })
+        .default({}),
     )
-    .mutation(async ({ input }) => {
-      if (!normalizeOwner(input.ownerName)) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Owner name" });
-      }
-      return setTaskOwnerEmail(input.ownerName, input.slackEmail);
-    }),
+    .query(({ input }) => getTaskPingActivity(new Date(), input.limit)),
 
   /** Re-sync now and wait for it. */
   sync: protectedOrganizerProcedure.mutation(async () => {

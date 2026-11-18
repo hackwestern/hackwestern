@@ -1,5 +1,5 @@
 {
-  "id": "17752d35-43d7-48d9-b3c7-068935724da5",
+  "id": "f4df1924-01d5-4b91-9416-f2607df467cc",
   "prevId": "5ffb0544-5cff-4fd3-b650-6b3f58dbafe9",
   "version": "7",
   "dialect": "postgresql",
@@ -722,133 +722,6 @@
         }
       },
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.coffee_chat_hold": {
-      "name": "coffee_chat_hold",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "sponsor_id": {
-          "name": "sponsor_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "room": {
-          "name": "room",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "start_time": {
-          "name": "start_time",
-          "type": "varchar(5)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "end_time": {
-          "name": "end_time",
-          "type": "varchar(5)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "note": {
-          "name": "note",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_by": {
-          "name": "created_by",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "coffee_chat_hold_sponsor_idx": {
-          "name": "coffee_chat_hold_sponsor_idx",
-          "columns": [
-            {
-              "expression": "sponsor_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "coffee_chat_hold_room_idx": {
-          "name": "coffee_chat_hold_room_idx",
-          "columns": [
-            {
-              "expression": "room",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "start_time",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "coffee_chat_hold_sponsor_id_sponsor_judging_sponsor_id_fk": {
-          "name": "coffee_chat_hold_sponsor_id_sponsor_judging_sponsor_id_fk",
-          "tableFrom": "coffee_chat_hold",
-          "tableTo": "sponsor_judging_sponsor",
-          "columnsFrom": [
-            "sponsor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "coffee_chat_hold_created_by_user_id_fk": {
-          "name": "coffee_chat_hold_created_by_user_id_fk",
-          "tableFrom": "coffee_chat_hold",
-          "tableTo": "user",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -2999,6 +2872,12 @@
         },
         "scheduled_message_id": {
           "name": "scheduled_message_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "route_key": {
+          "name": "route_key",
           "type": "varchar(64)",
           "primaryKey": false,
           "notNull": false

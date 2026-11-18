@@ -17,15 +17,36 @@ describe("parseOrganizerLocation", () => {
     expect(parseOrganizerLocation({})).toEqual({
       tab: "sponsors",
       jumpToRooms: false,
+      jumpToHelp: false,
       sponsor: null,
     });
     expect(parseOrganizerLocation({ tab: "coffee" }).tab).toBe("coffee");
-    expect(parseOrganizerLocation({ tab: "help" }).tab).toBe("help");
+    expect(parseOrganizerLocation({ tab: "pings" })).toMatchObject({
+      tab: "pings",
+      jumpToHelp: false,
+    });
     expect(parseOrganizerLocation({ tab: "schedule" }).tab).toBe("schedule");
     expect(parseOrganizerLocation({ tab: "nope" }).tab).toBe("sponsors");
-    expect(parseOrganizerLocation({ tab: ["help", "coffee"] }).tab).toBe(
-      "help",
+    expect(parseOrganizerLocation({ tab: ["pings", "coffee"] }).tab).toBe(
+      "pings",
     );
+  });
+
+  it("sends the old Help tab links to Task pings, scrolled to help", () => {
+    for (const loc of [
+      parseOrganizerLocation({ tab: "help" }),
+      parseOrganizerLocation({ view: "help" }),
+      parseOrganizerLocation({ tab: "pings" }, "#help"),
+      parseOrganizerLocation({ tab: ["help", "coffee"] }),
+    ]) {
+      expect(loc.tab).toBe("pings");
+      expect(loc.jumpToHelp).toBe(true);
+    }
+    // #help only means something on Task pings.
+    expect(parseOrganizerLocation({ tab: "help" }, "#rooms")).toMatchObject({
+      tab: "schedule",
+      jumpToHelp: false,
+    });
   });
 
   it("sends the old Where is everyone links to the rooms", () => {
@@ -42,6 +63,9 @@ describe("parseOrganizerLocation", () => {
 
   it("reads the sponsor focus, ignoring blanks", () => {
     expect(parseOrganizerLocation({ tab: "help", sponsor: A }).sponsor).toBe(A);
+    expect(parseOrganizerLocation({ tab: "pings", sponsor: A }).sponsor).toBe(
+      A,
+    );
     expect(parseOrganizerLocation({ sponsor: "  " }).sponsor).toBeNull();
   });
 });
@@ -55,6 +79,12 @@ describe("organizerHomeHref", () => {
     expect(organizerHomeHref({ tab: "schedule", rooms: true })).toBe(
       "/internal/sponsors?tab=schedule#rooms",
     );
+    expect(organizerHomeHref({ tab: "pings" })).toBe(
+      "/internal/sponsors?tab=pings",
+    );
+    expect(organizerHomeHref({ tab: "pings", sponsor: A, help: true })).toBe(
+      `/internal/sponsors?tab=pings&sponsor=${A}#help`,
+    );
   });
 
   it("links back to a sponsor's row on the Sponsors tab", () => {
@@ -64,13 +94,18 @@ describe("organizerHomeHref", () => {
   });
 
   it("round-trips through parseOrganizerLocation", () => {
-    const href = organizerHomeHref({ tab: "help", sponsor: B });
+    const href = organizerHomeHref({ tab: "pings", sponsor: B, help: true });
     const url = new URL(href, "https://x.test");
     const loc = parseOrganizerLocation(
       Object.fromEntries(url.searchParams),
       url.hash,
     );
-    expect(loc).toEqual({ tab: "help", jumpToRooms: false, sponsor: B });
+    expect(loc).toEqual({
+      tab: "pings",
+      jumpToRooms: false,
+      jumpToHelp: true,
+      sponsor: B,
+    });
   });
 });
 
@@ -86,7 +121,10 @@ describe("legacyScheduleDestination", () => {
       "/internal/sponsors?tab=coffee",
     );
     expect(legacyScheduleDestination({ view: "help" })).toBe(
-      "/internal/sponsors?tab=help",
+      "/internal/sponsors?tab=pings#help",
+    );
+    expect(legacyScheduleDestination({ tab: "pings" })).toBe(
+      "/internal/sponsors?tab=pings",
     );
     expect(legacyScheduleDestination({ tab: "where" })).toBe(
       "/internal/sponsors?tab=schedule#rooms",

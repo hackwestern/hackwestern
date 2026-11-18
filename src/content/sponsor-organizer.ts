@@ -7,15 +7,15 @@ export const sponsorOrganizerCopy = {
   eyebrow: "Hack Western 13 · Organizers",
   title: "Sponsor dashboard",
   intro:
-    "Sponsors, the run of show, coffee chats and help requests in one place. Times are Eastern.",
+    "Sponsors, the run of show, coffee chats, help requests and task pings in one place. Times are Eastern.",
   tabsLabel: "Sponsor dashboard sections",
   tabs: {
     sponsors: "Sponsors",
     schedule: "Run of show",
     coffee: "Coffee chats",
-    help: "Help",
+    pings: "Task pings",
   },
-  /** Screen reader text after the Help tab's count badge. */
+  /** Screen reader text after the Task pings tab's count badge. */
   openHelpCount: (n: number) =>
     n === 1 ? "1 open help request" : `${n} open help requests`,
   jumpToRooms: "Where is everyone",

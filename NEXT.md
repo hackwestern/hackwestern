@@ -16,11 +16,14 @@ T52 (coffee chats: map + where beside the table), T53 (tasks amber on schedule, 
 - Organizers land on /internal/sponsors after login (affects ALL organizers; no sponsor-team role).
 - Emil Kowalski skills installed in ~/.claude/skills (old versions in ~/.claude/skills/_to_delete/emil-skills-before-2026-11-17).
 
-## Running: redesign (docs/redesign-brief.md)
-- redesign-schedule (worktree hackwestern-sd-chat): day grid, details dialog, day picker, Happening now.
-- redesign-sponsor (worktree hackwestern-sd-help): sponsor portal pages + GitHub avatars (hacker-avatar.tsx) + hacker /live coffee chat UI.
-- redesign-organizer (worktree hackwestern-sd-hackers): /internal/sponsors tabs, Lucas's list on tokens, room table, help queue.
-- Each needs a code review (+ design-reviewer) before merge; screenshots in mocks/*-redesign-v1/. If a session ends before they report, check each branch's commits.
+## Merged later 2026-11-17
+- Redesigns merged: schedule grid (fluid columns, no sideways scroll at 1280), organizer (tokens, round-checkbox sponsor filter with "All sponsors" checkbox, map under the schedule), sponsor portal (GitHub avatars, Candidates tab). Checks: tsc clean; vitest 1123 passed, 1 failed (Apple Wallet).
+- Organizer tab URLs: ?tab=schedule | coffee | help.
+
+## Running: sd-room-holds (worktree hackwestern-sd-chat)
+1. Room holds: organizer holds a room for a sponsor at a time with no hacker yet ("Needs a hacker"); rooms shared by different sponsors at different times; chats in a held slot take the held room; sponsor sees "You still need a hacker" + Pick from candidates / Scan. Migration 0047 (apply locally after review).
+2. Jazz approved (2026-11-17): ONE combined sponsor table on the Sponsors tab (Lucas's columns + chat type, reps, chat room, chats, needs a hacker, help; expandable rows; totals row; phone = stacked cards). Coffee chats tab = colour-coded room table only. Each sponsor gets a stable colour; available cells grey; click a sponsor -> highlight their cells.
+- Needs review (code + design) before merge. May need extra colour tokens (add in main folder).
 
 ## Needs Jazz
 - SPONSOR_JUDGING_SHEET (Lucas's master sheet id) and HACKER_INTEREST_FORM (interest form sheet id) for local .env + Vercel; service account needs access to both sheets.
