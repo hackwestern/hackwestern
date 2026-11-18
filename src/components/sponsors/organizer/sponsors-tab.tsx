@@ -1,56 +1,82 @@
-import { Fragment, useEffect, useState, useMemo } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import { api } from "~/utils/api";
-import { CopyIcon, CheckIcon, ExternalLinkIcon } from "@radix-ui/react-icons";
+import {
+  ArrowRight,
+  Check,
+  ChevronDown,
+  Copy,
+  ExternalLink,
+  RefreshCw,
+  Search,
+  X,
+} from "lucide-react";
+import { DashboardButton } from "~/components/internals/dashboard-button";
+import { DashboardPanel } from "~/components/internals/dashboard-panel";
+import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { SponsorStrip } from "~/components/sponsors/organizer/sponsor-strip";
 import { sponsorOrganizerCopy } from "~/content/sponsor-organizer";
 import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
 import { sponsorRowId, type SponsorSummary } from "~/lib/sponsor-organizer";
 import { cn } from "~/lib/utils";
+import { api, type RouterOutputs } from "~/utils/api";
 
 // Lucas's sponsor board (status, rooms, judging picks, private links), now
 // the Sponsors tab of /internal/sponsors. Each sponsor also gets a strip with
 // its coffee chats and help (SponsorStrip) linking into the other tabs, and
-// a row anchor (#sponsor-<id>) those tabs link back to.
+// a row anchor (#sponsor-<id>) those tabs link back to. A table on wide
+// screens, one card per sponsor on phones.
+
+const copy = sponsorOrganizerCopy.board;
 
 type SponsorStatus = (typeof SPONSOR_STATUS_VALUES)[number];
+type Sponsor = RouterOutputs["sponsorDashboard"]["getSponsors"][number];
 
 const STATUS_FLOW = SPONSOR_STATUS_VALUES;
 
-const STATUS_CONFIG: Record<
-  SponsorStatus,
-  {
-    badge: string;
-    dot: string;
-    nextLabel: string | null;
-  }
-> = {
+/** Each status's pill and dot, on the dashboard palette. */
+const STATUS_STYLE: Record<SponsorStatus, { badge: string; dot: string }> = {
   "Not arrived": {
-    badge: "bg-slate-100 text-slate-700 border-slate-300",
-    dot: "bg-slate-400",
-    nextLabel: "Check in →",
+    badge:
+      "border-dashboard-border-muted bg-dashboard-bg-inset text-dashboard-text-medium",
+    dot: "bg-dashboard-border-medium",
   },
   "Checked in": {
-    badge: "bg-blue-50 text-blue-700 border-blue-300",
-    dot: "bg-blue-500",
-    nextLabel: "Booth set up →",
+    badge:
+      "border-dashboard-border-outline bg-dashboard-bg-highlight text-dashboard-text-active",
+    dot: "bg-dashboard-action-primary",
   },
   "Booth set up": {
-    badge: "bg-amber-50 text-amber-800 border-amber-300",
-    dot: "bg-amber-500",
-    nextLabel: "Workshop live →",
+    badge:
+      "border-dashboard-border-task bg-dashboard-bg-task text-dashboard-text-task",
+    dot: "bg-dashboard-border-task",
   },
   "Workshop live": {
-    badge: "bg-purple-100 text-purple-900 border-purple-300 font-bold",
-    dot: "bg-purple-600",
-    nextLabel: "Mark left →",
+    badge:
+      "border-dashboard-status-live bg-dashboard-schedule-green text-dashboard-text-heavy",
+    dot: "bg-dashboard-status-live",
   },
   Left: {
-    badge: "bg-zinc-100 text-zinc-500 border-zinc-300",
-    dot: "bg-zinc-400",
-    nextLabel: null,
+    badge:
+      "border-dashboard-border-muted bg-dashboard-bg-surface text-dashboard-text-light",
+    dot: "bg-dashboard-border-muted",
   },
 };
+
+/** Hover only where there is a pointer that hovers (no sticky taps). */
+const hoverHighlight = "[@media(hover:hover)]:hover:bg-dashboard-bg-highlight";
+/** Press feedback: a quick, subtle scale-down. */
+const press =
+  "motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out active:scale-[0.97]";
+const focusRing =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1";
+/** Small outline control: 44px tall on touch screens, 36px on desktop. */
+const smallControl = cn(
+  "inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-2.5 text-sm font-semibold text-dashboard-text-heavy md:min-h-9",
+  hoverHighlight,
+  press,
+  focusRing,
+  "disabled:pointer-events-none disabled:opacity-dashboard-disabled",
+);
 
 function ago(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1000));
@@ -67,19 +93,22 @@ function getNextStatus(current: SponsorStatus): SponsorStatus | null {
 
 function CopyLinkButton({
   sponsorId,
-  label,
-  className = "",
+  name,
 }: {
   sponsorId: string | null;
-  label?: string;
-  className?: string;
+  name: string;
 }) {
   const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(t);
+  }, [copied]);
 
   if (!sponsorId) {
     return (
-      <span className="inline-flex items-center text-[12px] font-medium text-amber-700">
-        Link pending sync
+      <span className="text-xs font-semibold text-dashboard-text-warning">
+        {copy.linkPending}
       </span>
     );
   }
@@ -87,50 +116,46 @@ function CopyLinkButton({
   const url = `/sponsors/${sponsorId}`;
 
   return (
-    <div className={`inline-flex items-center gap-1.5 ${className}`}>
+    <div className="inline-flex items-center gap-1.5">
       <button
         type="button"
         onClick={() => {
           void navigator.clipboard
             .writeText(`${window.location.origin}${url}`)
-            .then(() => {
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
-            });
+            .then(() => setCopied(true));
         }}
-        className={`inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[13px] font-semibold transition active:scale-95 ${
-          copied
-            ? "border-emerald-500 bg-emerald-50 text-emerald-800"
-            : "border-slate-300 bg-white text-[#0b2238] hover:bg-slate-50"
-        }`}
-        title="Copy private sponsor portal link"
+        aria-label={copied ? copy.copiedLabel(name) : copy.copyLabel(name)}
+        // Fixed width so "Copied" doesn't nudge the row.
+        className={cn(smallControl, "min-w-28")}
       >
         {copied ? (
-          <>
-            <CheckIcon className="h-4 w-4 text-emerald-600" />
-            <span>Copied!</span>
-          </>
+          <Check
+            aria-hidden
+            className="size-4 text-dashboard-status-live"
+          />
         ) : (
-          <>
-            <CopyIcon className="h-3.5 w-3.5 text-slate-500" />
-            <span>{label ?? "Copy link"}</span>
-          </>
+          <Copy aria-hidden className="size-4 text-dashboard-text-light" />
         )}
+        <span aria-hidden>{copied ? copy.copied : copy.copyLink}</span>
       </button>
-
       <a
         href={url}
         target="_blank"
         rel="noreferrer"
-        className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-slate-300 bg-white p-2 text-slate-600 transition hover:bg-slate-50"
-        title="Open sponsor portal in new tab"
+        aria-label={copy.openPage(name)}
+        className={cn(smallControl, "min-w-11 px-0 md:min-w-9")}
       >
-        <ExternalLinkIcon className="h-4 w-4" />
+        <ExternalLink aria-hidden className="size-4 text-dashboard-text-light" />
       </a>
+      <span aria-live="polite" className="sr-only">
+        {copied ? copy.copiedLabel(name) : ""}
+      </span>
     </div>
   );
 }
 
+// The status as a pill over a native select (any status, and the phone's own
+// picker on touch), plus a one-tap button for the usual next step.
 function StatusPicker({
   sponsorName,
   currentStatus,
@@ -140,32 +165,31 @@ function StatusPicker({
   sponsorName: string;
   currentStatus: SponsorStatus;
   onStatusChange: (status: SponsorStatus) => void;
-  isPending?: boolean;
+  isPending: boolean;
 }) {
-  const config = STATUS_CONFIG[currentStatus] ?? STATUS_CONFIG["Not arrived"];
+  const style = STATUS_STYLE[currentStatus] ?? STATUS_STYLE["Not arrived"];
   const next = getNextStatus(currentStatus);
+  const nextLabel = copy.advance[currentStatus];
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {/* Dropdown selector for any status */}
-      <div className="relative inline-flex items-center">
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[12px] font-semibold ${config.badge}`}
-        >
-          <span
-            className={`h-2 w-2 rounded-full ${config.dot} ${
-              currentStatus === "Workshop live" ? "animate-pulse" : ""
-            }`}
-          />
-          <span>{currentStatus}</span>
-          <span className="text-[10px] text-slate-400">▾</span>
-        </span>
+      <div
+        className={cn(
+          "relative inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-xs font-semibold md:min-h-8",
+          "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-dashboard-action-primary has-[:focus-visible]:ring-offset-1",
+          style.badge,
+          isPending && "opacity-dashboard-disabled",
+        )}
+      >
+        <span aria-hidden className={cn("size-2 rounded-full", style.dot)} />
+        <span aria-hidden>{currentStatus}</span>
+        <ChevronDown aria-hidden className="size-3.5 opacity-70" />
         <select
           value={currentStatus}
           disabled={isPending}
           onChange={(e) => onStatusChange(e.target.value as SponsorStatus)}
-          aria-label={`Change status for ${sponsorName}`}
-          className="absolute inset-0 cursor-pointer opacity-0"
+          aria-label={copy.changeStatus(sponsorName)}
+          className="absolute inset-0 cursor-pixel-hover appearance-none rounded-full opacity-0 focus:outline-none"
         >
           {STATUS_FLOW.map((status) => (
             <option key={status} value={status}>
@@ -175,16 +199,19 @@ function StatusPicker({
         </select>
       </div>
 
-      {/* Quick advance button for one-tap progression on mobile */}
-      {next && config.nextLabel && (
+      {next && nextLabel && (
         <button
           type="button"
           disabled={isPending}
           onClick={() => onStatusChange(next)}
-          className="inline-flex min-h-7 items-center rounded-md border border-purple-200 bg-purple-50 px-2 py-0.5 text-[11px] font-bold text-purple-700 transition hover:bg-purple-100 active:scale-95 disabled:opacity-50"
-          title={`Advance to ${next}`}
+          aria-label={copy.advanceLabel(sponsorName, next)}
+          className={cn(
+            smallControl,
+            "border-dashboard-border-outline px-2 text-xs text-dashboard-text-link md:min-h-8",
+          )}
         >
-          {config.nextLabel}
+          {nextLabel}
+          <ArrowRight aria-hidden className="size-3.5" />
         </button>
       )}
     </div>
@@ -192,18 +219,26 @@ function StatusPicker({
 }
 
 function RoomBadge({ roomNumber }: { roomNumber: string }) {
-  const isTbd = !roomNumber || roomNumber === "TBD";
-
+  const tbd = !roomNumber || roomNumber === "TBD";
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[12px] font-medium ${
-        isTbd
-          ? "border border-dashed border-amber-300 bg-amber-50/60 text-amber-800"
-          : "border border-slate-200 bg-slate-50 text-[#0b2238]"
-      }`}
+      className={cn(
+        "inline-flex items-center whitespace-nowrap rounded-dashboard-sm border px-2 py-0.5 text-xs font-semibold leading-5",
+        tbd
+          ? "border-dashed border-dashboard-border-task text-dashboard-text-warning"
+          : "border-dashboard-border-subtle bg-dashboard-bg-inset text-dashboard-text-heavy",
+      )}
     >
-      <span>{isTbd ? "Room: TBD" : `Room ${roomNumber}`}</span>
+      {tbd ? copy.roomTbd : copy.room(roomNumber)}
     </span>
+  );
+}
+
+function NotOnMaster() {
+  return (
+    <DashboardTag className="w-fit bg-dashboard-bg-task px-1.5 py-0 text-dashboard-text-task">
+      {copy.notOnMaster}
+    </DashboardTag>
   );
 }
 
@@ -230,6 +265,8 @@ function useTargetRow(ready: boolean): string | null {
   return target;
 }
 
+type Note = { tone: "ok" | "error"; text: string };
+
 export function SponsorsTab({
   summaries,
   summaryLoading,
@@ -242,9 +279,10 @@ export function SponsorsTab({
   now: Date;
 }) {
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [syncing, setSyncing] = useState(false);
-  const [syncNote, setSyncNote] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"ALL" | SponsorStatus>(
+    "ALL",
+  );
+  const [note, setNote] = useState<Note | null>(null);
 
   const utils = api.useUtils();
   const sponsorsQ = api.sponsorDashboard.getSponsors.useQuery(undefined, {
@@ -269,7 +307,7 @@ export function SponsorsTab({
       if (context?.prev) {
         utils.sponsorDashboard.getSponsors.setData(undefined, context.prev);
       }
-      setSyncNote(`Failed to update status: ${err.message}`);
+      setNote({ tone: "error", text: copy.statusFailed(err.message) });
     },
     onSettled: async () => {
       await utils.sponsorDashboard.getSponsors.invalidate();
@@ -278,31 +316,21 @@ export function SponsorsTab({
 
   const sync = api.sponsorDashboard.syncSponsors.useMutation({
     onSuccess: async (registered) => {
-      setSyncNote(
-        `Synced ${registered.length} sponsor(s) from the master sheet.`,
-      );
+      setNote({ tone: "ok", text: copy.synced(registered.length) });
       await utils.sponsorDashboard.getSponsors.invalidate();
     },
-    onError: (error) => setSyncNote(`Sync failed: ${error.message}`),
-    onSettled: () => setSyncing(false),
+    onError: (error) =>
+      setNote({ tone: "error", text: copy.syncFailed(error.message) }),
   });
 
-  const sponsors = sponsorsQ.data ?? [];
+  const sponsors = useMemo(() => sponsorsQ.data ?? [], [sponsorsQ.data]);
 
-  // Status counts for filter chips
   const countsByStatus = useMemo(() => {
-    const counts: Record<string, number> = {
-      ALL: sponsors.length,
-      "Not arrived": 0,
-      "Checked in": 0,
-      "Booth set up": 0,
-      "Workshop live": 0,
-      Left: 0,
-    };
+    const counts = Object.fromEntries(
+      STATUS_FLOW.map((s) => [s, 0]),
+    ) as Record<SponsorStatus, number>;
     for (const s of sponsors) {
-      if (s.status in counts) {
-        counts[s.status] = (counts[s.status] ?? 0) + 1;
-      }
+      if (s.status in counts) counts[s.status] += 1;
     }
     return counts;
   }, [sponsors]);
@@ -328,10 +356,26 @@ export function SponsorsTab({
 
   const updatedAt = sponsorsQ.dataUpdatedAt;
   const failed = sponsorsQ.error;
-  const missingLinks = sponsors.filter((s) => !s.sponsorId).length;
-  const withPicks = sponsors.filter((s) => s.teamIds.length > 0).length;
+  const stats = [
+    { label: copy.stats.total, value: sponsors.length, warn: false },
+    {
+      label: copy.stats.picks,
+      value: sponsors.filter((s) => s.teamIds.length > 0).length,
+      warn: false,
+    },
+    {
+      label: copy.stats.unregistered,
+      value: sponsors.filter((s) => !s.sponsorId).length,
+      warn: true,
+    },
+    {
+      label: copy.stats.offSheet,
+      value: sponsors.filter((s) => !s.onMasterSheet).length,
+      warn: true,
+    },
+  ];
   const target = useTargetRow(sponsors.length > 0);
-  const strip = (sponsor: (typeof sponsors)[number], className?: string) => (
+  const strip = (sponsor: Sponsor, className?: string) => (
     <SponsorStrip
       sponsorId={sponsor.sponsorId}
       name={sponsor.name}
@@ -345,424 +389,435 @@ export function SponsorsTab({
       className={className}
     />
   );
-  const rowAttrs = (sponsor: (typeof sponsors)[number]) => {
+  const rowAttrs = (sponsor: Sponsor) => {
     const id = sponsor.sponsorId ? sponsorRowId(sponsor.sponsorId) : undefined;
     return { dataRow: id, targeted: !!id && id === target };
   };
+  const statusPicker = (sponsor: Sponsor) => (
+    <StatusPicker
+      sponsorName={sponsor.name}
+      currentStatus={sponsor.status}
+      onStatusChange={(status) =>
+        updateStatus.mutate({ sponsorName: sponsor.name, status })
+      }
+      // Only the sponsor being saved waits; the rest stay usable.
+      isPending={
+        updateStatus.isPending &&
+        updateStatus.variables?.sponsorName === sponsor.name
+      }
+    />
+  );
+  const clearFilters = () => {
+    setQuery("");
+    setStatusFilter("ALL");
+  };
+  const loading = sponsorsQ.isLoading;
+  const emptyState = loading ? null : failed ? null : sponsors.length === 0 ? (
+    <p className="m-0 text-dashboard-text-medium">{copy.empty}</p>
+  ) : filtered.length === 0 ? (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <p className="m-0 text-dashboard-text-medium">{copy.noMatch}</p>
+      <DashboardButton variant="outline" onClick={clearFilters}>
+        {copy.clearFilters}
+      </DashboardButton>
+    </div>
+  ) : null;
 
   return (
-    <>
-      <div className="font-figtree text-[#0b2238]">
-        <div className="flex flex-col gap-4">
-          {/* Header */}
-          <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[12px] tabular-nums text-slate-500">
-                {updatedAt
-                  ? `Updated ${ago(Date.now() - updatedAt)} ago`
-                  : "Loading…"}
-              </span>
-            </div>
+    <div className="flex flex-col gap-4 font-figtree text-dashboard-text-heavy">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="text-xs tabular-nums text-dashboard-text-light">
+          {updatedAt
+            ? copy.updatedAgo(ago(now.getTime() - updatedAt))
+            : copy.loading}
+        </span>
+        <DashboardButton
+          variant="outline"
+          disabled={sync.isPending}
+          onClick={() => {
+            setNote(null);
+            sync.mutate();
+          }}
+          className={cn("h-11 md:h-10", press)}
+        >
+          <RefreshCw
+            aria-hidden
+            className={cn(sync.isPending && "motion-safe:animate-spin")}
+          />
+          {sync.isPending ? copy.syncing : copy.sync}
+        </DashboardButton>
+      </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                disabled={syncing}
-                onClick={() => {
-                  setSyncing(true);
-                  setSyncNote(null);
-                  sync.mutate();
-                }}
-                className="inline-flex min-h-10 cursor-pointer items-center justify-center rounded-xl bg-[#5b3fa0] px-3.5 text-[14px] font-bold text-white transition hover:bg-[#3f2a75] active:scale-95 disabled:opacity-60"
-              >
-                {syncing ? "Syncing…" : "Sync from master sheet"}
-              </button>
-            </div>
-          </header>
+      {summaryFailed && (
+        <p
+          aria-live="polite"
+          className="m-0 rounded-dashboard-lg bg-dashboard-bg-inset px-4 py-3 text-sm text-dashboard-text-medium"
+        >
+          {sponsorOrganizerCopy.strip.loadError}
+        </p>
+      )}
 
-          {summaryFailed && (
-            <p
-              aria-live="polite"
-              className="m-0 rounded-dashboard-lg bg-dashboard-bg-inset px-4 py-3 text-sm text-dashboard-text-medium"
-            >
-              {sponsorOrganizerCopy.strip.loadError}
-            </p>
+      {failed && (
+        <DashboardPanel className="flex-row flex-wrap items-center justify-between gap-3 p-4">
+          <p role="alert" className="m-0 text-sm text-dashboard-text-warning">
+            {copy.loadFailed(failed.message)}
+          </p>
+          <DashboardButton
+            variant="outline"
+            onClick={() => void sponsorsQ.refetch()}
+          >
+            {copy.retry}
+          </DashboardButton>
+        </DashboardPanel>
+      )}
+
+      {note && (
+        <div
+          role={note.tone === "error" ? "alert" : "status"}
+          className={cn(
+            "flex items-center justify-between gap-3 rounded-dashboard-lg py-1 pl-4 pr-1 text-sm font-semibold",
+            note.tone === "error"
+              ? "bg-dashboard-status-iconBadge text-dashboard-text-warning"
+              : "bg-dashboard-bg-highlight text-dashboard-text-active",
           )}
+        >
+          <span>{note.text}</span>
+          <button
+            type="button"
+            onClick={() => setNote(null)}
+            aria-label={copy.dismiss}
+            className={cn(
+              "inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-md",
+              "[@media(hover:hover)]:hover:bg-dashboard-bg-surface",
+              focusRing,
+            )}
+          >
+            <X aria-hidden className="size-4" />
+          </button>
+        </div>
+      )}
 
-          {/* Feedback banners */}
-          {failed && (
-            <p
-              aria-live="polite"
-              className="m-0 rounded-xl bg-[#fdecea] px-4 py-3 text-[14px] font-medium text-[#7a1a0f]"
-            >
-              Couldn&apos;t load sponsors: {failed.message}.
-            </p>
-          )}
-
-          {syncNote && (
-            <p
-              aria-live="polite"
-              className="m-0 flex items-center justify-between rounded-xl bg-white px-4 py-3 text-[14px] font-medium shadow-sm"
-            >
-              <span>{syncNote}</span>
-              <button
-                type="button"
-                onClick={() => setSyncNote(null)}
-                className="text-xs text-slate-400 hover:text-slate-700"
-              >
-                ✕
-              </button>
-            </p>
-          )}
-
-          {/* Mobile-Friendly Search & Quick Stats Bar */}
-          <div className="flex flex-col gap-3">
-            <div className="relative w-full">
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search company, room, contact, or status…"
-                className="min-h-11 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-9 text-[15px] placeholder:text-slate-400 focus:border-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-200"
-              />
-              <span className="pointer-events-none absolute left-3.5 top-3 text-[15px] text-slate-400">
-                🔍
-              </span>
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  className="absolute right-3 top-3 text-sm font-bold text-slate-400 hover:text-slate-700"
-                >
-                  ✕
-                </button>
+      {/* Totals: the two that need someone to act read in warning colour. */}
+      <dl
+        aria-label={copy.statsLabel}
+        className="m-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3"
+      >
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="flex flex-col-reverse gap-0.5 rounded-dashboard-lg bg-dashboard-bg-surface px-4 py-3 shadow-dashboard-card"
+          >
+            <dt className="text-xs text-dashboard-text-light">{stat.label}</dt>
+            <dd
+              className={cn(
+                "m-0 text-xl font-semibold tabular-nums",
+                stat.warn && stat.value > 0
+                  ? "text-dashboard-text-warning"
+                  : "text-dashboard-text-heavy",
               )}
-            </div>
+            >
+              {loading ? copy.none : stat.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
 
-            {/* Status Filter Chips (horizontally scrollable on mobile) */}
-            <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5">
+      {/* Search and status filter */}
+      <div className="flex flex-col gap-3">
+        <div className="relative w-full">
+          <Search
+            aria-hidden
+            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-dashboard-text-light"
+          />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" && query) {
+                e.preventDefault();
+                setQuery("");
+              }
+            }}
+            aria-label={copy.searchLabel}
+            placeholder={copy.searchPlaceholder}
+            // 16px text so phones don't zoom in on focus.
+            className="h-11 w-full appearance-none rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-surface pl-9 pr-11 text-base text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [&::-webkit-search-cancel-button]:hidden"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label={copy.clearSearch}
+              className={cn(
+                "absolute right-0 top-0 inline-flex size-11 items-center justify-center rounded-dashboard-lg text-dashboard-text-light",
+                "[@media(hover:hover)]:hover:text-dashboard-text-heavy",
+                focusRing,
+              )}
+            >
+              <X aria-hidden className="size-4" />
+            </button>
+          )}
+        </div>
+
+        {/* One row that scrolls sideways on phones, wraps on wider screens. */}
+        <div
+          role="group"
+          aria-label={copy.filtersLabel}
+          className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
+        >
+          {(["ALL", ...STATUS_FLOW] as const).map((status) => {
+            const active = statusFilter === status;
+            const count =
+              status === "ALL" ? sponsors.length : countsByStatus[status];
+            return (
               <button
+                key={status}
                 type="button"
-                onClick={() => setStatusFilter("ALL")}
-                className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[12px] font-bold transition active:scale-95 ${
-                  statusFilter === "ALL"
-                    ? "bg-[#5b3fa0] text-white shadow-sm"
-                    : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                }`}
+                aria-pressed={active}
+                onClick={() => setStatusFilter(status)}
+                className={cn(
+                  "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-3 text-sm font-semibold md:min-h-9",
+                  press,
+                  focusRing,
+                  active
+                    ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
+                    : cn(
+                        "border-dashboard-border-default bg-dashboard-bg-surface text-dashboard-text-heavy",
+                        hoverHighlight,
+                      ),
+                )}
               >
-                All ({countsByStatus.ALL ?? 0})
-              </button>
-
-              {STATUS_FLOW.map((status) => {
-                const count = countsByStatus[status] ?? 0;
-                const active = statusFilter === status;
-                const config = STATUS_CONFIG[status];
-                return (
-                  <button
-                    key={status}
-                    type="button"
-                    onClick={() => setStatusFilter(status)}
-                    className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-[12px] font-bold transition active:scale-95 ${
+                {status !== "ALL" && (
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "size-2 rounded-full",
                       active
-                        ? "border-purple-600 bg-purple-700 text-white shadow-sm"
-                        : `${config.badge} hover:bg-white`
-                    }`}
-                  >
-                    <span
-                      className={`h-2 w-2 rounded-full ${
-                        active ? "bg-white" : config.dot
-                      }`}
-                    />
-                    <span>{status}</span>
-                    <span
-                      className={`ml-0.5 text-[11px] tabular-nums ${
-                        active ? "text-purple-200" : "text-slate-500"
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Quick Stats Grid */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-            {[
-              { label: "Total Sponsors", value: sponsors.length },
-              { label: "Picks Received", value: withPicks },
-              { label: "Unregistered", value: missingLinks },
-              {
-                label: "Not on Master Sheet",
-                value: sponsors.filter((s) => !s.onMasterSheet).length,
-              },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm"
-              >
-                <div className="text-[20px] font-extrabold tabular-nums text-[#0b2238]">
-                  {stat.value}
-                </div>
-                <div className="text-[11px] font-medium text-slate-500">
-                  {stat.label}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Mobile View: Single column cards (one card width) */}
-          <div className="flex flex-col gap-3 md:hidden">
-            {filtered.map((sponsor) => {
-              const row = rowAttrs(sponsor);
-              return (
-                <div
-                  key={sponsor.sponsorId ?? sponsor.name}
-                  data-row={row.dataRow}
+                        ? "bg-dashboard-text-inverse"
+                        : STATUS_STYLE[status].dot,
+                    )}
+                  />
+                )}
+                {status === "ALL" ? copy.all : status}
+                <span
                   className={cn(
-                    "flex scroll-mt-4 flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md",
-                    row.targeted &&
-                      "ring-2 ring-dashboard-action-primary ring-offset-2",
+                    "tabular-nums",
+                    active
+                      ? "text-dashboard-text-inverse"
+                      : "text-dashboard-text-light",
                   )}
                 >
-                  <div className="flex flex-col gap-3">
-                    {/* Top: Name & Badges */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex flex-col">
-                        <h2 className="m-0 max-w-[150px] truncate text-[17px] font-bold leading-snug text-[#0b2238]">
-                          {sponsor.name}
-                        </h2>
-                        {!sponsor.onMasterSheet && (
-                          <span className="inline-self-start mt-0.5 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
-                            not on master sheet
-                          </span>
-                        )}
-                      </div>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-                      {sponsor.tier && (
-                        <span className="shrink-0 rounded-md bg-purple-50 px-2 py-0.5 text-[11px] font-bold text-purple-700">
-                          {sponsor.tier}
-                        </span>
-                      )}
-                    </div>
+      {loading && (
+        <div aria-busy="true" className="flex flex-col gap-2">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-20 w-full rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card motion-safe:animate-pulse"
+            />
+          ))}
+        </div>
+      )}
 
-                    {/* Status & Room Controls */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-y border-slate-100 py-2.5">
-                      <StatusPicker
-                        sponsorName={sponsor.name}
-                        currentStatus={sponsor.status}
-                        onStatusChange={(status) =>
-                          updateStatus.mutate({
-                            sponsorName: sponsor.name,
-                            status,
-                          })
-                        }
-                        isPending={updateStatus.isPending}
-                      />
+      {emptyState && <DashboardPanel>{emptyState}</DashboardPanel>}
 
-                      <RoomBadge roomNumber={sponsor.roomNumber} />
-                    </div>
-
-                    {/* Key Details Grid */}
-                    <div className="grid grid-cols-2 gap-2 text-[12px]">
-                      <div>
-                        <span className="block text-[11px] text-slate-400">
-                          HW Contact
-                        </span>
-                        <span className="font-semibold text-slate-700">
-                          {sponsor.hwContact || "—"}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="block text-[11px] text-slate-400">
-                          Booth
-                        </span>
-                        <span className="font-semibold text-slate-700">
-                          {sponsor.boothLocation || "TBD"}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="block text-[11px] text-slate-400">
-                          Company Contact
-                        </span>
-                        <span className="font-semibold text-slate-700">
-                          {sponsor.companyContact || "—"}
-                        </span>
-                      </div>
-
-                      <div>
-                        <span className="block text-[11px] text-slate-400">
-                          Picks
-                        </span>
-                        <span
-                          className={`font-bold tabular-nums ${
-                            sponsor.teamIds.length > 0
-                              ? "text-emerald-700"
-                              : "text-slate-400"
-                          }`}
-                        >
-                          {sponsor.teamIds.length > 0
-                            ? `${sponsor.teamIds.length} teams selected`
-                            : "No picks yet"}
-                        </span>
-                      </div>
-                    </div>
-
-                    {strip(sponsor, "border-t border-slate-100 pt-2.5")}
-
-                    {/* Notes snippet if present */}
-                    {sponsor.notes && (
-                      <p className="m-0 rounded-lg bg-slate-50 p-2 text-[11px] italic text-slate-600">
-                        {sponsor.notes}
-                      </p>
-                    )}
+      {/* Phones: one card per sponsor. */}
+      {filtered.length > 0 && (
+        <ul className="m-0 flex list-none flex-col gap-3 p-0 md:hidden">
+          {filtered.map((sponsor) => {
+            const row = rowAttrs(sponsor);
+            return (
+              <li
+                key={sponsor.sponsorId ?? sponsor.name}
+                data-row={row.dataRow}
+                className={cn(
+                  "flex scroll-mt-4 flex-col gap-3 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card",
+                  row.targeted &&
+                    "ring-2 ring-dashboard-action-primary ring-offset-2 ring-offset-dashboard-bg-page",
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <h2 className="m-0 break-words text-base font-semibold leading-snug">
+                      {sponsor.name}
+                    </h2>
+                    {!sponsor.onMasterSheet && <NotOnMaster />}
                   </div>
-
-                  {/* Bottom: Sponsor Page Action */}
-                  <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
-                    <span className="text-[11px] font-medium text-slate-500">
-                      Sponsor Page
-                    </span>
-                    <CopyLinkButton
-                      sponsorId={sponsor.sponsorId}
-                      label="Copy link"
-                    />
-                  </div>
+                  {sponsor.tier && (
+                    <DashboardTag className="shrink-0">{sponsor.tier}</DashboardTag>
+                  )}
                 </div>
-              );
-            })}
 
-            {filtered.length === 0 && (
-              <div className="rounded-2xl bg-white p-8 text-center text-slate-500 shadow-sm">
-                {sponsorsQ.isLoading
-                  ? "Loading sponsors…"
-                  : "No sponsors match your filter criteria."}
-              </div>
-            )}
-          </div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  {statusPicker(sponsor)}
+                  <RoomBadge roomNumber={sponsor.roomNumber} />
+                </div>
 
-          {/* Desktop View: Table */}
-          <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
-            <table className="w-full border-collapse text-left text-[14px]">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/60 text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-4 py-3">Company</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Room</th>
-                  <th className="px-4 py-3">Booth</th>
-                  <th className="px-4 py-3">Tier</th>
-                  <th className="px-4 py-3">HW Contact</th>
-                  <th className="px-4 py-3">Picks</th>
-                  <th className="px-4 py-3">Sponsor Page</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((sponsor) => {
-                  const row = rowAttrs(sponsor);
-                  return (
-                    <Fragment key={sponsor.sponsorId ?? sponsor.name}>
+                <dl className="m-0 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-dashboard-border-subtle pt-3 text-sm">
+                  <Detail label={copy.columns.booth}>
+                    {sponsor.boothLocation || copy.boothTbd}
+                  </Detail>
+                  <Detail label={copy.columns.hwContact}>
+                    {sponsor.hwContact || copy.none}
+                  </Detail>
+                  <Detail label={copy.columns.companyContact}>
+                    {sponsor.companyContact || copy.none}
+                  </Detail>
+                  <Detail label={copy.columns.picks}>
+                    <Picks n={sponsor.teamIds.length} long />
+                  </Detail>
+                </dl>
+
+                {sponsor.notes && (
+                  <p className="m-0 break-words rounded-dashboard-md bg-dashboard-bg-inset px-3 py-2 text-sm text-dashboard-text-medium">
+                    {sponsor.notes}
+                  </p>
+                )}
+
+                {strip(sponsor, "border-t border-dashboard-border-subtle pt-3")}
+
+                <div className="flex items-center justify-between gap-2 border-t border-dashboard-border-subtle pt-3">
+                  <span className="text-xs text-dashboard-text-light">
+                    {copy.columns.page}
+                  </span>
+                  <CopyLinkButton
+                    sponsorId={sponsor.sponsorId}
+                    name={sponsor.name}
+                  />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {/* Wider screens: a table, with each sponsor's chats and help strip
+          on a second line under its row. */}
+      {filtered.length > 0 && (
+        <div className="hidden overflow-x-auto rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card md:block">
+          <table className="w-full border-collapse text-left text-sm">
+            <caption className="sr-only">{copy.tableLabel}</caption>
+            <thead>
+              <tr className="border-b border-dashboard-border-subtle text-xs font-semibold text-dashboard-text-light">
+                {[
+                  copy.columns.company,
+                  copy.columns.status,
+                  copy.columns.room,
+                  copy.columns.booth,
+                  copy.columns.tier,
+                  copy.columns.hwContact,
+                  copy.columns.picks,
+                  copy.columns.page,
+                ].map((h) => (
+                  <th key={h} scope="col" className="px-4 py-3 font-semibold">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((sponsor) => {
+                const row = rowAttrs(sponsor);
+                return (
+                  <Fragment key={sponsor.sponsorId ?? sponsor.name}>
+                    <tr
+                      data-row={row.dataRow}
+                      className={cn(
+                        "scroll-mt-4 align-middle",
+                        !sponsor.sponsorId &&
+                          "border-b border-dashboard-border-subtle last:border-0",
+                        row.targeted && "bg-dashboard-bg-highlight",
+                      )}
+                    >
+                      <th
+                        scope="row"
+                        className="max-w-xs px-4 pb-2 pt-3 text-left font-semibold"
+                      >
+                        <span className="flex flex-col gap-1">
+                          <span className="break-words">{sponsor.name}</span>
+                          {!sponsor.onMasterSheet && <NotOnMaster />}
+                        </span>
+                      </th>
+                      <td className="px-4 pb-2 pt-3">{statusPicker(sponsor)}</td>
+                      <td className="px-4 pb-2 pt-3">
+                        <RoomBadge roomNumber={sponsor.roomNumber} />
+                      </td>
+                      <td className="px-4 pb-2 pt-3 text-dashboard-text-medium">
+                        {sponsor.boothLocation || copy.boothTbd}
+                      </td>
+                      <td className="px-4 pb-2 pt-3 text-dashboard-text-medium">
+                        {sponsor.tier || copy.none}
+                      </td>
+                      <td className="px-4 pb-2 pt-3 text-dashboard-text-medium">
+                        {sponsor.hwContact || sponsor.companyContact || copy.none}
+                      </td>
+                      <td className="px-4 pb-2 pt-3">
+                        <Picks n={sponsor.teamIds.length} />
+                      </td>
+                      <td className="px-4 pb-2 pt-3">
+                        <CopyLinkButton
+                          sponsorId={sponsor.sponsorId}
+                          name={sponsor.name}
+                        />
+                      </td>
+                    </tr>
+                    {sponsor.sponsorId && (
                       <tr
-                        data-row={row.dataRow}
                         className={cn(
-                          "scroll-mt-4 hover:bg-slate-50/50",
-                          !sponsor.sponsorId &&
-                            "border-b border-slate-100 last:border-0",
+                          "border-b border-dashboard-border-subtle last:border-0",
                           row.targeted && "bg-dashboard-bg-highlight",
                         )}
                       >
-                        <td className="px-4 py-3 font-semibold text-[#0b2238]">
-                          <span
-                            className="inline-block max-w-[150px] truncate align-bottom"
-                            title={sponsor.name}
-                          >
-                            {sponsor.name}
-                          </span>
-                          {!sponsor.onMasterSheet && (
-                            <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
-                              not on master
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="px-4 py-3">
-                          <StatusPicker
-                            sponsorName={sponsor.name}
-                            currentStatus={sponsor.status}
-                            onStatusChange={(status) =>
-                              updateStatus.mutate({
-                                sponsorName: sponsor.name,
-                                status,
-                              })
-                            }
-                            isPending={updateStatus.isPending}
-                          />
-                        </td>
-
-                        <td className="px-4 py-3">
-                          <RoomBadge roomNumber={sponsor.roomNumber} />
-                        </td>
-
-                        <td className="px-4 py-3 text-[13px] text-slate-600">
-                          {sponsor.boothLocation || "TBD"}
-                        </td>
-
-                        <td className="px-4 py-3 text-[13px] text-slate-600">
-                          {sponsor.tier || "—"}
-                        </td>
-
-                        <td className="px-4 py-3 text-[13px] text-slate-600">
-                          {sponsor.hwContact || sponsor.companyContact || "—"}
-                        </td>
-
-                        <td className="px-4 py-3 font-semibold tabular-nums">
-                          {sponsor.teamIds.length > 0 ? (
-                            <span className="text-emerald-700">
-                              {sponsor.teamIds.length}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400">0</span>
-                          )}
-                        </td>
-
-                        <td className="px-4 py-3">
-                          <CopyLinkButton sponsorId={sponsor.sponsorId} />
+                        <td colSpan={8} className="px-4 pb-3 pt-0">
+                          {strip(sponsor)}
                         </td>
                       </tr>
-                      {sponsor.sponsorId && (
-                        <tr
-                          className={cn(
-                            "border-b border-slate-100 last:border-0",
-                            row.targeted && "bg-dashboard-bg-highlight",
-                          )}
-                        >
-                          <td colSpan={8} className="px-4 pb-3 pt-0">
-                            {strip(sponsor)}
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
-                  );
-                })}
-
-                {filtered.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={8}
-                      className="px-4 py-8 text-center text-slate-500"
-                    >
-                      {sponsorsQ.isLoading
-                        ? "Loading…"
-                        : "No sponsors match your filter criteria."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      </div>
-    </>
+      )}
+    </div>
+  );
+}
+
+function Detail({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-w-0 flex-col">
+      <dt className="text-xs text-dashboard-text-light">{label}</dt>
+      <dd className="m-0 break-words font-semibold text-dashboard-text-heavy">
+        {children}
+      </dd>
+    </div>
+  );
+}
+
+function Picks({ n, long = false }: { n: number; long?: boolean }) {
+  return (
+    <span
+      className={cn(
+        "font-semibold tabular-nums",
+        n > 0 ? "text-dashboard-status-live" : "text-dashboard-text-light",
+      )}
+    >
+      {long ? (n > 0 ? copy.picks(n) : copy.noPicks) : n}
+    </span>
   );
 }

@@ -594,7 +594,7 @@ function BoardCellView({
         data-cell={cellId}
         className={cn(
           "flex h-full min-h-14 w-full flex-col items-stretch gap-1.5 px-2.5 py-2 text-left transition-colors",
-          "hover:bg-dashboard-bg-highlightSubtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary",
+          "[@media(hover:hover)]:hover:bg-dashboard-bg-highlightSubtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary",
         )}
       >
         <span className="sr-only">{copy.cellLabel(s.sponsor, time)}: </span>
@@ -690,7 +690,7 @@ function CellPanel({
                 </div>
                 <Dialog.Close
                   aria-label={copy.panel.close}
-                  className="-mr-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+                  className="-mr-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium [@media(hover:hover)]:hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
                 >
                   <X aria-hidden className="size-5" />
                 </Dialog.Close>

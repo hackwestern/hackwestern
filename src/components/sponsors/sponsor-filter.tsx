@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Check } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import { cn } from "~/lib/utils";
 
@@ -89,7 +89,10 @@ export function useSponsorSelection(
   };
 }
 
-/** Sponsor chips (multi-select) with All sponsors and Clear. */
+/**
+ * Sponsors as a light list of round checkboxes (native inputs, so Tab,
+ * Space and screen readers work as usual) with All sponsors and Clear.
+ */
 export function SponsorFilter({
   names,
   selection,
@@ -103,28 +106,27 @@ export function SponsorFilter({
   const shown = names.filter(selection.isShown).length;
   if (names.length === 0) return null;
   return (
-    <div
-      role="group"
+    <fieldset
       aria-labelledby={labelId}
       className={cn(
-        "flex flex-col gap-2 rounded-dashboard-lg bg-dashboard-bg-surface px-4 py-3 shadow-dashboard-card",
+        "m-0 flex min-w-0 flex-col gap-1 rounded-dashboard-lg border-0 bg-dashboard-bg-surface px-4 py-3 shadow-dashboard-card",
         className,
       )}
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-x-3">
         <span
           id={labelId}
           className="text-sm font-semibold text-dashboard-text-heavy"
         >
           {copy.label}
-          <span className="ml-2 font-medium text-dashboard-text-light">
+          <span className="ml-2 font-medium tabular-nums text-dashboard-text-light">
             {copy.count(shown, names.length)}
           </span>
         </span>
-        <div className="flex gap-1">
+        <div className="-mr-2 flex">
           <DashboardButton
             variant="tertiary"
-            className="min-h-11 px-2"
+            className="min-h-11 px-2 text-sm text-dashboard-text-link disabled:text-dashboard-text-disabled md:min-h-9 md:text-sm"
             disabled={selection.selected === null}
             onClick={selection.showAll}
           >
@@ -132,7 +134,7 @@ export function SponsorFilter({
           </DashboardButton>
           <DashboardButton
             variant="tertiary"
-            className="min-h-11 px-2"
+            className="min-h-11 px-2 text-sm text-dashboard-text-link disabled:text-dashboard-text-disabled md:min-h-9 md:text-sm"
             disabled={shown === 0}
             onClick={selection.clear}
           >
@@ -140,22 +142,63 @@ export function SponsorFilter({
           </DashboardButton>
         </div>
       </div>
-      {/* One row that scrolls sideways on phones, wraps on wider screens. */}
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+      <div className="-mx-2 flex flex-wrap">
         {names.map((name) => (
-          <DashboardChip
+          <SponsorCheck
             key={name}
-            selected={selection.isShown(name)}
-            onClick={() => selection.toggle(name)}
-            className="min-h-11 shrink-0"
-          >
-            {name}
-          </DashboardChip>
+            name={name}
+            checked={selection.isShown(name)}
+            onToggle={() => selection.toggle(name)}
+          />
         ))}
       </div>
       {shown === 0 && (
         <p className="m-0 text-sm text-dashboard-text-medium">{copy.none}</p>
       )}
-    </div>
+    </fieldset>
+  );
+}
+
+// One sponsor: the whole label is the hit area (44px tall on touch, 36px on
+// desktop); the circle fills blue with a white check when shown. Only colour
+// and the check's opacity change, so nothing shifts when toggling.
+function SponsorCheck({
+  name,
+  checked,
+  onToggle,
+}: {
+  name: string;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <label className="group flex min-h-11 min-w-0 max-w-full cursor-pixel-hover items-center gap-2 rounded-dashboard-md px-2 text-sm text-dashboard-text-heavy md:min-h-9 [@media(hover:hover)]:hover:bg-dashboard-bg-highlight">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onToggle}
+        className="peer sr-only"
+      />
+      <span
+        aria-hidden
+        className={cn(
+          "inline-flex size-4 shrink-0 items-center justify-center rounded-full border-[1.5px]",
+          "motion-safe:transition-colors motion-safe:duration-150 motion-safe:ease-out",
+          "peer-focus-visible:ring-2 peer-focus-visible:ring-dashboard-action-primary peer-focus-visible:ring-offset-2",
+          checked
+            ? "border-dashboard-action-primary bg-dashboard-action-primary"
+            : "border-dashboard-border-strong bg-dashboard-bg-surface",
+        )}
+      >
+        <Check
+          strokeWidth={3}
+          className={cn(
+            "size-2.5 text-dashboard-text-inverse motion-safe:transition-opacity motion-safe:duration-150 motion-safe:ease-out",
+            checked ? "opacity-100" : "opacity-0",
+          )}
+        />
+      </span>
+      <span className="min-w-0 break-words">{name}</span>
+    </label>
   );
 }

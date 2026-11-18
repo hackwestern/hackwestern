@@ -139,7 +139,7 @@ export function HelpQueue({
                     {sponsorHref ? (
                       <Link
                         href={sponsorHref(r.sponsorId)}
-                        className="rounded-dashboard-sm text-dashboard-text-heavy underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+                        className="rounded-dashboard-sm text-dashboard-text-heavy underline-offset-4 [@media(hover:hover)]:hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
                       >
                         {r.sponsorName}
                       </Link>

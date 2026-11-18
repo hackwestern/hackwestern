@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { AddChatHere } from "~/components/sponsors/coffee-chat-board";
@@ -145,7 +145,7 @@ export function CoffeeChatRoomTable({
 
 function Legend() {
   const items = [
-    ["free", "bg-dashboard-schedule-blue border-dashboard-action-primary"],
+    ["free", "border-dashed bg-dashboard-bg-surface border-dashboard-border-outline"],
     ["booked", "bg-dashboard-bg-inset border-dashboard-border-control"],
     ["full", "bg-dashboard-bg-navSelected border-dashboard-border-strong"],
     ["over", "bg-dashboard-status-iconBadge border-dashboard-status-warning"],
@@ -199,11 +199,12 @@ function CellButton({
       onClick={(e) => onOpen(e.currentTarget)}
       className={cn(
         "flex min-h-14 w-full flex-col items-stretch gap-1 rounded-dashboard-sm border px-2 py-1.5 text-left text-xs leading-4",
+        "motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out active:scale-[0.98]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1",
         cell.state === "free" &&
-          "border-dashboard-action-primary/40 bg-dashboard-schedule-blue font-semibold text-dashboard-text-active hover:bg-dashboard-bg-navSelected",
+          "border-dashed border-dashboard-border-outline bg-dashboard-bg-surface font-semibold text-dashboard-text-link [@media(hover:hover)]:hover:border-solid [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
         cell.state === "booked" &&
-          "border-dashboard-border-control bg-dashboard-bg-inset text-dashboard-text-heavy hover:bg-dashboard-bg-nav",
+          "border-dashboard-border-control bg-dashboard-bg-inset text-dashboard-text-heavy [@media(hover:hover)]:hover:bg-dashboard-bg-nav",
         cell.state === "full" &&
           "border-dashboard-border-strong bg-dashboard-bg-navSelected text-dashboard-text-heavy",
         cell.state === "over" &&
@@ -212,7 +213,10 @@ function CellButton({
       )}
     >
       {cell.state === "free" ? (
-        copy.free
+        <span className="flex items-center gap-1">
+          <Plus aria-hidden className="size-3.5 shrink-0" />
+          {copy.free}
+        </span>
       ) : (
         <>
           <span className="flex items-baseline justify-between gap-2">
@@ -336,7 +340,7 @@ function DialogBody({
         </div>
         <Dialog.Close
           aria-label={dialogCopy.close}
-          className="-mr-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+          className="-mr-2 -mt-2 inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-lg text-dashboard-text-medium [@media(hover:hover)]:hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
         >
           <X aria-hidden className="size-5" />
         </Dialog.Close>

@@ -98,7 +98,8 @@ export function OrganizerTabList({
       role="tablist"
       aria-label={copy.tabsLabel}
       onKeyDown={onKeyDown}
-      className="-mx-1 flex gap-1 overflow-x-auto border-b border-dashboard-border-default px-1"
+      // Four equal tabs on phones so all of them fit without scrolling.
+      className="-mx-1 grid grid-cols-4 gap-0.5 overflow-x-auto border-b border-dashboard-border-default px-1 sm:flex sm:gap-1"
     >
       {ORGANIZER_TABS.map((t) => {
         const selected = t === tab;
@@ -116,11 +117,11 @@ export function OrganizerTabList({
             tabIndex={selected ? 0 : -1}
             onClick={() => onSelect(t)}
             className={cn(
-              "-mb-px inline-flex min-h-11 shrink-0 cursor-pixel-hover items-center gap-2 whitespace-nowrap rounded-t-dashboard-md border-b-2 px-3 font-figtree text-sm font-semibold transition-colors",
+              "-mb-px inline-flex min-h-11 shrink-0 cursor-pixel-hover items-center justify-center gap-1.5 whitespace-nowrap rounded-t-dashboard-md border-b-2 px-1 font-figtree text-sm font-semibold sm:justify-start sm:gap-2 sm:px-3",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary",
               selected
                 ? "border-dashboard-action-primary text-dashboard-text-active"
-                : "border-transparent text-dashboard-text-light hover:bg-dashboard-bg-nav hover:text-dashboard-text-heavy",
+                : "border-transparent text-dashboard-text-light [@media(hover:hover)]:hover:bg-dashboard-bg-nav [@media(hover:hover)]:hover:text-dashboard-text-heavy",
             )}
           >
             {copy.tabs[t]}
@@ -140,7 +141,7 @@ export function OrganizerTabList({
 }
 
 const linkClass =
-  "inline-flex min-h-11 items-center gap-1.5 rounded-dashboard-sm text-sm font-semibold text-dashboard-text-link underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary";
+  "inline-flex min-h-11 items-center gap-1.5 rounded-dashboard-sm text-sm font-semibold text-dashboard-text-link underline-offset-4 [@media(hover:hover)]:hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary";
 
 /**
  * Shown on Run of show, Coffee chats and Help when they're focused on one

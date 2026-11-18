@@ -13,8 +13,12 @@ const copy = sponsorOrganizerCopy.strip;
 const pill =
   "inline-flex items-center gap-1 whitespace-nowrap rounded-dashboard-sm px-2 py-0.5 text-xs font-semibold leading-5";
 
+// 44px tall on touch screens, 36px on desktop; hover only where a pointer
+// hovers; a small scale-down on press.
+// Borderless so a long list of sponsors stays calm; an open help request
+// gets the warning outline so it stands out.
 const action =
-  "inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-dashboard-md border border-dashboard-border-outline bg-dashboard-bg-surface px-2.5 text-xs font-semibold text-dashboard-text-link transition-colors hover:bg-dashboard-bg-highlight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary";
+  "inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-dashboard-md border border-transparent px-2 text-xs font-semibold text-dashboard-text-link md:min-h-9 [@media(hover:hover)]:hover:bg-dashboard-bg-highlight motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary";
 
 /**
  * One sponsor at a glance on the Sponsors tab: coffee chat room, chats
