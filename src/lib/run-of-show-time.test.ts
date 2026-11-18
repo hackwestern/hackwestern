@@ -53,5 +53,12 @@ describe("ownLocation", () => {
     expect(ownLocation("Rm 1230", "QNX")).toBe("Rm 1230");
     // One labelled part is a place, not a per-sponsor list.
     expect(ownLocation("SEB: 2nd floor", "QNX")).toBe("SEB: 2nd floor");
+    // One part labelled with another known sponsor is still theirs alone.
+    const known = ["Scotiabank", "Canada Life", "QNX"];
+    expect(ownLocation("Scotiabank: Rm 2110", "QNX", known)).toBeNull();
+    expect(ownLocation("Scotiabank: Rm 2110", "Scotiabank", known)).toBe(
+      "Rm 2110",
+    );
+    expect(ownLocation("SEB: 2nd floor", "QNX", known)).toBe("SEB: 2nd floor");
   });
 });
