@@ -218,7 +218,7 @@ export default function SponsorHubPage() {
                   {venue.important.emergency.name}
                 </dd>
               </div>
-              {venue.important.emergency.phone && (
+              {venue.important.emergency.phone ? (
                 <a
                   href={`tel:${venue.important.emergency.phone.replace(/[^\d+]/g, "")}`}
                   aria-label={venue.important.emergency.call(
@@ -232,6 +232,10 @@ export default function SponsorHubPage() {
                   <Phone aria-hidden className="size-4" />
                   {venue.important.emergency.phone}
                 </a>
+              ) : (
+                <span className="shrink-0 rounded-dashboard-sm bg-dashboard-bg-nav px-2 py-1 text-xs font-medium text-dashboard-text-light">
+                  {venue.important.emergency.phonePlaceholder}
+                </span>
               )}
             </div>
           </dl>

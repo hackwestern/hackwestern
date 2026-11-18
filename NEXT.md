@@ -28,6 +28,7 @@ Then: review each (code-reviewer + design-reviewer), merge with `--no-ff`, apply
 - Login now sends ALL organizers to `/internal/sponsors`.
 
 ## Open questions for Jazz
+- **REMINDER: Noah's phone number** for the sponsor portal emergency contact. Set `phone` in `src/content/sponsor-venue.ts` (shows "Phone number coming soon" until then).
 - Lucas's sheet IDs (`SPONSOR_JUDGING_SHEET`, `SPONSOR_MASTER_SHEET`, `HACKER_INTEREST_FORM`) are not in git: ask Lucas or read them from Vercel env vars. Until then the Sponsors tab is empty locally. `1JRfqib3...` is Luka's HW13 schedule sheet, not Lucas's.
 - Add `SLACK_BOT_TOKEN` to local `.env` (signing secret, channel and mention were copied in), then restart :3013.
 - Limit Slack owner matching to spon-team channel members? (needs `channels:read`, plus `groups:read` if private)
