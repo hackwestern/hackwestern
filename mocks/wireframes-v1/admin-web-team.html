@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Web team admin · wireframes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== Design tokens (src/lib/tokens.ts → dashboardColors) ===== */
+:root{
+  --text-heavy:#0b2b4a; --text-medium:#1c3550; --text-light:#516476;
+  --text-placeholder:rgba(81,100,118,.7); --text-disabled:rgba(81,100,118,.5);
+  --text-inverse:#fff; --text-link:#0b6bc4; --text-active:#08559c;
+  --text-warning:#8a4300; --text-task:#5c3d00;
+  --bg-page:#f3f7fc; --bg-surface:#fff; --bg-nav:#dbe7f5; --bg-nav-selected:#b9d3f0;
+  --bg-inset:#edf3fa; --bg-highlight:#e1effb; --bg-highlight-subtle:rgba(225,239,251,.4);
+  --bg-task:#ffefb8;
+  --action-primary:#0b6bc4;
+  --border-default:#cdddeb; --border-subtle:#e0eaf3; --border-card:#d6e3ef;
+  --border-control:#b9cbe0; --border-outline:#accae5; --border-task:#c78a00;
+  --border-faint:rgba(81,100,118,.1); --border-muted:rgba(81,100,118,.2); --border-strong:#516476;
+  --status-live:#16803c; --status-warning:#a34a00;
+  --sch-pink:rgba(250,104,235,.15); --sch-blue:rgba(37,130,254,.15);
+  --sch-green:rgba(104,250,109,.15); --sch-orange:rgba(254,145,37,.15);
+  --r-xs:4px; --r-sm:6px; --r-md:8px; --r-lg:12px; --r-2xl:20px;
+  --shadow-card:0 1px 2px rgba(11,43,74,.06),0 4px 12px rgba(11,43,74,.06);
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --font:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+body{margin:0;font-family:var(--font);color:var(--text-heavy);background:#e9eef4;font-size:14px;line-height:1.45;padding:64px 0 40px}
+button,a,[role=button]{touch-action:manipulation}
+button{font:inherit;color:inherit;user-select:none;-webkit-user-select:none}
+input,select,textarea{font:inherit;font-size:16px}
+h1,h2,h3,h4,p{margin:0}
+ul{margin:0;padding:0;list-style:none}
+
+/* ===== Harness chrome (not part of the design) ===== */
+.h-top{max-width:1312px;margin:0 auto;padding:12px 16px 8px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.h-title{font-weight:700;font-size:15px}
+.h-badge{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6b4e00;background:#fff3c4;border:1px solid #e6c55a;border-radius:999px;padding:2px 8px}
+.h-frame-toggle{margin-left:auto;display:inline-flex;background:#dfe6ee;border-radius:999px;padding:2px}
+.h-frame-toggle button{border:0;background:transparent;border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;color:#445}
+.h-frame-toggle button[aria-pressed=true]{background:#fff;color:#111;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.h-note{max-width:1312px;margin:0 auto;padding:0 16px 12px;font-size:13px;color:#445}
+.h-note b{color:#111}
+.frame{container-type:inline-size;margin:0 auto;width:1280px;max-width:calc(100% - 32px);background:var(--bg-page);border-radius:14px;box-shadow:0 0 0 1px rgba(0,0,0,.06),0 10px 30px rgba(0,0,0,.08);overflow:hidden;min-height:70vh}
+.frame[data-mode=phone]{width:375px}
+@media (max-width:420px){.frame{max-width:100%;border-radius:0}}
+
+/* Picker: PICKER.md verbatim, data-position="top" */
+.proto-picker{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2147483647;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;background:rgba(10,10,10,.82);-webkit-backdrop-filter:blur(12px) saturate(1.4);backdrop-filter:blur(12px) saturate(1.4);box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 8px 24px rgba(0,0,0,.24),0 2px 6px rgba(0,0,0,.12);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;line-height:1;-webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none;max-width:calc(100vw - 16px);overflow-x:auto;scrollbar-width:none}
+.proto-picker-highlight{position:absolute;top:4px;left:0;height:28px;border-radius:999px;background:rgba(255,255,255,.12)}
+.proto-picker[data-ready] .proto-picker-highlight{transition:transform 250ms cubic-bezier(.23,1,.32,1),width 250ms cubic-bezier(.23,1,.32,1)}
+@media (prefers-reduced-motion:reduce){.proto-picker[data-ready] .proto-picker-highlight{transition:none}}
+.proto-picker-item{position:relative;display:flex;align-items:center;height:28px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:rgba(255,255,255,.55);font:inherit;cursor:pointer;white-space:nowrap;transition:color 150ms ease-out,transform 160ms cubic-bezier(.23,1,.32,1)}
+@media (hover:hover) and (pointer:fine){.proto-picker-item:hover{color:rgba(255,255,255,.85)}}
+.proto-picker-item:active{transform:scale(.97)}
+.proto-picker-item:focus-visible{outline:2px solid rgba(255,255,255,.4);outline-offset:2px}
+.proto-picker-item[data-active]{color:#fff}
+.proto-picker[data-position=top]{bottom:auto;top:12px}
+
+/* ===== Shared wireframe kit (uses tokens) ===== */
+.app{min-height:70vh;font-size:14px}
+.wrap{padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+@container (max-width:640px){.wrap{padding:16px}}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.stack{display:flex;flex-direction:column;gap:8px}
+.muted{color:var(--text-light)}
+.small{font-size:12px}
+.tnum{font-variant-numeric:tabular-nums}
+.h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.h2{font-size:16px;font-weight:600}
+.h3{font-size:14px;font-weight:600}
+.card{background:var(--bg-surface);border-radius:var(--r-lg);box-shadow:var(--shadow-card);padding:16px}
+.card.flat{box-shadow:none;border:1px solid var(--border-subtle)}
+.inset{background:var(--bg-inset);border-radius:var(--r-md);padding:12px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--border-control);background:var(--bg-surface);font-size:12px;font-weight:500;color:var(--text-medium);cursor:pointer;white-space:nowrap;transition:transform 160ms var(--ease-out),background-color 150ms ease-out}
+.pill:active{transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){.pill:hover{background:var(--bg-highlight)}}
+.pill.primary{background:var(--action-primary);border-color:var(--action-primary);color:#fff}
+@media (hover:hover) and (pointer:fine){.pill.primary:hover{background:var(--text-active)}}
+.pill.ghost{border-color:transparent;background:transparent;color:var(--text-link)}
+.pill.map{background:var(--text-heavy);border-color:var(--text-heavy);color:#fff;font-weight:600}
+.pill:focus-visible,.seg button:focus-visible{outline:2px solid var(--action-primary);outline-offset:2px}
+.seg{display:inline-flex;flex-wrap:wrap;gap:4px}
+.seg button{height:28px;padding:0 10px;border-radius:999px;border:0;background:var(--bg-nav);color:var(--text-medium);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed=true]{background:var(--action-primary);color:#fff}
+.seg button .n{opacity:.7;margin-left:4px;font-variant-numeric:tabular-nums}
+.tag{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;background:var(--bg-inset);color:var(--text-light)}
+.tag::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.tag.plain::before{display:none}
+.tag.sent{background:#e3f4e8;color:var(--status-live)}
+.tag.sched{background:var(--bg-highlight);color:var(--text-active)}
+.tag.failed{background:#fde9dc;color:var(--status-warning)}
+.tag.warn{background:var(--bg-task);color:var(--text-task)}
+.tag.off{background:var(--bg-inset);color:var(--text-light)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--status-live);display:inline-block;flex:none}
+.dot.warn{background:var(--status-warning)}.dot.off{background:var(--border-medium,#a9b4bf)}.dot.amber{background:var(--border-task)}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{text-align:left;font-weight:600;color:var(--text-light);font-size:12px;padding:8px 10px;border-bottom:1px solid var(--border-subtle);white-space:nowrap}
+table.t td{padding:10px;border-bottom:1px solid var(--border-subtle);vertical-align:top}
+table.t tr:nth-child(even) td{background:var(--bg-highlight-subtle)}
+.logo{height:18px;width:auto;max-width:90px;object-fit:contain;display:block}
+.logo-txt{font-weight:700;font-size:13px;letter-spacing:.02em}
+.sel{outline:2px solid var(--action-primary);outline-offset:-2px}
+.hide-phone{}
+@container (max-width:640px){.hide-phone{display:none!important}.t-phone-stack thead{display:none}.t-phone-stack tr{display:block;padding:10px 0;border-bottom:1px solid var(--border-subtle)}.t-phone-stack td{display:block;border:0;padding:2px 0;background:none!important}}
+.show-phone{display:none}
+@container (max-width:640px){.show-phone{display:revert}}
+.slack{border:1px solid var(--border-subtle);border-radius:var(--r-md);padding:12px;background:#fff;font-size:14px;display:flex;gap:10px}
+.slack .av{width:32px;height:32px;border-radius:6px;background:var(--text-heavy);color:#fff;display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
+.slack .who{font-weight:700}.slack .when{color:var(--text-light);font-size:12px;margin-left:6px;font-weight:400}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;background:var(--bg-inset);padding:1px 5px;border-radius:4px;word-break:break-all}
+.a-bars{display:grid;grid-template-columns:repeat(23,1fr);gap:2px;height:22px}
+.a-bars span{border-radius:2px;background:#7cc796}.a-bars .b1{background:var(--border-task)}.a-bars .b2{background:var(--status-warning)}
+.a-bars-ax{display:flex;justify-content:space-between;font-size:11px;margin-top:2px}
+.a-big{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.a-stack{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--bg-inset);margin-top:4px}
+.a-stack .sent{background:var(--status-live)}.a-stack .failed{background:var(--status-warning)}.a-stack .off{background:var(--border-control)}
+.a-resp-n{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.a-err{border-left:3px solid var(--border-task);padding:2px 0 2px 10px;display:flex;flex-direction:column;gap:2px}
+.a1-lights{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.a1-l{padding:12px;display:flex;flex-direction:column;gap:4px}
+.a1-g{display:grid;grid-template-columns:1.4fr 1fr;gap:12px}
+.a1-u{display:grid;grid-template-columns:120px 1fr 56px;gap:10px;align-items:start}
+@container (max-width:1000px){.a1-lights{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@container (max-width:640px){.a1-lights{grid-template-columns:1fr 1fr}.a1-g{grid-template-columns:1fr}.a1-u{grid-template-columns:1fr 48px}.a1-u>span:first-child{grid-column:1/-1}}
+.a2{max-width:860px;margin:0 auto;width:100%}
+.a2-banner{border-radius:var(--r-lg);background:#fde9dc;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.a2-list{padding:0}.a2-r{padding:14px 16px;border-bottom:1px solid var(--border-subtle);display:flex;flex-direction:column;gap:8px}
+.a2-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@container (max-width:640px){.a2-two{grid-template-columns:1fr}}
+.a4-card{max-width:640px;padding:24px}
+.a4-ul{list-style:disc;padding-left:20px;margin-top:6px;display:flex;flex-direction:column;gap:4px}
+.a5{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:16px;align-items:center;padding:24px}
+.a5-col{display:flex;flex-direction:column;gap:10px}
+.a5-arrow{font-size:22px;color:var(--text-light);display:flex;flex-direction:column;align-items:center;text-align:center;max-width:90px}
+.a5-n{display:flex;flex-direction:column;gap:4px;align-items:flex-start;text-align:left;border:1px solid var(--border-subtle);background:#fff;border-radius:var(--r-md);padding:12px;cursor:pointer;transition:transform 160ms var(--ease-out)}
+.a5-n:active{transform:scale(.98)}
+.a5-bad{border-color:var(--status-warning);box-shadow:0 0 0 3px #fde9dc}.a5-warn{border-color:var(--border-task)}
+.a5-n.sel{outline:2px solid var(--action-primary)}
+@container (max-width:640px){.a5{grid-template-columns:1fr;padding:16px}.a5-arrow{transform:rotate(90deg);max-width:none}.a5-arrow span{display:none}}
+.a6-k{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.a6-sent{color:var(--status-live)}.a6-failed{color:var(--status-warning)}.a6-warn{color:var(--text-task)}
+.a6-g{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@container (max-width:900px){.a6-k{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@container (max-width:640px){.a6-k{grid-template-columns:1fr 1fr}.a6-g{grid-template-columns:1fr}}
+.a7{padding:8px 0;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px}
+.a7-l{display:grid;grid-template-columns:84px 56px 150px 1fr;gap:10px;padding:5px 14px;border-bottom:1px solid var(--border-faint)}
+.a7-lv{font-weight:700;text-transform:uppercase;font-size:11px;color:var(--text-light)}
+.a7-error{background:#fdf1ea}.a7-error .a7-lv{color:var(--status-warning)}.a7-warn .a7-lv{color:var(--text-task)}
+.a7-s{color:var(--text-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.a7-m{min-width:0;overflow-wrap:anywhere}
+@container (max-width:640px){.a7-l{grid-template-columns:auto auto 1fr;gap:4px 8px}.a7-m{grid-column:1/-1}}
+.a8{display:grid;grid-template-columns:300px 1fr;gap:12px;align-items:start}
+.a8-left{padding:6px}.a8-i{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:var(--r-md);cursor:pointer}
+.a8-i .dot{margin-top:6px}.a8-i.sel{background:var(--bg-highlight)}
+@media (hover:hover) and (pointer:fine){.a8-i:hover{background:var(--bg-highlight-subtle)}}
+.a8-right{gap:10px}
+@container (max-width:640px){.a8{grid-template-columns:1fr}.a8[data-open="1"] .a8-left{display:none}.a8:not([data-open="1"]) .a8-right{display:none}}
+.a9-r{display:flex;flex-direction:column;gap:8px}.a9-r.off{opacity:.55}
+.a9-s{font-size:15px;line-height:1.7}
+.a9-s select,.a9-s input,#a9who select{height:32px;border:1px solid var(--border-control);border-radius:var(--r-sm);padding:0 6px;background:#fff;max-width:100%}
+.a9-sw{width:18px;height:18px;accent-color:var(--action-primary)}
+.a10{padding:8px 16px}
+.a10-r{display:grid;grid-template-columns:1fr 360px;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-subtle)}
+.a10-h{border:0;padding-bottom:0}
+.a10-runs{display:grid;grid-template-columns:repeat(5,1fr) 72px;align-items:center;justify-items:center}
+.a10-dot{width:14px;height:14px;border-radius:50%;background:var(--status-live)}.a10-dot.r1{background:var(--border-task)}.a10-dot.r2{background:var(--status-warning)}
+.a10-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@container (max-width:640px){.a10-r{grid-template-columns:1fr}.a10-h>div:first-child{display:none}.a10-two{grid-template-columns:1fr}}
+
+</style>
+</head>
+<body>
+<div class="h-top">
+  <span class="h-title">Admin page (for web team)</span>
+  <span class="h-badge">Wireframe · dummy data</span>
+  <span class="small" style="color:#556">Pretend now: Sat Nov 21, 10:12 AM ET</span>
+  <div class="h-frame-toggle" role="group" aria-label="Frame width">
+    <button data-frame="desktop" aria-pressed="true">Desktop</button>
+    <button data-frame="phone" aria-pressed="false">Phone</button>
+  </div>
+</div>
+<p class="h-note" id="h-note"></p>
+<div class="frame" id="frame" data-mode="desktop"><div id="stage"></div></div>
+<nav class="proto-picker" data-position="top" aria-label="Prototype variants">
+  <span class="proto-picker-highlight" aria-hidden="true"></span>
+</nav>
+
+<script>
+const actions = {};
+/* ===== Dummy data ===== */
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const SVC = [
+  { id: 'site', name: 'Site', st: 'ok', line: 'p95 410 ms · 0.02% errors', up: 99.98, detail: 'hackwestern.com on Vercel. 18.4k requests in the last hour.' },
+  { id: 'db', name: 'Database', st: 'ok', line: 'Queries 38 ms · 14 of 60 connections', up: 100, detail: 'Postgres. Slowest query in the last hour: coffee chat board, 210 ms.' },
+  { id: 'sheets', name: 'Google Sheets', st: 'warn', line: 'Last sync failed 10:04 · quota (429)', up: 97.1, detail: 'Run of show and coffee chats sheets. 2 of the last 5 syncs failed; the 10:09 one worked.' },
+  { id: 'slack', name: 'Slack', st: 'bad', line: '7 DMs failed · rate limited', up: 95.4, detail: 'Bot posts and DMs. Slack slowed us down 10:02–10:06 while ops pings and coffee chat offers went out together.' },
+  { id: 'mail', name: 'Email (Mailjet)', st: 'ok', line: '212 sent today · 1 bounced', up: 100, detail: 'Hackers not on Slack get coffee chat offers and presentation times by email.' },
+  { id: 'jobs', name: 'Scheduled jobs', st: 'warn', line: '6 jobs · 1 ran late', up: 99.2, detail: 'Cron jobs on Vercel. “Expire coffee chat offers” ran 3 min late at 10:00.' },
+];
+const ST = { ok: ['sent', 'Working'], warn: ['warn', 'Slow or flaky'], bad: ['failed', 'Having trouble'] };
+const light = (s) => `<span class="dot ${s === 'ok' ? '' : s === 'warn' ? 'amber' : 'warn'}"></span>`;
+const stTag = (s) => `<span class="tag ${ST[s][0]}">${ST[s][1]}</span>`;
+/* Hourly uptime, Fri 12 PM to Sat 10 AM (23 hours). 0 ok, 1 slow, 2 down */
+const HOURS = Array.from({ length: 23 }, (_, i) => { const h = (12 + i) % 24; const d = 12 + i < 24 ? 'Fri' : 'Sat'; return `${d} ${(h % 12) || 12} ${h < 12 ? 'AM' : 'PM'}`; });
+const UP = {
+  site: HOURS.map((_, i) => i === 7 ? 1 : 0), db: HOURS.map(() => 0),
+  sheets: HOURS.map((_, i) => i === 9 || i === 22 ? 1 : i === 21 ? 2 : 0),
+  slack: HOURS.map((_, i) => i === 7 ? 1 : i === 22 ? 2 : 0), mail: HOURS.map(() => 0),
+  jobs: HOURS.map((_, i) => i === 22 ? 1 : 0),
+};
+const bars = (id) => `<div class="a-bars" role="img" aria-label="${SVC.find(s => s.id === id).name} by hour">${UP[id].map((v, i) => `<span class="b${v}" title="${HOURS[i]}: ${['Working', 'Slow', 'Down'][v]}"></span>`).join('')}</div><div class="a-bars-ax small muted"><span>Fri noon</span><span>Now</span></div>`;
+
+const KINDS = { chat: 'Coffee chat', judge: 'Judging', task: 'Task ping', ops: 'Ops ping' };
+const N = [
+  ['10:11 AM', 'chat', 'Offer: StarTech, Sat 12:00 PM', 'Maya R. (hacker)', 'Slack DM', 'Delivered'],
+  ['10:10 AM', 'ops', 'Mentor check-in starts soon', 'Sam Okafor', 'Slack DM', 'Queued'],
+  ['10:08 AM', 'chat', 'Offer: Sun Life group, Sat 2:00 PM', 'Theo K. (hacker)', 'Email', 'Sent'],
+  ['10:06 AM', 'chat', 'Offer: Canada Life group, Sat 11:00 AM', 'Ana P. (hacker)', 'Slack DM', 'Failed'],
+  ['10:05 AM', 'ops', 'Swag table starts soon', 'Elena Rossi', 'Slack DM', 'Failed'],
+  ['10:05 AM', 'chat', 'Offer: StarTech, Sat 11:30 AM', 'Dev S. (hacker)', 'Slack DM', 'Retrying'],
+  ['10:04 AM', 'ops', 'Photo walk: no owner match', '#organizers', 'Slack channel', 'Sent'],
+  ['10:03 AM', 'chat', 'Reminder: chat in 15 min', 'Lena W. (hacker)', 'Slack DM', 'Failed'],
+  ['10:02 AM', 'task', 'Check reps are signed in', 'Daniel', 'Slack DM', 'Failed'],
+  ['10:00 AM', 'task', 'Open Sun Life group chats', '#sponsor-team', 'Slack channel', 'Delivered'],
+  ['10:00 AM', 'chat', 'Accepted: StarTech, Sat 10:30 AM', 'StarTech portal', 'Site', 'Delivered'],
+  ['9:58 AM', 'chat', 'Offer: StarTech, Sat 10:45 AM', 'Omar H. (hacker)', 'Email', 'Failed'],
+  ['9:50 AM', 'ops', 'Workshop: Intro to React starts soon', 'Marcus Lee', 'Slack DM', 'Delivered'],
+  ['9:45 AM', 'judge', 'Shortlist reminder for Sunday', 'Scotiabank reps', 'Email', 'Delivered'],
+  ['9:00 AM', 'task', 'Open StarTech coffee chats', 'Aniya', 'Slack DM', 'Delivered'],
+  ['Sun 10:00 AM', 'judge', 'Presentation times (not sent yet)', '58 hackers', 'Slack DM + email', 'Queued'],
+].map(([at, kind, what, to, plat, st], i) => ({ id: 'n' + i, at, kind, what, to, plat, st,
+  why: st === 'Failed' ? (plat === 'Email' ? 'Mailjet: mailbox full (bounce)' : 'Slack: ratelimited') : st === 'Retrying' ? 'Try 2 of 3 at 10:13' : '' }));
+const NST = { Delivered: 'sent', Sent: 'sent', Queued: 'sched', Retrying: 'warn', Failed: 'failed' };
+const nTag = (s) => `<span class="tag ${NST[s]}">${s}</span>`;
+const RESP = { offered: 64, accepted: 38, declined: 9, noReply: 17 };
+const ERRS = [
+  { at: '10:06 AM', ago: '6 min ago', where: 'slack.chat.postMessage', job: 'ops-pings job', msg: 'ratelimited: retry after 30 s', n: 7, sev: 'bad' },
+  { at: '10:04 AM', ago: '8 min ago', where: 'sheets.values.get', job: 'run-of-show sync', msg: '429 quota exceeded for read requests per minute', n: 2, sev: 'warn' },
+  { at: '9:58 AM', ago: '14 min ago', where: 'mailjet send', job: 'coffee chat offer', msg: 'bounce: mailbox full (omar.h@…)', n: 1, sev: 'warn' },
+  { at: '9:12 AM', ago: '1 h ago', where: '/api/trpc/coffeeChat.board', job: 'organizer page', msg: 'timeout after 10 s (cold start)', n: 1, sev: 'warn' },
+  { at: 'Fri 7:40 PM', ago: '15 h ago', where: '/sponsors/[uuid]/scan', job: 'sponsor page', msg: 'TypeError: cannot read hacker of null', n: 3, sev: 'bad' },
+];
+const ALERTS = [
+  { on: true, when: '5 or more messages fail', within: '10 min', then: 'DM the web team', who: '#web-team', fired: 'Fired 10:06 AM' },
+  { on: true, when: 'Sheets sync fails', within: '3 times in a row', then: 'DM', who: 'Jazz', fired: 'Not fired yet' },
+  { on: true, when: 'Site p95 is over 2 s', within: '5 min', then: 'Post in', who: '#web-team', fired: 'Fired Fri 7:41 PM' },
+  { on: false, when: 'A scheduled job is late', within: '5 min', then: 'DM', who: 'Ben Carter', fired: 'Off' },
+  { on: true, when: 'No hacker replies to an offer', within: '20 min before the chat', then: 'Post in', who: '#sponsor-team', fired: 'Fired 9:40 AM' },
+];
+const JOBS = [
+  { name: 'Run-of-show sync', every: 'every 5 min', last: '10:09 AM', res: 'ok', next: '10:14 AM', note: '10:04 failed (429)', runs: [0, 0, 0, 2, 0] },
+  { name: 'Task pings', every: 'every 5 min', last: '10:10 AM', res: 'ok', next: '10:15 AM', note: 'Hands pings to Slack', runs: [0, 0, 0, 0, 0] },
+  { name: 'Ops pings', every: 'every minute', last: '10:12 AM', res: 'warn', next: '10:13 AM', note: '7 DMs rate limited', runs: [0, 0, 2, 1, 0] },
+  { name: 'Expire coffee chat offers', every: 'every 10 min', last: '10:00 AM', res: 'warn', next: '10:20 AM', note: 'Ran 3 min late', runs: [0, 0, 1, 0, 0] },
+  { name: 'Coffee chat reminders', every: 'every 5 min', last: '10:10 AM', res: 'ok', next: '10:15 AM', note: '15 min before each chat', runs: [0, 0, 0, 0, 0] },
+  { name: 'Retry failed messages', every: 'every 2 min', last: '10:12 AM', res: 'ok', next: '10:14 AM', note: '3 tries, then gives up', runs: [0, 0, 0, 0, 0] },
+];
+const failedN = N.filter(n => n.st === 'Failed').length;
+const retryPill = (n) => n.st === 'Failed' ? `<button class="pill" data-act="retryN">Retry</button>` : '';
+actions.retryN = (el) => { const t = el.closest('[data-n]')?.querySelector('.tag') || el.previousElementSibling; if (t) t.outerHTML = nTag('Retrying'); el.remove(); };
+actions.retryAll = (el) => { stage.querySelectorAll('[data-act=retryN]').forEach(b => actions.retryN(b)); el.textContent = 'Retrying ' + failedN + '…'; el.disabled = true; };
+const head = (title, sub) => `<div class="row between"><div><div class="h1">${title}</div><div class="muted small">${sub || 'Hack Western 13 · production · Sat Nov 21, 10:12 AM'}</div></div><div class="row"><span class="tag ${SVC.some(s => s.st === 'bad') ? 'failed' : 'sent'}">${SVC.filter(s => s.st !== 'ok').length} of 6 need a look</span></div></div>`;
+const respBar = () => { const t = RESP.offered; return `<div class="a-resp"><div class="a-stack">${[['accepted', 'sent'], ['declined', 'failed'], ['noReply', 'off']].map(([k, c]) => `<span class="${c}" style="width:${RESP[k] / t * 100}%"></span>`).join('')}</div><div class="a-resp-n">${[['Offered', t], ['Accepted', RESP.accepted], ['Declined', RESP.declined], ['No reply', RESP.noReply]].map(([l, v]) => `<div><div class="a-big tnum">${v}</div><div class="small muted">${l}</div></div>`).join('')}</div></div>`; };
+const nRow = (n) => `<tr data-n="${n.id}" data-cat="${n.kind} ${NST[n.st]}"><td class="tnum small">${n.at}</td><td><div>${esc(n.what)}</div><div class="small muted">${KINDS[n.kind]} · to ${esc(n.to)}</div></td><td class="small">${n.plat}</td><td>${nTag(n.st)}${n.why ? `<div class="small muted">${n.why}</div>` : ''}</td><td>${retryPill(n)}</td></tr>`;
+
+/* ===== Variants ===== */
+const variants = [];
+
+/* 1. Overview */
+variants.push({ short: 'Overview', name: 'Project overview', why: 'Like a Vercel project page: one row of lights on top, uptime and errors underneath, notifications last. Good for a 5-second check.',
+  html: () => `<div class="app wrap">${head('Admin')}
+    <div class="a1-lights">${SVC.map(s => `<div class="card a1-l"><div class="row">${light(s.st)}<b>${s.name}</b></div><div class="small muted">${s.line}</div></div>`).join('')}</div>
+    <div class="a1-g"><div class="card stack"><div class="row between"><span class="h3">Uptime since Friday noon</span><span class="small muted">by hour</span></div>${SVC.map(s => `<div class="a1-u"><span class="small">${s.name}</span><div>${bars(s.id)}</div><span class="small tnum">${s.up}%</span></div>`).join('')}</div>
+    <div class="card stack"><div class="h3">Recent errors</div>${ERRS.slice(0, 4).map(e => `<div class="a-err"><div class="row between small"><code>${e.where}</code><span class="muted">${e.ago}</span></div><div class="small">${esc(e.msg)}${e.n > 1 ? ` <b>×${e.n}</b>` : ''}</div><div class="small muted">${e.job}</div></div>`).join('')}</div></div>
+    <div class="card stack"><div class="row between"><span class="h3">Latest notifications</span><button class="pill" data-act="retryAll">Retry ${failedN} failed</button></div><table class="t t-phone-stack"><thead><tr><th>When</th><th>What</th><th>Platform</th><th>Status</th><th></th></tr></thead><tbody>${N.slice(0, 7).map(nRow).join('')}</tbody></table></div>
+    <div class="card stack"><div class="h3">Coffee chat offers: how hackers answered</div>${respBar()}</div></div>` });
+
+/* 2. Status page */
+variants.push({ short: 'Status', name: 'Status page', why: 'The public-status-page shape everyone knows: one line per system with hourly bars, and the current incident written in plain words on top.',
+  html: () => `<div class="app wrap a2">
+    <div class="a2-banner"><div class="row">${light('bad')}<b>Slack messages are slow</b></div><p class="small">Since 10:02 AM Slack has been turning some of our DMs away. 7 messages failed; we're retrying them. Email is fine.</p><div class="small muted">Updated 10:10 AM · Ben Carter</div></div>
+    <div class="card a2-list">${SVC.map(s => `<div class="a2-r"><div class="row between"><span class="row">${light(s.st)}<b>${s.name}</b></span><span class="row small">${stTag(s.st)}<span class="muted tnum">${s.up}% up</span></span></div>${bars(s.id)}</div>`).join('')}</div>
+    <div class="a2-two"><div class="card stack"><div class="h3">Messages in the last hour</div>${['chat', 'ops', 'task', 'judge'].map(k => { const xs = N.filter(n => n.kind === k); return `<div class="row between small"><span>${KINDS[k]}</span><span class="row">${['Delivered', 'Failed', 'Queued'].map(s => { const c = xs.filter(x => x.st === s || (s === 'Delivered' && x.st === 'Sent')).length; return c ? `<span class="tag ${NST[s]}">${c} ${s.toLowerCase()}</span>` : ''; }).join('')}</span></div>`; }).join('')}</div>
+    <div class="card stack"><div class="h3">Past incidents</div><div class="small"><b>Fri 7:40 PM</b> · Scan page crashed for 3 sponsors. Fixed 7:58 PM.</div><div class="small"><b>Sat 9:00 AM</b> · Sheets sync over quota for 4 min. Fixed itself.</div></div></div></div>` });
+
+/* 3. Notification log */
+(() => {
+  const counts = (f) => N.filter(f).length;
+  variants.push({ short: 'Log', name: 'Notification log', why: 'Every message we send, in one table you can filter by kind and by status. The answer to “did Maya get her offer?”.',
+    html: () => `<div class="app wrap" data-scope>${head('Notifications', `${N.length} in the last hour · ${failedN} failed`)}
+      <div class="row between"><div class="seg" data-filter>${[['all', 'All', N.length], ['chat', 'Coffee chat', counts(n => n.kind === 'chat')], ['judge', 'Judging', counts(n => n.kind === 'judge')], ['task', 'Task ping', counts(n => n.kind === 'task')], ['ops', 'Ops ping', counts(n => n.kind === 'ops')]].map(([v, l, c], i) => `<button data-val="${v}" aria-pressed="${i === 0}">${l}<span class="n">${c}</span></button>`).join('')}</div>
+      <div class="seg" data-filter>${[['all', 'Any status'], ['failed', 'Failed'], ['warn', 'Retrying'], ['sched', 'Queued'], ['sent', 'Delivered']].map(([v, l], i) => `<button data-val="${v}" aria-pressed="${i === 0}">${l}<span class="n">${v === 'all' ? N.length : counts(n => NST[n.st] === v)}</span></button>`).join('')}</div></div>
+      <div class="card" style="padding:4px 8px"><table class="t t-phone-stack"><thead><tr><th>When</th><th>What</th><th>Platform</th><th>Status</th><th></th></tr></thead><tbody>${N.map(nRow).join('')}</tbody></table></div>
+      <div class="row between small muted"><span>Hackers: ${RESP.offered} offered · ${RESP.accepted} accepted · ${RESP.declined} declined · ${RESP.noReply} no reply</span><button class="pill" data-act="retryAll">Retry all failed</button></div></div>` });
+})();
+
+/* 4. What's broken */
+(() => {
+  const probs = [
+    { s: 'bad', t: 'Slack is turning DMs away', since: 'Since 10:02 AM', what: '7 messages failed: 4 coffee chat offers, 2 ops pings, 1 task ping. Slack says “ratelimited”.', where: 'slack.chat.postMessage · ops-pings job', fix: ['The retry job tries each one 3 times, 2 minutes apart.', 'If an offer still fails, the hacker gets it by email.', 'Ops pings and offers now go out 1 per second.'], act: 'Retry 7 now' },
+    { s: 'warn', t: 'Sheets sync failed once', since: '10:04 AM', what: 'Google said we read the sheet too often. The 10:09 sync worked, so the schedule is current.', where: 'sheets.values.get · run-of-show sync', fix: ['Nothing to do unless it fails 3 times in a row (then Jazz gets a DM).'], act: 'Sync now' },
+    { s: 'warn', t: 'An offer email bounced', since: '9:58 AM', what: 'Omar H.\'s mailbox is full, and he isn\'t on Slack. He hasn\'t seen his StarTech offer.', where: 'mailjet send · coffee chat offer', fix: ['Tell the StarTech rep or find Omar at the help desk.'], act: 'Mark as handled' },
+  ];
+  let i = 0;
+  const render = (root) => {
+    const p = probs[i];
+    root.querySelector('#a4b').innerHTML = i >= probs.length ? `<div class="h2">Nothing is broken right now</div><p class="muted">All 6 systems are working. We'll show the next problem here.</p>` : `<div class="row between"><span class="row">${light(p.s)}<span class="small muted">${p.since}</span></span><span class="small muted">${i + 1} of ${probs.length}</span></div><div class="h1" style="margin:8px 0">${p.t}</div><p>${p.what}</p><div class="inset small" style="margin:12px 0"><code>${p.where}</code></div><div class="h3">What happens next</div><ul class="a4-ul">${p.fix.map(f => `<li>${f}</li>`).join('')}</ul><div class="row" style="margin-top:16px"><button class="pill primary" data-act="a4next">${p.act}</button><button class="pill" data-act="a4next">Skip</button></div>`;
+  };
+  actions.a4next = () => { i++; render(stage); };
+  variants.push({ short: 'Broken', name: "What's broken", why: 'Incident-first: the page opens on the worst problem, says what it means for hackers in plain words, and what to do. Healthy stuff is one line.',
+    html: () => { i = 0; return `<div class="app wrap"><div class="row small">${SVC.map(s => `<span class="row" style="gap:4px">${light(s.st)}${s.name}</span>`).join('<span class="muted">·</span>')}</div><div class="card a4-card" id="a4b"></div><div class="small muted">Since Friday noon: site up ${SVC[0].up}% · ${N.length} messages this hour · ${RESP.accepted} of ${RESP.offered} offers accepted</div></div>`; },
+    init: render });
+})();
+
+/* 5. System map */
+(() => {
+  const node = (id, x) => { const s = SVC.find(v => v.id === id); return `<button class="a5-n a5-${s.st}" data-act="a5pick" data-id="${id}"><span class="row">${light(s.st)}<b>${s.name}</b></span><span class="small muted">${x}</span></button>`; };
+  actions.a5pick = (el) => { const s = SVC.find(v => v.id === el.dataset.id); stage.querySelectorAll('.a5-n').forEach(n => n.classList.toggle('sel', n === el)); stage.querySelector('#a5d').innerHTML = `<div class="row between"><b>${s.name}</b>${stTag(s.st)}</div><p class="small" style="margin-top:6px">${s.detail}</p>${bars(s.id)}${ERRS.filter(e => (s.id === 'slack' && e.where.startsWith('slack')) || (s.id === 'sheets' && e.where.startsWith('sheets')) || (s.id === 'mail' && e.where.startsWith('mailjet')) || (s.id === 'site' && e.where.startsWith('/'))).map(e => `<div class="a-err small" style="margin-top:8px"><code>${e.where}</code> · ${e.ago}<div>${esc(e.msg)}</div></div>`).join('')}`; };
+  variants.push({ short: 'Map', name: 'System map', why: 'Spatial: how a message travels, site → database → jobs → Slack, email or Sheets. The outlined box is where messages are getting stuck.',
+    html: () => `<div class="app wrap">${head('How it fits together')}
+      <div class="card a5">
+        <div class="a5-col">${node('site', '18.4k req/h')}${node('db', '38 ms')}</div>
+        <div class="a5-arrow">→<span class="small muted">jobs read and write</span></div>
+        <div class="a5-col">${node('jobs', '6 jobs')}</div>
+        <div class="a5-arrow">→</div>
+        <div class="a5-col">${node('slack', '41 sent · 7 failed')}${node('mail', '12 sent · 1 bounced')}${node('sheets', 'read every 5 min')}</div>
+      </div>
+      <div class="card" id="a5d"><span class="muted">Tap a box to see what it does and its errors.</span></div></div>`,
+    init: (r) => r.querySelector('[data-id=slack]').click() });
+})();
+
+/* 6. Metric tiles */
+variants.push({ short: 'Tiles', name: 'Metric tiles', why: 'Numbers first: delivery rate per channel, how hackers answer offers, and failures, each in its own tile. Best for a wall screen.',
+  html: () => `<div class="app wrap">${head('This hour')}
+    <div class="a6-k">${[['Messages sent', N.length - 2, ''], ['Delivered', '84%', 'sent'], ['Failed', failedN, 'failed'], ['Site p95', '410 ms', ''], ['Errors', ERRS.filter(e => e.ago.includes('min')).length, 'warn'], ['Jobs on time', '5/6', '']].map(([l, v, c]) => `<div class="card"><div class="small muted">${l}</div><div class="a-big tnum a6-${c}">${v}</div></div>`).join('')}</div>
+    <div class="a6-g">
+      <div class="card stack"><div class="h3">Delivery by platform</div>${[['Slack DM', 34, 6], ['Slack channel', 9, 0], ['Email', 12, 1], ['Site', 22, 0]].map(([p, ok, bad]) => `<div><div class="row between small"><span>${p}</span><span class="tnum">${ok} ok${bad ? ` · <b style="color:var(--status-warning)">${bad} failed</b>` : ''}</span></div><div class="a-stack"><span class="sent" style="width:${ok / (ok + bad) * 100}%"></span><span class="failed" style="width:${bad / (ok + bad) * 100}%"></span></div></div>`).join('')}</div>
+      <div class="card stack"><div class="h3">Coffee chat offers</div>${respBar()}<div class="small muted">No reply = offer expired 20 min before the chat, or still waiting.</div></div>
+      <div class="card stack"><div class="h3">Status</div>${SVC.map(s => `<div class="row between small"><span class="row">${light(s.st)}${s.name}</span><span class="muted">${s.line}</span></div>`).join('')}</div>
+      <div class="card stack"><div class="h3">Top errors</div>${ERRS.slice(0, 3).map(e => `<div class="small"><b>×${e.n}</b> <code>${e.where}</code><div class="muted">${e.ago}</div></div>`).join('')}</div>
+    </div></div>` });
+
+/* 7. Event stream */
+(() => {
+  const ev = [
+    ...N.slice(0, 15).map(n => ({ at: n.at, lv: NST[n.st] === 'failed' ? 'error' : NST[n.st] === 'warn' ? 'warn' : 'info', src: n.plat, msg: `${KINDS[n.kind]} → ${n.to}: ${n.what}${n.why ? ' (' + n.why + ')' : ''}` })),
+    ...ERRS.slice(0, 3).map(e => ({ at: e.at, lv: e.sev === 'bad' ? 'error' : 'warn', src: e.job, msg: `${e.where}: ${e.msg}` })),
+    { at: '10:09 AM', lv: 'info', src: 'run-of-show sync', msg: 'Read 142 rows, 0 changed' },
+    { at: '10:06 AM', lv: 'warn', src: 'alerts', msg: 'Rule “5 or more messages fail” fired → DM #web-team' },
+    { at: '9:30 AM', lv: 'info', src: 'deploy', msg: 'Deployed main@3daead6 by Ben Carter' },
+  ].sort((a, b) => { const t = (s) => { const m = s.match(/(\d+):(\d+) (AM|PM)/); return (m[3] === 'PM' && m[1] !== '12' ? 12 : 0) * 60 + (+m[1] % 12) * 60 + +m[2]; }; return t(b.at) - t(a.at); });
+  variants.push({ short: 'Stream', name: 'Event stream', why: 'Vercel-logs style: one monospace line per thing that happened, newest first, with a level filter. Fast to scan when you are already hunting.',
+    html: () => `<div class="app wrap" data-scope>${head('Logs', 'Live · newest first')}
+      <div class="row between"><div class="seg" data-filter>${[['all', 'All', ev.length], ['error', 'Errors', ev.filter(e => e.lv === 'error').length], ['warn', 'Warnings', ev.filter(e => e.lv === 'warn').length], ['info', 'Info', ev.filter(e => e.lv === 'info').length]].map(([v, l, c], i) => `<button data-val="${v}" aria-pressed="${i === 0}">${l}<span class="n">${c}</span></button>`).join('')}</div><span class="row small"><span class="dot"></span>Following</span></div>
+      <div class="card a7">${ev.map(e => `<div class="a7-l a7-${e.lv}" data-cat="${e.lv}"><span class="tnum a7-t">${e.at}</span><span class="a7-lv">${e.lv}</span><span class="a7-s">${esc(e.src)}</span><span class="a7-m">${esc(e.msg)}</span></div>`).join('')}</div></div>` });
+})();
+
+/* 8. Split view */
+(() => {
+  let cur = 'slack';
+  const PFX = { slack: 'slack', sheets: 'sheets', mail: 'mailjet', site: '/' };
+  const errsFor = (id) => PFX[id] ? ERRS.filter(e => e.where.startsWith(PFX[id])) : [];
+  const msgsFor = (id) => id === 'slack' ? N.filter(n => n.plat.startsWith('Slack')) : id === 'mail' ? N.filter(n => n.plat.includes('mail') || n.plat === 'Email') : [];
+  const render = (root) => {
+    const s = SVC.find(v => v.id === cur);
+    root.querySelector('.a8').dataset.open = cur ? '1' : '';
+    root.querySelector('#a8l').innerHTML = SVC.map(v => `<li class="a8-i ${v.id === cur ? 'sel' : ''}" data-pick="${v.id}" role="button" tabindex="0">${light(v.st)}<span class="grow"><b>${v.name}</b><span class="small muted" style="display:block">${v.line}</span></span></li>`).join('');
+    if (!s) return;
+    const ms = msgsFor(cur), es = errsFor(cur);
+    root.querySelector('#a8d').innerHTML = `<button class="pill ghost show-phone" data-act="a8back">← All systems</button><div class="row between"><div class="h2">${s.name}</div>${stTag(s.st)}</div><p class="small">${s.detail}</p>${bars(s.id)}
+      <div class="h3">Errors</div>${es.length ? es.map(e => `<div class="a-err small"><div class="row between"><code>${e.where}</code><span class="muted">${e.ago}</span></div>${esc(e.msg)} ${e.n > 1 ? '×' + e.n : ''}</div>`).join('') : '<div class="small muted">No errors since Friday noon.</div>'}
+      ${cur === 'jobs' ? `<div class="h3">Jobs</div>${JOBS.map(j => `<div class="row between small"><span>${light(j.res)} ${j.name}</span><span class="muted">${j.last} · ${j.note}</span></div>`).join('')}` : ''}
+      ${ms.length ? `<div class="h3">Messages through ${s.name}</div><table class="t t-phone-stack"><tbody>${ms.map(nRow).join('')}</tbody></table>` : ''}`;
+  };
+  actions.a8pick = (el) => { cur = el.dataset.pick; render(stage); };
+  actions.a8back = () => { cur = null; stage.querySelector('.a8').dataset.open = ''; stage.querySelectorAll('.a8-i').forEach(x => x.classList.remove('sel')); };
+  variants.push({ short: 'Split', name: 'Systems + detail', why: 'Pick a system on the left, see everything about it on the right: its bars, its errors, the messages that went through it.',
+    html: () => { cur = 'slack'; return `<div class="app wrap">${head('Systems')}<div class="a8"><ul class="card a8-left" id="a8l" data-picklist="a8pick"></ul><div class="card stack a8-right" id="a8d"></div></div></div>`; },
+    init: render });
+})();
+
+/* 9. Alert rules */
+(() => {
+  const ruleRow = (r, i) => `<div class="card a9-r ${r.on ? '' : 'off'}"><div class="a9-s">When <b>${r.when}</b> within <b>${r.within}</b>, <b>${r.then} ${r.who}</b>.</div><div class="row small"><span class="muted grow">${r.fired}</span><label class="row"><input type="checkbox" ${r.on ? 'checked' : ''} data-act="a9tog" data-i="${i}" class="a9-sw"> On</label></div></div>`;
+  actions.a9tog = (el) => { el.closest('.a9-r').classList.toggle('off', !el.checked); };
+  actions.a9add = () => { stage.querySelector('#a9new').hidden = false; };
+  actions.a9kind = (el) => { const v = el.dataset.val; stage.querySelector('#a9who').innerHTML = v === 'dm' ? `<select aria-label="Person"><option>Jazz</option><option>Ben Carter</option><option>Marcus Lee</option></select>` : `<select aria-label="Channel"><option>#web-team</option><option>#organizers</option><option>#sponsor-team</option></select>`; };
+  variants.push({ short: 'Alerts', name: 'Alert rules', why: 'Rules read as sentences, so anyone on the web team can tell what pages them. Adding one shows only the fields that kind of alert needs.',
+    html: () => `<div class="app wrap">${head('Alerts', 'Who gets told when something breaks')}
+      <div class="row">${SVC.map(s => `<span class="row small" style="gap:4px">${light(s.st)}${s.name}</span>`).join('')}</div>
+      <div class="stack">${ALERTS.map(ruleRow).join('')}</div>
+      <button class="pill" data-act="a9add" style="align-self:flex-start">+ Add a rule</button>
+      <div class="card stack" id="a9new" hidden><div class="a9-s">When <select aria-label="Event"><option>messages fail</option><option>a sync fails</option><option>the site is slow</option><option>a job is late</option></select> <input aria-label="How many" value="5" style="width:56px"> times within <select aria-label="Window"><option>10 min</option><option>30 min</option><option>1 hour</option></select></div>
+        <div class="row">Tell <div class="seg" data-act="a9kind"><button data-val="dm" aria-pressed="false">A person</button><button data-val="ch" aria-pressed="true">A channel</button></div><span id="a9who"><select aria-label="Channel"><option>#web-team</option><option>#organizers</option></select></span></div>
+        <div class="row"><button class="pill primary">Save rule</button><button class="pill" data-show="a9new">Cancel</button></div></div>
+      <div class="card stack"><div class="h3">Last fired</div><div class="small"><b>10:06 AM</b> · 7 messages failed in 10 min → DMed #web-team. Ben Carter reacted 👀 at 10:07.</div></div></div>` });
+})();
+
+/* 10. Jobs timeline */
+variants.push({ short: 'Jobs', name: 'Jobs timeline', why: 'Organized around the clock: each scheduled job is a row of its last runs and the next one, so a late or failing job is a gap you can see.',
+  html: () => { const times = ['9:52', '9:56', '10:00', '10:04', '10:09']; return `<div class="app wrap">${head('Scheduled jobs', '6 jobs · runs in the last 20 minutes')}
+    <div class="card a10"><div class="a10-r a10-h"><div></div><div class="a10-runs">${times.map(t => `<span class="small muted tnum">${t}</span>`).join('')}<span class="small muted">Next</span></div></div>
+    ${JOBS.map(j => `<div class="a10-r"><div><div class="row">${light(j.res)}<b>${j.name}</b></div><div class="small muted">${j.every} · ${j.note}</div></div><div class="a10-runs">${j.runs.map((r, i) => `<span class="a10-dot r${r}" title="${times[i]}: ${['ran fine', 'late', 'failed'][r]}"></span>`).join('')}<span class="small tnum">${j.next}</span></div></div>`).join('')}</div>
+    <div class="a10-two"><div class="card stack"><div class="h3">What the jobs sent</div>${['chat', 'ops', 'task'].map(k => `<div class="row between small"><span>${KINDS[k]}</span><span>${N.filter(n => n.kind === k).length} · ${N.filter(n => n.kind === k && n.st === 'Failed').length} failed</span></div>`).join('')}<div class="row between small"><span>Hacker answers</span><span>${RESP.accepted} yes · ${RESP.declined} no · ${RESP.noReply} no reply</span></div></div>
+    <div class="card stack"><div class="h3">Errors from jobs</div>${ERRS.slice(0, 3).map(e => `<div class="small"><b>${e.job}</b> · ${e.at}<div class="muted">${esc(e.msg)}</div></div>`).join('')}<button class="pill" data-act="retryAll" style="align-self:flex-start">Retry ${failedN} failed messages</button></div></div></div>`; } });
+
+/* ===== Harness wiring (PICKER.md behaviour) ===== */
+const stage = document.getElementById('stage');
+const frame = document.getElementById('frame');
+const note = document.getElementById('h-note');
+const picker = document.querySelector('.proto-picker');
+const highlight = picker.querySelector('.proto-picker-highlight');
+variants.forEach((v, i) => {
+  const b = document.createElement('button');
+  b.className = 'proto-picker-item';
+  b.textContent = (i + 1) % 10 + ' ' + v.short;
+  picker.appendChild(b);
+});
+const items = [...picker.querySelectorAll('.proto-picker-item')];
+let current = 0;
+function moveHighlight() {
+  const el = items[current];
+  highlight.style.width = el.offsetWidth + 'px';
+  highlight.style.transform = `translateX(${el.offsetLeft}px)`;
+}
+function mount(i) {
+  stage.innerHTML = '';
+  requestAnimationFrame(() => {
+    stage.innerHTML = variants[i].html();
+    variants[i].init && variants[i].init(stage);
+  });
+}
+function setActive(i) {
+  if (i < 0 || i >= variants.length) return;
+  current = i;
+  items.forEach((el, j) => {
+    el.toggleAttribute('data-active', j === i);
+    if (j === i) el.setAttribute('aria-current', 'true'); else el.removeAttribute('aria-current');
+  });
+  moveHighlight();
+  items[i].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  note.innerHTML = `<b>${i + 1}. ${variants[i].name}</b> — ${variants[i].why}`;
+  const url = new URL(location);
+  url.searchParams.set('v', i + 1);
+  history.replaceState(null, '', url);
+  mount(i);
+}
+items.forEach((el, i) => el.addEventListener('click', () => setActive(i)));
+window.addEventListener('resize', moveHighlight);
+document.addEventListener('keydown', (e) => {
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const num = e.key === '0' ? 10 : parseInt(e.key, 10);
+  if (num >= 1 && num <= variants.length) setActive(num - 1);
+  else if (e.key === 'ArrowRight') setActive((current + 1) % variants.length);
+  else if (e.key === 'ArrowLeft') setActive((current - 1 + variants.length) % variants.length);
+});
+/* Desktop / Phone frame */
+const frameBtns = [...document.querySelectorAll('[data-frame]')];
+function setFrame(mode) {
+  frame.dataset.mode = mode;
+  frameBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.frame === mode)));
+  const url = new URL(location); url.searchParams.set('f', mode); history.replaceState(null, '', url);
+}
+frameBtns.forEach(b => b.addEventListener('click', () => setFrame(b.dataset.frame)));
+setFrame(new URLSearchParams(location.search).get('f') === 'phone' ? 'phone' : 'desktop');
+
+/* ===== Shared interaction kit (event delegation on the stage) =====
+   .seg[data-filter] buttons[data-val] → show [data-cat~=val] inside closest [data-scope]
+   [data-show=id] toggles #id hidden; [data-act=name] → actions[name](el, e)
+   [data-pick] inside [data-picklist] → marks .sel, calls actions[list value] */
+stage.addEventListener('click', (e) => {
+  const segBtn = e.target.closest('.seg button');
+  if (segBtn) {
+    const seg = segBtn.closest('.seg');
+    seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b === segBtn)));
+    if (seg.dataset.filter !== undefined) {
+      const scope = seg.closest('[data-scope]') || stage;
+      const val = segBtn.dataset.val;
+      scope.querySelectorAll('[data-cat]').forEach(el => {
+        el.hidden = !(val === 'all' || el.dataset.cat.split(' ').includes(val));
+      });
+    }
+    if (seg.dataset.act && actions[seg.dataset.act]) actions[seg.dataset.act](segBtn, e);
+    if (segBtn.dataset.act && actions[segBtn.dataset.act]) actions[segBtn.dataset.act](segBtn, e);
+    return;
+  }
+  const show = e.target.closest('[data-show]');
+  if (show) { const t = stage.querySelector('#' + show.dataset.show); if (t) t.hidden = !t.hidden; }
+  const pick = e.target.closest('[data-pick]');
+  if (pick) {
+    const list = pick.closest('[data-picklist]');
+    list.querySelectorAll('[data-pick]').forEach(x => x.classList.toggle('sel', x === pick));
+    if (actions[list.dataset.picklist]) actions[list.dataset.picklist](pick, e);
+  }
+  const act = e.target.closest('[data-act]');
+  if (act && !act.classList.contains('seg') && actions[act.dataset.act]) actions[act.dataset.act](act, e);
+});
+
+const requested = parseInt(new URLSearchParams(location.search).get('v'), 10);
+setActive(requested >= 1 && requested <= variants.length ? requested - 1 : 0);
+requestAnimationFrame(() => requestAnimationFrame(() => picker.setAttribute('data-ready', '')));
+</script>
+</body>
+</html>
