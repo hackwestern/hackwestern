@@ -84,13 +84,27 @@ export function slotsByRoom(
   return [...groups].map(([room, list]) => ({ room, slots: list }));
 }
 
+/**
+ * What a slot cell shows: booked capped at the ask ("3/3", never "4/3"),
+ * plus how many are booked beyond it (an ask lowered after booking, or
+ * chats starting at different times inside one slot). Same cap as
+ * slotTotals, so cells and totals agree.
+ */
+export function slotFill(slot: Pick<ChatSlotFill, "booked" | "needed">): {
+  shown: number;
+  over: number;
+} {
+  const shown = Math.min(slot.booked, slot.needed);
+  return { shown, over: slot.booked - shown };
+}
+
 /** Hackers booked and asked for over some slots (booked capped per slot). */
 export function slotTotals(
   slots: readonly Pick<ChatSlotFill, "booked" | "needed">[],
 ): { booked: number; needed: number; open: number } {
   return slots.reduce<{ booked: number; needed: number; open: number }>(
     (t, s) => ({
-      booked: t.booked + Math.min(s.booked, s.needed),
+      booked: t.booked + slotFill(s).shown,
       needed: t.needed + s.needed,
       open: t.open + (slotTone(s) === "open" ? 1 : 0),
     }),

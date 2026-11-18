@@ -192,10 +192,19 @@ export const sponsorOrganizerCopy = {
     // Saturday
     slot: (time: string, booked: number, needed: number) =>
       `${time} ${booked}/${needed}`,
-    slotLabel: (room: string, time: string, booked: number, needed: number) =>
-      needed === 0
+    slotLabel: (
+      room: string,
+      time: string,
+      booked: number,
+      needed: number,
+      over = 0,
+    ) =>
+      (needed === 0
         ? `${room} at ${time}: asked for no hackers`
-        : `${room} at ${time}: ${booked} of ${needed} hackers booked`,
+        : `${room} at ${time}: ${booked} of ${needed} hackers booked`) +
+      (over > 0 ? `, ${over} more than asked for` : ""),
+    /** Hackers booked beyond a slot's ask (shown next to "3/3"). */
+    slotOver: (n: number) => `+${n} over`,
     noSlots: "No room given yet",
     // Sunday
     round1: {
