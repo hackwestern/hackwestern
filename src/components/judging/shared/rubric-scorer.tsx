@@ -32,31 +32,31 @@ export const DEFAULT_RUBRIC: Rubric = {
   weighted: false,
   criteria: [
     {
-      id: "innovation",
-      name: "Innovation & Creativity",
+      id: "impact",
+      name: "Innovation + Impact",
       description:
-        "How unique or original is the project idea? Does it present a new solution to a problem or use technology in an unexpected way?",
+        "How new is the idea, and how much does it matter? Does it solve a real problem in a way that could make a difference beyond the hackathon?",
       weight: 1,
     },
     {
-      id: "technical",
-      name: "Technical Complexity",
+      id: "creativity",
+      name: "Creativity",
       description:
-        "How technically challenging is the project? Did the team push the boundaries with complex algorithms, integrations, or hardware?",
-      weight: 1,
-    },
-    {
-      id: "completeness",
-      name: "Completeness",
-      description:
-        "Does the project work as intended? Are there any major bugs or broken features?",
+        "How original is the approach? Does the team use technology, design or ideas in an unexpected way?",
       weight: 1,
     },
     {
       id: "design",
-      name: "Design",
+      name: "Design/Polish",
       description:
-        "How user-friendly and visually appealing is the project? Is the interface intuitive and easy to navigate?",
+        "How finished and easy to use does it feel? Is the interface clear, and does the demo run smoothly?",
+      weight: 1,
+    },
+    {
+      id: "adventurous",
+      name: "Adventurous",
+      description:
+        "How bold was the team? Did they take a risk on something new to them, like an unfamiliar technology, domain or approach?",
       weight: 1,
     },
   ],

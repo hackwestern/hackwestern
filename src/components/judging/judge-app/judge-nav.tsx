@@ -2,6 +2,8 @@ import { focusRing } from "~/components/judging/shared/judge-ui";
 
 export const JUDGE_TABS = [
   { id: "next", label: "Next" },
+  { id: "questions", label: "Questions" },
+  // Score sits in the middle, the easiest tab to reach with a thumb.
   { id: "score", label: "Score" },
   { id: "teams", label: "My teams" },
   { id: "map", label: "Map" },
@@ -36,10 +38,18 @@ export function JudgeNav({
         {/* One highlight that slides to whichever tab is open. */}
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-0 w-1/4 border-t-[3px] border-dashboard-action-primary bg-dashboard-bg-navSelected transition-transform duration-300 ease-out motion-reduce:transition-none"
-          style={{ transform: `translateX(${activeIndex * 100}%)` }}
+          className="pointer-events-none absolute inset-y-0 left-0 border-t-[3px] border-dashboard-action-primary bg-dashboard-bg-navSelected transition-transform duration-300 ease-out motion-reduce:transition-none"
+          style={{
+            width: `${100 / JUDGE_TABS.length}%`,
+            transform: `translateX(${activeIndex * 100}%)`,
+          }}
         />
-        <ul className="relative m-0 grid list-none grid-cols-4 p-0">
+        <ul
+          className="relative m-0 grid list-none p-0"
+          style={{
+            gridTemplateColumns: `repeat(${JUDGE_TABS.length}, minmax(0, 1fr))`,
+          }}
+        >
           {JUDGE_TABS.map((tab) => {
             const on = active === tab.id;
             const reason = disabled[tab.id];
@@ -51,7 +61,7 @@ export function JudgeNav({
                   disabled={locked}
                   aria-current={on ? "page" : undefined}
                   onClick={() => onChange(tab.id)}
-                  className={`flex min-h-14 w-full items-center justify-center border-t-[3px] border-transparent text-sm font-semibold transition-colors duration-200 motion-reduce:transition-none ${
+                  className={`flex min-h-14 w-full items-center justify-center border-t-[3px] border-transparent px-0.5 text-center text-[13px] font-semibold leading-tight transition-colors duration-200 motion-reduce:transition-none min-[400px]:text-sm ${
                     locked
                       ? "cursor-not-allowed text-dashboard-text-disabled"
                       : on
