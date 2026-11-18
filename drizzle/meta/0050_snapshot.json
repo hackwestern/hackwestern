@@ -1,5 +1,5 @@
 {
-  "id": "023728af-1f6a-4a87-9295-4bbf159f049b",
+  "id": "2a7ce27e-8239-480a-9104-43802dda92d4",
   "prevId": "86187f5b-7190-4d6a-b177-645381ab53f7",
   "version": "7",
   "dialect": "postgresql",
@@ -2848,6 +2848,99 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.sponsor_presentation_notice": {
+      "name": "sponsor_presentation_notice",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "varchar(12)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slots_key": {
+          "name": "slots_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "claimed_at": {
+          "name": "claimed_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "sponsor_presentation_notice_team_idx": {
+          "name": "sponsor_presentation_notice_team_idx",
+          "columns": [
+            {
+              "expression": "team_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sponsor_presentation_notice_user_id_user_id_fk": {
+          "name": "sponsor_presentation_notice_user_id_user_id_fk",
+          "tableFrom": "sponsor_presentation_notice",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sponsor_presentation_notice_team_id_team_id_fk": {
+          "name": "sponsor_presentation_notice_team_id_team_id_fk",
+          "tableFrom": "sponsor_presentation_notice",
+          "tableTo": "team",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.sponsor_presentation": {
       "name": "sponsor_presentation",
       "schema": "",
@@ -2882,12 +2975,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "notified_at": {
-          "name": "notified_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {

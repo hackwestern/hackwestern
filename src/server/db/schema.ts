@@ -571,7 +571,7 @@ export const sponsorShortlistSends = pgTable("sponsor_shortlist_send", {
 // row per (sponsor, sent-shortlist team). startMinute is minutes after
 // midnight Eastern on judging day; null = couldn't fit (room set) or the
 // sponsor had no room (room null). "Schedule presentations" replaces every
-// row; notifiedAt is when the team's Slack DMs went out.
+// row; who was told which times lives in sponsor_presentation_notice.
 export const sponsorPresentations = pgTable(
   "sponsor_presentation",
   {
@@ -586,12 +586,38 @@ export const sponsorPresentations = pgTable(
     scheduledAt: timestamp("scheduled_at", { mode: "date", precision: 3 })
       .defaultNow()
       .notNull(),
-    notifiedAt: timestamp("notified_at", { mode: "date", precision: 3 }),
   },
   (t) => [
     primaryKey({ columns: [t.sponsorId, t.teamId] }),
     index("sponsor_presentation_team_idx").on(t.teamId),
   ],
+);
+
+// One row per team member DM'd (or tried) about presentations. A notify
+// claims the row atomically (status "sending") before sending, so a double
+// click or retry can't DM twice. slotsKey (slotsKey() in
+// src/lib/sponsor-presentations.ts) is the set of times the member was
+// sent: a member is up to date while it matches their team's slots, so
+// rescheduling a team without changing its times keeps them notified.
+export const sponsorPresentationNotices = pgTable(
+  "sponsor_presentation_notice",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 12 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    // "sending" | "sent" | "not-found" | "failed"
+    status: varchar("status", { length: 16 }).notNull(),
+    slotsKey: text("slots_key").notNull(),
+    claimedAt: timestamp("claimed_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    /** Last successful DM; null = never reached. */
+    sentAt: timestamp("sent_at", { mode: "date", precision: 3 }),
+  },
+  (t) => [index("sponsor_presentation_notice_team_idx").on(t.teamId)],
 );
 
 export const sponsorHelpStatusEnum = pgEnum("sponsor_help_status", [
