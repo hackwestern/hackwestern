@@ -69,8 +69,6 @@ const FOCUS_GROWTH = 1.3;
 
 const STORAGE_KEY = "hw-sponsor-schedule-show-hackathon";
 const ORGANIZERS_STORAGE_KEY = "hw-sponsor-schedule-show-organizers";
-// Schedule folded to its header, so what sits below is in view.
-const COLLAPSED_STORAGE_KEY = "hw-sponsor-schedule-collapsed";
 // The narrow "who's around" column (organizers only), right of the times.
 const ORGANIZERS_WIDTH = 92;
 
@@ -372,8 +370,8 @@ export function DayGrid({
     setSelected(entry);
   };
   // Fold the grid to its header to see the details under it (Jazz,
-  // 2026-11-18). Remembered on this device.
-  const [collapsed, setCollapsed] = useStoredFlag(COLLAPSED_STORAGE_KEY);
+  // 2026-11-18). Always starts open; not remembered.
+  const [collapsed, setCollapsed] = useState(false);
   const bodyId = `${headingId}-body`;
 
   return (
@@ -397,246 +395,255 @@ export function DayGrid({
             variant="outline"
             aria-expanded={!collapsed}
             aria-controls={bodyId}
+            aria-label={
+              collapsed ? copy.collapse.expand : copy.collapse.collapse
+            }
+            title={collapsed ? copy.collapse.expand : copy.collapse.collapse}
             onClick={() => setCollapsed(!collapsed)}
-            className="h-9 gap-1.5 px-3 text-sm motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.97]"
+            className="size-11 p-0 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.97]"
           >
             {collapsed ? (
-              <ChevronDown aria-hidden className="size-4" />
+              <ChevronDown aria-hidden className="size-6" />
             ) : (
-              <ChevronUp aria-hidden className="size-4" />
+              <ChevronUp aria-hidden className="size-6" />
             )}
-            {collapsed ? copy.collapse.expand : copy.collapse.collapse}
           </DashboardButton>
         </div>
       </div>
       <div id={bodyId} hidden={collapsed}>
-      <div className="-mt-1 mb-3 flex flex-wrap items-center justify-end gap-2 empty:hidden">
-        {focused ? (
-          <DashboardButton
-            variant="outline"
-            className="h-11 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.97]"
-            onClick={() => setFocusChoice(null)}
-          >
-            {copy.focus.showAll}
-          </DashboardButton>
-        ) : (
-          entries.length > 0 && (
-            <p className="m-0 text-sm text-dashboard-text-light">
-              {copy.focus.hint}
-            </p>
-          )
-        )}
-      </div>
-      <p aria-live="polite" className="sr-only">
-        {focused ? copy.focus.focused(label(focused)) : ""}
-      </p>
-
-      {entries.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-dashboard-lg bg-dashboard-bg-inset p-6 text-center">
-          <CalendarX
-            aria-hidden
-            className="size-6 text-dashboard-text-light"
-            strokeWidth={1.67}
-          />
-          <p className="m-0 text-base text-dashboard-text-medium">
-            {emptyText}
-          </p>
-        </div>
-      ) : (
-        <div
-          ref={scroller}
-          role="region"
-          aria-label={copy.gridLabel(day)}
-          tabIndex={0}
-          className="max-h-[80vh] overflow-auto overscroll-x-contain rounded-dashboard-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
-        >
-          <div style={{ minWidth }}>
-            {/* Column headers, pinned while the grid scrolls. Each is a
-                button that focuses its column (and unfocuses it again). */}
-            <div
-              className="sticky top-0 z-40 grid border-b-2 border-dashboard-border-default bg-dashboard-bg-surface"
-              style={{ gridTemplateColumns: template }}
+        <div className="-mt-1 mb-3 flex flex-wrap items-center justify-end gap-2 empty:hidden">
+          {focused ? (
+            <DashboardButton
+              variant="outline"
+              className="h-11 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.97]"
+              onClick={() => setFocusChoice(null)}
             >
-              <span
-                aria-hidden
-                className="sticky left-0 z-10 flex items-end bg-dashboard-bg-surface pb-2 text-xs font-semibold uppercase tracking-wide text-dashboard-text-light"
-              >
-                {copy.timeHeader}
-              </span>
-              {showOrganizers && (
-                <span className="flex min-h-11 items-end border-l border-dashboard-border-subtle px-2 py-2 text-xs font-semibold uppercase leading-tight tracking-wide text-dashboard-text-medium">
-                  {copy.organizers.header}
-                </span>
-              )}
-              {columns.map(({ column }) => {
-                const isFocused = focused === column;
-                const muted = focused !== null && !isFocused;
-                return (
-                  <button
-                    key={column}
-                    ref={(el) => {
-                      if (el) headers.current.set(column, el);
-                      else headers.current.delete(column);
-                    }}
-                    type="button"
-                    aria-pressed={isFocused}
-                    aria-label={copy.focus.focusColumn(label(column))}
-                    title={label(column)}
-                    onClick={() => toggleFocus(column)}
-                    className={cn(
-                      "flex min-h-11 min-w-0 cursor-pointer items-end gap-1 py-2 text-left text-xs font-semibold uppercase leading-tight tracking-wide text-dashboard-text-medium",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary",
-                      "[@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
-                      muted ? "justify-center px-0" : "px-2",
-                      column === "tasks" && !focused && PINNED_TASKS,
-                      isFocused &&
-                        "bg-dashboard-bg-highlight text-dashboard-text-active",
-                    )}
-                  >
-                    {muted ? (
-                      <span
-                        aria-hidden
-                        className={cn(
-                          "mb-0.5 size-3 shrink-0 rounded-dashboard-xs",
-                          COLUMN_SWATCH[column],
-                        )}
-                      />
-                    ) : (
-                      <>
-                        {/* Wraps to a second line rather than clipping. */}
-                        <span className="min-w-0 break-words">
-                          {label(column)}
-                        </span>
-                        {isFocused && (
-                          <X aria-hidden className="mb-px size-3.5 shrink-0" />
-                        )}
-                      </>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+              {copy.focus.showAll}
+            </DashboardButton>
+          ) : (
+            entries.length > 0 && (
+              <p className="m-0 text-sm text-dashboard-text-light">
+                {copy.focus.hint}
+              </p>
+            )
+          )}
+        </div>
+        <p aria-live="polite" className="sr-only">
+          {focused ? copy.focus.focused(label(focused)) : ""}
+        </p>
 
-            {/* Keyed on day and focus: the blocks fade in after a change
+        {entries.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 rounded-dashboard-lg bg-dashboard-bg-inset p-6 text-center">
+            <CalendarX
+              aria-hidden
+              className="size-6 text-dashboard-text-light"
+              strokeWidth={1.67}
+            />
+            <p className="m-0 text-base text-dashboard-text-medium">
+              {emptyText}
+            </p>
+          </div>
+        ) : (
+          <div
+            ref={scroller}
+            role="region"
+            aria-label={copy.gridLabel(day)}
+            tabIndex={0}
+            className="max-h-[80vh] overflow-auto overscroll-x-contain rounded-dashboard-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+          >
+            <div style={{ minWidth }}>
+              {/* Column headers, pinned while the grid scrolls. Each is a
+                button that focuses its column (and unfocuses it again). */}
+              <div
+                className="sticky top-0 z-40 grid border-b-2 border-dashboard-border-default bg-dashboard-bg-surface"
+                style={{ gridTemplateColumns: template }}
+              >
+                <span
+                  aria-hidden
+                  className="sticky left-0 z-10 flex items-end bg-dashboard-bg-surface pb-2 text-xs font-semibold uppercase tracking-wide text-dashboard-text-light"
+                >
+                  {copy.timeHeader}
+                </span>
+                {showOrganizers && (
+                  <span className="flex min-h-11 items-end border-l border-dashboard-border-subtle px-2 py-2 text-xs font-semibold uppercase leading-tight tracking-wide text-dashboard-text-medium">
+                    {copy.organizers.header}
+                  </span>
+                )}
+                {columns.map(({ column }) => {
+                  const isFocused = focused === column;
+                  const muted = focused !== null && !isFocused;
+                  return (
+                    <button
+                      key={column}
+                      ref={(el) => {
+                        if (el) headers.current.set(column, el);
+                        else headers.current.delete(column);
+                      }}
+                      type="button"
+                      aria-pressed={isFocused}
+                      aria-label={copy.focus.focusColumn(label(column))}
+                      title={label(column)}
+                      onClick={() => toggleFocus(column)}
+                      className={cn(
+                        "flex min-h-11 min-w-0 cursor-pointer items-end gap-1 py-2 text-left text-xs font-semibold uppercase leading-tight tracking-wide text-dashboard-text-medium",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary",
+                        "[@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
+                        muted ? "justify-center px-0" : "px-2",
+                        column === "tasks" && !focused && PINNED_TASKS,
+                        isFocused &&
+                          "bg-dashboard-bg-highlight text-dashboard-text-active",
+                      )}
+                    >
+                      {muted ? (
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "mb-0.5 size-3 shrink-0 rounded-dashboard-xs",
+                            COLUMN_SWATCH[column],
+                          )}
+                        />
+                      ) : (
+                        <>
+                          {/* Wraps to a second line rather than clipping. */}
+                          <span className="min-w-0 break-words">
+                            {label(column)}
+                          </span>
+                          {isFocused && (
+                            <X
+                              aria-hidden
+                              className="mb-px size-3.5 shrink-0"
+                            />
+                          )}
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Keyed on day and focus: the blocks fade in after a change
                 (short, ease-out, none with reduced motion) instead of
                 snapping to the new layout. Headers aren't keyed, so a
                 keyboard user keeps focus on the heading they pressed. */}
-            <div
-              key={`${day}-${focused ?? "all"}`}
-              className="relative grid motion-safe:duration-200 motion-safe:ease-out motion-safe:animate-in motion-safe:fade-in-0"
-              style={{ gridTemplateColumns: template, height }}
-            >
-              {/* Half-hour rules across every column (visual only). */}
-              <div aria-hidden className="pointer-events-none absolute inset-0">
-                {rows.map((row) =>
-                  row.type === "slot" ? (
-                    <div
-                      key={`rule-${row.minute}`}
-                      className="absolute inset-x-0 border-t border-dashboard-border-subtle"
-                      style={{ top: y(row.minute) }}
-                    />
-                  ) : (
-                    <div
-                      key={`gap-${row.from}`}
-                      className="absolute inset-x-0 my-1 flex items-center justify-center rounded-dashboard-sm border border-dashed border-dashboard-border-default bg-dashboard-bg-inset text-dashboard-text-light"
-                      style={{
-                        top: y(row.from) - GAP_HEIGHT / 2,
-                        height: GAP_HEIGHT - 8,
-                      }}
-                    >
-                      ⋯
-                    </div>
-                  ),
-                )}
-              </div>
-
-              {/* Time column, pinned on the left while scrolling sideways. */}
               <div
-                aria-hidden
-                className="sticky left-0 z-30 bg-dashboard-bg-surface"
+                key={`${day}-${focused ?? "all"}`}
+                className="relative grid motion-safe:duration-200 motion-safe:ease-out motion-safe:animate-in motion-safe:fade-in-0"
+                style={{ gridTemplateColumns: template, height }}
               >
-                {rows.map((row) =>
-                  row.type === "slot" ? (
-                    <span
-                      key={`time-${row.minute}`}
-                      className="absolute left-0 border-t border-dashboard-border-subtle pr-2 pt-1 text-xs leading-tight text-dashboard-text-light"
-                      style={{ top: y(row.minute), width: TIME_WIDTH }}
-                    >
-                      {formatMinutes(row.minute)}
-                    </span>
-                  ) : null,
-                )}
-              </div>
-
-              {showOrganizers && availability && (
-                <OrganizersColumn
-                  availability={availability}
-                  day={day}
-                  rows={rows}
-                  y={y}
-                />
-              )}
-
-              {columns.map(({ column, entries: laid }) => {
-                const muted = focused !== null && focused !== column;
-                return (
-                  <ol
-                    key={column}
-                    aria-label={label(column)}
-                    // Other columns stay readable and clickable, just faded.
-                    className={cn(
-                      "relative m-0 list-none border-l border-dashboard-border-subtle p-0 transition-opacity duration-150 motion-reduce:transition-none",
-                      column === "tasks" &&
-                        !focused &&
-                        cn(PINNED_TASKS, "z-30"),
-                      muted && "opacity-50",
-                    )}
-                  >
-                    {laid.map((entry) => (
-                      <GridBlock
-                        key={entry.id}
-                        entry={entry}
-                        column={column}
-                        top={y(entry.start)}
-                        height={Math.max(
-                          y(entry.end) - y(entry.start),
-                          GRID_SIZES.minBlock,
-                        )}
-                        nowMinute={nowMinute}
-                        mode={mode}
-                        sponsorName={sponsorName}
-                        onOpen={open}
-                        expanded={focused === column}
-                      />
-                    ))}
-                  </ol>
-                );
-              })}
-
-              {/* Now line: a pill in the time column, a dot where the line
-                  starts and the line across every column. */}
-              {nowY !== null && (
+                {/* Half-hour rules across every column (visual only). */}
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute inset-x-0 z-[35] flex items-center"
-                  style={{ top: nowY, transform: "translateY(-50%)" }}
+                  className="pointer-events-none absolute inset-0"
                 >
-                  <span
-                    className="sticky left-0 flex shrink-0 items-center bg-dashboard-bg-surface"
-                    style={{ width: TIME_WIDTH }}
-                  >
-                    <span className="whitespace-nowrap rounded-dashboard-xs bg-dashboard-action-primary px-1 py-0.5 text-[11px] font-bold leading-tight text-dashboard-text-inverse">
-                      {formatMinutes(Math.floor(nowMinute))}
-                    </span>
-                  </span>
-                  <span className="-ml-1 size-2 shrink-0 rounded-full bg-dashboard-action-primary" />
-                  <span className="h-0.5 flex-1 bg-dashboard-action-primary" />
+                  {rows.map((row) =>
+                    row.type === "slot" ? (
+                      <div
+                        key={`rule-${row.minute}`}
+                        className="absolute inset-x-0 border-t border-dashboard-border-subtle"
+                        style={{ top: y(row.minute) }}
+                      />
+                    ) : (
+                      <div
+                        key={`gap-${row.from}`}
+                        className="absolute inset-x-0 my-1 flex items-center justify-center rounded-dashboard-sm border border-dashed border-dashboard-border-default bg-dashboard-bg-inset text-dashboard-text-light"
+                        style={{
+                          top: y(row.from) - GAP_HEIGHT / 2,
+                          height: GAP_HEIGHT - 8,
+                        }}
+                      >
+                        ⋯
+                      </div>
+                    ),
+                  )}
                 </div>
-              )}
+
+                {/* Time column, pinned on the left while scrolling sideways. */}
+                <div
+                  aria-hidden
+                  className="sticky left-0 z-30 bg-dashboard-bg-surface"
+                >
+                  {rows.map((row) =>
+                    row.type === "slot" ? (
+                      <span
+                        key={`time-${row.minute}`}
+                        className="absolute left-0 border-t border-dashboard-border-subtle pr-2 pt-1 text-xs leading-tight text-dashboard-text-light"
+                        style={{ top: y(row.minute), width: TIME_WIDTH }}
+                      >
+                        {formatMinutes(row.minute)}
+                      </span>
+                    ) : null,
+                  )}
+                </div>
+
+                {showOrganizers && availability && (
+                  <OrganizersColumn
+                    availability={availability}
+                    day={day}
+                    rows={rows}
+                    y={y}
+                  />
+                )}
+
+                {columns.map(({ column, entries: laid }) => {
+                  const muted = focused !== null && focused !== column;
+                  return (
+                    <ol
+                      key={column}
+                      aria-label={label(column)}
+                      // Other columns stay readable and clickable, just faded.
+                      className={cn(
+                        "relative m-0 list-none border-l border-dashboard-border-subtle p-0 transition-opacity duration-150 motion-reduce:transition-none",
+                        column === "tasks" &&
+                          !focused &&
+                          cn(PINNED_TASKS, "z-30"),
+                        muted && "opacity-50",
+                      )}
+                    >
+                      {laid.map((entry) => (
+                        <GridBlock
+                          key={entry.id}
+                          entry={entry}
+                          column={column}
+                          top={y(entry.start)}
+                          height={Math.max(
+                            y(entry.end) - y(entry.start),
+                            GRID_SIZES.minBlock,
+                          )}
+                          nowMinute={nowMinute}
+                          mode={mode}
+                          sponsorName={sponsorName}
+                          onOpen={open}
+                          expanded={focused === column}
+                        />
+                      ))}
+                    </ol>
+                  );
+                })}
+
+                {/* Now line: a pill in the time column, a dot where the line
+                  starts and the line across every column. */}
+                {nowY !== null && (
+                  <div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-0 z-[35] flex items-center"
+                    style={{ top: nowY, transform: "translateY(-50%)" }}
+                  >
+                    <span
+                      className="sticky left-0 flex shrink-0 items-center bg-dashboard-bg-surface"
+                      style={{ width: TIME_WIDTH }}
+                    >
+                      <span className="whitespace-nowrap rounded-dashboard-xs bg-dashboard-action-primary px-1 py-0.5 text-[11px] font-bold leading-tight text-dashboard-text-inverse">
+                        {formatMinutes(Math.floor(nowMinute))}
+                      </span>
+                    </span>
+                    <span className="-ml-1 size-2 shrink-0 rounded-full bg-dashboard-action-primary" />
+                    <span className="h-0.5 flex-1 bg-dashboard-action-primary" />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
 
       <EventDetails

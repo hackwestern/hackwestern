@@ -108,7 +108,8 @@ export const scheduleCopy = {
       tasks: "Team tasks",
     },
     // Fold the schedule to its header (Jazz, 2026-11-18).
-    collapse: { collapse: "Minimize", expand: "Show schedule" },
+    // Labels for the icon-only button (screen readers + tooltip).
+    collapse: { collapse: "Minimize schedule", expand: "Show schedule" },
     focus: {
       focusColumn: (column: string) => `Focus on ${column}`,
       showAll: "Show all columns",
