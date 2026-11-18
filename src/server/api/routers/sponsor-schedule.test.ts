@@ -81,6 +81,7 @@ vi.mock("~/server/api/utils/run-of-show-sheet", () => {
 });
 
 let alphaId: string;
+let betaId: string;
 
 const publicCaller = createCaller(createInnerTRPCContext({ session: null }));
 
@@ -90,6 +91,7 @@ beforeAll(async () => {
     .values([{ name: alphaName }, { name: betaName }])
     .returning({ id: sponsorJudgingSponsors.id, name: sponsorJudgingSponsors.name });
   alphaId = rows.find((r) => r.name === alphaName)!.id;
+  betaId = rows.find((r) => r.name === betaName)!.id;
 });
 
 afterAll(async () => {
@@ -166,11 +168,20 @@ describe("sponsorSchedule.organizer", () => {
 });
 
 describe("sponsorSchedule.get ceremonies and workshops", () => {
-  test("full running order with only this sponsor's slots flagged", async () => {
+  test("only this sponsor's own ceremony segments, no running order", async () => {
     const result = await publicCaller.sponsorSchedule.get({ sponsor: alphaId });
     expect(
       result.ceremonies.map((c) => `${c.order} ${c.sponsor} ${c.yours}`),
-    ).toEqual([`1 ${alphaName} true`, `2 ${betaName} false`]);
+    ).toEqual([`1 ${alphaName} true`]);
+    expect(JSON.stringify(result.ceremonies)).not.toContain(betaName);
+  });
+
+  test("never returns another sponsor's ceremony segment", async () => {
+    const result = await publicCaller.sponsorSchedule.get({ sponsor: betaId });
+    expect(
+      result.ceremonies.map((c) => `${c.order} ${c.sponsor} ${c.yours}`),
+    ).toEqual([`2 ${betaName} true`]);
+    expect(JSON.stringify(result.ceremonies)).not.toContain(alphaName);
   });
 
   test("only this sponsor's workshops, with time and room from RUN OF SHOW", async () => {

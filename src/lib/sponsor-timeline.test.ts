@@ -6,6 +6,7 @@ import {
   buildAxis,
   buildSponsorTimeline,
   formatMinutes,
+  isAlwaysShown,
   isSameEvent,
   layoutGrid,
   liveDayEntries,
@@ -134,6 +135,26 @@ describe("isSameEvent", () => {
   });
 });
 
+describe("isAlwaysShown", () => {
+  it("is true for food and opening/closing ceremonies", () => {
+    expect(isAlwaysShown({ category: "food", title: "Lunch" })).toBe(true);
+    expect(
+      isAlwaysShown({ category: "big-event", title: "Opening Ceremony!" }),
+    ).toBe(true);
+    expect(
+      isAlwaysShown({ category: "main", title: "closing ceremonies" }),
+    ).toBe(true);
+  });
+  it("is false for other hackathon events", () => {
+    expect(isAlwaysShown({ category: "workshop", title: "Intro to Git" })).toBe(
+      false,
+    );
+    expect(isAlwaysShown({ category: "other", title: "Movie Night" })).toBe(
+      false,
+    );
+  });
+});
+
 describe("buildSponsorTimeline", () => {
   const build = (showHackathon = true, l: DaySchedule[] | undefined = live) =>
     buildSponsorTimeline({
@@ -173,10 +194,13 @@ describe("buildSponsorTimeline", () => {
     ).toEqual(["Opening Ceremony!", "Lunch"]);
   });
 
-  it("hides every hackathon event when switched off", () => {
+  it("keeps only food and ceremonies from the hackathon when switched off", () => {
     expect(build(false).map((e) => [e.title, e.kind])).toEqual([
+      ["Breakfast", "hackathon"],
       ["Scotiabank Workshop", "yours"],
+      ["Opening Ceremony", "hackathon"],
       ["Sponsor Bay", "yours"],
+      ["Lunch", "hackathon"],
     ]);
   });
 
@@ -292,22 +316,23 @@ describe("layoutGrid", () => {
           ["git", 1, 2],
         ],
       ],
+      ["food", []],
       ["spon-booth", [["bay", 0, 1]]],
       ["coffee-chats", []],
       ["other", [["hunt", 0, 1]]],
     ]);
   });
 
-  it("puts every muted hackathon event and Main event item in Hackathon events", () => {
+  it("puts Main event items in Hackathon events and every meal in Food", () => {
     const grid = layoutGrid([
       { ...e("dinner", "food", 1080, 1140), kind: "hackathon" },
       e("opening", "big-event", 540, 600),
       e("lunch", "food", 720, 780),
     ]);
     expect(grid.map((c) => [c.column, c.entries.map((x) => x.id)])).toEqual([
-      ["hackathon", ["opening", "dinner"]],
+      ["hackathon", ["opening"]],
       ["sponsor-workshop", []],
-      ["food", ["lunch"]],
+      ["food", ["lunch", "dinner"]],
       ["spon-booth", []],
       ["coffee-chats", []],
     ]);
@@ -335,9 +360,12 @@ describe("layoutGrid", () => {
     ).toEqual(["jw"]);
   });
 
-  it("drops empty columns except Workshops, Sponsor Bay and Coffee chats", () => {
-    expect(
-      layoutGrid([e("lunch", "food", 720, 780)]).map((c) => c.column),
-    ).toEqual(["sponsor-workshop", "food", "spon-booth", "coffee-chats"]);
+  it("drops empty columns except Workshops, Food, Sponsor Bay and Coffee chats", () => {
+    expect(layoutGrid([]).map((c) => c.column)).toEqual([
+      "sponsor-workshop",
+      "food",
+      "spon-booth",
+      "coffee-chats",
+    ]);
   });
 });

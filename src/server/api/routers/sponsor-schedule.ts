@@ -117,12 +117,11 @@ export const sponsorScheduleRouter = createTRPCRouter({
                 : item.sponsors,
           })),
         coffeeChat: sheet.coffeeChats.find((c) => c.sponsor === name) ?? null,
-        // The full running order is public at the ceremony itself; who else
-        // speaks helps a sponsor know when to be ready.
-        ceremonies: sheet.ceremonies.map((segment) => ({
-          ...segment,
-          yours: segment.sponsor === name,
-        })),
+        // Only this sponsor's own speaking slots (for their next-event card);
+        // the ceremony running order is organizer-only (Jazz, 2026-11-17).
+        ceremonies: sheet.ceremonies
+          .filter((segment) => segment.sponsor === name)
+          .map((segment) => ({ ...segment, yours: true })),
         // Rooms of other sponsors' workshops are not sent.
         workshops: sheet.workshops.filter((w) => w.sponsor === name),
       };

@@ -114,7 +114,7 @@ export type SponsorSchedule = {
   /** All-hands items (big events, food) plus this sponsor's own items. */
   items: RunOfShowItem[];
   coffeeChat: CoffeeChatSetup | null;
-  /** Both ceremonies' full running order; this sponsor's slots flagged. */
+  /** This sponsor's own ceremony slots only; never the running order. */
   ceremonies: SponsorCeremonySegment[];
   /** Only this sponsor's workshops. */
   workshops: WorkshopInfo[];
