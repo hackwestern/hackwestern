@@ -10,6 +10,7 @@ import {
 import { TourOverlay } from "~/components/sponsors/tour/tour-overlay";
 import { sponsorTourCopy as copy } from "~/content/sponsor-tour";
 import {
+  clickTargetOf,
   getStorage,
   hasSeenWelcome,
   hrefForMove,
@@ -45,9 +46,16 @@ function findTarget(target: string): Element | null {
   return null;
 }
 
+const isShown = (el: Element) => {
+  const r = el.getBoundingClientRect();
+  return r.width > 0 || r.height > 0;
+};
+
 /**
  * Watch for a step's target: it may render late (data loading, a dialog
- * opening, a tab switch) or go away (a dialog closing). `settled` turns
+ * opening, a tab switch) or go away (a dialog closing). The page is only
+ * searched when the DOM changes and the current target is gone or hidden;
+ * the overlay tracks the found element's position itself. `settled` turns
  * true once the grace time is up, so a missing target becomes a centred
  * callout instead of an endless wait.
  */
@@ -58,16 +66,26 @@ function useTarget(target: string | undefined, stepKey: string) {
     setEl(null);
     setSettled(!target);
     if (!target) return;
-    const started = Date.now();
-    let frame = 0;
-    const tick = () => {
-      const found = findTarget(target);
-      setEl((prev) => (prev === found ? prev : found));
-      if (Date.now() - started > TARGET_GRACE_MS) setSettled(true);
-      frame = requestAnimationFrame(tick);
+    let current: Element | null = null;
+    const look = () => {
+      if (current?.isConnected && isShown(current)) return;
+      current = findTarget(target);
+      setEl(current);
     };
-    tick();
-    return () => cancelAnimationFrame(frame);
+    look();
+    const observer = new MutationObserver(look);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      // Tab panels and dialogs show and hide through these.
+      attributes: true,
+      attributeFilter: ["hidden", "class", "style", "data-state"],
+    });
+    const grace = setTimeout(() => setSettled(true), TARGET_GRACE_MS);
+    return () => {
+      observer.disconnect();
+      clearTimeout(grace);
+    };
   }, [target, stepKey]);
   return { el, settled: settled || !!el };
 }
@@ -115,7 +133,8 @@ export function SponsorTour({
   const step = def && progress ? def.steps[progress.step] : undefined;
   const { el, settled } = useTarget(
     step?.placement === "center" ? undefined : step?.target,
-    `${progress?.tour}:${progress?.step}`,
+    // The route is in the key so a new page always gets a fresh search.
+    `${progress?.tour}:${progress?.step}:${router.asPath}`,
   );
 
   const close = useCallback(() => {
@@ -212,8 +231,10 @@ export function SponsorTour({
           onNext={() => {
             // Next on a click step does the click for them, so keyboard
             // users get the same result (the link opens, the map opens).
-            if (step.waitForClick && el instanceof HTMLElement) el.click();
-            else moveTo(progress.step + 1);
+            const clickable = el && clickTargetOf(el);
+            if (step.waitForClick && clickable instanceof HTMLElement) {
+              clickable.click();
+            } else moveTo(progress.step + 1);
           }}
         />
       );
