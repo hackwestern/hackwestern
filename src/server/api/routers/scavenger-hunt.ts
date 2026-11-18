@@ -328,7 +328,7 @@ export const scavengerHuntRouter = createTRPCRouter({
       try {
         const { id } = input;
         const item = await db.query.scavengerHuntItems.findFirst({
-          where: and(eq(scavengerHuntItems.id, id), notDeleted()),
+          where: and(eq(scavengerHuntItems.id, id), isOpen()),
         });
 
         if (!item) {

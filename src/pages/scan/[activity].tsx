@@ -420,13 +420,6 @@ const ScanActivityPage = () => {
             Item not found
           </p>
         )}
-        {itemData && itemData.status !== "active" && (
-          <p className="text-sm font-medium text-dashboard-status-warning">
-            This activity is{" "}
-            {itemData.status === "draft" ? "a draft" : "disabled"}. Scans are
-            blocked.
-          </p>
-        )}
         {isWinnable && (
           <Tabs
             value={activityType}

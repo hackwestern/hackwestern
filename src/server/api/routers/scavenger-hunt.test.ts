@@ -1048,6 +1048,9 @@ describe("scavengerHuntRouter item status", () => {
       const scannable = await caller.scavengerHunt.getAllScavengerHuntItems();
       expect(scannable.map((i) => i.id)).not.toContain(item.id);
       await expect(
+        organizerCaller.scavengerHunt.getScavengerHuntItemById({ id: item.id }),
+      ).rejects.toThrow("Item not found");
+      await expect(
         organizerCaller.scavengerHunt.scan({
           userId: session.user.id,
           itemId: item.id,
