@@ -377,6 +377,12 @@ export const sponsorJudgingSponsors = pgTable("sponsor_judging_sponsor", {
   // that room). Free-text name set by organizers; sponsors see it as their
   // Hack Western contact for chats. Null = nobody yet.
   coffeeChatWatcher: varchar("coffee_chat_watcher", { length: 255 }),
+  // When an organizer marked the sponsor's private portal link as handed
+  // over (Friday, on /internal/sponsors). Null = not given yet.
+  portalLinkGivenAt: timestamp("portal_link_given_at", {
+    mode: "date",
+    precision: 3,
+  }),
   createdAt: timestamp("created_at", { mode: "date", precision: 3 })
     .defaultNow()
     .notNull(),

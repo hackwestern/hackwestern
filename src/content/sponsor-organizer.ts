@@ -104,7 +104,8 @@ export const sponsorOrganizerCopy = {
       needsHacker: "Needs a hacker",
       help: "Help",
     },
-    chatType: (request: string, minutes: number) => `${request} · ${minutes} min`,
+    chatType: (request: string, minutes: number) =>
+      `${request} · ${minutes} min`,
     unassigned: "Unassigned",
     chatsCell: (accepted: number, waiting: number) =>
       `${accepted} accepted · ${waiting} waiting`,
@@ -136,6 +137,92 @@ export const sponsorOrganizerCopy = {
       roomLabel: "Sponsor room",
       notRegistered:
         "This sponsor has no private link yet, so no chats or help. Sync from the master sheet.",
+    },
+  },
+
+  /**
+   * The Sponsors tab follows the event day: Friday arrivals and portal
+   * links, Saturday coffee chat slots, Sunday judging and where to be.
+   */
+  day: {
+    pickerLabel: "Show the sponsors' day",
+    short: { Friday: "Fri", Saturday: "Sat", Sunday: "Sun" } as Record<
+      string,
+      string
+    >,
+    stats: {
+      Friday: {
+        arrived: "Arrived",
+        linkGiven: "Portal link given",
+      },
+      Saturday: {
+        booked: "Hackers booked",
+        openSlots: "Slots still open",
+        waiting: "Waiting on a hacker",
+      },
+      openHelp: "Open help requests",
+      Sunday: {
+        shortlists: "Shortlists sent",
+        topFive: "Top 5 sent",
+        round2: "Round 2",
+        missingRooms: "Missing judging rooms",
+      },
+      of: (n: number, total: number) => `${n} of ${total}`,
+      round2Open: "Open",
+      round2Closed: "Not open",
+    },
+    columns: {
+      link: "Portal link",
+      slots: "Chat slots (booked/asked)",
+      round1: "Round 1 shortlist",
+      round2: "Round 2 top 5",
+      where: "Where now",
+    },
+    /** A sheet-only field when the sponsor sheet didn't load. */
+    noSheet: "Sheet didn't load",
+    // Friday
+    linkGiven: "Link given",
+    markGiven: "Mark given",
+    linkGivenLabel: (name: string, given: boolean) =>
+      given
+        ? `${name}'s portal link is given. Press to undo.`
+        : `Mark ${name}'s portal link as given`,
+    linkFailed: (message: string) =>
+      `Couldn't save the portal link: ${message}`,
+    // Saturday
+    slot: (time: string, booked: number, needed: number) =>
+      `${time} ${booked}/${needed}`,
+    slotLabel: (room: string, time: string, booked: number, needed: number) =>
+      needed === 0
+        ? `${room} at ${time}: asked for no hackers`
+        : `${room} at ${time}: ${booked} of ${needed} hackers booked`,
+    noSlots: "No room given yet",
+    // Sunday
+    round1: {
+      sent: (teams: number, time: string) =>
+        `Sent ${time} · ${teams} ${teams === 1 ? "team" : "teams"}`,
+      working: (scored: number, shortlisted: number) =>
+        `Not sent · ${scored} scored, ${shortlisted} shortlisted`,
+      notStarted: "Not started",
+    },
+    round2: {
+      sent: (time: string) => `Sent ${time}`,
+      ranking: "Not sent yet",
+      notOpen: "Opens after presentations",
+    },
+    where: {
+      presenting: (room: string) => `Presentations in ${room}`,
+      presentingTeam: (team: string, until: string) =>
+        `${team} presenting · until ${until}`,
+      presentingUntil: (until: string) => `Until ${until}`,
+      presentingNext: (room: string) => `Presentations in ${room}`,
+      at: (time: string) => `From ${time}`,
+      now: "Now",
+      next: (time: string) => `Next at ${time}`,
+      noLocation: "No room on the run of show",
+      done: "Done for the day",
+      none: "Nothing on the run of show",
+      unread: "Run of show didn't load",
     },
   },
 

@@ -3,7 +3,12 @@
 // redirect, and the per-sponsor chat and help summary. Pure, so it's tested
 // without a router or a database.
 
-import { blockFill, holdStartTimes, type HoldSpan } from "~/lib/coffee-chat-holds";
+import {
+  blockFill,
+  blockSlots,
+  holdStartTimes,
+  type HoldSpan,
+} from "~/lib/coffee-chat-holds";
 import {
   askedAt,
   chatRequestOf,
@@ -17,6 +22,11 @@ import {
   effectiveCoffeeChatStatus,
   type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
+import type {
+  ChatSlotFill,
+  PresentationSlot,
+  SundayJudging,
+} from "~/lib/sponsor-day-board";
 import type { JudgingBoard, JudgingRow } from "~/lib/sponsor-judging-rooms";
 import { seatsLeft } from "~/server/api/utils/coffee-chat-capacity";
 
@@ -200,6 +210,12 @@ export type SponsorSummary = {
   } | null;
   /** Sunday judging room, picks and status; null without a judging read. */
   judging: JudgingRow | null;
+  /** When an organizer marked the portal link handed over; null = not. */
+  linkGivenAt: string | null;
+  /** Saturday: every slot of the sponsor's room blocks, booked/asked. */
+  chatSlots: ChatSlotFill[];
+  /** Sunday: rounds 1 and 2 and the sponsor's presentation slots. */
+  sunday: SundayJudging & { slots: PresentationSlot[] };
 };
 
 export type SummaryTotals = {
@@ -225,6 +241,8 @@ export type SponsorSummaries = {
   totals: SummaryTotals;
   /** Sunday judging: rooms, picks and status, incl. unregistered companies. */
   judging: JudgingBoard | null;
+  /** Organizers have opened round 2 (top 5). */
+  round2Open: boolean;
 };
 
 /**
@@ -259,6 +277,14 @@ export function summaryTotals(
   );
 }
 
+const NO_JUDGING: SundayJudging = {
+  shortlistSentAt: null,
+  shortlistSentCount: 0,
+  scored: 0,
+  shortlisted: 0,
+  finalSubmittedAt: null,
+};
+
 type SetupRow = SetupLike & {
   sponsor: string;
   room: string | null;
@@ -268,7 +294,10 @@ function savedOf(s: {
   coffeeChatStyle?: string | null;
   coffeeChatPerSlot?: number | null;
 }): SavedChatRequest {
-  return { style: s.coffeeChatStyle ?? null, perSlot: s.coffeeChatPerSlot ?? null };
+  return {
+    style: s.coffeeChatStyle ?? null,
+    perSlot: s.coffeeChatPerSlot ?? null,
+  };
 }
 
 /** Seats still offerable today: same rules as offering a chat. */
@@ -313,6 +342,9 @@ export function buildSponsorSummaries({
   holds = [],
   limits = [],
   judging = null,
+  sunday = new Map(),
+  presentations = [],
+  round2Open = false,
   now,
 }: {
   sponsors: readonly {
@@ -321,6 +353,7 @@ export function buildSponsorSummaries({
     coffeeChatStyle?: string | null;
     coffeeChatPerSlot?: number | null;
     coffeeChatWatcher?: string | null;
+    portalLinkGivenAt?: Date | null;
   }[];
   /** Coffee Chats sheet rows by sponsor name ([] when the sheet failed). */
   setups: readonly SetupRow[];
@@ -350,6 +383,11 @@ export function buildSponsorSummaries({
   limits?: readonly SlotLimit[];
   /** Sunday judging board (buildJudgingBoard); null when not read. */
   judging?: JudgingBoard | null;
+  /** Sunday portal progress per sponsor id (reviews, sends, top 5). */
+  sunday?: ReadonlyMap<string, SundayJudging>;
+  /** Placed presentation slots (every sponsor). */
+  presentations?: readonly (PresentationSlot & { sponsorId: string })[];
+  round2Open?: boolean;
   now: Date;
 }): SponsorSummaries {
   const byId = new Map<string, SponsorSummary>();
@@ -369,6 +407,15 @@ export function buildSponsorSummaries({
       holds: [],
       help: null,
       judging: judging?.rows.find((r) => r.sponsorId === s.id) ?? null,
+      linkGivenAt: s.portalLinkGivenAt?.toISOString() ?? null,
+      chatSlots: [],
+      sunday: {
+        ...(sunday.get(s.id) ?? NO_JUDGING),
+        slots: presentations
+          .filter((p) => p.sponsorId === s.id)
+          .map(({ room, start, teamName }) => ({ room, start, teamName }))
+          .sort((a, b) => a.start - b.start),
+      },
     });
   }
   // Earliest chats first.
@@ -424,6 +471,14 @@ export function buildSponsorSummaries({
       endTime: hold.endTime,
       needsHacker: needs,
     });
+    for (const slot of blockSlots(hold, row.request, live, limits)) {
+      row.chatSlots.push({
+        room: hold.room,
+        slotTime: slot.slotTime,
+        booked: slot.booked,
+        needed: slot.needed,
+      });
+    }
     if (!needs) continue;
     row.needsHacker += 1;
     needsHacker += 1;
@@ -472,5 +527,6 @@ export function buildSponsorSummaries({
     needsHacker,
     totals: summaryTotals(rows),
     judging,
+    round2Open,
   };
 }
