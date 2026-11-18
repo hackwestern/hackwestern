@@ -113,14 +113,18 @@ async function statusOf(chatId: string) {
   return row!.status;
 }
 
+/** A click in the bot's DM with `slackUser` (or in `channel`). */
 function clickPayload(
   slackUser: string,
   chatId: string,
   action: "coffee_chat_accept" | "coffee_chat_decline",
+  channel = `D-${slackUser}`,
 ) {
   return {
     type: "block_actions",
     user: { id: slackUser },
+    channel: { id: channel },
+    container: { type: "message", channel_id: channel, message_ts: "1.2" },
     response_url: RESPONSE_URL,
     actions: [{ action_id: action, value: chatId }],
   };
@@ -234,6 +238,52 @@ describe("Slack click matching (T23)", () => {
       response_type: "ephemeral",
       replace_original: false,
     });
+  });
+
+  test("a hacker whose Slack is on their Slack email can answer", async () => {
+    const kim = await makeHacker();
+    await db
+      .update(users)
+      .set({ slackEmail: "kim@slack.dev" })
+      .where(eq(users.id, kim.id));
+    const chatId = await makeChat(kim.id);
+    const slack = mockSlack({ U1: "Kim@Slack.dev" });
+
+    expect(
+      await handleCoffeeChatInteraction(
+        clickPayload("U1", chatId, "coffee_chat_accept"),
+        { fetch: slack.fetch },
+      ),
+    ).toBe("accepted");
+    expect(await statusOf(chatId)).toBe("accepted");
+  });
+
+  test("a click outside a DM with the bot changes nothing", async () => {
+    const kim = await makeHacker();
+    await db
+      .update(users)
+      .set({ slackEmail: "kim@slack.dev" })
+      .where(eq(users.id, kim.id));
+    const chatId = await makeChat(kim.id);
+    const slack = mockSlack({ U1: "kim@slack.dev" });
+
+    for (const channel of ["C0CHANNEL", "G0GROUP"]) {
+      expect(
+        await handleCoffeeChatInteraction(
+          clickPayload("U1", chatId, "coffee_chat_accept", channel),
+          { fetch: slack.fetch },
+        ),
+      ).toBe("notYours");
+    }
+    const {
+      channel: _c,
+      container: _k,
+      ...noChannel
+    } = clickPayload("U1", chatId, "coffee_chat_accept");
+    expect(
+      await handleCoffeeChatInteraction(noChannel, { fetch: slack.fetch }),
+    ).toBe("notYours");
+    expect(await statusOf(chatId)).toBe("pending");
   });
 
   test("a Slack user with no matching site account changes nothing", async () => {
