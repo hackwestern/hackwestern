@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { sql } from "drizzle-orm";
+import { and, eq, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { coffeeChatNotifyCopy } from "~/content/coffee-chat-notify";
@@ -8,7 +8,7 @@ import type { CoffeeChatAnswer } from "~/server/api/utils/coffee-chat-expiry";
 import { loadCoffeeChatNotice } from "~/server/api/utils/coffee-chat-notify";
 import { respondToCoffeeChat } from "~/server/api/utils/coffee-chat-respond";
 import { db } from "~/server/db";
-import { users } from "~/server/db/schema";
+import { coffeeChats, users } from "~/server/db/schema";
 import { slackApi, type SlackResponse } from "~/server/slack/client";
 import {
   COFFEE_CHAT_ACCEPT_ACTION,
@@ -43,6 +43,11 @@ const payloadSchema = z.object({
   type: z.string(),
   user: z.object({ id: z.string() }).optional(),
   response_url: z.string().optional(),
+  channel: z.object({ id: z.string() }).optional(),
+  container: z
+    .object({ channel_id: z.string().optional() })
+    .passthrough()
+    .optional(),
   actions: z
     .array(z.object({ action_id: z.string(), value: z.string().optional() }))
     .optional(),
@@ -60,9 +65,14 @@ type Deps = { token?: string; fetch?: typeof fetch; now?: Date };
 
 type UserInfo = SlackResponse & { user?: { profile?: { email?: string } } };
 
-/** The site user whose email matches the clicking Slack user's, or null. */
+/**
+ * The hacker who owns `chatId` when the clicking Slack user is them: the
+ * Slack account's email is their account email or the Slack email they
+ * set on /live. Null otherwise.
+ */
 async function hackerForSlackUser(
   slackUserId: string,
+  chatId: string,
   token: string,
   fetchImpl: typeof fetch,
 ): Promise<string | null> {
@@ -77,10 +87,29 @@ async function hackerForSlackUser(
   if (!email) return null;
   const [row] = await db
     .select({ id: users.id })
-    .from(users)
-    .where(sql`lower(${users.email}) = ${email}`)
+    .from(coffeeChats)
+    .innerJoin(users, eq(users.id, coffeeChats.userId))
+    .where(
+      and(
+        eq(coffeeChats.id, chatId),
+        or(
+          sql`lower(${users.email}) = ${email}`,
+          sql`lower(${users.slackEmail}) = ${email}`,
+        ),
+      ),
+    )
     .limit(1);
   return row?.id ?? null;
+}
+
+/**
+ * True when the click came from a direct message with the bot (Slack DM
+ * channel ids start with "D"). The offer buttons are only ever posted in
+ * the DM the bot opened with the hacker it found (dmHacker).
+ */
+function isDirectMessage(payload: z.infer<typeof payloadSchema>): boolean {
+  const channelId = payload.channel?.id ?? payload.container?.channel_id;
+  return typeof channelId === "string" && channelId.startsWith("D");
 }
 
 /** Post the result back to the DM through Slack's response_url. */
@@ -151,11 +180,21 @@ export async function handleCoffeeChatInteraction(
   };
 
   if (!chatId.success || !payload.user) return fail("notYours");
+  // Only a click in a 1:1 DM with the bot counts. The request is signed by
+  // Slack, so a "D…" channel is the bot's DM with the clicker: the clicker
+  // is the person the offer was DM'd to. That narrows a wrong Slack email
+  // (docs/decisions.md, 2026-11-18) to the one person who got the DM.
+  if (!isDirectMessage(payload)) return fail("notYours");
   if (!token) return fail("failed");
 
   let userId: string | null;
   try {
-    userId = await hackerForSlackUser(payload.user.id, token, fetchImpl);
+    userId = await hackerForSlackUser(
+      payload.user.id,
+      chatId.data,
+      token,
+      fetchImpl,
+    );
   } catch (error) {
     console.error(
       "Slack users.info failed:",

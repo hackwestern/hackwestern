@@ -15,6 +15,25 @@ export default defineConfig({
     env: {
       R2_PUBLIC_BASE_URL:
         process.env.R2_PUBLIC_BASE_URL ?? "http://localhost:3000",
+      // No test may reach Google Sheets or Slack with real credentials from
+      // .env. Blank them for the whole suite; a test that needs one mocks
+      // ~/env (and the network) itself. Mailjet already gets a dummy key
+      // under NODE_ENV=test (src/env.js) and its sends are mocked.
+      ...Object.fromEntries(
+        [
+          "RUN_OF_SHOW_SHEET",
+          "RUN_OF_SHOW_SHEETS_CLIENT_EMAIL",
+          "RUN_OF_SHOW_SHEETS_PRIVATE_KEY",
+          "SPONSOR_SHEETS_CLIENT_EMAIL",
+          "SPONSOR_SHEETS_PRIVATE_KEY",
+          "SPONSOR_JUDGING_SHEET",
+          "SPONSOR_MASTER_SHEET",
+          "GOOGLE_SHEETS_API_KEY",
+          "HACKER_INTEREST_FORM",
+          "SLACK_BOT_TOKEN",
+          "SPONSOR_HELP_SLACK_BOT_TOKEN",
+        ].map((name) => [name, ""]),
+      ),
     },
   },
   resolve: {

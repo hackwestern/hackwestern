@@ -125,6 +125,97 @@ const hasCurrentTimes = (
   keys: ReadonlyMap<string, string>,
 ) => notice.sentAt !== null && keys.get(notice.teamId) === notice.slotsKey;
 
+/** How a member heard about their times: Slack DM or email. */
+export type PresentationChannel = "slack" | "email";
+
+/**
+ * The user's team's presentation slots, in time order, once anyone on the
+ * team has been sent the current times (empty before that). `sentAt` is
+ * when the user heard (or, if a teammate heard and they didn't, when the
+ * team first did); `channel` is how the user themselves was reached, or
+ * null when they weren't.
+ */
+export async function teamPresentationsFor(userId: string): Promise<{
+  slots: {
+    sponsorId: string;
+    sponsorName: string;
+    room: string;
+    start: number;
+  }[];
+  sentAt: Date | null;
+  channel: PresentationChannel | null;
+}> {
+  const none = { slots: [], sentAt: null, channel: null };
+  const me = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { teamId: true },
+  });
+  if (!me?.teamId) return none;
+  const [rows, notices] = await Promise.all([
+    db
+      .select({
+        sponsorId: sponsorPresentations.sponsorId,
+        teamId: sponsorPresentations.teamId,
+        sponsorName: sponsorJudgingSponsors.name,
+        room: sponsorPresentations.room,
+        startMinute: sponsorPresentations.startMinute,
+      })
+      .from(sponsorPresentations)
+      .innerJoin(
+        sponsorJudgingSponsors,
+        eq(sponsorJudgingSponsors.id, sponsorPresentations.sponsorId),
+      )
+      .where(
+        and(
+          eq(sponsorPresentations.teamId, me.teamId),
+          isNotNull(sponsorPresentations.startMinute),
+        ),
+      ),
+    db
+      .select({
+        userId: sponsorPresentationNotices.userId,
+        teamId: sponsorPresentationNotices.teamId,
+        status: sponsorPresentationNotices.status,
+        slotsKey: sponsorPresentationNotices.slotsKey,
+        sentAt: sponsorPresentationNotices.sentAt,
+      })
+      .from(sponsorPresentationNotices)
+      .where(
+        and(
+          eq(sponsorPresentationNotices.teamId, me.teamId),
+          isNotNull(sponsorPresentationNotices.sentAt),
+        ),
+      ),
+  ]);
+  const keys = keysByTeam(rows);
+  const current = notices.filter((n) => hasCurrentTimes(n, keys));
+  if (current.length === 0) return none;
+  const mine = current.find((n) => n.userId === userId);
+  const sentAt =
+    mine?.sentAt ??
+    current
+      .map((n) => n.sentAt!)
+      .reduce((a, b) => (a.getTime() <= b.getTime() ? a : b));
+  const channel =
+    mine?.status === "sent"
+      ? "slack"
+      : mine?.status === "emailed"
+        ? "email"
+        : null;
+  return {
+    slots: rows
+      .map((r) => ({
+        sponsorId: r.sponsorId,
+        sponsorName: r.sponsorName,
+        room: r.room ?? "",
+        start: r.startMinute!,
+      }))
+      .sort((a, b) => a.start - b.start),
+    sentAt,
+    channel,
+  };
+}
+
 /** A blank name falls back to the email. */
 const displayName = (m: { name: string | null; email: string | null }) =>
   m.name?.trim() ? m.name : (m.email ?? "");
@@ -514,6 +605,7 @@ export const sponsorPresentationsRouter = createTRPCRouter({
           teamId: users.teamId,
           name: users.name,
           email: users.email,
+          slackEmail: users.slackEmail,
         })
         .from(users)
         .where(inArray(users.teamId, [...byTeam.keys()]));
@@ -566,7 +658,8 @@ export const sponsorPresentationsRouter = createTRPCRouter({
       const claimAt = claimed[0]?.claimedAt ?? null;
       const targets = members.filter((m) => claimedIds.has(m.id));
 
-      // Slack first; a member Slack can't find is emailed instead.
+      // Slack first (their Slack email, then the email they applied with);
+      // a member Slack can't find is emailed at the email they applied with.
       const results = await mapPool(targets, DM_CONCURRENCY, async (m) => {
         const team = byTeam.get(m.teamId!)!;
         const dmResult = await sendPresentationDm(
@@ -660,53 +753,11 @@ export const sponsorPresentationsRouter = createTRPCRouter({
    * reschedule that changes them hides them until notified again).
    */
   mine: protectedProcedure.query(async ({ ctx }) => {
-    const me = await db.query.users.findFirst({
-      where: eq(users.id, ctx.session.user.id),
-      columns: { teamId: true },
-    });
-    if (!me?.teamId) return [];
-    const [rows, notices] = await Promise.all([
-      db
-        .select({
-          sponsorId: sponsorPresentations.sponsorId,
-          teamId: sponsorPresentations.teamId,
-          sponsorName: sponsorJudgingSponsors.name,
-          room: sponsorPresentations.room,
-          startMinute: sponsorPresentations.startMinute,
-        })
-        .from(sponsorPresentations)
-        .innerJoin(
-          sponsorJudgingSponsors,
-          eq(sponsorJudgingSponsors.id, sponsorPresentations.sponsorId),
-        )
-        .where(
-          and(
-            eq(sponsorPresentations.teamId, me.teamId),
-            isNotNull(sponsorPresentations.startMinute),
-          ),
-        ),
-      db
-        .select({
-          teamId: sponsorPresentationNotices.teamId,
-          slotsKey: sponsorPresentationNotices.slotsKey,
-          sentAt: sponsorPresentationNotices.sentAt,
-        })
-        .from(sponsorPresentationNotices)
-        .where(
-          and(
-            eq(sponsorPresentationNotices.teamId, me.teamId),
-            isNotNull(sponsorPresentationNotices.sentAt),
-          ),
-        ),
-    ]);
-    const keys = keysByTeam(rows);
-    if (!notices.some((n) => hasCurrentTimes(n, keys))) return [];
-    return rows
-      .map((r) => ({
-        sponsorName: r.sponsorName,
-        room: r.room ?? "",
-        start: r.startMinute!,
-      }))
-      .sort((a, b) => a.start - b.start);
+    const { slots } = await teamPresentationsFor(ctx.session.user.id);
+    return slots.map(({ sponsorName, room, start }) => ({
+      sponsorName,
+      room,
+      start,
+    }));
   }),
 });
