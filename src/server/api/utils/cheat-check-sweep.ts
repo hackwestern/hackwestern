@@ -2,9 +2,10 @@
  * Orchestration for the automated cheat-check sweep.
  *
  * A sweep runs every team check across every eligible team. It is kicked off
- * when the judging queue drains — at that point every team has been judged,
- * submissions are final, and the GitHub/DevPost scrapes aren't competing with
- * judging for rate limit. Organizers can also start one by hand.
+ * when judging completes (every judging stop is done, absent or cancelled) —
+ * at that point every team has been judged, submissions are final, and the
+ * GitHub/DevPost scrapes aren't competing with judging for rate limit.
+ * Organizers can also start one by hand.
  *
  * The work itself is done by `/api/cheat-check/sweep`, which claims batches out
  * of `cheat_check_sweep_item` and re-invokes itself until the list is empty.
@@ -16,7 +17,7 @@ import { db, extractRows } from "~/server/db";
 import {
   cheatCheckSweepItems,
   cheatCheckSweeps,
-  judgingQueue,
+  judgingAssignments,
   teams,
   users,
 } from "~/server/db/schema";
@@ -24,9 +25,9 @@ import { env } from "~/env";
 import { ensureSystemUser } from "~/server/api/utils/cheat-check-runners";
 
 /**
- * How long after a sweep finishes before a drain may start another. Deleting a
- * mark re-queues its team (see `deleteMark` in the judging router), so without a
- * cooldown a single correction would re-drain and re-sweep.
+ * How long after a sweep finishes before judging completing may start another.
+ * Deleting a mark reopens its stop (see `deleteMark` in the judging engine), so
+ * without a cooldown a single correction would re-complete and re-sweep.
  */
 export const SWEEP_COOLDOWN_MINUTES = 30;
 
@@ -89,7 +90,7 @@ export async function getRunningSweep(): Promise<SweepRow | undefined> {
  * instant). Either way the caller has nothing to do.
  */
 export async function createSweep(
-  triggeredBy: "queue_drain" | "manual",
+  triggeredBy: "judging_complete" | "manual",
   opts: { forceRerun?: boolean } = {},
 ): Promise<SweepRow | null> {
   await ensureSystemUser();
@@ -141,15 +142,22 @@ export async function createSweep(
 }
 
 /**
- * Start a sweep if the judging queue has just drained.
+ * Start a sweep if judging has just completed: at least one judging stop
+ * exists and none is still assigned or in progress.
  *
- * Called fire-and-forget from `judging.me.submitTeamMark`, so it must never
- * throw: a cheat-check problem is not a reason to fail a judge's mark.
+ * Called after a judge submits or reports a team absent and after an organizer
+ * cancels or marks a stop absent. It must never throw: a cheat-check problem is
+ * not a reason to fail a judge's mark.
  */
-export async function maybeTriggerSweepOnDrain(): Promise<void> {
+export async function maybeTriggerSweepOnJudgingComplete(): Promise<void> {
   try {
-    const [queued] = await db.select({ value: count() }).from(judgingQueue);
-    if ((queued?.value ?? 0) > 0) return;
+    const [stops] = await db
+      .select({
+        live: sql<number>`count(*) filter (where ${judgingAssignments.status} <> 'cancelled')::int`,
+        open: sql<number>`count(*) filter (where ${judgingAssignments.status} in ('assigned', 'in_progress'))::int`,
+      })
+      .from(judgingAssignments);
+    if (!stops || stops.live === 0 || stops.open > 0) return;
 
     if (await getRunningSweep()) return;
 
@@ -161,15 +169,18 @@ export async function maybeTriggerSweepOnDrain(): Promise<void> {
     });
     if (recent) return;
 
-    const sweep = await createSweep("queue_drain");
+    const sweep = await createSweep("judging_complete");
     if (sweep && sweep.status === "running") await kickWorker();
   } catch (error) {
-    console.error("[cheat-check-sweep] failed to trigger on drain", error);
+    console.error(
+      "[cheat-check-sweep] failed to trigger on judging complete",
+      error,
+    );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Working the queue
+// Working the sweep items
 // ---------------------------------------------------------------------------
 
 /**
