@@ -5,6 +5,11 @@ import { authRedirectOrganizer } from "~/utils/redirect";
 
 const PAGES = [
   {
+    href: "/internal/judging",
+    title: "Judging",
+    description: "Coming soon.",
+  },
+  {
     href: "/internal/sponsors",
     title: "Sponsors",
     description: "Sponsor roster and check-in status.",
