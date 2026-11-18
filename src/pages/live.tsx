@@ -14,6 +14,7 @@ import ContactUs from "~/components/live/contact-us";
 import CoffeeChatRequests from "~/components/live/coffee-chat-requests";
 import CoffeeChats from "~/components/live/coffee-chats";
 import SponsorPresentations from "~/components/live/sponsor-presentations";
+import NotificationCenter from "~/components/live/notification-center";
 import Sidebar from "~/components/live/sidebar";
 import Topbar from "~/components/live/topbar";
 import { authOptions } from "~/server/auth";
@@ -40,14 +41,19 @@ const Live = ({ isOrganizer }: { isOrganizer: boolean }) => {
         noindex
       />
       <div className="flex h-screen w-screen flex-col bg-dashboard-bg-page md:flex-row">
-        <Topbar title={pageTitle} isOrganizer={isOrganizer} />
+        <Topbar
+          title={pageTitle}
+          isOrganizer={isOrganizer}
+          actions={!isOrganizer && <NotificationCenter />}
+        />
         <Sidebar isOrganizer={isOrganizer} />
         <main className="flex min-w-0 flex-1 flex-col gap-8 overflow-y-auto p-5 md:gap-10 md:p-12">
-          <h1
-            className={`hidden md:block ${isGreeting ? "dashboard-display" : "dashboard-h1"}`}
-          >
-            {isGreeting ? `Hi, ${firstName}!` : pageTitle}
-          </h1>
+          <div className="hidden items-start justify-between gap-4 md:flex">
+            <h1 className={isGreeting ? "dashboard-display" : "dashboard-h1"}>
+              {isGreeting ? `Hi, ${firstName}!` : pageTitle}
+            </h1>
+            {!isOrganizer && <NotificationCenter />}
+          </div>
           {!isOrganizer && <CoffeeChatRequests showSummary={tab === "home"} />}
           {!isOrganizer && tab === "home" && <SponsorPresentations />}
           <TabComponent tab={tab} isOrganizer={isOrganizer} />

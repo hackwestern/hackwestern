@@ -1,0 +1,1 @@
+ALTER TABLE "sponsor_judging_sponsor" ADD COLUMN "portal_link_given_at" timestamp (3);

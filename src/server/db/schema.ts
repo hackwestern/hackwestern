@@ -762,6 +762,18 @@ export const users = pgTable(
       .notNull()
       .default(sql`'{}'::text[]`),
 
+    // The email a hacker says their Slack account is on, set on /live when
+    // it isn't their account email. Slack lookups try it first, then
+    // `email`; email notices always go to `email` (src/lib/slack-email.ts).
+    slackEmail: varchar("slack_email", { length: 255 }),
+    // Keys of the /live notification center notices the hacker has seen
+    // (src/lib/hacker-notifications.ts). A notice's key changes when its
+    // status, time or room does, so a change shows as unread again.
+    notificationsSeen: text("notifications_seen")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+
     scavengerHuntEarned: integer("scavenger_hunt_earned").default(0),
     scavengerHuntBalance: integer("scavenger_hunt_balance").default(0),
 
