@@ -522,4 +522,89 @@ describe("sponsorScoring round 2", () => {
       await db.delete(sponsorPresentations);
     }
   });
+
+  // A schedule exists, but not for this sponsor: they keep round 1 and
+  // can still submit from their shortlist.
+  async function scheduleFor(sponsorId: string, teamId: string) {
+    await db.insert(sponsorPresentations).values({
+      sponsorId,
+      teamId,
+      room: "Rm 2110",
+      startMinute: 600,
+    });
+  }
+
+  test("a sponsor who sent late (no rows) isn't locked out", async () => {
+    const other = await sponsor();
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    try {
+      await scheduleFor(other.id, await team());
+      await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
+      const res = await anon.sponsorScoring.get({ sponsor: s.id });
+      expect(res.round.scheduledAt).not.toBeNull();
+      expect(res.round.slots).toEqual([]);
+      await expect(
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+      ).resolves.toMatchObject({ teamIds: ids });
+    } finally {
+      await db.delete(sponsorPresentations);
+    }
+  });
+
+  test("a sponsor with no room (rows, none placed) isn't locked out", async () => {
+    const other = await sponsor();
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    try {
+      await scheduleFor(other.id, await team());
+      await db.insert(sponsorPresentations).values(
+        ids.map((teamId) => ({
+          sponsorId: s.id,
+          teamId,
+          room: null,
+          startMinute: null,
+        })),
+      );
+      await expect(
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+      ).resolves.toMatchObject({ teamIds: ids });
+    } finally {
+      await db.delete(sponsorPresentations);
+    }
+  });
+
+  test("re-sending after scheduling keeps round 2 on the slots they have", async () => {
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    try {
+      await db.insert(sponsorPresentations).values(
+        ids.map((teamId, i) => ({
+          sponsorId: s.id,
+          teamId,
+          room: "Rm 2110",
+          startMinute: 600 + i * 5,
+        })),
+      );
+      // A new team joins the shortlist and is re-sent; it hasn't presented.
+      const added = await team();
+      await anon.sponsorScoring.review({
+        sponsor: s.id,
+        teamId: added,
+        shortlisted: true,
+      });
+      await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
+      await expect(
+        anon.sponsorScoring.submit({
+          sponsor: s.id,
+          teamIds: [added, ...ids.slice(0, 4)],
+        }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      await expect(
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+      ).resolves.toMatchObject({ teamIds: ids });
+    } finally {
+      await db.delete(sponsorPresentations);
+    }
+  });
 });
