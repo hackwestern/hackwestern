@@ -741,3 +741,14 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Why:** code review of track F: PCBWay's UUID could still read the roster and top 3, and the panel always showed picks as unknown after the tab was deleted.
 
 **Alternatives:** read In person / Digital from the Sponsor Day-Of sheet on each call (track E's parser isn't on this branch, and it adds a sheet read to every portal request); keep counting the sheet (always unknown now).
+
+## 2026-11-19: Judging round 1 = 6-minute presentations (up to 15 teams), ranked top 5, live "Judging Scores" sheet (Jazz)
+
+**Decision:**
+- In-person sponsors shortlist up to **15** teams for round 1 presentations, 10:00–11:30. Each slot is **6 minutes**: 3 min pitch, 2 min Q&A, 1 min switch (15 slots exactly fill 90 min). A team on several shortlists still gets 10 minutes between its presentations.
+- Each rep judges on their own laptop under "Who's judging?" (their own profile on that device) and scores every team they see, 1–10 in half points.
+- After the presentations, sponsors submit a **ranked top 5** (1st–5th). This replaces the top 3 from the Q1–Q11 answers, everywhere: portal, organizer judging tab, Sponsor Judging sheet, and digital (PCBWay) entry.
+- **Backup:** a "Judging Scores" sheet tab, one block per sponsor with presentation time, team ID + Devpost link, and one score column per rep. The app fills it as reps score (production only). If the app is down, reps type into the same cells. The app only writes cells it has a score for and never blanks one.
+**Why:** 3 + 2 minutes plus a switch is the typical hackathon pitch, and 20 teams don't fit 90 minutes. Per-rep scores on their own laptops let several reps judge at once; the sheet covers an outage.
+**Alternatives:** 5-min slots for 18 teams (no switch time, so running late compounds); 7-min slots for 12; a longer window for 20 (needs a run-of-show change); keeping top 3; a blank backup sheet the app doesn't fill.
+**Supersedes:** "Sponsors send a ranked top 3" (Q1–Q11, 2026-11-19), and the 5-minute slot and 20-team shortlist cap.
