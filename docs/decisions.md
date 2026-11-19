@@ -451,3 +451,11 @@
 **How (build):** autosave every block edit as a draft on the server; a small room-load query polled every ~5 s (react-query refetchInterval). Websockets rejected for now: more to build and run the day before the event for no visible gain at ~10 sponsors.
 
 **Supersedes:** the proposed clash rule, the Ivey-default question and the Ivey question in "two pools" (2026-11-19).
+
+## 2026-11-19: Help requests require a name and call-back phone (Jazz)
+
+**Decision:** "Send to the sponsor team" has two required fields, "Your name" and "Phone we can call back", prefilled from the sponsor's main contact (from setup) and editable. The Slack post carries the sponsor, name, phone, message and location, and @mentions their HW lead.
+
+**Why:** whoever is at the booth may not be the main contact; the team needs to know who to call and on which number.
+
+**Alternatives:** use only the main contact's number (wrong person when someone else is at the booth); optional fields (posts arrive with no way to call back).
