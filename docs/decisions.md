@@ -758,3 +758,14 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Decision:** HW Contacts gets a "Same view as" column. When the signed-in organizer's row names another person there, the dashboard uses that person's row: their sponsors in My sponsors, their tasks in Now and next, and their permissions. Jazz's row names Noah Medland, so she sees his My sponsors and can press "Send confirmed schedules & invites". The Send check runs on the server: Noah's login email, plus the login email of any row whose "Same view as" is Noah. The fail-closed rules stay: if HW Contacts can't be read, or Noah's row has no login email, nobody can send. One level only (if A names B and B names C, A gets B's row). A missing or blank column, an unknown name, or a name that fits several rows changes nothing. Send's note now reads "Only Noah (or someone with Noah's view) sends".
 **Why:** Jazz runs the dashboard alongside Noah and needs to see and do what he does. Keeping it in the private sheet means no emails in the public repo, and it's undone by clearing one cell.
 **Alternatives:** hardcoding Jazz's email in the code (leaks an email into a public repo, and needs a deploy to change); an admin role (a schema and auth change, and broader than "see what Noah sees").
+
+## 2026-11-19: Declines re-send at once; round 1 expires 10 AM and new invites go out then; no open seats shown (Jazz)
+
+**Decision:**
+- When a hacker declines, their seat is offered to the next person straight away (met at the booth → shortlist → interested), with the current round's answer-by time.
+- Round 1 invites expire at Sat 10:00 AM, and new invites go out at 10:00 (not 10:30). Later rounds stay every 30 minutes.
+- There are no open seats: when a sponsor's booth list and shortlist run out, seats fill with hackers interested in them.
+- Screens show only Accepted and Waiting. Declined and expired invites are replaced, not shown, and there's no "open seat" count.
+**Why:** sponsors and organizers care about who's coming, not who said no. Filling every seat at once keeps chats full.
+**Supersedes:** "Friday-night declines wait for round 2 (10:30)" and the round-2 start time of 10:30 (decisions-log, invites D5).
+**Still possible:** a seat stays empty only if no eligible hacker is left (nobody interested and free at that time). The board shows that as a problem, not as a normal count.
