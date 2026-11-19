@@ -50,6 +50,10 @@ export const coffeeSessionsCopy = {
     changedAfterSend: "Changed after invites",
     openLabel: (name: string, status: string) => `${name}, ${status}`,
     notSubmittedYet: "Nothing submitted yet.",
+    /** Once a sponsor is sent: their hackers' invites, all chats together. */
+    invites: (accepted: number, waiting: number, open: number) =>
+      `Invites: ${accepted} accepted · ${waiting} waiting · ${open} open`,
+    invitesOff: "Invites are switched off on this server, so none go out.",
     facts: (p: { hackersPerChat: number }) =>
       p.hackersPerChat === 1
         ? "1 hacker per chat · 15-min chats"

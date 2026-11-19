@@ -2,6 +2,7 @@ import { Check, ChevronRight } from "lucide-react";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import { COFFEE_SESSIONS, chatsInWindow } from "~/lib/coffee-chat-sessions";
 import { cn } from "~/lib/utils";
+import { api } from "~/utils/api";
 import {
   Card,
   CardHead,
@@ -212,7 +213,32 @@ function SponsorDetail({ sponsor: sp, board }: { sponsor: BoardSponsor; board: S
         </tbody>
       </table>
       <p className="m-0 text-sm text-dashboard-text-medium">{sc.facts(sp)}</p>
+      {board.placements.some((p) => p.sponsorId === sp.id && p.status === "sent") && (
+        <InviteSummary sponsorId={sp.id} />
+      )}
       <PeopleList sponsor={sp} />
     </>
+  );
+}
+
+/**
+ * One line once a sponsor is sent: "Invites: 6 accepted · 3 waiting · 3
+ * open" (coffeeChatInvites.status, every chat of theirs together).
+ */
+function InviteSummary({ sponsorId }: { sponsorId: string }) {
+  const status = api.coffeeChatInvites.status.useQuery(
+    { sponsorId },
+    { refetchInterval: 15_000, refetchOnWindowFocus: false },
+  );
+  const sponsor = status.data?.sponsors.find((s) => s.sponsorId === sponsorId);
+  if (!status.data || !sponsor) return null;
+  const t = sponsor.totals;
+  return (
+    <p className="m-0 text-sm font-semibold text-dashboard-text-heavy">
+      {sc.invites(t.accepted, t.pending, t.open)}
+      {!status.data.enabled && (
+        <span className="block font-normal text-dashboard-text-light">{sc.invitesOff}</span>
+      )}
+    </p>
   );
 }
