@@ -180,6 +180,8 @@ export const sponsorOrganizerCopy = {
         : `Synced ${n} sponsors from the Sponsor Day-Of tab.`,
     syncFailed: (message: string) => `Sync failed: ${message}`,
     statusFailed: (message: string) => `Couldn't update status: ${message}`,
+    /** A pill saved but the sheet wasn't (sheet writes off): the server's note. */
+    statusNote: (sponsor: string, note: string) => `${sponsor}: ${note}`,
     dismiss: "Dismiss",
     loadFailed: (message: string) => `Couldn't load sponsors: ${message}.`,
     retry: "Try again",
