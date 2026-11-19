@@ -41,7 +41,7 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 ## Organizer coffee chats: `organizer-coffee-autofill-v6a/b/c`
 | # | Change | Status |
 |---|---|---|
-| 1 | Build on autofill-v5's styling (Jazz's favourite) | Building |
+| 1 | Build on autofill-v5's styling (Jazz's favourite) | v6a done; v6b, v6c building |
 | 2 | Coffee chats start at 10:00 AM; nothing before 10 | Building |
 | 3 | No "Nudge on Slack". "Contact" button: the sponsor's reps + main contact + HW lead, each with phone, Copy, Message (drafted, editable text) and Call | Building |
 | 4 | Rooms first, sponsor info on the SAME page. No side drawer/popup | Building |
@@ -62,6 +62,14 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 | 5 | Sponsors uses the approved organizer-sponsors-home-v1 content (cards on phones, detail on its own screen, no drawer, "Left" removed) | Building |
 | 6 | Run of show uses the real sheet (35 events, 55 tasks, team availability) from `_data/run-of-show-snapshot.json` | Building |
 | 7 | Task pings: Up next + Ping log; no sponsor help queue (help goes to Slack) | Building |
+
+## Sponsor judging redesign: `sponsor-judging-redesign-a/b/c-v1`
+| # | Change | Status |
+|---|---|---|
+| 1 | Three versions of sponsor judging with dummy Devpost data (`_data/devpost-projects.json`): A swipe card stack, B scorecard list with rubric, C demo-fair route + board | Building |
+| 2 | Flow: locked → round 1 score + shortlist 5–10 → send → presentations → round 2 rank 1st–5th → review (team IDs) → sent | Building |
+| 3 | Hacker-v1 look, phone first | Building |
+| 4 | Sheet: "Sponsor Judging" tab with team IDs and 1st–5th place columns | Done (tab created; app code to fill it is in the build) |
 
 ## Organizer sponsors home: `organizer-sponsors-home-v1`
 | # | Change | Status |
