@@ -31,6 +31,7 @@ The whole build is done, tested and pushed. It's on PR #1165 with a Vercel previ
 - **Judging:**
   - Several reps can judge on one login, scoring 1 to 10 in half points, with a rubric.
   - They submit a ranked top 5 (1st to 5th).
+  - Reps' scores fill a "Judging Scores" tab in the run-of-show sheet (production only). If the app is down, reps type scores there instead; the app never blanks a cell.
   - The page opens Sunday 9 AM.
 
 **Organizers:**

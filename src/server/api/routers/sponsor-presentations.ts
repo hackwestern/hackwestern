@@ -23,6 +23,7 @@ import { runAllTeamChecks } from "~/server/api/utils/cheat-check-runners";
 import { sendPresentationEmail } from "~/server/api/utils/presentation-email";
 import { SHEET_WRITES_DISABLED } from "~/server/api/utils/coffee-chat-sheet-mirror";
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
+import { mirrorJudgingScoresSoon } from "~/server/api/utils/sponsor-judging-scores-mirror";
 import {
   mirrorSponsorJudging,
   mirrorSponsorJudgingSoon,
@@ -558,7 +559,13 @@ export const sponsorPresentationsRouter = createTRPCRouter({
           changedTimes,
         };
       });
-      if (!dryRun) await mirrorSponsorJudgingSoon();
+      // Both tabs; the Judging Scores tab gets each sponsor's new team rows.
+      if (!dryRun) {
+        await Promise.all([
+          mirrorSponsorJudgingSoon(),
+          mirrorJudgingScoresSoon(),
+        ]);
+      }
       return result;
     }),
 

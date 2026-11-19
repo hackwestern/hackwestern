@@ -362,6 +362,24 @@ export const sponsorJudgingCopy = {
     },
   },
 
+  /**
+   * The "Judging Scores" tab (sponsor-judging-scores-mirror.ts): one block
+   * per in-person sponsor, filled as reps score. The backup if the app is
+   * down, so the app never blanks a cell people may have typed in.
+   */
+  scoresSheet: {
+    tab: "Judging Scores",
+    note: "Filled by the app as reps score. If the app is down, type scores here.",
+    headers: {
+      time: "Time",
+      teamId: "Team ID",
+      devpost: "Devpost",
+      average: "Average",
+    },
+    /** Placeholder header for an unused rep column; type a name over it. */
+    rep: (n: number) => `Rep ${n}`,
+  },
+
   /** The organizer "Sponsor judging" tab on /internal/sponsors. */
   organizer: {
     viewsLabel: "Sponsor judging view",
