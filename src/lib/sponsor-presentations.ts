@@ -329,7 +329,7 @@ export type JudgingRound = "shortlist" | "sent" | "locked" | "rank";
  * room, or none of their teams fit). A sponsor with no slot can't rank in
  * round 2 (Jazz, 2026-11-18); sponsorScoring.submit refuses them too.
  * Before that, "sent" (shortlist sent, waiting for round 2) or "shortlist"
- * (round 1, nothing sent). No top 5 can be submitted until round 2 is
+ * (round 1, nothing sent). No top 3 can be submitted until round 2 is
  * open. For the picks page; takes sponsorScoring.get's `round`.
  */
 export function judgingRound(round: {

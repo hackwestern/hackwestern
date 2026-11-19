@@ -717,3 +717,15 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Why:** Jazz's 2026-11-19 answers (top 3, one at a time or list, several reps), the sheet-cut decision (Judging tab deleted), and the coordinator's bug report that saving failed against the deleted tab.
 
 **Alternatives:** keep one score per sponsor (loses who gave what); split by table (no table data yet); write picks to a new sheet tab as the record (the DB is the record, the sheet is a view).
+
+## 2026-11-19: Track F review fixes: digital gate, panel picks from the DB
+
+**Decision:**
+- One guard (`assertPortalJudge`, src/server/api/utils/sponsor-judging-guard.ts) covers every public judging and scoring procedure, including `sponsorJudging.listAllTeams` and `getChosenTeams`. No prize track or digital = FORBIDDEN. "Digital" is `DIGITAL_JUDGING_SPONSORS`, the content copy of the sheet's In person / Digital column, never whether a DB row exists.
+- The Run-of-show "Sponsor track judging" panel counts each sponsor's saved picks from `sponsor_final_pick` (0 until they submit), not the deleted "Judging" tab. `MIN_SPONSOR_PICKS = SPONSOR_FINAL_TOP` (3).
+- `submitDigital` works after judging closes (organizer-only; the spon team may enter PCBWay's top 3 late).
+- A Devpost link that matches more than one team in the track matches none; the organizer pastes the team ID.
+
+**Why:** code review of track F: PCBWay's UUID could still read the roster and top 3, and the panel always showed picks as unknown after the tab was deleted.
+
+**Alternatives:** read In person / Digital from the Sponsor Day-Of sheet on each call (track E's parser isn't on this branch, and it adds a sheet read to every portal request); keep counting the sheet (always unknown now).
