@@ -462,7 +462,10 @@ export const scavengerHuntRouter = createTRPCRouter({
       return await db
         .select({
           id: users.id,
-          name: users.name,
+          // Email sign-ups have no users.name, so prefer the (required) application name
+          name: sql<
+            string | null
+          >`coalesce(nullif(concat_ws(' ', ${applications.firstName}, ${applications.lastName}), ''), ${users.name})`,
           earned: users.scavengerHuntEarned,
         })
         .from(users)

@@ -525,6 +525,28 @@ describe("scavengerHuntRouter basic endpoints", () => {
       expect(ids).not.toContain(organizer);
     });
 
+    test("uses the application name when the account has no name", async () => {
+      const id = faker.string.uuid();
+      fixtureIds.push(id);
+      await db.insert(users).values({
+        id,
+        email: faker.internet.email(),
+        type: "hacker",
+        scavengerHuntEarned: 4_000_000,
+      });
+      await db.insert(applications).values({
+        ...ApplicationSeeder.createRandomWithoutUser(),
+        userId: id,
+        status: "CONFIRMED",
+        firstName: "Ada",
+        lastName: "Lovelace",
+      });
+      const leaderboard = await organizerCaller.scavengerHunt.getLeaderboard({
+        limit: 100_000,
+      });
+      expect(leaderboard.find((u) => u.id === id)?.name).toBe("Ada Lovelace");
+    });
+
     test("throws error if user is not an organizer", async () => {
       await expect(
         caller.scavengerHunt.getLeaderboard({ limit: 10 }),
