@@ -1,3 +1,4 @@
+import { keepNamesTogether } from "~/lib/keep-names-together";
 import { CalendarClock, Clock, MapPin, TriangleAlert } from "lucide-react";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
@@ -15,7 +16,7 @@ function titleOf(event: NextEvent): string {
   }
   if (event.kind === "coffee") return copy.coffeeTitle;
   if (event.kind === "hold") return copy.holdTitle;
-  return event.title;
+  return keepNamesTogether(event.title);
 }
 
 // "Your next event": the sponsor's next own item from now, with a countdown.

@@ -13,7 +13,8 @@ import {
   logisticsSteps,
 } from "~/constants/event-logistics";
 
-const navLinkClass = (isActive: boolean) =>
+// Shared with the sponsor portal side nav (sponsor-shell.tsx).
+export const navLinkClass = (isActive: boolean) =>
   cn(
     "group flex items-center gap-2.5 rounded-dashboard-sm px-4 py-3 leading-default transition-colors",
     isActive

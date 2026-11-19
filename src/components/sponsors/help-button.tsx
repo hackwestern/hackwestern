@@ -1,6 +1,6 @@
 import { createContext, useContext, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { LifeBuoy, X } from "lucide-react";
+import { CircleHelp, LifeBuoy, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { PhoneCopy } from "~/components/sponsors/phone-copy";
 import {
@@ -215,36 +215,37 @@ export function useOpenSponsorHelp(): (() => void) | null {
   return useContext(HelpContext)?.open ?? null;
 }
 
-// "Need help?" on a sponsor page. `variant="nav"` is the side nav's quiet
-// version. Both open the one Help dialog from SponsorHelpProvider.
+// "Need help?" on a sponsor page. `variant="header"` is the page header's
+// "Help" button (every page, phones and up); "card" is the full-width
+// button with its hint. Both open the one Help dialog from
+// SponsorHelpProvider, over the page you're on.
 export function SponsorHelp({
   variant = "card",
 }: {
-  variant?: "card" | "nav";
+  variant?: "card" | "header";
 }) {
   const help = useContext(HelpContext);
   const triggerRef = useRef<HTMLButtonElement>(null);
   if (!help) return null;
-  const nav = variant === "nav";
   return (
     <div data-tour="need-help" className="flex flex-col gap-2">
-      {nav ? (
+      {variant === "header" ? (
         <button
           ref={triggerRef}
           type="button"
           aria-haspopup="dialog"
           onClick={help.open}
           className={cn(
-            "flex min-h-11 w-full items-center gap-2.5 rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-left text-sm font-semibold text-dashboard-text-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+            "inline-flex min-h-11 items-center gap-1.5 rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface px-3 text-sm font-semibold text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
             hoverTint,
             pressable,
           )}
         >
-          <LifeBuoy
+          <CircleHelp
             aria-hidden
-            className="size-4 shrink-0 text-dashboard-action-primary"
+            className="size-[18px] shrink-0 text-dashboard-text-active"
           />
-          {copy.button}
+          {copy.headerButton}
         </button>
       ) : (
         <>

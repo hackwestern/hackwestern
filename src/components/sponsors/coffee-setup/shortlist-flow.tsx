@@ -279,10 +279,11 @@ export function ShortlistFlow({
                 aria-checked={filter === f}
                 onClick={() => setFilter(f)}
                 className={cn(
-                  "min-h-11 rounded-full border px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                  // DashboardChip's look, kept as radios.
+                  "min-h-11 whitespace-nowrap rounded-dashboard-lg px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
                   filter === f
-                    ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
-                    : "border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-medium",
+                    ? "bg-dashboard-action-primary text-dashboard-text-inverse"
+                    : "bg-dashboard-bg-nav text-dashboard-text-heavy [@media(hover:hover)]:hover:bg-dashboard-bg-navSelected",
                   pressable,
                 )}
               >

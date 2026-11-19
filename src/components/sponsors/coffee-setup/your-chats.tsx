@@ -24,10 +24,11 @@ export function YourChats({ data }: { data: SetupData }) {
   const when = workshopWhen(data);
   const chip = (on: boolean) =>
     cn(
-      "min-h-11 rounded-full border px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+      // DashboardChip's look (the mock's rep chips), kept as radios.
+      "min-h-11 whitespace-nowrap rounded-dashboard-lg px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
       on
-        ? "border-2 border-dashboard-action-primary bg-dashboard-bg-highlight text-dashboard-text-active"
-        : "border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-medium",
+        ? "bg-dashboard-action-primary text-dashboard-text-inverse"
+        : "bg-dashboard-bg-nav text-dashboard-text-heavy [@media(hover:hover)]:hover:bg-dashboard-bg-navSelected",
       pressable,
     );
 

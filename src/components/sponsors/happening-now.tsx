@@ -1,3 +1,4 @@
+import { keepNamesTogether } from "~/lib/keep-names-together";
 import { Radio } from "lucide-react";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { scheduleCopy } from "~/content/sponsor-schedule";
@@ -96,7 +97,7 @@ export function HappeningNowBanner({
                   const room = roomOf(i, sponsorName);
                   return (
                     <li key={i.id} className="break-words">
-                      {i.title}
+                      {keepNamesTogether(i.title, [sponsorName])}
                       {room && (
                         <span className="font-medium text-dashboard-text-medium">
                           {copy.roomSuffix(room)}

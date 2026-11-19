@@ -2,10 +2,10 @@ import { useRouter } from "next/router";
 import { BadgeScanner } from "~/components/sponsors/badge-scanner";
 import {
   InvalidLink,
-  PageIntro,
   ScheduleSkeleton,
 } from "~/components/sponsors/schedule-states";
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
+import { sponsorPortalCopy } from "~/content/sponsor-portal";
 import { sponsorScanCopy as copy } from "~/content/sponsor-scan";
 import { badgeCodeOf } from "~/lib/use-qr-scanner";
 import { api } from "~/utils/api";
@@ -30,7 +30,13 @@ export default function SponsorScanPage() {
   );
 
   const shell = (children: React.ReactNode) => (
-    <SponsorShell title={copy.seoTitle}>{children}</SponsorShell>
+    <SponsorShell
+      title={copy.seoTitle}
+      heading={hacker ? copy.offerTitle : copy.title}
+      barTitle={sponsorPortalCopy.nav.scan}
+    >
+      {children}
+    </SponsorShell>
   );
 
   if (!router.isReady) return shell(<ScheduleSkeleton />);
@@ -40,11 +46,10 @@ export default function SponsorScanPage() {
 
   return shell(
     <>
-      <PageIntro
-        eyebrow={copy.eyebrow}
-        title={hacker ? copy.offerTitle : copy.title}
-        intro={hacker ? copy.offerIntro : copy.intro}
-      />
+      {/* The intro stays on phones too: it says what scanning does. */}
+      <p className="m-0 max-w-[62ch] text-base text-dashboard-text-medium">
+        {hacker ? copy.offerIntro : copy.intro}
+      </p>
       <BadgeScanner
         key={hacker ?? ""}
         sponsor={id}

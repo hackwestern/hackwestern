@@ -1,44 +1,39 @@
-import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import * as Popover from "@radix-ui/react-popover";
 import {
-  CircleHelp,
-  Clock,
+  Calendar,
   Coffee,
   House,
   Lock,
-  MapPin,
+  Map as MapIcon,
   ScanLine,
   Trophy,
   type LucideIcon,
 } from "lucide-react";
 import SEO from "~/components/seo";
+import { navLinkClass } from "~/components/live/navlinks";
 import {
   SponsorHelp,
   SponsorHelpProvider,
 } from "~/components/sponsors/help-button";
-import { VenueMapButton } from "~/components/sponsors/venue-map";
-import {
-  SponsorTour,
-  startSponsorTour,
-} from "~/components/sponsors/tour/sponsor-tour";
+import { SponsorTour } from "~/components/sponsors/tour/sponsor-tour";
 import { useNow } from "~/components/sponsors/use-now";
 import { sponsorPortalCopy } from "~/content/sponsor-portal";
 import { sponsorVenueCopy } from "~/content/sponsor-venue";
 import { judgingUnlocked } from "~/lib/sponsor-judging-unlock";
 import { sponsorLogo } from "~/lib/sponsor-logos";
-import { WELCOME_TOUR_ID } from "~/lib/sponsor-tours";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
-import { hoverTint, pressable } from "./sponsor-shell-styles";
+import { pressable } from "./sponsor-shell-styles";
 
 export { pressable, hoverTint } from "./sponsor-shell-styles";
 
 const copy = sponsorPortalCopy.nav;
 
-type NavId = "home" | "scan" | "chats" | "schedule" | "judging" | "venue";
+type NavId = "home" | "chats" | "scan" | "schedule" | "judging" | "map";
 
 /** Which nav item a sponsor route belongs to. */
 const NAV_BY_PATH: Record<string, NavId> = {
@@ -47,6 +42,16 @@ const NAV_BY_PATH: Record<string, NavId> = {
   "/sponsors/[uuid]/coffee-chats": "chats",
   "/sponsors/[uuid]/schedule": "schedule",
   "/sponsors/[uuid]/picks": "judging",
+  "/sponsors/[uuid]/map": "map",
+};
+
+const NAV_LABELS: Record<NavId, string> = {
+  home: copy.home,
+  chats: copy.chats,
+  scan: copy.scan,
+  schedule: copy.schedule,
+  judging: copy.judging,
+  map: copy.map,
 };
 
 type NavItem = {
@@ -54,40 +59,53 @@ type NavItem = {
   label: string;
   icon: LucideIcon;
   href: string;
+  /** The tour's target name (defaults to nav-<id>). */
+  tour?: string;
   /** Judging before Sunday 9:00 AM: greyed, says when it opens on tap. */
   locked?: boolean;
   /** Small status beside the label in the side nav ("Sun 9 AM", "Sent"). */
   note?: string;
-  /** Side nav only (phones reach the venue through the Map button). */
-  sideOnly?: boolean;
 };
 
-/** "Sat 2:14 PM", in the event's time zone. */
-const whenFormat = new Intl.DateTimeFormat("en-US", {
-  weekday: "short",
-  hour: "numeric",
-  minute: "2-digit",
-  timeZone: "America/Toronto",
-});
-
 /**
- * The frame every sponsor page sits in: one nav, never two (Jazz,
- * 2026-11-18). Tablets and up get a side nav (logo, sections, Need help,
- * How this works); phones get a bottom tab bar with the same icons and
- * labels instead. A slim top bar carries the day and time, the "?" tour
- * menu and the Map. The active section comes from the route.
+ * The frame every sponsor page sits in, in the hacker /live look (design:
+ * mocks/sponsor-portal-flow-hacker-v6; the side nav reuses /live's sidebar
+ * style). One nav, never two: tablets and up get the side nav (Hack
+ * Western 13, the sponsor's logo card, the sections); phones get a top bar
+ * with the page title and a bottom tab bar. Help is a button in the
+ * header on every page and opens a dialog over the page you're on.
+ *
+ * The header is one element for both: the sticky top bar on phones, the
+ * page's title row (big heading, How to, Help) from tablets up, so the
+ * tour and Help mount once.
  *
  * Judging only shows for prize track sponsors, greyed and locked until
  * Sunday 9:00 AM (or with ?preview=judging, which the nav links keep).
  */
 export function SponsorShell({
   title,
-  wide = false,
+  heading,
+  barTitle,
+  headerStart,
+  lead,
+  display = false,
   children,
 }: {
+  /** The browser tab title. */
   title: string;
-  /** A wider column on big screens, for pages with a grid (the schedule). */
-  wide?: boolean;
+  /** The page's h1: the phone top bar's title and the big desktop heading.
+   * Leave it out when the page has its own h1 (the coffee chat flows). */
+  heading?: string;
+  /** The phone top bar's title when it should differ from the heading (or
+   * there's none); defaults to the heading, else the nav section's name. */
+  barTitle?: string;
+  /** Desktop only, left of How to and Help when there's no heading (the
+   * flows' "Back to Chats"). */
+  headerStart?: React.ReactNode;
+  /** One line under the heading, tablets and up. */
+  lead?: string;
+  /** The display size heading (Today's "Hi, Sun Life!"). */
+  display?: boolean;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -102,18 +120,7 @@ export function SponsorShell({
   );
   const sponsorName = info.data?.sponsorName ?? null;
 
-  // Venue is a section of Home, not a page: Home stays the current page
-  // there, and Venue is marked as the current location while the URL
-  // points at it.
-  const hash = router.asPath.split("#")[1] ?? "";
   const active = NAV_BY_PATH[router.pathname] ?? null;
-  const currentOf = (item: NavId): "page" | "location" | undefined =>
-    item === active
-      ? "page"
-      : item === "venue" && active === "home" && hash === "venue"
-        ? "location"
-        : undefined;
-
   const base = `/sponsors/${id}`;
   const withPreview = (href: string) => {
     if (!preview) return href;
@@ -130,17 +137,17 @@ export function SponsorShell({
   const items: NavItem[] = id
     ? [
         { id: "home", label: copy.home, icon: House, href: base },
-        { id: "scan", label: copy.scan, icon: ScanLine, href: `${base}/scan` },
         {
           id: "chats",
           label: copy.chats,
           icon: Coffee,
           href: `${base}/coffee-chats`,
         },
+        { id: "scan", label: copy.scan, icon: ScanLine, href: `${base}/scan` },
         {
           id: "schedule",
           label: copy.schedule,
-          icon: Clock,
+          icon: Calendar,
           href: `${base}/schedule`,
         },
         ...(showJudging
@@ -160,15 +167,19 @@ export function SponsorShell({
             ]
           : []),
         {
-          id: "venue",
-          label: copy.venue,
-          icon: MapPin,
-          href: `${base}#venue`,
-          sideOnly: true,
+          id: "map",
+          label: copy.map,
+          icon: MapIcon,
+          href: `${base}/map`,
+          // The map tour starts from the Map button it used to have.
+          tour: "map",
         },
       ]
     : [];
-  const tabs = items.filter((i) => !i.sideOnly);
+  // The section's name, even when its nav item is hidden (Judging for a
+  // sponsor without a prize track).
+  const activeLabel = active ? NAV_LABELS[active] : undefined;
+  const topTitle = barTitle ?? heading ?? activeLabel ?? sponsorPortalCopy.brand;
 
   const frame = (
     <>
@@ -176,8 +187,8 @@ export function SponsorShell({
       <div
         className={cn(
           "min-h-dvh bg-dashboard-bg-page font-figtree font-medium leading-default text-dashboard-text-heavy",
-          // No side rail for a missing or invalid link.
-          id && "md:grid md:grid-cols-[232px_minmax(0,1fr)]",
+          // No side nav for a missing or invalid link.
+          id && "md:flex",
           // Sticky bars at the bottom of a page (judging's send bar) sit
           // above the phone tab bar.
           id &&
@@ -191,48 +202,99 @@ export function SponsorShell({
           {sponsorPortalCopy.skipToContent}
         </a>
 
-        {/* Side nav: tablets and up */}
+        {/* Side nav: tablets and up (the /live sidebar's look) */}
         {id && (
-          <aside className="hidden md:sticky md:top-0 md:flex md:h-dvh md:flex-col md:gap-4 md:overflow-y-auto md:border-r md:border-dashboard-border-subtle md:bg-dashboard-bg-surface md:px-3 md:py-5">
-            <SponsorMark name={sponsorName} loading={info.isLoading} />
-            <nav aria-label={copy.label}>
-              <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
-                {items.map((item) => (
-                  <li key={item.id}>
-                    <SideNavItem
-                      item={{ ...item, href: withPreview(item.href) }}
-                      current={currentOf(item.id)}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </nav>
-            <div className="mt-auto flex flex-col gap-1 pt-4">
-              <SponsorHelp variant="nav" />
-              <button
-                type="button"
-                onClick={() => startSponsorTour(WELCOME_TOUR_ID)}
-                className={cn(
-                  "flex min-h-11 w-full items-center gap-2.5 rounded-dashboard-lg px-3 text-left text-sm font-semibold text-dashboard-text-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:text-dashboard-text-heavy",
-                  hoverTint,
-                  pressable,
-                )}
+          <aside className="hidden md:sticky md:top-0 md:flex md:h-dvh md:w-[300px] md:shrink-0 md:flex-col md:justify-between md:overflow-y-auto md:rounded-r-dashboard-lg md:border-r md:border-dashboard-border-default md:bg-dashboard-bg-nav md:px-6 md:py-12">
+            <div className="flex flex-col">
+              <Link
+                href={withPreview(base)}
+                aria-label={copy.homeLink}
+                className="flex items-center gap-3 text-xl leading-default text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
               >
-                <CircleHelp aria-hidden className="size-4 shrink-0" />
-                {copy.howItWorks}
-              </button>
+                <Image
+                  src="/shared/horse.svg"
+                  alt=""
+                  width={34}
+                  height={50}
+                  className="-my-[2.5px] mx-[7px] shrink-0"
+                />
+                {sponsorPortalCopy.brand}
+              </Link>
+              <SponsorCard name={sponsorName} loading={info.isLoading} />
+              <nav aria-label={copy.label} className="mt-9">
+                <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+                  {items.map((item) => (
+                    <li key={item.id}>
+                      <SideNavItem
+                        item={{ ...item, href: withPreview(item.href) }}
+                        current={item.id === active}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </nav>
             </div>
+            <p className="m-0 pt-6 text-[13px] text-dashboard-text-light">
+              {copy.footer}
+            </p>
           </aside>
         )}
 
-        <div className="flex min-w-0 flex-col">
-          <header className="flex min-h-14 items-center gap-2 border-b border-dashboard-border-subtle bg-dashboard-bg-surface px-4 py-2 sm:px-5 md:px-8">
-            <TopBarWhen />
-            <SponsorTour
-              offerWelcome={active === "home"}
-              hasPrizeTrack={info.data?.hasPrizeTrack}
-            />
-            <VenueMapButton />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header
+            className={cn(
+              "sticky top-0 z-30 flex min-h-16 items-center gap-2 border-b border-dashboard-border-default bg-dashboard-bg-nav px-4 pt-[env(safe-area-inset-top)]",
+              "md:static md:min-h-0 md:items-start md:gap-4 md:border-0 md:bg-transparent md:px-8 md:pt-12 lg:px-12",
+            )}
+          >
+            {id && (
+              <Link
+                href={withPreview(base)}
+                aria-label={copy.homeLink}
+                className="flex min-h-11 min-w-11 shrink-0 items-center px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary md:hidden"
+              >
+                <Image src="/shared/horse.svg" alt="" width={26} height={38} />
+              </Link>
+            )}
+            {heading ? (
+              <h1
+                className={cn(
+                  "m-0 min-w-0 flex-1 truncate text-center text-base font-semibold leading-default",
+                  "md:whitespace-normal md:text-left md:font-bold md:leading-[1.2]",
+                  display ? "md:text-[48px]" : "md:text-[32px]",
+                )}
+              >
+                {barTitle && barTitle !== heading ? (
+                  <>
+                    <span className="md:hidden">{barTitle}</span>
+                    <span className="hidden md:inline">{heading}</span>
+                  </>
+                ) : (
+                  heading
+                )}
+              </h1>
+            ) : (
+              <>
+                <p
+                  aria-hidden
+                  className="m-0 min-w-0 flex-1 truncate text-center text-base font-semibold md:hidden"
+                >
+                  {topTitle}
+                </p>
+                <div className="hidden min-w-0 flex-1 md:block">
+                  {headerStart}
+                </div>
+              </>
+            )}
+            {id && (
+              <div className="flex shrink-0 items-center gap-2 md:mt-1.5">
+                <SponsorTour
+                  offerWelcome={active === "home"}
+                  hasPrizeTrack={info.data?.hasPrizeTrack}
+                />
+                <SponsorHelp variant="header" />
+              </div>
+            )}
           </header>
 
           {/* A div, not <main>: the app root (_app.tsx) is already the one
@@ -242,41 +304,36 @@ export function SponsorShell({
             id="sponsor-main"
             tabIndex={-1}
             className={cn(
-              "flex-1 px-4 pt-5 focus:outline-none sm:px-5 md:px-8 md:pb-12 md:pt-6",
+              "flex-1 px-4 pt-5 focus:outline-none md:px-8 md:pb-12 md:pt-8 lg:px-12",
               id
                 ? "pb-[calc(6rem+env(safe-area-inset-bottom))]"
                 : "pb-[max(3rem,env(safe-area-inset-bottom))]",
             )}
           >
-            <div
-              className={cn(
-                "mx-auto flex w-full flex-col gap-5",
-                wide ? "max-w-[1040px]" : "max-w-[640px]",
+            <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-6 md:gap-8">
+              {lead && (
+                <p className="m-0 hidden max-w-[62ch] text-base text-dashboard-text-medium md:block">
+                  {lead}
+                </p>
               )}
-            >
               {children}
             </div>
           </div>
         </div>
 
         {/* Bottom tab bar: phones only */}
-        {tabs.length > 0 && (
+        {items.length > 0 && (
           <nav
             aria-label={copy.label}
             data-sponsor-tabbar=""
-            className="fixed inset-x-0 bottom-0 z-30 border-t border-dashboard-border-subtle bg-dashboard-bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
+            className="fixed inset-x-0 bottom-0 z-30 border-t border-dashboard-border-default bg-dashboard-bg-nav px-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] pt-1.5 md:hidden"
           >
-            <ul
-              className={cn(
-                "m-0 grid list-none p-0 px-1",
-                tabs.length === 5 ? "grid-cols-5" : "grid-cols-4",
-              )}
-            >
-              {tabs.map((item) => (
-                <li key={item.id} className="flex">
+            <ul className="m-0 grid list-none auto-cols-fr grid-flow-col gap-0.5 p-0">
+              {items.map((item) => (
+                <li key={item.id} className="flex min-w-0">
                   <TabItem
                     item={{ ...item, href: withPreview(item.href) }}
-                    current={currentOf(item.id)}
+                    current={item.id === active}
                   />
                 </li>
               ))}
@@ -287,8 +344,7 @@ export function SponsorShell({
     </>
   );
 
-  // One help request for the whole page, shared by the side nav and the
-  // page's own card on phones.
+  // One help dialog for the whole page, opened from the header.
   return id ? (
     <SponsorHelpProvider sponsor={id} boothLocation={info.data?.boothLocation}>
       {frame}
@@ -298,8 +354,9 @@ export function SponsorShell({
   );
 }
 
-/** The sponsor's own logo at the top of the side nav, else their name. */
-function SponsorMark({
+/** The sponsor's logo (else their name, on one line) and "Sponsor portal",
+ * in a white card under Hack Western 13. */
+function SponsorCard({
   name,
   loading,
 }: {
@@ -308,85 +365,112 @@ function SponsorMark({
 }) {
   const logo = name ? sponsorLogo(name) : null;
   return (
-    <div className="flex h-11 items-center px-3">
+    <div className="mt-7 flex min-h-11 items-center gap-2.5 rounded-dashboard-lg bg-dashboard-bg-surface px-3 py-2.5 shadow-dashboard-card">
       {loading ? (
-        <span className="h-6 w-28 animate-pulse rounded-dashboard-sm bg-dashboard-bg-nav motion-reduce:animate-none" />
+        <span className="h-[22px] w-24 animate-pulse rounded-dashboard-sm bg-dashboard-bg-nav motion-reduce:animate-none" />
       ) : logo && name ? (
         // eslint-disable-next-line @next/next/no-img-element -- small static logo
         <img
           src={logo}
           alt={sponsorPortalCopy.welcome.logoAlt(name)}
-          width={160}
-          height={28}
-          className="h-7 w-auto max-w-[160px] object-contain object-left"
+          width={120}
+          height={22}
+          className="h-[22px] w-auto max-w-[120px] shrink-0 object-contain object-left"
         />
       ) : name ? (
-        <span className="truncate text-base font-bold tracking-tight">
+        <span className="min-w-0 truncate whitespace-nowrap text-sm font-bold">
           {name}
         </span>
-      ) : (
-        <span className="text-sm font-semibold text-dashboard-text-light">
-          {sponsorPortalCopy.brand}
-        </span>
-      )}
+      ) : null}
+      <span className="whitespace-nowrap text-[13px] text-dashboard-text-light">
+        {copy.portal}
+      </span>
     </div>
   );
 }
 
-/** "Hack Western 13 · Sat 2:14 PM" (just the day and time on phones, so it
- * fits beside the buttons). The time only renders on the client so server
- * and client markup match. */
-function TopBarWhen() {
-  const now = useNow(30_000);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  const when = mounted ? whenFormat.format(now) : null;
-  return (
-    <p className="m-0 min-w-0 flex-1 truncate text-sm font-semibold text-dashboard-text-light">
-      {when ? (
-        <>
-          <span className="hidden sm:inline">{copy.now(when)}</span>
-          <span className="sm:hidden">{when}</span>
-        </>
-      ) : (
-        sponsorPortalCopy.brand
-      )}
-    </p>
-  );
-}
-
-type Current = "page" | "location" | undefined;
-
-function SideNavItem({ item, current }: { item: NavItem; current: Current }) {
+function SideNavItem({ item, current }: { item: NavItem; current: boolean }) {
   const Icon = item.icon;
-  const row =
-    "flex min-h-11 w-full items-center gap-2.5 rounded-dashboard-lg px-3 text-left text-[15px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary";
+  const tour = item.tour ?? `nav-${item.id}`;
   const inner = (
     <>
-      <Icon aria-hidden className="size-[18px] shrink-0" strokeWidth={1.75} />
+      <Icon
+        aria-hidden
+        className={cn(
+          "size-5 shrink-0 transition-colors",
+          current
+            ? "text-dashboard-text-active"
+            : "text-dashboard-text-light group-hover:text-dashboard-text-heavy",
+        )}
+      />
       <span className="min-w-0 flex-1 truncate">{item.label}</span>
       {item.note && (
-        <span
-          className={cn(
-            "shrink-0 text-xs font-medium",
-            !item.locked && "text-dashboard-text-light",
-          )}
-        >
+        <span className="shrink-0 text-xs font-medium text-dashboard-text-light">
           {item.note}
         </span>
       )}
     </>
   );
+  const ring =
+    "w-full text-left text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary";
   if (item.locked) {
     return (
       <LockedJudging side="right">
         <button
           type="button"
-          data-tour={`nav-${item.id}`}
+          data-tour={tour}
           aria-label={copy.judgingLocked(sponsorVenueCopy.judgingLocked.badge)}
           className={cn(
-            row,
-            "text-dashboard-text-placeholder [@media(hover:hover)]:hover:bg-dashboard-bg-inset",
+            navLinkClass(false),
+            ring,
+            "text-dashboard-text-placeholder",
+          )}
+        >
+          {inner}
+        </button>
+      </LockedJudging>
+    );
+  }
+  return (
+    <Link
+      href={item.href}
+      data-tour={tour}
+      aria-current={current ? "page" : undefined}
+      className={cn(navLinkClass(current), ring)}
+    >
+      {inner}
+    </Link>
+  );
+}
+
+function TabItem({ item, current }: { item: NavItem; current: boolean }) {
+  const Icon = item.icon;
+  const tour = item.tour ?? `nav-${item.id}`;
+  const cell =
+    "flex min-h-[52px] w-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-dashboard-lg px-0.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary";
+  const inner = (
+    <>
+      <Icon
+        aria-hidden
+        className={cn(
+          "size-5",
+          current ? "text-dashboard-text-active" : "text-dashboard-text-light",
+        )}
+        strokeWidth={1.8}
+      />
+      <span className="max-w-full truncate">{item.label}</span>
+    </>
+  );
+  if (item.locked) {
+    return (
+      <LockedJudging side="top">
+        <button
+          type="button"
+          data-tour={tour}
+          aria-label={copy.judgingLocked(sponsorVenueCopy.judgingLocked.badge)}
+          className={cn(
+            cell,
+            "font-medium text-dashboard-text-placeholder",
             pressable,
           )}
         >
@@ -398,55 +482,13 @@ function SideNavItem({ item, current }: { item: NavItem; current: Current }) {
   return (
     <Link
       href={item.href}
-      data-tour={`nav-${item.id}`}
-      aria-current={current}
-      className={cn(
-        row,
-        current === "page"
-          ? "bg-dashboard-bg-nav text-dashboard-text-active"
-          : current === "location"
-            ? "text-dashboard-text-active [@media(hover:hover)]:hover:bg-dashboard-bg-inset"
-            : "text-dashboard-text-medium [@media(hover:hover)]:hover:bg-dashboard-bg-inset",
-        pressable,
-      )}
-    >
-      {inner}
-    </Link>
-  );
-}
-
-function TabItem({ item, current }: { item: NavItem; current: Current }) {
-  const Icon = item.icon;
-  const cell =
-    "flex min-h-14 w-full flex-col items-center justify-center gap-0.5 rounded-dashboard-lg px-1 text-[11px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary";
-  const inner = (
-    <>
-      <Icon aria-hidden className="size-5" strokeWidth={1.75} />
-      <span className="max-w-full truncate">{item.label}</span>
-    </>
-  );
-  if (item.locked) {
-    return (
-      <LockedJudging side="top">
-        <button
-          type="button"
-          data-tour={`nav-${item.id}`}
-          aria-label={copy.judgingLocked(sponsorVenueCopy.judgingLocked.badge)}
-          className={cn(cell, "text-dashboard-text-placeholder", pressable)}
-        >
-          {inner}
-        </button>
-      </LockedJudging>
-    );
-  }
-  return (
-    <Link
-      href={item.href}
-      data-tour={`nav-${item.id}`}
-      aria-current={current}
+      data-tour={tour}
+      aria-current={current ? "page" : undefined}
       className={cn(
         cell,
-        current ? "text-dashboard-action-primary" : "text-dashboard-text-light",
+        current
+          ? "bg-dashboard-bg-navSelected font-semibold text-dashboard-text-active"
+          : "font-medium text-dashboard-text-medium",
         pressable,
       )}
     >
