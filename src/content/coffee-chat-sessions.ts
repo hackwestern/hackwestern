@@ -35,6 +35,8 @@ export const coffeeSessionsCopy = {
     empty: "No sponsors are doing coffee chats yet.",
     status: {
       not: "Not submitted",
+      /** Submitted, but no rep has a session they can do. */
+      unavailable: "No availability",
       sent: "Sent",
       need: (done: number, total: number) =>
         `Needs scheduling · ${done} of ${total}`,

@@ -92,6 +92,7 @@ export function PrimaryCrown() {
 
 const STATUS_STYLE: Record<BoardSponsor["status"]["kind"], string> = {
   not: "border border-dashed border-dashboard-border-task text-dashboard-text-warning",
+  unavailable: "border border-dashed border-dashboard-border-task text-dashboard-text-warning",
   need: "bg-dashboard-bg-task text-dashboard-text-task",
   scheduled: "bg-dashboard-bg-nav text-dashboard-text-active",
   sent: "bg-dashboard-schedule-green text-dashboard-status-live",
@@ -102,6 +103,8 @@ export function statusText(status: BoardSponsor["status"]): string {
   switch (status.kind) {
     case "not":
       return s.not;
+    case "unavailable":
+      return s.unavailable;
     case "sent":
       return s.sent;
     case "scheduled":

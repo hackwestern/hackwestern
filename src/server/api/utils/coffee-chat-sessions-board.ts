@@ -9,6 +9,7 @@ import { asc, sql } from "drizzle-orm";
 
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import {
+  availSessions,
   blockedSessions,
   boardFixes,
   cellKey,
@@ -70,6 +71,8 @@ export type BoardRep = {
 
 export type BoardSponsorStatus =
   | { kind: "not" }
+  /** Submitted, but no rep has a free session outside their workshops. */
+  | { kind: "unavailable" }
   | { kind: "need" | "scheduled"; done: number; total: number }
   | { kind: "sent"; done: number; total: number };
 
@@ -290,9 +293,12 @@ export async function loadBoardState(
     // Chats that break a rule now don't count as scheduled.
     const bad = invalidChats([sp], COFFEE_SESSIONS, board).map((x) => x.key);
     const tally = repTally(sp, COFFEE_SESSIONS, withoutCells(board, bad));
+    const free = sp.reps.reduce((n, r) => n + availSessions(sp, r, COFFEE_SESSIONS).length, 0);
     const status: BoardSponsorStatus = !submitted
       ? { kind: "not" }
-      : mine.length > 0 &&
+      : free === 0
+        ? { kind: "unavailable" }
+        : mine.length > 0 &&
           mine.every((p) => p.status === "sent") &&
           tally.done === tally.total
         ? { kind: "sent", ...tally }

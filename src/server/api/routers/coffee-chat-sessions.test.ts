@@ -18,7 +18,7 @@ import { loadBoardState } from "~/server/api/utils/coffee-chat-sessions-board";
 const { names, ros } = vi.hoisted(() => {
   const stamp = Date.now();
   return {
-    names: { work: `WorkCo${stamp}`, team: `TeamCo${stamp}`, late: `LateCo${stamp}` },
+    names: { work: `WorkCo${stamp}`, team: `TeamCo${stamp}`, late: `LateCo${stamp}`, busy: `BusyCo${stamp}` },
     /** Flip to make the run-of-show read fail. */
     ros: { fail: false },
   };
@@ -87,6 +87,8 @@ beforeAll(async () => {
     { name: "Tom", chats: 4, free: ["11"] },
   ]);
   await addSponsor(names.late, false, [{ name: "Lou", chats: 4, free: [] }]);
+  // Submitted, but no rep ticked a session.
+  await addSponsor(names.busy, true, [{ name: "Bo", chats: 4, free: [] }]);
 });
 
 describe("access", () => {
@@ -106,6 +108,7 @@ describe("board and auto-schedule", () => {
     expect(work.blocked).toEqual(["13", "14"]);
     expect(work.status).toEqual({ kind: "need", done: 0, total: 1 });
     expect(late.status).toEqual({ kind: "not" });
+    expect(board.sponsors.find((s) => s.name === names.busy)!.status).toEqual({ kind: "unavailable" });
     expect(late.reps[0]!.isPrimary).toBe(true);
     expect(board.scheduled).toBe(false);
     expect(board.fixes).toEqual([]);
