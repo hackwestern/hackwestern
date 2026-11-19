@@ -176,7 +176,7 @@ const Map = () => {
         </p>
         <p className="text-base font-medium text-dashboard-text-medium">
           <b className="font-semibold text-dashboard-text-heavy">Address:</b>{" "}
-          1151 Richmond St, London, ON N6A 3K7
+          1317 Western Rd, London, ON
         </p>
       </DashboardPanel>
 
