@@ -70,6 +70,9 @@ export default function SponsorJudgingPage() {
   };
 
   // Same rule as the nav: locked until Sunday 9:00 AM, unless previewing.
+  // This lock is UI-only by design: the server enforces only the close
+  // time. Round 1 starts at 9:00 Sunday (docs/flows/sponsor-judging.md),
+  // so the page simply doesn't show judging before then.
   if (
     router.isReady &&
     router.query.preview !== "judging" &&
