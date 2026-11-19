@@ -182,6 +182,14 @@ function HelpContacts({
   );
 }
 
+/**
+ * Opens the portal Help from anywhere inside SponsorHelpProvider (e.g. the
+ * preferences step's "Contact organizers"). Null outside the provider.
+ */
+export function useOpenSponsorHelp(): (() => void) | null {
+  return useContext(HelpContext)?.open ?? null;
+}
+
 // "Need help?" on a sponsor page. `variant="nav"` is the side nav's quiet
 // version. Both open the one Help dialog from SponsorHelpProvider.
 export function SponsorHelp({

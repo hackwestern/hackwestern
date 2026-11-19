@@ -120,8 +120,10 @@ export const sponsorSetupCopy = {
 
   back: "Back to Chats",
   backStep: "Back",
+  /** Opens the portal Help (HW lead + emergency contact). */
   help: {
-    message: "Need something different? Message organizers",
+    question: "Need something different?",
+    contact: "Contact organizers",
   },
   rail: {
     stepOf: (n: number, total: number) => `Step ${n} of ${total}`,
@@ -248,9 +250,6 @@ export const sponsorSetupCopy = {
     noChats: "No rep has a chat at a time they're free. Tick a session or add chats.",
     noPrimary: "Pick a primary contact (the crown) in Your team.",
   },
-
-  confirmedLock:
-    "Your chats are confirmed, so this is read-only. Message organizers to change something.",
 
   shortlist: {
     tag: "Optional",

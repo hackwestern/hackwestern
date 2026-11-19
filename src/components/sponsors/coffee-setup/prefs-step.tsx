@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import { Minus, Plus } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { useOpenSponsorHelp } from "~/components/sponsors/help-button";
 import { pressable } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
 import {
@@ -52,6 +53,7 @@ export function PrefsStep({
   const utils = api.useUtils();
   const { announce, region } = useAnnounce();
   const { guard, dialog } = useAfterInvites(data);
+  const openHelp = useOpenSponsorHelp();
   const [draft, setDraft] = useState<Draft>(() => draftOf(data));
   const [error, setError] = useState<string | null>(null);
   const dirty = useRef(false);
@@ -301,8 +303,19 @@ export function PrefsStep({
         <p role="alert" className="m-0 text-sm font-semibold text-dashboard-text-warning">{error}</p>
       )}
 
-      {/* TODO(merge with track D): "Need something different? Message
-          organizers" (sponsorSetupCopy.help.message) opens track D's Help. */}
+      {openHelp && (
+        <p className="m-0 flex flex-wrap items-center gap-x-1 text-base text-dashboard-text-medium">
+          {sponsorSetupCopy.help.question}
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={openHelp}
+            className="min-h-11 rounded-dashboard-md px-1 text-base font-semibold text-dashboard-text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+          >
+            {sponsorSetupCopy.help.contact}
+          </button>
+        </p>
+      )}
 
       <StepFooter
         back={
