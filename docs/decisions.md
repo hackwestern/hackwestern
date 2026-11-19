@@ -795,3 +795,15 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Why:** organizers need their day and everything about their sponsors in one place, and coffee chats / judging each only matter on certain days.
 **Alternatives:** layouts 2 (side by side) and 3 (sponsor first) from v2; separate Sponsors and Run of show tabs (the current build).
 **Workflow (Jazz, same day):** every new screen is mocked in HTML first and approved before it's built.
+
+## 2026-11-19: Organizer Home built from v3: what's in, what waits for data (build)
+
+**Decision:** /internal/sponsors opens on the v3 day view. Columns built from data the app has: Fri (Arrived, Booth, Coffee chat briefing as tap pills that write Sponsor Day-Of; Availability; Chat shortlist; Chats + invites), Sat (Chats by rep from sent placements with ✓/⏳ seats; Workshop with setup at −30; Booth status), Sun (Judging shortlist, Judging room, Top 5). Left out until there's a data source: Opening speaker check-in, Met at booth count, Tonight (staying/leaving), Judging workshop attendance, Closing role, Gifts · departed. Empty sent chats on Saturday show as one flag per sponsor ("5 chats have no hackers yet, first …"), not one per chat. The chat shortlist is never flagged (it's optional since seats fill from interested hackers). Home has no guided tour yet; the tools keep theirs. The old Sponsors board, Needs attention and Task pings code stays in the repo, not rendered; Sync from sheet and search went with the board.
+**Why:** every flag must come from real data; inventing columns would show permanent "not yet" cells. One flag per problem keeps "N things need you" honest.
+**Alternatives:** add the missing fields to Sponsor Day-Of now (sheet work during event week); flag the shortlist from 9 PM as the mock says (conflicts with the no-open-seats decision).
+
+## 2026-11-19: Sponsors can search every hacker by name and shortlist them (Jazz)
+
+**Decision:** The coffee chat shortlist has a name search over every admitted hacker, not just the sponsor's top 40 candidates. Hackers who share with sponsors match on first, last or full name and show their full profile. Hackers who don't share show, and match on, their first name only, and get no Shortlist button ("Can't be invited: they didn't agree to share with sponsors"), because invite rounds only invite sharers. A hacker already scanned at the booth shows "Met at your booth". A pick found by search is listed after the candidates, counts toward the seat cap, and shows in the organizer forSponsor view. Top-40 candidates from the interest form keep their old rule (they can be shortlisted without the app share box). Up to 20 results, 2+ letters, % and _ match literally.
+**Why:** sponsors meet people at the event who never ranked them, and want to shortlist them by name.
+**Alternatives:** search only the top 40 (no rule change, but can't find people off the list); include non-sharers as shortlistable (dead picks that use a seat and never get invited).

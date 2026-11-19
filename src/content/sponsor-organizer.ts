@@ -447,4 +447,178 @@ export const sponsorOrganizerCopy = {
           : `${n} missing rooms`,
     detailLabel: "Judging",
   },
+  /**
+   * The organizer Home (mock organizer-sponsors-home-v3): Fri · Sat · Sun
+   * day tabs, Up next, your day, and that day's sponsor table with flags.
+   */
+  home: {
+    title: "Home",
+    signedIn: (name: string, led: readonly string[]) =>
+      led.length === 0
+        ? `Signed in as ${name} · you don't lead a sponsor. Times are Eastern.`
+        : `Signed in as ${name} · you lead ${listOf(led)}. Times are Eastern.`,
+    signedInWithView: (own: string, view: string, led: readonly string[]) =>
+      `Signed in as ${own}, with ${view}'s view · ${view} leads ${led.length === 0 ? "no sponsor" : listOf(led)}. Times are Eastern.`,
+    noMatch: "You're not on HW Contacts, so this shows every sponsor. Times are Eastern.",
+    daysLabel: "Day",
+    dayShort: { Friday: "Fri", Saturday: "Sat", Sunday: "Sun" },
+    dayDate: { Friday: "Nov 20", Saturday: "Nov 21", Sunday: "Nov 22" },
+    today: "Today",
+    viewLabel: "Which sponsors",
+    yours: "Your sponsors",
+    all: "All sponsors",
+    nav: {
+      label: "Organizer dashboard",
+      home: "Home",
+      tools: "Tools",
+      coffee: "Coffee chat board",
+      judging: "Judging board",
+      schedule: "Full run of show",
+      back: "Home",
+    },
+    upNext: {
+      label: "Up next",
+      next: (time: string, task: string) => `${time}  ${task}`,
+      inMinutes: (m: number) =>
+        m === 0
+          ? "now"
+          : m < 60
+            ? `in ${m} min`
+            : `in ${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}`,
+      first: (day: string, time: string, task: string) =>
+        `First on ${day}: ${time}  ${task}`,
+      over: (day: string) => `${day} is over. The status below is final.`,
+      none: (day: string) => `Nothing on the run of show is yours on ${day}.`,
+      noneToday: "Nothing else on the run of show is yours today.",
+      loadError: "Couldn't read the run of show. It retries on its own.",
+    },
+    toolIntro: "Times are Eastern.",
+    yourDay: "Your day",
+    yourDayNoMatch: "The day",
+    fullRunOfShow: "Full run of show",
+    sponsorsOn: (yours: boolean, day: string) =>
+      `${yours ? "Your sponsors" : "All sponsors"} on ${day}`,
+    count: {
+      things: (n: number) => (n === 1 ? "1 thing needs you" : `${n} things need you`),
+      clear: (yours: boolean) =>
+        yours ? "All clear for your sponsors" : "All clear",
+      notStarted: (day: string) => `${day} hasn't started · showing the plan`,
+    },
+    countHint:
+      "Amber flags show what to fix. Tap a sponsor for contacts and package.",
+    board: {
+      coffee: "Open coffee chat board",
+      coffeeCount: (n: number) => `${n} need scheduling`,
+      judging: "Open judging board",
+      judgingCount: (n: number) => `${n} not in`,
+    },
+    doneChip: (label: string) => `${label}: all done`,
+    doneChipShow: (label: string) => `Show ${label}`,
+    tableLabel: (day: string) => `Sponsors on ${day}`,
+    sponsor: "Sponsor",
+    toFix: (n: number) => (n === 1 ? "1 to fix" : `${n} to fix`),
+    none: "—",
+    noSponsors: "No sponsors to show.",
+    noneLed: "You don't lead a sponsor. Switch to All sponsors to see everyone.",
+    loading: "Loading sponsors…",
+    loadFailed: "Couldn't read the sponsor list. It retries on its own.",
+    columns: {
+      arrived: "Arrived",
+      booth: "Booth",
+      briefing: "Coffee chat briefing",
+      availability: "Availability",
+      shortlist: "Chat shortlist",
+      invites: "Chats + invites",
+      chats: "Chats by rep",
+      workshop: "Workshop",
+      boothOpen: "Booth",
+      judgingShortlist: "Judging shortlist",
+      judgingRoom: "Judging room",
+      top5: "Top 5",
+    },
+    columnSub: {
+      briefing: "5:00 PM · Rm 2110",
+      availability: "",
+      shortlist: "due 9:30 PM",
+      invites: "invites go out 10 PM",
+      chats: "✓ confirmed · ⏳ waiting",
+      workshop: "setup at −30 min",
+      judgingShortlist: "due 9:30 AM",
+      top5: "due 12:00 PM",
+    } as Partial<Record<string, string>>,
+    cell: {
+      notHere: "Not here yet",
+      boothTbd: "Spot TBD",
+      boothSetUp: "Set up",
+      boothNotSetUp: "Not set up",
+      briefingCame: "Came",
+      briefingNot: "Not yet",
+      noAvailability: "Not sent",
+      availabilitySent: (when: string) => `Sent ${when}`,
+      repsPlaced: (placed: number, reps: number) => `${placed} of ${reps} reps placed`,
+      shortlistSent: (when: string) => `Sent ${when}`,
+      shortlistNot: "Not sent (optional)",
+      invitesOut: (accepted: number, invites: number) =>
+        `Invites out · ${accepted} of ${invites} accepted`,
+      invitesNotOut: "Invites not out",
+      confirmed: "Schedule confirmed",
+      noChats: "No chats",
+      block: (rep: string, time: string, room: string) => `${rep} ${time} · Rm ${room}`,
+      seats: (accepted: number, waiting: number) =>
+        `${accepted}✓${waiting ? ` ${waiting}⏳` : ""}`,
+      blockDone: "done",
+      workshop: (time: string, room: string | null) =>
+        room ? `${time} · ${room}` : time,
+      setup: (time: string) => `Setup ${time}`,
+      workshopDone: "Done",
+      shortlistWorking: (scored: number, picked: number) =>
+        `Working · ${scored} scored, ${picked} picked`,
+      shortlistNotStarted: "Not started",
+      judgingSent: (n: number, when: string) => `Sent ${n} teams · ${when}`,
+      roomMissing: "No room yet",
+      roomRemote: "Online",
+      topIn: (when: string) => `In · ${when}`,
+      topNot: "Not in",
+      digitalTop: "Spon team enters",
+    },
+    flags: {
+      notHere: "Not here yet: call the main contact",
+      noAvailability: "No availability yet: chats can't be scheduled",
+      invitesNotOut: "Invites aren't out",
+      changedAfterSend: "Changed reps after invites: resend",
+      emptyBlocks: (count: number, rep: string, time: string) =>
+        count === 1
+          ? `${rep}'s ${time} chat has no hackers yet`
+          : `${count} chats have no hackers yet, first ${rep}'s at ${time}`,
+      shortlistLate: "Shortlist not in",
+      noRoom: "No judging room",
+      topLate: "Top 5 not in",
+    },
+    details: {
+      heading: "Contacts and package",
+      hwLead: "HW lead",
+      you: "You",
+      noLead: "No lead",
+      mainContact: "Main contact",
+      reps: "Reps",
+      noReps: "No reps yet",
+      booth: "Booth",
+      workshops: "Workshops",
+      noWorkshop: "No workshop",
+      prize: "Prize track",
+      prizeInPerson: "In person",
+      prizeDigital: "Digital (Spon team enters)",
+      prizeNone: "None",
+      portal: "Portal link",
+      notes: "Notes",
+      openCoffee: "Coffee chats",
+      openJudging: "Judging",
+    },
+  },
 };
+
+/** "A", "A and B", "A, B and C". */
+function listOf(names: readonly string[]): string {
+  if (names.length <= 1) return names.join("");
+  return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CircleCheck, ScanLine } from "lucide-react";
+import { CircleCheck, ScanLine, Search, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { HackerLinks } from "~/components/sponsors/hacker-links";
@@ -46,9 +46,17 @@ export function ShortlistFlow({
   const [filter, setFilter] = useState<Filter>("shortlisted");
   const [skipped, setSkipped] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
+  // Name search over every admitted hacker (not just the candidates).
+  const [query, setQuery] = useState("");
+  const term = useDebounced(query.trim(), 250);
+  const search = api.sponsorShortlist.search.useQuery(
+    { sponsor, q: term },
+    { enabled: term.length >= 2, retry: 1, refetchOnWindowFocus: false },
+  );
   const refresh = async () => {
     await Promise.all([
       utils.sponsorShortlist.list.invalidate({ sponsor }),
+      utils.sponsorShortlist.search.invalidate(),
       utils.coffeeChatSetup.get.invalidate({ sponsor }),
     ]);
   };
@@ -238,6 +246,55 @@ export function ShortlistFlow({
       {max === 0 && <p className="m-0 text-base text-dashboard-text-warning">{copy.noSeats}</p>}
       {full && !over && max > 0 && <p className="m-0 text-sm text-dashboard-text-medium">{copy.full}</p>}
 
+      <div className="relative w-full">
+        <Search
+          aria-hidden
+          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-dashboard-text-light"
+        />
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape" && query) {
+              e.preventDefault();
+              setQuery("");
+            }
+          }}
+          aria-label={copy.search.label}
+          aria-describedby="sl-search-hint"
+          placeholder={copy.search.placeholder}
+          // 16px text so phones don't zoom in on focus.
+          className="h-11 w-full appearance-none rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-surface pl-9 pr-11 text-base text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [&::-webkit-search-cancel-button]:hidden"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label={copy.search.clear}
+            className="absolute right-0 top-0 inline-flex size-11 items-center justify-center rounded-dashboard-lg text-dashboard-text-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+          >
+            <X aria-hidden className="size-4" />
+          </button>
+        )}
+      </div>
+      <p id="sl-search-hint" className="m-0 -mt-2 text-sm text-dashboard-text-light">
+        {copy.search.hint}
+      </p>
+
+      {query.trim().length >= 2 ? (
+        <SearchResults
+          term={term}
+          pending={term !== query.trim() || search.isFetching}
+          failed={search.isError}
+          results={search.data}
+          busy={busy}
+          submitted={submitted}
+          full={full}
+          onToggle={toggle}
+        />
+      ) : (
+        <>
       {scannedSection}
 
       {view === "one" ? (
@@ -305,6 +362,9 @@ export function ShortlistFlow({
         </div>
       )}
 
+        </>
+      )}
+
       {error && <p role="alert" className="m-0 text-sm font-semibold text-dashboard-text-warning">{error}</p>}
 
       <StepFooter
@@ -344,8 +404,11 @@ function HackerRow({
   hidden,
   canAdd,
   onToggle,
+  note,
 }: {
   hacker: InterestedHacker;
+  /** In place of the Add button: why this hacker can't be added. */
+  note?: string | null;
   disabled: boolean;
   /** Submitted: no Shortlist / Remove until they tap Edit shortlist. */
   hidden: boolean;
@@ -364,7 +427,9 @@ function HackerRow({
           </span>
           {studyLine(hacker) && <span className="text-sm text-dashboard-text-medium">{studyLine(hacker)}</span>}
         </span>
-        {!hidden && (
+        {note && !hacker.shortlisted ? (
+          <span className="max-w-40 shrink-0 text-right text-xs text-dashboard-text-light">{note}</span>
+        ) : !hidden && (
         <DashboardButton
           variant={hacker.shortlisted ? "outline" : "small"}
           className={cn("h-11 shrink-0", pressable, blocked && "opacity-dashboard-disabled")}
@@ -394,5 +459,78 @@ function ScannedRow({ hacker }: { hacker: ScannedHacker }) {
         </span>
       </span>
     </li>
+  );
+}
+
+/** `value`, once it has stopped changing for `ms`. */
+function useDebounced<T>(value: T, ms: number): T {
+  const [settled, setSettled] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setSettled(value), ms);
+    return () => clearTimeout(id);
+  }, [value, ms]);
+  return settled;
+}
+
+type SearchHacker = InterestedHacker & { scanned: boolean };
+
+/** Most results the search returns (sponsorShortlist.search). */
+const SEARCH_LIMIT = 20;
+
+/**
+ * Name search results over every admitted hacker. Hackers they scanned
+ * already have a seat; hackers who don't share can't be invited, so
+ * neither gets an Add button.
+ */
+function SearchResults({
+  term,
+  pending,
+  failed,
+  results,
+  busy,
+  submitted,
+  full,
+  onToggle,
+}: {
+  term: string;
+  pending: boolean;
+  failed: boolean;
+  results: SearchHacker[] | undefined;
+  busy: boolean;
+  submitted: boolean;
+  full: boolean;
+  onToggle: (h: InterestedHacker) => void;
+}) {
+  const s = copy.search;
+  return (
+    <section aria-label={s.label} aria-busy={pending || undefined} className="flex flex-col gap-2">
+      <p role="status" className="m-0 text-sm text-dashboard-text-light">
+        {failed
+          ? s.failed
+          : !results
+            ? s.searching
+            : results.length === 0
+              ? s.none(term)
+              : s.results(results.length)}
+      </p>
+      {results && results.length > 0 && (
+        <ul className={cn("m-0 flex list-none flex-col p-0", pending && "opacity-dashboard-disabled")}>
+          {results.map((h) => (
+            <HackerRow
+              key={h.userId}
+              hacker={h}
+              disabled={busy}
+              hidden={submitted}
+              canAdd={!full}
+              onToggle={() => onToggle(h)}
+              note={h.scanned ? copy.scannedTag : !h.shared ? s.cantInvite : null}
+            />
+          ))}
+        </ul>
+      )}
+      {results && results.length >= SEARCH_LIMIT && (
+        <p className="m-0 text-sm text-dashboard-text-light">{s.more}</p>
+      )}
+    </section>
   );
 }
