@@ -1,0 +1,931 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chat setup · Sun Life (mock v1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   DESIGN SYSTEM: copied from sponsor-coffee-chats-v7 (tokens + components).
+   Hierarchy from type, spacing and alignment, not cards.
+   Blue = action / selected. Green = confirmed / ok. Amber = needs attention
+   (errors, warnings, organizer note) and the mock strip.
+   ===================================================================== */
+:root{
+  --ink:#0b2b4a; --ink-2:#1c3550; --ink-3:#516476; --ink-4:rgba(81,100,118,.7);
+  --bg:#ffffff; --bg-sub:#f3f7fc; --bg-sel:rgba(225,239,251,.55); --bg-hover:#f6f9fd;
+  --line:#e0eaf3; --line-2:#cdddeb; --line-3:#b9cbe0;
+  --accent:#0b6bc4; --accent-2:#08559c;
+  --ok:#16803c; --warn:#8a4300;
+  --mock-bg:#fff8de; --mock-line:#c78a00;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+  --t-cap:12px; --t-sec:13px; --t-body:14px; --t-sect:16px; --t-title:20px;
+  --r1:4px; --r2:6px; --r3:10px;
+  --h-ctl:32px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  --ease-drawer:cubic-bezier(0.32,0.72,0,1);
+}
+@media (pointer:coarse){:root{--h-ctl:40px}}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink-2);font-family:Figtree,system-ui,sans-serif;font-size:var(--t-body);font-weight:500;line-height:1.43;-webkit-tap-highlight-color:transparent}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation;background:none;border:0;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--r1)}
+.num{font-variant-numeric:tabular-nums}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[hidden]{display:none!important}
+h1,h2,h3,p{margin:0}
+
+/* ---------- mock control strip (not part of the product) ---------- */
+.mock{background:var(--mock-bg);border-bottom:1px dashed var(--mock-line);font-size:var(--t-cap);color:var(--warn)}
+.mock-in{max-width:880px;margin:0 auto;padding:var(--s2) var(--s4);display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s5)}
+.mock-t{font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.mock-g{display:flex;align-items:center;gap:var(--s1);flex-wrap:wrap}
+.mock-g>span{margin-right:var(--s1)}
+.mock-b{min-height:24px;padding:0 var(--s2);border:1px solid #e6c766;border-radius:var(--r1);background:#fff;font-size:var(--t-cap);font-weight:600;color:var(--warn)}
+.mock-b[aria-pressed="true"]{background:var(--warn);border-color:var(--warn);color:#fff}
+.mock-v{margin-left:auto;font-weight:700;padding:2px var(--s2);border:1px solid var(--mock-line);border-radius:var(--r1);background:#fff}
+@media (pointer:coarse){.mock-b{min-height:32px}}
+
+/* ---------- page + header ---------- */
+.wrap{max-width:880px;margin:0 auto;padding:0 var(--s4)}
+@media (min-width:720px){.wrap{padding:0 var(--s6)}.mock-in{padding:var(--s2) var(--s6)}}
+.hd{padding-top:var(--s4)}
+.hd-back{display:inline-flex;align-items:center;gap:var(--s1);font-size:var(--t-sec);font-weight:600;color:var(--ink-3);text-decoration:none;min-height:24px}
+.hd-row{display:flex;align-items:center;gap:var(--s3);margin-top:var(--s2)}
+.hd-logo{height:24px;display:flex;align-items:center;padding-right:var(--s3);border-right:1px solid var(--line)}
+.hd-logo img{height:100%;width:auto;max-width:96px;object-fit:contain}
+h1{font-size:var(--t-title);line-height:1.3;font-weight:700;letter-spacing:-0.01em;color:var(--ink)}
+.hd-ev{font-size:var(--t-sec);color:var(--ink-3);margin-left:auto;display:none}
+@media (min-width:640px){.hd-ev{display:inline}}
+.intro{display:flex;flex-direction:column;gap:var(--s1);margin-top:var(--s3);padding-bottom:var(--s5)}
+.lead{max-width:620px}
+.meta{font-size:var(--t-sec);color:var(--ink-3)}
+.meta b{color:var(--ink);font-weight:600}
+h2{font-size:var(--t-sect);font-weight:600;color:var(--ink);line-height:1.4}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:var(--h-ctl);padding:0 var(--s3);border-radius:var(--r2);font-size:var(--t-body);font-weight:600;white-space:nowrap;transition:transform 140ms var(--ease-out),background-color 140ms var(--ease-out),border-color 140ms var(--ease-out)}
+.btn:active:not(:disabled){transform:scale(0.97)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-pri{background:var(--accent);color:#fff}
+.btn-sec{background:var(--bg);border:1px solid var(--line-2);color:var(--ink)}
+.btn-ghost{color:var(--accent);padding:0 var(--s2)}
+.btn-icon{width:var(--h-ctl);padding:0;color:var(--ink-3)}
+@media (hover:hover) and (pointer:fine){
+  .btn-pri:hover:not(:disabled){background:var(--accent-2)}
+  .btn-sec:hover:not(:disabled){border-color:var(--line-3);background:var(--bg-hover)}
+  .btn-ghost:hover{text-decoration:underline}
+  .btn-icon:hover{color:var(--ink);background:var(--bg-sub)}
+}
+
+/* ---------- shared: participant ---------- */
+.pp{display:inline-flex;align-items:center;gap:var(--s2);min-width:0;max-width:100%;vertical-align:middle}
+.pp-av{flex:none;display:grid;place-items:center;border-radius:50%;background:#e4edf7;color:var(--ink-2);font-weight:700;letter-spacing:.02em}
+.pp-tx{min-width:0;display:flex}
+.pp-n{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp-u{color:var(--ink-3);font-size:var(--t-sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp-md .pp-av{width:28px;height:28px;font-size:11px}
+.pp-md .pp-tx{flex-direction:column;line-height:1.3}
+.pp-sm .pp-av{width:20px;height:20px;font-size:9px}
+.pp-sm .pp-tx{flex-wrap:wrap;column-gap:6px;line-height:1.35}
+
+/* ---------- shared: status marks ---------- */
+.st{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-cap);font-weight:600;color:var(--ink-2);white-space:nowrap;line-height:1}
+.st-m{flex:none;width:8px;height:8px;border-radius:50%}
+.st-short .st-m{background:var(--accent)}
+.st-confirmed{color:var(--ok)}
+
+/* ---------- shared: links ---------- */
+.ext{display:inline-flex;align-items:center;gap:2px;color:var(--accent);font-size:var(--t-sec);font-weight:600;text-decoration:none;border-radius:var(--r1);min-height:24px}
+.ext .arr{font-size:10px;color:var(--ink-3);transform:translateY(-3px)}
+.nolink{font-size:var(--t-sec);color:var(--ink-4)}
+@media (hover:hover) and (pointer:fine){.ext:hover{text-decoration:underline}}
+
+/* ---------- shared: tables ---------- */
+.frame{position:relative;border:1px solid var(--line);border-radius:var(--r3);overflow:hidden}
+.scroll{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:var(--t-cap);font-weight:600;color:var(--ink-3);text-align:left;padding:var(--s2) var(--s3);background:var(--bg-sub);border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:var(--s2) var(--s3);border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tbody:last-child tr:last-child td,.tbl tbody:last-child tr:last-child th{border-bottom:0}
+.tbl tr.sel{background:var(--bg-sel)}
+.sec{font-size:var(--t-sec);color:var(--ink-3)}
+.hint{font-size:var(--t-sec);color:var(--ink-3)}
+.cap{font-size:var(--t-cap);color:var(--ink-3)}
+
+/* ---------- segmented control (v7) ---------- */
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:var(--r2);padding:2px;gap:2px;flex-wrap:wrap}
+.seg button{height:calc(var(--h-ctl) - 6px);min-width:32px;padding:0 var(--s3);border-radius:var(--r1);font-size:var(--t-sec);font-weight:600;color:var(--ink-3);transition:background-color 120ms var(--ease-out),color 120ms var(--ease-out)}
+.seg button[aria-pressed="true"]{background:var(--bg-sub);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line-2)}
+@media (hover:hover) and (pointer:fine){.seg button[aria-pressed="false"]:hover{color:var(--ink)}}
+.f-l{font-size:var(--t-body);font-weight:600;color:var(--ink)}
+
+/* ---------- toast (v7) ---------- */
+.toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));z-index:60;display:flex;align-items:center;gap:var(--s3);width:max-content;max-width:calc(100vw - 32px);
+  padding:var(--s2) var(--s4);min-height:40px;border-radius:var(--r3);background:var(--ink);color:#fff;font-size:var(--t-sec);font-weight:600;box-shadow:0 8px 24px rgba(11,43,74,.22);
+  transform:translate(-50%,12px);opacity:0;pointer-events:none;transition:opacity 180ms var(--ease-out),transform 180ms var(--ease-out)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+body.editing .toast{bottom:96px}
+
+/* ---------- dialog (v7 sheet) ---------- */
+.scrim{position:fixed;inset:0;background:rgba(11,43,74,.28);opacity:0;pointer-events:none;transition:opacity 200ms var(--ease-out);z-index:40}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;z-index:50;left:0;right:0;bottom:0;max-height:88dvh;display:flex;flex-direction:column;background:var(--bg);border-radius:var(--r3) var(--r3) 0 0;box-shadow:0 -8px 32px rgba(11,43,74,.16);
+  transform:translateY(100%);visibility:hidden;transition:transform 250ms var(--ease-drawer),visibility 0s linear 250ms}
+.sheet.on{transform:none;visibility:visible;transition:transform 250ms var(--ease-drawer),visibility 0s}
+@media (min-width:720px){
+  .sheet{left:50%;top:50%;right:auto;bottom:auto;width:480px;border-radius:var(--r3);box-shadow:0 16px 48px rgba(11,43,74,.2);
+    opacity:0;transform:translate(-50%,-48%) scale(.98);transition:opacity 160ms var(--ease-out),transform 160ms var(--ease-out),visibility 0s linear 160ms}
+  .sheet.on{opacity:1;transform:translate(-50%,-50%);transition:opacity 200ms var(--ease-out),transform 200ms var(--ease-out),visibility 0s}
+}
+.s-head{padding:var(--s4) var(--s4) var(--s3);border-bottom:1px solid var(--line)}
+.s-sub{font-size:var(--t-sec);color:var(--ink-3);margin-top:2px}
+.s-body{padding:var(--s4);display:flex;flex-direction:column;gap:var(--s3)}
+.s-foot{display:flex;justify-content:flex-end;gap:var(--s2);padding:var(--s3) var(--s4) max(var(--s3),env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+
+/* =====================================================================
+   CHAT SETUP (new in this mock, built from the same tokens)
+   ===================================================================== */
+.step{display:flex;flex-direction:column;gap:var(--s4);padding:var(--s6) 0;border-top:1px solid var(--line)}
+.step>.seg,.step>.fr>.seg{align-self:flex-start}
+.step-h{display:flex;flex-direction:column;gap:var(--s1)}
+.fr{display:flex;align-items:center;gap:var(--s2) var(--s4);flex-wrap:wrap}
+.fr>.f-l,.fr>.fl{min-width:150px}
+.fl{font-size:var(--t-sec);font-weight:600;color:var(--ink-2)}
+
+/* stepper */
+.stp{display:inline-flex;align-items:stretch;height:var(--h-ctl);border:1px solid var(--line-2);border-radius:var(--r2);overflow:hidden}
+.stp-b{width:var(--h-ctl);display:grid;place-items:center;color:var(--ink-2);transition:background-color 120ms var(--ease-out)}
+.stp-b[aria-disabled="true"]{color:var(--ink-4);cursor:not-allowed}
+.stp-b:focus-visible{outline-offset:-2px}
+.stp-v{min-width:36px;display:grid;place-items:center;font-weight:700;color:var(--ink);border-left:1px solid var(--line);border-right:1px solid var(--line)}
+@media (hover:hover) and (pointer:fine){.stp-b:not([aria-disabled="true"]):hover{background:var(--bg-hover);color:var(--ink)}}
+
+/* inputs */
+.in,.selc,.ta{height:var(--h-ctl);padding:0 var(--s2);border:1px solid var(--line-2);border-radius:var(--r2);background:var(--bg);color:var(--ink);font-size:var(--t-body);transition:border-color 140ms var(--ease-out)}
+.selc{font-weight:600;padding-right:var(--s1)}
+.ta{height:auto;min-height:96px;width:100%;padding:var(--s2);resize:vertical;line-height:1.43}
+.in::placeholder,.ta::placeholder{color:var(--ink-4)}
+@media (hover:hover) and (pointer:fine){.in:hover,.selc:hover,.ta:hover{border-color:var(--line-3)}}
+@media (pointer:coarse){.in,.selc,.ta{font-size:16px}}
+.names{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:var(--s3)}
+.names label{display:flex;flex-direction:column;gap:var(--s1);font-size:var(--t-cap);font-weight:600;color:var(--ink-3)}
+.names .in{width:100%}
+
+/* checkbox rows */
+.chk{display:flex;align-items:flex-start;gap:var(--s3);cursor:pointer}
+.chk input{flex:none;width:16px;height:16px;margin:2px 0 0;accent-color:var(--accent);cursor:pointer}
+.chk input:disabled{cursor:not-allowed}
+.chk-t{display:flex;flex-direction:column}
+.chk.sm{gap:var(--s2);align-items:center;font-size:var(--t-sec);color:var(--ink-2)}
+.chk.sm input{margin:0}
+
+.fmt{display:flex;flex-direction:column;gap:var(--s5)}
+.fmt-b{display:flex;flex-direction:column;gap:var(--s3);margin:var(--s3) 0 0 7px;padding-left:var(--s5);border-left:1px solid var(--line)}
+.math{font-size:var(--t-sec);color:var(--ink-3)}
+.math b{color:var(--ink);font-weight:700}
+
+/* messages: shape + text, never colour alone */
+.msg{display:flex;align-items:flex-start;gap:6px;font-size:var(--t-sec);font-weight:600;line-height:1.4}
+.msg svg{flex:none;margin-top:2px}
+.msg-err,.msg-warn{color:var(--warn)}
+.msg-ok{color:var(--ok)}
+.msg-info{color:var(--ink-3);font-weight:500}
+.msg b{font-weight:700}
+
+/* hours meter */
+.meter{display:flex;flex-direction:column;gap:var(--s2);padding:var(--s3) 0}
+.meter-r{display:flex;align-items:baseline;gap:var(--s2) var(--s3);flex-wrap:wrap}
+.meter-v{font-size:var(--t-sect);font-weight:700;color:var(--ink)}
+.meter-v.over{color:var(--warn)}
+.bar{height:4px;border-radius:2px;background:var(--line);overflow:hidden;max-width:320px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width 200ms var(--ease-out)}
+.bar.over i{background:var(--warn)}
+
+/* availability blocks */
+.blks{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:var(--r3)}
+.blk{display:flex;flex-direction:column;gap:var(--s2);padding:var(--s3)}
+.blk+.blk{border-top:1px solid var(--line)}
+.blk-r{display:flex;align-items:center;flex-wrap:wrap;gap:var(--s2)}
+.blk-n{font-weight:600;color:var(--ink);min-width:60px}
+.blk-to{color:var(--ink-3);font-size:var(--t-sec)}
+.blk-len{font-size:var(--t-sec);color:var(--ink-3);min-width:44px}
+.blk-len.bad{color:var(--warn);font-weight:600}
+.blk-x{margin-left:auto}
+.rp summary{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 var(--s2);border:1px solid var(--line-2);border-radius:var(--r2);font-size:var(--t-sec);font-weight:600;color:var(--ink-2);cursor:pointer;list-style:none;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+.rp summary::-webkit-details-marker{display:none}
+.rp summary svg{transition:transform 150ms var(--ease-out)}
+.rp[open] summary svg{transform:rotate(180deg)}
+.rp-l{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);padding-top:var(--s2)}
+.blk .selc{width:124px}
+.blk-br{display:none}
+@media (max-width:639px){
+  /* phone: "Block 1 · 2 h · remove" on top, then times, then reps */
+  .blk-r>*{order:4}
+  .blk-n{order:0}.blk-len{order:1}.blk-x{order:2}
+  .blk-br{display:block;order:3;flex-basis:100%;height:0}
+  .blk-rp{order:5;flex-basis:100%}
+  .blk .selc{flex:1 1 0;min-width:0;width:auto}
+}
+.empty-b{padding:var(--s5) var(--s4);text-align:center;color:var(--ink-3);border:1px dashed var(--line-2);border-radius:var(--r3)}
+
+/* slot preview */
+.bulk{display:flex;flex-direction:column;gap:var(--s2)}
+.bulk-r{display:flex;align-items:center;flex-wrap:wrap;gap:var(--s2);font-size:var(--t-sec);color:var(--ink-3)}
+.bulk-r .fl{min-width:96px}
+.pv-w{overflow-x:auto}
+.pv th,.pv td{text-align:center;padding:var(--s1) var(--s2)}
+.pv thead th{vertical-align:bottom;padding:var(--s2)}
+.pv .c-t{text-align:left;width:88px;padding-left:var(--s3);font-size:var(--t-sec);font-weight:600;color:var(--ink);background:var(--bg);white-space:nowrap}
+.pv thead .c-t{background:var(--bg-sub);color:var(--ink-3);font-size:var(--t-cap)}
+.ch-n{display:block;color:var(--ink);font-weight:600;font-size:var(--t-sec);max-width:120px;margin:0 auto;overflow:hidden;text-overflow:ellipsis}
+.ch-s{display:block;font-weight:500}
+.cell{width:100%;min-width:52px;height:28px;border-radius:var(--r1);font-weight:700;color:var(--ink);transition:background-color 120ms var(--ease-out),box-shadow 120ms var(--ease-out)}
+.cell.off,.ro.off{color:var(--ink-4);font-weight:500}
+.cell:focus-visible{outline-offset:-2px}
+@media (hover:hover) and (pointer:fine){.cell:hover{background:var(--bg-hover);box-shadow:inset 0 0 0 1px var(--line-3)}}
+.ro{display:inline-block;min-width:40px;font-weight:700;color:var(--ink)}
+.na{color:var(--ink-4)}
+.pv .brk td{background:var(--bg-sub);text-align:left;font-size:var(--t-cap);color:var(--ink-3);padding:6px var(--s3)}
+@media (max-width:639px){.pv{width:max-content;min-width:100%}}
+.pv-sum{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--s1) var(--s3)}
+.pv-sum b{color:var(--ink);font-weight:700;font-size:var(--t-sect)}
+
+/* shortlist */
+.sl-top{display:flex;flex-direction:column;gap:var(--s2)}
+.sl-n{font-size:var(--t-sect);color:var(--ink-2)}
+.sl-n b{color:var(--ink);font-weight:700}
+.tools{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--s2) var(--s3)}
+.search{position:relative;display:block;width:220px;max-width:100%}
+.search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none}
+.search .in{width:100%;padding-left:30px}
+.tools label.fld{display:flex;flex-direction:column;gap:2px;font-size:var(--t-cap);font-weight:600;color:var(--ink-3)}
+.tools .selc{max-width:200px;font-size:var(--t-sec)}
+@media (max-width:639px){.search{flex:1 1 100%;width:auto}.tools label.fld{flex:1 1 30%;min-width:0}.tools .selc{max-width:none;width:100%}}
+.dir .c-sl{width:150px;text-align:right}
+.dir .g1{display:block;font-size:var(--t-sec);color:var(--ink-2)}
+.dir .g2{display:block;font-size:var(--t-sec);color:var(--ink-3)}
+@media (min-width:720px){.dir-w{max-height:560px;overflow-y:auto}.dir thead th{position:sticky;top:0;z-index:1}}
+.tg{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 var(--s2);border:1px solid var(--line-2);border-radius:var(--r2);font-size:var(--t-cap);font-weight:600;color:var(--ink-2);background:var(--bg);white-space:nowrap;transition:transform 140ms var(--ease-out),border-color 140ms var(--ease-out),color 140ms var(--ease-out)}
+.tg:active:not(:disabled){transform:scale(0.97)}
+.tg:disabled{opacity:.45;cursor:not-allowed}
+.tg .plus{color:var(--accent);font-size:14px;line-height:1}
+.tg[aria-pressed="true"]{border-color:transparent;background:transparent;padding-right:0}
+.tg .tg-x{color:var(--ink-3);font-weight:600;margin-left:var(--s1)}
+@media (pointer:coarse){.tg{height:36px}}
+@media (hover:hover) and (pointer:fine){.tg[aria-pressed="false"]:not(:disabled):hover{border-color:var(--accent);color:var(--accent)}.tg[aria-pressed="true"]:hover .tg-x{color:var(--ink);text-decoration:underline}}
+.empty{padding:var(--s6) var(--s4);text-align:center;color:var(--ink-3)}
+@media (max-width:719px){
+  .dir thead{display:none}
+  .dir tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"p s" "g g" "l l";column-gap:var(--s3);row-gap:2px;padding:var(--s2) var(--s3);border-bottom:1px solid var(--line)}
+  .dir tbody tr:last-child{border-bottom:0}
+  .dir td{display:block;padding:0;border:0!important}
+  .dir .c-p{grid-area:p;min-width:0}.dir .c-sl{grid-area:s;width:auto;align-self:center}
+  .dir .c-g{grid-area:g;padding-left:36px;min-width:0}.dir .c-l{grid-area:l;padding-left:36px}
+}
+
+/* sticky footer */
+.foot{position:sticky;bottom:0;z-index:20;background:var(--bg);border-top:1px solid var(--line);margin:0 calc(-1 * var(--s4));padding:var(--s3) var(--s4) max(var(--s3),env(safe-area-inset-bottom))}
+@media (min-width:720px){.foot{margin:0 calc(-1 * var(--s6));padding-left:var(--s6);padding-right:var(--s6)}}
+.foot-in{display:flex;align-items:center;gap:var(--s2) var(--s4);flex-wrap:wrap}
+.foot-t{flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:2px}
+.foot-s{font-size:var(--t-sec);color:var(--ink-2)}
+.foot-s b{color:var(--ink);font-weight:700}
+.foot-s .over{color:var(--warn);font-weight:700}
+.foot-e{min-height:19px}
+.foot-e .btn-ghost{height:20px;padding:0 var(--s1);font-size:var(--t-sec)}
+@media (max-width:639px){.foot .btn-pri{width:100%}}
+
+/* banners and summary */
+.bn{display:flex;flex-direction:column;gap:var(--s2);padding:var(--s4) 0 var(--s4) var(--s4);border-left:2px solid var(--line-2);margin-bottom:var(--s5)}
+.bn-note{border-left-color:var(--mock-line)}
+.bn-ok{border-left-color:var(--ok)}
+.bn-h{display:flex;align-items:center;gap:var(--s2);font-size:var(--t-sect);font-weight:700;color:var(--ink)}
+.bn-ok .bn-h svg{color:var(--ok)}
+.bn-lock .bn-h{color:var(--ok)}
+.bn-lock{border-left-color:var(--ok)}
+.bn-from{font-size:var(--t-cap);font-weight:600;color:var(--warn)}
+.bn-q{font-size:var(--t-body);color:var(--ink)}
+.bn-btns{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s1)}
+.bn-reply{display:flex;flex-direction:column;gap:var(--s2);max-width:560px}
+.bn-reply label{font-size:var(--t-cap);font-weight:600;color:var(--ink-3)}
+.bn-mine{font-size:var(--t-sec);color:var(--ink-3)}
+.bn-mine b{color:var(--ink-2);font-weight:600}
+.info{font-size:var(--t-sec);color:var(--ink-3);margin-bottom:var(--s4)}
+.kv{margin:0;display:grid;grid-template-columns:140px 1fr;gap:var(--s3) var(--s5);padding:var(--s5) 0;border-top:1px solid var(--line)}
+.kv dt{color:var(--ink-3);font-size:var(--t-sec);font-weight:600}
+.kv dd{margin:0;color:var(--ink)}
+.kv dd p+p{margin-top:2px}
+@media (max-width:639px){.kv{grid-template-columns:1fr;gap:2px}.kv dd{margin-bottom:var(--s3)}}
+.ro-sec{display:flex;flex-direction:column;gap:var(--s3);padding:var(--s5) 0;border-top:1px solid var(--line)}
+.slg{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--s2) var(--s4)}
+.slg li{min-width:0}
+.pad-end{height:var(--s7)}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:1ms!important;animation:none!important}}
+</style>
+</head>
+<body class="editing">
+
+<!-- MOCK CONTROL: not part of the product -->
+<div class="mock" role="region" aria-label="Mock control (not part of the product)">
+  <div class="mock-in">
+    <span class="mock-t">Mock control</span>
+    <div class="mock-g" role="group" aria-label="Form state"><span>State</span>
+      <button class="mock-b" type="button" data-state="draft" aria-pressed="true">Draft (prefilled)</button>
+      <button class="mock-b" type="button" data-state="empty" aria-pressed="false">Empty sponsor</button>
+      <button class="mock-b" type="button" data-state="submitted" aria-pressed="false">Submitted</button>
+      <button class="mock-b" type="button" data-state="note" aria-pressed="false">Organizer note</button>
+      <button class="mock-b" type="button" data-state="locked" aria-pressed="false">Locked</button>
+    </div>
+    <div class="mock-g" role="group" aria-label="Demo toggles"><span>Demo</span>
+      <button class="mock-b" type="button" data-tog="over" aria-pressed="false">Over allocated hours</button>
+      <button class="mock-b" type="button" data-tog="full" aria-pressed="false">Full shortlist (40)</button>
+    </div>
+    <span class="mock-v">v1 · fake data · deadline "Thu Nov 19, 11:59 PM" is a placeholder</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="hd">
+    <a class="hd-back" href="#" id="backLink"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Coffee chats</a>
+    <div class="hd-row">
+      <span class="hd-logo"><img src="../../public/shared/sponsors/sunlife.png" alt="Sun Life" width="72" height="24"></span>
+      <h1>Chat setup</h1>
+      <span class="hd-ev">Hack Western 13 · Saturday</span>
+    </div>
+    <div class="intro">
+      <p class="lead">Tell Hack Western how you want to run coffee chats and who you'd like to meet. Organizers review your preferences, assign rooms, and publish the schedule.</p>
+      <p class="meta" id="meta"></p>
+    </div>
+  </header>
+
+  <div id="banners"></div>
+  <main id="main"></main>
+  <div id="footWrap"></div>
+  <div class="pad-end" id="padEnd"></div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle" aria-describedby="sSub" aria-hidden="true"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------- constants ---------- */
+const WIN=[600,1020];              // Saturday 10:00 AM - 5:00 PM, in minutes
+const ALLOC=180;                   // Sun Life package: 3 chatting hours
+const ROOM_MAX=6, SHORT_MAX=40, MIN_BLOCK=60, LONG_RUN=180;
+const DEADLINE="Thu Nov 19, 11:59 PM"; // placeholder
+const GL="ABCDEFGH";
+
+/* ---------- FAKE data: fictional hackers (copied from v7, plus skills + role interest) ---------- */
+const RAW = [
+ ["Avery","K","Western University","Computer Science",3,1],["Noor","H","University of Waterloo","Statistics",2,1],
+ ["Mateo","R","McMaster University","Software Engineering",4,1],["Priya","S","University of Toronto","Math & Economics",3,1],
+ ["Jonah","W","Queen's University","Commerce",2,1],["Lin","Z","Western University","Software Engineering",1,0],
+ ["Kofi","A","York University","Information Technology",3,1],["Sofia","M","Toronto Metropolitan University","Computer Engineering",4,1],
+ ["Ravi","P","University of Ottawa","Computer Science",2,1],["Elodie","B","McGill University","Cognitive Science",3,1],
+ ["Theo","N","Western University","Ivey HBA",4,1],["Amara","O","University of Waterloo","Computer Science",3,1],
+ ["Haruto","T","University of Guelph","Bioinformatics",2,1],["Isla","F","Carleton University","Cybersecurity",3,0],
+ ["Diego","L","Western University","Electrical Engineering",2,1],["Mei","C","University of Toronto","Data Science",4,1],
+ ["Yusuf","E","Wilfrid Laurier University","Business Technology",3,1],["Clara","V","Queen's University","Computing",1,0],
+ ["Arjun","D","McMaster University","Computer Science",3,1],["Zoe","G","Western University","Media & Information",2,1],
+ ["Omar","S","University of Windsor","Computer Science",4,1],["Hana","Y","University of Waterloo","Mathematics",2,1],
+ ["Felix","J","University of Ottawa","Software Engineering",3,1],["Leila","R","York University","Computer Science",2,1],
+ ["Ben","Q","Western University","Computer Science",4,1],["Ines","P","Université de Montréal","Computer Science",3,1],
+ ["Kai","L","Simon Fraser University","Interactive Arts",2,0],["Grace","H","University of Toronto","Engineering Science",3,1],
+ ["Samir","K","Toronto Metropolitan University","Business Analytics",4,1],["Nina","W","Western University","Health Sciences",3,1],
+ ["Oscar","T","University of Guelph","Computer Science",1,1],["Freya","D","Queen's University","Mechanical Engineering",4,1],
+ ["Tariq","M","McMaster University","Computer Science",2,1],["Lucia","A","University of Waterloo","Systems Design Engineering",3,1],
+ ["Ezra","B","Carleton University","Computer Science",3,1],["Aiko","S","Western University","Computer Science",2,1],
+ ["Marcus","F","Wilfrid Laurier University","Computer Science",4,0],["Tessa","I","University of Toronto","Statistics",3,1],
+ ["Rohan","C","University of Windsor","Computer Engineering",2,1],["Wren","E","McGill University","Software Engineering",3,1],
+ ["Jules","R","Western University","Computer Science",2,1],["Maya","T","University of Waterloo","Mechatronics Engineering",3,1],
+ ["Ahmed","N","McMaster University","Computer Science",4,1],["Chloe","B","Queen's University","Computing",2,0],
+ ["Sienna","P","University of Toronto","Computer Science",1,1],["Rafael","G","University of Ottawa","Computer Engineering",3,1],
+ ["Talia","W","Carleton University","Information Technology",2,1],["Kenji","M","Wilfrid Laurier University","Computer Science",3,1],
+];
+const SKILLS=["Python","React","SQL","Java","Machine learning","Data analysis","Cloud","UX design","Security","Product"];
+const ROLES=["Software engineering","Data science","Product management","Design","Actuarial and risk","Cybersecurity"];
+function roleOf(p,i){
+  if(i%7===3)return "Actuarial and risk";
+  if(/Statistic|Math|Data|Econom|Bioinf/.test(p))return "Data science";
+  if(/Commerce|Business|Ivey|Health/.test(p))return "Product management";
+  if(/Media|Arts|Cognitive/.test(p))return "Design";
+  if(/Cyber|Information Tech/.test(p))return "Cybersecurity";
+  return "Software engineering";
+}
+const HACKERS=RAW.map((r,i)=>({id:i,first:r[0],last:r[1],school:r[2],prog:r[3],year:r[4],resume:!!r[5],
+  skills:[...new Set([SKILLS[i%10],SKILLS[(i*3+4)%10],SKILLS[(i*7+1)%10]])],role:roleOf(r[3],i)}));
+const PRE_SHORT=[0,1,3,7,11,15,18,21,24,27,33,38];
+
+/* ---------- helpers ---------- */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const nm=h=>`${h.first} ${h.last}.`, ini=h=>h.first[0]+h.last;
+const fmt=m=>{const h=Math.floor(m/60),mm=m%60;return `${((h+11)%12)+1}:${String(mm).padStart(2,"0")}`;};
+const ap=m=>m>=720?"PM":"AM";
+const fa=m=>`${fmt(m)} ${ap(m)}`;
+const rng=(s,e)=>ap(s)===ap(e)?`${fmt(s)}–${fa(e)}`:`${fa(s)}–${fa(e)}`;
+const hrs=m=>`${+(m/60).toFixed(2)} h`;
+const dur=m=>m<60?`${m} min`:hrs(m);
+const plural=(n,w)=>`${n} ${w}${n===1?"":"s"}`;
+const SVG={
+  check:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`,
+  lock:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`,
+  x:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>`,
+  alert:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></svg>`,
+  info:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>`,
+  plus:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
+  minus:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>`,
+  chev:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`,
+  search:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>`,
+};
+const msg=(kind,html,id)=>`<p class="msg msg-${kind}"${id?` id="${id}" tabindex="-1"`:""}>${kind==="info"?SVG.info:kind==="ok"?SVG.check:SVG.alert}<span>${html}</span></p>`;
+
+/* ---------- state ---------- */
+function fresh(pre){
+  return pre?{reps:4,names:["Dana Whitfield","Marcus Oyelaran","",""],one:true,oneReps:2,group:true,groups:1,rpg:2,hpc:4,len:30,
+      blocks:[{s:600,e:720,reps:null},{s:780,e:840,reps:null}],cells:{},notes:"",short:new Set(PRE_SHORT),prefilled:true}
+    :{reps:1,names:[""],one:false,oneReps:1,group:false,groups:1,rpg:1,hpc:2,len:30,blocks:[],cells:{},notes:"",short:new Set(),prefilled:false};
+}
+let S=fresh(true), STATE="draft", MODE="edit", NOTE=false, RESUB=false, SENT="Wed Nov 18, 3:12 PM",
+    REPLYING=false, REPLY=null, OVER=false, FULL=false;
+const UI={merge:null,snap:null,clamp:null,open:new Set(),focus:null,bkT:"",bkV:"full",lnS:null,lnE:null,q:"",school:"",skill:"",role:"",only:false};
+
+/* ---------- derived ---------- */
+const repName=r=>(S.names[r]||"").trim()||`Rep ${r+1}`;
+const shortName=r=>{const n=(S.names[r]||"").trim();if(!n)return `Rep ${r+1}`;const p=n.split(/\s+/);return p.length>1?`${p[0]} ${p[p.length-1][0]}.`:p[0];};
+const repsUsed=()=>(S.one?S.oneReps:0)+(S.group?S.groups*S.rpg:0);
+function cols(){
+  const out=[];let r=0;
+  if(S.one)for(let i=0;i<S.oneReps;i++){out.push({key:"o"+i,kind:"one",reps:[r],label:shortName(r),sub:"1-on-1",max:1});r++;}
+  if(S.group)for(let g=0;g<S.groups;g++){const reps=[];for(let j=0;j<S.rpg;j++)reps.push(r++);
+    out.push({key:"g"+g,kind:"group",reps,label:`Group ${GL[g]}`,sub:`${plural(S.rpg,"rep")} + ${S.hpc}`,max:S.hpc});}
+  return out;
+}
+function slots(){const out=[];S.blocks.forEach((b,bi)=>{for(let t=b.s;t+S.len<=b.e;t+=S.len)out.push({t,bi});});return out;}
+const avail=(c,bi)=>{const b=S.blocks[bi];return !b.reps||c.reps.every(r=>b.reps.includes(r));};
+const cellVal=(c,t)=>{const v=S.cells[c.key+"|"+t];return v==null?c.max:Math.min(v,c.max);};
+function seats(){const cs=cols();return slots().reduce((a,{t,bi})=>a+cs.reduce((x,c)=>x+(avail(c,bi)?cellVal(c,t):0),0),0);}
+const usedMin=()=>S.blocks.reduce((a,b)=>a+Math.max(0,b.e-b.s),0);
+function longRuns(){
+  const out=[],sl=slots();
+  cols().forEach(c=>{let run=null;
+    const close=()=>{if(run&&run.e-run.s>LONG_RUN)out.push({c,...run});run=null;};
+    sl.forEach(({t,bi})=>{const on=avail(c,bi)&&cellVal(c,t)>0;
+      if(on&&run&&run.e===t)run.e=t+S.len;else if(on){close();run={s:t,e:t+S.len};}else close();});
+    close();});
+  return out;
+}
+function issues(){
+  const out=[],u=repsUsed(),used=usedMin();
+  if(!S.one&&!S.group)out.push({m:"Pick 1-on-1, group, or both.",to:"f-one"});
+  if(u>S.reps)out.push({m:`Reps used: ${u} of ${S.reps}. Lower a format count or add reps.`,to:"repsUsed"});
+  if(!S.blocks.length)out.push({m:"Add at least one availability block.",to:"addBlk"});
+  S.blocks.forEach((b,i)=>{if(b.e-b.s<MIN_BLOCK)out.push({m:`Block ${i+1} is ${dur(b.e-b.s)}. Blocks need at least 1 hour.`,to:`b${i}-e`});});
+  if(used>ALLOC)out.push({m:`You've requested ${hrs(used)}; your package includes ${hrs(ALLOC)}. Remove ${hrs(used-ALLOC)} or contact organizers.`,to:"hoursMsg"});
+  if(cols().length&&slots().length&&seats()===0)out.push({m:"Every slot is Off. Turn at least one back on.",to:"pvH"});
+  return out;
+}
+function sentence(){
+  const p=[plural(S.reps,"rep")];
+  if(S.one)p.push(`${S.oneReps} one-on-one`);
+  if(S.group)p.push(`${S.groups===1?"1 group":S.groups+" groups"} of ${plural(S.rpg,"rep")} + ${plural(S.hpc,"hacker")}`);
+  if(!S.one&&!S.group)p.push("no format yet");
+  p.push(`${S.len} min`);
+  const used=usedMin();
+  p.push(`<span class="${used>ALLOC?"over":""}">${+(used/60).toFixed(2)} / ${ALLOC/60} h</span>`);
+  p.push(`~${seats()} hacker seats`);
+  p.push(`${S.short.size} shortlisted`);
+  return p.join(" · ");
+}
+
+/* ---------- block normalisation: sort, merge overlapping / touching ---------- */
+function normalize(){
+  const b=[...S.blocks].sort((a,c)=>a.s-c.s),out=[],notes=[];
+  for(const x of b){const last=out[out.length-1];
+    if(last&&x.s<=last.e){
+      const before=rng(last.s,last.e),other=rng(x.s,x.e),touch=x.s===last.e;
+      last.e=Math.max(last.e,x.e);
+      last.reps=(!last.reps||!x.reps)?null:[...new Set([...last.reps,...x.reps])].sort((a,c)=>a-c);
+      notes.push(`${before} and ${other} ${touch?"touched":"overlapped"}, so they're now one block: <b>${rng(last.s,last.e)}</b>.`);
+    } else out.push({...x,reps:x.reps?[...x.reps]:null});}
+  S.blocks=out;
+  return notes.length?notes.join(" "):null;
+}
+function freeSpot(){
+  for(let s=WIN[0];s+MIN_BLOCK<=WIN[1];s+=S.len){const e=s+MIN_BLOCK;if(S.blocks.every(b=>e<b.s||s>b.e))return s;}
+  return null;
+}
+
+/* ---------- components ---------- */
+function stepper(id,val,min,max,noun,labelId){
+  return `<div class="stp" role="group" aria-labelledby="${labelId}">
+    <button type="button" class="stp-b" id="${id}-dec" data-step="${id}" data-d="-1" aria-disabled="${val<=min}" aria-label="Fewer ${noun}">${SVG.minus}</button>
+    <output class="stp-v num" id="${id}-v" aria-live="polite">${val}</output>
+    <button type="button" class="stp-b" id="${id}-inc" data-step="${id}" data-d="1" aria-disabled="${val>=max}" aria-label="More ${noun}">${SVG.plus}</button></div>`;
+}
+function person(h,size="md"){
+  return `<span class="pp pp-${size}"><span class="pp-av" aria-hidden="true">${ini(h)}</span><span class="pp-tx"><span class="pp-n">${esc(nm(h))}</span><span class="pp-u">${esc(h.school)}</span></span></span>`;
+}
+function timeOpts(sel,isEnd){
+  // steps of the chat length inside 10-5; one whole hour on each side is shown disabled so the window is visible
+  const lo=isEnd?WIN[0]+S.len:WIN[0], hi=isEnd?WIN[1]:WIN[1]-S.len;
+  let o="";
+  for(let t=lo-60;t<=hi+60;t+=S.len){
+    const out=t<lo||t>hi;
+    if(out&&t%60!==0)continue;
+    o+=`<option value="${t}"${t===sel?" selected":""}${out?" disabled":""}>${fa(t)}${out?" (closed)":""}</option>`;
+  }
+  return o;
+}
+
+/* ========== FORM SECTIONS ========== */
+function renderReps(){
+  const n=S.reps;
+  $("st-reps").innerHTML=`<div class="step-h"><h2 id="h-reps">Reps</h2><p class="hint">How many people from Sun Life will chat with hackers. Names are optional.</p></div>
+  <div class="fr"><span class="f-l" id="l-reps">Number of reps</span>${stepper("reps",n,1,8,"reps","l-reps")}</div>
+  <div class="names">${Array.from({length:n},(_,i)=>`<label for="nm${i}">Rep ${i+1} name (optional)<input class="in" id="nm${i}" data-name="${i}" type="text" autocomplete="off" value="${esc(S.names[i]||"")}" placeholder="Rep ${i+1}"></label>`).join("")}</div>`;
+}
+function renderFormat(){
+  const u=repsUsed(),max=ROOM_MAX-S.rpg,total=S.rpg+S.hpc;
+  const hpcBtns=Array.from({length:max},(_,i)=>i+1).map(v=>`<button type="button" id="hpc-${v}" data-hpc="${v}" aria-pressed="${v===S.hpc}">${v}</button>`).join("");
+  const used=(!S.one&&!S.group)?msg("info","Pick 1-on-1, group, or both.")
+    :u>S.reps?msg("err",`<b>Reps used: ${u} of ${S.reps}.</b> Lower a count here or add reps above.`,"repsUsed")
+    :u===S.reps?msg("ok",`Reps used: ${u} of ${S.reps}`,"repsUsed")
+    :msg("info",`Reps used: ${u} of ${S.reps}. ${plural(S.reps-u,"rep")} not assigned to a format.`,"repsUsed");
+  $("st-format").innerHTML=`<div class="step-h"><h2 id="h-format">Format</h2><p class="hint">Pick one or both. A room holds up to ${ROOM_MAX} people, reps and hackers combined.</p></div>
+  <div class="fmt">
+    <div>
+      <label class="chk"><input type="checkbox" id="f-one" ${S.one?"checked":""}><span class="chk-t"><span class="f-l">1-on-1</span><span class="hint">One rep with one hacker at a time.</span></span></label>
+      ${S.one?`<div class="fmt-b">
+        <div class="fr"><span class="fl" id="l-one">Reps doing 1-on-1s</span>${stepper("one",S.oneReps,1,8,"1-on-1 reps","l-one")}</div>
+        <p class="hint">Each 1-on-1 rep needs their own room, so ${plural(S.oneReps,"rep")} means ${plural(S.oneReps,"room")}.</p></div>`:""}
+    </div>
+    <div>
+      <label class="chk"><input type="checkbox" id="f-group" ${S.group?"checked":""}><span class="chk-t"><span class="f-l">Group</span><span class="hint">One or more reps with a few hackers at once.</span></span></label>
+      ${S.group?`<div class="fmt-b">
+        <div class="fr"><span class="fl" id="l-groups">Number of groups</span>${stepper("groups",S.groups,1,8,"groups","l-groups")}</div>
+        <div class="fr"><span class="fl" id="l-rpg">Reps per group</span>${stepper("rpg",S.rpg,1,5,"reps per group","l-rpg")}</div>
+        <div class="fr"><span class="fl" id="l-hpc">Hackers per chat</span><div class="seg" role="group" aria-labelledby="l-hpc">${hpcBtns}</div></div>
+        <p class="math num" aria-live="polite">${plural(S.rpg,"rep")} + ${plural(S.hpc,"hacker")} = <b>${total} / ${ROOM_MAX}</b> in the room${total<ROOM_MAX?` · room for ${ROOM_MAX-total} more`:""}</p>
+        ${UI.clamp?msg("info",UI.clamp):""}</div>`:""}
+    </div>
+  </div>
+  ${used}`;
+}
+function renderLength(){
+  $("st-len").innerHTML=`<div class="step-h"><h2 id="h-len">Chat length</h2><p class="hint">How long each chat lasts. Availability times move in steps of this length.</p></div>
+  <div class="seg" role="group" aria-labelledby="h-len">${[15,30].map(v=>`<button type="button" id="len-${v}" data-len="${v}" aria-pressed="${S.len===v}">${v} min</button>`).join("")}</div>
+  ${UI.snap?msg("info",UI.snap):""}`;
+}
+function repPick(b,i){
+  const lab=!b.reps?"All reps":b.reps.map(shortName).join(", ");
+  const boxes=Array.from({length:S.reps},(_,r)=>{const on=!b.reps||b.reps.includes(r),onlyOne=on&&(b.reps?b.reps.length===1:S.reps===1);
+    return `<label class="chk sm"><input type="checkbox" id="b${i}-r${r}" data-brep="${i}|${r}" ${on?"checked":""} ${onlyOne?"disabled":""}>${esc(repName(r))}</label>`;}).join("");
+  return `<details class="rp" data-rpd="${i}" ${UI.open.has(i)?"open":""}><summary id="b${i}-rp" aria-label="Reps in block ${i+1}: ${esc(lab)}">Reps: ${esc(lab)} ${SVG.chev}</summary>
+    <div class="rp-l" role="group" aria-label="Reps available in block ${i+1}">${boxes}</div></details>`;
+}
+function renderAvail(){
+  const used=usedMin(),over=used>ALLOC,runs=longRuns(),spot=freeSpot();
+  const blocks=S.blocks.map((b,i)=>{const len=b.e-b.s,short=len<MIN_BLOCK;
+    const blockRuns=runs.filter(r=>r.s<b.e&&r.e>b.s);
+    return `<li class="blk" id="blk${i}">
+      <div class="blk-r">
+        <span class="blk-n">Block ${i+1}</span>
+        <label class="sr-only" for="b${i}-s">Block ${i+1} start</label>
+        <select class="selc num" id="b${i}-s" data-bs="${i}">${timeOpts(b.s,false)}</select>
+        <span class="blk-to" aria-hidden="true">to</span>
+        <label class="sr-only" for="b${i}-e">Block ${i+1} end</label>
+        <select class="selc num" id="b${i}-e" data-be="${i}" ${short?`aria-invalid="true" aria-describedby="b${i}-err"`:""}>${timeOpts(b.e,true)}</select>
+        <span class="blk-len num${short?" bad":""}">${dur(len)}</span>
+        <span class="blk-br" aria-hidden="true"></span>
+        <span class="blk-rp">${repPick(b,i)}</span>
+        <button type="button" class="btn btn-icon blk-x" id="b${i}-x" data-rmblk="${i}" aria-label="Remove block ${i+1}, ${rng(b.s,b.e)}">${SVG.x}</button>
+      </div>
+      ${short?msg("err",`This block is ${dur(len)}. The minimum is 1 hour.`,`b${i}-err`):""}
+      ${blockRuns.length?msg("warn",`This block is ${hrs(len)} with no break. Mark an Off slot in the preview so no one chats more than 3 hours straight.`):""}
+    </li>`;}).join("");
+  const pct=Math.min(100,used/ALLOC*100);
+  $("st-avail").innerHTML=`<div class="step-h"><h2 id="h-avail">Availability</h2>
+    <p class="hint">When your reps can chat on Saturday, between 10:00 AM and 5:00 PM. Each block is at least 1 hour. Blocks that overlap or touch merge into one.</p></div>
+  ${S.prefilled?msg("info","Prefilled from your sponsor info. Change anything that's out of date."):""}
+  <div class="meter" id="hoursMeter">
+    <div class="meter-r"><span class="fl">Chatting hours</span><span class="meter-v num${over?" over":""}">${+(used/60).toFixed(2)} / ${ALLOC/60} h used</span><span class="hint">Your package: ${ALLOC/60} chatting hours</span></div>
+    <div class="bar${over?" over":""}" role="progressbar" aria-label="Chatting hours used" aria-valuemin="0" aria-valuemax="${ALLOC/60}" aria-valuenow="${+(used/60).toFixed(2)}"><i style="width:${pct}%"></i></div>
+    <p class="hint">Counted as clock time across your blocks, not per room or per rep. Three rooms running 10:00–11:00 AM use 1 h.</p>
+    ${over?msg("err",`<b>You've requested ${hrs(used)}; your package includes ${hrs(ALLOC)}.</b> Remove ${hrs(used-ALLOC)} or contact organizers.`,"hoursMsg"):""}
+  </div>
+  ${S.blocks.length?`<ul class="blks">${blocks}</ul>`:`<div class="empty-b">No times yet. Add a block inside Saturday 10:00 AM–5:00 PM.</div>`}
+  <div role="status" aria-live="polite">${UI.merge?msg("info",UI.merge):""}</div>
+  <div class="fr"><button type="button" class="btn btn-sec" id="addBlk" ${spot==null?"disabled":""}>${SVG.plus}Add block</button>
+    ${spot==null?`<span class="hint">No free hour left between 10:00 AM and 5:00 PM.</span>`:""}</div>`;
+}
+function renderPreview(){
+  const cs=cols(),sl=slots(),el=$("st-pv");
+  const head=`<div class="step-h"><h2 id="pvH" tabindex="-1">Slot preview</h2>
+    <p class="hint"><b style="color:var(--ink);font-weight:600">Preview of what you're requesting, not a confirmed schedule.</b> Each cell is the number of hackers in that chat. Click a cell to lower it or turn it Off.</p></div>`;
+  if(!cs.length||!sl.length){el.innerHTML=head+`<div class="empty-b">Pick a format and add availability to see your slots.</div>`;return;}
+  if(UI.lnS==null||!sl.some(x=>x.t===UI.lnS)){const l=sl.find(x=>x.t>=720)||sl[0];UI.lnS=l.t;UI.lnE=l.t+S.len;}
+  if(UI.lnE<=UI.lnS)UI.lnE=UI.lnS+S.len;
+  const maxV=Math.max(...cs.map(c=>c.max));
+  const tOpts=`<optgroup label="Rows">${sl.map(x=>`<option value="r:${x.t}"${UI.bkT==="r:"+x.t?" selected":""}>${fa(x.t)} row</option>`).join("")}</optgroup>
+    <optgroup label="Columns">${cs.map(c=>`<option value="c:${c.key}"${UI.bkT==="c:"+c.key?" selected":""}>${esc(c.label)} column</option>`).join("")}</optgroup>`;
+  const vOpts=[["full","Full"],["0","Off"],...Array.from({length:maxV},(_,i)=>[String(i+1),plural(i+1,"hacker")])].map(([v,l])=>`<option value="${v}"${UI.bkV===v?" selected":""}>${l}</option>`).join("");
+  const lnS=sl.map(x=>`<option value="${x.t}"${x.t===UI.lnS?" selected":""}>${fa(x.t)}</option>`).join("");
+  const lnE=sl.filter(x=>x.t>=UI.lnS).map(x=>x.t+S.len).map(t=>`<option value="${t}"${t===UI.lnE?" selected":""}>${fa(t)}</option>`).join("");
+  el.innerHTML=head+`
+  <div class="bulk">
+    <div class="bulk-r"><span class="fl">Set many</span>
+      <label class="sr-only" for="bk-t">Row or column</label><select class="selc" id="bk-t">${tOpts}</select>
+      <span aria-hidden="true">to</span><label class="sr-only" for="bk-v">Hackers per chat</label><select class="selc" id="bk-v">${vOpts}</select>
+      <button type="button" class="btn btn-sec" id="bk-go">Apply</button></div>
+    <div class="bulk-r"><span class="fl">Lunch break</span>
+      <label class="sr-only" for="ln-s">Break starts</label><select class="selc num" id="ln-s">${lnS}</select>
+      <span aria-hidden="true">to</span><label class="sr-only" for="ln-e">Break ends</label><select class="selc num" id="ln-e">${lnE}</select>
+      <button type="button" class="btn btn-sec" id="ln-go">Mark lunch break</button></div>
+  </div>
+  <div class="frame pv-w" id="pvFrame">${pvTable(cs,sl,false)}</div>
+  <p class="pv-sum"><span>Total hacker seats <b class="num">${seats()}</b></span><span class="hint">Full = ${cs.some(c=>c.kind==="one")?"1 for a 1-on-1":""}${cs.some(c=>c.kind==="one")&&S.group?", ":""}${S.group?`${S.hpc} for a group`:""}. Off = no chat in that slot.</span></p>
+  ${longRuns().map(r=>msg("warn",`${esc(r.c.label)} chats ${rng(r.s,r.e)} (${hrs(r.e-r.s)}) with no Off slot. Consider a break.`)).join("")}`;
+}
+function pvTable(cs,sl,ro){
+  let body="",lastBi=-1;
+  sl.forEach(({t,bi})=>{
+    if(bi!==lastBi){
+      if(lastBi>=0){const pe=S.blocks[lastBi].e,ns=S.blocks[bi].s;body+=`</tbody><tbody><tr class="brk"><td colspan="${cs.length+1}">Not available · ${rng(pe,ns)}</td></tr>`;}
+      lastBi=bi;
+    }
+    body+=`<tr><th scope="row" class="c-t num">${fa(t)}</th>${cs.map(c=>{
+      if(!avail(c,bi))return `<td class="na"><span aria-hidden="true">—</span><span class="sr-only">Not available</span></td>`;
+      const v=cellVal(c,t),txt=v?String(v):"Off";
+      if(ro)return `<td><span class="ro num${v?"":" off"}">${txt}</span></td>`;
+      return `<td><button type="button" class="cell num${v?"":" off"}" id="c-${c.key}-${t}" data-cell="${c.key}|${t}" aria-label="${esc(c.label)} at ${fa(t)}: ${v?plural(v,"hacker"):"Off"}. Change">${txt}</button></td>`;
+    }).join("")}</tr>`;
+  });
+  return `<table class="tbl pv"><caption class="sr-only">Hackers per chat, by time and ${S.group?"group":"rep"}</caption>
+    <thead><tr><th scope="col" class="c-t">Time</th>${cs.map(c=>`<th scope="col"><span class="ch-n">${esc(c.label)}</span><span class="ch-s">${esc(c.sub)}</span></th>`).join("")}</tr></thead>
+    <tbody>${body}</tbody></table>`;
+}
+function renderSlTop(){
+  const n=S.short.size,st=seats(),full=n>=SHORT_MAX;
+  $("slTop").innerHTML=`<p class="sl-n num" aria-live="polite"><b>${n} / ${SHORT_MAX}</b> shortlisted</p>
+    ${full?msg("info","Your shortlist is full. Remove someone to add another."):""}
+    ${n>st&&st>0?msg("warn",`You've shortlisted ${n} hackers but offered ${st} seats. Not everyone will get a chat.`):""}`;
+}
+function renderList(){
+  const q=UI.q.trim().toLowerCase(),full=S.short.size>=SHORT_MAX;
+  const rows=HACKERS.filter(h=>(!q||`${h.first} ${h.last} ${h.school} ${h.prog}`.toLowerCase().includes(q))
+    &&(!UI.school||h.school===UI.school)&&(!UI.skill||h.skills.includes(UI.skill))&&(!UI.role||h.role===UI.role)&&(!UI.only||S.short.has(h.id)))
+    .sort((a,b)=>a.first.localeCompare(b.first));
+  $("slCap").textContent=`Showing ${plural(rows.length,"hacker")}, sorted by first name`;
+  if(!rows.length){$("dir").innerHTML=`<tbody><tr><td class="empty">No hackers match. Clear a filter or search.</td></tr></tbody>`;return;}
+  $("dir").innerHTML=`<thead><tr><th scope="col">Hacker</th><th scope="col">Program, skills, interest</th><th scope="col">Résumé</th><th scope="col" class="c-sl">Shortlist</th></tr></thead><tbody>${rows.map(h=>{
+    const on=S.short.has(h.id);
+    return `<tr class="${on?"sel":""}">
+      <td class="c-p">${person(h)}</td>
+      <td class="c-g"><span class="g1">${esc(h.prog)} · Year ${h.year}</span><span class="g2">${esc(h.skills.join(", "))} · Wants ${esc(h.role.toLowerCase())}</span></td>
+      <td class="c-l">${h.resume?`<a class="ext" href="#" target="_blank" rel="noopener" data-link>Résumé<span class="arr" aria-hidden="true">↗</span><span class="sr-only"> for ${esc(nm(h))} (opens in a new tab)</span></a>`:`<span class="nolink">No résumé</span>`}</td>
+      <td class="c-sl"><button type="button" class="tg" id="sl-${h.id}" data-sl="${h.id}" aria-pressed="${on}" ${!on&&full?"disabled":""} aria-label="${on?`Remove ${esc(nm(h))} from shortlist`:`Add ${esc(nm(h))} to shortlist`}">${on?`<span class="st st-short"><i class="st-m" aria-hidden="true"></i>Shortlisted</span><span class="tg-x">Remove</span>`:`<span class="plus" aria-hidden="true">+</span>Add`}</button></td>
+    </tr>`;}).join("")}</tbody>`;
+}
+function renderFooter(){
+  const is=issues();
+  $("footWrap").innerHTML=`<div class="foot"><div class="foot-in">
+    <div class="foot-t"><p class="foot-s num" id="footS">${sentence()}</p>
+      <p class="foot-e">${is.length?`<span class="msg msg-err" style="display:inline-flex">${SVG.alert}<span>${esc(is[0].m)}${is.length>1?` (+${is.length-1} more)`:""}</span></span> <button type="button" class="btn btn-ghost" data-jump="${is[0].to}">Show me</button>`
+        :`<span class="hint">You can edit until ${DEADLINE}.</span>`}</p></div>
+    <button type="button" class="btn btn-pri" id="submit" ${is.length?"disabled":""}>Submit preferences</button>
+  </div></div>`;
+}
+
+/* refresh every dynamic part of the form, keeping focus */
+function refresh(opts={}){
+  const a=document.activeElement,id=a&&a.id;
+  if(!opts.keepReps)renderReps();
+  renderFormat();renderLength();renderAvail();renderPreview();renderSlTop();renderList();renderFooter();
+  const f=$(UI.focus||id);
+  if(f&&f!==document.activeElement)f.focus({preventScroll:true});
+  UI.focus=null;
+}
+const clearNotes=()=>{UI.merge=UI.snap=UI.clamp=null;};
+
+/* ========== PAGE ========== */
+function buildForm(){
+  const schools=[...new Set(HACKERS.map(h=>h.school))].sort();
+  $("main").innerHTML=`<form id="form" novalidate onsubmit="return false">
+    <section class="step" id="st-reps" aria-labelledby="h-reps"></section>
+    <section class="step" id="st-format" aria-labelledby="h-format"></section>
+    <section class="step" id="st-len" aria-labelledby="h-len"></section>
+    <section class="step" id="st-avail" aria-labelledby="h-avail"></section>
+    <section class="step" id="st-pv" aria-labelledby="pvH"></section>
+    <section class="step" aria-labelledby="h-notes">
+      <div class="step-h"><h2 id="h-notes"><label for="notes">Notes for organizers</label></h2><p class="hint" id="notesHint">Optional. Accessibility needs, topics your reps want to cover, roles you're hiring for.</p></div>
+      <textarea class="ta" id="notes" aria-describedby="notesHint" placeholder="Our reps would like to talk about summer internships in data and software.">${esc(S.notes)}</textarea>
+    </section>
+    <section class="step" aria-labelledby="h-sl">
+      <div class="step-h"><h2 id="h-sl">Shortlist</h2><p class="hint">Hackers you'd most like to meet, up to ${SHORT_MAX}. Order doesn't matter. Optional: organizers fill open seats from hackers interested in Sun Life.</p></div>
+      <div class="sl-top" id="slTop"></div>
+      <div class="tools">
+        <label class="search"><span class="sr-only">Search hackers</span>${SVG.search}<input class="in" id="q" type="search" placeholder="Search name, school, program" autocomplete="off" value="${esc(UI.q)}"></label>
+        <label class="fld">School<select class="selc" id="fSchool"><option value="">All schools</option>${schools.map(s=>`<option${UI.school===s?" selected":""}>${esc(s)}</option>`).join("")}</select></label>
+        <label class="fld">Skill<select class="selc" id="fSkill"><option value="">All skills</option>${SKILLS.map(s=>`<option${UI.skill===s?" selected":""}>${s}</option>`).join("")}</select></label>
+        <label class="fld">Role interest<select class="selc" id="fRole"><option value="">All roles</option>${ROLES.map(s=>`<option${UI.role===s?" selected":""}>${s}</option>`).join("")}</select></label>
+        <div class="seg" role="group" aria-label="Show"><button type="button" id="only-0" data-only="0" aria-pressed="${!UI.only}">All</button><button type="button" id="only-1" data-only="1" aria-pressed="${UI.only}">Shortlisted</button></div>
+      </div>
+      <p class="cap" id="slCap"></p>
+      <div class="frame dir-w"><table class="tbl dir" id="dir"></table></div>
+    </section>
+  </form>`;
+  refresh();
+}
+function blocksText(){
+  return S.blocks.map(b=>`<p class="num">${rng(b.s,b.e)} · ${b.reps?esc(b.reps.map(repName).join(", ")):"all reps"}</p>`).join("")||"<p>None</p>";
+}
+function formatText(){
+  const p=[];
+  if(S.one)p.push(`${plural(S.oneReps,"rep")} doing 1-on-1s (${plural(S.oneReps,"room")})`);
+  if(S.group)p.push(`${S.groups===1?"1 group":S.groups+" groups"} of ${plural(S.rpg,"rep")} + ${plural(S.hpc,"hacker")}`);
+  return p.map(x=>`<p>${x}</p>`).join("")||"<p>None</p>";
+}
+function buildSummary(){
+  const cs=cols(),sl=slots(),sh=[...S.short].map(i=>HACKERS[i]).sort((a,b)=>a.first.localeCompare(b.first));
+  $("main").innerHTML=`<h2 class="sr-only">What you sent</h2>
+  <dl class="kv">
+    <dt>Reps</dt><dd>${plural(S.reps,"rep")}: ${esc(Array.from({length:S.reps},(_,r)=>repName(r)).join(", "))}</dd>
+    <dt>Format</dt><dd>${formatText()}</dd>
+    <dt>Chat length</dt><dd>${S.len} min</dd>
+    <dt>Availability</dt><dd>${blocksText()}</dd>
+    <dt>Chatting hours</dt><dd class="num">${hrs(usedMin())} of ${hrs(ALLOC)}</dd>
+    <dt>Hacker seats</dt><dd class="num">~${seats()}</dd>
+    <dt>Notes</dt><dd>${S.notes?esc(S.notes):`<span class="sec">None</span>`}</dd>
+  </dl>
+  <section class="ro-sec" aria-labelledby="roPv"><div class="step-h"><h2 id="roPv">Slot preview</h2><p class="hint">What you requested, not a confirmed schedule.</p></div>
+    ${cs.length&&sl.length?`<div class="frame pv-w">${pvTable(cs,sl,true)}</div>`:`<p class="sec">No slots.</p>`}</section>
+  <section class="ro-sec" aria-labelledby="roSl"><div class="step-h"><h2 id="roSl">Shortlist <span class="sec num">· ${S.short.size} of ${SHORT_MAX}</span></h2><p class="hint">In no particular order.</p></div>
+    ${sh.length?`<ul class="slg">${sh.map(h=>`<li>${person(h,"sm")}</li>`).join("")}</ul>`:`<p class="sec">No one shortlisted. Organizers will fill your seats from interested hackers.</p>`}</section>`;
+  $("footWrap").innerHTML="";
+}
+function renderBanners(){
+  let h="";
+  if(NOTE&&MODE!=="locked"){
+    h+=`<section class="bn bn-note" aria-labelledby="noteH">
+      <p class="bn-from" id="noteH">Note from Hack Western organizers · Wed Nov 18, 4:05 PM</p>
+      <p class="bn-q">Rooms are tight at 10:00. Can your 1-on-1s start at 10:30?</p>
+      ${REPLY?`<p class="bn-mine"><b>You replied:</b> ${esc(REPLY)}</p>`:""}
+      ${REPLYING?`<div class="bn-reply"><label for="replyTx">Your reply</label><textarea class="ta" id="replyTx" placeholder="Yes, 10:30 works. I'll update our availability."></textarea>
+        <div class="bn-btns"><button type="button" class="btn btn-pri" id="replySend">Send reply</button><button type="button" class="btn btn-sec" id="replyCancel">Cancel</button></div></div>`
+      :`<div class="bn-btns"><button type="button" class="btn btn-sec" id="replyBtn">${REPLY?"Reply again":"Reply"}</button></div>`}
+    </section>`;
+  }
+  if(MODE==="submitted"){
+    h+=`<section class="bn bn-ok" aria-labelledby="doneH">
+      <h2 class="bn-h" id="doneH" tabindex="-1">${SVG.check}Preferences sent</h2>
+      <p>Sent to Hack Western ${SENT}. You can edit until ${DEADLINE}.</p>
+      <p class="hint">Organizers review your preferences, assign rooms, and publish the schedule. Nothing is booked yet.</p>
+      <div class="bn-btns"><button type="button" class="btn btn-sec" data-edit id="editPrefs">Edit preferences</button></div>
+    </section>`;
+  }
+  if(MODE==="locked"){
+    h+=`<section class="bn bn-lock" aria-labelledby="lockH">
+      <h2 class="bn-h" id="lockH">${SVG.lock}Locked. Your room and times are set.</h2>
+      <p>Contact organizers to make changes.</p>
+      <p class="hint">You confirmed your shortlist with Hack Western, so these preferences are final.</p>
+      <div class="bn-btns"><a class="btn btn-sec" href="#" id="contactBtn">Contact organizers</a></div>
+    </section>`;
+  }
+  if(MODE==="edit"&&RESUB)h+=`<p class="info">${SVG.info} You're editing preferences you already sent. Submit again to update them before ${DEADLINE}.</p>`;
+  $("banners").innerHTML=h;
+}
+function renderAll(){
+  document.querySelectorAll("[data-state]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.state===STATE)));
+  document.querySelectorAll("[data-tog]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.tog==="over"?OVER:FULL)));
+  $("meta").innerHTML=`Your package: <b>${ALLOC/60} chatting hours</b> · Saturday 10:00 AM–5:00 PM${MODE==="locked"?"":` · Edit until ${DEADLINE}`}`;
+  document.body.classList.toggle("editing",MODE==="edit");
+  renderBanners();
+  MODE==="edit"?buildForm():buildSummary();
+}
+function setState(k){
+  STATE=k;S=fresh(k!=="empty");OVER=false;FULL=false;NOTE=k==="note";RESUB=false;REPLYING=false;REPLY=null;
+  MODE=k==="draft"||k==="empty"?"edit":k==="locked"?"locked":"submitted";
+  Object.assign(UI,{merge:null,snap:null,clamp:null,open:new Set(),bkT:"",bkV:"full",lnS:null,lnE:null,q:"",school:"",skill:"",role:"",only:false});
+  renderAll();
+}
+
+/* ---------- toast ---------- */
+let tt;function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),2600);}
+
+/* ---------- confirm dialog ---------- */
+let lastFocus=null;
+function openConfirm(){
+  lastFocus=document.activeElement;
+  $("sheet").innerHTML=`<div class="s-head"><h2 id="sTitle">Submit preferences?</h2><p class="s-sub" id="sSub">You can edit until ${DEADLINE}.</p></div>
+    <div class="s-body"><p class="foot-s num">${sentence()}</p><p class="hint">Organizers review your preferences, then assign rooms and publish the schedule.</p></div>
+    <div class="s-foot"><button type="button" class="btn btn-sec" id="cfCancel">Keep editing</button><button type="button" class="btn btn-pri" id="cfGo">Submit preferences</button></div>`;
+  $("sheet").classList.add("on");$("sheet").setAttribute("aria-hidden","false");$("scrim").classList.add("on");
+  $("cfGo").focus();
+}
+function closeConfirm(back=true){
+  $("sheet").classList.remove("on");$("sheet").setAttribute("aria-hidden","true");$("scrim").classList.remove("on");
+  if(back&&lastFocus&&document.contains(lastFocus))lastFocus.focus();
+}
+const sheetOpen=()=>$("sheet").classList.contains("on");
+
+/* ---------- events ---------- */
+const STEP={
+  reps:v=>{S.reps=v;while(S.names.length<v)S.names.push("");
+    S.blocks.forEach(b=>{if(b.reps){b.reps=b.reps.filter(r=>r<v);if(!b.reps.length||b.reps.length===v)b.reps=null;}});},
+  one:v=>{S.oneReps=v;},
+  groups:v=>{S.groups=v;},
+  rpg:v=>{S.rpg=v;if(S.hpc>ROOM_MAX-v){S.hpc=ROOM_MAX-v;UI.clamp=`Hackers per chat lowered to ${S.hpc} to keep the room at ${ROOM_MAX}.`;}},
+};
+const LIM={reps:[1,8],one:[1,8],groups:[1,8],rpg:[1,5]};
+const CUR={reps:()=>S.reps,one:()=>S.oneReps,groups:()=>S.groups,rpg:()=>S.rpg};
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button,a");if(!t)return;
+  if(t.matches("a[href='#']"))e.preventDefault();
+  if(t.dataset.state){setState(t.dataset.state);return;}
+  if(t.dataset.tog==="over"){OVER=!OVER;
+    if(MODE!=="edit"){MODE="edit";STATE="draft";NOTE=false;RESUB=false;}
+    S.blocks=OVER?[{s:600,e:840,reps:null}]:[{s:600,e:720,reps:null},{s:780,e:840,reps:null}];clearNotes();renderAll();return;}
+  if(t.dataset.tog==="full"){FULL=!FULL;S.short=new Set(FULL?HACKERS.slice(0,SHORT_MAX).map(h=>h.id):PRE_SHORT);renderAll();return;}
+  if(t.dataset.step){if(t.getAttribute("aria-disabled")==="true")return;clearNotes();
+    const k=t.dataset.step,[lo,hi]=LIM[k];const v=Math.max(lo,Math.min(hi,CUR[k]()+(+t.dataset.d)));STEP[k](v);refresh();return;}
+  if(t.dataset.hpc){clearNotes();S.hpc=+t.dataset.hpc;refresh();return;}
+  if(t.dataset.len){const v=+t.dataset.len;if(v===S.len)return;clearNotes();S.len=v;
+    let moved=false;S.blocks.forEach(b=>{const s=WIN[0]+Math.floor((b.s-WIN[0])/v)*v,en=Math.min(WIN[1],WIN[0]+Math.ceil((b.e-WIN[0])/v)*v);if(s!==b.s||en!==b.e)moved=true;b.s=s;b.e=en;});
+    if(moved)UI.snap=`Block times moved to ${v}-minute steps.`;UI.merge=normalize();UI.lnS=null;refresh();return;}
+  if(t.dataset.rmblk!=null){clearNotes();const i=+t.dataset.rmblk,b=S.blocks[i];S.blocks.splice(i,1);UI.open=new Set();
+    UI.focus=S.blocks.length?`b${Math.max(0,i-1)}-x`:"addBlk";refresh();toast(`Removed ${rng(b.s,b.e)}`);return;}
+  if(t.id==="addBlk"){clearNotes();const s=freeSpot();if(s==null)return;S.blocks.push({s,e:s+MIN_BLOCK,reps:null});UI.merge=normalize();
+    UI.focus=`b${S.blocks.findIndex(b=>b.s<=s&&b.e>=s+MIN_BLOCK)}-s`;refresh();return;}
+  if(t.dataset.cell){const [k,tm]=t.dataset.cell.split("|"),c=cols().find(x=>x.key===k),v=cellVal(c,+tm);
+    S.cells[t.dataset.cell]=v===0?c.max:v-1;refresh();return;}
+  if(t.id==="bk-go"){const tg=$("bk-t").value,val=$("bk-v").value,[kind,ref]=tg.split(":");UI.bkT=tg;UI.bkV=val;
+    const cs=cols();slots().forEach(({t:tm})=>cs.forEach(c=>{if(kind==="r"&&tm!==+ref)return;if(kind==="c"&&c.key!==ref)return;
+      const key=c.key+"|"+tm;if(val==="full")delete S.cells[key];else S.cells[key]=Math.min(+val,c.max);}));
+    refresh();toast(`${kind==="r"?fa(+ref)+" row":cs.find(c=>c.key===ref).label+" column"} set to ${val==="full"?"full":val==="0"?"Off":plural(+val,"hacker")}`);return;}
+  if(t.id==="ln-go"){const s=+$("ln-s").value,en=+$("ln-e").value,cs=cols();
+    slots().forEach(({t:tm})=>{if(tm>=s&&tm<en)cs.forEach(c=>S.cells[c.key+"|"+tm]=0);});refresh();toast(`Lunch break: ${rng(s,en)} is Off`);return;}
+  if(t.dataset.sl){const id=+t.dataset.sl;if(S.short.has(id))S.short.delete(id);else if(S.short.size<SHORT_MAX)S.short.add(id);
+    renderSlTop();renderList();renderFooter();const f=$("sl-"+id);if(f)f.focus({preventScroll:true});return;}
+  if(t.dataset.only!=null){UI.only=t.dataset.only==="1";$("only-0").setAttribute("aria-pressed",String(!UI.only));$("only-1").setAttribute("aria-pressed",String(UI.only));renderList();return;}
+  if(t.dataset.jump){const f=$(t.dataset.jump);if(f){f.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});f.focus({preventScroll:true});}return;}
+  if(t.id==="submit"){openConfirm();return;}
+  if(t.id==="cfCancel"){closeConfirm();return;}
+  if(t.id==="cfGo"){closeConfirm(false);MODE="submitted";STATE="submitted";
+    SENT=`Wed Nov 18, ${new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`;
+    RESUB=false;renderAll();window.scrollTo({top:0});$("doneH").focus({preventScroll:true});toast("Preferences sent to Hack Western");return;}
+  if(t.hasAttribute("data-edit")){MODE="edit";RESUB=true;STATE=NOTE?"note":"draft";renderAll();$("h-reps").scrollIntoView({block:"start"});return;}
+  if(t.id==="replyBtn"){REPLYING=true;renderBanners();$("replyTx").focus();return;}
+  if(t.id==="replyCancel"){REPLYING=false;renderBanners();$("replyBtn").focus();return;}
+  if(t.id==="replySend"){const v=$("replyTx").value.trim();if(!v){$("replyTx").focus();return;}REPLY=v;REPLYING=false;renderBanners();$("replyBtn").focus();toast("Reply sent to organizers");return;}
+  if(t.id==="contactBtn"){toast("Opens an email to Hack Western organizers (mock)");return;}
+  if(t.dataset.link!=null){toast("Opens the résumé in a new tab (mock)");return;}
+});
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.id==="f-one"){clearNotes();S.one=t.checked;refresh();return;}
+  if(t.id==="f-group"){clearNotes();S.group=t.checked;refresh();return;}
+  if(t.dataset.bs!=null){clearNotes();const b=S.blocks[+t.dataset.bs];b.s=+t.value;if(b.e<=b.s)b.e=Math.min(WIN[1],b.s+MIN_BLOCK);UI.merge=normalize();refresh();return;}
+  if(t.dataset.be!=null){clearNotes();const b=S.blocks[+t.dataset.be];b.e=+t.value;if(b.e<=b.s)b.s=Math.max(WIN[0],b.e-MIN_BLOCK);UI.merge=normalize();refresh();return;}
+  if(t.dataset.brep){clearNotes();const [i,r]=t.dataset.brep.split("|").map(Number),b=S.blocks[i];
+    let cur=b.reps?[...b.reps]:Array.from({length:S.reps},(_,k)=>k);
+    cur=t.checked?[...new Set([...cur,r])].sort((a,c)=>a-c):cur.filter(x=>x!==r);
+    b.reps=cur.length===S.reps?null:cur;UI.open.add(i);refresh();return;}
+  if(t.id==="bk-t"){UI.bkT=t.value;return;}
+  if(t.id==="bk-v"){UI.bkV=t.value;return;}
+  if(t.id==="ln-s"){UI.lnS=+t.value;if(UI.lnE<=UI.lnS)UI.lnE=UI.lnS+S.len;renderPreview();$("ln-s").focus();return;}
+  if(t.id==="ln-e"){UI.lnE=+t.value;return;}
+  if(t.id==="fSchool"){UI.school=t.value;renderList();return;}
+  if(t.id==="fSkill"){UI.skill=t.value;renderList();return;}
+  if(t.id==="fRole"){UI.role=t.value;renderList();return;}
+});
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.dataset.name!=null){S.names[+t.dataset.name]=t.value;refresh({keepReps:true});return;}
+  if(t.id==="notes"){S.notes=t.value;return;}
+  if(t.id==="q"){UI.q=t.value;renderList();return;}
+});
+document.addEventListener("toggle",e=>{const d=e.target;if(d.dataset&&d.dataset.rpd!=null){const i=+d.dataset.rpd;d.open?UI.open.add(i):UI.open.delete(i);}},true);
+document.addEventListener("keydown",e=>{
+  if(!sheetOpen())return;
+  if(e.key==="Escape"){e.preventDefault();closeConfirm();return;}
+  if(e.key==="Tab"){const f=[...$("sheet").querySelectorAll("button")];const first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}
+});
+$("scrim").addEventListener("click",()=>closeConfirm());
+
+setState("draft");
+</script>
+</body>
+</html>

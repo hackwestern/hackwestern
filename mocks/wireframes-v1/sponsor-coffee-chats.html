@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Coffee chats wireframes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Tokens: src/lib/tokens.ts (dashboardColors, dashboardRadius, dashboardShadows) */
+:root{
+  --t-heavy:#0b2b4a; --t-medium:#1c3550; --t-light:#516476; --t-ph:rgba(81,100,118,0.7); --t-dis:rgba(81,100,118,0.5);
+  --t-inverse:#fff; --t-link:#0b6bc4; --t-active:#08559c; --t-warning:#8a4300;
+  --bg-page:#f3f7fc; --bg-surface:#fff; --bg-nav:#dbe7f5; --bg-navSel:#b9d3f0; --bg-inset:#edf3fa;
+  --bg-hl:#e1effb; --bg-hl-sub:rgba(225,239,251,0.4); --bg-task:#ffefb8;
+  --primary:#0b6bc4;
+  --b-default:#cdddeb; --b-subtle:#e0eaf3; --b-card:#d6e3ef; --b-control:#b9cbe0; --b-outline:#accae5;
+  --b-faint:rgba(81,100,118,0.1); --b-muted:rgba(81,100,118,0.2); --b-medium:rgba(81,100,118,0.5); --b-strong:#516476;
+  --live:#16803c; --warn:#a34a00;
+  --s-pink:rgba(250,104,235,0.15); --s-blue:rgba(37,130,254,0.15); --s-green:rgba(104,250,109,0.15); --s-orange:rgba(254,145,37,0.15);
+  --r-xs:3px; --r-sm:4px; --r-md:6px; --r-lg:8px; --r-xl:10px; --r-2xl:12px; --r-3xl:20px; --r-full:999px;
+  --sh-card:0px 1px 2px 0px rgba(11,43,74,0.06),0px 1px 4px 0px rgba(11,43,74,0.05);
+  --sh-pri:0px 2px 4px 0px rgba(11,43,74,0.2);
+  --sh-sec:0px 2px 8px 0px rgba(0,0,0,0.12);
+  --ease:cubic-bezier(0.23,1,0.32,1);
+  --ease-drawer:cubic-bezier(0.32,0.72,0,1);
+}
+*{box-sizing:border-box}
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg-page);color:var(--t-heavy);font-family:Figtree,system-ui,sans-serif;font-weight:500;font-size:14px;line-height:1.35}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+a{color:var(--t-link);touch-action:manipulation}
+input{font:inherit;font-size:16px}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+h1,h2,h3,h4,p{margin:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- harness chrome ---------- */
+.hx{max-width:1320px;margin:0 auto;padding:72px 20px 12px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end;justify-content:space-between}
+.hx-l{min-width:0;flex:1 1 420px}
+.hx-page{font-size:12px;font-weight:600;color:var(--t-light);text-transform:uppercase;letter-spacing:.02em}
+.hx-name{font-size:18px;font-weight:700;margin-top:2px}
+.hx-why{color:var(--t-light);margin-top:2px}
+.hx-r{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.wf{font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--t-warning);background:var(--bg-task);border-radius:var(--r-full);padding:4px 8px;white-space:nowrap}
+.stagewrap{padding:0 20px 80px}
+.frame{container:app/inline-size;position:relative;margin:0 auto;width:100%;max-width:1280px;background:var(--bg-page);border:1px solid var(--b-subtle);border-radius:var(--r-2xl);min-height:720px}
+body[data-device=phone] .frame{width:375px;max-width:375px;border-radius:28px;border:1px solid var(--b-default);box-shadow:var(--sh-sec)}
+
+/* ---------- picker (verbatim from prototype/PICKER.md) ---------- */
+.proto-picker{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2147483647;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;background:rgba(10,10,10,0.82);-webkit-backdrop-filter:blur(12px) saturate(1.4);backdrop-filter:blur(12px) saturate(1.4);box-shadow:0 0 0 1px rgba(255,255,255,0.08) inset,0 8px 24px rgba(0,0,0,0.24),0 2px 6px rgba(0,0,0,0.12);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;line-height:1;-webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none;max-width:calc(100vw - 16px);overflow-x:auto;scrollbar-width:none}
+.proto-picker-highlight{position:absolute;top:4px;left:0;height:28px;border-radius:999px;background:rgba(255,255,255,0.12)}
+.proto-picker[data-ready] .proto-picker-highlight{transition:transform 250ms cubic-bezier(0.23,1,0.32,1),width 250ms cubic-bezier(0.23,1,0.32,1)}
+@media (prefers-reduced-motion:reduce){.proto-picker[data-ready] .proto-picker-highlight{transition:none}}
+.proto-picker-item{position:relative;display:flex;align-items:center;height:28px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:rgba(255,255,255,0.55);font:inherit;cursor:pointer;white-space:nowrap;transition:color 150ms ease-out,transform 160ms cubic-bezier(0.23,1,0.32,1)}
+@media (hover:hover) and (pointer:fine){.proto-picker-item:hover{color:rgba(255,255,255,0.85)}}
+.proto-picker-item:active{transform:scale(0.97)}
+.proto-picker-item:focus-visible{outline:2px solid rgba(255,255,255,0.4);outline-offset:2px}
+.proto-picker-item[data-active]{color:#fff}
+.proto-picker[data-position="top"]{bottom:auto;top:24px}
+
+/* ---------- shared UI ---------- */
+.pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 11px;border-radius:var(--r-full);border:1px solid var(--b-control);background:var(--bg-surface);color:var(--t-medium);font-size:13px;font-weight:600;white-space:nowrap;text-decoration:none;transition:transform 160ms var(--ease),background-color 150ms ease-out,border-color 150ms ease-out,color 150ms ease-out}
+.pill:active{transform:scale(0.97)}
+.pill.pri{background:var(--primary);border-color:var(--primary);color:var(--t-inverse);box-shadow:var(--sh-pri)}
+.pill.on{background:var(--bg-navSel);border-color:transparent;color:var(--t-active)}
+.pill.ghost{border-color:transparent;background:transparent;color:var(--t-link);padding:0 6px}
+.pill.sm{height:24px;padding:0 9px;font-size:12px}
+.pill[disabled]{opacity:.5;cursor:default}
+@media (hover:hover) and (pointer:fine){.pill:hover{border-color:var(--b-medium)}.pill.pri:hover{background:var(--t-active)}.pill.ghost:hover{background:var(--bg-inset)}}
+@media (pointer:coarse){.pill{height:32px}.pill.sm{height:28px}}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--bg-nav);border-radius:var(--r-full);padding:2px;gap:2px;max-width:100%}
+.seg button{height:26px;padding:0 10px;border-radius:var(--r-full);border:0;background:transparent;font-size:13px;font-weight:600;color:var(--t-light);white-space:nowrap;transition:transform 160ms var(--ease),background-color 150ms ease-out}
+.seg button:active{transform:scale(0.97)}
+.seg button[aria-pressed=true]{background:var(--bg-surface);color:var(--t-heavy);box-shadow:var(--sh-card)}
+.seg .n{margin-left:5px;color:var(--t-light);font-variant-numeric:tabular-nums;font-weight:500}
+@media (pointer:coarse){.seg button{height:30px}}
+.card{background:var(--bg-surface);border:1px solid var(--b-subtle);border-radius:var(--r-2xl);box-shadow:var(--sh-card)}
+.muted{color:var(--t-light)}
+.small{font-size:12px}
+.lab{font-size:12px;font-weight:600;color:var(--t-light);text-transform:uppercase;letter-spacing:.02em}
+.h2{font-size:20px;font-weight:600}
+.h3{font-size:16px;font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sp{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:12px;padding:2px 7px;border-radius:var(--r-full);background:var(--bg-inset);color:var(--t-medium)}
+.tag{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:var(--r-full);font-size:12px;font-weight:600;white-space:nowrap}
+.tag.acc{background:rgba(22,128,60,.1);color:var(--live)}
+.tag.wait{background:var(--bg-hl);color:var(--t-active)}
+.tag.dec{background:var(--bg-inset);color:var(--t-light)}
+.tag.warn{background:var(--bg-task);color:var(--t-warning)}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;background:currentColor}
+.lnks{display:flex;gap:10px;font-size:13px;font-weight:600}
+.logo{height:22px;width:auto;display:block}
+.bar{height:6px;border-radius:3px;background:var(--bg-inset);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--primary);border-radius:3px}
+.stepper{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--b-control);border-radius:var(--r-full);padding:2px}
+.stepper button{width:26px;height:24px;border:0;border-radius:var(--r-full);background:transparent;font-size:16px;line-height:1;color:var(--t-medium)}
+.stepper button:active{transform:scale(0.95);background:var(--bg-inset)}
+.stepper button[disabled]{opacity:.35}
+.stepper output{min-width:64px;text-align:center;font-weight:600;font-size:13px}
+.empty{padding:20px;border-radius:var(--r-xl);background:var(--bg-inset);color:var(--t-light);text-align:center}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid var(--b-subtle);background:var(--bg-surface);border-radius:var(--r-2xl) var(--r-2xl) 0 0}
+body[data-device=phone] .top{border-radius:28px 28px 0 0;padding:16px}
+.top h1{font-size:20px;font-weight:700}
+.map{background:var(--primary);color:#fff;border-color:var(--primary)}
+.pad{padding:20px}
+@container app (max-width:700px){.pad{padding:16px}}
+
+/* dialog + toast */
+.ovl{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(11,43,74,.28)}
+.dlg{width:min(460px,calc(100vw - 32px));max-height:min(640px,calc(100dvh - 120px));overflow:auto;background:var(--bg-surface);border-radius:var(--r-3xl);box-shadow:var(--sh-sec);padding:20px;display:flex;flex-direction:column;gap:14px}
+body[data-device=phone] .ovl{align-items:flex-end}
+body[data-device=phone] .dlg{width:375px;max-width:100vw;border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.dlg.anim{animation:dlgIn 220ms var(--ease)}
+body[data-device=phone] .dlg.anim{animation:sheetIn 320ms var(--ease-drawer)}
+.ovl.anim{animation:fadeIn 200ms ease-out}
+@keyframes dlgIn{from{opacity:0;transform:scale(.96)}}
+@keyframes sheetIn{from{transform:translateY(100%)}}
+@keyframes fadeIn{from{opacity:0}}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;background:var(--t-heavy);color:#fff;padding:10px 14px;border-radius:var(--r-xl);font-weight:600;box-shadow:var(--sh-sec);animation:toastIn 240ms var(--ease);max-width:calc(100vw - 32px)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,8px)}}
+.slotpick{display:flex;flex-wrap:wrap;gap:6px}
+.slotpick button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:7px 11px;border-radius:var(--r-lg);border:1px solid var(--b-control);background:var(--bg-surface);text-align:left;transition:transform 160ms var(--ease)}
+.slotpick button:active{transform:scale(.97)}
+.slotpick button[aria-pressed=true]{border-color:var(--primary);background:var(--bg-hl);color:var(--t-active)}
+.slotpick b{font-size:14px}.slotpick span{font-size:12px;color:var(--t-light)}
+.hpick{display:flex;flex-direction:column;gap:4px}
+.hpick button{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:9px 11px;border:1px solid var(--b-subtle);border-radius:var(--r-lg);background:var(--bg-surface);text-align:left}
+.hpick button[aria-pressed=true]{border-color:var(--primary);background:var(--bg-hl)}
+@media (prefers-reduced-motion:reduce){*{animation-duration:1ms!important;transition-duration:1ms!important}}
+
+/* ---------- V1 Timeline ---------- */
+.v1-tl{padding:18px 20px 22px;overflow:hidden}
+.v1-axis,.v1-track{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));column-gap:4px}
+.v1-axis span{grid-column:span 4;font-size:12px;color:var(--t-light);border-left:1px solid var(--b-subtle);padding-left:6px}
+.v1-track{margin-top:8px;min-height:150px;background:repeating-linear-gradient(90deg,transparent 0 calc(25% - 1px),var(--b-subtle) calc(25% - 1px) 25%)}
+.v1-blk{border-radius:var(--r-xl);background:var(--s-blue);padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.v1-blk.b1{background:var(--s-green)}
+.v1-gap{border:1px dashed var(--b-muted);border-radius:var(--r-xl);display:flex;align-items:center;justify-content:center;color:var(--t-light);font-size:12px;text-align:center;padding:8px}
+.v1-slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.v1-slot{background:var(--bg-surface);border:0;border-radius:var(--r-lg);padding:6px;text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0}
+.v1-slot b{font-size:15px}
+.v1-slot .small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v1-low{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;padding:0 20px 20px}
+.v1-list{display:flex;flex-direction:column}
+.v1-li{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--b-subtle)}
+.v1-li .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+@container app (max-width:700px){
+  .v1-axis{display:none}
+  .v1-tl{padding:16px}
+  .v1-track{display:flex;flex-direction:column;gap:8px;background:none;min-height:0}
+  .v1-low{grid-template-columns:1fr;padding:0 16px 16px}
+  .v1-li{grid-template-columns:24px minmax(0,1fr)}
+  .v1-li .acts{grid-column:2;justify-content:flex-start}
+}
+
+/* ---------- V2 Tiles ---------- */
+.v2-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:20px}
+.v2-tile{display:flex;flex-direction:column;gap:10px;padding:16px;text-align:left;border:1px solid var(--b-subtle);background:var(--bg-surface);border-radius:var(--r-2xl);box-shadow:var(--sh-card);min-width:0;transition:transform 160ms var(--ease),border-color 150ms ease-out}
+.v2-tile:active{transform:scale(.98)}
+.v2-tile[aria-expanded=true]{border-color:var(--primary);background:var(--bg-hl-sub)}
+.v2-big{font-size:32px;font-weight:700;line-height:1.1}
+.v2-open{margin:0 20px 20px;padding:20px}
+.v2-open.anim{animation:dlgIn 200ms var(--ease)}
+@container app (max-width:900px){.v2-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@container app (max-width:700px){.v2-grid{padding:16px;gap:8px}.v2-open{margin:0 16px 16px;padding:16px}.v2-big{font-size:26px}}
+
+/* shared section bodies */
+.blocks{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.blk{border:1px solid var(--b-subtle);border-radius:var(--r-xl);overflow:hidden;background:var(--bg-surface)}
+.blk-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;background:var(--bg-inset)}
+.blk-r{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 12px;border-top:1px solid var(--b-subtle)}
+.cands{display:flex;flex-direction:column}
+.cand{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:12px;padding:12px 0;border-top:1px solid var(--b-subtle);align-items:start}
+.cand .rk{font-size:12px;color:var(--t-light);padding-top:2px}
+.cand .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.cand .nm{font-weight:600;font-size:15px}
+@container app (max-width:700px){.cand{grid-template-columns:24px minmax(0,1fr)}.cand .acts{grid-column:2;justify-content:flex-start}.blocks{grid-template-columns:1fr}}
+.offers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.ocol{display:flex;flex-direction:column;gap:6px;min-width:0}
+.orow{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg-inset);border-radius:var(--r-lg);flex-wrap:wrap}
+@container app (max-width:700px){.offers{grid-template-columns:1fr}}
+
+/* ---------- V3 Steps ---------- */
+.v3{max-width:720px;margin:0 auto;padding:24px 20px 28px;display:flex;flex-direction:column;gap:16px}
+.v3-steps{display:flex;gap:4px;flex-wrap:wrap}
+.v3-steps button{display:flex;gap:6px;align-items:center;height:28px;padding:0 10px 0 4px;border:0;border-radius:var(--r-full);background:transparent;color:var(--t-light);font-size:13px;font-weight:600}
+.v3-steps i{font-style:normal;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--bg-nav);font-size:11px}
+.v3-steps button[aria-current=step]{background:var(--bg-surface);color:var(--t-heavy);box-shadow:var(--sh-card)}
+.v3-steps button[aria-current=step] i,.v3-steps button.done i{background:var(--primary);color:#fff}
+.v3-q{font-size:24px;font-weight:700;letter-spacing:-.01em}
+.v3-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.v3-choice button{text-align:left;padding:16px;border-radius:var(--r-2xl);border:1px solid var(--b-default);background:var(--bg-surface);display:flex;flex-direction:column;gap:6px;transition:transform 160ms var(--ease)}
+.v3-choice button:active{transform:scale(.98)}
+.v3-choice button[aria-pressed=true]{border-color:var(--primary);background:var(--bg-hl)}
+.v3-body{padding:20px}
+.v3-nav{display:flex;justify-content:space-between;gap:8px}
+@container app (max-width:700px){.v3{padding:16px}.v3-choice{grid-template-columns:1fr}.v3-q{font-size:20px}.v3-body{padding:16px}}
+
+/* ---------- V4 Table ---------- */
+.v4{padding:16px 20px 24px;display:flex;flex-direction:column;gap:20px}
+.v4-tool{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 12px;background:var(--bg-surface);border:1px solid var(--b-subtle);border-radius:var(--r-xl)}
+.tbl{width:100%;border-collapse:collapse;background:var(--bg-surface);border:1px solid var(--b-subtle);border-radius:var(--r-xl);overflow:hidden;font-size:13px}
+.tbl th{text-align:left;font-size:12px;font-weight:600;color:var(--t-light);padding:8px 10px;background:var(--bg-inset);white-space:nowrap}
+.tbl th button{border:0;background:none;padding:0;font:inherit;color:inherit}
+.tbl th button[aria-pressed=true]{color:var(--t-active)}
+.tbl td{padding:8px 10px;border-top:1px solid var(--b-subtle);vertical-align:middle}
+.tbl tr.grp td{background:var(--bg-hl-sub);font-weight:600}
+.tbl tbody tr:nth-child(even):not(.grp) td{background:var(--bg-hl-sub)}
+@container app (max-width:700px){
+  .v4{padding:16px}
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:100%}
+  .tbl thead{display:none}
+  .tbl tr{border-top:1px solid var(--b-subtle);padding:8px 10px}
+  .tbl td{border:0;padding:2px 0;background:none!important}
+  .tbl td[data-l]::before{content:attr(data-l) " · ";color:var(--t-light);font-size:12px}
+  .tbl tr.grp{background:var(--bg-inset)}
+}
+
+/* ---------- V5 Split ---------- */
+.v5{display:grid;grid-template-columns:340px minmax(0,1fr);min-height:660px}
+.v5-l{border-right:1px solid var(--b-subtle);display:flex;flex-direction:column;min-width:0}
+.v5-lh{padding:14px 16px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--b-subtle)}
+.v5-search{height:36px;border:1px solid var(--b-control);border-radius:var(--r-full);padding:0 14px;width:100%;background:var(--bg-surface)}
+.v5-list{overflow:auto;max-height:620px}
+.v5-it{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;align-items:center;width:100%;padding:10px 16px;border:0;border-bottom:1px solid var(--b-subtle);background:transparent;text-align:left}
+.v5-it[aria-current=true]{background:var(--bg-hl)}
+.v5-it .nm{font-weight:600}
+.v5-it .sub{font-size:12px;color:var(--t-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v5-r{padding:24px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.v5-big{font-size:28px;font-weight:700;letter-spacing:-.01em}
+.v5-strip{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 20px;border-bottom:1px solid var(--b-subtle);background:var(--bg-surface)}
+.v5-back{display:none}
+@container app (max-width:700px){
+  .v5{grid-template-columns:1fr;min-height:0}
+  .v5-l{border-right:0}
+  .v5-list{max-height:none}
+  .v5[data-detail=true] .v5-l{display:none}
+  .v5:not([data-detail=true]) .v5-r{display:none}
+  .v5-back{display:inline-flex}
+  .v5-r{padding:16px}
+  .v5-strip{padding:10px 16px}
+}
+
+/* ---------- V6 Stack ---------- */
+.v6{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;padding:24px 20px}
+.v6-main{display:flex;flex-direction:column;gap:14px;align-items:center;min-width:0}
+.v6-card{width:100%;max-width:560px;padding:24px;display:flex;flex-direction:column;gap:14px;position:relative}
+.v6-card.anim{animation:v6In 240ms var(--ease)}
+.v6-card.back{animation:v6Back 240ms var(--ease)}
+@keyframes v6In{from{opacity:0;transform:translateX(24px)}}
+@keyframes v6Back{from{opacity:0;transform:translateX(-24px)}}
+.v6-under{width:100%;max-width:540px;height:10px;margin-top:-14px;border-radius:0 0 var(--r-2xl) var(--r-2xl);background:var(--bg-surface);border:1px solid var(--b-subtle);border-top:0;opacity:.7}
+.v6-name{font-size:30px;font-weight:700;letter-spacing:-.01em}
+.v6-note{font-size:16px;line-height:1.45;color:var(--t-medium);background:var(--bg-inset);padding:12px 14px;border-radius:var(--r-xl)}
+.v6-acts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.v6-side{display:flex;flex-direction:column;gap:12px}
+@container app (max-width:760px){.v6{grid-template-columns:1fr;padding:16px}.v6-card{padding:18px}.v6-name{font-size:24px}}
+
+/* ---------- V7 Seats ---------- */
+.v7{padding:20px;display:flex;flex-direction:column;gap:20px}
+.v7-room{border:2px dashed var(--b-outline);border-radius:var(--r-3xl);padding:16px;position:relative;background:var(--bg-hl-sub)}
+.v7-door{position:absolute;top:-2px;left:28px;width:56px;height:4px;background:var(--bg-page)}
+.v7-tables{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:12px}
+.v7-t{display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:0}
+.v7-desk{background:var(--bg-surface);border:1px solid var(--b-card);border-radius:var(--r-xl);padding:8px 10px;display:flex;justify-content:space-between;align-items:center;box-shadow:var(--sh-card)}
+.v7-chairs{display:flex;flex-direction:column;gap:5px}
+.v7-ch{display:flex;align-items:center;gap:6px;min-height:30px;padding:4px 10px;border-radius:var(--r-lg);font-size:13px;font-weight:600;border:1px solid transparent;text-align:left;width:100%;min-width:0}
+.v7-ch span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v7-ch.acc{background:var(--bg-surface);border-color:var(--b-card)}
+.v7-ch.wait{background:transparent;border:1px dashed var(--primary);color:var(--t-active)}
+.v7-ch.free{background:transparent;border:1px dashed var(--b-medium);color:var(--t-link);transition:transform 160ms var(--ease)}
+.v7-ch.free:active{transform:scale(.97)}
+.v7-ch.gone{background:transparent;border:1px dashed var(--b-faint);color:var(--t-dis)}
+@container app (max-width:760px){.v7{padding:16px}.v7-tables{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.v7-room{padding:12px}}
+
+/* ---------- V8 Feed ---------- */
+.v8{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;padding:20px}
+.v8-feed{display:flex;flex-direction:column;gap:0}
+.v8-day{margin:6px 0 8px}
+.v8-it{display:grid;grid-template-columns:18px minmax(0,1fr);gap:12px;padding:12px 0;position:relative}
+.v8-it::before{content:"";position:absolute;left:8px;top:28px;bottom:-4px;width:1px;background:var(--b-subtle)}
+.v8-it:last-child::before{display:none}
+.v8-ic{width:17px;height:17px;border-radius:50%;margin-top:2px;border:2px solid var(--b-default);background:var(--bg-surface)}
+.v8-ic.acc{border-color:var(--live);background:var(--live)}
+.v8-ic.wait{border-color:var(--primary)}
+.v8-ic.dec{border-color:var(--b-medium)}
+.v8-ic.tip{border-color:var(--border-task,#c78a00);background:var(--bg-task)}
+.v8-sug{padding:14px;margin-top:6px;display:flex;flex-direction:column;gap:10px}
+.v8-side{display:flex;flex-direction:column;gap:12px}
+@container app (max-width:760px){.v8{grid-template-columns:1fr;padding:16px}.v8-side{order:-1}}
+
+/* ---------- V9 Tabs ---------- */
+.v9{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:700px}
+.v9-nav{border-right:1px solid var(--b-subtle);padding:16px 10px;display:flex;flex-direction:column;gap:2px;background:var(--bg-surface)}
+.v9-nav button{display:flex;align-items:center;gap:10px;justify-content:space-between;height:38px;padding:0 12px;border:0;border-radius:var(--r-lg);background:transparent;font-weight:600;color:var(--t-medium);text-align:left;transition:transform 160ms var(--ease)}
+.v9-nav button:active{transform:scale(.98)}
+.v9-nav button[aria-current=page]{background:var(--bg-nav);color:var(--t-active)}
+.v9-nav .n{font-size:12px;color:var(--t-light);font-weight:500}
+.v9-nav .n.hot{background:var(--primary);color:#fff;border-radius:var(--r-full);padding:1px 7px}
+.v9-main{padding:24px;min-width:0;display:flex;flex-direction:column;gap:16px}
+.v9-cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.v9-cc{padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+@container app (max-width:700px){
+  .v9{grid-template-columns:1fr;min-height:0}
+  .v9-main{padding:16px 16px 96px}
+  .v9-nav{position:sticky;bottom:0;order:2;flex-direction:row;border-right:0;border-top:1px solid var(--b-subtle);padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5;border-radius:0 0 28px 28px}
+  .v9-nav button{flex:1;flex-direction:column;justify-content:center;gap:2px;height:52px;padding:0 4px;font-size:12px}
+  .v9-nav .lab-l{display:none}
+  .v9-cgrid{grid-template-columns:1fr}
+}
+
+/* ---------- V10 Brief ---------- */
+.v10{max-width:680px;margin:0 auto;padding:36px 20px 40px;display:flex;flex-direction:column;gap:22px}
+.v10 p.lead{font-size:20px;line-height:1.5;color:var(--t-medium)}
+.tok{display:inline;border:0;padding:1px 6px;margin:0 1px;border-radius:var(--r-md);background:var(--bg-hl);color:var(--t-active);font-weight:700;font-size:inherit;line-height:inherit;border-bottom:1px dashed var(--primary)}
+.tok:active{background:var(--bg-navSel)}
+.v10-todo{display:flex;flex-direction:column}
+.v10-td{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;padding:14px 0;border-top:1px solid var(--b-subtle)}
+.v10-box{width:18px;height:18px;border:2px solid var(--b-default);border-radius:5px;margin-top:2px}
+.v10-box.ok{background:var(--live);border-color:var(--live)}
+@container app (max-width:700px){.v10{padding:20px 16px 28px}.v10 p.lead{font-size:17px}}
+</style>
+</head>
+<body data-device="desktop">
+
+<nav class="proto-picker" data-position="top" aria-label="Prototype variants">
+  <span class="proto-picker-highlight" aria-hidden="true"></span>
+</nav>
+
+<header class="hx">
+  <div class="hx-l">
+    <div class="hx-page">Sponsor · Coffee chats</div>
+    <div class="hx-name" id="vName"></div>
+    <div class="hx-why" id="vWhy"></div>
+  </div>
+  <div class="hx-r">
+    <div class="seg" role="group" aria-label="Frame size">
+      <button data-dev="desktop" aria-pressed="true">Desktop</button>
+      <button data-dev="phone" aria-pressed="false">Phone</button>
+    </div>
+    <span class="wf">WIREFRAME · dummy data</span>
+  </div>
+</header>
+
+<div class="stagewrap"><div class="frame" id="stage"></div></div>
+<div id="ovl"></div>
+<div id="toast"></div>
+
+<script>
+/* ================= data (fictional) ================= */
+const LOGO = '../../public/shared/sponsors/startech.svg';
+const RAW = [
+ 'Maya R.|Western|Computer Engineering, 3rd year|C++,Embedded,PCB design|Built a USB-C hub from scratch for a class project; curious about hardware testing.',
+ 'Tobi A.|Waterloo|Electrical Engineering, 2nd year|Python,FPGA,Signal processing|Wants to learn how docking stations get certified.',
+ 'Priya S.|UofT|Computer Science, 4th year|React,TypeScript,Node|Looking for a new-grad role on a product web team.',
+ 'Ewan M.|McMaster|Mechatronics, 3rd year|SolidWorks,Arduino,C|Into enclosure design and thermal testing.',
+ 'Lina K.|Western|Software Engineering, 2nd year|Go,Kubernetes,AWS|Asked about internships in firmware update pipelines.',
+ 'Jun H.|Queen\'s|Computing, 3rd year|Swift,iOS,Figma|Wants to talk about companion apps for hardware.',
+ 'Sofia D.|Ottawa|Electrical Engineering, 4th year|Altium,Power electronics,MATLAB|Did a co-op on power delivery; graduating in April.',
+ 'Arjun P.|Waterloo|Computer Engineering, 3rd year|Rust,Linux,USB stack|Wrote a toy USB driver; loves low-level debugging.',
+ 'Chloe B.|York|Computer Science, 2nd year|Python,Pandas,SQL|Interested in supply chain data.',
+ 'Daniel O.|TMU|Computer Engineering, 4th year|Verilog,C,RTOS|Looking for a hardware validation role.',
+ 'Hana Y.|Western|Integrated Engineering, 3rd year|Product design,Figma,CAD|Wants to see how product decisions get made.',
+ 'Marcus L.|Carleton|Computer Science, 3rd year|Java,Spring,Postgres|Curious about e-commerce backends.',
+ 'Aisha N.|McMaster|Electrical Engineering, 3rd year|PCB design,KiCad,Python|Brought a prototype display adapter to the event.',
+ 'Leo F.|Guelph|Engineering Systems, 2nd year|C,Arduino,3D printing|First hackathon; wants advice on internships.',
+ 'Grace T.|UofT|Engineering Science, 3rd year|ML,PyTorch,C++|Interested in on-device ML for peripherals.',
+ 'Omar Z.|Waterloo|Systems Design, 4th year|UX research,Figma,Prototyping|Wants to talk about packaging and setup UX.',
+ 'Ines C.|Concordia|Computer Engineering, 2nd year|C,Python,Raspberry Pi|Built a KVM switch with a Pi.',
+ 'Ben W.|Western|Computer Science, 1st year|JavaScript,HTML,CSS|Exploring what hardware companies hire for.',
+ 'Rhea G.|Laurier|Business + CS, 3rd year|SQL,Tableau,Python|Interested in product management.',
+ 'Kenji S.|UBC|Electrical Engineering, 4th year|Signal integrity,HFSS,MATLAB|Did research on high-speed cable losses.',
+ 'Fatima H.|Windsor|Mechanical Engineering, 3rd year|SolidWorks,FEA,Python|Asked about mechanical design co-ops.',
+ 'Noel V.|Queen\'s|Computer Engineering, 3rd year|C++,Qt,Linux|Builds desktop tools for device setup.',
+ 'Zara M.|McGill|Software Engineering, 2nd year|React Native,Firebase,Figma|Wants to build apps that talk to hardware.',
+ 'Ivan P.|Ottawa|Computer Science, 4th year|Go,gRPC,Docker|Looking for backend new-grad roles.',
+ 'Mei L.|Western|Electrical Engineering, 2nd year|Arduino,C,Soldering|Runs the soldering table at her club.',
+ 'Theo R.|Waterloo|Mechatronics, 2nd year|ROS,C++,Python|Robotics team lead; curious about USB-connected sensors.',
+ 'Ana S.|York|Computer Engineering, 3rd year|Embedded C,STM32,Bluetooth|Wants to learn about wireless adapters.',
+ 'Sam K.|TMU|Computer Science, 3rd year|TypeScript,Next.js,Tailwind|Front-end dev; wants an internship.',
+ 'Lucas D.|Carleton|Electrical Engineering, 3rd year|PLC,Python,AutoCAD|Interested in industrial connectivity.',
+ 'Yara E.|McMaster|Computer Science, 2nd year|Java,Android,Kotlin|Built an app for checking cable specs.',
+ 'Felix J.|Guelph|Computer Engineering, 4th year|VHDL,FPGA,C|Graduating; looking for full-time hardware roles.',
+ 'Nadia B.|UofT|Computer Science, 3rd year|Python,Data viz,SQL|Curious about returns and warranty data.',
+ 'Owen T.|Western|Computer Science, 2nd year|C#,Unity,Blender|Game dev who loves peripherals.',
+ 'Kira A.|Waterloo|Electrical Engineering, 3rd year|Analog,SPICE,MATLAB|Interested in power supply design.',
+ 'Diego M.|Concordia|Software Engineering, 3rd year|Python,Django,AWS|Wants to talk about internal tools.',
+ 'Elsa N.|Ottawa|Computer Engineering, 2nd year|C,Linux,Networking|Curious about network adapters.',
+ 'Ravi K.|UBC|Computer Science, 4th year|Rust,WebAssembly,C++|Systems programmer; open to relocating.',
+ 'Jade W.|Laurier|Computer Science, 2nd year|Python,Flask,SQL|Asked about first-year-friendly internships.',
+ 'Musa O.|Windsor|Electrical Engineering, 4th year|Embedded,C,CAN bus|Automotive projects; graduating in May.',
+ 'Clara P.|Queen\'s|Engineering Physics, 3rd year|Python,Optics,LabVIEW|Interested in test lab automation.'
+];
+const H = RAW.map((s,i)=>{const [name,school,prog,skills,note]=s.split('|');return {id:'h'+i,rank:i+1,name,first:name.split(' ')[0],school,prog,skills:skills.split(','),note,gh:i%3!==1,cv:i%4!==2};});
+const HB = Object.fromEntries(H.map(h=>[h.id,h]));
+const BLOCKS = [{id:'b0',room:'Rm 2243',from:'09:00',to:'10:00',tint:'b0'},{id:'b1',room:'Rm 2241',from:'11:00',to:'12:00',tint:'b1'}];
+const SLOTS = [];
+BLOCKS.forEach(b=>{const hh=b.from.slice(0,2);['00','15','30','45'].forEach(m=>SLOTS.push({id:'s'+SLOTS.length,b:b.id,room:b.room,t:hh+':'+m}));});
+const SL = Object.fromEntries(SLOTS.map(s=>[s.id,s]));
+
+const S = {
+  mode:'solo', reps:3, group:3, cap:{s7:2},
+  filter:'all',
+  short:new Set(['h0','h1','h2','h3','h4','h5','h6','h7','h8','h9','h11','h12','h14','h18']),
+  offers:[
+    {hid:'h0',sid:'s0',st:'acc',at:'Fri 8:12 PM'},{hid:'h1',sid:'s0',st:'acc',at:'Fri 8:15 PM'},
+    {hid:'h3',sid:'s1',st:'acc',at:'Fri 8:40 PM'},{hid:'h5',sid:'s2',st:'acc',at:'Fri 9:02 PM'},
+    {hid:'h11',sid:'s2',st:'dec',at:'Fri 9:05 PM'},{hid:'h2',sid:'s4',st:'acc',at:'Fri 9:30 PM'},
+    {hid:'h8',sid:'s4',st:'dec',at:'Fri 9:31 PM'},{hid:'h7',sid:'s5',st:'acc',at:'Fri 10:10 PM'},
+    {hid:'h4',sid:'s1',st:'wait',at:'Sat 7:50 AM'},{hid:'h9',sid:'s3',st:'wait',at:'Sat 8:05 AM'},
+    {hid:'h6',sid:'s6',st:'wait',at:'Sat 8:20 AM'}
+  ],
+  dlg:null, toast:null, v:{}
+};
+
+/* ================= helpers ================= */
+const T = t=>{const [h,m]=t.split(':').map(Number);return (h>12?h-12:h)+':'+String(m).padStart(2,'0');};
+const AP = t=>+t.slice(0,2)<12?'AM':'PM';
+const TR = (a,b)=>AP(a)===AP(b)?`${T(a)}–${T(b)} ${AP(b)}`:`${T(a)} ${AP(a)}–${T(b)} ${AP(b)}`;
+const end15 = t=>{let [h,m]=t.split(':').map(Number);m+=15;if(m===60){h++;m=0;}return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');};
+const base = ()=>S.mode==='solo'?S.reps:S.group;
+const asked = sid=>S.cap[sid]!=null?Math.min(S.cap[sid],base()):base();
+const st = sid=>{const a=asked(sid);const acc=S.offers.filter(o=>o.sid===sid&&o.st==='acc');const w=S.offers.filter(o=>o.sid===sid&&o.st==='wait');return {a,acc,w,taken:acc.length+w.length,free:Math.max(0,a-acc.length-w.length)};};
+const bst = bid=>SLOTS.filter(s=>s.b===bid).reduce((t,s)=>{const x=st(s.id);t.a+=x.a;t.acc+=x.acc.length;t.w+=x.w.length;t.free+=x.free;return t;},{a:0,acc:0,w:0,free:0});
+const tot = ()=>BLOCKS.reduce((t,b)=>{const x=bst(b.id);for(const k in x)t[k]+=x[k];return t;},{a:0,acc:0,w:0,free:0});
+const offerOf = hid=>{for(let i=S.offers.length-1;i>=0;i--)if(S.offers[i].hid===hid)return S.offers[i];return null;};
+const active = hid=>{const o=offerOf(hid);return o&&o.st!=='dec'?o:null;};
+const seatTxt = sid=>{const x=st(sid);if(x.a===0)return 'No chat';return `${x.acc.length}/${x.a}`;};
+const maxTaken = ()=>Math.max(...SLOTS.map(s=>st(s.id).taken));
+const shortN = ()=>S.short.size;
+const filtered = (list=H,f=S.filter)=>list.filter(h=>f==='all'||(f==='short')===S.short.has(h.id));
+const cnt = (arr,k)=>arr.filter(o=>o.st===k).length;
+
+function seg(opts,cur,act,extra=''){return `<div class="seg" role="group" ${extra}>${opts.map(([v,l,n])=>`<button data-a="${act}" data-val="${v}" aria-pressed="${String(v)===String(cur)}">${l}${n!=null?`<span class="n">${n}</span>`:''}</button>`).join('')}</div>`;}
+const filterPills = (cur=S.filter,act='filter')=>seg([['all','All',H.length],['short','Shortlisted',shortN()],['not','Not shortlisted',H.length-shortN()]],cur,act,'aria-label="Filter candidates"');
+const shortPill = h=>{const on=S.short.has(h.id);return `<button class="pill sm ${on?'on':''}" data-a="short" data-id="${h.id}" aria-pressed="${on}">${on?'★ Shortlisted':'☆ Shortlist'}</button>`;};
+function offerPill(h,cls='sm'){const o=offerOf(h.id);
+  if(o&&o.st!=='dec'){return `<span class="tag ${o.st}"><span class="dot"></span>${o.st==='acc'?'Booked':'Waiting'} · ${T(SL[o.sid].t)}</span>`;}
+  return `${o?`<span class="tag dec">Declined ${T(SL[o.sid].t)}</span>`:''}<button class="pill ${cls} pri" data-a="offer" data-id="${h.id}">${o?'Offer another time':'Offer a chat'}</button>`;}
+const links = h=>(h.cv||h.gh)?`<div class="lnks">${h.cv?'<a href="#" data-a="noop">Resume</a>':''}${h.gh?'<a href="#" data-a="noop">GitHub</a>':''}</div>`:'<span class="small muted">No resume or GitHub shared</span>';
+const skills = h=>`<div class="chips">${h.skills.map(s=>`<span class="chip">${s}</span>`).join('')}</div>`;
+const setupLine = ()=>S.mode==='solo'?`1-on-1 · ${S.reps} rep${S.reps>1?'s':''}`:`One group · ${S.group} hacker${S.group>1?'s':''}`;
+const sheetLine = '15-min chats · 9:00 AM–1:00 PM · from your sponsor sheet';
+const topbar = (extra='')=>`<div class="top"><img class="logo" src="${LOGO}" alt="StarTech"><h1>Coffee chats</h1><span class="sp"></span>${extra}<button class="pill sm map" data-a="noop">Map</button></div>`;
+
+function setupBody(){const solo=S.mode==='solo';const v=solo?S.reps:S.group;const min=Math.max(1,maxTaken());
+  return `<div class="row">${seg([['solo','1-on-1 chats'],['group','One group chat']],S.mode,'mode','aria-label="Chat type"')}
+  <div class="stepper"><button data-a="rep" data-val="-1" aria-label="Fewer" ${v<=min?'disabled':''}>−</button><output>${v} ${solo?(v>1?'reps':'rep'):(v>1?'hackers':'hacker')}</output><button data-a="rep" data-val="1" aria-label="More" ${v>=3?'disabled':''}>+</button></div></div>
+  <p class="small muted" style="margin-top:8px">${solo?`Each rep meets one hacker, so up to ${v} hacker${v>1?'s':''} per slot.`:`All your reps meet ${v} hacker${v>1?'s':''} together.`} Max 3 hackers per slot. ${sheetLine}.</p>
+  ${v<=min&&min>1?`<p class="small muted" style="margin-top:4px">${min} hackers are already booked or waiting in one slot, so ${min} is the lowest for now.</p>`:''}`;}
+
+function slotRow(s){const x=st(s.id);const names=x.acc.map(o=>HB[o.hid].first);const w=x.w.map(o=>HB[o.hid].first);
+  return `<div class="blk-r"><b class="num">${T(s.t)}</b><div style="min-width:0"><div class="row" style="gap:6px"><span class="num" style="font-weight:700">${seatTxt(s.id)}</span>${x.a===0?'':x.free===0&&x.w.length===0?'<span class="tag acc">Full</span>':x.free>0?`<span class="small muted">${x.free} open</span>`:''}${S.cap[s.id]!=null&&S.cap[s.id]<base()?`<span class="tag warn">asked for ${x.a}</span>`:''}</div>
+  <div class="small muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${names.join(', ')}${w.length?`${names.length?' · ':''}waiting: ${w.join(', ')}`:''}</div></div>
+  <button class="pill sm ghost" data-a="fewer" data-id="${s.id}">Ask for fewer</button></div>`;}
+function roomsBody(){return `<div class="blocks">${BLOCKS.map(b=>{const x=bst(b.id);return `<div class="blk"><div class="blk-h"><b>${b.room}</b><span class="muted">${TR(b.from,b.to)}</span><span class="sp"></span><span class="small muted">${x.acc} of ${x.a} filled</span><button class="pill sm" data-a="fewerh" data-id="${b.id}">Ask for fewer this hour</button></div>${SLOTS.filter(s=>s.b===b.id).map(slotRow).join('')}</div>`;}).join('')}</div>`;}
+function candRow(h){return `<div class="cand"><span class="rk">#${h.rank}</span><div style="min-width:0;display:flex;flex-direction:column;gap:5px"><div><span class="nm">${h.name}</span> <span class="muted">· ${h.school} · ${h.prog}</span></div>${skills(h)}<div class="small muted">${h.note}</div>${links(h)}</div><div class="acts">${shortPill(h)}${offerPill(h)}</div></div>`;}
+function candBody(list=filtered()){return `<div class="row" style="margin-bottom:6px">${filterPills()}</div><div class="cands">${list.length?list.map(candRow).join(''):'<div class="empty">No one here yet. Shortlist hackers from All.</div>'}</div>`;}
+function offerItem(o){const h=HB[o.hid],s=SL[o.sid];const i=S.offers.indexOf(o);
+  return `<div class="orow"><div style="min-width:0"><b>${h.name}</b> <span class="muted small">${T(s.t)} · ${s.room}</span></div>${o.st==='wait'?`<button class="pill sm ghost" data-a="withdraw" data-id="${i}">Withdraw</button>`:o.st==='dec'&&!active(h.id)?`<button class="pill sm ghost" data-a="offer" data-id="${h.id}">Offer another time</button>`:''}</div>`;}
+function offersBody(){const g=k=>S.offers.filter(o=>o.st===k);
+  return `<div class="offers">${[['wait','Waiting'],['acc','Accepted'],['dec','Declined']].map(([k,l])=>`<div class="ocol"><div class="row"><span class="tag ${k}"><span class="dot"></span>${l}</span><span class="small muted num">${g(k).length}</span></div>${g(k).length?g(k).map(offerItem).join(''):'<div class="small muted">None</div>'}</div>`).join('')}</div>
+  <p class="small muted" style="margin-top:10px">Hackers accept or decline on their live site. Waiting offers hold the seat.</p>`;}
+
+/* ================= dialogs ================= */
+function freeFor(hid){return SLOTS.filter(s=>st(s.id).free>0&&!S.offers.some(o=>o.hid===hid&&o.sid===s.id&&o.st!=='dec'));}
+function dlgHtml(){const d=S.dlg;if(!d)return '';let body='';
+  if(d.type==='offer'){const h=HB[d.hid];const fr=freeFor(h.id);
+    body=`<div><div class="h3">Offer ${h.name} a chat</div><p class="small muted" style="margin-top:4px">${h.school} · ${h.prog}. They'll accept or decline on their live site.</p></div>
+    ${fr.length?BLOCKS.map(b=>{const l=fr.filter(s=>s.b===b.id);return l.length?`<div><div class="lab" style="margin-bottom:6px">${b.room} · ${TR(b.from,b.to)}</div><div class="slotpick">${l.map(s=>`<button data-a="pickslot" data-id="${s.id}" aria-pressed="${d.sid===s.id}"><b>${T(s.t)}</b><span>${st(s.id).free} seat${st(s.id).free>1?'s':''} left</span></button>`).join('')}</div></div>`:'';}).join('')
+    :`<div class="empty">No free seats left today. Ask for fewer elsewhere, or ask the spon team for another room.</div>`}
+    <div class="row" style="justify-content:flex-end"><button class="pill" data-a="close">Cancel</button>${fr.length?`<button class="pill pri" data-a="send" ${d.sid?'':'disabled'}>${d.sid?`Offer ${T(SL[d.sid].t)} chat`:'Pick a time'}</button>`:''}</div>`;}
+  if(d.type==='seat'){const s=SL[d.sid];const pool=H.filter(h=>!active(h.id)&&(d.f==='all'||S.short.has(h.id)));
+    body=`<div><div class="h3">Who should sit here?</div><p class="small muted" style="margin-top:4px">${T(s.t)} · ${s.room} · ${st(s.id).free} open</p></div>
+    ${seg([['short','Shortlisted',H.filter(h=>!active(h.id)&&S.short.has(h.id)).length],['all','All',H.filter(h=>!active(h.id)).length]],d.f,'seatf')}
+    <div class="hpick">${pool.slice(0,12).map(h=>`<button data-a="pickh" data-id="${h.id}" aria-pressed="${d.hid===h.id}"><span><b>${h.name}</b> <span class="small muted">${h.school}</span></span><span class="small muted">#${h.rank}</span></button>`).join('')||'<div class="empty">Everyone here already has an offer.</div>'}</div>
+    <div class="row" style="justify-content:flex-end"><button class="pill" data-a="close">Cancel</button><button class="pill pri" data-a="sendseat" ${d.hid?'':'disabled'}>${d.hid?`Offer ${HB[d.hid].first} ${T(s.t)}`:'Pick a hacker'}</button></div>`;}
+  if(d.type==='fewer'){const isH=!!d.bid;const slots=isH?SLOTS.filter(s=>s.b===d.bid):[SL[d.sid]];const min=isH?0:st(d.sid).taken;const b=BLOCKS.find(x=>x.id===(isH?d.bid:SL[d.sid].b));
+    body=`<div><div class="h3">${isH?`Fewer hackers ${TR(b.from,b.to)}`:`Fewer hackers at ${T(SL[d.sid].t)}`}</div><p class="small muted" style="margin-top:4px">${b.room}. You're set for ${base()} per slot (${setupLine()}). 0 means no chat ${isH?'that hour':'then'}.</p></div>
+    <div class="row"><div class="stepper"><button data-a="fv" data-val="-1" ${d.val<=min?'disabled':''} aria-label="Fewer">−</button><output>${d.val===0?'No chat':d.val+' hacker'+(d.val>1?'s':'')}</output><button data-a="fv" data-val="1" ${d.val>=base()?'disabled':''} aria-label="More">+</button></div></div>
+    ${!isH&&min>0?`<p class="small muted">${min} already booked or waiting, so ${min} is the lowest. Withdraw an offer to go lower.</p>`:''}
+    ${isH&&slots.some(s=>st(s.id).taken>d.val)?`<p class="small muted">Slots with more hackers already booked keep them.</p>`:''}
+    <p class="small muted">Organizers see this right away.</p>
+    <div class="row" style="justify-content:flex-end"><button class="pill" data-a="close">Cancel</button><button class="pill pri" data-a="savefewer">Save</button></div>`;}
+  if(d.type==='setup'){body=`<div class="h3">Your chat setup</div>${setupBody()}<div class="row" style="justify-content:flex-end"><button class="pill pri" data-a="close">Done</button></div>`;}
+  if(d.type==='cands'){body=`<div class="row"><div class="h3">Candidates</div><span class="sp"></span><button class="pill sm" data-a="close">Close</button></div><p class="small muted">Top 40 from the interest form.</p>${candBody()}`;}
+  return `<div class="ovl ${d.anim?'anim':''}" data-a="bg"><div class="dlg ${d.anim?'anim':''}" role="dialog" aria-modal="true">${body}</div></div>`;}
+function toast(t){S.toast=t;const el=document.getElementById('toast');el.innerHTML=`<div class="toast" role="status">${t}</div>`;clearTimeout(toast.k);toast.k=setTimeout(()=>{el.innerHTML='';},2600);}
+
+/* ================= variants ================= */
+const V = [];
+
+/* 1 Timeline */
+V.push({name:'Timeline',title:'Day timeline',why:'Chats are about time: the morning on one line shows rooms, gaps and open seats at a glance.',html(){
+  const day=S.v.day||'sat';
+  const slotBtn=s=>{const x=st(s.id);return `<button class="v1-slot" data-a="fewer" data-id="${s.id}" aria-label="${T(s.t)}, ${seatTxt(s.id)}"><span class="small muted">${T(s.t)}</span><b class="num">${seatTxt(s.id)}</b><span class="small ${x.free?'':'muted'}">${x.a===0?'Asked for 0':x.free?`${x.free} open`:x.w.length?`${x.w.length} waiting`:'Full'}</span></button>`;};
+  const blk=b=>{const x=bst(b.id);return `<div class="v1-blk ${b.tint}" style="grid-column:${b.id==='b0'?'1 / span 4':'9 / span 4'}"><div class="row"><b>${b.room}</b><span class="small muted">${TR(b.from,b.to)}</span><span class="sp"></span><span class="small num">${x.acc} of ${x.a} seats</span></div><div class="v1-slots">${SLOTS.filter(s=>s.b===b.id).map(slotBtn).join('')}</div><div class="row"><button class="pill sm" data-a="fewerh" data-id="${b.id}">Ask for fewer this hour</button></div></div>`;};
+  const list=filtered();
+  return `${topbar(seg([['fri','Fri 20'],['sat','Sat 21'],['sun','Sun 22']],day,'v" data-k="day','aria-label="Day"'))}
+  <div class="v1-tl"><div class="row" style="margin-bottom:12px"><span class="h3">Saturday chats</span><span class="sp"></span><span class="small muted">${setupLine()}</span><button class="pill sm" data-a="dsetup">Change setup</button></div>
+  ${day!=='sat'?`<div class="empty">No coffee chat rooms on ${day==='fri'?'Friday':'Sunday'}. Your chats are Saturday morning.</div>`:`
+  <div class="v1-axis" aria-hidden="true"><span>9 AM</span><span>10 AM</span><span>11 AM</span><span>12 PM</span></div>
+  <div class="v1-track">${blk(BLOCKS[0])}<div class="v1-gap" style="grid-column:5 / span 4">No room 10–11. Reps on the floor.</div>${blk(BLOCKS[1])}<div class="v1-gap" style="grid-column:13 / span 4">No room 12–1</div></div>
+  <p class="small muted" style="margin-top:8px">Tap a slot to ask for fewer hackers then.</p>`}</div>
+  <div class="v1-low"><section class="card pad"><div class="row" style="margin-bottom:4px"><span class="h3">Candidates</span><span class="sp"></span>${filterPills()}</div>
+  <div class="v1-list">${list.map(h=>`<div class="v1-li"><span class="small muted">#${h.rank}</span><div style="min-width:0"><b>${h.name}</b> <span class="small muted">${h.school} · ${h.skills.slice(0,2).join(', ')}</span></div><div class="acts">${shortPill(h)}${offerPill(h)}</div></div>`).join('')||'<div class="empty">No one shortlisted yet.</div>'}</div></section>
+  <section class="card pad" style="align-self:start"><div class="h3" style="margin-bottom:10px">Offers</div>${['wait','acc','dec'].map(k=>{const l=S.offers.filter(o=>o.st===k);return `<div style="margin-bottom:12px"><div class="row" style="margin-bottom:6px"><span class="tag ${k}"><span class="dot"></span>${{wait:'Waiting',acc:'Accepted',dec:'Declined'}[k]} ${l.length}</span></div><div style="display:flex;flex-direction:column;gap:4px">${l.map(offerItem).join('')||'<span class="small muted">None</span>'}</div></div>`;}).join('')}</section></div>`;}});
+
+/* 2 Tiles */
+V.push({name:'Tiles',title:'Dashboard tiles',why:'Four numbers answer "how are my chats going?"; open one tile for its details, one at a time.',html(){
+  const open=S.v.open||null;const t=tot();const o=S.offers;
+  const tile=(k,lab,big,sub,extra='')=>`<button class="v2-tile" data-a="v" data-k="open" data-val="${open===k?'':k}" aria-expanded="${open===k}"><span class="lab">${lab}</span><span class="v2-big num">${big}</span>${extra}<span class="small muted">${sub}</span></button>`;
+  const body={setup:['Your chat setup',setupBody()],rooms:['Your rooms',roomsBody()],cands:['Candidates',candBody()],offers:['Offers',offersBody()]};
+  return `${topbar()}<div class="v2-grid">
+  ${tile('setup','Chat setup',S.mode==='solo'?`${S.reps} reps`:`Group of ${S.group}`,S.mode==='solo'?'1-on-1, 15 min each':'One group, 15 min')}
+  ${tile('rooms','Seats filled',`${t.acc} of ${t.a}`,`${t.free} open · 2 rooms Sat`,`<div class="bar"><i style="width:${t.a?t.acc/t.a*100:0}%"></i></div>`)}
+  ${tile('cands','Shortlisted',`${shortN()}/40`,'From the interest form')}
+  ${tile('offers','Offers waiting',cnt(o,'wait'),`${cnt(o,'acc')} accepted · ${cnt(o,'dec')} declined`)}
+  </div>${open?`<section class="card v2-open ${S.v.anim?'anim':''}"><div class="row" style="margin-bottom:12px"><span class="h2">${body[open][0]}</span><span class="sp"></span><button class="pill sm" data-a="v" data-k="open" data-val="">Close</button></div>${body[open][1]}</section>`:`<p class="muted" style="padding:0 20px 20px">Pick a tile to see details.</p>`}`;}});
+
+/* 3 Steps */
+V.push({name:'Steps',title:'Step by step',why:'For a rep doing this the first time: one question per screen, in the order the day needs it.',html(){
+  const step=S.v.step||1;const names=['Setup','Rooms','Shortlist','Offer'];
+  const nav=`<div class="v3-nav"><button class="pill" data-a="v" data-k="step" data-val="${step-1}" ${step===1?'disabled':''}>Back</button>${step<4?`<button class="pill pri" data-a="v" data-k="step" data-val="${step+1}">Next: ${names[step]}</button>`:'<span class="small muted">You can come back any time.</span>'}</div>`;
+  let body='';
+  if(step===1){const solo=S.mode==='solo';const v=solo?S.reps:S.group;const min=Math.max(1,maxTaken());body=`<div class="v3-q">How will you run chats?</div><div class="v3-choice"><button data-a="mode" data-val="solo" aria-pressed="${solo}"><b>1-on-1 chats</b><span class="small muted">Each rep meets one hacker at a time.</span></button><button data-a="mode" data-val="group" aria-pressed="${!solo}"><b>One group chat</b><span class="small muted">Your reps meet a few hackers together.</span></button></div>
+    <div class="row"><span>${solo?'How many reps?':'How many hackers per group?'}</span><div class="stepper"><button data-a="rep" data-val="-1" ${v<=min?'disabled':''} aria-label="Fewer">−</button><output>${v}</output><button data-a="rep" data-val="1" ${v>=3?'disabled':''} aria-label="More">+</button></div><span class="small muted">Max 3</span></div><p class="small muted">${sheetLine}.</p>`;}
+  if(step===2){body=`<div class="v3-q">Here are your rooms on Saturday</div><p class="muted">If a rep has to leave, ask for fewer hackers for that slot or hour.</p>${roomsBody()}`;}
+  if(step===3){body=`<div class="v3-q">Who would you like to meet?</div><p class="muted">The top 40 hackers who picked StarTech on the interest form. Shortlist anyone you'd like to chat with.</p>${candBody()}`;}
+  if(step===4){const todo=H.filter(h=>S.short.has(h.id)&&!active(h.id));body=`<div class="v3-q">Offer chats to your shortlist</div><p class="muted">${todo.length} shortlisted hacker${todo.length===1?'':'s'} without an offer · ${tot().free} open seats.</p><div class="cands">${todo.map(candRow).join('')||'<div class="empty">Everyone on your shortlist has an offer.</div>'}</div><div class="lab" style="margin-top:8px">Your offers</div>${offersBody()}`;}
+  return `${topbar()}<div class="v3"><div class="v3-steps">${names.map((n,i)=>`<button data-a="v" data-k="step" data-val="${i+1}" ${step===i+1?'aria-current="step"':''} class="${i+1<step?'done':''}"><i>${i+1<step?'✓':i+1}</i>${n}</button>`).join('')}</div><section class="card v3-body" style="display:flex;flex-direction:column;gap:14px">${body}</section>${nav}</div>`;}});
+
+/* 4 Table */
+V.push({name:'Table',title:'One table',why:'Recruiters live in spreadsheets: every slot, person and offer as rows you can scan and sort.',html(){
+  const sort=S.v.sort||'rank';const list=filtered().slice().sort((a,b)=>sort==='school'?a.school.localeCompare(b.school)||a.rank-b.rank:a.rank-b.rank);
+  const th=(k,l)=>`<th><button data-a="v" data-k="sort" data-val="${k}" aria-pressed="${sort===k}">${l}${sort===k?' ↓':''}</button></th>`;
+  return `${topbar()}<div class="v4">
+  <div class="v4-tool"><b>Setup</b>${setupBody().replace('<p class="small muted" style="margin-top:8px">','<p class="small muted" style="flex-basis:100%">')}</div>
+  <div><div class="row" style="margin-bottom:8px"><span class="h3">Slots · Saturday</span><span class="sp"></span><span class="small muted">${tot().acc} of ${tot().a} seats filled</span></div>
+  <table class="tbl"><thead><tr><th>Time</th><th>Room</th><th>Booked</th><th>Hackers</th><th>Waiting</th><th></th></tr></thead><tbody>
+  ${BLOCKS.map(b=>`<tr class="grp"><td colspan="5">${b.room} · ${TR(b.from,b.to)}</td><td style="text-align:right"><button class="pill sm" data-a="fewerh" data-id="${b.id}">Ask for fewer this hour</button></td></tr>`+SLOTS.filter(s=>s.b===b.id).map(s=>{const x=st(s.id);return `<tr><td data-l="Time"><b>${T(s.t)}</b></td><td data-l="Room">${s.room}</td><td data-l="Booked" class="num"><b>${seatTxt(s.id)}</b>${S.cap[s.id]!=null&&S.cap[s.id]<base()?' <span class="tag warn">asked for '+x.a+'</span>':''}</td><td data-l="Hackers">${x.acc.map(o=>HB[o.hid].name).join(', ')||'<span class="muted">None</span>'}</td><td data-l="Waiting">${x.w.map(o=>HB[o.hid].name).join(', ')||'<span class="muted">None</span>'}</td><td style="text-align:right"><button class="pill sm ghost" data-a="fewer" data-id="${s.id}">Ask for fewer</button></td></tr>`;}).join('')).join('')}
+  </tbody></table></div>
+  <div><div class="row" style="margin-bottom:8px"><span class="h3">Candidates</span><span class="sp"></span>${filterPills()}</div>
+  <table class="tbl"><thead><tr>${th('rank','#')}<th>Name</th>${th('school','School')}<th>Program</th><th>Skills</th><th>Links</th><th></th></tr></thead><tbody>
+  ${list.map(h=>`<tr><td data-l="#" class="num muted">${h.rank}</td><td><b>${h.name}</b></td><td data-l="School">${h.school}</td><td data-l="Program">${h.prog}</td><td data-l="Skills">${h.skills.join(', ')}</td><td>${links(h)}</td><td><div class="row" style="justify-content:flex-end;flex-wrap:nowrap">${shortPill(h)}${offerPill(h)}</div></td></tr>`).join('')||'<tr><td colspan="7" class="muted">No one here yet.</td></tr>'}
+  </tbody></table></div>
+  <div><div class="row" style="margin-bottom:8px"><span class="h3">Offers</span><span class="sp"></span>${seg([['all','All',S.offers.length],['wait','Waiting',cnt(S.offers,'wait')],['acc','Accepted',cnt(S.offers,'acc')],['dec','Declined',cnt(S.offers,'dec')]],S.v.of||'all','v" data-k="of')}</div>
+  <table class="tbl"><thead><tr><th>Hacker</th><th>Time</th><th>Room</th><th>Status</th><th>Sent</th><th></th></tr></thead><tbody>
+  ${S.offers.filter(o=>!S.v.of||S.v.of==='all'||o.st===S.v.of).map(o=>{const i=S.offers.indexOf(o);return `<tr><td><b>${HB[o.hid].name}</b></td><td data-l="Time">${T(SL[o.sid].t)}</td><td data-l="Room">${SL[o.sid].room}</td><td><span class="tag ${o.st}"><span class="dot"></span>${{wait:'Waiting',acc:'Accepted',dec:'Declined'}[o.st]}</span></td><td data-l="Sent" class="muted">${o.at}</td><td style="text-align:right">${o.st==='wait'?`<button class="pill sm ghost" data-a="withdraw" data-id="${i}">Withdraw</button>`:''}</td></tr>`;}).join('')}
+  </tbody></table></div></div>`;}});
+
+/* 5 Split */
+V.push({name:'Split',title:'Split view',why:'Reviewing people is the main job: pick from the list, read them, and offer a time right there.',html(){
+  const q=(S.v.q||'').toLowerCase();const list=filtered().filter(h=>!q||(h.name+h.school+h.skills.join(' ')+h.prog).toLowerCase().includes(q));
+  const sel=HB[S.v.sel]||list[0]||H[0];const o=offerOf(sel.id);const fr=freeFor(sel.id);const t=tot();
+  return `${topbar()}<div class="v5-strip"><span class="small muted">${setupLine()}</span><button class="pill sm ghost" data-a="dsetup">Change</button><span class="sp"></span>${BLOCKS.map(b=>{const x=bst(b.id);return `<button class="pill sm" data-a="fewerh" data-id="${b.id}">${b.room} · ${T(b.from)} · <span class="num">${x.acc} of ${x.a} seats</span></button>`;}).join('')}<span class="small muted">${cnt(S.offers,'wait')} waiting</span></div>
+  <div class="v5" data-detail="${!!S.v.sel}"><aside class="v5-l"><div class="v5-lh"><input class="v5-search" id="v5q" placeholder="Search name, school or skill" value="${S.v.q||''}" aria-label="Search candidates">${filterPills()}</div>
+  <div class="v5-list" data-scroll="v5">${list.map(h=>{const a=offerOf(h.id);return `<button class="v5-it" data-a="v" data-k="sel" data-val="${h.id}" aria-current="${h.id===sel.id}"><span class="small muted">#${h.rank}</span><span style="min-width:0"><span class="nm">${S.short.has(h.id)?'★ ':''}${h.name}</span><span class="sub" style="display:block">${h.school} · ${h.skills.slice(0,2).join(', ')}</span></span>${a?`<span class="tag ${a.st}">${{wait:'Waiting',acc:'Booked',dec:'Declined'}[a.st]}</span>`:''}</button>`;}).join('')||'<div class="pad muted">No matches.</div>'}</div></aside>
+  <section class="v5-r"><button class="pill sm ghost v5-back" data-a="v" data-k="sel" data-val="">‹ All candidates</button>
+  <div><span class="small muted">#${sel.rank} on the interest form</span><div class="v5-big">${sel.name}</div><div class="muted">${sel.school} · ${sel.prog}</div></div>
+  <div class="row">${shortPill(sel)}</div>${skills(sel)}<p style="font-size:15px;line-height:1.5">${sel.note}</p>${links(sel)}
+  <div class="card pad" style="display:flex;flex-direction:column;gap:10px"><span class="h3">Coffee chat</span>
+  ${o&&o.st!=='dec'?`<div class="row"><span class="tag ${o.st}"><span class="dot"></span>${o.st==='acc'?'Booked':'Offer waiting'} · ${T(SL[o.sid].t)} · ${SL[o.sid].room}</span>${o.st==='wait'?`<button class="pill sm ghost" data-a="withdraw" data-id="${S.offers.indexOf(o)}">Withdraw</button>`:''}</div>`
+  :`${o?`<span class="small muted">Declined ${T(SL[o.sid].t)}. Offer another time?</span>`:`<span class="small muted">Pick an open time. ${t.free} seats open.</span>`}
+  ${fr.length?`<div class="slotpick">${fr.map(s=>`<button data-a="v" data-k="ps" data-val="${s.id}" aria-pressed="${S.v.ps===s.id}"><b>${T(s.t)}</b><span>${s.room} · ${st(s.id).free} left</span></button>`).join('')}</div><div class="row"><button class="pill pri" data-a="sendsplit" data-id="${sel.id}" ${S.v.ps&&fr.some(s=>s.id===S.v.ps)?'':'disabled'}>${S.v.ps&&fr.some(s=>s.id===S.v.ps)?`Offer ${T(SL[S.v.ps].t)}`:'Pick a time first'}</button></div>`:'<div class="empty">No free seats left.</div>'}`}
+  </div></section></div>`;},
+  after(){const i=document.getElementById('v5q');if(i)i.oninput=e=>{S.v.q=e.target.value;render();};}});
+
+/* 6 Stack */
+V.push({name:'Stack',title:'One at a time',why:'Triage 40 people fast: one card, three choices, the next card slides in.',html(){
+  const f=S.v.f||'all';const list=filtered(H,f);let i=Math.min(S.v.i||0,Math.max(0,list.length-1));const h=list[i];const t=tot();
+  const card=h?`<article class="card v6-card ${S.v.anim||''}"><div class="row"><span class="small muted">#${h.rank} · ${i+1} of ${list.length}</span><span class="sp"></span>${(()=>{const o=offerOf(h.id);return o?`<span class="tag ${o.st}">${{wait:'Waiting',acc:'Booked',dec:'Declined'}[o.st]} ${T(SL[o.sid].t)}</span>`:'';})()}</div>
+  <div><div class="v6-name">${h.name}</div><div class="muted" style="font-size:15px">${h.school} · ${h.prog}</div></div>${skills(h)}<div class="v6-note">“${h.note}”</div>${links(h)}</article><div class="v6-under" aria-hidden="true"></div>
+  <div class="v6-acts"><button class="pill" data-a="stk" data-val="-1" ${i===0?'disabled':''}>‹ Back</button><button class="pill" data-a="stk" data-val="1" ${i>=list.length-1?'disabled':''}>Skip</button>${shortPill(h).replace('pill sm','pill')}${(()=>{const o=active(h.id);return o?'':`<button class="pill pri" data-a="offer" data-id="${h.id}">Offer a chat</button>`;})()}</div>`
+  :'<div class="empty" style="width:100%;max-width:560px">No one shortlisted yet. Switch to All.</div>';
+  return `${topbar()}<div class="v6"><div class="v6-main">${seg([['all','All',40],['short','Shortlisted',shortN()],['not','Not shortlisted',40-shortN()]],f,'stkf')}${card}</div>
+  <aside class="v6-side"><section class="card pad"><div class="lab">Open seats</div><div class="h2 num" style="margin:4px 0 10px">${t.free} of ${t.a}</div>${BLOCKS.map(b=>`<div style="margin-bottom:10px"><div class="row small"><b>${b.room}</b><span class="muted">${TR(b.from,b.to)}</span></div><div class="row" style="gap:4px;margin-top:6px">${SLOTS.filter(s=>s.b===b.id).map(s=>`<button class="pill sm" data-a="fewer" data-id="${s.id}">${T(s.t)} <span class="num">${seatTxt(s.id)}</span></button>`).join('')}</div></div>`).join('')}<span class="small muted">Tap a time to ask for fewer.</span></section>
+  <section class="card pad"><div class="lab" style="margin-bottom:6px">Offers</div><div class="row">${['wait','acc','dec'].map(k=>`<span class="tag ${k}">${{wait:'Waiting',acc:'Accepted',dec:'Declined'}[k]} ${cnt(S.offers,k)}</span>`).join('')}</div></section>
+  <section class="card pad"><div class="lab" style="margin-bottom:6px">Setup</div><div class="row"><span>${setupLine()}</span><button class="pill sm ghost" data-a="dsetup">Change</button></div></section></aside></div>`;}});
+
+/* 7 Seats */
+V.push({name:'Seats',title:'Seating chart',why:'The scarce thing is a chair: see empty seats as chairs, and fill one by tapping it.',html(){
+  const chairs=s=>{const x=st(s.id);const out=[];x.acc.forEach(o=>out.push(`<div class="v7-ch acc"><span class="dot" style="color:var(--live)"></span><span>${HB[o.hid].name}</span></div>`));x.w.forEach(o=>out.push(`<div class="v7-ch wait"><span>${HB[o.hid].first} · waiting</span></div>`));for(let k=0;k<x.free;k++)out.push(`<button class="v7-ch free" data-a="seat" data-id="${s.id}">+ Empty seat</button>`);for(let k=x.a;k<base();k++)out.push(`<button class="v7-ch gone" data-a="putback" data-id="${s.id}"><span>No seat · put back</span></button>`);return out.join('');};
+  return `${topbar(`<span class="small muted">${setupLine()}</span><button class="pill sm" data-a="dsetup">Setup</button>`)}<div class="v7">
+  ${BLOCKS.map(b=>{const x=bst(b.id);return `<section class="v7-room"><span class="v7-door" aria-hidden="true"></span><div class="row"><span class="h3">${b.room}</span><span class="muted">Saturday · ${TR(b.from,b.to)}</span><span class="sp"></span><span class="small num">${x.acc} seated · ${x.w} waiting · ${x.free} empty</span><button class="pill sm" data-a="fewerh" data-id="${b.id}">Fewer this hour</button></div>
+  <div class="v7-tables">${SLOTS.filter(s=>s.b===b.id).map(s=>{const xx=st(s.id);return `<div class="v7-t"><div class="v7-desk"><b>${T(s.t)}</b><span class="small num muted">${seatTxt(s.id)}</span></div><div class="v7-chairs">${chairs(s)}</div>${xx.free>0||xx.a>xx.taken?`<button class="pill sm ghost" data-a="rmseat" data-id="${s.id}">Remove a seat</button>`:''}</div>`;}).join('')}</div></section>`;}).join('')}
+  <section class="card pad"><div class="row"><span class="h3">Declined</span><span class="small muted">${S.offers.filter(o=>o.st==='dec').map(o=>`${HB[o.hid].name} (${T(SL[o.sid].t)})`).join(' · ')||'None'}</span><span class="sp"></span><button class="pill sm" data-a="dcands">All 40 candidates</button></div></section></div>`;}});
+
+/* 8 Feed */
+V.push({name:'Feed',title:'What changed',why:'During the event the question is "what happened since I last looked?": a feed with the next move inline.',html(){
+  const items=S.offers.map((o,i)=>({o,i})).reverse();const t=tot();
+  const open=SLOTS.filter(s=>st(s.id).free>0);const cand=H.filter(h=>S.short.has(h.id)&&!active(h.id)).slice(0,3);
+  const verb={acc:'accepted',wait:'has an offer for',dec:'declined'};
+  return `${topbar()}<div class="v8"><div class="v8-feed">
+  ${open.length?`<div class="card v8-sug"><div class="row"><span class="tag warn">Next up</span><b>${open.length} time${open.length>1?'s':''} still have open seats</b></div><p class="small muted">${open.slice(0,4).map(s=>`${T(s.t)} (${st(s.id).free})`).join(', ')}${open.length>4?'…':''}. These shortlisted hackers have no offer yet:</p><div class="row">${cand.map(h=>`<button class="pill sm pri" data-a="offer" data-id="${h.id}">Offer ${h.name}</button>`).join('')||'<span class="small muted">Shortlist more people first.</span>'}<button class="pill sm" data-a="dcands">Browse all 40</button></div></div>`:''}
+  <div class="lab v8-day" style="margin-top:16px">Activity</div>
+  ${items.map(({o,i})=>{const h=HB[o.hid],s=SL[o.sid];return `<div class="v8-it"><span class="v8-ic ${o.st}"></span><div style="min-width:0;display:flex;flex-direction:column;gap:4px"><div><b>${h.name}</b> ${verb[o.st]} ${o.st==='wait'?'':'a chat at '}<b>${T(s.t)}</b>${o.st==='wait'?' (waiting for a reply)':''} · ${s.room}</div><div class="small muted">${o.at} · ${h.school} · ${h.skills.slice(0,2).join(', ')}</div><div class="row">${o.st==='wait'?`<button class="pill sm ghost" data-a="withdraw" data-id="${i}">Withdraw offer</button>`:o.st==='dec'&&!active(h.id)?`<button class="pill sm" data-a="offer" data-id="${h.id}">Offer another time</button>`:''}</div></div></div>`;}).join('')}
+  </div><aside class="v8-side"><section class="card pad"><div class="lab">Saturday</div><div class="h2 num" style="margin:4px 0 2px">${t.acc} of ${t.a} booked</div><div class="small muted" style="margin-bottom:10px">${t.w} waiting · ${t.free} open</div>${BLOCKS.map(b=>{const x=bst(b.id);return `<div style="margin-bottom:10px"><div class="row small"><b>${b.room}</b><span class="muted">${TR(b.from,b.to)}</span><span class="sp"></span><span class="num">${x.acc} of ${x.a}</span></div><div class="bar" style="margin:6px 0"><i style="width:${x.a?x.acc/x.a*100:0}%"></i></div><button class="pill sm ghost" data-a="fewerh" data-id="${b.id}">Ask for fewer</button></div>`;}).join('')}</section>
+  <section class="card pad"><div class="lab" style="margin-bottom:6px">Your setup</div><div class="row"><span>${setupLine()}</span><span class="sp"></span><button class="pill sm" data-a="dsetup">Change</button></div><p class="small muted" style="margin-top:6px">${sheetLine}</p></section></aside></div>`;}});
+
+/* 9 Tabs */
+V.push({name:'Tabs',title:'App tabs',why:'One section at a time with counts on the tabs; bottom bar on phones keeps every section a thumb away.',html(){
+  const tab=S.v.tab||'cands';const t=tot();const w=cnt(S.offers,'wait');
+  const tabs=[['setup','Setup',S.mode==='solo'?S.reps+' reps':'Group'],['rooms','Rooms',`${t.free} open`],['cands','Candidates',40],['offers','Offers',w]];
+  let body='';
+  if(tab==='setup')body=`<div class="h2">Your chat setup</div><section class="card pad">${setupBody()}</section>`;
+  if(tab==='rooms')body=`<div class="row"><span class="h2">Your rooms</span><span class="sp"></span>${seg([['sat','Sat 21'],['sun','Sun 22']],S.v.day||'sat','v" data-k="day')}</div>${(S.v.day||'sat')==='sat'?roomsBody():'<div class="empty">No coffee chat rooms on Sunday.</div>'}`;
+  if(tab==='cands'){const list=filtered();body=`<div class="row"><span class="h2">Candidates</span><span class="sp"></span>${filterPills()}</div><div class="v9-cgrid">${list.map(h=>`<article class="card v9-cc"><div class="row"><span class="small muted">#${h.rank}</span><span class="sp"></span>${shortPill(h)}</div><div><b style="font-size:15px">${h.name}</b><div class="small muted">${h.school} · ${h.prog}</div></div>${skills(h)}<p class="small muted">${h.note}</p>${links(h)}<div class="row">${offerPill(h)}</div></article>`).join('')||'<div class="empty">No one here yet.</div>'}</div>`;}
+  if(tab==='offers')body=`<div class="h2">Offers</div><section class="card pad">${offersBody()}</section>`;
+  return `${topbar()}<div class="v9"><nav class="v9-nav" aria-label="Sections">${tabs.map(([k,l,n])=>`<button data-a="v" data-k="tab" data-val="${k}" ${tab===k?'aria-current="page"':''}><span>${l}</span><span class="n ${k==='offers'&&n?'hot':''}">${n}</span></button>`).join('')}</nav><main class="v9-main">${body}</main></div>`;}});
+
+/* 10 Brief */
+V.push({name:'Brief',title:'Plain-language brief',why:'Reads like a note from the spon team: what is set, what needs doing, nothing to learn.',html(){
+  const t=tot();const b0=bst('b0'),b1=bst('b1');const w=S.offers.filter(o=>o.st==='wait');const todo=H.filter(h=>S.short.has(h.id)&&!active(h.id));const more=S.v.more;
+  const suggest=H.filter(h=>!S.short.has(h.id)).slice(0,more?40:5);
+  return `${topbar()}<div class="v10">
+  <div><div class="lab">Saturday, Nov 21</div><h2 style="font-size:28px;font-weight:700;margin-top:4px;letter-spacing:-.01em">Your coffee chats</h2></div>
+  <p class="lead">You're running <button class="tok" data-a="mode" data-val="${S.mode==='solo'?'group':'solo'}">${S.mode==='solo'?'1-on-1 chats':'one group chat'}</button> with <button class="tok" data-a="dsetup">${S.mode==='solo'?S.reps+' rep'+(S.reps>1?'s':''):S.group+' hacker'+(S.group>1?'s':'')}</button>, 15 minutes each, so up to ${base()} hacker${base()>1?'s':''} per slot.
+  You have <b>${BLOCKS[0].room}</b> from ${TR(BLOCKS[0].from,BLOCKS[0].to)} (<button class="tok" data-a="fewerh" data-id="b0">${b0.acc} of ${b0.a} booked</button>) and <b>${BLOCKS[1].room}</b> from ${TR(BLOCKS[1].from,BLOCKS[1].to)} (<button class="tok" data-a="fewerh" data-id="b1">${b1.acc} of ${b1.a} booked</button>).</p>
+  <p class="small muted">Tap a highlighted word to change it.</p>
+  <section><div class="h3" style="margin-bottom:4px">To do</div><div class="v10-todo">
+  <div class="v10-td"><span class="v10-box ${t.free?'':'ok'}"></span><div style="display:flex;flex-direction:column;gap:8px"><b>${t.free?`Fill ${t.free} open seat${t.free>1?'s':''}`:'Every seat is filled'}</b>${todo.length?`<span class="small muted">${todo.length} people on your shortlist don't have an offer yet.</span><div class="row">${todo.slice(0,4).map(h=>`<button class="pill sm pri" data-a="offer" data-id="${h.id}">Offer ${h.name}</button>`).join('')}</div>`:'<span class="small muted">Everyone you shortlisted has an offer.</span>'}</div></div>
+  <div class="v10-td"><span class="v10-box ${w.length?'':'ok'}"></span><div style="display:flex;flex-direction:column;gap:6px"><b>${w.length?`${w.length} offer${w.length>1?'s are':' is'} waiting for a reply`:'No offers waiting'}</b>${w.map(o=>`<div class="row small"><span>${HB[o.hid].name} · ${T(SL[o.sid].t)}</span><button class="pill sm ghost" data-a="withdraw" data-id="${S.offers.indexOf(o)}">Withdraw</button></div>`).join('')}<span class="small muted">${cnt(S.offers,'acc')} accepted · ${cnt(S.offers,'dec')} declined so far.</span></div></div>
+  <div class="v10-td"><span class="v10-box"></span><div style="display:flex;flex-direction:column;gap:6px"><b>A rep leaving early?</b><span class="small muted">Lower the count for any time and we'll stop booking it.</span><div class="row">${SLOTS.map(s=>`<button class="pill sm" data-a="fewer" data-id="${s.id}">${T(s.t)} · ${seatTxt(s.id)}</button>`).join('')}</div></div></div>
+  </div></section>
+  <section><div class="row" style="margin-bottom:4px"><span class="h3">People you might want to meet</span><span class="sp"></span><span class="small muted">${shortN()} shortlisted of 40</span></div><p class="small muted">Highest on the interest form and not on your shortlist yet.</p><div class="cands">${suggest.map(candRow).join('')}</div>${more?'':`<button class="pill" data-a="v" data-k="more" data-val="1" style="margin-top:8px">See all ${40-shortN()}</button>`}</section>
+  </div>`;}});
+
+/* ================= events ================= */
+const stage=document.getElementById('stage'),ovl=document.getElementById('ovl');
+function render(){const keep={};document.querySelectorAll('[data-scroll]').forEach(e=>keep[e.dataset.scroll]=e.scrollTop);const ae=document.activeElement;const aid=ae&&ae.id,sel=ae&&ae.selectionStart;
+  stage.innerHTML=V[cur].html();ovl.innerHTML=dlgHtml();V[cur].after&&V[cur].after();
+  document.querySelectorAll('[data-scroll]').forEach(e=>{if(keep[e.dataset.scroll])e.scrollTop=keep[e.dataset.scroll];});
+  if(aid){const n=document.getElementById(aid);if(n){n.focus();if(sel!=null&&n.setSelectionRange)n.setSelectionRange(sel,sel);}}
+  if(S.dlg)S.dlg.anim=false;S.v.anim=false;}
+const num=v=>v===''?null:(isNaN(v)?v:+v);
+document.addEventListener('click',e=>{
+  const dv=e.target.closest('[data-dev]');if(dv){document.body.dataset.device=dv.dataset.dev;document.querySelectorAll('[data-dev]').forEach(b=>b.setAttribute('aria-pressed',b===dv));render();return;}
+  const el=e.target.closest('[data-a]');if(!el)return;if(el.tagName==='A')e.preventDefault();
+  const a=el.dataset.a,id=el.dataset.id,val=el.dataset.val;
+  if(a==='bg'&&e.target!==el)return;
+  switch(a){
+    case 'noop':return;
+    case 'bg':case 'close':S.dlg=null;break;
+    case 'short':S.short.has(id)?S.short.delete(id):S.short.add(id);break;
+    case 'filter':S.filter=val;break;
+    case 'mode':S.mode=val;break;
+    case 'rep':{const k=S.mode==='solo'?'reps':'group';S[k]=Math.min(3,Math.max(Math.max(1,maxTaken()),S[k]+ +val));break;}
+    case 'offer':S.dlg={type:'offer',hid:id,sid:null,anim:true};break;
+    case 'pickslot':S.dlg.sid=id;break;
+    case 'send':{const d=S.dlg;S.offers.push({hid:d.hid,sid:d.sid,st:'wait',at:'Just now'});toast(`Offer sent to ${HB[d.hid].first} for ${T(SL[d.sid].t)}, ${SL[d.sid].room}`);S.dlg=null;break;}
+    case 'sendsplit':{S.offers.push({hid:id,sid:S.v.ps,st:'wait',at:'Just now'});toast(`Offer sent to ${HB[id].first} for ${T(SL[S.v.ps].t)}`);S.v.ps=null;break;}
+    case 'seat':S.dlg={type:'seat',sid:id,hid:null,f:'short',anim:true};break;
+    case 'seatf':S.dlg.f=val;S.dlg.hid=null;break;
+    case 'pickh':S.dlg.hid=id;break;
+    case 'sendseat':{const d=S.dlg;S.offers.push({hid:d.hid,sid:d.sid,st:'wait',at:'Just now'});toast(`Offer sent to ${HB[d.hid].first} for ${T(SL[d.sid].t)}`);S.dlg=null;break;}
+    case 'fewer':S.dlg={type:'fewer',sid:id,val:asked(id),anim:true};break;
+    case 'fewerh':S.dlg={type:'fewer',bid:id,val:Math.max(...SLOTS.filter(s=>s.b===id).map(s=>asked(s.id))),anim:true};break;
+    case 'fv':{const d=S.dlg;const min=d.bid?0:st(d.sid).taken;d.val=Math.min(base(),Math.max(min,d.val+ +val));break;}
+    case 'savefewer':{const d=S.dlg;(d.bid?SLOTS.filter(s=>s.b===d.bid):[SL[d.sid]]).forEach(s=>{S.cap[s.id]=Math.max(d.val,st(s.id).taken);});toast(d.val===0?'Got it. No chats then.':`Got it. ${d.val} hacker${d.val>1?'s':''} max ${d.bid?'that hour':'then'}.`);S.dlg=null;break;}
+    case 'rmseat':{const x=st(id);if(x.a>x.taken){S.cap[id]=x.a-1;}break;}
+    case 'putback':{S.cap[id]=Math.min(base(),asked(id)+1);break;}
+    case 'withdraw':{const o=S.offers[+id];S.offers.splice(+id,1);toast(`Offer to ${HB[o.hid].first} withdrawn`);break;}
+    case 'dsetup':S.dlg={type:'setup',anim:true};break;
+    case 'dcands':S.dlg={type:'cands',anim:true};break;
+    case 'stk':S.v.i=(S.v.i||0)+ +val;S.v.anim=+val>0?'anim':'back';break;
+    case 'stkf':S.v.f=val;S.v.i=0;S.v.anim='anim';break;
+    case 'v':{const k=el.dataset.k;S.v[k]=num(val);if(k==='open')S.v.anim=true;if(k==='step')window.scrollTo({top:0});break;}
+  }
+  render();
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.dlg){S.dlg=null;render();}});
+
+/* ================= picker wiring (PICKER.md) ================= */
+const picker=document.querySelector('.proto-picker');
+V.forEach((v,i)=>{const b=document.createElement('button');b.className='proto-picker-item';b.textContent=(i+1)%10+' '+v.name;picker.appendChild(b);});
+const highlight=picker.querySelector('.proto-picker-highlight');
+const items=[...picker.querySelectorAll('.proto-picker-item')];
+let cur=0;
+function moveHighlight(){const el=items[cur];highlight.style.width=el.offsetWidth+'px';highlight.style.transform=`translateX(${el.offsetLeft}px)`;}
+function mount(i){S.v={};S.dlg=null;document.getElementById('vName').textContent=`${i+1}. ${V[i].title}`;document.getElementById('vWhy').textContent=V[i].why;stage.innerHTML='';requestAnimationFrame(render);}
+function setActive(i){if(i<0||i>=V.length)return;cur=i;items.forEach((el,j)=>{el.toggleAttribute('data-active',j===i);if(j===i)el.setAttribute('aria-current','true');else el.removeAttribute('aria-current');});moveHighlight();const url=new URL(location);url.searchParams.set('v',i+1);history.replaceState(null,'',url);mount(i);}
+items.forEach((el,i)=>el.addEventListener('click',()=>setActive(i)));
+window.addEventListener('resize',moveHighlight);
+document.addEventListener('keydown',e=>{if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)||e.target.isContentEditable)return;if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const n=parseInt(e.key,10);if(!isNaN(n)){setActive(n===0?9:n-1);}else if(e.key==='ArrowRight')setActive((cur+1)%V.length);else if(e.key==='ArrowLeft')setActive((cur-1+V.length)%V.length);});
+const req=parseInt(new URLSearchParams(location.search).get('v'),10);
+if(new URLSearchParams(location.search).get('d')==='phone'){document.body.dataset.device='phone';document.querySelectorAll('[data-dev]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.dev==='phone'));}
+setActive(req>=1&&req<=V.length?req-1:0);
+requestAnimationFrame(()=>requestAnimationFrame(()=>picker.setAttribute('data-ready','')));
+</script>
+</body>
+</html>

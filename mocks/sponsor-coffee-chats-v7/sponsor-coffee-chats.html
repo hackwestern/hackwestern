@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coffee chats · Sun Life (mock v7)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   v7 DESIGN SYSTEM
+   A small, deliberate subset of src/lib/tokens.ts (dashboardColors).
+   Rules:
+   - Hierarchy comes from type, spacing and alignment. Not from cards.
+   - One page background (white). Containers only where rows need grouping
+     (lists and tables), drawn with a 1px line, never a shadow.
+   - Shadows only on things that float: the sheet and the toast.
+   - Accent blue = primary action, selected nav, links.
+     Amber = "Waiting" (needs attention) and the mock strip. Nothing else.
+   ===================================================================== */
+:root{
+  /* colour */
+  --ink:#0b2b4a;            /* text.heavy: names, headings */
+  --ink-2:#1c3550;          /* text.medium: body */
+  --ink-3:#516476;          /* text.light: secondary, table headers */
+  --ink-4:rgba(81,100,118,.7); /* text.placeholder */
+  --bg:#ffffff;             /* bg.surface: the page */
+  --bg-sub:#f3f7fc;         /* bg.page: table header + group rows only */
+  --bg-sel:rgba(225,239,251,.55); /* bg.highlight (subtle): shortlisted rows */
+  --bg-hover:#f6f9fd;
+  --line:#e0eaf3;           /* border.subtle: dividers, frames */
+  --line-2:#cdddeb;         /* border.default: control borders */
+  --line-3:#b9cbe0;         /* border.control: hover on controls */
+  --accent:#0b6bc4;         /* action.primary */
+  --accent-2:#08559c;       /* text.active */
+  --ok:#16803c;             /* status.live -> Confirmed */
+  --warn:#8a4300;           /* text.warning -> Waiting */
+  --mock-bg:#fff8de; --mock-line:#c78a00; /* border.task: mock strip only */
+
+  /* spacing: 4px base */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+
+  /* type: 5 sizes. weight builds hierarchy, not size */
+  --t-cap:12px;  /* table headers, status labels, captions */
+  --t-sec:13px;  /* secondary lines: university, program, meta */
+  --t-body:14px; /* body, names, controls */
+  --t-sect:16px; /* section headings */
+  --t-title:20px;/* page title (one per page) */
+
+  /* radius: 3 steps. circles only for initials */
+  --r1:4px;   /* small marks, focus, checkbox-ish */
+  --r2:6px;   /* controls: buttons, inputs, segments */
+  --r3:10px;  /* containers: list/table frames, sheet, toast */
+
+  --h-ctl:32px; /* control height (40 on touch) */
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  --ease-drawer:cubic-bezier(0.32,0.72,0,1);
+}
+@media (pointer:coarse){:root{--h-ctl:40px}}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink-2);font-family:Figtree,system-ui,sans-serif;font-size:var(--t-body);font-weight:500;line-height:1.43;-webkit-tap-highlight-color:transparent}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation;background:none;border:0;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--r1)}
+.num{font-variant-numeric:tabular-nums}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+[hidden]{display:none!important}
+h1,h2,h3,p{margin:0}
+
+/* ---------- mock control strip (not part of the product) ---------- */
+.mock{background:var(--mock-bg);border-bottom:1px dashed var(--mock-line);font-size:var(--t-cap);color:var(--warn)}
+.mock-in{max-width:1040px;margin:0 auto;padding:var(--s2) var(--s4);display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s5)}
+.mock-t{font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.mock-g{display:flex;align-items:center;gap:var(--s1);flex-wrap:wrap}
+.mock-g>span{margin-right:var(--s1)}
+.mock-b{min-height:24px;padding:0 var(--s2);border:1px solid #e6c766;border-radius:var(--r1);background:#fff;font-size:var(--t-cap);font-weight:600;color:var(--warn)}
+.mock-b[aria-pressed="true"]{background:var(--warn);border-color:var(--warn);color:#fff}
+.mock-v{margin-left:auto;font-weight:700;padding:2px var(--s2);border:1px solid var(--mock-line);border-radius:var(--r1);background:#fff;white-space:nowrap}
+@media (pointer:coarse){.mock-b{min-height:32px}}
+
+/* ---------- page + header ---------- */
+.wrap{max-width:1040px;margin:0 auto;padding:0 var(--s4) var(--s7)}
+@media (min-width:720px){.wrap{padding:0 var(--s6) var(--s7)}.mock-in{padding:var(--s2) var(--s6)}}
+.hd{padding-top:var(--s4)}
+.hd-back{display:inline-flex;align-items:center;gap:var(--s1);font-size:var(--t-sec);font-weight:600;color:var(--ink-3);text-decoration:none;min-height:24px}
+.hd-row{display:flex;align-items:center;gap:var(--s3);margin-top:var(--s2)}
+.hd-logo{height:24px;display:flex;align-items:center;padding-right:var(--s3);border-right:1px solid var(--line)}
+.hd-logo img{height:100%;width:auto;max-width:96px;object-fit:contain}
+h1{font-size:var(--t-title);line-height:1.3;font-weight:700;letter-spacing:-0.01em;color:var(--ink)}
+.hd-ev{font-size:var(--t-sec);color:var(--ink-3);display:none}
+@media (min-width:640px){.hd-ev{display:inline}}
+.hd-r{margin-left:auto;display:flex;align-items:center;gap:var(--s3)}
+
+/* nav (tabs): the one "selected" treatment, reused by the hacker filter */
+.nav{display:flex;gap:var(--s5);margin-top:var(--s4);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tab{position:relative;display:inline-flex;align-items:center;gap:6px;height:40px;font-size:var(--t-body);font-weight:600;color:var(--ink-3);white-space:nowrap}
+.tab .c{font-size:var(--t-cap);color:var(--ink-3);font-weight:600}
+.tab[aria-selected="true"],.flt[aria-pressed="true"]{color:var(--ink)}
+.tab[aria-selected="true"]::after,.flt[aria-pressed="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent);border-radius:1px}
+@media (hover:hover) and (pointer:fine){.tab:hover,.flt:hover{color:var(--ink)}}
+
+.view{padding-top:var(--s5)}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:var(--h-ctl);padding:0 var(--s3);border-radius:var(--r2);font-size:var(--t-body);font-weight:600;white-space:nowrap;transition:transform 140ms var(--ease-out),background-color 140ms var(--ease-out),border-color 140ms var(--ease-out)}
+.btn:active:not(:disabled){transform:scale(0.97)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-pri{background:var(--accent);color:#fff}
+.btn-sec{background:var(--bg);border:1px solid var(--line-2);color:var(--ink)}
+.btn-ghost{color:var(--accent);padding:0 var(--s2)}
+.btn-icon{width:var(--h-ctl);padding:0;color:var(--ink-3)}
+@media (hover:hover) and (pointer:fine){
+  .btn-pri:hover:not(:disabled){background:var(--accent-2)}
+  .btn-sec:hover:not(:disabled){border-color:var(--line-3);background:var(--bg-hover)}
+  .btn-ghost:hover{text-decoration:underline}
+  .btn-icon:hover{color:var(--ink);background:var(--bg-sub)}
+}
+
+/* ---------- shared: participant (initials, name, university) ---------- */
+.pp{display:inline-flex;align-items:center;gap:var(--s2);min-width:0;max-width:100%;vertical-align:middle}
+.pp-av{flex:none;display:grid;place-items:center;border-radius:50%;background:#e4edf7;color:var(--ink-2);font-weight:700;letter-spacing:.02em}
+.pp-tx{min-width:0;display:flex}
+.pp-n{color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp-u{color:var(--ink-3);font-size:var(--t-sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pp-md .pp-av{width:28px;height:28px;font-size:11px}
+.pp-md .pp-tx{flex-direction:column;line-height:1.3}
+.pp-sm .pp-av{width:20px;height:20px;font-size:9px}
+.pp-sm .pp-tx{flex-wrap:wrap;column-gap:6px;line-height:1.35}
+.pp-lg .pp-av{width:40px;height:40px;font-size:14px}
+.pp-lg .pp-tx{flex-direction:column;line-height:1.3}
+.pp-lg .pp-n{font-size:var(--t-sect);font-weight:700}
+button.pp-hit{text-align:left;border-radius:var(--r1)}
+@media (hover:hover) and (pointer:fine){button.pp-hit:hover .pp-n{color:var(--accent)}}
+
+/* ---------- shared: status (shape + text, never colour alone) ---------- */
+.st{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-cap);font-weight:600;color:var(--ink-2);white-space:nowrap;line-height:1}
+.st-m{flex:none;width:8px;height:8px;border-radius:50%}
+.st-short .st-m{background:var(--accent)}
+.st-extra{color:var(--ink-3)} .st-extra .st-m{border:1.5px solid var(--ink-3)}
+.st-manual .st-m{width:7px;height:7px;border-radius:1px;background:var(--ink-2);transform:rotate(45deg)}
+.st-confirmed{color:var(--ok)} .st-waiting{color:var(--warn)}
+.st svg{flex:none}
+
+/* ---------- shared: external links ---------- */
+.lk{display:inline-flex;align-items:center;gap:var(--s2)}
+.ext{display:inline-flex;align-items:center;gap:2px;color:var(--accent);font-size:var(--t-sec);font-weight:600;text-decoration:none;border-radius:var(--r1);min-height:24px}
+.ext.logo{color:var(--ink-2)}
+.ext .arr{font-size:10px;color:var(--ink-3);transform:translateY(-3px)}
+.nolink{font-size:var(--t-sec);color:var(--ink-4)}
+@media (hover:hover) and (pointer:fine){.ext:hover{text-decoration:underline}.ext.logo:hover{color:var(--ink)}}
+
+/* ---------- shared: tables (one frame style) ---------- */
+.frame{border:1px solid var(--line);border-radius:var(--r3);overflow:hidden}
+.scroll{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:var(--t-cap);font-weight:600;color:var(--ink-3);text-align:left;padding:var(--s2) var(--s3);background:var(--bg-sub);border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:var(--s2) var(--s3);border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tbody:last-child tr:last-child td{border-bottom:0}
+.tbl .r{text-align:right}
+.tbl tr[data-row]{cursor:pointer;transition:background-color 120ms var(--ease-out)}
+@media (hover:hover) and (pointer:fine){.tbl tr[data-row]:hover{background:var(--bg-hover)}}
+.tbl tr.sel{background:var(--bg-sel)}
+.sec{font-size:var(--t-sec);color:var(--ink-3)}
+
+/* ---------- 1. SHORTLIST ---------- */
+.sum{display:flex;flex-direction:column;gap:var(--s3);padding-bottom:var(--s5);border-bottom:1px solid var(--line)}
+@media (min-width:760px){.sum{flex-direction:row;align-items:flex-end;justify-content:space-between;gap:var(--s5)}}
+.sum-l{display:flex;flex-direction:column;gap:var(--s1);min-width:0}
+.sum-line{font-size:var(--t-sect);color:var(--ink-2)}
+.sum-line b{color:var(--ink);font-weight:700}
+.sum-line .dot{color:var(--ink-4);margin:0 2px}
+.sum-setup{font-size:var(--t-sec);color:var(--ink-3);display:flex;align-items:center;flex-wrap:wrap;gap:0 var(--s1)}
+.sum-setup .btn-ghost{height:24px;padding:0 var(--s1);font-size:var(--t-sec)}
+.sum-r{display:flex;flex-direction:column;gap:var(--s2);align-items:flex-start}
+@media (min-width:760px){.sum-r{align-items:flex-end;text-align:right}}
+.sum-note{font-size:var(--t-sec);color:var(--ink-3)}
+.sum-ask{font-size:var(--t-sec);color:var(--ink);font-weight:600;max-width:360px}
+.sum-btns{display:flex;gap:var(--s2);flex-wrap:wrap}
+.locked{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-body);font-weight:600;color:var(--ok)}
+
+.lh{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);flex-wrap:wrap;margin:var(--s5) 0 var(--s3)}
+h2{font-size:var(--t-sect);font-weight:600;color:var(--ink);line-height:1.4}
+.lh-btns{display:flex;gap:var(--s2)}
+.sl .grp th{background:var(--bg-sub);color:var(--ink-2);font-size:var(--t-cap);padding-top:var(--s2);padding-bottom:var(--s2)}
+.sl .grp .gn{font-weight:500;color:var(--ink-3);margin-left:var(--s2)}
+.sl .cnt{color:var(--ink-3);font-weight:600;margin-left:var(--s1)}
+.sl .xdiv td{padding:var(--s2) var(--s3);font-size:var(--t-cap);color:var(--ink-3);border-top:1px dashed var(--line-2);background:var(--bg)}
+.sl .xdiv b{color:var(--ink-2);font-weight:600}
+.sl .c-st{width:150px}
+.sl .c-x{width:1%;white-space:nowrap;text-align:right;padding-right:var(--s2)}
+.sl thead th.c-x{padding-right:var(--s3)}
+.rm-l{display:none}
+@media (min-width:640px){.rm-l{display:inline}.rm .rm-i{display:none}.rm{width:auto;padding:0 var(--s2);color:var(--ink-3);font-size:var(--t-sec)}}
+@media (max-width:639px){
+  .sl thead,.sl .c-prog{display:none}
+  .sl tbody,.sl tr.grp,.sl tr.xdiv{display:block}
+  .sl tr.grp th,.sl tr.xdiv td{display:block}
+  .sl tr[data-row]{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;column-gap:var(--s2);padding:6px var(--s1) 6px var(--s3);border-bottom:1px solid var(--line)}
+  .sl tbody:last-child tr:last-child{border-bottom:0}
+  .sl tr[data-row] td{display:block;padding:0;border:0;width:auto;min-width:0}
+  .sl tr[data-row] td.c-prog{display:none}
+}
+.empty{padding:var(--s6) var(--s4);text-align:center;color:var(--ink-3);font-size:var(--t-body)}
+.empty p+p,.empty p+.btn{margin-top:var(--s3)}
+
+/* ---------- 2. HACKERS ---------- */
+.tools{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3) var(--s4);margin-bottom:var(--s3)}
+.flts{display:flex;gap:var(--s4);border-bottom:1px solid var(--line);flex:1 1 auto;min-width:0}
+.flt{position:relative;height:32px;font-size:var(--t-sec);font-weight:600;color:var(--ink-3);white-space:nowrap}
+.flt .c{font-weight:600;color:var(--ink-3);margin-left:2px}
+.tools-r{display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap}
+.search{position:relative;display:block;width:220px;max-width:100%}
+.search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none}
+.search input{width:100%;height:var(--h-ctl);padding:0 var(--s2) 0 30px;border:1px solid var(--line-2);border-radius:var(--r2);background:var(--bg);font-size:var(--t-body);color:var(--ink)}
+.search input::placeholder{color:var(--ink-4)}
+.sort{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-sec);color:var(--ink-3)}
+.sort select{height:var(--h-ctl);padding:0 var(--s2);border:1px solid var(--line-2);border-radius:var(--r2);background:var(--bg);color:var(--ink);font-size:var(--t-sec);font-weight:600}
+@media (pointer:coarse){.search input,.sort select{font-size:16px}}
+@media (max-width:639px){.tools-r{width:100%}.search{flex:1 1 160px;width:auto}}
+.cap{font-size:var(--t-cap);color:var(--ink-3);margin-bottom:var(--s2)}
+.dir .c-sl{width:160px}
+/* shortlist toggle: one compact control everywhere */
+.tg{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 var(--s2);border:1px solid var(--line-2);border-radius:var(--r2);font-size:var(--t-cap);font-weight:600;color:var(--ink-2);background:var(--bg);white-space:nowrap;transition:transform 140ms var(--ease-out),border-color 140ms var(--ease-out),background-color 140ms var(--ease-out)}
+.tg:active{transform:scale(0.97)}
+.tg[aria-pressed="true"]{border-color:transparent;background:transparent;padding-left:0}
+.tg .plus{color:var(--accent);font-size:14px;line-height:1}
+@media (pointer:coarse){.tg{height:36px}}
+@media (hover:hover) and (pointer:fine){.tg[aria-pressed="false"]:hover{border-color:var(--accent);color:var(--accent)}.tg[aria-pressed="true"]:hover .st{text-decoration:line-through}}
+@media (max-width:719px){
+  .dir thead{display:none}
+  .dir tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"p s" "g l";column-gap:var(--s3);row-gap:2px;padding:var(--s2) var(--s3);border-bottom:1px solid var(--line)}
+  .dir tbody tr:last-child{border-bottom:0}
+  .dir td{display:block;padding:0;border:0!important}
+  .dir .c-p{grid-area:p;min-width:0}.dir .c-sl{grid-area:s;width:auto;align-self:center;text-align:right}
+  .dir .c-g{grid-area:g;padding-left:36px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dir .c-l{grid-area:l;text-align:right}
+}
+
+/* ---------- 3. YOUR CHATS ---------- */
+.ch-sum{display:flex;flex-direction:column;gap:var(--s1);padding-bottom:var(--s5);border-bottom:1px solid var(--line)}
+.ch-note{font-size:var(--t-sec);color:var(--ink-3);max-width:640px}
+.room{margin-top:var(--s5)}
+.room-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 var(--s2);margin-bottom:var(--s2)}
+.room-h h2{font-size:var(--t-sect)}
+.room-meta{font-size:var(--t-sec);color:var(--ink-3)}
+.room-from{flex-basis:100%;font-size:var(--t-sec);color:var(--accent-2);font-weight:600}
+.ct .c-t{width:72px;font-weight:600;color:var(--ink);vertical-align:top;padding-top:10px}
+.ct .c-c{width:96px;vertical-align:top;padding-top:10px;white-space:nowrap;color:var(--ink-2)}
+.ct .c-c b{color:var(--ink);font-weight:600}
+.ct .c-c.full b{color:var(--ink)}
+.ppl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ppl li{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;min-width:0}
+.ct tr.off td{color:var(--ink-3)}
+.move{display:flex;align-items:center;gap:var(--s2);margin-top:var(--s2);font-size:var(--t-sec);font-weight:600;color:var(--accent-2)}
+@media (max-width:639px){.ct .c-t{width:52px;padding-left:var(--s2)}.ct .c-c{width:auto;padding-right:var(--s2)}.ct td{padding-left:var(--s2);padding-right:var(--s2)}.ct .pp-sm .pp-tx{flex-direction:column}.ct .st-waiting{font-size:11px}}
+
+.pre{max-width:560px;padding:var(--s5) 0}
+.pre h2{margin-top:var(--s3)}
+.pre .ico{color:var(--ink-3)}
+.pre p{margin-top:var(--s1);color:var(--ink-3)}
+.kv{margin:var(--s5) 0 0;display:grid;grid-template-columns:auto 1fr;gap:var(--s2) var(--s5);font-size:var(--t-body)}
+.kv dt{color:var(--ink-3);font-size:var(--t-sec)}
+.kv dd{margin:0;display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.kv .btn-ghost{height:24px;padding:0 var(--s1);font-size:var(--t-sec)}
+
+/* ---------- sheet (details / add / setup) ---------- */
+.scrim{position:fixed;inset:0;background:rgba(11,43,74,.28);opacity:0;pointer-events:none;transition:opacity 200ms var(--ease-out);z-index:40}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;z-index:50;left:0;right:0;bottom:0;max-height:88dvh;display:flex;flex-direction:column;background:var(--bg);border-radius:var(--r3) var(--r3) 0 0;box-shadow:0 -8px 32px rgba(11,43,74,.16);
+  transform:translateY(100%);visibility:hidden;transition:transform 300ms var(--ease-drawer),visibility 0s linear 300ms}
+.sheet.on{transform:none;visibility:visible;transition:transform 300ms var(--ease-drawer),visibility 0s}
+@media (min-width:720px){
+  .sheet{left:50%;top:50%;right:auto;bottom:auto;width:520px;max-height:min(680px,88dvh);border-radius:var(--r3);box-shadow:0 16px 48px rgba(11,43,74,.2);
+    opacity:0;transform:translate(-50%,-48%) scale(.98);transition:opacity 160ms var(--ease-out),transform 160ms var(--ease-out),visibility 0s linear 160ms}
+  .sheet.on{opacity:1;transform:translate(-50%,-50%);transition:opacity 200ms var(--ease-out),transform 200ms var(--ease-out),visibility 0s}
+}
+.s-head{display:flex;align-items:flex-start;gap:var(--s3);padding:var(--s4) var(--s4) var(--s3);border-bottom:1px solid var(--line)}
+.s-head h2{font-size:var(--t-sect)}
+.s-head .btn-icon{margin:-6px -6px 0 auto}
+.s-sub{font-size:var(--t-sec);color:var(--ink-3);margin-top:2px}
+.s-body{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:var(--s4);display:flex;flex-direction:column;gap:var(--s5)}
+.s-sec{display:flex;flex-direction:column;gap:var(--s2)}
+.s-l{font-size:var(--t-cap);font-weight:600;color:var(--ink-3)}
+.s-v{font-size:var(--t-body);color:var(--ink)}
+.s-links .lk{flex-direction:column;align-items:flex-start;gap:var(--s1)}
+.s-links .ext{font-size:var(--t-body);min-height:32px;gap:var(--s2)}
+.s-foot{display:flex;align-items:center;gap:var(--s2);padding:var(--s3) var(--s4) max(var(--s3),env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.s-nav{margin-left:auto;display:flex;gap:var(--s2)}
+.addl{list-style:none;margin:0;padding:0}
+.addl li{display:flex;align-items:center;gap:var(--s3);padding:var(--s2) 0;border-bottom:1px solid var(--line)}
+.addl li:last-child{border-bottom:0}
+.addl .pp{flex:1}
+.addl .why{font-size:var(--t-cap);color:var(--ink-3);white-space:nowrap}
+@media (max-width:480px){.addl .why{display:none}}
+/* segmented control (chat setup) */
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:var(--r2);padding:2px;gap:2px}
+.seg button{height:calc(var(--h-ctl) - 6px);padding:0 var(--s3);border-radius:var(--r1);font-size:var(--t-sec);font-weight:600;color:var(--ink-3);transition:background-color 120ms var(--ease-out),color 120ms var(--ease-out)}
+.seg button[aria-pressed="true"]{background:var(--bg-sub);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line-2)}
+@media (hover:hover) and (pointer:fine){.seg button[aria-pressed="false"]:hover{color:var(--ink)}}
+.f{display:flex;flex-direction:column;gap:var(--s2)}
+.f-row{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);flex-wrap:wrap}
+.f-l{font-size:var(--t-body);font-weight:600;color:var(--ink)}
+.hint{font-size:var(--t-sec);color:var(--ink-3)}
+.less{border:1px solid var(--line);border-radius:var(--r3)}
+.less-r{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);padding:6px var(--s3)}
+.less-r+.less-r{border-top:1px solid var(--line)}
+.less-r .tm{font-size:var(--t-sec);font-weight:600;color:var(--ink)}
+.less-r.red .tm{color:var(--warn)}
+.less-r .seg button{padding:0 var(--s2)}
+
+/* ---------- toast (with Undo) ---------- */
+.toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));z-index:60;display:flex;align-items:center;gap:var(--s3);width:max-content;max-width:calc(100vw - 32px);
+  padding:var(--s2) var(--s2) var(--s2) var(--s4);min-height:40px;border-radius:var(--r3);background:var(--ink);color:#fff;font-size:var(--t-sec);font-weight:600;box-shadow:0 8px 24px rgba(11,43,74,.22);
+  transform:translate(-50%,12px);opacity:0;pointer-events:none;transition:opacity 180ms var(--ease-out),transform 180ms var(--ease-out)}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast:not(:has(button)){padding-right:var(--s4)}
+.toast button{height:28px;padding:0 var(--s2);border-radius:var(--r2);color:#9fd0ff;font-weight:700}
+@media (hover:hover) and (pointer:fine){.toast button:hover{background:rgba(255,255,255,.1)}}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:1ms!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- MOCK CONTROL: not part of the product -->
+<div class="mock" role="region" aria-label="Mock control (not part of the product)">
+  <div class="mock-in">
+    <span class="mock-t">Mock control</span>
+    <div class="mock-g" role="group" aria-label="Preview as sponsor"><span>Preview as</span><span class="mock-g" id="mcSponsor"></span></div>
+    <div class="mock-g" role="group" aria-label="Your chats state"><span>Your chats</span><span class="mock-g" id="mcAssign"></span></div>
+    <span class="mock-v">v7 · redesign · fake data</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="hd">
+    <a class="hd-back" href="#" id="backLink"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Your portal</a>
+    <div class="hd-row">
+      <span class="hd-logo"><img id="spLogo" src="../../public/shared/sponsors/sunlife.png" alt="Sun Life"></span>
+      <h1>Coffee chats</h1>
+      <div class="hd-r">
+        <span class="hd-ev">Hack Western 13 · Saturday</span>
+        <button class="btn btn-sec" type="button" id="mapBtn">Venue map</button>
+      </div>
+    </div>
+    <nav class="nav" role="tablist" aria-label="Coffee chats">
+      <button class="tab" role="tab" type="button" id="tab-shortlist" aria-controls="v-shortlist" aria-selected="true">Shortlist <span class="c num" id="tabN"></span></button>
+      <button class="tab" role="tab" type="button" id="tab-hackers" aria-controls="v-hackers" aria-selected="false" tabindex="-1">Hackers</button>
+      <button class="tab" role="tab" type="button" id="tab-chats" aria-controls="v-chats" aria-selected="false" tabindex="-1">Your chats</button>
+    </nav>
+  </header>
+
+  <!-- 1. SHORTLIST -->
+  <main>
+  <section class="view" id="v-shortlist" role="tabpanel" aria-labelledby="tab-shortlist">
+    <div class="sum">
+      <div class="sum-l">
+        <p class="sum-line num" id="sumLine"></p>
+        <p class="sum-setup" id="sumSetup"></p>
+      </div>
+      <div class="sum-r" id="sumR"></div>
+    </div>
+    <div class="lh">
+      <h2 id="slH">Your shortlist</h2>
+      <div class="lh-btns" id="slBtns">
+        <button class="btn btn-sec" type="button" id="addBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a hacker</button>
+        <button class="btn btn-sec" type="button" id="scanBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></svg>Scan a badge</button>
+      </div>
+    </div>
+    <div class="frame" id="slFrame"></div>
+  </section>
+
+  <!-- 2. HACKERS -->
+  <section class="view" id="v-hackers" role="tabpanel" aria-labelledby="tab-hackers" hidden>
+    <div class="tools">
+      <div class="flts" role="group" aria-label="Filter hackers" id="flts"></div>
+      <div class="tools-r">
+        <label class="search"><span class="sr-only">Search by name</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="q" type="search" placeholder="Search by name" autocomplete="off"></label>
+        <label class="sort">Sort
+          <select id="sortSel">
+            <option value="name">Name</option>
+            <option value="school">University</option>
+            <option value="prog">Program</option>
+            <option value="status">Shortlist status</option>
+          </select></label>
+      </div>
+    </div>
+    <p class="cap" id="dirCap"></p>
+    <div class="frame scroll"><table class="tbl dir" id="dir"></table></div>
+  </section>
+
+  <!-- 3. YOUR CHATS (read-only) -->
+  <section class="view" id="v-chats" role="tabpanel" aria-labelledby="tab-chats" hidden></section>
+  </main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle" aria-hidden="true"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------- FAKE data: fictional hackers (not real applicants) ----------
+   [first, last initial, school, program, year, has résumé, extra link] */
+const RAW = [
+ ["Avery","K","Western University","Computer Science",3,1,"gh"],["Noor","H","University of Waterloo","Statistics",2,1,"pf"],
+ ["Mateo","R","McMaster University","Software Engineering",4,1,"gh"],["Priya","S","University of Toronto","Math & Economics",3,1,"pf"],
+ ["Jonah","W","Queen's University","Commerce",2,1,null],["Lin","Z","Western University","Software Engineering",1,0,"gh"],
+ ["Kofi","A","York University","Information Technology",3,1,"gh"],["Sofia","M","Toronto Metropolitan University","Computer Engineering",4,1,"gh"],
+ ["Ravi","P","University of Ottawa","Computer Science",2,1,"gh"],["Elodie","B","McGill University","Cognitive Science",3,1,"pf"],
+ ["Theo","N","Western University","Ivey HBA",4,1,null],["Amara","O","University of Waterloo","Computer Science",3,1,"gh"],
+ ["Haruto","T","University of Guelph","Bioinformatics",2,1,"gh"],["Isla","F","Carleton University","Cybersecurity",3,0,"gh"],
+ ["Diego","L","Western University","Electrical Engineering",2,1,"gh"],["Mei","C","University of Toronto","Data Science",4,1,"gh"],
+ ["Yusuf","E","Wilfrid Laurier University","Business Technology",3,1,"pf"],["Clara","V","Queen's University","Computing",1,0,null],
+ ["Arjun","D","McMaster University","Computer Science",3,1,"gh"],["Zoe","G","Western University","Media & Information",2,1,"pf"],
+ ["Omar","S","University of Windsor","Computer Science",4,1,"gh"],["Hana","Y","University of Waterloo","Mathematics",2,1,"pf"],
+ ["Felix","J","University of Ottawa","Software Engineering",3,1,"gh"],["Leila","R","York University","Computer Science",2,1,null],
+ ["Ben","Q","Western University","Computer Science",4,1,"gh"],["Ines","P","Université de Montréal","Computer Science",3,1,"gh"],
+ ["Kai","L","Simon Fraser University","Interactive Arts",2,0,"pf"],["Grace","H","University of Toronto","Engineering Science",3,1,"gh"],
+ ["Samir","K","Toronto Metropolitan University","Business Analytics",4,1,"pf"],["Nina","W","Western University","Health Sciences",3,1,null],
+ ["Oscar","T","University of Guelph","Computer Science",1,1,"gh"],["Freya","D","Queen's University","Mechanical Engineering",4,1,"pf"],
+ ["Tariq","M","McMaster University","Computer Science",2,1,"gh"],["Lucia","A","University of Waterloo","Systems Design Engineering",3,1,"pf"],
+ ["Ezra","B","Carleton University","Computer Science",3,1,"gh"],["Aiko","S","Western University","Computer Science",2,1,"gh"],
+ ["Marcus","F","Wilfrid Laurier University","Computer Science",4,0,"gh"],["Tessa","I","University of Toronto","Statistics",3,1,"pf"],
+ ["Rohan","C","University of Windsor","Computer Engineering",2,1,"gh"],["Wren","E","McGill University","Software Engineering",3,1,"pf"],
+ // ids 40+: did NOT pick this sponsor; only reachable through "Add a hacker" / "Scan a badge"
+ ["Jules","R","Western University","Computer Science",2,1,"gh"],["Maya","T","University of Waterloo","Mechatronics Engineering",3,1,"pf"],
+ ["Ahmed","N","McMaster University","Computer Science",4,1,"gh"],["Chloe","B","Queen's University","Computing",2,0,null],
+ ["Sienna","P","University of Toronto","Computer Science",1,1,null],["Rafael","G","University of Ottawa","Computer Engineering",3,1,"gh"],
+ ["Talia","W","Carleton University","Information Technology",2,1,"pf"],["Kenji","M","Wilfrid Laurier University","Computer Science",3,1,"gh"],
+];
+const HACKERS=RAW.map((r,i)=>({id:i,first:r[0],last:r[1],school:r[2],prog:r[3],year:r[4],resume:!!r[5],gh:r[6]==="gh"||i%3===1,li:i%4!==1}));
+const TOTAL=40; // interested hackers (picked this sponsor): ids 0-39
+const nm=h=>`${h.first} ${h.last}.`, ini=h=>h.first[0]+h.last;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=m=>{const h=Math.floor(m/60),mm=m%60;return `${((h+11)%12)+1}:${String(mm).padStart(2,"0")}`;};
+const fa=m=>`${fmt(m)} ${m>=720?"PM":"AM"}`;
+const nowTime=()=>new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+const plural=(n,w)=>`${n} ${w}${n===1?"":"s"}`;
+
+const SVG={
+  gh:`<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.6.2 2.8.1 3.2.8.8 1.3 1.9 1.3 3.1 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg>`,
+  li:`<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="3" fill="#0A66C2"/><path fill="#fff" d="M7.1 9.5H4.7V19h2.4V9.5zM5.9 5.2a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8zM19.3 13.6c0-2.5-1.3-4.3-3.7-4.3-1.2 0-2 .6-2.4 1.3V9.5h-2.3V19h2.4v-4.9c0-1.3.4-2.4 1.8-2.4 1.3 0 1.6 1.1 1.6 2.4V19h2.6v-5.4z"/></svg>`,
+  check:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`,
+  clock:`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
+  lock:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>`,
+  x:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>`,
+  arrow:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
+  bigclock:`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>`,
+};
+
+/* ---------- sponsors. Window + rooms come from the sponsor sheet; organizers set rooms.
+   Coffee chats run Sat 10 AM-5 PM in Rm 2241, 2242, 2243, 1348, 1352, 1354, 1356, 1358. ---------- */
+const SPONSORS={
+  sunlife:{name:"Sun Life",logo:"sunlife.png",win:[600,960],rooms:[["2241",600,780],["2243",780,960]],mode:"group",len:30,reps:3,short:[11,15,3,21,1,24,8],manual:[40,41,0]},
+  startech:{name:"StarTech",logo:"startech.svg",win:[600,780],rooms:[["2242",600,780]],mode:"one",len:20,reps:3,short:[5,18,30,2,12],manual:[42]},
+  canadalife:{name:"Canada Life",logo:"canadalife.png",win:[600,720],rooms:[["1352",600,720]],mode:"group",len:30,reps:3,short:[9,27,14,2,6,19,25,33,36,12,22,30,38],manual:[43]},
+};
+const STATE={};
+Object.entries(SPONSORS).forEach(([k,s])=>{
+  STATE[k]={short:[...s.short],manual:[...s.manual],sentAt:null,confirming:false,
+    setup:{mode:s.mode,len:s.len,reps:s.reps,less:{}},setupAt:null,setupSig:null};
+});
+let SP="sunlife", ASSIGNED=false, view="shortlist", filter="all", query="", sortBy="name", lessOpen=false;
+const cur=()=>STATE[SP], spn=()=>SPONSORS[SP];
+const isManual=id=>cur().manual.includes(id), isShort=id=>isManual(id)||cur().short.includes(id);
+const locked=()=>!!cur().sentAt;
+
+/* ---------- setup math ---------- */
+const perSlot=st=>Math.min(3,st.mode==="one"?st.reps:3); // never more than 3 hackers per slot
+function slotsOf(st){const [s,e]=spn().win,out=[];for(let t=s;t+st.len<=e;t+=st.len)out.push(t);return out;}
+const seatsAt=(st,t)=>st.less[t]!=null?Math.min(st.less[t],perSlot(st)):perSlot(st);
+const totalSeats=st=>slotsOf(st).reduce((a,t)=>a+seatsAt(st,t),0);
+const roomAt=t=>spn().rooms.find(([,s,e])=>t>=s&&t<e)||spn().rooms[spn().rooms.length-1];
+const setupSig=st=>JSON.stringify([st.mode,st.len,st.reps,st.less]);
+const styleName=m=>m==="one"?"1-on-1":"3-on-1";
+const setupOk=()=>cur().setupAt&&cur().setupSig===setupSig(cur().setup);
+
+/* =====================================================================
+   ONE DATA SOURCE. Every count and status on every view comes from M().
+   ===================================================================== */
+function M(){
+  const st=cur(),seats=totalSeats(st.setup);
+  const order=[...st.manual,...st.short];            // booth picks get chats first
+  const pos=new Map(order.map((id,i)=>[id,i]));
+  const slots=assign(order);                          // null before organizers assign
+  const chat=new Map();
+  if(slots)slots.forEach(r=>r.people.forEach(p=>chat.set(p.id,{t:r.t,room:roomAt(r.t)[0],wait:p.wait})));
+  const n=order.length;
+  return {seats,order,pos,n,filled:Math.min(n,seats),extras:Math.max(0,n-seats),slots,chat,
+    confirmed:[...chat.values()].filter(c=>!c.wait).length,waiting:[...chat.values()].filter(c=>c.wait).length};
+}
+// mock of what organizers assign: shortlist in order, then other interested hackers fill open seats.
+// Extras past the seat count are not placed. A few seats stay open once the shortlist runs out.
+function assign(order){
+  if(!ASSIGNED)return null;
+  const st=cur(),others=HACKERS.filter(h=>h.id<TOTAL&&!order.includes(h.id)).map(h=>h.id),pool=[...order,...others];
+  let k=0,seat=0;
+  return slotsOf(st.setup).map(t=>{const n=seatsAt(st.setup,t),people=[];
+    for(let j=0;j<n;j++){seat++;if(k>=order.length&&seat%5===0)continue;const id=pool[k++];if(id==null)break;people.push({id,wait:k%4===0});}
+    return {t,n,people};});
+}
+// shared status vocabulary
+function statusOf(id,m){
+  const c=m.chat.get(id);
+  if(c)return c.wait?"waiting":"confirmed";
+  if(isManual(id))return "manual";
+  if(m.pos.has(id))return m.pos.get(id)>=m.seats?"extra":"short";
+  return null;
+}
+const ST_LABEL={short:"Shortlisted",extra:"Extra",manual:"Manually selected",confirmed:"Confirmed",waiting:"Waiting"};
+const ST_ORDER={confirmed:0,waiting:1,manual:2,short:3,extra:4};
+
+/* ---------- shared components ---------- */
+function person(h,size="md",tag="span",attrs=""){
+  return `<${tag} class="pp pp-${size}${tag==="button"?" pp-hit":""}" ${attrs}><span class="pp-av" aria-hidden="true">${ini(h)}</span><span class="pp-tx"><span class="pp-n">${esc(nm(h))}</span><span class="pp-u">${esc(h.school)}</span></span></${tag}>`;
+}
+function status(kind){
+  if(!kind)return "";
+  const mark=kind==="confirmed"?SVG.check:kind==="waiting"?SVG.clock:`<i class="st-m" aria-hidden="true"></i>`;
+  return `<span class="st st-${kind}">${mark}${ST_LABEL[kind]}</span>`;
+}
+function ext(h,kind,big){
+  if(kind==="resume")return `<a class="ext" href="#" data-link="résumé" data-h="${h.id}" target="_blank" rel="noopener">${big?"Open résumé":"Résumé"}<span class="arr" aria-hidden="true">↗</span><span class="sr-only"> (opens in a new tab)</span></a>`;
+  const name=kind==="gh"?"GitHub":"LinkedIn";
+  return `<a class="ext logo" href="#" data-link="${name}" data-h="${h.id}" target="_blank" rel="noopener" title="${name} (opens in a new tab)" ${big?"":`aria-label="${esc(nm(h))} on ${name} (opens in a new tab)"`}>${SVG[kind]}${big?name:""}<span class="arr" aria-hidden="true">↗</span></a>`;
+}
+function links(h,big){
+  const a=[h.resume?ext(h,"resume",big):`<span class="nolink">No résumé</span>`];
+  if(h.gh)a.push(ext(h,"gh",big));if(h.li)a.push(ext(h,"li",big));
+  return `<span class="lk">${a.join("")}</span>`;
+}
+const capacity=(used,total)=>total===0?`<span class="sec">No chat</span>`:`<b class="num">${used}</b>/<span class="num">${total}</span> seats`;
+const progYr=h=>`${esc(h.prog)} · Year ${h.year}`;
+
+/* ========== 1. SHORTLIST ========== */
+function renderSummary(m){
+  const st=cur(),sp=spn(),s=st.setup;
+  const due=st.sentAt?`Sent to Hack Western ${st.sentAt}`:`Due before Saturday ${fa(sp.win[0])}`;
+  document.getElementById("sumLine").innerHTML=`<b>${m.filled} of ${m.seats} seats</b><span class="dot"> · </span>${plural(m.extras,"extra")}<span class="dot"> · </span>${due}`;
+  document.getElementById("sumSetup").innerHTML=`<span>${styleName(s.mode)} · ${s.len}-min chats · Sat ${fa(sp.win[0])}–${fa(sp.win[1])} · ${setupOk()?"Setup confirmed":"Setup not confirmed"}</span><button class="btn btn-ghost" type="button" data-setup>Chat setup</button>`;
+  const r=document.getElementById("sumR");
+  if(st.sentAt) r.innerHTML=`<span class="locked">${SVG.lock}Confirmed · shortlist locked</span><span class="sum-note">Organizers assign your chats next.</span>`;
+  else if(st.confirming){
+    const open=m.seats-m.filled;
+    r.innerHTML=`<p class="sum-ask" id="askTxt">Send ${plural(m.n,"hacker")} to Hack Western?${open>0?` Organizers fill the other ${plural(open,"seat")} from interested hackers.`:""} You can't change the list after this.</p>
+      <span class="sum-btns"><button class="btn btn-sec" type="button" id="cancelConfirm">Keep editing</button><button class="btn btn-pri" type="button" id="doConfirm">Confirm and lock</button></span>`;
+  } else r.innerHTML=`<span class="sum-note">You can't change it once you submit.</span>
+      <button class="btn btn-pri" type="button" id="askConfirm" ${m.n?"":"disabled"}>Confirm Shortlist to Hack Western</button>`;
+}
+function slRow(id,m){
+  const h=HACKERS[id],lk=locked();
+  return `<tr data-row="${id}">
+    <td>${person(h,"md","button",`type="button" data-open="${id}" aria-label="${esc(nm(h))}, ${esc(h.school)}. Open details"`)}</td>
+    <td class="c-prog sec">${progYr(h)}</td>
+    <td class="c-st">${status(statusOf(id,m))}</td>
+    <td class="c-x">${lk?"":`<button class="btn btn-icon rm" type="button" data-rm="${id}" aria-label="Remove ${esc(nm(h))} from your shortlist"><span class="rm-i">${SVG.x}</span><span class="rm-l">Remove</span></button>`}</td></tr>`;
+}
+function renderShortlist(m){
+  const st=cur(),frame=document.getElementById("slFrame");
+  document.getElementById("slBtns").hidden=locked();
+  if(!m.n){frame.innerHTML=`<div class="empty"><p>Nobody on your shortlist yet.</p><p>Pick from the hackers who chose ${esc(spn().name)}, or add someone you met at your booth.</p><button class="btn btn-sec" type="button" data-go="hackers">Browse hackers</button></div>`;return;}
+  const xdiv=`<tr class="xdiv"><td colspan="4"><b>Extras</b> · Your ${plural(m.seats,"seat")} ${m.seats===1?"is":"are"} full. Extras fill in if someone can't make it.</td></tr>`;
+  const body=(ids,title,note)=>{if(!ids.length)return "";
+    return `<tbody><tr class="grp"><th colspan="4" scope="colgroup">${title}<span class="cnt num">${ids.length}</span>${note?`<span class="gn">${note}</span>`:""}</th></tr>`+
+      ids.map(id=>(m.pos.get(id)===m.seats&&m.extras?xdiv:"")+slRow(id,m)).join("")+`</tbody>`;};
+  frame.innerHTML=`<table class="tbl sl" aria-labelledby="slH"><thead><tr><th scope="col">Participant</th><th scope="col" class="c-prog">Program</th><th scope="col" class="c-st">Status</th><th scope="col" class="c-x"><span class="sr-only">Remove</span></th></tr></thead>`+
+    body(st.manual,"Met at your booth","Manual picks get their chats first")+body(st.short,"From interested hackers","")+`</table>`;
+}
+
+function removeId(id){
+  const st=cur();if(st.sentAt)return;
+  const wasManual=st.manual.includes(id),arr=wasManual?st.manual:st.short,idx=arr.indexOf(id);if(idx<0)return;
+  arr.splice(idx,1);st.confirming=false;renderAll();
+  const h=HACKERS[id];
+  toast(`Removed ${nm(h)} from your shortlist`,()=>{
+    if(st.sentAt||st.manual.includes(id)||st.short.includes(id))return;
+    const a=wasManual?st.manual:st.short;a.splice(Math.min(idx,a.length),0,id);renderAll();toast(`${nm(h)} is back on your shortlist`);
+  });
+}
+function addShort(id){
+  const st=cur();if(st.sentAt)return;st.short.push(id);st.confirming=false;renderAll();
+  const m=M();toast(`Shortlisted ${nm(HACKERS[id])}${statusOf(id,m)==="extra"?" as an extra":""}`);
+}
+function addManual(id,how){
+  const st=cur();if(st.sentAt)return;
+  st.short=st.short.filter(x=>x!==id);if(!st.manual.includes(id))st.manual.push(id);st.confirming=false;renderAll();
+  toast(`${how==="scan"?"Scanned a badge. ":""}Added ${nm(HACKERS[id])} as manually selected`);
+}
+function scanBadge(){const h=HACKERS.find(x=>x.id>=TOTAL&&!isShort(x.id));if(!h){toast("Opens the badge scanner");return;}addManual(h.id,"scan");}
+
+document.getElementById("v-shortlist").addEventListener("click",e=>{
+  if(onLink(e))return;
+  const b=e.target.closest("button");
+  if(!b){const tr=e.target.closest("tr[data-row]");if(tr)openDetails(+tr.dataset.row,tr.querySelector("[data-open]"));return;}
+  if(b.dataset.rm){const tr=b.closest("tr"),nx=tr.nextElementSibling?.dataset.row??tr.previousElementSibling?.dataset.row;removeId(+b.dataset.rm);
+    (document.querySelector(`#slFrame [data-rm="${nx}"]`)||document.getElementById("addBtn")).focus({preventScroll:true});}
+  else if(b.dataset.open)openDetails(+b.dataset.open,b);
+  else if(b.dataset.go)setView(b.dataset.go,true);
+  else if(b.hasAttribute("data-setup"))openSetup(b);
+  else if(b.id==="addBtn")openAdd(b);
+  else if(b.id==="scanBtn")scanBadge();
+  else if(b.id==="askConfirm"){cur().confirming=true;renderAll();document.getElementById("cancelConfirm").focus();}
+  else if(b.id==="cancelConfirm"){cur().confirming=false;renderAll();document.getElementById("askConfirm").focus();}
+  else if(b.id==="doConfirm"){const st=cur(),n=M().n;st.confirming=false;st.sentAt=nowTime();renderAll();toast(`Confirmed ${plural(n,"hacker")}. Your shortlist is locked.`);}
+});
+
+/* ========== 2. HACKERS ========== */
+function dirRows(m){
+  const q=query.trim().toLowerCase();
+  // the 40 interested hackers, plus anyone you added at your booth (so counts match the shortlist)
+  const base=HACKERS.filter(h=>h.id<TOTAL||isManual(h.id));
+  const rows=base.filter(h=>(filter==="all"||(filter==="on")===isShort(h.id))&&(!q||`${h.first} ${h.last}`.toLowerCase().includes(q)));
+  const by={name:h=>h.first+h.last,school:h=>h.school+"|"+h.first,prog:h=>h.prog+"|"+h.first};
+  if(sortBy==="status")rows.sort((a,b)=>((ST_ORDER[statusOf(a.id,m)]??9)-(ST_ORDER[statusOf(b.id,m)]??9))||a.first.localeCompare(b.first));
+  else rows.sort((a,b)=>by[sortBy](a).localeCompare(by[sortBy](b)));
+  return {base,rows};
+}
+function toggle(h,m){
+  const on=isShort(h.id),s=statusOf(h.id,m);
+  if(locked())return s?status(s):`<span class="sec">—</span>`;
+  return on?`<button class="tg" type="button" data-tg="${h.id}" aria-pressed="true" aria-label="${esc(nm(h))}: ${ST_LABEL[s]}. Remove from shortlist" title="Remove from shortlist">${status(s)}</button>`
+    :`<button class="tg" type="button" data-tg="${h.id}" aria-pressed="false" aria-label="Shortlist ${esc(nm(h))}"><span class="plus" aria-hidden="true">+</span>Shortlist</button>`;
+}
+function renderHackers(m){
+  const {base,rows}=dirRows(m),on=base.filter(h=>isShort(h.id)).length,booth=base.length-TOTAL;
+  document.getElementById("flts").innerHTML=[["all","All",base.length],["on","Shortlisted",on],["off","Not shortlisted",base.length-on]]
+    .map(([k,l,c])=>`<button class="flt" type="button" data-f="${k}" aria-pressed="${filter===k}">${l} <span class="c num">${c}</span></button>`).join("");
+  document.getElementById("dirCap").textContent=`${TOTAL} hackers picked ${spn().name}${booth?` · ${booth} more added at your booth`:""}${locked()?" · Shortlist locked":""}`;
+  const t=document.getElementById("dir");
+  const head=`<thead><tr><th scope="col">Participant</th><th scope="col">Program</th><th scope="col">Links</th><th scope="col" class="c-sl">Shortlist</th></tr></thead>`;
+  if(!rows.length){t.innerHTML=head+`<tbody><tr><td colspan="4" class="empty">${filter==="on"&&!query?"Nobody shortlisted yet.":"No hackers match. Try another name or filter."}</td></tr></tbody>`;return;}
+  t.innerHTML=head+`<tbody>`+rows.map(h=>`<tr data-row="${h.id}" class="${isShort(h.id)?"sel":""}">
+    <td class="c-p">${person(h,"md","button",`type="button" data-open="${h.id}" aria-label="${esc(nm(h))}, ${esc(h.school)}. Open details"`)}</td>
+    <td class="c-g sec">${progYr(h)}</td>
+    <td class="c-l">${links(h)}</td>
+    <td class="c-sl">${toggle(h,m)}</td></tr>`).join("")+`</tbody>`;
+}
+document.getElementById("v-hackers").addEventListener("click",e=>{
+  if(onLink(e))return;
+  const b=e.target.closest("button");
+  if(!b){const tr=e.target.closest("tr[data-row]");if(tr)openDetails(+tr.dataset.row,tr.querySelector("[data-open]"));return;}
+  if(b.dataset.tg){const id=+b.dataset.tg;isShort(id)?removeId(id):addShort(id);document.querySelector(`#dir [data-tg="${id}"]`)?.focus({preventScroll:true});}
+  else if(b.dataset.open)openDetails(+b.dataset.open,b);
+  else if(b.dataset.f){filter=b.dataset.f;renderAll();document.querySelector(`[data-f="${filter}"]`).focus();}
+});
+document.getElementById("q").addEventListener("input",e=>{query=e.target.value;renderHackers(M());});
+document.getElementById("sortSel").addEventListener("change",e=>{sortBy=e.target.value;renderHackers(M());});
+
+/* ========== 3. YOUR CHATS (read-only) ========== */
+function renderChats(m){
+  const st=cur(),sp=spn(),s=st.setup,el=document.getElementById("v-chats");
+  if(!ASSIGNED){
+    el.innerHTML=`<div class="pre"><span class="ico">${SVG.bigclock}</span>
+      <h2>Organizers assign your chats after shortlists are in.</h2>
+      <p>You'll see each time, room and who's coming here.</p>
+      <dl class="kv">
+        <dt>Shortlist</dt><dd>${st.sentAt?status("confirmed").replace("Confirmed",`Confirmed ${st.sentAt}`):`<span>Not confirmed yet · ${plural(m.n,"hacker")}</span><button class="btn btn-ghost" type="button" data-go="shortlist">Review</button>`}</dd>
+        <dt>Chat setup</dt><dd><span>${styleName(s.mode)} · ${s.len} min · ${plural(m.seats,"seat")}</span>${setupOk()?status("confirmed"):`<span class="sec">Not confirmed</span>`}<button class="btn btn-ghost" type="button" data-setup>Edit</button></dd>
+        <dt>When</dt><dd>Saturday · ${fa(sp.win[0])}–${fa(sp.win[1])}</dd>
+      </dl></div>`;
+    return;
+  }
+  const sessions=`${s.len}-minute sessions${s.mode==="one"?" · 1-on-1":""}`;
+  let html=`<div class="ch-sum"><p class="sum-line num"><b>${m.confirmed} confirmed</b><span class="dot"> · </span>${m.waiting} waiting<span class="dot"> · </span>${plural(m.seats,"seat")}</p>
+    <p class="ch-note">Everyone listed is confirmed unless marked Waiting. Waiting means the seat is held for them while organizers confirm they're coming.</p></div>`;
+  sp.rooms.forEach(([room,bs,be],bi)=>{
+    const rs=m.slots.filter(r=>roomAt(r.t)[0]===room&&r.t>=bs&&r.t<be);if(!rs.length)return;
+    const prev=sp.rooms[bi-1],next=sp.rooms[bi+1];
+    html+=`<section class="room" aria-labelledby="rm${bi}"><div class="room-h"><h2 id="rm${bi}">Room ${room}</h2><span class="room-meta">Saturday · ${fa(bs)}–${fa(be)} · ${sessions}</span>
+      ${prev&&prev[0]!==room?`<span class="room-from">From ${fa(bs)}, after Rm ${prev[0]}</span>`:""}</div>
+      <div class="frame scroll"><table class="tbl ct"><thead><tr><th scope="col" class="c-t">Time</th><th scope="col">Participants</th><th scope="col" class="c-c">Capacity</th></tr></thead><tbody>`+
+      rs.map(r=>`<tr class="${r.n===0?"off":""}"><td class="c-t num">${fmt(r.t)}</td><td>${r.n===0?`<span class="sec">No chat · you offered fewer at this time</span>`:
+        r.people.length?`<ul class="ppl">${r.people.map(p=>{const h=HACKERS[p.id];return `<li>${person(h,"sm","button",`type="button" data-open="${p.id}" aria-label="${esc(nm(h))}, ${p.wait?"waiting":"confirmed"}. Open details"`)}${p.wait?status("waiting"):""}</li>`;}).join("")}</ul>`:`<span class="sec">Open</span>`}</td>
+        <td class="c-c">${capacity(r.people.length,r.n)}</td></tr>`).join("")+`</tbody></table></div>
+      ${next&&next[0]!==room?`<p class="move">${SVG.arrow}Moves to Rm ${next[0]} at ${fmt(next[1])}. Walk over after your ${fmt(rs[rs.length-1].t)} chat.</p>`:""}</section>`;
+  });
+  el.innerHTML=html;
+}
+document.getElementById("v-chats").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.open)openDetails(+b.dataset.open,b);
+  else if(b.dataset.go)setView(b.dataset.go,true);
+  else if(b.hasAttribute("data-setup"))openSetup(b);
+});
+
+/* ========== sheet: details / add a hacker / chat setup ========== */
+const sheet=document.getElementById("sheet"),scrim=document.getElementById("scrim");
+let sh=null; // {mode, id, from, list, q}
+const head=(title,sub,extra="")=>`<div class="s-head">${extra}<div style="min-width:0"><h2 id="sTitle">${title}</h2>${sub?`<p class="s-sub">${sub}</p>`:""}</div>
+  <button class="btn btn-icon" type="button" data-close aria-label="Close">${SVG.x}</button></div>`;
+function renderSheet(){({details:renderDetails,add:renderAdd,setup:renderSetup})[sh.mode]();}
+function renderDetails(){
+  const h=HACKERS[sh.id],m=M(),s=statusOf(h.id,m),c=m.chat.get(h.id),i=sh.list.indexOf(sh.id),lk=locked();
+  sheet.innerHTML=`<div class="s-head">${person(h,"lg").replace('class="pp-n"','class="pp-n" id="sTitle"')}<button class="btn btn-icon" type="button" data-close aria-label="Close" style="margin:-6px -6px 0 auto">${SVG.x}</button></div>
+    <div class="s-body">
+      <div class="s-sec"><span class="s-l">Program</span><span class="s-v">${progYr(h)}</span></div>
+      ${h.id>=TOTAL?`<p class="hint">Didn't pick ${esc(spn().name)} on their form. You can still add them as a manual pick.</p>`:""}
+      <div class="s-sec"><span class="s-l">Links</span><div class="s-links">${links(h,true)}</div></div>
+      <div class="s-sec"><span class="s-l">Status</span><span>${s?status(s):`<span class="sec">Not shortlisted</span>`}</span>
+        ${s==="manual"?`<p class="hint">Met at your booth. Manual picks get their chats first.</p>`:s==="extra"?`<p class="hint">Past your seat count. Fills in if someone can't make it.</p>`:s==="waiting"?`<p class="hint">The seat is held for them while organizers confirm they're coming.</p>`:""}</div>
+      ${c?`<div class="s-sec"><span class="s-l">Your chat</span><span class="s-v num">Saturday ${fa(c.t)} · Rm ${c.room}</span></div>`:""}
+    </div>
+    <div class="s-foot">${lk?`<span class="sec">${SVG.lock} Shortlist locked</span>`:isShort(h.id)?`<button class="btn btn-sec" type="button" data-sheet-rm="${h.id}">Remove from shortlist</button>`
+      :`<button class="btn btn-sec" type="button" data-sheet-add="${h.id}">${h.id>=TOTAL?"Add as manual pick":"Shortlist"}</button>`}
+      <span class="s-nav"><button class="btn btn-sec" type="button" data-step="-1" ${i<=0?"disabled":""} aria-label="Previous hacker">Prev</button><button class="btn btn-sec" type="button" data-step="1" ${i<0||i>=sh.list.length-1?"disabled":""} aria-label="Next hacker">Next</button></span></div>`;
+}
+function renderAdd(){
+  sheet.innerHTML=head("Add a hacker",`Met someone at your booth? Search anyone at Hack Western, or scan their badge. Manual picks get their chats first.`)+
+    `<div class="s-body"><div style="display:flex;gap:var(--s2);flex-wrap:wrap">
+        <label class="search" style="flex:1 1 200px;width:auto"><span class="sr-only">Search all hackers by name</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="addQ" type="search" placeholder="Search by name" autocomplete="off" value="${esc(sh.q)}"></label>
+        <button class="btn btn-sec" type="button" data-scan>Scan a badge</button></div>
+      <ul class="addl" id="addRes" aria-live="polite"></ul></div>`;
+  renderAddRes();
+}
+function renderAddRes(){
+  const q=sh.q.trim().toLowerCase(),m=M();
+  const rows=HACKERS.filter(h=>!q||`${h.first} ${h.last}`.toLowerCase().includes(q)).sort((a,b)=>a.first.localeCompare(b.first));
+  document.getElementById("addRes").innerHTML=rows.length?rows.map(h=>{const s=statusOf(h.id,m);
+    return `<li>${person(h,"md")}<span class="why">${h.id<TOTAL?`Picked ${esc(spn().name)}`:`Didn't pick ${esc(spn().name)}`}</span>
+      ${isManual(h.id)?status("manual"):`<button class="btn btn-sec" type="button" data-add="${h.id}" aria-label="Add ${esc(nm(h))} as manually selected">Add</button>`}</li>`;}).join("")
+    :`<li class="empty" style="display:block">Nobody by that name. Try scanning their badge.</li>`;
+}
+function renderSetup(){
+  const st=cur().setup,sp=spn(),ps=perSlot(st),seg=(attr,opts,val,label)=>`<span class="seg" role="group" aria-label="${label}">${opts.map(([v,l])=>`<button type="button" ${attr}="${v}" aria-pressed="${val===v}">${l}</button>`).join("")}</span>`;
+  const reduced=Object.keys(st.less).filter(t=>st.less[t]<ps).length;
+  sheet.innerHTML=head("Chat setup","Rooms are set by the organizers. You'll see them in Your chats.")+
+    `<div class="s-body">
+      <div class="f"><div class="f-row"><span class="f-l">Style</span>${seg("data-mode",[["one","1-on-1"],["group","3-on-1"]],st.mode,"Style")}</div>
+        <p class="hint">${st.mode==="one"?"Each rep chats with one hacker.":"One rep chats with a group of up to 3 hackers."}</p></div>
+      <div class="f"><div class="f-row"><span class="f-l">Length</span>${seg("data-len",[[20,"20 min"],[30,"30 min"]],st.len,"Length")}</div></div>
+      ${st.mode==="one"?`<div class="f"><div class="f-row"><span class="f-l">Reps chatting</span>${seg("data-reps",[[1,"1"],[2,"2"],[3,"3"]],st.reps,"Reps chatting")}</div>
+        <p class="hint">${plural(st.reps,"hacker")} per time slot.</p></div>`:""}
+      <div class="f"><div class="f-row"><span class="f-l">Window</span><span class="num">Saturday · ${fa(sp.win[0])}–${fa(sp.win[1])}</span></div>
+        <p class="hint">From your sponsor sheet.</p>
+        <div><button class="btn btn-ghost" type="button" id="lessToggle" aria-expanded="${lessOpen}" aria-controls="less" style="margin-left:calc(-1 * var(--s2))">${lessOpen?"Done":"Offer less chats"}</button>${!lessOpen&&reduced?`<span class="hint">Fewer at ${plural(reduced,"time")}</span>`:""}</div>
+        ${lessOpen?`<p class="hint">Fewer hackers at a time, or none. Handy for lunch or when a rep steps out.</p>
+        <div class="less" id="less">${slotsOf(st).map(t=>{const v=seatsAt(st,t);
+          return `<div class="less-r${v<ps?" red":""}"><span class="tm num">${fa(t)}</span>${seg(`data-less="${t}" data-n`,Array.from({length:ps+1},(_,n)=>[n,n===0?"None":String(n)]),v,`Hackers at ${fa(t)}`)}</div>`;}).join("")}</div>`:""}
+      </div></div>
+    <div class="s-foot"><span class="hint"><b style="color:var(--ink)" class="num">${plural(totalSeats(st),"seat")}</b> · ${styleName(st.mode)} · ${st.len} min</span>
+      <span class="s-nav">${setupOk()?status("confirmed").replace("Confirmed",`Confirmed ${cur().setupAt}`):`${cur().setupAt?`<span class="hint">Changed since ${cur().setupAt}</span>`:""}<button class="btn btn-pri" type="button" id="setupConfirm">${cur().setupAt?"Confirm again":"Confirm setup"}</button>`}</span></div>`;
+}
+function openDetails(id,from){
+  const m=M();
+  const list=from&&from.closest("#v-chats")?m.slots.flatMap(r=>r.people.map(p=>p.id))
+    :from&&from.closest("#v-shortlist")?m.order:dirRows(m).rows.map(h=>h.id);
+  sh={mode:"details",id,from,list};showSheet();
+}
+function openAdd(from){sh={mode:"add",from,q:""};showSheet("#addQ");}
+function openSetup(from){sh={mode:"setup",from};showSheet();}
+function showSheet(focusSel){renderSheet();
+  sheet.classList.add("on");scrim.classList.add("on");sheet.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
+  setTimeout(()=>{const f=sheet.querySelector(focusSel||"[data-close]");if(f)f.focus();},40);}
+function closeSheet(){if(!sh)return;const f=sh.from,id=sh.mode==="details"?sh.id:null;sh=null;sheet.classList.remove("on");scrim.classList.remove("on");sheet.setAttribute("aria-hidden","true");document.body.style.overflow="";
+  const again=(id!=null&&document.querySelector(`#v-${view} [data-open="${id}"]`))||f;if(again&&document.contains(again))again.focus({preventScroll:true});}
+sheet.addEventListener("input",e=>{if(e.target.id==="addQ"&&sh){sh.q=e.target.value;renderAddRes();}});
+sheet.addEventListener("click",e=>{
+  if(onLink(e))return;const t=e.target.closest("button");if(!t||!sh)return;const st=cur().setup;
+  if(t.hasAttribute("data-close"))return closeSheet();
+  // add a hacker
+  if(t.dataset.add){addManual(+t.dataset.add,"search");renderAddRes();(sheet.querySelector("[data-add]")||sheet.querySelector("#addQ")).focus();return;}
+  if(t.hasAttribute("data-scan")){scanBadge();renderAddRes();return;}
+  // details
+  if(t.dataset.sheetRm){removeId(+t.dataset.sheetRm);renderSheet();sheet.querySelector("[data-sheet-add]")?.focus();return;}
+  if(t.dataset.sheetAdd){const id=+t.dataset.sheetAdd;id>=TOTAL?addManual(id,"search"):addShort(id);renderSheet();sheet.querySelector("[data-sheet-rm]")?.focus();return;}
+  if(t.dataset.step){const i=sh.list.indexOf(sh.id)+(+t.dataset.step);if(sh.list[i]!=null){sh.id=sh.list[i];renderSheet();const b=sheet.querySelector(`[data-step="${t.dataset.step}"]`);(b&&!b.disabled?b:sheet.querySelector("[data-close]")).focus();}return;}
+  // chat setup
+  let sel=null;
+  if(t.dataset.mode){st.mode=t.dataset.mode;sel=`[data-mode="${st.mode}"]`;}
+  else if(t.dataset.len){st.len=+t.dataset.len;st.less={};sel=`[data-len="${st.len}"]`;}
+  else if(t.dataset.reps){st.reps=+t.dataset.reps;sel=`[data-reps="${st.reps}"]`;}
+  else if(t.dataset.less!=null){const tm=+t.dataset.less,n=+t.dataset.n;if(n>=perSlot(st))delete st.less[tm];else st.less[tm]=n;sel=`[data-less="${tm}"][data-n="${n}"]`;}
+  else if(t.id==="lessToggle"){lessOpen=!lessOpen;sel="#lessToggle";}
+  else if(t.id==="setupConfirm"){cur().setupAt=nowTime();cur().setupSig=setupSig(st);renderAll();renderSheet();toast("Setup confirmed. Organizers can see it now.");sheet.querySelector("[data-close]").focus();return;}
+  else return;
+  renderAll();renderSheet();sheet.querySelector(sel)?.focus();
+});
+scrim.addEventListener("click",closeSheet);
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&sh)closeSheet();
+  if(e.key==="Tab"&&sh){const f=[...sheet.querySelectorAll("button:not(:disabled),a[href],input")];const a=f[0],z=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus();}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus();}}
+});
+function onLink(e){const l=e.target.closest("[data-link]");if(!l)return false;e.preventDefault();toast(`Opens ${nm(HACKERS[+l.dataset.h])}'s ${l.dataset.link} in a new tab`);return true;}
+
+/* ---------- nav ---------- */
+const TABS=["shortlist","hackers","chats"];
+function setView(v,focus){view=v;TABS.forEach(k=>{const t=document.getElementById("tab-"+k),on=k===v;t.setAttribute("aria-selected",on);t.tabIndex=on?0:-1;document.getElementById("v-"+k).hidden=!on;});
+  if(focus)document.getElementById("tab-"+v).focus();}
+TABS.forEach((k,i)=>{const t=document.getElementById("tab-"+k);t.addEventListener("click",()=>setView(k));
+  t.addEventListener("keydown",e=>{if(e.key!=="ArrowRight"&&e.key!=="ArrowLeft")return;e.preventDefault();setView(TABS[(i+(e.key==="ArrowRight"?1:2))%3],true);});});
+
+/* ---------- mock control ---------- */
+function renderMock(){
+  document.getElementById("mcSponsor").innerHTML=Object.entries(SPONSORS).map(([k,v])=>`<button class="mock-b" type="button" data-sp="${k}" aria-pressed="${SP===k}">${v.name}</button>`).join("");
+  document.getElementById("mcAssign").innerHTML=[[false,"Before assignment"],[true,"After assignment"]].map(([v,l])=>`<button class="mock-b" type="button" data-as="${v}" aria-pressed="${ASSIGNED===v}">${l}</button>`).join("");
+}
+document.querySelector(".mock").addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.sp){SP=t.dataset.sp;lessOpen=false;closeSheet();renderAll();document.querySelector(`[data-sp="${SP}"]`).focus();}
+  else if(t.dataset.as){ASSIGNED=t.dataset.as==="true";renderAll();document.querySelector(`[data-as="${ASSIGNED}"]`).focus();}});
+
+/* ---------- render ---------- */
+function renderAll(){
+  const m=M();
+  renderMock();renderSummary(m);renderShortlist(m);renderHackers(m);renderChats(m);
+  document.getElementById("tabN").textContent=m.n;
+  const img=document.getElementById("spLogo");img.src=`../../public/shared/sponsors/${spn().logo}`;img.alt=spn().name;
+  document.title=`Coffee chats · ${spn().name} (mock v7)`;
+}
+let tt;
+function toast(msg,undo){
+  const t=document.getElementById("toast");
+  t.innerHTML=`<span>${esc(msg)}</span>${undo?`<button type="button">Undo</button>`:""}`;
+  if(undo)t.querySelector("button").onclick=()=>{clearTimeout(tt);t.classList.remove("on");undo();};
+  t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),undo?6000:3000);
+}
+document.getElementById("mapBtn").addEventListener("click",()=>toast("Opens the venue map"));
+document.getElementById("backLink").addEventListener("click",e=>{e.preventDefault();toast("Back to your sponsor portal");});
+renderAll();
+</script>
+</body>
+</html>

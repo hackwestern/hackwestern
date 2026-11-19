@@ -1,0 +1,851 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coffee chats · Sun Life (mock B v4)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* dashboard tokens (src/lib/tokens.ts -> dashboardColors etc.) */
+  :root{
+    --t-heavy:#0b2b4a; --t-medium:#1c3550; --t-light:#516476; --t-placeholder:rgba(81,100,118,0.7);
+    --t-inverse:#fff; --t-link:#0b6bc4; --t-active:#08559c; --t-warning:#8a4300; --t-danger:#b42318;
+    --bg-page:#f3f7fc; --bg-surface:#fff; --bg-nav:#dbe7f5; --bg-navSel:#b9d3f0; --bg-inset:#edf3fa;
+    --bg-highlight:#e1effb; --bg-task:#ffefb8; --bg-danger:#fdecea;
+    --primary:#0b6bc4;
+    --b-default:#cdddeb; --b-subtle:#e0eaf3; --b-card:#d6e3ef; --b-control:#b9cbe0; --b-outline:#accae5;
+    --b-muted:rgba(81,100,118,0.2); --b-medium:rgba(81,100,118,0.5);
+    --live:#16803c; --warn:#a34a00; --iconBadge:#fbdac4;
+    --r-sm:4px; --r-md:6px; --r-lg:8px; --r-xl:10px; --r-2xl:12px; --r-3xl:20px; --r-full:999px;
+    --sh-card:0px 1px 2px 0px rgba(11,43,74,0.06),0px 1px 4px 0px rgba(11,43,74,0.05);
+    --sh-primary:0px 2px 4px 0px rgba(11,43,74,0.2);
+    --sh-secondary:0px 2px 8px 0px rgba(0,0,0,0.12);
+    --sh-pop:0 8px 28px rgba(11,43,74,0.16),0 1px 3px rgba(11,43,74,0.08);
+    --ease-out:cubic-bezier(0.23,1,0.32,1);
+    --ease-drawer:cubic-bezier(0.32,0.72,0,1);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg-page);color:var(--t-heavy);font-family:Figtree,system-ui,sans-serif;font-weight:500;line-height:1.2;-webkit-tap-highlight-color:transparent}
+  button{font:inherit;color:inherit;cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+  button:focus-visible,a:focus-visible,input:focus-visible{outline:none;box-shadow:0 0 0 2px var(--bg-surface),0 0 0 4px var(--primary)}
+  .press{transition:transform 160ms var(--ease-out),background-color 160ms var(--ease-out),border-color 160ms var(--ease-out)}
+  .press:active{transform:scale(0.97)}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  .page{min-height:100dvh;padding:16px 16px max(48px,env(safe-area-inset-bottom))}
+  .col{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+  @media (min-width:640px){.page{padding:24px 20px 48px}}
+
+  /* header */
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+  .back{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-left:-8px;padding:0 8px;border-radius:var(--r-lg);font-size:14px;font-weight:600;color:var(--t-medium);text-decoration:none}
+  .brand{display:none;font-size:14px;font-weight:600;color:var(--t-light)}
+  @media (min-width:640px){.brand{display:inline}}
+  .top-r{display:flex;align-items:center;gap:12px}
+  .map-pill{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:0;border-radius:var(--r-full);background:var(--primary);color:var(--t-inverse);font-size:14px;font-weight:600;box-shadow:var(--sh-primary)}
+
+  /* title */
+  .title{display:flex;align-items:center;gap:14px}
+  .logo{flex:none;display:inline-flex;align-items:center;height:48px;padding:8px 12px;background:var(--bg-surface);border-radius:var(--r-lg);box-shadow:var(--sh-card)}
+  .logo img{height:100%;width:auto;max-width:120px;object-fit:contain}
+  h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em}
+  @media (min-width:640px){h1{font-size:32px}}
+  .sub{margin:4px 0 0;font-size:14px;color:var(--t-light)}
+
+  .label{margin:0;font-size:12px;font-weight:600;letter-spacing:-0.02em;text-transform:uppercase;color:var(--t-light)}
+
+  /* setup bar */
+  .setup{background:var(--bg-surface);border-radius:var(--r-2xl);box-shadow:var(--sh-card);padding:12px 12px 12px 16px}
+  .setup-row{display:flex;align-items:center;gap:12px}
+  .setup-sum{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+  .setup-main{font-size:16px;font-weight:600}
+  .setup-meta{font-size:13px;color:var(--t-light);line-height:1.4}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border-radius:var(--r-lg);font-size:14px;font-weight:600;white-space:nowrap}
+  .btn-sec{background:var(--bg-surface);border:1px solid var(--b-default);color:var(--t-medium);box-shadow:var(--sh-secondary)}
+  .btn-pri{background:var(--primary);border:0;color:var(--t-inverse);box-shadow:var(--sh-primary)}
+  .btn-pri:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .btn-ghost{background:transparent;border:0;color:var(--t-link);padding:0 8px}
+  @media (hover:hover){
+    .btn-sec:hover{background:var(--bg-inset)}
+    .btn-pri:not(:disabled):hover{background:var(--t-active)}
+    .btn-ghost:hover{text-decoration:underline}
+    .back:hover{color:var(--t-heavy)}
+    .map-pill:hover{background:var(--t-active)}
+  }
+  .editor{display:grid;grid-template-rows:0fr;transition:grid-template-rows 240ms var(--ease-out)}
+  .editor.open{grid-template-rows:1fr}
+  .editor>div{overflow:hidden}
+  .editor-in{padding-top:12px;margin-top:12px;border-top:1px solid var(--b-subtle);display:flex;flex-direction:column;gap:8px}
+  .opt{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:12px;border:1.5px solid var(--b-subtle);border-radius:var(--r-xl);background:var(--bg-surface);font-size:15px;text-align:left;width:100%}
+  .opt[aria-checked="true"]{border-color:var(--primary);background:var(--bg-highlight)}
+  .radio{flex:none;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--b-medium);display:grid;place-items:center}
+  .opt[aria-checked="true"] .radio{border-color:var(--primary)}
+  .opt[aria-checked="true"] .radio::after{content:"";width:8px;height:8px;border-radius:50%;background:var(--primary)}
+  .num{width:52px;min-height:36px;padding:0 6px;border:1px solid var(--b-control);border-radius:var(--r-md);font:inherit;font-size:16px;font-weight:600;text-align:center;color:var(--t-heavy);background:var(--bg-surface)}
+  .editor-foot{display:flex;justify-content:flex-end;gap:8px;padding-top:4px}
+  .hint{font-size:13px;color:var(--t-light);line-height:1.4;margin:0}
+
+  /* v4: mock-only control to preview another sponsor's own view */
+  .mockctl{margin-top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border:1px dashed #c78a00;border-radius:var(--r-xl);background:#fff8de}
+  .mockctl-l{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--t-warning)}
+  .mockctl .pill{min-height:28px;padding:0 10px;font-size:12px;background:var(--bg-surface);border:1px solid #e6c766;color:var(--t-warning)}
+  .mockctl .pill[aria-pressed="true"]{background:var(--t-warning);border-color:var(--t-warning);color:var(--t-inverse)}
+
+  /* v4: how you run chats */
+  .run{padding:10px 12px 10px 16px}
+  .run-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .run-sum{font-size:14px;font-weight:600;color:var(--t-medium);font-variant-numeric:tabular-nums}
+  .run-edit{margin-left:auto}
+  .run-field{display:flex;flex-direction:column;gap:6px}
+  .run-field .pills{margin-top:0}
+
+  /* v4: calm note where the room changes */
+  .move{display:flex;align-items:center;gap:8px;padding:10px 12px 10px 14px;border-top:1px solid var(--b-subtle);background:var(--bg-highlight);border-radius:0 0 var(--r-2xl) 0;font-size:13px;font-weight:600;color:var(--t-active);line-height:1.35}
+  .move svg{flex:none}
+  .room-from{font-size:12px;font-weight:600;color:var(--t-active)}
+
+  /* progress */
+  .prog{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .prog-num{font-size:14px;color:var(--t-medium)}
+  .prog-num b{color:var(--t-heavy);font-weight:700}
+  .bar{height:6px;border-radius:var(--r-full);background:var(--bg-nav);overflow:hidden;margin-top:8px;display:flex}
+  .bar i{display:block;height:100%;background:var(--primary);transition:width 300ms var(--ease-out)}
+  .bar i.w{opacity:.45}
+
+  /* timeline */
+  .timeline{position:relative;display:flex;flex-direction:column;gap:14px}
+  .timeline::before{content:"";position:absolute;left:46px;top:8px;bottom:8px;width:2px;background:var(--b-subtle);border-radius:2px}
+  .block{position:relative;margin-left:60px;background:var(--bg-surface);border-radius:var(--r-2xl);box-shadow:var(--sh-card);border-left:4px solid var(--primary)}
+  .block-h{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:12px 12px 10px 14px;border-bottom:1px solid var(--b-subtle)}
+  .room{font-size:16px;font-weight:700}
+  .room-meta{font-size:13px;color:var(--t-light);margin-top:3px;line-height:1.4}
+  .block-acts{display:flex;gap:6px;width:100%}
+  .block-acts .btn{flex:1;padding:0 8px}
+  @media (min-width:640px){.block-acts{width:auto}.block-acts .btn{flex:none;padding:0 10px}}
+  .slot [data-fewer]{margin-left:auto}
+  .btn-sm{min-height:36px;padding:0 10px;font-size:13px}
+  .slot{position:relative;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px 10px 14px;min-height:64px}
+  .slot+.slot{border-top:1px solid var(--b-subtle)}
+  .slot.zero{background:var(--bg-inset)}
+  .time{position:absolute;left:-60px;top:32px;transform:translateY(-50%);width:40px;text-align:right;font-size:12px;font-weight:600;color:var(--t-light);font-variant-numeric:tabular-nums;line-height:1.1}
+  .time::after{content:"";position:absolute;right:-13px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--bg-surface);border:2px solid var(--b-outline)}
+  .slot.open .time::after{border-color:var(--primary);background:var(--primary)}
+  .seats{display:flex;gap:6px;flex:none;align-items:flex-start}
+  .seat-w{display:flex;flex-direction:column;align-items:center;gap:2px;width:40px}
+  .seat{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;border:0;padding:0;position:relative}
+  .seat.empty{background:transparent;border:1.5px dashed var(--b-medium);color:var(--t-light)}
+  @media (hover:hover){
+    .seat.empty:hover{border-color:var(--primary);color:var(--primary);background:var(--bg-highlight)}
+    .seat.taken:hover{box-shadow:0 0 0 2px var(--bg-surface),0 0 0 3.5px var(--b-outline)}
+  }
+  .seat.taken[aria-expanded="true"]{box-shadow:0 0 0 2px var(--bg-surface),0 0 0 3.5px var(--primary)}
+  /* invited, not confirmed yet: faded avatar + "Waiting" text under it */
+  .seat.waiting .ini{opacity:.45}
+  .seat.waiting{background:transparent!important;border:1.5px dashed var(--b-medium)}
+  .seat.waiting::before{content:"";position:absolute;inset:2px;border-radius:50%;background:var(--seat-bg);opacity:.45}
+  .seat .ini{position:relative}
+  .seat-cap{font-size:10px;font-weight:600;color:var(--t-light);line-height:1}
+  .seat.pop{animation:pop 260ms var(--ease-out)}
+  @keyframes pop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+  .slot-info{flex:1;min-width:96px;display:flex;flex-direction:column;gap:2px}
+  .count{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+  .count.full{color:var(--live)}
+  .note{font-size:12px;color:var(--t-light)}
+  .note.warn{color:var(--t-warning)}
+  .fewer-ctl{display:flex;align-items:center;gap:6px;width:100%;padding:8px 10px;background:var(--bg-inset);border-radius:var(--r-lg);font-size:13px;color:var(--t-medium);flex-wrap:wrap}
+  .step{width:36px;height:36px;border-radius:var(--r-lg);border:1px solid var(--b-control);background:var(--bg-surface);font-size:18px;font-weight:600;display:grid;place-items:center;padding:0}
+  .step:disabled{opacity:.45;cursor:not-allowed}
+  .step-v{min-width:24px;text-align:center;font-size:16px;font-weight:700;color:var(--t-heavy);font-variant-numeric:tabular-nums}
+
+  /* avatars */
+  .av{flex:none;border-radius:50%;display:grid;place-items:center;font-weight:700;color:var(--t-heavy);background:var(--seat-bg)}
+  .c0{--seat-bg:#c4e0fc}.c1{--seat-bg:var(--iconBadge)}.c2{--seat-bg:var(--bg-task)}.c3{--seat-bg:var(--bg-navSel)}
+  .c4{--seat-bg:#d9f3d6}.c5{--seat-bg:#f5dcf2}.c6{--seat-bg:#fde3c8}.c7{--seat-bg:#dbe7f5}
+
+  /* status chips + links */
+  .st{flex:none;font-size:11px;font-weight:600;padding:3px 8px;border-radius:var(--r-full);white-space:nowrap}
+  .st-short{background:var(--bg-highlight);color:var(--t-active)}
+  .st-not{background:var(--bg-inset);color:var(--t-light)}
+  .st-conf{background:#d9f3d6;color:var(--live)}
+  .st-wait{background:transparent;color:var(--t-light);box-shadow:inset 0 0 0 1px var(--b-medium)}
+  .rank{font-size:12px;font-weight:600;color:var(--t-medium);font-variant-numeric:tabular-nums}
+  .links{display:flex;gap:6px;flex-wrap:wrap}
+  .lnk{display:inline-flex;align-items:center;gap:4px;min-height:28px;padding:0 10px;border-radius:var(--r-full);background:var(--bg-inset);color:var(--t-link);font-size:12px;font-weight:600;text-decoration:none}
+  @media (hover:hover){.lnk:hover{background:var(--bg-highlight)}}
+  .nolink{display:inline-flex;align-items:center;min-height:28px;font-size:12px;color:var(--t-light)}
+
+  /* v4: view switch (Rooms / Hackers) */
+  .views{display:inline-flex;gap:4px;padding:3px;border-radius:var(--r-full);background:var(--bg-nav);align-self:flex-start}
+  .view-t{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 14px;border:0;border-radius:var(--r-full);background:transparent;color:var(--t-medium);font-size:13px;font-weight:600}
+  .view-t .n{font-variant-numeric:tabular-nums;opacity:.7}
+  .view-t[aria-selected="true"]{background:var(--bg-surface);color:var(--t-heavy);box-shadow:var(--sh-card)}
+  .view{display:flex;flex-direction:column;gap:20px}
+  .view[hidden]{display:none}
+
+  /* v4: browse hackers */
+  .search{position:relative;display:block}
+  .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t-light);pointer-events:none}
+  .search input{width:100%;min-height:44px;padding:0 12px 0 38px;border:1px solid var(--b-default);border-radius:var(--r-xl);background:var(--bg-surface);font:inherit;font-size:16px;color:var(--t-heavy)}
+  .search input::placeholder{color:var(--t-placeholder)}
+  .hk-head{display:flex;flex-direction:column;gap:10px}
+  .hk-head .pills{margin-top:0}
+  .hgrid{display:grid;gap:10px;grid-template-columns:minmax(0,1fr);margin:0;padding:0;list-style:none}
+  @media (min-width:640px){.hgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .hcard{width:100%;height:100%;display:flex;gap:12px;align-items:flex-start;text-align:left;padding:14px;border:1.5px solid transparent;border-radius:var(--r-2xl);background:var(--bg-surface);box-shadow:var(--sh-card)}
+  @media (hover:hover){.hcard:hover{border-color:var(--b-outline)}}
+  .hcard .av{width:40px;height:40px;font-size:14px}
+  .hcard .av.waiting{opacity:.45}
+
+  /* v4: hacker details (sheet on phone, centered panel on desktop) */
+  .sheet{position:fixed;z-index:50;left:0;right:0;bottom:0;max-height:88dvh;display:flex;flex-direction:column;background:var(--bg-surface);border-radius:var(--r-3xl) var(--r-3xl) 0 0;box-shadow:0 -4px 24px rgba(11,43,74,0.14);
+    transform:translateY(100%);visibility:hidden;transition:transform 320ms var(--ease-drawer),visibility 0s linear 320ms}
+  .sheet.on{transform:none;visibility:visible;transition:transform 320ms var(--ease-drawer),visibility 0s}
+  @media (min-width:640px){
+    .sheet{left:50%;top:50%;right:auto;bottom:auto;width:440px;max-height:min(640px,90dvh);border-radius:var(--r-3xl);box-shadow:0 16px 48px rgba(11,43,74,0.2);
+      opacity:0;transform:translate(-50%,-50%) scale(.97);transition:opacity 200ms var(--ease-out),transform 200ms var(--ease-out),visibility 0s linear 200ms}
+    .sheet.on{opacity:1;transform:translate(-50%,-50%);transition:opacity 220ms var(--ease-out),transform 220ms var(--ease-out),visibility 0s}
+    .sheet .grab{display:none}
+  }
+  .s-body{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:12px 16px 16px;display:flex;flex-direction:column;gap:14px}
+  .s-sec{display:flex;flex-direction:column;gap:8px}
+  .s-status{font-size:14px;font-weight:600;color:var(--t-medium);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .slotpick{display:flex;flex-wrap:wrap;gap:6px}
+  .sp{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:var(--r-full);border:1px solid var(--b-default);background:var(--bg-surface);color:var(--t-medium);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+  .sp .n{opacity:.7;font-weight:500}
+  .sp[aria-checked="true"]{background:var(--primary);border-color:var(--primary);color:var(--t-inverse)}
+  @media (hover:hover){.sp[aria-checked="false"]:hover{background:var(--bg-inset)}}
+
+  /* v4: hacker popover (booked or invited seat) */
+  .popv{position:fixed;z-index:45;width:min(296px,calc(100vw - 32px));background:var(--bg-surface);border-radius:var(--r-2xl);box-shadow:var(--sh-pop);border:1px solid var(--b-subtle);padding:12px;display:flex;flex-direction:column;gap:10px;
+    opacity:0;transform:scale(.96);pointer-events:none;visibility:hidden;transition:opacity 160ms var(--ease-out),transform 160ms var(--ease-out),visibility 0s linear 160ms}
+  .popv.on{opacity:1;transform:none;pointer-events:auto;visibility:visible;transition:opacity 180ms var(--ease-out),transform 180ms var(--ease-out),visibility 0s}
+  .pv-h{display:flex;gap:10px;align-items:center}
+  .pv-h .av{width:40px;height:40px;font-size:14px}
+  .pv-name{font-size:15px;font-weight:600}
+  .pv-school{font-size:12px;color:var(--t-light);line-height:1.35;margin-top:2px}
+  .pv-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--t-light)}
+  .pv-foot{border-top:1px solid var(--b-subtle);padding-top:8px;display:flex;justify-content:flex-start}
+  .quiet{background:transparent;border:0;padding:4px 6px;margin-left:-6px;border-radius:var(--r-md);font-size:12px;font-weight:600;color:var(--t-light)}
+  @media (hover:hover){.quiet:hover{color:var(--t-danger);background:var(--bg-danger)}}
+  .confirm{display:flex;flex-direction:column;gap:8px;width:100%}
+  .confirm p{margin:0;font-size:13px;line-height:1.4;color:var(--t-medium)}
+  .confirm-acts{display:flex;gap:6px;justify-content:flex-end}
+  .pill-btn{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border-radius:var(--r-full);font-size:13px;font-weight:600;border:0;background:var(--bg-inset);color:var(--t-medium)}
+  .pill-btn.danger{background:var(--t-danger);color:var(--t-inverse)}
+  @media (hover:hover){.pill-btn:hover{background:var(--bg-nav)}.pill-btn.danger:hover{background:#8f1c13}}
+
+  /* drawer */
+  .scrim{position:fixed;inset:0;background:rgba(11,43,74,0.32);opacity:0;pointer-events:none;transition:opacity 240ms var(--ease-out);z-index:40}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;z-index:50;background:var(--bg-surface);display:flex;flex-direction:column;box-shadow:0 -4px 24px rgba(11,43,74,0.14);
+    left:0;right:0;bottom:0;max-height:88dvh;border-radius:var(--r-3xl) var(--r-3xl) 0 0;transform:translateY(100%);transition:transform 320ms var(--ease-drawer);visibility:hidden}
+  .drawer.on{transform:none;visibility:visible}
+  .grab{width:36px;height:4px;border-radius:2px;background:var(--b-default);margin:8px auto 0;flex:none}
+  @media (min-width:900px){
+    .drawer{left:auto;top:0;bottom:0;width:420px;max-height:none;border-radius:var(--r-3xl) 0 0 var(--r-3xl);transform:translateX(100%);box-shadow:-4px 0 24px rgba(11,43,74,0.14)}
+    .grab{display:none}
+  }
+  .d-head{padding:12px 16px 12px;border-bottom:1px solid var(--b-subtle);flex:none}
+  .d-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .d-title{margin:0;font-size:18px;font-weight:600}
+  .d-sub{margin:4px 0 0;font-size:13px;color:var(--t-light)}
+  .x{width:40px;height:40px;border-radius:var(--r-lg);border:0;background:var(--bg-inset);display:grid;place-items:center;flex:none;margin:-4px -4px 0 0}
+  .pills{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:var(--r-full);border:0;background:var(--bg-nav);color:var(--t-medium);font-size:13px;font-weight:600}
+  .pill .n{font-variant-numeric:tabular-nums;opacity:.75}
+  .pill[aria-pressed="true"]{background:var(--primary);color:var(--t-inverse)}
+  .pill[aria-pressed="true"] .n{opacity:.9}
+  @media (hover:hover){.pill[aria-pressed="false"]:hover{background:var(--bg-navSel)}}
+  .list{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:8px 8px 12px;margin:0;list-style:none}
+  .card{border:1.5px solid transparent;border-radius:var(--r-xl);padding:2px 0 10px}
+  .card.sel{border-color:var(--primary);background:var(--bg-highlight)}
+  .card.busy{opacity:.55}
+  .cand{width:100%;display:flex;gap:12px;align-items:flex-start;text-align:left;padding:10px 10px 6px;border:0;border-radius:var(--r-xl);background:transparent}
+  @media (hover:hover){.card:not(.sel):not(.busy):hover{background:var(--bg-inset)}}
+  .cand:disabled{cursor:not-allowed}
+  .cand .av{width:40px;height:40px;font-size:14px}
+  .c-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+  .c-line{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .c-name{font-size:15px;font-weight:600}
+  .c-school{font-size:13px;color:var(--t-light);line-height:1.35}
+  .card .links{padding-left:62px}
+  .d-foot{flex:none;display:flex;align-items:center;gap:10px;padding:12px 16px max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--b-subtle);background:var(--bg-surface)}
+  .d-foot .pick{flex:1;min-width:0;font-size:13px;color:var(--t-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .d-foot .pick b{color:var(--t-heavy)}
+  .d-foot .btn{min-height:44px}
+  .empty-st{padding:32px 16px;text-align:center;font-size:14px;font-style:italic;color:var(--t-light)}
+
+  /* toast + mock badge */
+  .toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translate(-50%,16px);opacity:0;z-index:60;background:var(--t-heavy);color:var(--t-inverse);font-size:14px;font-weight:600;padding:12px 16px;border-radius:var(--r-xl);box-shadow:var(--sh-secondary);transition:opacity 200ms var(--ease-out),transform 200ms var(--ease-out);pointer-events:none;width:max-content;max-width:calc(100vw - 32px);line-height:1.35}
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+  .mock-wrap{position:fixed;top:4px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:70;pointer-events:none;white-space:nowrap}
+  .mock{font-size:10px;font-weight:700;letter-spacing:.04em;padding:4px 8px;border-radius:var(--r-full);background:var(--bg-task);color:var(--t-warning);border:1px solid #c78a00}
+  .mock-v{font-size:10px;font-weight:700;padding:4px 8px;border-radius:var(--r-full);background:var(--bg-surface);color:var(--t-medium);border:1px solid var(--b-default)}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{transition-duration:1ms!important;animation:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="mock-wrap" aria-hidden="true"><span class="mock">MOCK · fake data</span><span class="mock-v">v4</span></div>
+
+<div class="page">
+  <div class="col">
+    <!-- MOCK ONLY: not part of the product. Previews another sponsor's own view. -->
+    <div class="mockctl" role="group" aria-label="Mock control: preview another sponsor's view">
+      <span class="mockctl-l">Mock control · preview as</span>
+      <span id="spSwitch" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+    </div>
+
+    <header class="top">
+      <a class="back press" href="#">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to your portal
+      </a>
+      <div class="top-r">
+        <span class="brand">Hack Western 13</span>
+        <button class="map-pill press" type="button" id="mapBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>
+          Map
+        </button>
+      </div>
+    </header>
+
+    <div class="title">
+      <span class="logo"><img id="spLogo" src="../../public/shared/sponsors/sunlife.png" alt="Sun Life"></span>
+      <div>
+        <h1>Coffee chats</h1>
+        <p class="sub">Saturday · your chat times and who's sitting with you.</p>
+      </div>
+    </div>
+
+    <div class="views" role="tablist" aria-label="View">
+      <button class="view-t press" type="button" role="tab" id="tabRooms" aria-controls="viewRooms" aria-selected="true">Rooms</button>
+      <button class="view-t press" type="button" role="tab" id="tabHackers" aria-controls="viewHackers" aria-selected="false" tabindex="-1">Hackers <span class="n" id="tabN">40</span></button>
+    </div>
+
+    <!-- ROOMS VIEW: only this sponsor's own blocks -->
+    <div class="view" id="viewRooms" role="tabpanel" aria-labelledby="tabRooms">
+      <section class="setup run" aria-labelledby="runLabel">
+        <div class="run-row">
+          <span class="label" id="runLabel">How you run chats</span>
+          <span class="run-sum" id="runSum"></span>
+          <button class="btn btn-ghost btn-sm press run-edit" type="button" id="editBtn" aria-expanded="false" aria-controls="editor">Edit</button>
+        </div>
+        <div class="editor" id="editor">
+          <div>
+            <div class="editor-in" id="runEd"></div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="roomsLabel" style="display:flex;flex-direction:column;gap:12px">
+        <div class="prog">
+          <h2 class="label" id="roomsLabel">Your chat times</h2>
+          <span class="prog-num" id="progNum"></span>
+        </div>
+        <div class="bar" aria-hidden="true"><i id="barC" style="width:0"></i><i class="w" id="barW" style="width:0"></i></div>
+        <div class="timeline" id="timeline"></div>
+      </section>
+    </div>
+
+    <!-- HACKERS VIEW: browse this sponsor's interested hackers -->
+    <div class="view" id="viewHackers" role="tabpanel" aria-labelledby="tabHackers" hidden>
+      <div class="hk-head">
+        <label class="search">
+          <span class="sr-only">Search by name</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="q" type="search" placeholder="Search by name" autocomplete="off">
+        </label>
+        <div class="pills" role="group" aria-label="Filter hackers" id="hkPills"></div>
+      </div>
+      <ul class="hgrid" id="hgrid" aria-live="polite"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- Hacker popover (on a seat in Rooms) -->
+<div class="popv" id="popv" role="dialog" aria-modal="false" aria-labelledby="pvName" aria-hidden="true"></div>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- Hacker details: sheet on phone, centered panel on desktop -->
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sName" aria-hidden="true"></div>
+
+<!-- Fill-a-seat drawer (from a "+" seat in Rooms) -->
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle" aria-hidden="true">
+  <div class="grab" aria-hidden="true"></div>
+  <div class="d-head">
+    <div class="d-top">
+      <div>
+        <h2 class="d-title" id="dTitle">Invite</h2>
+        <p class="d-sub" id="dSub"></p>
+      </div>
+      <button class="x press" type="button" id="closeD" aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="pills" role="group" aria-label="Filter hackers" id="pills"></div>
+  </div>
+  <ul class="list" id="list" aria-label="Pick a hacker"></ul>
+  <div class="d-foot">
+    <span class="pick" id="pickTxt">Pick a hacker</span>
+    <button class="btn btn-pri press" type="button" id="offerBtn" disabled>Send invite</button>
+  </div>
+</aside>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------- FAKE data: 40 fictional hackers (not real applicants) ----------
+   Only fields the real app has: name, school, program + year, résumé, one extra link, interest rank.
+   [first, last initial, school, program, year, has résumé, extra link: "gh" | "pf" | null] */
+const RAW = [
+ ["Avery","K","Western University","Computer Science",3,1,"gh"],
+ ["Noor","H","University of Waterloo","Statistics",2,1,"pf"],
+ ["Mateo","R","McMaster University","Software Engineering",4,1,"gh"],
+ ["Priya","S","University of Toronto","Math & Economics",3,1,"pf"],
+ ["Jonah","W","Queen's University","Commerce",2,1,null],
+ ["Lin","Z","Western University","Software Engineering",1,0,"gh"],
+ ["Kofi","A","York University","Information Technology",3,1,"gh"],
+ ["Sofia","M","Toronto Metropolitan University","Computer Engineering",4,1,"gh"],
+ ["Ravi","P","University of Ottawa","Computer Science",2,1,"gh"],
+ ["Elodie","B","McGill University","Cognitive Science",3,1,"pf"],
+ ["Theo","N","Western University","Ivey HBA",4,1,null],
+ ["Amara","O","University of Waterloo","Computer Science",3,1,"gh"],
+ ["Haruto","T","University of Guelph","Bioinformatics",2,1,"gh"],
+ ["Isla","F","Carleton University","Cybersecurity",3,0,"gh"],
+ ["Diego","L","Western University","Electrical Engineering",2,1,"gh"],
+ ["Mei","C","University of Toronto","Data Science",4,1,"gh"],
+ ["Yusuf","E","Wilfrid Laurier University","Business Technology",3,1,"pf"],
+ ["Clara","V","Queen's University","Computing",1,0,null],
+ ["Arjun","D","McMaster University","Computer Science",3,1,"gh"],
+ ["Zoe","G","Western University","Media & Information",2,1,"pf"],
+ ["Omar","S","University of Windsor","Computer Science",4,1,"gh"],
+ ["Hana","Y","University of Waterloo","Mathematics",2,1,"pf"],
+ ["Felix","J","University of Ottawa","Software Engineering",3,1,"gh"],
+ ["Leila","R","York University","Computer Science",2,1,null],
+ ["Ben","Q","Western University","Computer Science",4,1,"gh"],
+ ["Ines","P","Université de Montréal","Computer Science",3,1,"gh"],
+ ["Kai","L","Simon Fraser University","Interactive Arts",2,0,"pf"],
+ ["Grace","H","University of Toronto","Engineering Science",3,1,"gh"],
+ ["Samir","K","Toronto Metropolitan University","Business Analytics",4,1,"pf"],
+ ["Nina","W","Western University","Health Sciences",3,1,null],
+ ["Oscar","T","University of Guelph","Computer Science",1,1,"gh"],
+ ["Freya","D","Queen's University","Mechanical Engineering",4,1,"pf"],
+ ["Tariq","M","McMaster University","Computer Science",2,1,"gh"],
+ ["Lucia","A","University of Waterloo","Systems Design Engineering",3,1,"pf"],
+ ["Ezra","B","Carleton University","Computer Science",3,1,"gh"],
+ ["Aiko","S","Western University","Computer Science",2,1,"gh"],
+ ["Marcus","F","Wilfrid Laurier University","Computer Science",4,0,"gh"],
+ ["Tessa","I","University of Toronto","Statistics",3,1,"pf"],
+ ["Rohan","C","University of Windsor","Computer Engineering",2,1,"gh"],
+ ["Wren","E","McGill University","Software Engineering",3,1,"pf"],
+];
+const HACKERS = RAW.map((r,i)=>({id:i,first:r[0],last:r[1],school:r[2],prog:r[3],year:r[4],resume:!!r[5],link:r[6]==="gh"?"GitHub":r[6]==="pf"?"Portfolio":null,c:i%8}));
+const TOTAL=HACKERS.length; // 40
+const initials = h => h.first[0]+h.last;
+const nm = h => `${h.first} ${h.last}.`;
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const progYr = h => `${h.prog} · Year ${h.year}`;
+
+/* ---------- time helpers ---------- */
+const fmt = m => { const h=Math.floor(m/60), mm=m%60; return `${((h+11)%12)+1}:${String(mm).padStart(2,"0")}`; };
+const ap = m => m>=720?"PM":"AM";
+const fa = m => `${fmt(m)} ${ap(m)}`;
+
+/* ---------- sponsors: each sees ONLY its own blocks ----------
+   Organizers keep a sponsor in one room when they can; Sun Life moves partway through. */
+const SPONSORS={
+  sunlife:{name:"Sun Life",logo:"sunlife.png",len:30,mode:"group",size:3,reps:3,blocks:[["2241",600,780],["2243",780,960]],rk:[17,3]},
+  startech:{name:"StarTech",logo:"startech.svg",len:20,mode:"one",size:3,reps:3,blocks:[["2242",600,780]],rk:[23,11]},
+  canadalife:{name:"Canada Life",logo:"canadalife.png",len:30,mode:"group",size:3,reps:3,blocks:[["2243",600,720]],rk:[31,6]},
+};
+// build per-sponsor state: ranks (#1–#40, a permutation), blocks with slots, seeded seats
+const STATE={};
+Object.entries(SPONSORS).forEach(([k,sp])=>{
+  const [mul,off]=sp.rk;
+  const ranks=HACKERS.map(h=>((h.id*mul+off)%TOTAL)+1);
+  const blocks=sp.blocks.map(([room,s,e])=>({room,start:s,end:e,slots:Array.from({length:Math.floor((e-s)/sp.len)},(_,i)=>({t:s+i*sp.len,len:sp.len,asked:null,seats:[]}))}));
+  STATE[k]={ranks,blocks,mode:sp.mode,len:sp.len,reps:sp.reps};
+});
+// seeds. Sun Life is hand-set; others use a simple repeating pattern.
+(function seed(){
+  const sl=STATE.sunlife.blocks;
+  const put=(b,s,arr)=>sl[b].slots[s].seats=arr.map(([id,st])=>({id,st}));
+  put(0,0,[[0,"c"],[3,"c"],[11,"c"]]);put(0,1,[[1,"c"],[2,"w"]]);put(0,2,[[6,"c"],[8,"c"],[15,"w"]]);put(0,3,[[9,"c"]]);
+  put(0,4,[[18,"c"],[21,"c"],[24,"c"]]);put(0,5,[[4,"w"]]);
+  put(1,1,[[12,"c"],[30,"w"]]);put(1,2,[[16,"c"],[10,"c"]]);put(1,3,[[19,"c"],[22,"w"],[33,"c"]]);put(1,4,[[5,"c"]]);
+  sl[0].slots[3].asked=2;  // a rep leaves early
+  sl[1].slots[5].asked=0;  // no chat at 3:30
+  ["startech","canadalife"].forEach(k=>{
+    const pattern=[3,2,1,3,0,2,3,1,2,0,3,1];let next=0;
+    const order=HACKERS.map(h=>h.id).sort((a,b)=>STATE[k].ranks[a]-STATE[k].ranks[b]);
+    STATE[k].blocks.forEach(b=>b.slots.forEach((s,i)=>{const n=pattern[i%pattern.length];
+      for(let j=0;j<n;j++){const id=order[next++];s.seats.push({id,st:(next%4===0)?"w":"c"});}}));
+  });
+})();
+
+let SP="sunlife";
+const cur=()=>STATE[SP];
+const spn=()=>SPONSORS[SP];
+const rankOf=h=>cur().ranks[h.id];
+// 1-on-1: one hacker per rep. 3-on-1: one group of up to 3. Never more than 3 per slot.
+const perSlot=()=>Math.min(3,cur().mode==="one"?cur().reps:3);
+const asked = s => Math.max(s.seats.length, s.asked==null?perSlot():s.asked);
+const where = new Map(); // hackerId -> {st,t,bi,si,room}
+function reindex(){where.clear();cur().blocks.forEach((b,bi)=>b.slots.forEach((s,si)=>s.seats.forEach(x=>where.set(x.id,{st:x.st,t:s.t,bi,si,room:b.room}))));}
+const statusKey=id=>{const w=where.get(id);return !w?"none":w.st==="c"?"conf":"wait";};
+
+/* ---------- setup summary ---------- */
+function setupText(){document.getElementById("runSum").textContent=runSummary();}
+
+/* ---------- Rooms view: your chat times, block by block ---------- */
+const tl=document.getElementById("timeline");
+let openFewer=null; // "bi-si"
+function renderRooms(){
+  reindex();
+  let conf=0,wait=0,target=0;
+  tl.innerHTML="";
+  const st=cur(), sp=spn();
+  st.blocks.forEach((b,bi)=>{
+    const filled=b.slots.reduce((a,s)=>a+s.seats.length,0), cap=b.slots.reduce((a,s)=>a+asked(s),0);
+    const prev=st.blocks[bi-1], next=st.blocks[bi+1];
+    const el=document.createElement("article");el.className="block";
+    el.setAttribute("aria-label",`Room ${b.room}, ${fa(b.start)} to ${fa(b.end)}`);
+    el.innerHTML=`<div class="block-h"><div><div class="room">Rm ${b.room}</div>
+      ${prev&&prev.room!==b.room?`<div class="room-from">From ${fmt(b.start)}, after your time in Rm ${prev.room}</div>`:""}
+      <div class="room-meta">${fa(b.start)}–${fa(b.end)} · ${st.len}-min chats · ${filled} of ${cap} seats filled</div></div>
+      <div class="block-acts"><button class="btn btn-sec btn-sm press" data-pick="${bi}" ${filled>=cap?"disabled":""}>Pick a hacker</button><button class="btn btn-sec btn-sm press" data-scan="${bi}">Scan a badge</button></div></div>`;
+    b.slots.forEach((s,si)=>{
+      const a=asked(s), n=s.seats.length, open=a-n, key=`${bi}-${si}`;
+      const w=s.seats.filter(x=>x.st==="w").length;
+      conf+=n-w; wait+=w; target+=a;
+      const row=document.createElement("div");row.className="slot"+(a===0?" zero":"")+(open>0?" open":"");
+      let seats="";
+      s.seats.forEach(x=>{const h=HACKERS[x.id];const wt=x.st==="w";
+        seats+=`<span class="seat-w"><button class="seat taken av c${h.c}${wt?" waiting":""}${x.fresh?" pop":""}" type="button" data-who="${key}-${x.id}" aria-haspopup="dialog" aria-expanded="false" aria-label="${esc(nm(h))}, ${wt?"invited, waiting to confirm":"confirmed"}. Open details"><span class="ini">${initials(h)}</span></button>${wt?`<span class="seat-cap" aria-hidden="true">Waiting</span>`:""}</span>`;
+        delete x.fresh;});
+      for(let k=0;k<open;k++) seats+=`<span class="seat-w"><button class="seat empty press" type="button" data-seat="${key}" aria-label="Fill open seat at ${fmt(s.t)}">+</button></span>`;
+      let note = a===0?"No chat this slot": open>0?`Needs ${open} hacker${open>1?"s":""}`:"";
+      if(w) note += (note?" · ":"")+`${w} waiting to confirm`;
+      const keptNote = s.seats.length&&(s.len!==st.len||s.seats.length>perSlot()) ? `<span class="note">Booked chat keeps its time: ${fmt(s.t)}–${fmt(s.t+s.len)}</span>`:"";
+      const lowered = s.asked!=null && s.asked<perSlot() && a>0 ? `<span class="note warn">You asked for ${a}</span>`:"";
+      const isOpen=openFewer===key;
+      row.innerHTML=`<span class="time">${fmt(s.t)}</span>
+        <div class="seats">${seats}</div>
+        <div class="slot-info"><span class="count ${a>0&&open===0?"full":""}">${a===0?"0/0":(open===0?"Full · ":"")+n+"/"+a}</span>${note?`<span class="note">${note}</span>`:""}${keptNote}${lowered}</div>
+        <button class="btn btn-ghost btn-sm press" data-fewer="${key}" aria-expanded="${isOpen}">${isOpen?"Done":"Offer less chats"}</button>
+        ${isOpen?`<div class="fewer-ctl"><span>Hackers at ${fmt(s.t)}:</span>
+          <button class="step press" data-dec="${key}" aria-label="Fewer" ${a<=n?"disabled":""}>−</button>
+          <span class="step-v" aria-live="polite">${a}</span>
+          <button class="step press" data-inc="${key}" aria-label="More" ${a>=perSlot()?"disabled":""}>+</button>
+          <span class="note" style="flex-basis:100%">${a<=n&&n>0?"Cancel a chat to go lower. ":""}0 means no chat then. Organizers see this right away.</span></div>`:""}`;
+      el.appendChild(row);
+    });
+    if(next&&next.room!==b.room){
+      const last=b.slots[b.slots.length-1];
+      el.insertAdjacentHTML("beforeend",`<div class="move"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Moves to Rm ${next.room} at ${fmt(next.start)}. Walk over after your ${fmt(last.t)} chat.</div>`);
+    }
+    tl.appendChild(el);
+  });
+  document.getElementById("progNum").innerHTML=`<b>${conf}</b> confirmed · ${wait} waiting · of ${target}`;
+  document.getElementById("barC").style.width=(target?conf/target*100:0)+"%";
+  document.getElementById("barW").style.width=(target?wait/target*100:0)+"%";
+}
+const slotAt=key=>{const [b,s]=key.split("-").map(Number);return {bi:b,si:s,b:cur().blocks[b],sl:cur().blocks[b].slots[s]};};
+
+tl.addEventListener("click",e=>{
+  const t=e.target.closest("button"); if(!t) return;
+  if(t.dataset.who){openPop(t);return;}
+  if(t.dataset.seat){openDrawer(t.dataset.seat,t);}
+  else if(t.dataset.pick){const bi=+t.dataset.pick;const si=cur().blocks[bi].slots.findIndex(x=>asked(x)>x.seats.length);if(si>=0)openDrawer(`${bi}-${si}`,t);}
+  else if(t.dataset.scan){toast("Opens the badge scanner for Rm "+cur().blocks[+t.dataset.scan].room);}
+  else if(t.dataset.fewer){const k=t.dataset.fewer;openFewer=openFewer===k?null:k;renderRooms();focusSel(`[data-fewer="${k}"]`);}
+  else if(t.dataset.dec||t.dataset.inc){const k=t.dataset.dec||t.dataset.inc;const {sl}=slotAt(k);
+    sl.asked=Math.max(sl.seats.length,Math.min(perSlot(),asked(sl)+(t.dataset.dec?-1:1)));if(sl.asked===perSlot())sl.asked=null;renderAll();focusSel(t.dataset.dec?`[data-dec="${k}"]`:`[data-inc="${k}"]`);}
+});
+function focusSel(sel){const el=tl.querySelector(sel);if(el&&!el.disabled)el.focus();}
+
+/* ---------- shared bits: rank, links, status, invite, cancel ---------- */
+function rankHTML(h){return `<span class="rank" title="Where they rank among the ${TOTAL} hackers who picked ${esc(spn().name)}">#${rankOf(h)} of ${TOTAL} by interest</span>`;}
+function linksHTML(h){
+  const a=[];
+  a.push(h.resume?`<a class="lnk" href="#" data-link="résumé" data-h="${h.id}">Résumé<span aria-hidden="true">↗</span></a>`:`<span class="nolink">No résumé</span>`);
+  if(h.link) a.push(`<a class="lnk" href="#" data-link="${h.link}" data-h="${h.id}">${h.link}<span aria-hidden="true">↗</span></a>`);
+  return `<div class="links">${a.join("")}</div>`;
+}
+function onLink(e){const l=e.target.closest("[data-link]");if(!l)return false;e.preventDefault();toast(`Opens ${nm(HACKERS[+l.dataset.h])}'s ${l.dataset.link}`);return true;}
+function chipFor(id){const w=where.get(id);
+  if(!w)return `<span class="st st-not">Not invited</span>`;
+  return w.st==="c"?`<span class="st st-conf">Confirmed · ${fmt(w.t)}</span>`:`<span class="st st-wait">Waiting · ${fmt(w.t)}</span>`;}
+function invite(id,key){
+  const {b,sl}=slotAt(key);if(sl.seats.length>=asked(sl)||where.has(id))return;
+  sl.seats.push({id,st:"w",fresh:true});renderAll();
+  toast(`Invited ${nm(HACKERS[id])} to ${fmt(sl.t)} in Rm ${b.room}. They show as Waiting until they confirm.`);
+}
+function cancelSeat(id){
+  const w=where.get(id);if(!w)return;const {sl}=slotAt(`${w.bi}-${w.si}`);
+  const before=`${sl.seats.length}/${asked(sl)}`;
+  sl.seats=sl.seats.filter(x=>x.id!==id);renderAll();
+  toast(`${w.st==="w"?"Invite taken back":"Chat cancelled"}. ${fmt(sl.t)} is now ${sl.seats.length}/${asked(sl)} (was ${before}). We let ${HACKERS[id].first} know.`);
+  return w;
+}
+function confirmHTML(id){
+  const w=where.get(id),h=HACKERS[id],wt=w.st==="w";
+  return `<div class="confirm"><p>${wt?`Take back ${esc(h.first)}'s invite for ${fmt(w.t)}?`:`Cancel your ${fmt(w.t)} chat with ${esc(h.first)}?`} We'll let them know, and the seat opens up again.</p>
+    <div class="confirm-acts"><button class="pill-btn press" type="button" data-keep>Keep</button><button class="pill-btn danger press" type="button" data-yes>${wt?"Yes, take back":"Yes, cancel"}</button></div></div>`;
+}
+const cancelLabel=id=>where.get(id).st==="w"?"Cancel invite":"Cancel chat";
+
+/* ---------- seat popover (Rooms) ---------- */
+const popv=document.getElementById("popv");
+let pop=null; // {id,anchor}
+function popBody(confirming){
+  const id=pop.id,h=HACKERS[id],w=where.get(id),wt=w.st==="w";
+  popv.innerHTML=`<div class="pv-h"><span class="av c${h.c}" aria-hidden="true" ${wt?'style="opacity:.45"':""}>${initials(h)}</span>
+      <div><div class="pv-name" id="pvName">${esc(nm(h))}</div><div class="pv-school">${esc(h.school)} · ${esc(progYr(h))}</div></div></div>
+    <div class="pv-row"><span class="st ${wt?"st-wait":"st-conf"}">${wt?"Waiting to confirm":"Confirmed"}</span><span>${fa(w.t)} · Rm ${w.room}</span>${rankHTML(h)}</div>
+    ${linksHTML(h)}
+    <div class="pv-foot">${confirming?confirmHTML(id):`<button class="quiet press" type="button" data-cancel>${cancelLabel(id)}</button>`}</div>`;
+}
+function placePop(){
+  const r=pop.anchor.getBoundingClientRect(), vw=document.documentElement.clientWidth, vh=window.innerHeight;
+  const w=popv.offsetWidth, ht=popv.offsetHeight;
+  const left=Math.min(Math.max(16,r.left+r.width/2-w/2),vw-16-w);
+  let top=r.bottom+8, fromTop=true;
+  if(top+ht>vh-8 && r.top-8-ht>8){top=r.top-8-ht;fromTop=false;}
+  popv.style.left=left+"px";popv.style.top=top+"px";
+  popv.style.transformOrigin=`${r.left+r.width/2-left}px ${fromTop?0:ht}px`;
+}
+function openPop(anchor){
+  const id=+anchor.dataset.who.split("-")[2];
+  if(pop&&pop.id===id){closePop(true);return;}
+  if(pop) closePop(false);
+  pop={id,anchor};anchor.setAttribute("aria-expanded","true");
+  popBody(false);placePop();
+  popv.classList.add("on");popv.setAttribute("aria-hidden","false");
+  popv.querySelector("[data-cancel]").focus({preventScroll:true});
+}
+function closePop(refocus){
+  if(!pop)return;const a=pop.anchor;a.setAttribute("aria-expanded","false");
+  popv.classList.remove("on");popv.setAttribute("aria-hidden","true");pop=null;
+  if(refocus&&document.contains(a))a.focus({preventScroll:true});
+}
+popv.addEventListener("click",e=>{
+  if(onLink(e))return;
+  const t=e.target.closest("button");if(!t||!pop)return;
+  if(t.hasAttribute("data-cancel")){popBody(true);placePop();popv.querySelector("[data-keep]").focus({preventScroll:true});}
+  else if(t.hasAttribute("data-keep")){popBody(false);placePop();popv.querySelector("[data-cancel]").focus({preventScroll:true});}
+  else if(t.hasAttribute("data-yes")){const id=pop.id;closePop(false);const w=cancelSeat(id);
+    const nxt=tl.querySelector(`[data-seat="${w.bi}-${w.si}"]`);if(nxt)nxt.focus({preventScroll:true});}
+});
+document.addEventListener("pointerdown",e=>{if(pop&&!popv.contains(e.target)&&!e.target.closest("[data-who]"))closePop(false);});
+window.addEventListener("resize",()=>{if(pop)placePop();});
+window.addEventListener("scroll",()=>{if(pop)placePop();},{passive:true});
+
+/* ---------- Hackers view: browse, search, filter ---------- */
+const hgrid=document.getElementById("hgrid"),hkPills=document.getElementById("hkPills"),qIn=document.getElementById("q");
+let hFilter="all",query="";
+const HF=[["all","All"],["none","Not invited"],["wait","Invited"],["conf","Confirmed"]];
+function renderHackers(){
+  const n={all:TOTAL,none:0,wait:0,conf:0};HACKERS.forEach(h=>n[statusKey(h.id)]++);
+  hkPills.innerHTML=HF.map(([k,l])=>`<button class="pill press" type="button" data-hf="${k}" aria-pressed="${hFilter===k}">${l} <span class="n">${n[k]}</span></button>`).join("");
+  const q=query.trim().toLowerCase();
+  const rows=HACKERS.filter(h=>(hFilter==="all"||statusKey(h.id)===hFilter)&&(!q||`${h.first} ${h.last}`.toLowerCase().includes(q)))
+    .sort((a,b)=>rankOf(a)-rankOf(b));
+  if(!rows.length){hgrid.innerHTML=`<li class="empty-st" style="grid-column:1/-1">No hackers match. Try another filter or name.</li>`;return;}
+  hgrid.innerHTML=rows.map(h=>{const sk=statusKey(h.id);
+    return `<li><button class="hcard press" type="button" data-open="${h.id}" aria-haspopup="dialog">
+      <span class="av c${h.c}${sk==="wait"?" waiting":""}" aria-hidden="true">${initials(h)}</span>
+      <span class="c-body"><span class="c-line"><span class="c-name">${esc(nm(h))}</span>${chipFor(h.id)}</span>
+      <span class="c-school">${esc(h.school)}<br>${esc(progYr(h))}</span>${rankHTML(h)}</span></button></li>`;}).join("");
+}
+hkPills.addEventListener("click",e=>{const p=e.target.closest("[data-hf]");if(!p)return;hFilter=p.dataset.hf;renderHackers();hkPills.querySelector(`[data-hf="${hFilter}"]`).focus();});
+qIn.addEventListener("input",()=>{query=qIn.value;renderHackers();});
+hgrid.addEventListener("click",e=>{const c=e.target.closest("[data-open]");if(c)openSheet(+c.dataset.open,c);});
+
+/* ---------- hacker details (sheet / centered panel) ---------- */
+const sheet=document.getElementById("sheet"),scrim=document.getElementById("scrim");
+let sh=null; // {id,from,pick,confirming}
+function renderSheet(){
+  const h=HACKERS[sh.id],w=where.get(sh.id);
+  let status,act="",foot="";
+  if(!w){
+    status=`<span class="st st-not">Not invited</span>`;
+    const groups=cur().blocks.map((b,bi)=>{
+      const open=b.slots.map((s,si)=>({s,si})).filter(({s})=>asked(s)>s.seats.length);
+      if(!open.length)return "";
+      return `<div class="s-sec"><span class="note">Rm ${b.room}</span><div class="slotpick">${open.map(({s,si})=>{const k=`${bi}-${si}`;
+        return `<button class="sp press" type="button" role="radio" aria-checked="${sh.pick===k}" data-sp="${k}">${fmt(s.t)} <span class="n">${s.seats.length}/${asked(s)}</span></button>`;}).join("")}</div></div>`;}).join("");
+    act=groups?`<div class="s-sec" role="radiogroup" aria-label="Open times"><span class="label">Invite to an open time</span>${groups}</div>`
+              :`<p class="hint">All your times are full. Cancel a chat in Rooms to open a seat.</p>`;
+    if(groups){const p=sh.pick&&slotAt(sh.pick);
+      foot=`<div class="d-foot"><span class="pick">${p?`<b>${fa(p.sl.t)}</b> · Rm ${p.b.room}`:"Pick a time"}</span><button class="btn btn-pri press" type="button" data-send ${p?"":"disabled"}>Send invite</button></div>`;}
+  } else {
+    status=`${w.st==="c"?`<span class="st st-conf">Confirmed</span>`:`<span class="st st-wait">Invited, waiting</span>`}<span>${fa(w.t)} · Rm ${w.room}</span>`;
+    act=`<div class="pv-foot">${sh.confirming?confirmHTML(sh.id):`<button class="quiet press" type="button" data-cancel>${cancelLabel(sh.id)}</button>`}</div>`;
+  }
+  sheet.innerHTML=`<div class="grab" aria-hidden="true"></div>
+    <div class="d-head"><div class="d-top"><div class="pv-h"><span class="av c${h.c}" aria-hidden="true" ${w&&w.st==="w"?'style="opacity:.45"':""}>${initials(h)}</span>
+      <div><h2 class="d-title" id="sName">${esc(nm(h))}</h2><p class="d-sub">${esc(h.school)} · ${esc(progYr(h))}</p></div></div>
+      <button class="x press" type="button" data-close aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div></div>
+    <div class="s-body">
+      <div class="s-sec">${rankHTML(h)}${linksHTML(h)}</div>
+      <div class="s-sec"><span class="label">Chat with ${esc(spn().name)}</span><div class="s-status">${status}</div>${act}</div>
+    </div>${foot}`;
+}
+function openSheet(id,from){
+  closePop(false);sh={id,from,pick:null,confirming:false};renderSheet();
+  sheet.classList.add("on");scrim.classList.add("on");sheet.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
+  setTimeout(()=>{const f=sheet.querySelector("[data-sp],[data-cancel],[data-close]");if(f)f.focus();},50);
+}
+function closeSheet(){
+  if(!sh)return;const from=sh.from;sh=null;
+  sheet.classList.remove("on");scrim.classList.remove("on");sheet.setAttribute("aria-hidden","true");document.body.style.overflow="";
+  const again=from&&from.dataset.open&&hgrid.querySelector(`[data-open="${from.dataset.open}"]`);
+  (again||from)&&document.contains(again||from)&&(again||from).focus({preventScroll:true});
+}
+sheet.addEventListener("click",e=>{
+  if(onLink(e))return;
+  const t=e.target.closest("button");if(!t||!sh)return;
+  if(t.hasAttribute("data-close")){closeSheet();return;}
+  if(t.dataset.sp){sh.pick=t.dataset.sp;renderSheet();sheet.querySelector(`[data-sp="${sh.pick}"]`).focus();return;}
+  if(t.hasAttribute("data-send")&&sh.pick){const id=sh.id,k=sh.pick;closeSheet();invite(id,k);return;}
+  if(t.hasAttribute("data-cancel")){sh.confirming=true;renderSheet();sheet.querySelector("[data-keep]").focus();return;}
+  if(t.hasAttribute("data-keep")){sh.confirming=false;renderSheet();sheet.querySelector("[data-cancel]").focus();return;}
+  if(t.hasAttribute("data-yes")){const id=sh.id;cancelSeat(id);sh.confirming=false;sh.pick=null;renderSheet();const f=sheet.querySelector("[data-sp],[data-close]");if(f)f.focus();}
+});
+
+/* ---------- fill-a-seat drawer (from Rooms) ---------- */
+const drawer=document.getElementById("drawer"),list=document.getElementById("list"),pills=document.getElementById("pills");
+const offerBtn=document.getElementById("offerBtn"),pickTxt=document.getElementById("pickTxt");
+let ctx=null, filter="none", picked=null, lastFocus=null;
+function openDrawer(key,from){
+  closePop(false);
+  ctx={key};picked=null;lastFocus=from;
+  const {b,sl}=slotAt(key), open=asked(sl)-sl.seats.length;
+  document.getElementById("dTitle").textContent=`Invite for ${fa(sl.t)}`;
+  document.getElementById("dSub").textContent=`Rm ${b.room} · ${sl.len} min · ${sl.seats.length}/${asked(sl)} · ${open} seat${open>1?"s":""} open`;
+  renderList();
+  drawer.classList.add("on");scrim.classList.add("on");drawer.setAttribute("aria-hidden","false");
+  document.body.style.overflow="hidden";
+  setTimeout(()=>pills.querySelector('[aria-pressed="true"]').focus(),50);
+}
+function closeDrawer(){if(!ctx)return;drawer.classList.remove("on");scrim.classList.remove("on");drawer.setAttribute("aria-hidden","true");document.body.style.overflow="";ctx=null;if(lastFocus&&document.contains(lastFocus))lastFocus.focus();}
+function renderList(){
+  const free=HACKERS.filter(h=>!where.has(h.id)).length;
+  pills.innerHTML=[["none","Not invited",free],["all","All",TOTAL]].map(([k,l,n])=>`<button class="pill press" type="button" data-f="${k}" aria-pressed="${filter===k}">${l} <span class="n">${n}</span></button>`).join("");
+  const rows=HACKERS.filter(h=>filter==="all"||!where.has(h.id)).sort((a,b)=>(where.has(a.id)-where.has(b.id))||(rankOf(a)-rankOf(b)));
+  if(!rows.length){list.innerHTML=`<li class="empty-st">Everyone has an invite already.</li>`;updateFoot();return;}
+  list.innerHTML=rows.map(h=>{const busy=where.has(h.id);
+    return `<li class="card${picked===h.id?" sel":""}${busy?" busy":""}" data-card="${h.id}"><button class="cand press" type="button" aria-pressed="${picked===h.id}" data-pick-h="${h.id}" ${busy?"disabled":""}>
+      <span class="av c${h.c}" aria-hidden="true">${initials(h)}</span>
+      <span class="c-body"><span class="c-line"><span class="c-name">${esc(nm(h))}</span>${chipFor(h.id)}</span>
+      <span class="c-school">${esc(h.school)} · ${esc(progYr(h))}</span>${rankHTML(h)}</span></button>
+      ${linksHTML(h)}</li>`;}).join("");
+  updateFoot();
+}
+function updateFoot(){offerBtn.disabled=picked==null;pickTxt.innerHTML=picked==null?"Pick a hacker":`<b>${esc(nm(HACKERS[picked]))}</b> · #${rankOf(HACKERS[picked])} of ${TOTAL}`;}
+pills.addEventListener("click",e=>{const p=e.target.closest("[data-f]");if(!p)return;filter=p.dataset.f;renderList();pills.querySelector(`[data-f="${filter}"]`).focus();list.scrollTop=0;});
+list.addEventListener("click",e=>{
+  if(onLink(e))return;
+  const c=e.target.closest("[data-pick-h]");if(!c||c.disabled)return;picked=+c.dataset.pickH;
+  list.querySelectorAll("[data-card]").forEach(x=>{const on=+x.dataset.card===picked;x.classList.toggle("sel",on);x.querySelector("[data-pick-h]").setAttribute("aria-pressed",String(on));});updateFoot();});
+offerBtn.addEventListener("click",()=>{if(picked==null||!ctx)return;const id=picked,k=ctx.key;closeDrawer();invite(id,k);});
+document.getElementById("closeD").addEventListener("click",closeDrawer);
+scrim.addEventListener("click",()=>{closeSheet();closeDrawer();});
+
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"){if(pop){closePop(true);return;}if(sh){closeSheet();return;}if(ctx)closeDrawer();}
+  const box=sh?sheet:ctx?drawer:null;
+  if(e.key==="Tab"&&box){const f=[...box.querySelectorAll("button:not(:disabled),a[href]")];if(!f.length)return;const first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}
+});
+
+/* ---------- view switch (Rooms / Hackers) ---------- */
+const tabs=[document.getElementById("tabRooms"),document.getElementById("tabHackers")];
+function setView(v){
+  closePop(false);
+  tabs.forEach(t=>{const on=t.id===(v==="rooms"?"tabRooms":"tabHackers");t.setAttribute("aria-selected",on);t.tabIndex=on?0:-1;});
+  document.getElementById("viewRooms").hidden=v!=="rooms";document.getElementById("viewHackers").hidden=v!=="hackers";
+}
+tabs.forEach(t=>t.addEventListener("click",()=>setView(t.id==="tabRooms"?"rooms":"hackers")));
+tabs.forEach(t=>t.addEventListener("keydown",e=>{if(e.key==="ArrowRight"||e.key==="ArrowLeft"){e.preventDefault();const o=tabs.find(x=>x!==t);o.click();o.focus();}}));
+
+/* ---------- "How you run chats": style, length, reps ---------- */
+const editor=document.getElementById("editor"),editBtn=document.getElementById("editBtn"),runEd=document.getElementById("runEd");
+let draft=null;
+const styleName=m=>m==="one"?"1-on-1":"3-on-1";
+function runSummary(){const st=cur();return `${styleName(st.mode)} · ${st.len} min${st.mode==="one"?` · ${st.reps} rep${st.reps>1?"s":""}`:""}`;}
+function renderRunEd(){
+  const booked=cur().blocks.some(b=>b.slots.some(s=>s.seats.length));
+  const pill=(attr,val,on,label)=>`<button class="pill press" type="button" ${attr}="${val}" aria-pressed="${on}">${label}</button>`;
+  runEd.innerHTML=`
+    <div class="run-field"><span class="note">Style</span><div class="pills" role="group" aria-label="Style">
+      ${pill("data-style","one",draft.mode==="one","1-on-1")}${pill("data-style","group",draft.mode==="group","3-on-1")}</div>
+      <span class="hint">${draft.mode==="one"?"Each rep chats with one hacker.":"One rep chats with a group of up to 3 hackers."}</span></div>
+    <div class="run-field"><span class="note">Length</span><div class="pills" role="group" aria-label="Length">
+      ${pill("data-len",20,draft.len===20,"20 min")}${pill("data-len",30,draft.len===30,"30 min")}</div></div>
+    ${draft.mode==="one"?`<div class="run-field"><span class="note">Reps chatting</span><div class="pills" role="group" aria-label="Reps chatting">
+      ${[1,2,3].map(n=>pill("data-reps",n,draft.reps===n,n)).join("")}</div>
+      <span class="hint">That's ${draft.reps} hacker${draft.reps>1?"s":""} per time slot.</span></div>`:""}
+    ${booked?`<p class="hint">Booked chats keep their times. New ${draft.len}-min slots fill in around them.</p>`:""}
+    <div class="editor-foot">
+      <button class="btn btn-ghost btn-sm press" type="button" data-run-cancel>Cancel</button>
+      <button class="btn btn-pri btn-sm press" type="button" data-run-save>Save</button>
+    </div>`;
+}
+function toggleEdit(on){
+  editor.classList.toggle("open",on);editBtn.setAttribute("aria-expanded",on);editBtn.textContent=on?"Close":"Edit";
+  if(on){const st=cur();draft={mode:st.mode,len:st.len,reps:st.reps};renderRunEd();}
+}
+// re-cut slots at the new length inside each block; slots that already have hackers keep their times
+function recut(st){
+  st.blocks.forEach(b=>{
+    const kept=b.slots.filter(s=>s.seats.length);
+    const over=(t,len)=>kept.some(k=>t<k.t+k.len&&k.t<t+len);
+    const grid=[];for(let t=b.start;t+st.len<=b.end;t+=st.len){if(!over(t,st.len))grid.push({t,len:st.len,asked:null,seats:[]});}
+    b.slots=[...kept,...grid].sort((x,y)=>x.t-y.t);
+  });
+}
+editBtn.addEventListener("click",()=>toggleEdit(!editor.classList.contains("open")));
+runEd.addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t||!draft)return;
+  if(t.dataset.style){draft.mode=t.dataset.style;renderRunEd();runEd.querySelector(`[data-style="${draft.mode}"]`).focus();}
+  else if(t.dataset.len){draft.len=+t.dataset.len;renderRunEd();runEd.querySelector(`[data-len="${draft.len}"]`).focus();}
+  else if(t.dataset.reps){draft.reps=+t.dataset.reps;renderRunEd();runEd.querySelector(`[data-reps="${draft.reps}"]`).focus();}
+  else if(t.hasAttribute("data-run-cancel")){toggleEdit(false);editBtn.focus();}
+  else if(t.hasAttribute("data-run-save")){
+    const st=cur(),changed=draft.mode!==st.mode||draft.len!==st.len||draft.reps!==st.reps;
+    st.mode=draft.mode;st.len=draft.len;st.reps=Math.max(1,Math.min(3,draft.reps)); // max 3 hackers per slot
+    if(changed){recut(st);openFewer=null;}
+    toggleEdit(false);renderAll();editBtn.focus();
+    toast(changed?`Saved: ${runSummary()}. Your times are updated.`:"No changes.");
+  }
+});
+
+/* ---------- mock control: preview another sponsor's own view ---------- */
+const spSwitch=document.getElementById("spSwitch");
+function renderSwitch(){spSwitch.innerHTML=Object.entries(SPONSORS).map(([k,v])=>`<button class="pill press" type="button" data-sp-k="${k}" aria-pressed="${SP===k}">${v.name}</button>`).join("");}
+spSwitch.addEventListener("click",e=>{const b=e.target.closest("[data-sp-k]");if(!b)return;
+  closePop(false);closeSheet();closeDrawer();toggleEdit(false);SP=b.dataset.spK;openFewer=null;renderAll();spSwitch.querySelector(`[data-sp-k="${SP}"]`).focus();});
+
+/* ---------- misc ---------- */
+function renderAll(){
+  reindex();renderSwitch();setupText();renderRooms();renderHackers();
+  const img=document.getElementById("spLogo");img.src=`../../public/shared/sponsors/${spn().logo}`;img.alt=spn().name;
+  document.title=`Coffee chats · ${spn().name} (mock B v4)`;
+  if(ctx)renderList();
+}
+let tt;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),3200);}
+document.getElementById("mapBtn").addEventListener("click",()=>toast("Opens the venue map"));
+renderAll();
+</script>
+</body>
+</html>

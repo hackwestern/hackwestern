@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wireframes v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --text-heavy:#0b2b4a;--text-medium:#1c3550;--text-light:#516476;--link:#0b6bc4;
+  --bg-page:#f3f7fc;--surface:#fff;--nav:#dbe7f5;--nav-selected:#b9d3f0;--inset:#edf3fa;--highlight:#e1effb;
+  --primary:#0b6bc4;--border:#cdddeb;--border-subtle:#e0eaf3;--live:#16803c;--warning:#a34a00;
+  --r-sm:4px;--r-md:6px;--r-lg:8px;--r-2xl:12px;--r-3xl:20px;--r-full:999px;
+  --shadow-card:0px 1px 2px 0px rgba(11,43,74,0.06),0px 1px 4px 0px rgba(11,43,74,0.05);
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+}
+*{box-sizing:border-box}
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg-page);color:var(--text-heavy);font-family:Figtree,system-ui,sans-serif;font-size:15px;line-height:1.45}
+a{touch-action:manipulation}
+.wrap{max-width:1080px;margin:0 auto;padding:32px 16px 64px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px;margin-bottom:6px}
+h1{font-size:28px;margin:0;letter-spacing:-0.01em}
+.badge{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--warning);background:#fff3e6;border:1px solid #f3d3b3;border-radius:var(--r-full);padding:2px 8px;white-space:nowrap}
+.lede{color:var(--text-light);margin:0 0 28px;max-width:62ch}
+section{margin-bottom:28px}
+h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-light);margin:0 0 10px;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px}
+.card{display:flex;flex-direction:column;gap:4px;padding:14px 16px;background:var(--surface);border:1px solid var(--border-subtle);border-radius:var(--r-2xl);box-shadow:var(--shadow-card);color:inherit;text-decoration:none;transition:border-color 150ms ease,transform 160ms var(--ease-out);min-width:0}
+.card:active{transform:scale(0.98)}
+.card:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.name{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px}
+.file{font-size:12px;color:var(--text-light);font-weight:500;margin-left:auto;font-variant-numeric:tabular-nums;white-space:nowrap}
+.desc{color:var(--text-light);font-size:14px}
+.go{font-size:13px;color:var(--link);font-weight:600;margin-top:4px}
+@media (hover:hover) and (pointer:fine){.card:hover{border-color:var(--border)}.card:hover .go{text-decoration:underline}}
+footer{color:var(--text-light);font-size:13px;border-top:1px solid var(--border-subtle);padding-top:16px}
+@media (prefers-reduced-motion:reduce){.card{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Sponsor dashboard wireframes</h1><span class="badge">WIREFRAME · dummy data</span><span class="badge" style="opacity:.75">v2 · new map logistics</span></header>
+  <p class="lede">Hack Western 13, Fri Nov 20 to Sun Nov 22. Each file has 10 different layouts behind a picker. Flip with ← → or 1 to 0, and switch Desktop / Phone at the top.</p>
+  <div id="groups"></div>
+  <footer>Dummy data only: the people and teams are made up. Sponsor names and logos are real. Wireframes v2 (rooms, times and maps from the official floor maps), Nov 18 2026.</footer>
+</div>
+<script>
+const groups = [
+  ["Sponsor", [
+    ["sponsor-home","Sponsor home","What a rep sees first: today's booth, next thing on, chats, Map and help."],
+    ["sponsor-schedule","Schedule","Your day by day plan, opening on today, with rooms and times."],
+    ["sponsor-coffee-chats","Coffee chats","Saturday 10 to 5 in Rm 2241-2243: your slots, who's booked, who's waiting, at most 3 hackers per slot."],
+    ["sponsor-scan","Scan a badge","Scan a hacker's badge to save them or offer a coffee chat."],
+    ["sponsor-judging","Judging","Sunday: shortlist teams, see presentations, send your top 5."],
+    ["venue-map","Venue map","Find your booth (Rm 1235), chat rooms and judging in the Grand Hall, one tap from anywhere."],
+  ]],
+  ["Organizer", [
+    ["organizer-sponsors","Sponsors","Every sponsor's status, room, chats and help pings in one list."],
+    ["organizer-run-of-show","Run of show","The whole weekend by room and time, filterable by sponsor."],
+    ["organizer-coffee-chats","Coffee chats","Rooms, holds and bookings across sponsors; move or cancel chats."],
+    ["organizer-judging","Judging","Shortlists in, the presentation schedule built, round 2 and cheat check."],
+    ["organizer-pings","Pings","Help requests and task pings, oldest first, with who's on it."],
+  ]],
+  ["Hacker", [
+    ["hacker-notifications","Notifications","What a hacker gets: chat offers, room and time changes, judging slots."],
+  ]],
+  ["System", [
+    ["admin-web-team","Web team admin","Tools for the web team: data checks, sends, and the cheat check."],
+    ["components","Components","Shared building blocks: pills, chips, logos, rows, sheets, toasts, states."],
+    ["sponsor-tour","Sponsor tour","The guided tour and How to… flows for first-time sponsors."],
+  ]],
+];
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+document.getElementById("groups").innerHTML = groups.map(([g, items]) => `
+  <section aria-labelledby="g-${g}">
+    <h2 id="g-${g}">${g}</h2>
+    <div class="grid">${items.map(([f, n, d]) => `
+      <a class="card" href="${f}.html">
+        <span class="name">${esc(n)}<span class="file">${f}.html</span></span>
+        <span class="desc">${esc(d)}</span>
+        <span class="go">Open 10 variants →</span>
+      </a>`).join("")}
+    </div>
+  </section>`).join("");
+</script>
+</body>
+</html>

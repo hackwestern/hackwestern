@@ -1,0 +1,1046 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0a0a">
+<title>Sponsor tour · wireframes v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* dashboardColors from src/lib/tokens.ts */
+  --text-heavy:#0b2b4a; --text-medium:#1c3550; --text-light:#516476; --link:#0b6bc4; --active:#08559c;
+  --bg-page:#f3f7fc; --surface:#ffffff; --nav:#dbe7f5; --nav-selected:#b9d3f0; --inset:#edf3fa; --highlight:#e1effb;
+  --primary:#0b6bc4; --border:#cdddeb; --border-subtle:#e0eaf3; --live:#16803c; --warning:#a34a00;
+  --r-xs:4px; --r-sm:6px; --r-md:8px; --r-lg:12px; --r-xl:20px; --r-full:999px;
+  --shadow-card:0px 1px 2px 0px rgba(11,43,74,0.06),0px 1px 4px 0px rgba(11,43,74,0.05);
+  --shadow-pop:0 12px 32px rgba(11,43,74,.22),0 0 0 1px var(--border-subtle);
+  --dim:rgba(11,43,74,.52);
+  --ease:cubic-bezier(0.23,1,0.32,1);
+  --ease-io:cubic-bezier(0.77,0,0.175,1);
+  --ease-drawer:cubic-bezier(0.32,0.72,0,1);
+}
+*{box-sizing:border-box}
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg-page);color:var(--text-heavy);font-family:Figtree,system-ui,sans-serif;font-size:14px;line-height:1.4;overflow-x:hidden}
+button,a,[role="button"]{touch-action:manipulation}
+button{user-select:none;-webkit-user-select:none;font-family:inherit}
+h1{font-size:24px;line-height:1.2;margin:2px 0 0;font-weight:700}
+
+/* ---------- wireframe chrome ---------- */
+.wf-head{position:sticky;top:0;z-index:100;background:#fff;border-bottom:1px solid var(--border-subtle);padding:10px 16px}
+.wf-row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wf-title{font-weight:700;font-size:16px}
+.wf-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:var(--r-full);background:var(--inset);color:var(--text-light);white-space:nowrap}
+.wf-back{font-size:12px;font-weight:600;color:var(--link);text-decoration:none}
+.seg{margin-left:auto;display:inline-flex;background:var(--nav);border-radius:var(--r-full);padding:2px}
+.seg button{border:0;background:transparent;font-size:12px;font-weight:600;padding:5px 10px;border-radius:var(--r-full);color:var(--text-light);cursor:pointer;transition:transform 160ms var(--ease)}
+.seg button:active{transform:scale(.97)}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--text-heavy);box-shadow:var(--shadow-card)}
+.wf-row2{margin-top:8px}
+#wf-note{margin-top:8px;font-size:13px;color:var(--text-light)}
+#wf-note b{color:var(--text-heavy)}
+main{padding:16px}
+#frame{position:relative;margin:0 auto;max-width:1280px;height:calc(100dvh - var(--head-h,150px) - 32px);min-height:540px;background:var(--bg-page);border:1px solid var(--border-subtle);border-radius:var(--r-lg);overflow:hidden;container:app / inline-size}
+body.phone #frame{max-width:375px;height:min(780px,calc(100dvh - var(--head-h,150px) - 32px));border:6px solid var(--text-medium);border-radius:28px}
+#app{position:absolute;top:0;left:0;right:0;bottom:var(--ib,0px);overflow:auto;overscroll-behavior:contain}
+#layer{position:absolute;inset:0;pointer-events:none;z-index:40}
+#layer > *{pointer-events:auto}
+#layer .center,#layer .toast-wrap,#layer .c3wrap,#layer .sheetwrap,#layer .chipwrap,#layer .tbwrap,#layer .pwrap{pointer-events:none}
+#layer .center > *,#layer .toast-wrap > *,#layer .c3wrap > *,#layer .sheetwrap > *,#layer .chipwrap > *,#layer .tbwrap > *,#layer .pwrap > *{pointer-events:auto}
+
+/* ---------- picker (verbatim from prototype/PICKER.md) ---------- */
+.proto-picker{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2147483647;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;background:rgba(10,10,10,0.82);-webkit-backdrop-filter:blur(12px) saturate(1.4);backdrop-filter:blur(12px) saturate(1.4);box-shadow:0 0 0 1px rgba(255,255,255,0.08) inset,0 8px 24px rgba(0,0,0,0.24),0 2px 6px rgba(0,0,0,0.12);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;line-height:1;-webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none}
+.proto-picker-highlight{position:absolute;top:4px;left:0;height:28px;border-radius:999px;background:rgba(255,255,255,0.12)}
+.proto-picker[data-ready] .proto-picker-highlight{transition:transform 250ms cubic-bezier(0.23,1,0.32,1),width 250ms cubic-bezier(0.23,1,0.32,1)}
+@media (prefers-reduced-motion: reduce){.proto-picker[data-ready] .proto-picker-highlight{transition:none}}
+.proto-picker-item{position:relative;display:flex;align-items:center;height:28px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:rgba(255,255,255,0.55);font:inherit;cursor:pointer;transition:color 150ms ease-out,transform 160ms cubic-bezier(0.23,1,0.32,1)}
+@media (hover: hover) and (pointer: fine){.proto-picker-item:hover{color:rgba(255,255,255,0.85)}}
+.proto-picker-item:active{transform:scale(0.97)}
+.proto-picker-item:focus-visible{outline:2px solid rgba(255,255,255,0.4);outline-offset:2px}
+.proto-picker-item[data-active]{color:#fff}
+.proto-picker-divider{width:1px;height:16px;margin:0 4px;background:rgba(255,255,255,0.12)}
+.proto-picker-replay{padding:0 10px;font-size:14px}
+.proto-picker[data-position="top"]{bottom:auto;top:24px}
+.proto-picker[data-position="inline"]{position:relative;left:auto;bottom:auto;top:auto;transform:none;max-width:100%;overflow-x:auto;scrollbar-width:none;width:max-content;white-space:nowrap}
+.proto-picker[data-position="inline"]::-webkit-scrollbar{display:none}
+.proto-picker-item{flex-shrink:0}
+
+/* ---------- shared UI ---------- */
+.pill{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:30px;padding:0 12px;border-radius:var(--r-full);border:1px solid var(--border);background:#fff;color:var(--text-heavy);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:transform 160ms var(--ease),background-color 150ms ease,opacity 150ms ease}
+.pill:active{transform:scale(.97)}
+.pill.sm{height:28px;padding:0 11px;font-size:12px}
+.pill.primary,.pill.map{background:var(--primary);border-color:var(--primary);color:#fff}
+.pill:disabled{opacity:.45;cursor:default;transform:none}
+.pill.dk{background:rgba(255,255,255,.12);border-color:transparent;color:#fff}
+.pill.dk.primary{background:#fff;color:var(--text-heavy)}
+.pill:focus-visible,.link:focus-visible,.mi:focus-visible,.fl:focus-visible,.dot:focus-visible,.hs:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.link{border:0;background:none;font-size:12px;font-weight:600;color:var(--text-light);padding:6px 4px;cursor:pointer;border-radius:var(--r-sm);white-space:nowrap}
+@media (hover: hover) and (pointer: fine){
+  .pill:hover{background:var(--inset)}
+  .pill.primary:hover,.pill.map:hover{background:var(--active)}
+  .pill.dk:hover{background:rgba(255,255,255,.2)}
+  .pill.dk.primary:hover{background:var(--highlight)}
+  .pill:disabled:hover{background:#fff}
+  .pill.primary:disabled:hover{background:var(--primary)}
+  .link:hover{color:var(--text-heavy)}
+  .mi:hover,.fl:hover,.ck-i:hover{background:var(--inset)}
+  .p-nav button:hover{color:var(--text-heavy)}
+  .dp:hover,.chipb:hover{background:var(--inset)}
+}
+.sp{flex:1}
+.lbl{font-size:11px;font-weight:700;color:var(--link);letter-spacing:.02em}
+.ttl{font-size:15px;font-weight:700;margin-top:3px;line-height:1.3}
+.ttl.lg{font-size:18px}
+.bd{font-size:13px;color:var(--text-light);margin-top:4px;line-height:1.45}
+.hint{margin-top:10px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--link);background:var(--highlight);padding:7px 10px;border-radius:var(--r-md)}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--primary);position:relative;flex-shrink:0}
+.pulse-dot::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--primary);animation:pulse 1.6s var(--ease) infinite}
+.ctrls{display:flex;align-items:center;gap:6px;margin-top:12px;flex-wrap:wrap}
+.noanim{animation:none !important}
+
+@keyframes pop{from{opacity:0;transform:scale(.96)}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+@keyframes fade{from{opacity:0}}
+@keyframes up{from{transform:translateY(100%)}}
+@keyframes pulse{from{transform:scale(1);opacity:.55}to{transform:scale(2.6);opacity:0}}
+@keyframes ripple{from{opacity:.8;transform:scale(.4)}to{opacity:0;transform:scale(1.7)}}
+
+/* ---------- portal (the app under the tour) ---------- */
+.p-root{min-height:100%;display:flex;flex-direction:column}
+.p-top{order:0;position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:12px 24px;background:#fff;border-bottom:1px solid var(--border-subtle)}
+.p-logo{height:18px;width:auto;display:block;flex-shrink:0}
+.p-brand{font-size:12px;color:var(--text-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.p-actions{margin-left:auto;display:flex;gap:6px;flex-shrink:0}
+.p-nav{order:1;display:flex;gap:4px;padding:8px 24px;background:#fff;border-bottom:1px solid var(--border-subtle)}
+.p-nav button{position:relative;border:0;background:transparent;color:var(--text-light);font-size:13px;font-weight:600;padding:6px 12px;border-radius:var(--r-full);cursor:pointer;transition:transform 160ms var(--ease)}
+.p-nav button:active{transform:scale(.97)}
+.p-nav button.on{background:var(--nav-selected);color:var(--active)}
+.ndot{position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 2px #fff}
+.slot-top{order:2;padding:12px 24px 0;max-width:1000px;width:100%;margin:0 auto}
+.p-body{order:3;flex:1;padding:20px 24px 32px;width:100%;max-width:1000px;margin:0 auto}
+.hello{margin-bottom:14px}
+.k{font-size:12px;font-weight:600;color:var(--text-light)}
+.v{font-size:16px;font-weight:700;margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.s{font-size:13px;color:var(--text-light);margin-top:2px}
+.days{display:inline-flex;gap:2px;background:var(--nav);border-radius:var(--r-full);padding:2px;margin-bottom:16px;max-width:100%;overflow-x:auto;scrollbar-width:none}
+.dp{border:0;background:transparent;border-radius:var(--r-full);padding:5px 12px;font-size:12px;font-weight:600;color:var(--text-light);cursor:pointer;white-space:nowrap}
+.dp.on{background:#fff;color:var(--text-heavy);box-shadow:var(--shadow-card)}
+.dp small{font-weight:500;color:var(--link)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.card{background:#fff;border:1px solid var(--border-subtle);border-radius:var(--r-lg);box-shadow:var(--shadow-card);padding:14px 16px;min-width:0}
+.card.wide{grid-column:span 2}
+.fill{font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;padding:2px 8px;border-radius:var(--r-full);background:var(--highlight);color:var(--link)}
+.fill.full{background:var(--inset);color:var(--text-light)}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mp,.hp{margin-bottom:14px}
+.plan{margin-top:10px}
+.fl-l{font-size:11px;font-weight:700;color:var(--text-light);margin:8px 0 4px}
+.maps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mapimg{position:relative;border-radius:var(--r-md);overflow:hidden;box-shadow:0 0 0 1px var(--border-subtle)}
+.mapimg img{display:block;width:100%;height:auto;max-width:100%}
+.mpin{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.mpin i{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--text-medium);box-shadow:0 0 0 2px #fff}
+.mpin b{margin-top:2px;font-size:10px;font-weight:700;padding:1px 6px;border-radius:var(--r-full);background:var(--text-medium);color:#fff;white-space:nowrap}
+.mpin.you i{border-color:var(--primary)}
+.mpin.you b{background:var(--primary)}
+.mpin.l b{position:absolute;right:calc(100% + 3px);top:50%;transform:translateY(-50%);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chipb{border:1px solid var(--border);background:#fff;border-radius:var(--r-full);padding:5px 11px;font-size:12px;font-weight:600;color:var(--text-heavy);cursor:pointer}
+.chipb.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.hs-status{display:flex;gap:8px;align-items:flex-start;margin-top:12px;padding:10px;border-radius:var(--r-md);background:var(--inset);font-size:12px;color:var(--text-light)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--live);margin-top:4px;flex-shrink:0}
+.list{padding:4px 0}
+.li{display:flex;gap:14px;padding:10px 16px;border-bottom:1px solid var(--border-subtle)}
+.li:last-child{border-bottom:0}
+.tm{font-size:12px;font-weight:700;color:var(--text-light);width:76px;flex-shrink:0;font-variant-numeric:tabular-nums;padding-top:1px}
+.tx{display:flex;flex-direction:column;min-width:0}
+.tx small{font-size:12px;color:var(--text-light)}
+.slots{display:grid;gap:10px}
+.slotc .names{margin-top:6px;font-size:12px;color:var(--text-light)}
+.scanbox{position:relative;height:220px;border-radius:var(--r-lg);background:var(--text-medium);display:grid;place-items:center;color:rgba(255,255,255,.8);font-size:13px;font-weight:600;max-width:420px;margin-bottom:12px}
+.scanbox i{position:absolute;width:28px;height:28px;border:3px solid #fff}
+.scanbox .tl{top:40px;left:calc(50% - 70px);border-right:0;border-bottom:0;border-radius:6px 0 0 0}
+.scanbox .tr{top:40px;right:calc(50% - 70px);border-left:0;border-bottom:0;border-radius:0 6px 0 0}
+.scanbox .bl{bottom:40px;left:calc(50% - 70px);border-right:0;border-top:0;border-radius:0 0 0 6px}
+.scanbox .br{bottom:40px;right:calc(50% - 70px);border-left:0;border-top:0;border-radius:0 0 6px 0}
+.scanlast{max-width:420px}
+.tl-list{display:grid;gap:10px;max-width:640px}
+.tlr{display:flex;gap:14px}
+
+@container app (max-width: 640px){
+  .p-top{padding:10px 12px;gap:8px}
+  .p-brand,.lg{display:none}
+  .p-actions .pill{padding:0 10px}
+  .p-nav{order:9;position:sticky;bottom:0;z-index:5;border-bottom:0;border-top:1px solid var(--border-subtle);padding:6px 4px calc(6px + env(safe-area-inset-bottom));gap:0}
+  .p-nav button{flex:1;font-size:11px;padding:8px 2px}
+  .slot-top{padding:12px 16px 0}
+  .p-body{padding:16px 16px 24px}
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .card.wide{grid-column:auto}
+  .maps{grid-template-columns:minmax(0,1fr)}
+  h1{font-size:21px}
+}
+
+/* ---------- tour: ring + callout ---------- */
+.ring{position:absolute;left:0;top:0;z-index:30;pointer-events:none;border-radius:var(--r-lg);transition:transform 300ms var(--ease-io),width 300ms var(--ease-io),height 300ms var(--ease-io),opacity 200ms var(--ease)}
+.ring.jump{transition:opacity 200ms var(--ease)}
+.ring.off{opacity:0;visibility:hidden}
+.ring.dim{box-shadow:0 0 0 2px var(--primary),0 0 0 6px rgba(11,107,196,.28),0 0 0 9999px var(--dim)}
+.ring.soft{box-shadow:0 0 0 2px var(--primary),0 0 0 6px rgba(11,107,196,.18)}
+#anchors > *{position:absolute;z-index:31}
+.co{width:min(320px,calc(100% - 24px));background:#fff;border-radius:var(--r-lg);padding:14px 16px;box-shadow:var(--shadow-pop);animation:pop 200ms var(--ease) both}
+.co.slim{width:min(280px,calc(100% - 24px));padding:12px 14px}
+.menu{width:min(290px,calc(100% - 24px));background:#fff;border-radius:var(--r-lg);padding:6px;box-shadow:var(--shadow-pop);animation:pop 180ms var(--ease) both}
+.menu-h{font-size:12px;font-weight:700;color:var(--text-light);padding:8px 10px 4px}
+.mi{display:flex;flex-direction:column;align-items:flex-start;width:100%;border:0;background:none;text-align:left;padding:8px 10px;border-radius:var(--r-md);cursor:pointer;color:var(--text-heavy);transition:transform 160ms var(--ease)}
+.mi:active{transform:scale(.98)}
+.mi b{font-size:13px}
+.mi span{font-size:12px;color:var(--text-light)}
+.toast-wrap{position:absolute;left:0;right:0;bottom:calc(var(--ib,0px) + 16px);display:flex;justify-content:center;padding:0 16px}
+.toast{background:var(--text-heavy);color:#fff;font-size:13px;font-weight:600;padding:9px 14px;border-radius:var(--r-full);box-shadow:0 8px 24px rgba(11,43,74,.25);animation:rise 300ms var(--ease) both;max-width:100%}
+@container app (max-width: 640px){ .toast-wrap{bottom:calc(var(--ib,0px) + 70px)} }
+.scrim{position:absolute;inset:0;background:var(--dim);animation:fade 200ms var(--ease) both}
+.center{position:absolute;inset:0;display:grid;place-items:center;padding:16px}
+.modal{width:min(380px,100%);background:#fff;border-radius:var(--r-xl);padding:20px;box-shadow:var(--shadow-pop);animation:pop 240ms var(--ease) both;max-height:100%;overflow:auto}
+.mini{height:84px;border-radius:var(--r-lg);background:var(--inset);margin-bottom:14px;padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;align-content:end}
+.mini i{height:34px;border-radius:var(--r-md);background:#fff;box-shadow:var(--shadow-card)}
+.mini i:nth-child(2){outline:2px solid var(--primary)}
+
+/* V2 checklist */
+.side{position:absolute;top:0;right:0;bottom:0;width:300px;background:#fff;border-left:1px solid var(--border-subtle);display:flex;flex-direction:column}
+.side-scroll{overflow:auto;flex:1}
+.side-peek{display:none}
+.side-hd{padding:16px;border-bottom:1px solid var(--border-subtle)}
+.bar{height:4px;border-radius:var(--r-full);background:var(--border-subtle);overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;background:var(--live);transition:width 300ms var(--ease)}
+.ck-sec{font-size:12px;font-weight:700;color:var(--text-light);padding:14px 16px 4px}
+.ck{list-style:none}
+.ck-list{margin:0;padding:4px 0}
+.ck-i{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;padding:9px 16px;cursor:pointer;color:var(--text-heavy);font-size:13px}
+.ck-i small{display:block;font-size:12px;color:var(--text-light);font-weight:500}
+.ck-c{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:grid;place-items:center;color:#fff}
+.ck.done .ck-c{background:var(--live);border-color:var(--live)}
+.ck.cur .ck-c{border-color:var(--primary);box-shadow:0 0 0 3px var(--highlight)}
+.ck.cur{background:var(--highlight)}
+.ck-b{padding:0 16px 12px 44px;animation:fade 200ms var(--ease)}
+.side-ft{padding:10px 16px;border-top:1px solid var(--border-subtle);display:flex}
+@container app (min-width: 641px){ .v-side #app{right:300px} }
+@container app (max-width: 640px){
+  .v-side #app{bottom:58px}
+  .side{top:auto;left:0;width:auto;height:72%;border-left:0;border-top:1px solid var(--border-subtle);border-radius:20px 20px 0 0;box-shadow:0 -8px 32px rgba(11,43,74,.18);transform:translateY(calc(100% - 58px));transition:transform 400ms var(--ease-drawer)}
+  .side.open{transform:none}
+  .side-peek{display:flex;align-items:center;gap:8px;height:58px;padding:0 12px 0 16px;flex-shrink:0;border-bottom:1px solid var(--border-subtle)}
+  .side-peek .pt{flex:1;min-width:0;border:0;background:none;text-align:left;cursor:pointer;color:var(--text-heavy);padding:0}
+  .side-peek .pt b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .side-peek .pt small{display:block;font-size:11px;color:var(--link);font-weight:600}
+}
+
+/* V3 dots card */
+.c3wrap{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;padding:0 16px}
+.c3{width:min(380px,100%);background:#fff;border-radius:var(--r-xl);padding:16px;box-shadow:var(--shadow-pop);animation:rise 300ms var(--ease) both;touch-action:pan-y}
+.c3-in{animation:fade 180ms var(--ease) both}
+.art{height:92px;border-radius:var(--r-lg);background:var(--inset);display:grid;place-items:center;margin-bottom:10px;padding:10px}
+.a-card{background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-card);padding:8px 12px;font-size:12px;outline:2px solid var(--primary)}
+.a-card small{display:block;color:var(--text-light)}
+.a-map{position:relative;height:72px}
+.a-map img{height:100%;width:auto;border-radius:4px}
+.a-map i{position:absolute;width:12px;height:12px;border-radius:50%;border:2.5px solid var(--primary);box-shadow:0 0 0 1.5px #fff;transform:translate(-50%,-50%)}
+.dots{display:flex;justify-content:center;margin:2px 0 4px}
+.dot{width:22px;height:24px;border:0;background:none;padding:0;display:grid;place-items:center;cursor:pointer}
+.dot span{display:block;width:8px;height:8px;border-radius:var(--r-full);background:var(--border);transition:width 200ms var(--ease),background-color 200ms ease}
+.dot.on{width:34px}
+.dot.on span{width:22px;background:var(--primary)}
+@container app (max-width: 640px){ .c3wrap{bottom:66px;padding:0 10px} }
+
+/* V4 inline */
+.inl{margin-top:12px;border-radius:var(--r-md);background:var(--highlight);border:1px solid var(--border);padding:10px 12px;animation:rise 200ms var(--ease) both}
+.inl .ttl{font-size:14px;margin-top:2px}
+.inl .ctrls{margin-top:8px}
+.inl .hint{background:#fff}
+
+/* V5 auto-play */
+.player{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--border-subtle);padding:10px 16px 14px;animation:rise 300ms var(--ease) both}
+.chap{display:flex;gap:4px;margin-bottom:8px}
+.chap button{flex:1;border:0;background:none;padding:6px 0;cursor:pointer}
+.chap i{display:block;height:4px;border-radius:var(--r-full);background:var(--border-subtle);overflow:hidden;position:relative}
+.chap i b{position:absolute;left:0;top:0;bottom:0;background:var(--primary)}
+.prow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.play{width:36px;height:36px;border-radius:50%;background:var(--primary);color:#fff;border:0;display:grid;place-items:center;cursor:pointer;flex-shrink:0;transition:transform 160ms var(--ease)}
+.play:active{transform:scale(.94)}
+.cap{flex:1;min-width:180px}
+.cap .ttl{margin-top:1px}
+.pctl{display:flex;gap:6px;align-items:center}
+@container app (max-width: 640px){ .pctl{width:100%;justify-content:flex-end} }
+#cursor{position:absolute;left:0;top:0;z-index:33;pointer-events:none;transition:transform 700ms var(--ease-io),opacity 200ms ease}
+#cursor.off{opacity:0}
+#cursor::after{content:"";position:absolute;left:-11px;top:-11px;width:24px;height:24px;border-radius:50%;border:2px solid var(--primary);opacity:0}
+#cursor.click::after{animation:ripple 400ms var(--ease)}
+.vid{height:150px;border-radius:var(--r-lg);background:var(--text-medium);display:grid;place-items:center;margin-bottom:14px;position:relative}
+.bigplay{width:56px;height:56px;border-radius:50%;border:0;background:#fff;color:var(--text-heavy);display:grid;place-items:center;cursor:pointer;transition:transform 160ms var(--ease)}
+.bigplay:active{transform:scale(.95)}
+.dur{position:absolute;right:10px;bottom:8px;font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.35);padding:2px 6px;border-radius:var(--r-xs)}
+
+/* V6 hotspots */
+.hs{width:28px;height:28px;border:0;background:transparent;padding:0;cursor:pointer;transform:translate(-50%,-50%);display:grid;place-items:center;animation:pop 200ms var(--ease) both}
+.hs::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 2px #fff;position:relative;z-index:1}
+.hs::after{content:"";position:absolute;width:12px;height:12px;border-radius:50%;background:var(--primary);animation:pulse 1.6s var(--ease) infinite}
+.hs.seen::before{background:#fff;box-shadow:0 0 0 2px var(--primary)}
+.hs.seen::after,.hs.cur::after{animation:none;opacity:0}
+.chipwrap,.pwrap{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;padding:0 16px}
+.pwrap{justify-content:flex-start}
+.chip{display:flex;align-items:center;gap:10px;background:var(--text-heavy);color:#fff;border-radius:var(--r-full);padding:4px 4px 4px 14px;font-size:12px;font-weight:600;box-shadow:0 8px 24px rgba(11,43,74,.25);animation:rise 300ms var(--ease) both;max-width:100%}
+.mbar{width:60px;height:4px;border-radius:var(--r-full);background:rgba(255,255,255,.2);overflow:hidden;flex-shrink:0}
+.mbar i{display:block;height:100%;background:#fff;transition:width 300ms var(--ease)}
+.pcard{width:min(330px,100%);background:#fff;border-radius:var(--r-lg);padding:14px 16px;box-shadow:var(--shadow-pop);animation:rise 300ms var(--ease) both}
+@container app (max-width: 640px){ .chipwrap,.pwrap{bottom:66px;padding:0 10px} .pwrap{justify-content:center} }
+
+/* V7 bottom sheet */
+.sheetwrap{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center}
+.sheet{width:min(440px,100%);background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -8px 32px rgba(11,43,74,.18);padding:0 20px calc(18px + env(safe-area-inset-bottom));animation:up 400ms var(--ease-drawer)}
+.grab{touch-action:none;padding:10px 0 12px;cursor:grab;display:block;width:100%;border:0;background:none}
+.grab i{display:block;width:36px;height:4px;border-radius:var(--r-full);background:var(--border);margin:0 auto}
+.segbar{display:flex;gap:4px;margin:0 0 12px}
+.segbar i{flex:1;height:4px;border-radius:var(--r-full);background:var(--border-subtle);transition:background-color 200ms ease}
+.segbar i.on{background:var(--primary)}
+.sheet .ctrls .pill{flex:1}
+.sheet .ctrls .link{flex:0 0 auto}
+.peekrow{display:flex;align-items:center;gap:8px;padding-bottom:4px}
+@container app (min-width: 641px){ .sheetwrap{bottom:16px} .sheet{border-radius:var(--r-xl)} }
+
+/* V8 chat */
+.chat{position:absolute;right:16px;bottom:16px;top:16px;width:340px;display:flex;flex-direction:column;background:#fff;border-radius:var(--r-xl);box-shadow:var(--shadow-pop);animation:rise 300ms var(--ease) both;overflow:hidden}
+.chat-h{display:flex;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--border-subtle)}
+.av{width:30px;height:30px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;flex-shrink:0}
+.chat-h small{display:block;font-size:11px;color:var(--live);font-weight:600}
+.msgs{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.b{max-width:86%;padding:8px 12px;border-radius:14px;font-size:13px;line-height:1.45;animation:rise 200ms var(--ease) both;overflow-wrap:anywhere}
+.b.bot{background:var(--inset);border-bottom-left-radius:4px;align-self:flex-start}
+.b.me{background:var(--primary);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.b .lbl{font-size:10px}
+.hint-in{display:inline-block;margin-top:4px;font-weight:700;color:var(--link)}
+.replies{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px 14px;border-top:1px solid var(--border-subtle)}
+.waiting{border-style:dashed;color:var(--link);cursor:default}
+@container app (min-width: 641px){ .v-chat #app{right:372px} }
+@container app (max-width: 640px){
+  .v-chat #app{bottom:50%}
+  .chat{left:0;right:0;bottom:0;top:auto;height:50%;width:auto;border-radius:20px 20px 0 0}
+}
+
+/* V9 launcher */
+.launch{width:min(460px,100%)}
+.fls{display:grid;gap:8px;margin-top:14px}
+.fl{display:flex;align-items:center;gap:12px;width:100%;padding:11px 12px;border:1px solid var(--border-subtle);border-radius:var(--r-lg);background:#fff;text-align:left;cursor:pointer;color:var(--text-heavy);transition:transform 160ms var(--ease)}
+.fl:active{transform:scale(.98)}
+.fl .n{width:28px;height:28px;border-radius:var(--r-md);background:var(--highlight);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--link);flex-shrink:0}
+.flt{flex:1;min-width:0}
+.flt b{display:block;font-size:13px}
+.flt span{display:block;font-size:12px;color:var(--text-light)}
+.flm{font-size:11px;font-weight:600;color:var(--text-light);white-space:nowrap}
+.tourrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border-subtle)}
+.tourrow > span{flex:1;min-width:150px}
+.tourrow b{display:block;font-size:13px}
+.tourrow span span{display:block;font-size:12px;color:var(--text-light)}
+.tbwrap{position:absolute;left:0;right:0;bottom:16px;display:flex;justify-content:center;padding:0 12px}
+.tb{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--text-heavy);color:#fff;border-radius:18px;padding:5px 5px 5px 14px;font-size:12px;box-shadow:0 8px 24px rgba(11,43,74,.25);animation:rise 300ms var(--ease) both;max-width:100%}
+.tb b{font-size:12px}
+.tbs{color:rgba(255,255,255,.7);white-space:nowrap}
+.done-ic{width:32px;height:32px;border-radius:50%;background:var(--live);color:#fff;display:grid;place-items:center;margin-bottom:10px}
+@container app (max-width: 640px){ .tbwrap{bottom:66px} .tb{justify-content:flex-end} .tb b{flex:1 0 100%} }
+
+@media (prefers-reduced-motion: reduce){
+  .co,.menu,.toast,.scrim,.modal,.c3,.c3-in,.inl,.player,.hs,.chip,.pcard,.sheet,.chat,.b,.tb,.ck-b{animation:none !important}
+  .pulse-dot::after,.hs::after{animation:none !important;opacity:0}
+  .ring,#cursor,.side,.bar i,.mbar i,.dot span{transition:none !important}
+  #cursor.click::after{animation:none}
+}
+</style>
+</head>
+<body>
+<header class="wf-head" id="wf-head">
+  <div class="wf-row1">
+    <span class="wf-title">Sponsor tour</span>
+    <span class="wf-badge">WIREFRAME · dummy data</span><span class="wf-badge" style="opacity:.75">v2 · new map logistics</span>
+    <a class="wf-back" href="index.html">All wireframes</a>
+    <div class="seg" role="group" aria-label="Frame size">
+      <button type="button" data-d="desktop" aria-pressed="true">Desktop</button>
+      <button type="button" data-d="phone" aria-pressed="false">Phone</button>
+    </div>
+  </div>
+  <div class="wf-row2">
+    <nav class="proto-picker" data-position="inline" aria-label="Prototype variants">
+      <span class="proto-picker-highlight" aria-hidden="true"></span>
+      <button class="proto-picker-item" data-active aria-current="true">1 Spotlight</button>
+      <button class="proto-picker-item">2 Checklist</button>
+      <button class="proto-picker-item">3 Dots</button>
+      <button class="proto-picker-item">4 Inline</button>
+      <button class="proto-picker-item">5 Auto-play</button>
+      <button class="proto-picker-item">6 Hotspots</button>
+      <button class="proto-picker-item">7 Sheet</button>
+      <button class="proto-picker-item">8 Chat</button>
+      <button class="proto-picker-item">9 Launcher</button>
+      <button class="proto-picker-item">10 Page tips</button>
+      <span class="proto-picker-divider" aria-hidden="true"></span>
+      <button class="proto-picker-item proto-picker-replay" aria-label="Replay animation (R)">↻</button>
+    </nav>
+  </div>
+  <div id="wf-note"></div>
+</header>
+<main>
+  <div id="frame"><div id="app"></div><div id="layer"></div></div>
+</main>
+
+<script>
+/* ================= data ================= */
+const LOGO = "../../public/shared/sponsors/scotiabank-trimmed.svg";
+const MAPI = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+const CHECK = '<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2.5 6.5l2.5 2.5 4.5-5"/></svg>';
+const PLAY = '<svg width="14" height="14" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5v9l7.5-4.5z" fill="currentColor"/></svg>';
+const PAUSE = '<svg width="14" height="14" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5h2v9H3zM7 1.5h2v9H7z" fill="currentColor"/></svg>';
+const CURSOR = '<svg width="20" height="22" viewBox="0 0 20 22" aria-hidden="true"><path d="M2 1l15 9-6.5 1.5L7 19z" fill="#0b2b4a" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+const PROMPT = "Five quick stops: your day, the map, coffee chats and where to get help.";
+
+const STEPS = {
+  tour: { name: "1-minute tour", steps: [
+    { t: "booth", page: "home", title: "Your day at a glance", body: "Everything on Home is for the day you pick. It opens on today, Fri Nov 20." },
+    { t: "map", page: "home", title: "The map is one tap away", body: "Rooms, your booth and the lounge, from any page.", wait: true, hint: "Tap Map to continue" },
+    { t: "mappanel", page: "home", panel: "map", title: "Your booth is pinned", body: "Sponsor Bay is Rm 1235, Floor 1. Close the map any time." },
+    { t: "chats", page: "home", title: "Coffee chats", body: "Each slot fits up to 3 hackers. 1/3 means one has booked so far." },
+    { t: "help", page: "home", title: "Stuck? Ask us", body: "Tap Need help? and someone from the sponsor team comes to you." },
+  ]},
+  coffee: { name: "Offer a coffee chat", steps: [
+    { t: "nav-scan", title: "Start at Scan", body: "Met someone great at your booth? Scan their badge.", wait: true, hint: "Tap Scan to continue" },
+    { t: "scanbox", page: "scan", title: "Point at their badge", body: "The QR code is on the front. Hold steady for a second." },
+    { t: "offer", page: "scan", title: "Pick a slot and send", body: "Choose a time with room left. They get a Slack message to accept." },
+  ]},
+  help: { name: "Ask for help", steps: [
+    { t: "help", title: "Tap Need help?", body: "It's at the top of every page.", wait: true, hint: "Tap Need help? to continue" },
+    { t: "helppanel", page: "home", panel: "help", title: "Pick what you need", body: "One tap. We ping the sponsor team on Slack." },
+    { t: "helpstatus", page: "home", panel: "help", title: "See who's coming", body: "You'll see the name of the organizer on their way. Usually under 10 minutes." },
+  ]},
+  way: { name: "Find your way", steps: [
+    { t: "map", title: "Open the map", body: "Same pill on every page.", wait: true, hint: "Tap Map to continue" },
+    { t: "mappanel", page: "home", panel: "map", title: "Rooms you'll use", body: "Your booth in Rm 1235, the lounge behind the curtain in Rm 2110 and coffee chat rooms 2241 to 2243." },
+    { t: "lounge", page: "home", title: "Bags and breaks", body: "Leave belongings in Rm 2244. Take a break in the Rm 2110 lounge." },
+  ]},
+  judge: { name: "Judging on Sunday", steps: [
+    { t: "nav-judging", title: "Judging lives here", body: "It opens Sunday morning. You can look around now.", wait: true, hint: "Tap Judging to continue" },
+    { t: "r1", page: "judging", title: "9:00 · Shortlist", body: "Browse the Devposts in your track and shortlist as many teams as you like." },
+    { t: "r2", page: "judging", title: "10:00 to 11:30 · Presentations", body: "Shortlisted teams come to your table in the Grand Hall, Rm 1110, for 5-minute demos. We build the schedule." },
+    { t: "r3", page: "judging", title: "Then · Your top 5", body: "Rank your top 5 from the teams that presented and send it to us." },
+  ]},
+  ctx: { name: "Page tips", steps: [
+    { t: "map", page: "home", title: "The map is one tap away", body: "Rooms, your booth and the lounge, from any page.", wait: true, hint: "Tap Map to continue" },
+    { t: "days", page: "schedule", title: "It opens on today", body: "Pick Sat or Sun to see only that day." },
+    { t: "slot", page: "chats", title: "1/3 means one booked", body: "Each slot fits up to 3 hackers. Full slots say Full." },
+    { t: "scanbox", page: "scan", title: "Scan to offer a chat", body: "Point at the QR code on a hacker's badge." },
+    { t: "r1", page: "judging", title: "Sunday at 9:00", body: "Shortlist teams from your track here. We set up the presentations." },
+  ]},
+};
+const FLOW_LIST = [
+  ["coffee", "Offer a coffee chat", "Scan a badge, pick a slot", "3 steps"],
+  ["help", "Ask for help", "Someone comes to you", "3 steps"],
+  ["way", "Find your way", "Booth, lounge, chat rooms", "3 steps"],
+  ["judge", "Judging on Sunday", "Shortlist, presentations, top 5", "4 steps"],
+];
+const NAV = [["home", "Home"], ["schedule", "Schedule"], ["chats", "Coffee chats"], ["scan", "Scan"], ["judging", "Judging"]];
+const PAGE_NAME = Object.fromEntries(NAV);
+const DAYS = [["fri", "Fri Nov 20", "Today"], ["sat", "Sat Nov 21"], ["sun", "Sun Nov 22"]];
+const DAY_LONG = { fri: "Friday, Nov 20", sat: "Saturday, Nov 21", sun: "Sunday, Nov 22" };
+const NEXT = {
+  fri: ["Next up · in 1 h 40 min", "Opening ceremony", "7:00 PM · Grand Hall Rm 1110"],
+  sat: ["First thing", "Booth opens", "10:00 AM · Sponsor Bay, Rm 1235"],
+  sun: ["First thing", "Judging workshop", "8:30 AM · Grand Hall Rm 1110"],
+};
+const SCHED = {
+  fri: [["4:00 PM", "Sponsor check-in", "Sponsor Bay · Rm 1235, Floor 1"], ["4:30 PM", "Booth set up", "Table 14"], ["7:00 PM", "Opening ceremony", "Grand Hall Rm 1110"], ["9:00 PM", "Hacking starts", ""], ["11:00 PM", "Booth closes", "Belongings can stay in Rm 2244"]],
+  sat: [["10:00 AM", "Booth opens", "Sponsor Bay, Rm 1235 · until midnight"], ["10:00 AM", "Coffee chats", "Rm 2241 · until 12:00"], ["1:00 PM", "Lunch", "Sponsor lounge, Rm 2110"], ["3:00 PM", "Your workshop", "Rm 2230, Floor 2"]],
+  sun: [["8:30 AM", "Judging workshop", "Grand Hall Rm 1110"], ["9:00 AM", "Round 1: shortlist", "On this portal"], ["10:00 AM", "Presentations", "Grand Hall Rm 1110, Scotiabank table"], ["1:00 PM", "Closing ceremony", "Grand Hall Rm 1110"]],
+};
+const SLOTS = [
+  ["10:00 AM", 1, ["Maya R. · Western, CS 3rd year"]],
+  ["10:15 AM", 0, []],
+  ["10:30 AM", 3, ["Jonah T. · McMaster, Eng 2nd year", "Priya K. · Waterloo, SE 2nd year", "Leo M. · Western, Ivey HBA 1"]],
+  ["10:45 AM", 2, ["Amara O. · Toronto, Stats 4th year", "Sam W. · Queen's, Comp Eng 3rd year"]],
+];
+const JUD = [
+  { t: "r1", tm: "9:00 AM", ti: "Round 1: shortlist", d: "Browse the Devposts in your track. Shortlist as many as you like." },
+  { t: "r2", tm: "10:00 to 11:30", ti: "Presentations in the Grand Hall", d: "Rm 1110, at your table. 5 minutes per team. We make the schedule." },
+  { t: "r3", tm: "After 11:30", ti: "Round 2: your top 5", d: "Rank 5 from the teams that presented, then send." },
+  { t: "", tm: "Then", ti: "Cheat check", d: "Our web team checks every top 5 team. Nothing for you to do." },
+];
+const REASONS = ["Out of swag or supplies", "Tech or wifi", "Food or drinks", "Find a hacker", "Something else"];
+
+/* ================= engine ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const frame = $("#frame"), app = $("#app"), layer = $("#layer"), note = $("#wf-note");
+let portalEl, ringEl, anchorsEl, V, timers = [], lastKey = "";
+const E = {};
+const every = (fn, ms) => timers.push(setInterval(fn, ms));
+const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+function clearTimers() { timers.forEach(t => { clearInterval(t); clearTimeout(t); }); timers = []; }
+const step = () => E.flow && STEPS[E.flow].steps[E.i];
+const total = () => STEPS[E.flow].steps.length;
+const q = t => portalEl.querySelector('[data-t="' + t + '"]');
+const H = n => (V && V.slot ? V.slot(n) : "");
+
+function enter() { const s = step(); if (s.page) E.page = s.page; E.panel = s.panel || null; V.onStep && V.onStep(); }
+function start(f) { E.flow = f; E.i = 0; E.on = true; E.prompt = false; E.panel = null; V.onStart && V.onStart(f); enter(); render(); }
+function next() { if (E.i < total() - 1) { E.i++; enter(); render(); } else finish(); }
+function back() { if (E.i > 0) { E.i--; enter(); render(); } }
+function go(i) { E.i = i; enter(); render(); }
+function finish(msg) {
+  const f = E.flow; E.on = false; E.panel = null;
+  const m = msg || (f === "tour" ? "You're all set. Restart the tour any time from ?" : f === "ctx" ? "All 5 tips seen. Find them again under ?" : STEPS[f].name + ": done.");
+  V.onFinish && V.onFinish(f);
+  if (!V.quietFinish) toast(m);
+  render();
+}
+function skip() { E.on = false; E.prompt = false; E.panel = null; toast("Tour closed. Restart it any time from ?"); render(); }
+function notNow() { E.prompt = false; toast("No problem. The tour is under ? when you want it."); render(); }
+let toastT;
+function toast(m) { E.toast = m; clearTimeout(toastT); toastT = setTimeout(() => { E.toast = null; renderLayer(); place(); }, 3200); }
+
+const ACT = {
+  page: a => { E.page = a; E.panel = null; V.onPage && V.onPage(a); render(); },
+  map: () => { E.panel = E.panel === "map" ? null : "map"; render(); },
+  help: () => { E.panel = E.panel === "help" ? null : "help"; render(); },
+  howto: () => { E.panel = E.panel === "howto" ? null : "howto"; render(); },
+  close: () => { E.panel = null; render(); },
+  day: a => { E.day = a; render(); },
+  start: a => start(a || "tour"),
+  next: () => next(), back: () => back(), skip: () => skip(), notnow: () => notNow(), go: a => go(+a),
+  reason: a => { E.reason = a; render(); },
+  send: () => { E.panel = null; toast("Sent. Caroline is on her way."); render(); },
+  offer: () => { toast("Offer sent to Priya K. on Slack."); renderLayer(); place(); },
+};
+
+frame.addEventListener("click", e => {
+  if (E.panel === "howto" && !e.target.closest('.menu,[data-t="howto"]')) { E.panel = null; render(); }
+  const b = e.target.closest("[data-act]");
+  if (!b || b.disabled) return;
+  const A = (V.acts && V.acts[b.dataset.act]) || ACT[b.dataset.act];
+  if (!A) return;
+  const s = E.on && step();
+  const hit = s && s.wait && b.dataset.t === s.t && (!V.waitOk || V.waitOk());
+  A(b.dataset.arg, b);
+  if (hit) V.afterWait ? V.afterWait() : next();
+});
+
+function rel(el) {
+  const a = app.getBoundingClientRect(), r = el.getBoundingClientRect();
+  return { x: r.left - a.left + app.scrollLeft, y: r.top - a.top + app.scrollTop, w: r.width, h: r.height };
+}
+function posNear(a, r) {
+  const W = app.clientWidth, aw = a.offsetWidth, ah = a.offsetHeight;
+  let x = Math.max(12, Math.min(r.x + r.w / 2 - aw / 2, W - aw - 12));
+  const top = app.scrollTop, bottom = top + app.clientHeight;
+  let y = r.y + r.h + 12, below = true;
+  if (y + ah > bottom - 8 && r.y - 12 - ah > top + 8) { y = r.y - 12 - ah; below = false; }
+  a.style.left = x + "px"; a.style.top = y + "px";
+  a.style.transformOrigin = Math.max(0, Math.min(aw, r.x + r.w / 2 - x)) + "px " + (below ? "0" : "100%");
+}
+function scrollToTarget(t) {
+  const el = q(t); if (!el || el.closest(".p-top,.p-nav")) return;
+  const r = rel(el), vh = app.clientHeight;
+  if (r.y < app.scrollTop + 64 || r.y + r.h > app.scrollTop + vh - 40) app.scrollTop = Math.max(0, r.y - vh * 0.28);
+}
+function place() {
+  const s = E.on && step();
+  const mode = V.ring ? V.ring() : (s ? "dim" : null);
+  const el = s && q(s.t);
+  if (mode && el) {
+    const r = rel(el), pad = 4, was = ringEl.classList.contains("off");
+    ringEl.className = "ring " + mode + (was ? " jump" : "");
+    ringEl.style.width = r.w + pad * 2 + "px"; ringEl.style.height = r.h + pad * 2 + "px";
+    ringEl.style.transform = "translate(" + (r.x - pad) + "px," + (r.y - pad) + "px)";
+    const br = getComputedStyle(el).borderTopLeftRadius;
+    ringEl.style.borderRadius = br && br !== "0px" ? "calc(" + br + " + 4px)" : "8px";
+    if (was) { void ringEl.offsetWidth; ringEl.classList.remove("jump"); }
+  } else ringEl.className = "ring off";
+  anchorsEl.querySelectorAll("[data-anchor]").forEach(a => {
+    const t = a.dataset.anchor === "step" ? (s && s.t) : a.dataset.anchor;
+    const te = t && q(t);
+    if (!te) { a.style.visibility = "hidden"; return; }
+    a.style.visibility = "";
+    const r = rel(te);
+    if (a.dataset.place === "corner") { a.style.left = r.x + r.w - 6 + "px"; a.style.top = r.y + 6 + "px"; }
+    else posNear(a, r);
+  });
+}
+function keepSwap(root, html) {
+  const prev = new Set([...root.querySelectorAll("[data-keep]")].map(e => e.dataset.keep));
+  root.innerHTML = html;
+  root.querySelectorAll("[data-keep]").forEach(e => { if (prev.has(e.dataset.keep)) e.classList.add("noanim"); });
+}
+function renderLayer() {
+  keepSwap(layer, (V.layer ? V.layer() : "") + (E.toast ? '<div class="toast-wrap"><div class="toast" role="status" data-keep="toast">' + E.toast + "</div></div>" : ""));
+  keepSwap(anchorsEl, (V.anchor ? V.anchor() : "") + (E.panel === "howto" && !V.howto ? howtoMenu() : ""));
+}
+function render() {
+  const st = app.scrollTop;
+  portalEl.innerHTML = portal();
+  app.scrollTop = st;
+  renderLayer();
+  const s = E.on && step();
+  const key = s ? E.flow + E.i + E.page + (E.panel || "") : "";
+  if (s && key !== lastKey) scrollToTarget(s.t);
+  lastKey = key;
+  place();
+  V.after && V.after();
+}
+
+/* ---------- shared tour bits ---------- */
+function stepText(o = {}) {
+  const s = step(), fl = E.flow !== "tour" && E.flow !== "ctx" ? " · " + STEPS[E.flow].name : "";
+  return (o.noLabel ? "" : '<div class="lbl">Step ' + (E.i + 1) + " of " + total() + fl + "</div>") +
+    (o.noTitle ? "" : '<div class="ttl">' + s.title + "</div>") +
+    '<div class="bd">' + s.body + "</div>" +
+    (s.wait ? '<div class="hint"><span class="pulse-dot"></span>' + s.hint + "</div>" : "");
+}
+function ctrls(o = {}) {
+  const s = step(), last = E.i === total() - 1;
+  return '<div class="ctrls"><button class="link" data-act="skip">Skip tour</button><span class="sp"></span>' +
+    (E.i > 0 ? '<button class="pill sm" data-act="back">Back</button>' : "") +
+    '<button class="pill sm primary" data-act="next"' + (s.wait ? " disabled" : "") + ">" + (last ? "Done" : "Next") + "</button></div>";
+}
+const promptBtns = (start = "Start tour") => '<div class="ctrls"><span class="sp"></span><button class="pill sm" data-act="notnow">Not now</button><button class="pill sm primary" data-act="start">' + start + "</button></div>";
+const MENU_ITEMS = [["tour", "Take the 1-minute tour", "Five basics, start to finish"]].concat(FLOW_LIST.map(f => [f[0], f[1], f[2]]));
+function howtoMenu() {
+  return '<div class="menu" data-anchor="howto" data-keep="menu" role="menu" aria-label="How to"><div class="menu-h">How to…</div>' +
+    MENU_ITEMS.map(f => '<button class="mi" role="menuitem" data-act="start" data-arg="' + f[0] + '"><b>' + f[1] + "</b><span>" + f[2] + "</span></button>").join("") + "</div>";
+}
+function promptModal(extraTop = '<div class="mini"><i></i><i></i><i></i></div>', body = PROMPT, startLabel) {
+  return '<div class="scrim" data-keep="scrim"></div><div class="center"><div class="modal" role="dialog" aria-label="Tour" data-keep="pm">' + extraTop +
+    '<div class="ttl lg">Take a 1-minute tour?</div><div class="bd">' + body + "</div>" + promptBtns(startLabel) + "</div></div>";
+}
+function promptCard(body) {
+  return '<div class="pwrap"><div class="pcard" role="dialog" aria-label="Tour" data-keep="pc"><div class="ttl">Take a 1-minute tour?</div><div class="bd">' + body + "</div>" + promptBtns() + "</div></div>";
+}
+function callout() {
+  return E.on ? '<div class="co" role="dialog" aria-label="Tour step" data-anchor="step" data-keep="co' + E.flow + E.i + '">' + stepText() + ctrls() + "</div>" : "";
+}
+
+/* ================= portal ================= */
+function portal() {
+  return '<div class="p-root">' +
+    '<header class="p-top"><img class="p-logo" src="' + LOGO + '" alt="Scotiabank"><span class="p-brand">Sponsor portal · Hack Western 13</span>' +
+    '<div class="p-actions">' +
+    '<button class="pill map" data-act="map" data-t="map">' + MAPI + "Map</button>" +
+    '<button class="pill" data-act="howto" data-t="howto" aria-label="How to…">?<span class="lg"> How to…</span></button>' +
+    '<button class="pill" data-act="help" data-t="help">Need help?</button>' +
+    "</div></header>" +
+    '<nav class="p-nav" aria-label="Portal">' + NAV.map(([k, l]) => '<button class="' + (E.page === k ? "on" : "") + '" data-act="page" data-arg="' + k + '" data-t="nav-' + k + '">' + l + (V.navDot ? V.navDot(k) : "") + "</button>").join("") + "</nav>" +
+    (H("top") ? '<div class="slot-top">' + H("top") + "</div>" : "") +
+    '<div class="p-body">' + (E.panel === "map" ? mapPanel() : "") + (E.panel === "help" ? helpPanel() : "") + PAGES[E.page]() + "</div></div>";
+}
+function days() {
+  return '<div class="days" data-t="days" role="group" aria-label="Day">' + DAYS.map(([k, l, x]) => '<button class="dp ' + (E.day === k ? "on" : "") + '" data-act="day" data-arg="' + k + '">' + l + (x ? " <small>· " + x + "</small>" : "") + "</button>").join("") + "</div>";
+}
+/* Official floor maps; pins are a percent of the full image (left, top). */
+const MAP_SRC = { 1: ["../../public/sponsor-map/floor1.webp", 2086], 2: ["../../public/sponsor-map/floor2.webp", 2453] };
+const MAP_PINS = {
+  1: [[14.4, 59.0, "You · table 14", true], [82.7, 64.2, "Judging Sun"]],
+  2: [[84.3, 38.9, "Lounge"], [28.3, 42.0, "Coffee chats"], [17.8, 45.4, "Bags", false, true]],
+};
+function mapImg(f) {
+  return '<div class="mapimg"><img src="' + MAP_SRC[f][0] + '" alt="Level ' + f + ' floor map, Hack Western 13" width="2400" height="' + MAP_SRC[f][1] + '">' +
+    MAP_PINS[f].map(([x, y, l, you, left]) => '<span class="mpin' + (you ? " you" : "") + (left ? " l" : "") + '" style="left:' + x + '%;top:' + y + '%"><i></i><b>' + l + "</b></span>").join("") + "</div>";
+}
+function mapPanel() {
+  return '<section class="card mp" data-t="mappanel"><div class="row"><b>Venue map</b><span class="s">Floor 1 and 2</span><span class="sp"></span><button class="pill sm" data-act="close">Close</button></div><div class="plan">' +
+    '<div class="maps"><div><div class="fl-l">Floor 1</div>' + mapImg(1) + '</div><div><div class="fl-l">Floor 2</div>' + mapImg(2) + '</div></div>' +
+    "</div>" + H("mappanel") + "</section>";
+}
+function helpPanel() {
+  return '<section class="card hp" data-t="helppanel"><div class="row"><b>What do you need?</b><span class="sp"></span><button class="pill sm" data-act="close">Close</button></div><div class="bd">Pick one. We\'ll ping the sponsor team and show you who\'s coming.</div>' +
+    '<div class="chips">' + REASONS.map(r => '<button class="chipb ' + (E.reason === r ? "on" : "") + '" data-act="reason" data-arg="' + r + '">' + r + "</button>").join("") + "</div>" +
+    '<div class="row" style="margin-top:10px"><span class="sp"></span><button class="pill sm primary" data-act="send"' + (E.reason ? "" : " disabled") + ">Send</button></div>" +
+    '<div class="hs-status" data-t="helpstatus"><span class="live-dot"></span><span><b>After you send:</b> "Caroline is on her way." Usually under 10 minutes.</span></div>' +
+    H("helppanel") + H("helpstatus") + "</section>";
+}
+const PAGES = {
+  home() {
+    const n = NEXT[E.day];
+    const chats = E.day === "sun"
+      ? '<div class="k">Coffee chats</div><div class="v">None today</div><div class="s">Your chats were on Saturday.</div>'
+      : '<div class="k">Coffee chats · ' + (E.day === "fri" ? "tomorrow" : "today") + '</div><div class="v">First slot 10:00 AM <span class="fill">1/3</span></div><div class="s">Rm 2241 · 3 reps, 15 min each</div>';
+    return '<div class="hello">' + H("welcome") + '<div class="k" style="margin-top:' + (E.prompt && V.slot ? "14px" : "0") + '">' + DAY_LONG[E.day] + (E.day === "fri" ? " · Today" : "") + "</div><h1>Welcome, Scotiabank!</h1></div>" + days() +
+      '<div class="grid">' +
+      '<div class="card" data-t="booth"><div class="k">Your booth</div><div class="v">Sponsor Bay, table 14</div><div class="s">Rm 1235, Floor 1 · set up from 4:00 PM Friday</div>' + H("booth") + "</div>" +
+      '<div class="card" data-t="next"><div class="k">' + n[0] + '</div><div class="v">' + n[1] + '</div><div class="s">' + n[2] + "</div></div>" +
+      '<div class="card" data-t="chats">' + chats + H("chats") + "</div>" +
+      '<div class="card wide" data-t="lounge"><div class="k">Lounge and bags</div><div class="v">Rm 2110 sponsor lounge</div><div class="s">Behind the curtain in Rm 2110 · leave belongings in Rm 2244 overnight</div>' + H("lounge") + "</div>" +
+      '<div class="card"><div class="k">Your contact</div><div class="v">Noah</div><div class="s">Phone coming soon · on Slack</div></div>' +
+      "</div>";
+  },
+  schedule() {
+    return '<div class="hello"><div class="k">Your schedule</div><h1>' + DAY_LONG[E.day] + "</h1></div>" + days() + H("days") +
+      '<div class="card list">' + SCHED[E.day].map(([t, ti, w]) => '<div class="li"><span class="tm">' + t + '</span><span class="tx"><b>' + ti + "</b>" + (w ? "<small>" + w + "</small>" : "") + "</span></div>").join("") + "</div>";
+  },
+  chats() {
+    return '<div class="hello"><div class="k">Coffee chats · Sat Nov 21</div><h1>Rm 2241 · 15 min each</h1><div class="s">3 reps, 1-on-1. Up to 3 hackers per slot.</div></div><div class="slots">' +
+      SLOTS.map(([t, n, names], i) => '<div class="card slotc"' + (i === 0 ? ' data-t="slot"' : "") + '><div class="row"><b>' + t + "</b><span class=\"sp\"></span>" + (n >= 3 ? '<span class="fill full">Full</span>' : '<span class="fill">' + n + "/3</span>") + "</div>" +
+        '<div class="names">' + (names.length ? names.join("<br>") : "No one yet") + "</div>" + (i === 0 ? H("slot") : "") + "</div>").join("") + "</div>";
+  },
+  scan() {
+    return '<div class="hello"><div class="k">Scan</div><h1>Scan a badge</h1></div>' +
+      '<div class="scanbox" data-t="scanbox"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i><span>Point at the QR code on a badge</span></div>' + H("scanbox") +
+      '<div class="card scanlast"><div class="k">Last scanned</div><div class="v">Priya K.</div><div class="s">University of Waterloo · Software Eng, 2nd year · React, Figma</div><div class="row" style="margin-top:10px"><span class="sp"></span><button class="pill sm primary" data-act="offer" data-t="offer">Offer a coffee chat</button></div>' + H("offer") + "</div>";
+  },
+  judging() {
+    return '<div class="hello"><div class="k">Judging · Sun Nov 22</div><h1>Scotiabank track</h1><div class="s">Opens Sunday at 9:00 AM. You can look around now.</div></div><div class="tl-list">' +
+      JUD.map(r => '<div class="card tlr"' + (r.t ? ' data-t="' + r.t + '"' : "") + '><span class="tm">' + r.tm + '</span><span class="tx"><b>' + r.ti + "</b><small>" + r.d + "</small></span></div>" + (r.t ? H(r.t) : "")).join("") + "</div>";
+  },
+};
+
+/* ================= variants ================= */
+const ART = {
+  booth: '<div class="a-card"><small>Your booth</small><b>Sponsor Bay, table 14</b></div>',
+  map: '<span class="pill map">' + MAPI + "Map</span>",
+  mappanel: '<div class="a-map"><img src="../../public/sponsor-map/floor1.webp" alt="" width="2400" height="2086"><i style="left:14.4%;top:59%"></i></div>',
+  chats: '<div class="a-card"><small>First slot 10:00 AM</small><b><span class="fill">1/3</span></b></div>',
+  help: '<span class="pill">Need help?</span>',
+};
+
+const VARIANTS = [
+  /* 1 */ {
+    name: "Spotlight callout",
+    why: "Dims the page and rings one thing at a time, with the callout right next to it. The most familiar pattern, and the strongest focus.",
+    layer: () => (E.prompt ? promptModal() : ""),
+    anchor: callout,
+  },
+  /* 2 */ {
+    name: "Checklist sidebar",
+    why: "A to-do list that stays beside the page. Sponsors see what's left, do steps in any order, and the same list holds the How-to flows.",
+    howto: true,
+    mount() { frame.classList.add("v-side"); E.done = new Set(); E.sideOpen = true; },
+    onStart() { E.sideOpen = false; },
+    onStep() { if (E.flow === "tour") for (let k = 0; k < E.i; k++) E.done.add(k); },
+    onFinish(f) { if (f === "tour") E.done = new Set([0, 1, 2, 3, 4]); (E.doneFlows = E.doneFlows || new Set()).add(f); },
+    ring: () => (E.on ? "dim" : null),
+    acts: {
+      howto: () => { E.sideOpen = true; E.panel = null; render(); const h = layer.querySelector("#side-howto"); h && h.scrollIntoView({ block: "nearest" }); },
+      toggleSide: () => { E.sideOpen = !E.sideOpen; render(); },
+      goTour: a => { if (!E.on || E.flow !== "tour") { E.flow = "tour"; E.on = true; E.prompt = false; } E.i = +a; enter(); render(); },
+      notnow: () => { E.prompt = false; render(); },
+    },
+    layer() {
+      const tour = STEPS.tour.steps, dn = E.done.size;
+      const s = E.on && step();
+      const peek = '<div class="side-peek"><button class="pt" data-act="toggleSide" aria-expanded="' + !!E.sideOpen + '">' +
+        (s ? "<small>Step " + (E.i + 1) + " of " + total() + (s.wait ? " · " + s.hint : "") + "</small><b>" + s.title + "</b>" : E.prompt ? "<small>New here?</small><b>Take a 1-minute tour?</b>" : "<small>" + dn + " of 5 done</small><b>Getting started</b>") +
+        "</button>" + (s ? '<button class="pill sm primary" data-act="next"' + (s.wait ? " disabled" : "") + ">" + (E.i === total() - 1 ? "Done" : "Next") + "</button>" : '<button class="pill sm" data-act="toggleSide">' + (E.sideOpen ? "Hide" : "Open") + "</button>") + "</div>";
+      const head = E.prompt
+        ? '<div class="side-hd"><div class="ttl">Take a 1-minute tour?</div><div class="bd">' + PROMPT + "</div>" + promptBtns() + "</div>"
+        : '<div class="side-hd"><div class="ttl">Getting started</div><div class="bar"><i style="width:' + dn * 20 + '%"></i></div><div class="bd">' + dn + " of 5 done</div></div>";
+      const items = tour.map((x, i) => {
+        const cur = E.on && E.flow === "tour" && E.i === i, done = E.done.has(i);
+        return '<li class="ck ' + (cur ? "cur " : "") + (done ? "done" : "") + '"><button class="ck-i" data-act="goTour" data-arg="' + i + '"><span class="ck-c">' + (done ? CHECK : "") + "</span><span>" + x.title + "</span></button>" +
+          (cur ? '<div class="ck-b">' + stepText({ noTitle: true }) + ctrls() + "</div>" : "") + "</li>";
+      }).join("");
+      const flows = FLOW_LIST.map(f => {
+        const cur = E.on && E.flow === f[0], done = E.doneFlows && E.doneFlows.has(f[0]);
+        return '<li class="ck ' + (cur ? "cur " : "") + (done ? "done" : "") + '"><button class="ck-i" data-act="start" data-arg="' + f[0] + '"><span class="ck-c">' + (done ? CHECK : "") + "</span><span>" + f[1] + "<small>" + f[2] + " · " + f[3] + "</small></span></button>" +
+          (cur ? '<div class="ck-b">' + stepText() + ctrls() + "</div>" : "") + "</li>";
+      }).join("");
+      return '<aside class="side ' + (E.sideOpen ? "open" : "") + '" aria-label="Getting started">' + peek + '<div class="side-scroll">' + head +
+        '<ul class="ck-list">' + items + '</ul><div class="ck-sec" id="side-howto">How to…</div><ul class="ck-list">' + flows + "</ul></div>" +
+        (E.on ? '<div class="side-ft"><button class="link" data-act="skip">Skip tour</button></div>' : "") + "</aside>";
+    },
+  },
+  /* 3 */ {
+    name: "Progress dots card",
+    why: "One card, one idea. Swipe or tap through; the dots show how short it is and the picture shows what to look for.",
+    ring: () => (E.on ? "dim" : null),
+    layer() {
+      if (E.prompt) return '<div class="c3wrap"><div class="c3" role="dialog" aria-label="Tour" data-keep="c3"><div class="art"><div class="mini" style="margin:0;width:100%;height:100%;background:none;padding:0"><i></i><i></i><i></i></div></div><div class="ttl lg">Take a 1-minute tour?</div><div class="bd">' + PROMPT + "</div>" + promptBtns() + "</div></div>";
+      if (!E.on) return "";
+      const s = step(), n = total();
+      const dots = '<div class="dots" role="group" aria-label="Steps">' + STEPS[E.flow].steps.map((x, i) => '<button class="dot ' + (i === E.i ? "on" : "") + '" data-act="go" data-arg="' + i + '" aria-label="Step ' + (i + 1) + '"' + (i === E.i ? ' aria-current="step"' : "") + "><span></span></button>").join("") + "</div>";
+      return '<div class="c3wrap"><div class="c3" role="dialog" aria-label="Tour step" data-keep="c3"><div class="c3-in"><div class="art">' + (ART[s.t] || "<b>" + s.title + "</b>") + "</div>" + dots + stepText() + "</div>" + ctrls() + "</div></div>";
+    },
+    after() {
+      const c = layer.querySelector(".c3"); if (!c || !E.on) return;
+      let x0 = null;
+      c.onpointerdown = e => { if (e.target.closest("button")) return; x0 = e.clientX; };
+      c.onpointerup = e => { if (x0 == null) return; const dx = e.clientX - x0; x0 = null; if (dx < -40 && !step().wait) next(); else if (dx > 40) back(); };
+    },
+  },
+  /* 4 */ {
+    name: "Inline hints",
+    why: "No dimming, nothing covered. Each hint sits inside the page under the thing it explains, so sponsors can keep working mid-tour.",
+    ring: () => (E.on ? "soft" : null),
+    slot(n) {
+      if (n === "welcome" && E.prompt) return '<div class="inl"><div class="ttl">Take a 1-minute tour?</div><div class="bd">Five short hints will show up right here on the page. Nothing gets covered.</div>' + promptBtns() + "</div>";
+      if (!E.on) return "";
+      const t = step().t, slot = /^(map|help|howto|nav-)/.test(t) ? "top" : t;
+      return slot === n ? '<div class="inl" role="note">' + stepText() + ctrls() + "</div>" : "";
+    },
+  },
+  /* 5 */ {
+    name: "Auto-play walkthrough",
+    why: "Plays like a short video: a cursor moves to each spot on its own. Sit back, pause or scrub; it stops when it needs a real tap.",
+    mount() {
+      const c = document.createElement("div"); c.id = "cursor"; c.className = "off"; c.innerHTML = CURSOR; c.style.transform = "translate(160px,180px)"; app.appendChild(c);
+      E.prog = 0; E.playing = false;
+      every(() => {
+        if (!E.on || !E.playing || step().wait) return;
+        E.prog += 100 / 3800;
+        const b = layer.querySelector(".chap .cur b"); if (b) b.style.width = Math.min(100, E.prog * 100) + "%";
+        if (E.prog >= 1) next();
+      }, 100);
+    },
+    onStart() { E.playing = true; },
+    onStep() { E.prog = 0; E.ck = null; },
+    acts: { play: () => { E.playing = !E.playing; renderLayer(); place(); V.after(); } },
+    layer() {
+      if (E.prompt) return promptModal('<div class="vid"><button class="bigplay" data-act="start" aria-label="Play tour">' + PLAY + '</button><span class="dur">1:00</span></div>', "It plays on its own, like a short video. Pause or skip any time.", "Play tour");
+      if (!E.on) return "";
+      const s = step(), n = total();
+      return '<div class="player" data-keep="player" role="region" aria-label="Tour player"><div class="chap">' +
+        STEPS[E.flow].steps.map((x, i) => '<button data-act="go" data-arg="' + i + '" class="' + (i === E.i ? "cur" : "") + '" aria-label="Go to step ' + (i + 1) + '"><i><b style="width:' + (i < E.i ? 100 : i === E.i ? E.prog * 100 : 0) + '%"></b></i></button>').join("") +
+        '</div><div class="prow"><button class="play" data-act="play" aria-label="' + (E.playing ? "Pause" : "Play") + '">' + (E.playing && !s.wait ? PAUSE : PLAY) + "</button>" +
+        '<div class="cap"><div class="lbl">Step ' + (E.i + 1) + " of " + n + (E.flow !== "tour" ? " · " + STEPS[E.flow].name : "") + '</div><div class="ttl">' + (s.wait ? "Your turn: " + s.hint.toLowerCase() : s.title) + '</div><div class="bd">' + s.body + "</div></div>" +
+        '<div class="pctl"><button class="pill sm" data-act="back"' + (E.i ? "" : " disabled") + '>Back</button><button class="pill sm primary" data-act="next"' + (s.wait ? " disabled" : "") + ">" + (E.i === n - 1 ? "Done" : "Next") + '</button><button class="link" data-act="skip">Skip tour</button></div></div></div>';
+    },
+    after() {
+      const p = layer.querySelector(".player");
+      const ib = (p ? p.offsetHeight : 0) + "px";
+      if (frame.style.getPropertyValue("--ib") !== ib) { frame.style.setProperty("--ib", ib); place(); }
+      const c = $("#cursor"); if (!c) return;
+      if (!E.on) { c.className = "off"; return; }
+      const el = q(step().t); if (!el) return;
+      const key = E.flow + E.i; if (E.ck === key) return; E.ck = key;
+      const r = rel(el); c.className = "";
+      c.style.transform = "translate(" + (r.x + Math.min(r.w / 2, 60)) + "px," + (r.y + r.h / 2) + "px)";
+      if (!step().wait) later(() => { c.classList.add("click"); later(() => c.classList.remove("click"), 420); }, 800);
+    },
+  },
+  /* 6 */ {
+    name: "Hotspots",
+    why: "Blue dots mark what's worth knowing; tap them in any order. Curious sponsors explore, busy ones ignore the dots and nothing blocks them.",
+    ring: () => (E.on && E.open ? "dim" : null),
+    waitOk: () => E.open,
+    afterWait() { V.acts.next(); },
+    acts: {
+      start: a => { E.flow = a || "tour"; E.on = true; E.prompt = false; E.panel = null; E.hs = new Set(); E.open = false; E.i = 0; if (E.flow !== "tour") { E.open = true; E.hs.add(0); enter(); } render(); },
+      hs: a => { E.i = +a; E.open = true; E.hs.add(E.i); enter(); render(); },
+      next: () => { const n = total(); for (let k = 1; k <= n; k++) { const j = (E.i + k) % n; if (!E.hs.has(j)) { E.i = j; E.open = true; E.hs.add(j); enter(); render(); return; } } E.open = false; finish(E.flow === "tour" ? "All 5 seen. You're set." : null); },
+      back: () => { if (E.i > 0) { E.i--; E.hs.add(E.i); enter(); render(); } },
+      closeHs: () => { E.open = false; E.panel = null; render(); },
+    },
+    anchor() {
+      if (!E.on) return "";
+      const steps = STEPS[E.flow].steps, left = steps.length - E.hs.size;
+      let h = steps.map((s, i) => (s.page && s.page !== E.page) ? "" : '<button class="hs ' + (E.hs.has(i) ? "seen " : "") + (E.open && E.i === i ? "cur" : "") + '" data-anchor="' + s.t + '" data-place="corner" data-act="hs" data-arg="' + i + '" aria-label="Tour stop ' + (i + 1) + ": " + s.title + '"></button>').join("");
+      if (E.open) h += '<div class="co" role="dialog" aria-label="Tour step" data-anchor="step" data-keep="co' + E.i + '">' + stepText() + '<div class="ctrls"><button class="link" data-act="closeHs">Close</button><span class="sp"></span>' + (E.i > 0 ? '<button class="pill sm" data-act="back">Back</button>' : "") + '<button class="pill sm primary" data-act="next"' + (step().wait ? " disabled" : "") + ">" + (left ? "Next" : "Done") + "</button></div></div>";
+      return h;
+    },
+    layer() {
+      if (E.prompt) return promptCard("Five blue dots mark the spots worth knowing. Tap them in any order.");
+      if (!E.on) return "";
+      const n = total();
+      return '<div class="chipwrap"><div class="chip" data-keep="chip"><span>' + (E.open ? "" : "Tap a blue dot · ") + E.hs.size + " of " + n + ' seen</span><span class="mbar"><i style="width:' + (E.hs.size / n) * 100 + '%"></i></span><button class="pill sm dk" data-act="skip">Skip tour</button></div></div>';
+    },
+  },
+  /* 7 */ {
+    name: "Bottom-sheet coach",
+    why: "Built for the phone: the coach lives in a sheet your thumb can reach and the page stays visible above. Drag it down to pause.",
+    howto: true,
+    ring: () => (E.on && !E.min ? "dim" : null),
+    acts: {
+      howto: () => { E.panel = E.panel === "howto" ? null : "howto"; render(); },
+      resume: () => { E.min = false; render(); },
+      start: a => { E.panel = null; E.min = false; start(a || "tour"); },
+    },
+    layer() {
+      const wrap = (inner, label) => '<div class="sheetwrap"><div class="sheet" role="dialog" aria-label="' + label + '" data-keep="sheet"><button class="grab" aria-label="Drag down to pause"><i></i></button>' + inner + "</div></div>";
+      if (E.panel === "howto") return wrap('<div class="ttl lg" style="margin-top:0">How to…</div><div style="margin:8px -10px 4px">' + MENU_ITEMS.map(f => '<button class="mi" data-act="start" data-arg="' + f[0] + '"><b>' + f[1] + "</b><span>" + f[2] + "</span></button>").join("") + '</div><div class="ctrls"><button class="pill sm" data-act="howto">Close</button></div>', "How to");
+      if (E.prompt) return wrap('<div class="ttl lg" style="margin-top:0">Take a 1-minute tour?</div><div class="bd">' + PROMPT + '</div><div class="ctrls"><button class="pill sm" data-act="notnow">Not now</button><button class="pill sm primary" data-act="start">Start tour</button></div>', "Tour");
+      if (!E.on) return "";
+      const s = step(), n = total();
+      if (E.min) return '<div class="sheetwrap"><div class="sheet" data-keep="sheet"><button class="grab" data-act="resume" aria-label="Resume tour"><i></i></button><div class="peekrow"><span class="sp" style="min-width:0"><span class="lbl">Tour paused</span><br><b style="font-size:13px">Step ' + (E.i + 1) + " of " + n + " · " + s.title + '</b></span><button class="link" data-act="skip">Skip tour</button><button class="pill sm primary" data-act="resume">Resume</button></div></div></div>';
+      return wrap('<div class="segbar">' + STEPS[E.flow].steps.map((x, i) => '<i class="' + (i <= E.i ? "on" : "") + '"></i>').join("") + "</div>" + stepText() + ctrls(), "Tour step");
+    },
+    after() {
+      const sh = layer.querySelector(".sheet"); if (!sh || !E.on || E.min || E.panel === "howto") return;
+      const g = sh.querySelector(".grab"); let y0 = null, t0 = 0, dy = 0;
+      g.onpointerdown = e => { y0 = e.clientY; t0 = performance.now(); dy = 0; sh.style.animation = "none"; sh.style.transition = "none"; g.setPointerCapture(e.pointerId); };
+      g.onpointermove = e => { if (y0 == null) return; dy = e.clientY - y0; sh.style.transform = "translateY(" + (dy < 0 ? dy * 0.2 : dy) + "px)"; };
+      g.onpointerup = g.onpointercancel = () => {
+        if (y0 == null) return; const v = dy / Math.max(1, performance.now() - t0); y0 = null;
+        if (dy > 80 || v > 0.5) { E.min = true; render(); }
+        else { sh.style.transition = "transform 400ms var(--ease-drawer)"; sh.style.transform = ""; }
+      };
+    },
+  },
+  /* 8 */ {
+    name: "Chat guide",
+    why: "A friendly guide talks you through it one message at a time. Quick-reply pills replace buttons, and How-to is just asking.",
+    howto: true,
+    ring: () => (E.on ? "dim" : null),
+    mount() {
+      frame.classList.add("v-chat"); E.seenLog = 0; E.mode = "prompt";
+      E.log = [{ w: "bot", h: "Hi! I'm from the Hack Western sponsor team. Welcome to Hack Western 13." }, { w: "bot", h: "<b>Take a 1-minute tour?</b> " + PROMPT }];
+    },
+    onStep() { const s = step(); E.log.push({ w: "bot", h: '<span class="lbl">Step ' + (E.i + 1) + " of " + total() + "</span><br><b>" + s.title + ".</b> " + s.body + (s.wait ? '<br><span class="hint-in">Try it: ' + s.hint.toLowerCase() + "</span>" : "") }); },
+    onFinish(f) { E.log.push({ w: "bot", h: f === "tour" ? "That's the tour! Ask me how to do something any time." : "That's how to " + STEPS[f].name.toLowerCase() + ". Anything else?" }); E.mode = "idle"; },
+    quietFinish: true,
+    acts: {
+      start: a => { E.log.push({ w: "me", h: a && a !== "tour" ? STEPS[a].name : "Start tour" }); start(a || "tour"); },
+      next: () => { E.log.push({ w: "me", h: E.i === total() - 1 ? "Done" : "Next" }); next(); },
+      back: () => { E.log.push({ w: "me", h: "Back" }); back(); },
+      skip: () => { E.log.push({ w: "me", h: "Skip tour" }, { w: "bot", h: "No problem. Tap ? up top or ask me here when you need something." }); E.mode = "idle"; E.on = false; E.panel = null; render(); },
+      notnow: () => { E.log.push({ w: "me", h: "Not now" }, { w: "bot", h: "Sure. I'll be right here if you need me." }); E.prompt = false; E.mode = "idle"; render(); },
+      howto: () => { E.log.push({ w: "me", h: "How do I…?" }, { w: "bot", h: "What do you want to do?" }); E.prompt = false; E.mode = "idle"; E.on = false; render(); },
+    },
+    layer() {
+      let r;
+      if (E.on) {
+        const s = step();
+        r = (s.wait ? '<span class="pill sm waiting" aria-live="polite">Waiting for you…</span>' : '<button class="pill sm primary" data-act="next">' + (E.i === total() - 1 ? "Done" : "Next") + "</button>") +
+          (E.i > 0 ? '<button class="pill sm" data-act="back">Back</button>' : "") + '<button class="pill sm" data-act="skip">Skip tour</button>';
+      } else if (E.mode === "prompt") r = '<button class="pill sm primary" data-act="start">Start tour</button><button class="pill sm" data-act="notnow">Not now</button><button class="pill sm" data-act="howto">How do I…?</button>';
+      else r = FLOW_LIST.map(f => '<button class="pill sm" data-act="start" data-arg="' + f[0] + '">' + f[1] + "</button>").join("") + '<button class="pill sm" data-act="start">Take the tour</button>';
+      const msgs = E.log.map((m, i) => '<div class="b ' + m.w + (i < E.seenLog ? " noanim" : "") + '">' + m.h + "</div>").join("");
+      return '<section class="chat" data-keep="chat" aria-label="Chat with the sponsor team"><div class="chat-h"><span class="av" aria-hidden="true">HW</span><span><b>Sponsor team</b><small>Here all weekend</small></span></div><div class="msgs" aria-live="polite">' + msgs + '</div><div class="replies">' + r + "</div></section>";
+    },
+    after() { E.seenLog = E.log.length; const m = layer.querySelector(".msgs"); if (m) m.scrollTop = m.scrollHeight; },
+  },
+  /* 9 */ {
+    name: "Task launcher",
+    why: "Asks what you came to do and teaches just that. The full tour is one option, not a gate in front of the page.",
+    howto: true,
+    quietFinish: true,
+    ring: () => (E.on ? "dim" : null),
+    onFinish(f) { E.doneFlow = f; },
+    acts: {
+      howto: () => { E.launch = true; E.doneFlow = null; render(); },
+      start: a => { E.launch = false; E.doneFlow = null; start(a || "tour"); },
+      notnow: () => { E.launch = false; notNow(); },
+      closeL: () => { E.launch = false; E.doneFlow = null; render(); },
+    },
+    layer() {
+      if (E.prompt || E.launch) {
+        const first = E.prompt;
+        return '<div class="scrim" data-keep="scrim"></div><div class="center"><div class="modal launch" role="dialog" aria-label="What do you want to do?" data-keep="launch"><div class="ttl lg">What do you want to do first?</div><div class="bd">Pick one and we\'ll walk you through it right on the page.</div><div class="fls">' +
+          FLOW_LIST.map((f, i) => '<button class="fl" data-act="start" data-arg="' + f[0] + '"><span class="n">' + (i + 1) + '</span><span class="flt"><b>' + f[1] + "</b><span>" + f[2] + '</span></span><span class="flm">' + f[3] + "</span></button>").join("") +
+          '</div><div class="tourrow"><span><b>Take a 1-minute tour?</b><span>All five basics in a row.</span></span><button class="pill sm" data-act="' + (first ? "notnow" : "closeL") + '">' + (first ? "Not now" : "Close") + '</button><button class="pill sm primary" data-act="start">Start tour</button></div></div></div>';
+      }
+      if (E.doneFlow) {
+        const f = E.doneFlow, others = FLOW_LIST.filter(x => x[0] !== f);
+        return '<div class="scrim" data-keep="scrim"></div><div class="center"><div class="modal launch" role="dialog" aria-label="Done" data-keep="launch"><div class="done-ic">' + CHECK + '</div><div class="ttl lg">' + (f === "tour" ? "Tour done" : "Done: " + STEPS[f].name) + '</div><div class="bd">Want to learn another one?</div><div class="fls">' +
+          others.map((x, i) => '<button class="fl" data-act="start" data-arg="' + x[0] + '"><span class="n">' + (i + 1) + '</span><span class="flt"><b>' + x[1] + "</b><span>" + x[2] + '</span></span><span class="flm">' + x[3] + "</span></button>").join("") +
+          '</div><div class="ctrls"><span class="sp"></span><button class="pill sm" data-act="closeL">Close</button></div></div></div>';
+      }
+      if (!E.on) return "";
+      const s = step(), n = total();
+      return '<div class="tbwrap"><div class="tb" data-keep="tb" role="region" aria-label="Tour progress"><b>' + (E.flow === "tour" ? "1-minute tour" : STEPS[E.flow].name) + '</b><span class="tbs">Step ' + (E.i + 1) + " of " + n + '</span><span class="mbar"><i style="width:' + ((E.i + 1) / n) * 100 + '%"></i></span>' +
+        '<button class="pill sm dk" data-act="back"' + (E.i ? "" : " disabled") + '>Back</button><button class="pill sm dk primary" data-act="next"' + (s.wait ? " disabled" : "") + ">" + (E.i === n - 1 ? "Done" : "Next") + '</button><button class="pill sm dk" data-act="skip">Skip tour</button></div></div>';
+    },
+    anchor: () => (E.on ? '<div class="co slim" role="note" data-anchor="step" data-keep="co' + E.flow + E.i + '"><div class="ttl" style="margin-top:0">' + step().title + "</div>" + stepText({ noLabel: true, noTitle: true }) + "</div>" : ""),
+  },
+  /* 10 */ {
+    name: "Page-by-page tips",
+    why: "No tour to sit through: each page teaches one thing the first time you open it. A dot on a tab means that page still has a tip.",
+    mount() { E.tipsOn = true; E.ctx = new Set(); E.seq = false; },
+    onStep() { if (E.flow === "ctx") E.ctx.add(E.i); },
+    navDot(k) { const i = STEPS.ctx.steps.findIndex(s => s.page === k); return E.tipsOn && i >= 0 && !E.ctx.has(i) ? '<i class="ndot" aria-label="(new tip)"></i>' : ""; },
+    onPage(p) {
+      if (E.on && E.flow !== "ctx") return;
+      const i = STEPS.ctx.steps.findIndex(s => s.page === p);
+      if (E.tipsOn && !E.prompt && i >= 0 && !E.ctx.has(i)) { E.flow = "ctx"; E.i = i; E.on = true; E.ctx.add(i); }
+      else if (E.flow === "ctx") E.on = false;
+    },
+    ring: () => (E.on ? (E.seq || E.flow !== "ctx" ? "dim" : "soft") : null),
+    afterWait() { if (E.flow === "ctx" && !E.seq) { E.on = false; E.panel = "map"; render(); } else next(); },
+    acts: {
+      start: a => { if (!a || a === "tour") { E.seq = true; E.tipsOn = true; E.ctx = new Set(); E.prompt = false; E.panel = null; E.flow = "ctx"; E.i = 0; E.on = true; enter(); render(); } else ACT.start(a); },
+      notnow: () => { E.prompt = false; E.seq = false; E.flow = "ctx"; E.i = 0; E.on = true; enter(); render(); },
+      gotit: () => { E.on = false; render(); },
+      skip: () => { E.tipsOn = false; E.seq = false; skip(); },
+    },
+    layer: () => (E.prompt ? promptCard("Or skip it: we'll show one short tip the first time you open each page.") : ""),
+    anchor() {
+      if (!E.on) return "";
+      if (E.flow !== "ctx") return callout();
+      const s = step(), dis = s.wait ? " disabled" : "";
+      return '<div class="co" role="dialog" aria-label="Page tip" data-anchor="step" data-keep="tip' + E.i + '"><div class="lbl">Step ' + (E.i + 1) + " of 5 · " + PAGE_NAME[s.page] + ' tip</div><div class="ttl">' + s.title + '</div><div class="bd">' + s.body + "</div>" + (s.wait ? '<div class="hint"><span class="pulse-dot"></span>' + s.hint + "</div>" : "") +
+        '<div class="ctrls">' + (E.seq
+          ? '<button class="link" data-act="skip">Skip tour</button><span class="sp"></span>' + (E.i ? '<button class="pill sm" data-act="back">Back</button>' : "") + '<button class="pill sm primary" data-act="next"' + dis + ">" + (E.i === 4 ? "Done" : "Next page") + "</button>"
+          : '<button class="link" data-act="skip">Turn off tips</button><span class="sp"></span><button class="pill sm primary" data-act="gotit"' + dis + ">Got it</button>") + "</div></div>";
+    },
+  },
+];
+
+/* ================= mount + harness ================= */
+function mountV(i) {
+  clearTimers(); clearTimeout(toastT);
+  V = VARIANTS[i];
+  for (const k in E) delete E[k];
+  Object.assign(E, { flow: null, i: 0, on: false, prompt: true, page: "home", panel: null, day: "fri", toast: null, reason: null });
+  frame.className = ""; frame.style.removeProperty("--ib");
+  app.innerHTML = '<div id="portal"></div><div id="ring" class="ring off" aria-hidden="true"></div><div id="anchors"></div>';
+  layer.innerHTML = "";
+  portalEl = $("#portal"); ringEl = $("#ring"); anchorsEl = $("#anchors");
+  app.scrollTop = 0; lastKey = "";
+  V.mount && V.mount();
+  note.innerHTML = "<b>" + V.name + "</b> · " + V.why;
+  measureHead();
+  render();
+}
+function measureHead() { document.documentElement.style.setProperty("--head-h", $("#wf-head").offsetHeight + "px"); }
+app.addEventListener("scroll", () => place(), { passive: true });
+new ResizeObserver(() => { if (V) { place(); V.after && V.after(); } }).observe(app);
+window.addEventListener("resize", measureHead);
+
+// Desktop / Phone
+const segBtns = [...document.querySelectorAll(".seg button")];
+function setD(d) {
+  document.body.classList.toggle("phone", d === "phone");
+  segBtns.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.d === d)));
+  const url = new URL(location); if (d === "phone") url.searchParams.set("d", "phone"); else url.searchParams.delete("d"); history.replaceState(null, "", url);
+  requestAnimationFrame(() => { if (V) { lastKey = ""; render(); } });
+}
+segBtns.forEach(b => b.addEventListener("click", () => setD(b.dataset.d)));
+setD(new URLSearchParams(location.search).get("d") === "phone" ? "phone" : "desktop");
+
+// Picker wiring (PICKER.md reference, mount swapped for this harness)
+const picker = document.querySelector(".proto-picker");
+const highlight = picker.querySelector(".proto-picker-highlight");
+const items = [...picker.querySelectorAll(".proto-picker-item:not(.proto-picker-replay)")];
+const replay = picker.querySelector(".proto-picker-replay");
+let current = 0;
+function moveHighlight() { const el = items[current]; highlight.style.width = el.offsetWidth + "px"; highlight.style.transform = "translateX(" + el.offsetLeft + "px)"; }
+function mount(i) { requestAnimationFrame(() => mountV(i)); }
+function setActive(i) {
+  if (i < 0 || i >= VARIANTS.length) return;
+  current = i;
+  items.forEach((el, j) => { el.toggleAttribute("data-active", j === i); if (j === i) el.setAttribute("aria-current", "true"); else el.removeAttribute("aria-current"); });
+  moveHighlight();
+  const url = new URL(location); url.searchParams.set("v", i + 1); history.replaceState(null, "", url);
+  mount(i);
+}
+items.forEach((el, i) => el.addEventListener("click", () => setActive(i)));
+replay && replay.addEventListener("click", () => mount(current));
+window.addEventListener("resize", moveHighlight);
+document.addEventListener("keydown", e => {
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const num = parseInt(e.key, 10);
+  if (e.key === "0") setActive(9);
+  else if (num >= 1 && num <= VARIANTS.length) setActive(num - 1);
+  else if (e.key === "ArrowRight") setActive((current + 1) % VARIANTS.length);
+  else if (e.key === "ArrowLeft") setActive((current - 1 + VARIANTS.length) % VARIANTS.length);
+  else if (e.key === "r" || e.key === "R") mount(current);
+});
+const requested = parseInt(new URLSearchParams(location.search).get("v"), 10);
+setActive(requested >= 1 && requested <= VARIANTS.length ? requested - 1 : 0);
+requestAnimationFrame(() => requestAnimationFrame(() => picker.setAttribute("data-ready", "")));
+</script>
+</body>
+</html>

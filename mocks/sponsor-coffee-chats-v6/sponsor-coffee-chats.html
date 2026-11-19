@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coffee chats · Sun Life (mock v6)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* dashboard tokens (src/lib/tokens.ts -> dashboardColors etc.) */
+  :root{
+    --t-heavy:#0b2b4a; --t-medium:#1c3550; --t-light:#516476; --t-placeholder:rgba(81,100,118,0.7);
+    --t-inverse:#fff; --t-link:#0b6bc4; --t-active:#08559c; --t-warning:#8a4300;
+    --bg-page:#f3f7fc; --bg-surface:#fff; --bg-nav:#dbe7f5; --bg-navSel:#b9d3f0; --bg-inset:#edf3fa;
+    --bg-highlight:#e1effb; --bg-task:#ffefb8; --bg-live:#e3f3e8;
+    --primary:#0b6bc4;
+    --b-default:#cdddeb; --b-subtle:#e0eaf3; --b-control:#b9cbe0; --b-outline:#accae5; --b-medium:rgba(81,100,118,0.5);
+    --live:#16803c; --iconBadge:#fbdac4; --star:#c98a00;
+    --r-sm:4px; --r-md:6px; --r-lg:8px; --r-xl:10px; --r-2xl:12px; --r-3xl:20px; --r-full:999px;
+    --sh-card:0px 1px 2px 0px rgba(11,43,74,0.06),0px 1px 4px 0px rgba(11,43,74,0.05);
+    --sh-primary:0px 2px 4px 0px rgba(11,43,74,0.2);
+    --sh-secondary:0px 2px 8px 0px rgba(0,0,0,0.12);
+    --ease-out:cubic-bezier(0.23,1,0.32,1);
+    --ease-drawer:cubic-bezier(0.32,0.72,0,1);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg-page);color:var(--t-heavy);font-family:Figtree,system-ui,sans-serif;font-weight:500;line-height:1.2;-webkit-tap-highlight-color:transparent}
+  button{font:inherit;color:inherit;cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+  button:focus-visible,a:focus-visible,input:focus-visible{outline:none;box-shadow:0 0 0 2px var(--bg-surface),0 0 0 4px var(--primary)}
+  .press{transition:transform 160ms var(--ease-out),background-color 160ms var(--ease-out),border-color 160ms var(--ease-out),color 160ms var(--ease-out)}
+  .press:active{transform:scale(0.97)}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  [hidden]{display:none!important}
+
+  .page{min-height:100dvh;padding:16px 16px max(48px,env(safe-area-inset-bottom))}
+  .col{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+  .narrow{max-width:760px;width:100%}
+  @media (min-width:640px){.page{padding:24px 24px 56px}}
+
+  /* mock badge + mock controls (not part of the product) */
+  .mock-wrap{position:fixed;top:4px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:70;pointer-events:none;white-space:nowrap}
+  .mock{font-size:10px;font-weight:700;letter-spacing:.04em;padding:4px 8px;border-radius:var(--r-full);background:var(--bg-task);color:var(--t-warning);border:1px solid #c78a00}
+  .mock-v{font-size:10px;font-weight:700;padding:4px 8px;border-radius:var(--r-full);background:var(--bg-surface);color:var(--t-medium);border:1px solid var(--b-default)}
+  .mockctl{margin-top:14px;display:flex;flex-direction:column;gap:6px;padding:8px 10px;border:1px dashed #c78a00;border-radius:var(--r-xl);background:#fff8de}
+  @media (min-width:760px){.mockctl{flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap}}
+  .mc-g{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .mc-l{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--t-warning)}
+  .mc-b{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:var(--r-full);font-size:12px;font-weight:600;background:var(--bg-surface);border:1px solid #e6c766;color:var(--t-warning)}
+  .mc-b[aria-pressed="true"]{background:var(--t-warning);border-color:var(--t-warning);color:var(--t-inverse)}
+
+  /* header */
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+  .back{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin-left:-8px;padding:0 8px;border-radius:var(--r-lg);font-size:14px;font-weight:600;color:var(--t-medium);text-decoration:none}
+  .brand{display:none;font-size:14px;font-weight:600;color:var(--t-light)}
+  @media (min-width:640px){.brand{display:inline}}
+  .top-r{display:flex;align-items:center;gap:12px}
+  .map-pill{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:0;border-radius:var(--r-full);background:var(--primary);color:var(--t-inverse);font-size:14px;font-weight:600;box-shadow:var(--sh-primary)}
+  .title{display:flex;align-items:center;gap:14px}
+  .logo{flex:none;display:inline-flex;align-items:center;height:48px;padding:8px 12px;background:var(--bg-surface);border-radius:var(--r-lg);box-shadow:var(--sh-card)}
+  .logo img{height:100%;width:auto;max-width:120px;object-fit:contain}
+  h1{margin:0;font-size:24px;font-weight:700;letter-spacing:-0.01em}
+  @media (min-width:640px){h1{font-size:32px}}
+  .sub{margin:4px 0 0;font-size:14px;color:var(--t-light);line-height:1.4}
+  .label{margin:0;font-size:12px;font-weight:600;letter-spacing:-0.02em;text-transform:uppercase;color:var(--t-light)}
+  .hint{margin:0;font-size:13px;color:var(--t-light);line-height:1.45}
+
+  /* tabs */
+  .tabs{display:inline-flex;gap:4px;padding:3px;border-radius:var(--r-full);background:var(--bg-nav);align-self:flex-start;max-width:100%}
+  .tab{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 14px;border:0;border-radius:var(--r-full);background:transparent;color:var(--t-medium);font-size:13px;font-weight:600;white-space:nowrap}
+  .tab .n{font-variant-numeric:tabular-nums;opacity:.7}
+  .tab .dot{width:6px;height:6px;border-radius:50%;background:var(--live)}
+  .tab[aria-selected="true"]{background:var(--bg-surface);color:var(--t-heavy);box-shadow:var(--sh-card)}
+  @media (max-width:400px){.tab{padding:0 10px}}
+  @media (hover:hover){.tab[aria-selected="false"]:hover{background:rgba(255,255,255,.5)}}
+
+  /* buttons + pills */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 16px;border-radius:var(--r-full);font-size:14px;font-weight:600;white-space:nowrap;border:0}
+  .btn-pri{background:var(--primary);color:var(--t-inverse);box-shadow:var(--sh-primary)}
+  .btn-sec{background:var(--bg-surface);border:1px solid var(--b-default);color:var(--t-medium)}
+  .btn-ghost{background:transparent;color:var(--t-link);padding:0 8px}
+  .btn-sm{min-height:32px;padding:0 12px;font-size:13px}
+  @media (hover:hover){.btn-pri:hover{background:var(--t-active)}.btn-sec:hover{background:var(--bg-inset)}.btn-ghost:hover{text-decoration:underline}.map-pill:hover{background:var(--t-active)}.back:hover{color:var(--t-heavy)}}
+  .pills{display:flex;gap:6px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:var(--r-full);border:0;background:var(--bg-nav);color:var(--t-medium);font-size:13px;font-weight:600;white-space:nowrap}
+  .pill .n{font-variant-numeric:tabular-nums;opacity:.75}
+  .pill[aria-pressed="true"]{background:var(--primary);color:var(--t-inverse)}
+  @media (hover:hover){.pill[aria-pressed="false"]:hover{background:var(--bg-navSel)}}
+  .lnk{display:inline-flex;align-items:center;gap:4px;min-height:30px;padding:0 10px;border-radius:var(--r-full);background:var(--bg-inset);color:var(--t-link);font-size:12px;font-weight:600;text-decoration:none}
+  @media (hover:hover){.lnk:hover{background:var(--bg-highlight)}}
+  .nolink{display:inline-flex;align-items:center;min-height:30px;font-size:12px;color:var(--t-light)}
+  .card{background:var(--bg-surface);border-radius:var(--r-2xl);box-shadow:var(--sh-card)}
+
+  /* star toggle */
+  .star{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px 0 10px;border-radius:var(--r-full);border:1px solid var(--b-default);background:var(--bg-surface);color:var(--t-medium);font-size:13px;font-weight:600;white-space:nowrap}
+  .star svg{flex:none}
+  .star[aria-pressed="true"]{background:#fff6dc;border-color:#ecd28a;color:#6b4a00}
+  .star[aria-pressed="true"] svg{fill:var(--star);stroke:var(--star)}
+  @media (hover:hover){.star[aria-pressed="false"]:hover{border-color:var(--b-outline);background:var(--bg-inset)}}
+  .star.pop svg{animation:starpop 280ms var(--ease-out)}
+  @keyframes starpop{0%{transform:scale(.8)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+
+  /* avatars */
+  .av{flex:none;border-radius:50%;display:grid;place-items:center;font-weight:700;color:var(--t-heavy);background:var(--seat-bg);width:40px;height:40px;font-size:14px}
+  .c0{--seat-bg:#c4e0fc}.c1{--seat-bg:var(--iconBadge)}.c2{--seat-bg:var(--bg-task)}.c3{--seat-bg:var(--bg-navSel)}
+  .c4{--seat-bg:#d9f3d6}.c5{--seat-bg:#f5dcf2}.c6{--seat-bg:#fde3c8}.c7{--seat-bg:#dbe7f5}
+
+  /* ===== 1. SHORTLIST ===== */
+  .tray{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+  .tray-top{display:flex;gap:12px 20px;flex-wrap:wrap;align-items:flex-start;justify-content:space-between}
+  .guide{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1 1 300px}
+  .guide-main{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+  .guide-main b{font-weight:700}
+  .meter{height:6px;border-radius:var(--r-full);background:var(--bg-nav);overflow:hidden;max-width:420px}
+  .meter i{display:block;height:100%;background:var(--star);border-radius:inherit;transition:width 300ms var(--ease-out)}
+  .send{display:flex;flex-direction:column;align-items:flex-start;gap:6px;flex:0 1 auto}
+  @media (min-width:760px){.send{align-items:flex-end;text-align:right}}
+  .sent{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--live)}
+  .changed{font-size:13px;color:var(--t-light)}
+  .order-h{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--b-subtle);padding-top:10px}
+  .order{list-style:none;margin:0;padding:0;display:grid;gap:6px;grid-template-columns:minmax(0,1fr)}
+  @media (min-width:900px){.order{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:10px}}
+  .orow{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 4px;border-radius:var(--r-xl);background:var(--bg-inset);border:1.5px solid transparent;min-width:0}
+  .pos{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--bg-surface);font-size:12px;font-weight:700;color:var(--t-medium);font-variant-numeric:tabular-nums}
+  .oname{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;text-align:left;background:transparent;border:0;padding:2px 0;border-radius:var(--r-md)}
+  .oname b{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .oname span{font-size:12px;color:var(--t-light);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mv{flex:none;width:32px;height:32px;border-radius:var(--r-lg);border:1px solid var(--b-control);background:var(--bg-surface);display:grid;place-items:center;padding:0;color:var(--t-medium)}
+  .mv:disabled{opacity:.35;cursor:not-allowed}
+  .guide-lead{margin:0;font-size:16px;font-weight:600;line-height:1.35}
+  .guide .guide-main{font-size:14px;color:var(--t-medium)}
+  .add-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .add-row .hint{flex-basis:100%}
+  @media (min-width:760px){.add-row .hint{flex-basis:auto}}
+  .grp{display:flex;flex-direction:column;gap:6px}
+  .grp-h{font-size:13px;font-weight:600;color:var(--t-medium)}
+  .orow{padding:6px 10px 6px 6px}
+  .orow .av{width:32px;height:32px;font-size:12px}
+  .mtag{flex:none;font-size:11px;font-weight:700;padding:3px 8px;border-radius:var(--r-full);background:var(--bg-highlight);color:var(--t-active);white-space:nowrap}
+  .addlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .arow{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 8px;border-radius:var(--r-xl);background:var(--bg-inset)}
+  .arow .av{width:32px;height:32px;font-size:12px}
+  .a-who{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .a-who b{font-size:14px;font-weight:600}
+  .a-who span{font-size:12px;color:var(--t-light);line-height:1.35}
+  .empty-tray{font-size:14px;color:var(--t-light);font-style:italic;padding:4px 0}
+
+  .browse-h{display:flex;flex-direction:column;gap:10px}
+  @media (min-width:760px){.browse-h{flex-direction:row;align-items:center;justify-content:space-between}}
+  .search{position:relative;display:block;max-width:420px}
+  @media (min-width:760px){.search{flex:1 1 320px}}
+  .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t-light);pointer-events:none}
+  .search input{width:100%;min-height:44px;padding:0 12px 0 38px;border:1px solid var(--b-default);border-radius:var(--r-xl);background:var(--bg-surface);font:inherit;font-size:16px;color:var(--t-heavy)}
+  .search input::placeholder{color:var(--t-placeholder)}
+  .grid{list-style:none;margin:0;padding:0;display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+  @media (min-width:640px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (min-width:1000px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  .hc{display:flex;flex-direction:column;height:100%;border:1.5px solid transparent;transition:border-color 160ms var(--ease-out)}
+  .hc.on{border-color:#ecd28a}
+  .hc-main{flex:1;display:flex;flex-direction:column;gap:12px;text-align:left;background:transparent;border:0;padding:16px 16px 12px;border-radius:var(--r-2xl) var(--r-2xl) 0 0}
+  @media (hover:hover){.hc-main:hover .hc-name{color:var(--t-link)}}
+  .hc-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+  .rank{white-space:nowrap;font-size:26px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;color:var(--t-heavy)}
+  .rank small{font-size:13px;font-weight:600;color:var(--t-light);letter-spacing:0;margin-left:2px}
+  .rank-cap{font-size:11px;font-weight:600;color:var(--t-light);text-transform:uppercase;letter-spacing:-0.02em}
+  .onlist{font-size:12px;font-weight:600;color:#6b4a00;background:#fff6dc;padding:3px 8px;border-radius:var(--r-full);white-space:nowrap}
+  .hc-who{display:flex;gap:12px;align-items:center;min-width:0}
+  .hc-name{font-size:16px;font-weight:600;transition:color 160ms var(--ease-out)}
+  .hc-sch{font-size:13px;color:var(--t-light);line-height:1.4;margin-top:2px}
+  .hc-foot{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:10px 16px 14px;border-top:1px solid var(--b-subtle)}
+  .hc-foot .star{margin-left:auto}
+  .empty{padding:32px 16px;text-align:center;font-style:italic;font-size:14px;color:var(--t-light);background:var(--bg-inset);border-radius:var(--r-2xl);grid-column:1/-1}
+
+  /* ===== 2. CHAT SETUP ===== */
+  .setup{padding:16px;display:flex;flex-direction:column;gap:16px}
+  .field{display:flex;flex-direction:column;gap:8px}
+  .f-l{font-size:14px;font-weight:600}
+  .window{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px;font-weight:600}
+  .from{font-size:12px;font-weight:600;color:var(--t-light);background:var(--bg-inset);padding:3px 8px;border-radius:var(--r-full)}
+  .less{display:flex;flex-direction:column;gap:2px;border:1px solid var(--b-subtle);border-radius:var(--r-xl);padding:4px 10px}
+  .lrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 0;min-height:44px}
+  .lrow+.lrow{border-top:1px solid var(--b-subtle)}
+  .ltime{width:72px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--t-medium)}
+  .lrow .pills{gap:4px}
+  .lrow .pill{min-height:28px;padding:0 10px;font-size:12px}
+  .lrow.reduced .ltime{color:var(--t-warning)}
+  .setup-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--b-subtle);padding-top:14px}
+  .total{font-size:14px;color:var(--t-medium)}
+  .total b{font-weight:700;color:var(--t-heavy)}
+
+  /* ===== 3. YOUR CHATS ===== */
+  .wait-state{padding:28px 20px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+  .wait-state .ico{width:44px;height:44px;border-radius:50%;background:var(--bg-highlight);display:grid;place-items:center;color:var(--primary)}
+  .wait-state h2{margin:0;font-size:18px;font-weight:600;max-width:420px;line-height:1.35}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+  .chip{font-size:12px;font-weight:600;padding:4px 10px;border-radius:var(--r-full);background:var(--bg-inset);color:var(--t-medium)}
+  .chip.ok{background:var(--bg-live);color:var(--live)}
+  .block{overflow:hidden}
+  .block-h{padding:12px 14px 10px;border-bottom:1px solid var(--b-subtle)}
+  .room{font-size:16px;font-weight:700}
+  .room-meta{font-size:13px;color:var(--t-light);margin-top:3px}
+  .room-from{font-size:12px;font-weight:600;color:var(--t-active);margin-top:3px}
+  .crow{display:flex;gap:12px;padding:10px 14px;align-items:flex-start}
+  .crow+.crow{border-top:1px solid var(--b-subtle)}
+  .ctime{flex:none;width:52px;padding-top:8px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .cbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+  .people{display:flex;flex-wrap:wrap;gap:6px}
+  .person{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:3px 10px 3px 3px;border-radius:var(--r-full);border:1px solid var(--b-subtle);background:var(--bg-surface);font-size:13px;font-weight:600;color:var(--t-heavy);max-width:100%}
+  .person .av{width:30px;height:30px;font-size:11px}
+  .person.waiting{border-style:dashed;border-color:var(--b-medium)}
+  .person.waiting .av,.person.waiting .pn{opacity:.45}
+  .person .wl{font-size:11px;font-weight:600;color:var(--t-light)}
+  @media (hover:hover){.person:hover{border-color:var(--b-outline);background:var(--bg-inset)}}
+  .cmeta{font-size:12px;color:var(--t-light);font-variant-numeric:tabular-nums}
+  .cmeta b{color:var(--t-heavy)}
+  .crow.off{background:var(--bg-inset)}
+  .move{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--b-subtle);background:var(--bg-highlight);font-size:13px;font-weight:600;color:var(--t-active);line-height:1.35}
+
+  /* ===== details: sheet on phone, large panel on desktop ===== */
+  .scrim{position:fixed;inset:0;background:rgba(11,43,74,0.32);opacity:0;pointer-events:none;transition:opacity 240ms var(--ease-out);z-index:40}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;z-index:50;left:0;right:0;bottom:0;max-height:90dvh;display:flex;flex-direction:column;background:var(--bg-surface);border-radius:var(--r-3xl) var(--r-3xl) 0 0;box-shadow:0 -4px 24px rgba(11,43,74,0.14);
+    transform:translateY(100%);visibility:hidden;transition:transform 320ms var(--ease-drawer),visibility 0s linear 320ms}
+  .sheet.on{transform:none;visibility:visible;transition:transform 320ms var(--ease-drawer),visibility 0s}
+  .grab{width:36px;height:4px;border-radius:2px;background:var(--b-default);margin:8px auto 0;flex:none}
+  @media (min-width:700px){
+    .sheet{left:50%;top:50%;right:auto;bottom:auto;width:600px;max-height:min(720px,90dvh);border-radius:var(--r-3xl);box-shadow:0 16px 48px rgba(11,43,74,0.2);
+      opacity:0;transform:translate(-50%,-50%) scale(.97);transition:opacity 200ms var(--ease-out),transform 200ms var(--ease-out),visibility 0s linear 200ms}
+    .sheet.on{opacity:1;transform:translate(-50%,-50%);transition:opacity 220ms var(--ease-out),transform 220ms var(--ease-out),visibility 0s}
+    .grab{display:none}
+  }
+  .s-head{display:flex;align-items:flex-start;gap:12px;padding:14px 16px 12px;border-bottom:1px solid var(--b-subtle)}
+  .s-head .av{width:48px;height:48px;font-size:16px}
+  .s-name{margin:0;font-size:20px;font-weight:700}
+  .s-sub{margin:4px 0 0;font-size:14px;color:var(--t-light);line-height:1.4}
+  .x{width:40px;height:40px;border-radius:var(--r-lg);border:0;background:var(--bg-inset);display:grid;place-items:center;flex:none;margin:-4px -4px 0 auto}
+  .s-body{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:16px;display:flex;flex-direction:column;gap:16px}
+  .s-rank{display:flex;align-items:center;gap:14px;padding:14px;border-radius:var(--r-xl);background:var(--bg-inset)}
+  .s-rank .rank{font-size:32px}
+  .s-links{display:flex;flex-direction:column;gap:8px}
+  .s-links .lnk{min-height:44px;padding:0 16px;font-size:14px;border-radius:var(--r-xl);justify-content:space-between}
+  .s-sec{display:flex;flex-direction:column;gap:8px}
+  .s-foot{display:flex;align-items:center;gap:8px;padding:12px 16px max(12px,env(safe-area-inset-bottom));border-top:1px solid var(--b-subtle)}
+  .s-foot .star{min-height:40px;padding:0 16px 0 14px;font-size:14px}
+  .s-nav{margin-left:auto;display:flex;gap:6px}
+
+  /* toast */
+  .toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translate(-50%,16px);opacity:0;z-index:60;background:var(--t-heavy);color:var(--t-inverse);font-size:14px;font-weight:600;padding:12px 16px;border-radius:var(--r-xl);box-shadow:var(--sh-secondary);transition:opacity 200ms var(--ease-out),transform 200ms var(--ease-out);pointer-events:none;width:max-content;max-width:calc(100vw - 32px);line-height:1.35}
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:1ms!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="mock-wrap" aria-hidden="true"><span class="mock">MOCK · fake data</span><span class="mock-v">v6 · confirm shortlist</span></div>
+
+<div class="page">
+  <div class="col">
+    <!-- MOCK CONTROLS: not part of the product -->
+    <div class="mockctl" aria-label="Mock controls">
+      <div class="mc-g" role="group" aria-label="Mock control: preview as sponsor"><span class="mc-l">Mock control · preview as</span><span class="mc-g" id="mcSponsor"></span></div>
+      <div class="mc-g" role="group" aria-label="Mock control: your chats state"><span class="mc-l">Mock control · your chats</span><span class="mc-g" id="mcAssign"></span></div>
+    </div>
+
+    <header class="top">
+      <a class="back press" href="#">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to your portal
+      </a>
+      <div class="top-r">
+        <span class="brand">Hack Western 13</span>
+        <button class="map-pill press" type="button" id="mapBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>
+          Map
+        </button>
+      </div>
+    </header>
+
+    <div class="title">
+      <span class="logo"><img id="spLogo" src="../../public/shared/sponsors/sunlife.png" alt="Sun Life"></span>
+      <div>
+        <h1>Coffee chats</h1>
+        <p class="sub">Shortlist who you'd like to meet. We'll set up the chats on Saturday.</p>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="Coffee chats">
+      <button class="tab press" role="tab" type="button" id="tab-shortlist" aria-controls="v-shortlist" aria-selected="true">Shortlist <span class="n" id="tabN"></span></button>
+      <button class="tab press" role="tab" type="button" id="tab-setup" aria-controls="v-setup" aria-selected="false" tabindex="-1">Chat setup <span class="dot" id="tabDot" hidden aria-label="confirmed"></span></button>
+      <button class="tab press" role="tab" type="button" id="tab-chats" aria-controls="v-chats" aria-selected="false" tabindex="-1">Your chats</button>
+    </div>
+
+    <!-- 1. SHORTLIST -->
+    <div id="v-shortlist" role="tabpanel" aria-labelledby="tab-shortlist" style="display:flex;flex-direction:column;gap:20px">
+      <section class="card tray" aria-labelledby="trayL">
+        <div class="tray-top">
+          <div class="guide">
+            <h2 class="label" id="trayL">Your shortlist</h2>
+            <p class="guide-lead" id="guideLead"></p>
+            <div class="guide-main" id="guideMain"></div>
+            <div class="meter" aria-hidden="true"><i id="meter"></i></div>
+            <p class="hint" id="guideHint"></p>
+          </div>
+          <div class="send" id="sendBox"></div>
+        </div>
+        <div class="add-row">
+          <button class="pill press" type="button" id="addBtn">+ Add a hacker</button>
+          <button class="pill press" type="button" id="scanBtn">Scan a badge</button>
+          <span class="hint">Met someone at your booth? Add them, even if they didn't pick you. Manual picks get their chats first.</span>
+        </div>
+        <div class="order-h" id="orderH">
+          <span class="label">On your shortlist</span>
+          <button class="btn btn-ghost btn-sm press" type="button" id="orderToggle" aria-expanded="true" aria-controls="setWrap">Hide</button>
+        </div>
+        <div id="setWrap" style="display:flex;flex-direction:column;gap:14px"></div>
+      </section>
+
+      <section aria-labelledby="browseL" style="display:flex;flex-direction:column;gap:12px">
+        <h2 class="sr-only" id="browseL">Interested hackers</h2>
+        <div class="browse-h">
+          <label class="search">
+            <span class="sr-only">Search by name</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="q" type="search" placeholder="Search by name" autocomplete="off">
+          </label>
+          <div class="pills" role="group" aria-label="Filter hackers" id="fPills"></div>
+        </div>
+        <ul class="grid" id="grid"></ul>
+      </section>
+    </div>
+
+    <!-- 2. CHAT SETUP -->
+    <div id="v-setup" role="tabpanel" aria-labelledby="tab-setup" hidden>
+      <section class="card setup narrow" aria-label="Configure your chats" id="setupCard"></section>
+    </div>
+
+    <!-- 3. YOUR CHATS (read-only) -->
+    <div id="v-chats" role="tabpanel" aria-labelledby="tab-chats" hidden>
+      <div class="narrow" id="chats" style="display:flex;flex-direction:column;gap:14px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sName" aria-hidden="true"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------- FAKE data: 40 fictional hackers (not real applicants) ----------
+   Only fields the real app has. [first, last initial, school, program, year, has résumé, extra link] */
+const RAW = [
+ ["Avery","K","Western University","Computer Science",3,1,"gh"],["Noor","H","University of Waterloo","Statistics",2,1,"pf"],
+ ["Mateo","R","McMaster University","Software Engineering",4,1,"gh"],["Priya","S","University of Toronto","Math & Economics",3,1,"pf"],
+ ["Jonah","W","Queen's University","Commerce",2,1,null],["Lin","Z","Western University","Software Engineering",1,0,"gh"],
+ ["Kofi","A","York University","Information Technology",3,1,"gh"],["Sofia","M","Toronto Metropolitan University","Computer Engineering",4,1,"gh"],
+ ["Ravi","P","University of Ottawa","Computer Science",2,1,"gh"],["Elodie","B","McGill University","Cognitive Science",3,1,"pf"],
+ ["Theo","N","Western University","Ivey HBA",4,1,null],["Amara","O","University of Waterloo","Computer Science",3,1,"gh"],
+ ["Haruto","T","University of Guelph","Bioinformatics",2,1,"gh"],["Isla","F","Carleton University","Cybersecurity",3,0,"gh"],
+ ["Diego","L","Western University","Electrical Engineering",2,1,"gh"],["Mei","C","University of Toronto","Data Science",4,1,"gh"],
+ ["Yusuf","E","Wilfrid Laurier University","Business Technology",3,1,"pf"],["Clara","V","Queen's University","Computing",1,0,null],
+ ["Arjun","D","McMaster University","Computer Science",3,1,"gh"],["Zoe","G","Western University","Media & Information",2,1,"pf"],
+ ["Omar","S","University of Windsor","Computer Science",4,1,"gh"],["Hana","Y","University of Waterloo","Mathematics",2,1,"pf"],
+ ["Felix","J","University of Ottawa","Software Engineering",3,1,"gh"],["Leila","R","York University","Computer Science",2,1,null],
+ ["Ben","Q","Western University","Computer Science",4,1,"gh"],["Ines","P","Université de Montréal","Computer Science",3,1,"gh"],
+ ["Kai","L","Simon Fraser University","Interactive Arts",2,0,"pf"],["Grace","H","University of Toronto","Engineering Science",3,1,"gh"],
+ ["Samir","K","Toronto Metropolitan University","Business Analytics",4,1,"pf"],["Nina","W","Western University","Health Sciences",3,1,null],
+ ["Oscar","T","University of Guelph","Computer Science",1,1,"gh"],["Freya","D","Queen's University","Mechanical Engineering",4,1,"pf"],
+ ["Tariq","M","McMaster University","Computer Science",2,1,"gh"],["Lucia","A","University of Waterloo","Systems Design Engineering",3,1,"pf"],
+ ["Ezra","B","Carleton University","Computer Science",3,1,"gh"],["Aiko","S","Western University","Computer Science",2,1,"gh"],
+ ["Marcus","F","Wilfrid Laurier University","Computer Science",4,0,"gh"],["Tessa","I","University of Toronto","Statistics",3,1,"pf"],
+ ["Rohan","C","University of Windsor","Computer Engineering",2,1,"gh"],["Wren","E","McGill University","Software Engineering",3,1,"pf"],
+ // ids 40+: did NOT pick this sponsor; only findable via "Add a hacker"
+ ["Jules","R","Western University","Computer Science",2,1,"gh"],["Maya","T","University of Waterloo","Mechatronics Engineering",3,1,"pf"],
+ ["Ahmed","N","McMaster University","Computer Science",4,1,"gh"],["Chloe","B","Queen's University","Computing",2,0,null],
+ ["Sienna","P","University of Toronto","Computer Science",1,1,null],["Rafael","G","University of Ottawa","Computer Engineering",3,1,"gh"],
+ ["Talia","W","Carleton University","Information Technology",2,1,"pf"],["Kenji","M","Wilfrid Laurier University","Computer Science",3,1,"gh"],
+];
+const HACKERS=RAW.map((r,i)=>({id:i,first:r[0],last:r[1],school:r[2],prog:r[3],year:r[4],resume:!!r[5],gh:r[6]==="gh"||i%3===1,li:i%4!==1,c:i%8}));
+const TOTAL=40; // hackers who picked this sponsor (ids 0-39)
+const nm=h=>`${h.first} ${h.last}.`, ini=h=>h.first[0]+h.last, progYr=h=>`${h.prog} · Year ${h.year}`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt=m=>{const h=Math.floor(m/60),mm=m%60;return `${((h+11)%12)+1}:${String(mm).padStart(2,"0")}`;};
+const ap=m=>m>=720?"PM":"AM", fa=m=>`${fmt(m)} ${ap(m)}`;
+const nowTime=()=>new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+const LOGO={
+  gh:`<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.6.2 2.8.1 3.2.8.8 1.3 1.9 1.3 3.1 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg>`,
+  li:`<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="4" fill="#0A66C2"/><path fill="#fff" d="M7.1 9.5H4.7V19h2.4V9.5zM5.9 5.2a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8zM19.3 13.6c0-2.5-1.3-4.3-3.7-4.3-1.2 0-2 .6-2.4 1.3V9.5h-2.3V19h2.4v-4.9c0-1.3.4-2.4 1.8-2.4 1.3 0 1.6 1.1 1.6 2.4V19h2.6v-5.4z"/></svg>`};
+const ICON={
+  star:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3 6.4 20.2l1.1-6.2L3 9.6l6.2-.9z"/></svg>`,
+  up:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>`,
+  down:`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`,
+  grip:`<svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor" aria-hidden="true"><circle cx="3" cy="3" r="1.4"/><circle cx="9" cy="3" r="1.4"/><circle cx="3" cy="8" r="1.4"/><circle cx="9" cy="8" r="1.4"/><circle cx="3" cy="13" r="1.4"/><circle cx="9" cy="13" r="1.4"/></svg>`,
+  check:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>`,
+  arrow:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
+  ext:`<span aria-hidden="true">↗</span>`,
+  x:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>`,
+};
+
+/* ---------- sponsors (own data only). Window + rooms come from the sponsor sheet; organizers set rooms. ---------- */
+const SPONSORS={
+  sunlife:{name:"Sun Life",logo:"sunlife.png",win:[600,960],rooms:[["2241",600,780],["2243",780,960]],mode:"group",len:30,reps:3,rk:[17,3],short:[11,15,3,21,1,24,8],manual:[40,41,0]},
+  startech:{name:"StarTech",logo:"startech.svg",win:[600,780],rooms:[["2242",600,780]],mode:"one",len:20,reps:3,rk:[23,11],short:[5,18,30,2,12],manual:[42]},
+  canadalife:{name:"Canada Life",logo:"canadalife.png",win:[600,720],rooms:[["2243",600,720]],mode:"group",len:30,reps:3,rk:[31,6],short:[9,27,14,2,6,19,25,33,36,12,22,30,38],manual:[43]},
+};
+const STATE={};
+Object.entries(SPONSORS).forEach(([k,s])=>{
+  STATE[k]={ranks:HACKERS.map(h=>h.id<TOTAL?((h.id*s.rk[0]+s.rk[1])%TOTAL)+1:null),short:[...s.short],manual:[...s.manual],sentAt:null,sentSig:null,
+    setup:{mode:s.mode,len:s.len,reps:s.reps,less:{}},confirmedAt:null,confirmedSig:null};
+});
+let SP="sunlife", ASSIGNED=false, view="shortlist", filter="all", query="", orderOpen=true;
+const cur=()=>STATE[SP], spn=()=>SPONSORS[SP], rankOf=h=>cur().ranks[h.id];
+const isManual=id=>cur().manual.includes(id), isShort=id=>isManual(id)||cur().short.includes(id);
+const shortCount=()=>cur().short.length+cur().manual.length;
+
+/* ---------- setup math ---------- */
+const perSlot=st=>Math.min(3,st.mode==="one"?st.reps:3); // never more than 3 hackers per slot
+function slotsOf(st){const [s,e]=spn().win,out=[];for(let t=s;t+st.len<=e;t+=st.len)out.push(t);return out;}
+const seatsAt=(st,t)=>st.less[t]!=null?Math.min(st.less[t],perSlot(st)):perSlot(st);
+const totalSeats=st=>slotsOf(st).reduce((a,t)=>a+seatsAt(st,t),0);
+const roomAt=t=>spn().rooms.find(([,s,e])=>t>=s&&t<e)||spn().rooms[spn().rooms.length-1];
+const setupSig=st=>JSON.stringify([st.mode,st.len,st.reps,st.less]);
+const styleName=m=>m==="one"?"1-on-1":"3-on-1";
+
+/* ========== 1. SHORTLIST ========== */
+const grid=document.getElementById("grid"),fPills=document.getElementById("fPills"),order=document.getElementById("order");
+function guide(){
+  const st=cur(),seats=totalSeats(st.setup),n=shortCount(),filled=Math.min(n,seats),extras=Math.max(0,n-seats);
+  document.getElementById("guideLead").textContent=`Your chats have ${seats} seats. Shortlist ${seats}, plus a few extras in case someone can't make it.`;
+  document.getElementById("guideMain").innerHTML=`<b>${filled} of ${seats} seats</b> · ${extras} extra${extras===1?"":"s"}`;
+  document.getElementById("meter").style.width=(seats?filled/seats*100:0)+"%";
+  document.getElementById("guideHint").textContent= n===0?"Star the hackers you'd like to meet below."
+    : n<seats?`${seats-n} more to fill your seats. It's a guide, not a rule: send what you have and we'll fill the rest by interest.`
+    : extras===0?"Seats covered. A few extras help if someone can't make it."
+    : "Seats covered, with extras ready if someone can't make it.";
+  const box=document.getElementById("sendBox"),sig=setSig(st);
+  const due=`Due before Saturday ${fa(spn().win[0])}`;
+  if(st.sentAt) box.innerHTML=`<span class="sent">${ICON.check}Confirmed ${st.sentAt} · we'll set up your chats</span><span class="changed">Your shortlist is locked.</span>`;
+  else if(st.confirming) box.innerHTML=`<span class="changed" style="color:var(--warn,#9a5b00);font-weight:600">You can't change your shortlist once you confirm. Send ${n} hackers?</span><span style="display:flex;gap:8px"><button class="btn press" type="button" id="cancelConfirm">Keep editing</button><button class="btn btn-pri press" type="button" id="sendBtn">Yes, confirm</button></span>`;
+  else box.innerHTML=`<span class="changed">${due} · You can't change it once you submit.</span><button class="btn btn-pri press" type="button" id="askConfirm" ${n?"":"disabled"}>Confirm Shortlist to Hack Western</button>`;
+}
+const setSig=st=>JSON.stringify([[...st.manual].sort((a,b)=>a-b),[...st.short].sort((a,b)=>a-b)]);
+function rankLine(h){return rankOf(h)?`Picked ${esc(spn().name)}`:`Met at your booth`;}
+function setRow(id,manual){const h=HACKERS[id];
+  return `<li class="orow"><span class="av c${h.c}" aria-hidden="true">${ini(h)}</span>
+    <button class="oname" type="button" data-open="${id}"><b>${esc(nm(h))}</b><span>${rankLine(h)} · ${esc(h.school)}</span></button>
+    ${manual?`<span class="mtag">Manually selected</span>`:""}</li>`;}
+// the shortlist is a set (no order): booth picks first, then the rest by interest rank
+function renderOrder(){
+  const st=cur(),wrap=document.getElementById("setWrap");
+  document.getElementById("orderH").hidden=!shortCount();
+  document.getElementById("orderToggle").textContent=orderOpen?"Hide":"Show";
+  document.getElementById("orderToggle").setAttribute("aria-expanded",orderOpen);
+  wrap.hidden=!orderOpen||!shortCount();
+  const fromList=[...st.short].sort((a,b)=>st.ranks[a]-st.ranks[b]);
+  wrap.innerHTML=
+    (st.manual.length?`<div class="grp"><span class="grp-h">Met at your booth · ${st.manual.length}</span><ul class="order">${st.manual.map(id=>setRow(id,true)).join("")}</ul></div>`:"")+
+    (fromList.length?`<div class="grp"><span class="grp-h">From interested hackers · ${fromList.length}</span><ul class="order">${fromList.map(id=>setRow(id,false)).join("")}</ul></div>`:"");
+}
+function starBtn(h){const on=isShort(h.id);
+  return `<button class="star press" type="button" data-star="${h.id}" aria-pressed="${on}" aria-label="${on?"Remove "+esc(nm(h))+" from shortlist":"Shortlist "+esc(nm(h))}">${ICON.star}${on?"Shortlisted":"Shortlist"}</button>`;}
+function logoLink(h,kind){const name=kind==="gh"?"GitHub":"LinkedIn";
+  return `<a class="lnk" href="#" data-link="${name}" data-h="${h.id}" aria-label="${esc(nm(h))} on ${name}" title="${name}" style="display:inline-flex;align-items:center">${LOGO[kind]}</a>`;}
+function linksHTML(h){const a=[];
+  a.push(h.resume?`<a class="lnk" href="#" data-link="résumé" data-h="${h.id}">Résumé ${ICON.ext}</a>`:`<span class="nolink">No résumé</span>`);
+  if(h.gh)a.push(logoLink(h,"gh"));if(h.li)a.push(logoLink(h,"li"));return a.join("");}
+// the browse grid shows the 40 hackers who picked this sponsor
+function visible(){
+  const q=query.trim().toLowerCase();
+  return HACKERS.filter(h=>h.id<TOTAL&&(filter==="all"||(filter==="on")===isShort(h.id))&&(!q||`${h.first} ${h.last}`.toLowerCase().includes(q))).sort((a,b)=>rankOf(a)-rankOf(b));
+}
+function renderGrid(){
+  const n=HACKERS.filter(h=>h.id<TOTAL&&isShort(h.id)).length;
+  fPills.innerHTML=[["all","All",TOTAL],["on","Shortlisted",n],["off","Not shortlisted",TOTAL-n]].map(([k,l,c])=>`<button class="pill press" type="button" data-f="${k}" aria-pressed="${filter===k}">${l} <span class="n">${c}</span></button>`).join("");
+  const rows=visible();
+  if(!rows.length){grid.innerHTML=`<li class="empty">${filter==="on"&&!query?"Nobody shortlisted yet. Star hackers from All.":"No hackers match. Try another name or filter."}</li>`;return;}
+  grid.innerHTML=rows.map(h=>`<li class="card hc${isShort(h.id)?" on":""}">
+    <button class="hc-main" type="button" data-open="${h.id}" aria-label="Open ${esc(nm(h))}'s details">
+      <span class="hc-top"><span></span>${isShort(h.id)?`<span class="${isManual(h.id)?"mtag":"onlist"}">${isManual(h.id)?"Manually selected":"On your shortlist"}</span>`:""}</span>
+      <span class="hc-who"><span class="av c${h.c}" aria-hidden="true">${ini(h)}</span><span><span class="hc-name">${esc(nm(h))}</span><span class="hc-sch" style="display:block">${esc(h.school)}<br>${esc(progYr(h))}</span></span></span>
+    </button>
+    <div class="hc-foot">${linksHTML(h)}${starBtn(h)}</div></li>`).join("");
+}
+function unshort(id){const st=cur();st.manual=st.manual.filter(x=>x!==id);st.short=st.short.filter(x=>x!==id);}
+function toggleStar(id,src){
+  if(cur().sentAt){toast("Your shortlist is confirmed and locked.");return;}
+  const on=isShort(id);on?unshort(id):cur().short.push(id);
+  renderAll();
+  const again=document.querySelector(`${src} [data-star="${id}"]`);if(again){again.focus({preventScroll:true});if(!on)again.classList.add("pop");}
+  toast(on?`Removed ${nm(HACKERS[id])} from your shortlist`:`Shortlisted ${nm(HACKERS[id])}`);
+}
+function addManual(id,how){const st=cur();if(st.sentAt){toast("Your shortlist is confirmed and locked.");return;}st.short=st.short.filter(x=>x!==id);if(!st.manual.includes(id))st.manual.push(id);renderAll();
+  toast(`${how==="scan"?`Scanned ${nm(HACKERS[id])}'s badge. Added them`:`Added ${nm(HACKERS[id])}`} as manually selected. They get their chat first.`);}
+// mock scan: "scans" the next hacker who didn't pick this sponsor
+function scanBadge(){const h=HACKERS.find(x=>x.id>=TOTAL&&!isShort(x.id));if(!h){toast("Opens the badge scanner");return;}addManual(h.id,"scan");}
+document.getElementById("v-shortlist").addEventListener("click",e=>{
+  if(onLink(e))return;
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.star)toggleStar(+t.dataset.star,"#grid");
+  else if(t.dataset.open)openSheet(+t.dataset.open,t);
+  else if(t.dataset.f){filter=t.dataset.f;renderGrid();fPills.querySelector(`[data-f="${filter}"]`).focus();}
+  else if(t.id==="orderToggle"){orderOpen=!orderOpen;renderOrder();}
+  else if(t.id==="addBtn")openAdd(t);
+  else if(t.id==="scanBtn")scanBadge();
+  else if(t.id==="askConfirm"){cur().confirming=true;renderAll();document.getElementById("cancelConfirm")?.focus();}
+  else if(t.id==="cancelConfirm"){cur().confirming=false;renderAll();}
+  else if(t.id==="sendBtn"){const st=cur();st.confirming=false;st.sentAt=nowTime();st.sentSig=setSig(st);renderAll();
+    toast(`Confirmed ${shortCount()} hackers. We'll set up your chats.`);}
+});
+document.getElementById("q").addEventListener("input",e=>{query=e.target.value;renderGrid();});
+
+/* ========== 2. CHAT SETUP ========== */
+const setupCard=document.getElementById("setupCard");
+let lessOpen=false;
+function renderSetup(){
+  const st=cur().setup,sp=spn(),ps=perSlot(st),pill=(a,v,on,l)=>`<button class="pill press" type="button" ${a}="${v}" aria-pressed="${on}">${l}</button>`;
+  const confirmed=cur().confirmedAt&&cur().confirmedSig===setupSig(st);
+  const reduced=Object.keys(st.less).filter(t=>st.less[t]<ps).length;
+  setupCard.innerHTML=`
+    <h2 class="label">Configure your chats</h2>
+    <div class="field"><span class="f-l">Style</span><div class="pills" role="group" aria-label="Style">${pill("data-mode","one",st.mode==="one","1-on-1")}${pill("data-mode","group",st.mode==="group","3-on-1")}</div>
+      <p class="hint">${st.mode==="one"?"Each rep chats with one hacker.":"One rep chats with a group of up to 3 hackers."}</p></div>
+    <div class="field"><span class="f-l">Length</span><div class="pills" role="group" aria-label="Length">${pill("data-len",20,st.len===20,"20 min")}${pill("data-len",30,st.len===30,"30 min")}</div></div>
+    ${st.mode==="one"?`<div class="field"><span class="f-l">Reps chatting</span><div class="pills" role="group" aria-label="Reps chatting">${[1,2,3].map(n=>pill("data-reps",n,st.reps===n,n)).join("")}</div>
+      <p class="hint">${st.reps} hacker${st.reps>1?"s":""} per time slot.</p></div>`:""}
+    <div class="field"><span class="f-l">Availability</span>
+      <div class="window">Saturday · ${fa(sp.win[0])}–${fa(sp.win[1])}<span class="from">From your sponsor sheet</span></div>
+      <div><button class="btn btn-ghost btn-sm press" type="button" id="lessToggle" aria-expanded="${lessOpen}" aria-controls="less" style="margin-left:-8px">${lessOpen?"Done":"Offer less chats"}</button>${!lessOpen&&reduced?`<span class="hint"> · fewer at ${reduced} time${reduced>1?"s":""}</span>`:""}</div>
+      ${lessOpen?`<p class="hint">Fewer hackers at a time, or none. Handy for lunch or when a rep steps out.</p>
+      <div class="less" id="less">${slotsOf(st).map(t=>{const v=seatsAt(st,t);
+        return `<div class="lrow${v<ps?" reduced":""}"><span class="ltime">${fa(t)}</span><div class="pills" role="group" aria-label="Hackers at ${fa(t)}">
+        ${Array.from({length:ps+1},(_,n)=>n).map(n=>pill(`data-less="${t}" data-n`,n,v===n,n===0?"No chat":`${n}`)).join("")}</div></div>`;}).join("")}</div>`:""}
+    </div>
+    <p class="hint">Rooms are set by the organizers. You'll see them in Your chats.</p>
+    <div class="setup-foot">
+      <span class="total">${styleName(st.mode)} · ${st.len} min · <b>${totalSeats(st)} seats</b></span>
+      ${confirmed?`<span class="sent">${ICON.check}Confirmed ${cur().confirmedAt}</span>`
+        :`<span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">${cur().confirmedAt?`<span class="changed">Changed since ${cur().confirmedAt}</span>`:""}<button class="btn btn-pri press" type="button" id="confirmBtn">${cur().confirmedAt?"Confirm again":"Confirm setup"}</button></span>`}
+    </div>`;
+}
+setupCard.addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;const st=cur().setup;let sel=null;
+  if(t.dataset.mode){st.mode=t.dataset.mode;sel=`[data-mode="${st.mode}"]`;}
+  else if(t.dataset.len){st.len=+t.dataset.len;st.less={};sel=`[data-len="${st.len}"]`;} // new slot times: availability tweaks reset
+  else if(t.dataset.reps){st.reps=+t.dataset.reps;sel=`[data-reps="${st.reps}"]`;}
+  else if(t.dataset.less!=null){const tm=+t.dataset.less,n=+t.dataset.n;if(n>=perSlot(st))delete st.less[tm];else st.less[tm]=n;sel=`[data-less="${tm}"][data-n="${n}"]`;}
+  else if(t.id==="lessToggle"){lessOpen=!lessOpen;sel="#lessToggle";}
+  else if(t.id==="confirmBtn"){cur().confirmedAt=nowTime();cur().confirmedSig=setupSig(st);renderAll();toast("Setup confirmed. Organizers see it now.");setupCard.querySelector(".sent")?.setAttribute("tabindex","-1");return;}
+  else return;
+  renderAll();const f=setupCard.querySelector(sel);if(f)f.focus();
+});
+
+/* ========== 3. YOUR CHATS (read-only) ========== */
+const chatsEl=document.getElementById("chats");
+// what organizers assigned (mock): manual picks first, then the shortlist, then by interest; a few seats left open
+function assignment(){
+  const st=cur(),pool=[...st.manual,...st.short,...HACKERS.filter(h=>h.id<TOTAL&&!isShort(h.id)).map(h=>h.id).sort((a,b)=>st.ranks[a]-st.ranks[b])];
+  let k=0,seat=0;
+  return slotsOf(st.setup).map(t=>{const n=seatsAt(st.setup,t),people=[];
+    for(let j=0;j<n;j++){seat++;if(seat%5===0)continue;const id=pool[k++];if(id==null)break;people.push({id,wait:k%4===0});}
+    return {t,n,people};});
+}
+function renderChats(){
+  const st=cur(),sp=spn(),s=st.setup;
+  if(!ASSIGNED){
+    chatsEl.innerHTML=`<section class="card wait-state">
+      <span class="ico" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+      <h2>We'll assign your shortlisted hackers. You'll see them here.</h2>
+      <p class="hint">Saturday · ${fa(sp.win[0])}–${fa(sp.win[1])} · ${styleName(s.mode)} · ${s.len} min</p>
+      <div class="chips">
+        <span class="chip${st.sentAt?" ok":""}">${st.sentAt?`Shortlist confirmed ${st.sentAt}`:"Shortlist not confirmed yet"}</span>
+        <span class="chip${st.confirmedAt&&st.confirmedSig===setupSig(s)?" ok":""}">${st.confirmedAt&&st.confirmedSig===setupSig(s)?`Setup confirmed ${st.confirmedAt}`:"Setup not confirmed yet"}</span>
+      </div></section>`;
+    return;
+  }
+  const rows=assignment();
+  let conf=0,wait=0;rows.forEach(r=>r.people.forEach(p=>p.wait?wait++:conf++));
+  let html=`<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><h2 class="label">Your chats · Saturday</h2><span class="cmeta"><b>${conf}</b> confirmed · ${wait} waiting · ${totalSeats(s)} seats</span></div>`;
+  sp.rooms.forEach(([room,bs,be],bi)=>{
+    const rs=rows.filter(r=>roomAt(r.t)[0]===room&&r.t>=bs&&r.t<be);if(!rs.length)return;
+    const prev=sp.rooms[bi-1],next=sp.rooms[bi+1];
+    html+=`<section class="card block" aria-label="Room ${room}, ${fa(bs)} to ${fa(be)}"><div class="block-h"><div class="room">Rm ${room}</div>
+      ${prev&&prev[0]!==room?`<div class="room-from">From ${fmt(bs)}, after Rm ${prev[0]}</div>`:""}
+      <div class="room-meta">${fa(bs)}–${fa(be)} · ${s.len}-min chats</div></div>`;
+    rs.forEach(r=>{
+      html+=`<div class="crow${r.n===0?" off":""}"><span class="ctime">${fmt(r.t)}</span><div class="cbody">`+
+        (r.n===0?`<span class="cmeta" style="padding-top:8px">No chat (you offered less)</span>`:
+        `<div class="people">${r.people.map(p=>{const h=HACKERS[p.id];return `<button class="person${p.wait?" waiting":""} press" type="button" data-open="${p.id}" aria-label="${esc(nm(h))}, ${p.wait?"waiting to confirm":"confirmed"}. Open details"><span class="av c${h.c}" aria-hidden="true">${ini(h)}</span><span class="pn">${esc(nm(h))}</span>${p.wait?`<span class="wl">Waiting</span>`:""}</button>`;}).join("")}</div>
+        <span class="cmeta">${r.people.length}/${r.n}${r.people.length<r.n?` · ${r.n-r.people.length} seat${r.n-r.people.length>1?"s":""} still open`:""}</span>`)+`</div></div>`;
+    });
+    if(next&&next[0]!==room)html+=`<div class="move">${ICON.arrow}Moves to Rm ${next[0]} at ${fmt(next[1])}. Walk over after your ${fmt(rs[rs.length-1].t)} chat.</div>`;
+    html+=`</section>`;
+  });
+  chatsEl.innerHTML=html;
+}
+chatsEl.addEventListener("click",e=>{const t=e.target.closest("[data-open]");if(t)openSheet(+t.dataset.open,t);});
+
+/* ========== details + "Add a hacker": sheet on phone, large panel on desktop ========== */
+const sheet=document.getElementById("sheet"),scrim=document.getElementById("scrim");
+let sh=null; // {mode:"details"|"add", id, from, list, q}
+function chatOf(id){if(!ASSIGNED)return null;for(const r of assignment()){const p=r.people.find(x=>x.id===id);if(p)return {t:r.t,room:roomAt(r.t)[0],wait:p.wait};}return null;}
+function renderSheet(){
+  if(sh.mode==="add"){renderAddSheet();return;}
+  const h=HACKERS[sh.id],list=sh.list,i=list.indexOf(sh.id),chat=chatOf(h.id),r=rankOf(h);
+  sheet.innerHTML=`<div class="grab" aria-hidden="true"></div>
+    <div class="s-head"><span class="av c${h.c}" aria-hidden="true">${ini(h)}</span>
+      <div style="min-width:0"><h2 class="s-name" id="sName">${esc(nm(h))}</h2><p class="s-sub">${esc(h.school)}<br>${esc(progYr(h))}</p></div>
+      <button class="x press" type="button" data-close aria-label="Close">${ICON.x}</button></div>
+    <div class="s-body">
+      ${r?"":`<div class="s-rank"><p class="hint" style="font-size:14px">Didn't pick ${esc(spn().name)} on their form. You can still add them as a manual pick.</p></div>`}
+      <div class="s-sec"><span class="label">Links</span><div class="s-links">
+        ${h.resume?`<a class="lnk" href="#" data-link="résumé" data-h="${h.id}">Open résumé ${ICON.ext}</a>`:`<span class="nolink">No résumé uploaded</span>`}
+        ${h.gh?logoLink(h,"gh"):""}${h.li?logoLink(h,"li"):""}</div></div>
+      ${isShort(h.id)?`<div class="s-sec"><span class="label">Your shortlist</span><span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;font-weight:600">On your shortlist${isManual(h.id)?`<span class="mtag">Manually selected</span>`:""}</span>${isManual(h.id)?`<p class="hint">Manual picks get their chats first.</p>`:""}</div>`:""}
+      ${chat?`<div class="s-sec"><span class="label">Your chat</span><span style="font-size:14px;font-weight:600">${fa(chat.t)} · Rm ${chat.room} · ${chat.wait?"Waiting to confirm":"Confirmed"}</span></div>`:""}
+    </div>
+    <div class="s-foot">${starBtn(h)}
+      <span class="s-nav"><button class="btn btn-sec btn-sm press" type="button" data-step="-1" ${i<=0?"disabled":""} aria-label="Previous hacker">Prev</button><button class="btn btn-sec btn-sm press" type="button" data-step="1" ${i<0||i>=list.length-1?"disabled":""} aria-label="Next hacker">Next</button></span></div>`;
+}
+function renderAddSheet(){
+  sheet.innerHTML=`<div class="grab" aria-hidden="true"></div>
+    <div class="s-head"><div style="min-width:0"><h2 class="s-name" id="sName">Add a hacker</h2><p class="s-sub">Met someone at your booth? Search anyone at Hack Western, or scan their badge. Manual picks get their chats first.</p></div>
+      <button class="x press" type="button" data-close aria-label="Close">${ICON.x}</button></div>
+    <div class="s-body">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label class="search" style="flex:1 1 220px;max-width:none"><span class="sr-only">Search all hackers by name</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="addQ" type="search" placeholder="Search by name" autocomplete="off" value="${esc(sh.q)}"></label>
+        <button class="pill press" type="button" data-scan>Scan a badge</button>
+      </div>
+      <ul class="addlist" id="addRes" aria-live="polite"></ul>
+    </div>`;
+  renderAddRes();
+}
+function renderAddRes(){
+  const q=sh.q.trim().toLowerCase(),sp=esc(spn().name);
+  const rows=HACKERS.filter(h=>!q||`${h.first} ${h.last}`.toLowerCase().includes(q)).sort((a,b)=>a.first.localeCompare(b.first));
+  document.getElementById("addRes").innerHTML=rows.length?rows.map(h=>{const r=rankOf(h),m=isManual(h.id);
+    return `<li class="arow"><span class="av c${h.c}" aria-hidden="true">${ini(h)}</span>
+      <span class="a-who"><b>${esc(nm(h))}</b><span>${esc(h.school)} · ${r?`picked ${sp}`:`didn't pick ${sp}`}</span></span>
+      ${m?`<span class="mtag">Added</span>`:`<button class="pill press" type="button" data-add="${h.id}" aria-label="Add ${esc(nm(h))}">Add</button>`}</li>`;}).join("")
+    :`<li class="empty">Nobody by that name. Try scanning their badge.</li>`;
+}
+function openSheet(id,from){
+  const st=cur();
+  const list=from&&from.closest("#chats")?assignment().flatMap(r=>r.people.map(p=>p.id))
+    :from&&from.closest("#setWrap")?[...st.manual,...[...st.short].sort((a,b)=>st.ranks[a]-st.ranks[b])]:visible().map(h=>h.id);
+  sh={mode:"details",id,from,list};showSheet();
+}
+function openAdd(from){sh={mode:"add",from,q:""};showSheet("#addQ");}
+function showSheet(focusSel){renderSheet();
+  sheet.classList.add("on");scrim.classList.add("on");sheet.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
+  setTimeout(()=>{const f=sheet.querySelector(focusSel||"[data-close]");if(f)f.focus();},50);}
+function closeSheet(){if(!sh)return;const f=sh.from,id=sh.id;sh=null;sheet.classList.remove("on");scrim.classList.remove("on");sheet.setAttribute("aria-hidden","true");document.body.style.overflow="";
+  const again=(id!=null&&document.querySelector(`[data-open="${id}"]`))||f;if(again&&document.contains(again))again.focus({preventScroll:true});}
+sheet.addEventListener("input",e=>{if(e.target.id==="addQ"&&sh){sh.q=e.target.value;renderAddRes();}});
+sheet.addEventListener("click",e=>{
+  if(onLink(e))return;const t=e.target.closest("button");if(!t||!sh)return;
+  if(t.hasAttribute("data-close"))closeSheet();
+  else if(t.dataset.add){addManual(+t.dataset.add,"search");renderAddRes();const nx=sheet.querySelector("[data-add]");(nx||sheet.querySelector("#addQ")).focus();}
+  else if(t.hasAttribute("data-scan")){scanBadge();renderAddRes();}
+  else if(t.dataset.star&&cur().sentAt){toast("Your shortlist is confirmed and locked.");}
+  else if(t.dataset.star){const id=+t.dataset.star,on=isShort(id);on?unshort(id):cur().short.push(id);renderAll();renderSheet();
+    const b=sheet.querySelector("[data-star]");b.focus();if(!on)b.classList.add("pop");toast(on?`Removed ${nm(HACKERS[id])} from your shortlist`:`Shortlisted ${nm(HACKERS[id])}`);}
+  else if(t.dataset.step){const i=sh.list.indexOf(sh.id)+(+t.dataset.step);if(sh.list[i]!=null){sh.id=sh.list[i];renderSheet();const b=sheet.querySelector(`[data-step="${t.dataset.step}"]`);(b&&!b.disabled?b:sheet.querySelector("[data-close]")).focus();}}
+});
+scrim.addEventListener("click",closeSheet);
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&sh)closeSheet();
+  if(e.key==="Tab"&&sh){const f=[...sheet.querySelectorAll("button:not(:disabled),a[href],input")];const a=f[0],z=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus();}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus();}}
+});
+function onLink(e){const l=e.target.closest("[data-link]");if(!l)return false;e.preventDefault();toast(`Opens ${nm(HACKERS[+l.dataset.h])}'s ${l.dataset.link}`);return true;}
+
+/* ---------- tabs ---------- */
+const TABS=["shortlist","setup","chats"];
+function setView(v){view=v;TABS.forEach(k=>{const t=document.getElementById("tab-"+k),on=k===v;t.setAttribute("aria-selected",on);t.tabIndex=on?0:-1;document.getElementById("v-"+k).hidden=!on;});}
+TABS.forEach((k,i)=>{const t=document.getElementById("tab-"+k);t.addEventListener("click",()=>setView(k));
+  t.addEventListener("keydown",e=>{if(e.key!=="ArrowRight"&&e.key!=="ArrowLeft")return;e.preventDefault();const n=TABS[(i+(e.key==="ArrowRight"?1:2))%3];setView(n);document.getElementById("tab-"+n).focus();});});
+
+/* ---------- mock controls ---------- */
+function renderMock(){
+  document.getElementById("mcSponsor").innerHTML=Object.entries(SPONSORS).map(([k,v])=>`<button class="mc-b press" type="button" data-sp="${k}" aria-pressed="${SP===k}">${v.name}</button>`).join("");
+  document.getElementById("mcAssign").innerHTML=[[false,"Before assignment"],[true,"After assignment"]].map(([v,l])=>`<button class="mc-b press" type="button" data-as="${v}" aria-pressed="${ASSIGNED===v}">${l}</button>`).join("");
+}
+document.querySelector(".mockctl").addEventListener("click",e=>{const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.sp){SP=t.dataset.sp;lessOpen=false;closeSheet();renderAll();document.querySelector(`[data-sp="${SP}"]`).focus();}
+  else if(t.dataset.as){ASSIGNED=t.dataset.as==="true";renderAll();document.querySelector(`[data-as="${ASSIGNED}"]`).focus();}});
+
+/* ---------- misc ---------- */
+function renderAll(){
+  renderMock();guide();renderOrder();renderGrid();renderSetup();renderChats();
+  document.getElementById("tabN").textContent=shortCount();
+  document.getElementById("tabDot").hidden=!(cur().confirmedAt&&cur().confirmedSig===setupSig(cur().setup));
+  const img=document.getElementById("spLogo");img.src=`../../public/shared/sponsors/${spn().logo}`;img.alt=spn().name;
+  document.title=`Coffee chats · ${spn().name} (mock v6)`;
+}
+let tt;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),3000);}
+document.getElementById("mapBtn").addEventListener("click",()=>toast("Opens the venue map"));
+renderAll();
+</script>
+</body>
+</html>

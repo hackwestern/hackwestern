@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hacker notifications · wireframes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ===== Design tokens (src/lib/tokens.ts → dashboardColors) ===== */
+:root{
+  --text-heavy:#0b2b4a; --text-medium:#1c3550; --text-light:#516476;
+  --text-placeholder:rgba(81,100,118,.7); --text-disabled:rgba(81,100,118,.5);
+  --text-inverse:#fff; --text-link:#0b6bc4; --text-active:#08559c;
+  --text-warning:#8a4300; --text-task:#5c3d00;
+  --bg-page:#f3f7fc; --bg-surface:#fff; --bg-nav:#dbe7f5; --bg-nav-selected:#b9d3f0;
+  --bg-inset:#edf3fa; --bg-highlight:#e1effb; --bg-highlight-subtle:rgba(225,239,251,.4);
+  --bg-task:#ffefb8;
+  --action-primary:#0b6bc4;
+  --border-default:#cdddeb; --border-subtle:#e0eaf3; --border-card:#d6e3ef;
+  --border-control:#b9cbe0; --border-outline:#accae5; --border-task:#c78a00;
+  --border-faint:rgba(81,100,118,.1); --border-muted:rgba(81,100,118,.2); --border-strong:#516476;
+  --status-live:#16803c; --status-warning:#a34a00;
+  --sch-pink:rgba(250,104,235,.15); --sch-blue:rgba(37,130,254,.15);
+  --sch-green:rgba(104,250,109,.15); --sch-orange:rgba(254,145,37,.15);
+  --r-xs:4px; --r-sm:6px; --r-md:8px; --r-lg:12px; --r-2xl:20px;
+  --shadow-card:0 1px 2px rgba(11,43,74,.06),0 4px 12px rgba(11,43,74,.06);
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --font:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+body{margin:0;font-family:var(--font);color:var(--text-heavy);background:#e9eef4;font-size:14px;line-height:1.45;padding:64px 0 40px}
+button,a,[role=button]{touch-action:manipulation}
+button{font:inherit;color:inherit;user-select:none;-webkit-user-select:none}
+input,select,textarea{font:inherit;font-size:16px}
+h1,h2,h3,h4,p{margin:0}
+ul{margin:0;padding:0;list-style:none}
+
+/* ===== Harness chrome (not part of the design) ===== */
+.h-top{max-width:1312px;margin:0 auto;padding:12px 16px 8px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.h-title{font-weight:700;font-size:15px}
+.h-badge{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6b4e00;background:#fff3c4;border:1px solid #e6c55a;border-radius:999px;padding:2px 8px}
+.h-frame-toggle{margin-left:auto;display:inline-flex;background:#dfe6ee;border-radius:999px;padding:2px}
+.h-frame-toggle button{border:0;background:transparent;border-radius:999px;padding:4px 10px;font-size:12px;cursor:pointer;color:#445}
+.h-frame-toggle button[aria-pressed=true]{background:#fff;color:#111;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.h-note{max-width:1312px;margin:0 auto;padding:0 16px 12px;font-size:13px;color:#445}
+.h-note b{color:#111}
+.frame{container-type:inline-size;margin:0 auto;width:1280px;max-width:calc(100% - 32px);background:var(--bg-page);border-radius:14px;box-shadow:0 0 0 1px rgba(0,0,0,.06),0 10px 30px rgba(0,0,0,.08);overflow:hidden;min-height:70vh}
+.frame[data-mode=phone]{width:375px}
+@media (max-width:420px){.frame{max-width:100%;border-radius:0}}
+
+/* Picker: PICKER.md verbatim, data-position="top" */
+.proto-picker{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2147483647;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;background:rgba(10,10,10,.82);-webkit-backdrop-filter:blur(12px) saturate(1.4);backdrop-filter:blur(12px) saturate(1.4);box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 8px 24px rgba(0,0,0,.24),0 2px 6px rgba(0,0,0,.12);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;line-height:1;-webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none;max-width:calc(100vw - 16px);overflow-x:auto;scrollbar-width:none}
+.proto-picker-highlight{position:absolute;top:4px;left:0;height:28px;border-radius:999px;background:rgba(255,255,255,.12)}
+.proto-picker[data-ready] .proto-picker-highlight{transition:transform 250ms cubic-bezier(.23,1,.32,1),width 250ms cubic-bezier(.23,1,.32,1)}
+@media (prefers-reduced-motion:reduce){.proto-picker[data-ready] .proto-picker-highlight{transition:none}}
+.proto-picker-item{position:relative;display:flex;align-items:center;height:28px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:rgba(255,255,255,.55);font:inherit;cursor:pointer;white-space:nowrap;transition:color 150ms ease-out,transform 160ms cubic-bezier(.23,1,.32,1)}
+@media (hover:hover) and (pointer:fine){.proto-picker-item:hover{color:rgba(255,255,255,.85)}}
+.proto-picker-item:active{transform:scale(.97)}
+.proto-picker-item:focus-visible{outline:2px solid rgba(255,255,255,.4);outline-offset:2px}
+.proto-picker-item[data-active]{color:#fff}
+.proto-picker[data-position=top]{bottom:auto;top:12px}
+
+/* ===== Shared wireframe kit (uses tokens) ===== */
+.app{min-height:70vh;font-size:14px}
+.wrap{padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+@container (max-width:640px){.wrap{padding:16px}}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.stack{display:flex;flex-direction:column;gap:8px}
+.muted{color:var(--text-light)}
+.small{font-size:12px}
+.tnum{font-variant-numeric:tabular-nums}
+.h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.h2{font-size:16px;font-weight:600}
+.h3{font-size:14px;font-weight:600}
+.card{background:var(--bg-surface);border-radius:var(--r-lg);box-shadow:var(--shadow-card);padding:16px}
+.card.flat{box-shadow:none;border:1px solid var(--border-subtle)}
+.inset{background:var(--bg-inset);border-radius:var(--r-md);padding:12px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;border:1px solid var(--border-control);background:var(--bg-surface);font-size:12px;font-weight:500;color:var(--text-medium);cursor:pointer;white-space:nowrap;transition:transform 160ms var(--ease-out),background-color 150ms ease-out}
+.pill:active{transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){.pill:hover{background:var(--bg-highlight)}}
+.pill.primary{background:var(--action-primary);border-color:var(--action-primary);color:#fff}
+@media (hover:hover) and (pointer:fine){.pill.primary:hover{background:var(--text-active)}}
+.pill.ghost{border-color:transparent;background:transparent;color:var(--text-link)}
+.pill.map{background:var(--text-heavy);border-color:var(--text-heavy);color:#fff;font-weight:600}
+.pill:focus-visible,.seg button:focus-visible{outline:2px solid var(--action-primary);outline-offset:2px}
+.seg{display:inline-flex;flex-wrap:wrap;gap:4px}
+.seg button{height:28px;padding:0 10px;border-radius:999px;border:0;background:var(--bg-nav);color:var(--text-medium);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed=true]{background:var(--action-primary);color:#fff}
+.seg button .n{opacity:.7;margin-left:4px;font-variant-numeric:tabular-nums}
+.tag{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;background:var(--bg-inset);color:var(--text-light)}
+.tag::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.tag.plain::before{display:none}
+.tag.sent{background:#e3f4e8;color:var(--status-live)}
+.tag.sched{background:var(--bg-highlight);color:var(--text-active)}
+.tag.failed{background:#fde9dc;color:var(--status-warning)}
+.tag.warn{background:var(--bg-task);color:var(--text-task)}
+.tag.off{background:var(--bg-inset);color:var(--text-light)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--status-live);display:inline-block;flex:none}
+.dot.warn{background:var(--status-warning)}.dot.off{background:var(--border-medium,#a9b4bf)}.dot.amber{background:var(--border-task)}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{text-align:left;font-weight:600;color:var(--text-light);font-size:12px;padding:8px 10px;border-bottom:1px solid var(--border-subtle);white-space:nowrap}
+table.t td{padding:10px;border-bottom:1px solid var(--border-subtle);vertical-align:top}
+table.t tr:nth-child(even) td{background:var(--bg-highlight-subtle)}
+.logo{height:18px;width:auto;max-width:90px;object-fit:contain;display:block}
+.logo-txt{font-weight:700;font-size:13px;letter-spacing:.02em}
+.sel{outline:2px solid var(--action-primary);outline-offset:-2px}
+.hide-phone{}
+@container (max-width:640px){.hide-phone{display:none!important}.t-phone-stack thead{display:none}.t-phone-stack tr{display:block;padding:10px 0;border-bottom:1px solid var(--border-subtle)}.t-phone-stack td{display:block;border:0;padding:2px 0;background:none!important}}
+.show-phone{display:none}
+@container (max-width:640px){.show-phone{display:revert}}
+.slack{border:1px solid var(--border-subtle);border-radius:var(--r-md);padding:12px;background:#fff;font-size:14px;display:flex;gap:10px}
+.slack .av{width:32px;height:32px;border-radius:6px;background:var(--text-heavy);color:#fff;display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
+.slack .who{font-weight:700}.slack .when{color:var(--text-light);font-size:12px;margin-left:6px;font-weight:400}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.app{position:relative}
+.n-nav{display:flex;align-items:center;gap:16px;padding:10px 24px;background:var(--bg-nav);position:relative;z-index:3}
+.n-brand{font-weight:700}
+.n-links{display:flex;gap:16px;font-size:13px;color:var(--text-medium)}
+.n-bell{position:relative;width:40px;height:40px;border-radius:999px;border:0;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--text-heavy);transition:transform 160ms var(--ease-out)}
+.n-bell:active{transform:scale(.94)}
+@media (hover:hover) and (pointer:fine){.n-bell:hover{background:var(--bg-nav-selected)}}
+.n-bell:focus-visible{outline:2px solid var(--action-primary)}
+.n-badge{position:absolute;top:4px;right:3px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--status-warning);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;box-shadow:0 0 0 2px var(--bg-nav)}
+.n-me{font-size:13px;color:var(--text-medium)}
+@container (max-width:640px){.n-nav{padding:8px 16px;gap:8px}.n-me{display:none}}
+.n-chat{display:flex;flex-direction:column;gap:10px}
+.n-facts{display:flex;flex-direction:column;gap:4px}
+.n-confirm{background:var(--bg-inset);border-radius:var(--r-md);padding:10px;display:flex;flex-direction:column;gap:8px}
+.n-beat{background:var(--bg-highlight);border-radius:var(--r-md);padding:10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.n-past{display:flex;flex-direction:column;gap:6px;opacity:.75}
+.n-pres{display:flex;flex-direction:column;gap:10px}
+.n-pres.flat{box-shadow:none;border:1px solid var(--border-subtle)}
+.n-pr{display:flex;gap:10px;align-items:center;padding:8px;border-radius:var(--r-md);background:var(--bg-inset)}
+.n-pr.soon{background:var(--bg-highlight);box-shadow:inset 3px 0 0 var(--action-primary)}
+.n-pr-t{font-weight:700;width:68px;flex:none}
+.n-pr .grow{display:flex;flex-direction:column;gap:2px}
+.n-item{padding:12px;border-bottom:1px solid var(--border-subtle);cursor:pointer;display:flex;flex-direction:column;gap:8px}
+.n-item:last-child{border-bottom:0}
+.n-item.unread{background:var(--bg-highlight-subtle)}
+.n-item-h{display:flex;gap:10px;align-items:flex-start}
+.n-item-b{padding-left:42px;display:flex;flex-direction:column;gap:8px}
+.n-icw{width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:var(--r-sm);background:var(--bg-inset)}
+.n-icw .logo,.n-ic{height:14px;max-width:30px}
+.n-icw .logo-txt{font-size:10px}
+.n-ic-k{font-size:15px}
+.n-tt{display:block;font-weight:600}
+.n-udot{width:8px;height:8px;border-radius:50%;background:var(--action-primary);flex:none;margin-top:6px}
+@container (max-width:640px){.n-item-b{padding-left:0}}
+.n-map{position:absolute;inset:0;overflow:auto;background:rgba(11,43,74,.35);display:grid;place-items:center;z-index:20;padding:16px}
+.n-map-c{width:100%;max-width:420px;display:flex;flex-direction:column;gap:8px;animation:n-in 200ms var(--ease-out)}
+.n-map-f{position:relative}.n-map-f img{display:block;width:100%;height:auto;max-width:100%;border-radius:var(--r-sm)}.n-map-pin{position:absolute;width:9%;aspect-ratio:1;transform:translate(-50%,-50%);border:3px solid var(--action-primary);border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.85);pointer-events:none}
+.n-map-g{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px}
+.n-map-g span{background:var(--bg-inset);border-radius:var(--r-sm);padding:14px 4px;text-align:center;font-size:12px}
+.n-map-g span.on{background:var(--text-heavy);color:#fff;font-weight:700}
+@keyframes n-in{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+.n-home-g{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@container (max-width:640px){.n-home-g{grid-template-columns:1fr}}
+/* 1 popover */
+.n1-pop{position:absolute;top:56px;right:24px;width:380px;max-width:calc(100% - 32px);background:#fff;border-radius:var(--r-lg);box-shadow:0 12px 32px rgba(11,43,74,.18),0 0 0 1px var(--border-subtle);transform-origin:top right;animation:n-in 180ms var(--ease-out);z-index:5;max-height:620px;overflow:auto}
+.n1-ph{padding:12px 12px 8px;position:sticky;top:0;background:#fff;z-index:1}
+.n1-foot{padding:8px;text-align:center;border-top:1px solid var(--border-subtle)}
+.n1{min-height:720px}
+@container (max-width:640px){.n1-pop{right:16px;left:16px;width:auto;max-width:none}}
+/* 2 inbox */
+.n2{max-width:760px;width:100%;margin:0 auto}
+.n2-list{padding:0}
+/* 3 timeline */
+.n3{max-width:760px;width:100%;margin:0 auto}
+.n3-rail{list-style:none;margin:0;padding:0}
+.n3-e{display:grid;grid-template-columns:70px 12px 1fr;gap:12px;padding:8px 0}
+.n3-t{font-weight:600;font-size:13px;text-align:right;padding-top:10px}
+.n3-d{width:12px;height:12px;border-radius:50%;background:var(--action-primary);margin-top:12px}
+.n3-c{background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-card);padding:10px 12px;min-width:0}
+.n3-h .logo{height:18px}
+.n3-e.past{opacity:.55}.n3-deadline .n3-d{background:var(--status-warning)}.n3-deadline .n3-c{box-shadow:inset 3px 0 0 var(--status-warning),var(--shadow-card)}
+.n3-chat .n3-d{background:var(--border-task)}
+.n3-now{display:flex;align-items:center;gap:8px;color:var(--status-live);font-weight:600;font-size:12px}
+.n3-now::before{content:"";flex:0 0 70px;height:2px;background:var(--status-live)}.n3-now::after{content:"";flex:1;height:2px;background:var(--status-live)}
+summary{cursor:pointer}
+@container (max-width:640px){.n3-e{grid-template-columns:56px 10px 1fr;gap:8px}.n3-now::before{flex-basis:56px}}
+/* 4 focus */
+.n4{max-width:560px;width:100%;margin:0 auto}
+.n4-card{animation:n-in 220ms var(--ease-out)}
+.n4-big{padding:22px}.n4-big .logo{height:26px;max-width:140px}
+.n4-done{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+/* 5 drawer */
+.n5{min-height:760px;overflow:hidden}
+.n5-scrim{position:absolute;inset:0;background:rgba(11,43,74,.25);z-index:4}
+.n5-d{position:absolute;top:0;right:0;bottom:0;width:400px;background:var(--bg-page);z-index:5;padding:16px;display:flex;flex-direction:column;gap:10px;overflow:auto;box-shadow:-12px 0 32px rgba(11,43,74,.15);animation:n5-in 320ms var(--ease-out)}
+.n5-grab{display:none}
+@keyframes n5-in{from{transform:translateX(100%)}to{transform:none}}
+@keyframes n5-up{from{transform:translateY(100%)}to{transform:none}}
+@container (max-width:640px){.n5-d{top:auto;left:0;width:auto;max-height:84%;border-radius:16px 16px 0 0;animation-name:n5-up}.n5-grab{display:block;width:36px;height:4px;border-radius:2px;background:var(--border-control);margin:0 auto;flex:none}}
+/* 6 tiles */
+.n6-g{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"a b" "c b";gap:12px;align-items:start}
+.n6-a{grid-area:a;display:flex;flex-direction:column;gap:10px}.n6-b{grid-area:b}.n6-c{grid-area:c}
+@container (max-width:640px){.n6-g{grid-template-columns:1fr;grid-template-areas:"a" "b" "c"}}
+/* 7 thread */
+.n7{background:#fff}
+.n7-top{padding:12px 24px;border-bottom:1px solid var(--border-subtle)}
+.n7-feed{max-width:720px;width:100%;margin:0 auto}
+.n7-m{display:flex;gap:10px}
+.n7-av{width:34px;height:34px;border-radius:8px;background:var(--text-heavy);color:#fff;font-size:12px;font-weight:700;display:grid;place-items:center;flex:none}
+.n7-b{background:var(--bg-inset);border-radius:4px 14px 14px 14px;padding:10px 12px;min-width:0;flex:1}
+.n7-day,.n7-new{text-align:center;font-size:12px;color:var(--text-light)}
+.n7-new{color:var(--status-warning);font-weight:600;display:flex;gap:8px;align-items:center}.n7-new::before,.n7-new::after{content:"";flex:1;height:1px;background:currentColor}
+.n7-me{align-self:flex-end;background:var(--action-primary);color:#fff;border-radius:14px 14px 4px 14px;padding:8px 12px;font-size:13px}
+@container (max-width:640px){.n7-top{padding:10px 16px}}
+/* 8 split */
+.n8{display:grid;grid-template-columns:340px 1fr;gap:12px;align-items:start}
+.n8-l{padding:6px}
+.n8-i{display:flex;gap:10px;padding:10px;border-radius:var(--r-md);cursor:pointer;align-items:flex-start}
+.n8-i.unread .n-tt{font-weight:700}.n8-i:not(.unread) .n-tt{font-weight:500}
+.n8-i.sel{background:var(--bg-highlight);outline:0}
+@media (hover:hover) and (pointer:fine){.n8-i:hover{background:var(--bg-highlight-subtle)}}
+@container (max-width:640px){.n8{grid-template-columns:1fr}.n8[data-open="1"] .n8-l{display:none}.n8:not([data-open="1"]) .n8-r{display:none}}
+/* 9 banner */
+.n9-ban{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:12px 24px;background:#fff6dc;border-bottom:1px solid var(--border-task)}
+.n9-ban.ok{background:var(--bg-highlight);border-color:var(--border-outline)}
+.n9-next{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 24px;background:#fff;border-bottom:1px solid var(--border-subtle)}
+.n9-g{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+@container (max-width:640px){.n9-ban,.n9-next{padding:10px 16px}.n9-g{grid-template-columns:1fr}}
+/* 10 passes */
+.n10-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.n10-p{background:#fff;border-radius:16px;box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column}
+.n10-top{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:var(--bg-inset)}
+.n10-top .logo{height:20px;max-width:120px}
+.n10-mid{display:flex;gap:24px;padding:14px 16px;border-bottom:2px dashed var(--border-subtle)}
+.n10-big{font-size:24px;font-weight:700;letter-spacing:-.02em}
+.n10-bot{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 16px}
+.n10-act{padding:0 16px 14px}
+.n10-p.pending{box-shadow:0 0 0 2px var(--border-task),var(--shadow-card)}
+.n10-p.past{opacity:.55}
+@container (max-width:900px){.n10-g{grid-template-columns:1fr 1fr}}
+@container (max-width:640px){.n10-g{grid-template-columns:1fr}}
+
+</style>
+</head>
+<body>
+<div class="h-top">
+  <span class="h-title">Hacker notifications (live site)</span>
+  <span class="h-badge">Wireframe · dummy data</span><span class="h-badge" style="text-transform:none;letter-spacing:.02em;opacity:.75">v2 · new map logistics</span>
+  <span class="small" style="color:#556">Pretend now: Sat Nov 21, 11:48 AM ET</span>
+  <div class="h-frame-toggle" role="group" aria-label="Frame width">
+    <button data-frame="desktop" aria-pressed="true">Desktop</button>
+    <button data-frame="phone" aria-pressed="false">Phone</button>
+  </div>
+</div>
+<p class="h-note" id="h-note"></p>
+<div class="frame" id="frame" data-mode="desktop"><div id="stage"></div></div>
+<nav class="proto-picker" data-position="top" aria-label="Prototype variants">
+  <span class="proto-picker-highlight" aria-hidden="true"></span>
+</nav>
+
+<script>
+const actions = {};
+/* ===== Dummy data ===== */
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ME = { name: 'Maya R.', team: 'Tidepool' };
+const LOGO = { StarTech: 'startech.svg', 'Sun Life': 'sunlife.png', Scotiabank: 'scotiabank-trimmed.svg', 'Canada Life': 'canadalife.png' };
+const logo = (n, cls = '') => LOGO[n] ? `<img class="logo ${cls}" src="../../public/shared/sponsors/${LOGO[n]}" alt="${n}">` : `<span class="logo-txt ${cls}">${n}</span>`;
+const PRES = [
+  { sp: 'Scotiabank', room: 'Rm 1110', t: '10:05 AM', m: 1440 + 605 },
+  { sp: 'Canada Life', room: 'Rm 1110', t: '10:25 AM', m: 1440 + 625 },
+  { sp: 'QNX', room: 'Rm 1110', t: '10:45 AM', m: 1440 + 645 },
+];
+const NOWM = 11 * 60 + 48; // Sat 11:48 AM. Coffee chats are Saturday only (10am-5pm); judging is Sunday (m + 1440)
+const CHAT = { sp: 'StarTech', when: 'Sat 12:30 PM, 15 min', t: '12:30 PM', room: 'Rm 2241', with: 'With a StarTech rep', replyBy: '12:10 PM', left: '22 min left' };
+const PAST = { sp: 'Sun Life', when: 'Sat 10:00 AM, 30 min', room: 'Rm 2242', with: 'Group chat with 3 hackers' };
+const S = { chat: 'pending', read: new Set(['u2', 'cc0', 'u3']) };
+const NOTIFS = [
+  { id: 'cc1', kind: 'chat', at: '11:41 AM', day: 'Today', title: 'StarTech offered you a coffee chat', body: `${CHAT.when} · ${CHAT.room}. Reply by ${CHAT.replyBy}.` },
+  { id: 'pr', kind: 'judge', at: '11:30 AM', day: 'Today', title: 'Your Sunday presentation times are in', body: 'Judging is tomorrow in Grand Hall Rm 1110. Team Tidepool presents to 3 sponsors, 5 minutes each. Be there 5 min early.' },
+  { id: 'u1', kind: 'update', at: '11:20 AM', day: 'Today', title: 'Lunch is in Grand Hall Rm 1110 at 12:00', body: 'Vegan and halal trays are on the left.', room: 'Grand Hall Rm 1110' },
+  { id: 'u2', kind: 'update', at: '8:00 AM', day: 'Today', title: 'Sponsor Bay opens at 10:00 AM', body: 'Sponsor booths are in Rm 1235, Floor 1. Open until midnight.', room: 'Rm 1235' },
+  { id: 'u3', kind: 'update', at: '11:58 PM', day: 'Yesterday', title: 'Midnight snack: noodles in Grand Hall', body: 'While they last.', room: 'Grand Hall Rm 1110' },
+  { id: 'cc0', kind: 'chat', at: '1:12 PM', day: 'Yesterday', title: 'You accepted Sun Life\'s group chat', body: `${PAST.when} · ${PAST.room}. This chat is over.` },
+];
+const KIND = { chat: 'Coffee chat', judge: 'Judging', update: 'Update' };
+const unread = () => NOTIFS.filter(n => !S.read.has(n.id)).length;
+const badge = () => { const u = unread(); return u ? `<span class="n-badge tnum" aria-label="${u} unread">${u}</span>` : ''; };
+let lastV = -1;
+const V = (o) => { const idx = variants.length; const h = o.html; o.html = () => { if (lastV !== idx) { S.chat = 'pending'; S.read = new Set(['u2', 'cc0', 'u3']); lastV = idx; } return h(); }; variants.push(o); };
+const rerender = () => { const y = window.scrollY; stage.innerHTML = variants[current].html(); variants[current].init && variants[current].init(stage); window.scrollTo(0, y); };
+const mapPill = (room) => `<button class="pill map" data-act="map" data-room="${room}">Map</button>`;
+
+/* Site nav with the bell */
+const nav = (opts = {}) => `<header class="n-nav"><span class="n-brand">Hack Western 13</span><nav class="n-links hide-phone"><a>Home</a><a>Schedule</a><a>Coffee chats</a><a>Map</a></nav><span class="grow"></span>${opts.noBell ? '' : `<button class="n-bell" data-act="${opts.bellAct || 'bell'}" aria-label="Notifications, ${unread()} unread"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>${badge()}</button>`}<span class="n-me">${ME.name}</span></header>`;
+
+/* Coffee chat card (pending / confirm / accepted / declined) */
+const chatActions = () => S.chat === 'pending' ? `<div class="row"><button class="pill primary" data-act="accept" aria-label="Accept coffee chat with StarTech">Accept</button><button class="pill" data-act="decline" aria-label="Decline coffee chat with StarTech">Decline</button></div>`
+  : S.chat === 'confirm' ? `<div class="n-confirm"><div class="small">Decline StarTech's chat? The time goes to another hacker.</div><div class="row"><button class="pill" data-act="reallyDecline">Yes, decline</button><button class="pill primary" data-act="keep">Keep</button></div></div>`
+  : S.chat === 'accepted' ? `<div class="n-beat"><b>Be at ${CHAT.room} at ${CHAT.t}</b>${mapPill(CHAT.room)}</div>`
+  : `<div class="small muted">You declined this chat.</div>`;
+const chatTag = () => ({ pending: '<span class="tag sched">Needs your answer</span>', confirm: '<span class="tag sched">Needs your answer</span>', accepted: '<span class="tag sent">Accepted</span>', declined: '<span class="tag off">Declined</span>' }[S.chat]);
+const chatCard = (cls = '') => `<div class="card n-chat ${cls}"><div class="row between">${logo('StarTech')}${chatTag()}</div><ul class="n-facts small"><li>${CHAT.when}</li><li class="row">${CHAT.room} ${S.chat === 'accepted' ? '' : mapPill(CHAT.room)}</li><li>${CHAT.with}</li></ul>${S.chat === 'pending' || S.chat === 'confirm' ? `<div class="small"><b style="color:var(--text-warning)">Reply by ${CHAT.replyBy}</b> <span class="muted">· ${CHAT.left}</span></div>` : ''}${chatActions()}</div>`;
+const pastCard = () => `<div class="card flat n-past"><div class="row between">${logo('Sun Life')}<span class="tag off">Done</span></div><div class="small muted">${PAST.when} · ${PAST.room} · ${PAST.with}</div></div>`;
+
+/* Sponsor presentations panel */
+const presRow = (p) => `<li class="n-pr ${p.m - NOWM < 20 ? 'soon' : ''}"><span class="n-pr-t tnum">${p.t}</span><span class="grow">${logo(p.sp)}<span class="small muted">Grand Hall ${p.room}, ${p.sp} table · 5 min${p.m - NOWM < 20 ? ` · in ${p.m - NOWM} min` : ''}</span></span>${mapPill(p.room)}</li>`;
+const presPanel = (cls = '') => `<section class="card n-pres ${cls}"><div class="row between"><span class="h3">Sunday presentations</span><span class="small muted">Team ${ME.team}</span></div><ul class="stack">${PRES.map(presRow).join('')}</ul><div class="small muted">Be there 5 min early. Walk straight to the next sponsor table after.</div></section>`;
+
+/* One notification, with its own body for each kind */
+const nBody = (n) => n.id === 'cc1' ? chatActions() : n.id === 'pr' ? `<ul class="stack">${PRES.map(presRow).join('')}</ul>` : n.room ? `<div class="row">${mapPill(n.room)}</div>` : '';
+const nIcon = (n) => n.kind === 'chat' ? logo(n.id === 'cc1' ? 'StarTech' : 'Sun Life', 'n-ic') : n.kind === 'judge' ? '<span class="n-ic-k">🏁</span>' : '<span class="n-ic-k">📣</span>';
+const nItem = (n, full = true) => `<li class="n-item ${S.read.has(n.id) ? '' : 'unread'}" data-cat="${n.kind}" data-act="read" data-id="${n.id}"><div class="n-item-h"><span class="n-icw">${nIcon(n)}</span><span class="grow"><span class="n-tt">${n.title}</span><span class="small muted">${n.day === 'Today' ? '' : n.day + ' '}${n.at} · ${KIND[n.kind]}</span></span>${S.read.has(n.id) ? '' : '<span class="n-udot" aria-label="Unread"></span>'}</div>${full ? `<div class="n-item-b"><div class="small">${n.body}</div>${nBody(n)}</div>` : ''}</li>`;
+
+actions.read = (el, e) => { if (e.target.closest('button')) return; const id = el.dataset.id; if (!S.read.has(id)) { S.read.add(id); rerender(); } };
+actions.accept = () => { S.chat = 'accepted'; S.read.add('cc1'); rerender(); };
+actions.decline = () => { S.chat = 'confirm'; rerender(); };
+actions.keep = () => { S.chat = 'pending'; rerender(); };
+actions.reallyDecline = () => { S.chat = 'declined'; S.read.add('cc1'); rerender(); };
+actions.markAll = () => { NOTIFS.forEach(n => S.read.add(n.id)); rerender(); };
+actions.map = (el) => {
+  const room = el.dataset.room; const app = stage.querySelector('.app');
+  const PINS = [['1235', 1, 14.4, 59.0], ['1230', 1, 29.2, 48.5], ['1110', 1, 82.7, 64.2], ['Help desk', 1, 82.7, 51.4], ['2110', 2, 84.3, 38.9], ['2230', 2, 40.0, 35.9], ['2235', 2, 30.3, 34.1], ['2241', 2, 28.3, 42.0], ['2242', 2, 28.3, 42.0], ['2243', 2, 28.3, 42.0], ['2244', 2, 17.8, 45.4]];
+  const p = PINS.find(x => room.includes(x[0])); const fl = p ? p[1] : 1;
+  app.querySelector('.n-map')?.remove();
+  app.insertAdjacentHTML('beforeend', `<div class="n-map" role="dialog" aria-label="Map"><div class="n-map-c card"><div class="row between"><b>${room}</b><button class="pill" data-act="closeMap">Close</button></div><div class="small muted">${fl === 1 ? 'Floor 1 (ground floor)' : 'Floor 2 · up the main stairs'}</div><div class="n-map-f"><img src="../../public/sponsor-map/floor${fl}.webp" alt="Level ${fl} floor map">${p ? `<span class="n-map-pin" style="left:${p[2]}%;top:${p[3]}%"></span>` : ''}</div></div></div>`);
+};
+actions.closeMap = () => stage.querySelector('.n-map')?.remove();
+const homeBg = () => `<div class="wrap n-home"><div class="h1">Good morning, Maya</div><div class="muted">Saturday · coffee chats 10–5 in Rm 2241-2243. Judging is tomorrow.</div><div class="n-home-g"><div class="card stack"><div class="h3">Next up</div><div class="row between"><span>${logo('StarTech')}<span class="small muted">${CHAT.room} · ${CHAT.t}</span></span>${mapPill(CHAT.room)}</div></div><div class="card stack"><div class="h3">Today</div><div class="small">12:00 Lunch · 12:30 StarTech chat · Sponsor Bay open till midnight</div></div></div></div>`;
+
+/* ===== Variants ===== */
+const variants = [];
+
+/* 1. Bell popover */
+(() => {
+  let open = true;
+  actions.bell = () => { open = !open; rerender(); };
+  V({ short: 'Popover', name: 'Bell popover', why: 'The classic: the page stays put, the bell drops a short list from the top right. Answering a chat or reading times never leaves the page.',
+    html: () => `<div class="app n1">${nav()}${homeBg()}${open ? `<div class="n1-pop" role="dialog" aria-label="Notifications"><div class="row between n1-ph"><b>Notifications</b><button class="pill ghost" data-act="markAll">Mark all read</button></div><ul class="n1-list">${NOTIFS.slice(0, 5).map(n => nItem(n, !S.read.has(n.id) || n.id === 'cc1')).join('')}</ul><div class="n1-foot"><button class="pill ghost">See all</button></div></div>` : ''}</div>`,
+    init: () => {} });
+})();
+
+/* 2. Inbox page */
+V({ short: 'Inbox', name: 'Inbox page', why: 'A real page for notifications with filter pills, so judging times and chat offers are easy to find again later in the day.',
+  html: () => { const c = (k) => NOTIFS.filter(n => n.kind === k).length; return `<div class="app">${nav()}<div class="wrap n2" data-scope><div class="row between"><div class="h1">Notifications</div><button class="pill ghost" data-act="markAll">Mark all read</button></div>
+    <div class="seg" data-filter><button data-val="all" aria-pressed="true">All<span class="n">${NOTIFS.length}</span></button><button data-val="chat" aria-pressed="false">Coffee chats<span class="n">${c('chat')}</span></button><button data-val="judge" aria-pressed="false">Judging<span class="n">${c('judge')}</span></button><button data-val="update" aria-pressed="false">Updates<span class="n">${c('update')}</span></button></div>
+    ${['Today', 'Yesterday'].map(d => `<div class="h3 muted">${d}</div><ul class="card n2-list">${NOTIFS.filter(n => n.day === d).map(n => nItem(n)).join('')}</ul>`).join('')}</div></div>`; } });
+
+/* 3. My day timeline */
+V({ short: 'My day', name: 'My day timeline', why: 'Notifications become places on today’s clock: presentations, the reply-by deadline, the chat and lunch sit at their times, with a Now line.',
+  html: () => { const ev = [
+      { m: 600, t: '10:00 AM', h: logo('Sun Life'), s: `Group chat · ${PAST.room} · done`, kind: 'update', read: true },
+      ...(S.chat === 'pending' || S.chat === 'confirm' ? [{ m: 730, t: '12:10 PM', h: 'Answer StarTech by now', s: 'Your offer expires after this', kind: 'deadline' }] : []),
+      ...(S.chat !== 'declined' ? [{ m: 750, t: '12:30 PM', h: logo('StarTech'), s: `Coffee chat · ${CHAT.room} · 15 min${S.chat === 'accepted' ? '' : ' · not answered yet'}`, room: CHAT.room, kind: 'chat', chat: true }] : []),
+      { m: 720, t: '12:00 PM', h: 'Lunch', s: 'Grand Hall Rm 1110', room: 'Grand Hall Rm 1110', kind: 'update' },
+      { m: 1440 + 600, t: 'Sun', h: 'Judging tomorrow', s: `Present · Grand Hall Rm 1110 · ${PRES.map(p => p.sp + ' ' + p.t).join(', ')}`, room: 'Grand Hall Rm 1110', kind: 'judge' },
+    ]; let out = '', put = false;
+    ev.forEach(e => { if (!put && e.m > NOWM) { out += `<li class="n3-now"><span>Now · 11:48 AM</span></li>`; put = true; } out += `<li class="n3-e n3-${e.kind} ${e.m < NOWM ? 'past' : ''}"><span class="n3-t tnum">${e.t}</span><span class="n3-d"></span><div class="n3-c"><div class="row between"><span class="n3-h">${e.h}</span>${e.room ? mapPill(e.room) : ''}</div><div class="small muted">${e.s}</div>${e.chat && (S.chat === 'pending' || S.chat === 'confirm') ? `<div style="margin-top:8px">${chatActions()}</div>` : ''}</div></li>`; });
+    return `<div class="app">${nav()}<div class="wrap n3"><div class="row between"><div><div class="h1">Your Saturday</div><div class="muted">${unread()} new · everything you were sent, at its time</div></div><div class="seg"><button aria-pressed="true">Sat · Today</button><button aria-pressed="false">Sun</button></div></div><ol class="n3-rail">${out}</ol>
+    <details class="card"><summary class="h3">Other updates (${NOTIFS.filter(n => n.kind === 'update').length})</summary><ul class="n2-list" style="margin-top:8px">${NOTIFS.filter(n => n.kind === 'update').map(n => nItem(n)).join('')}</ul></details></div></div>`; } });
+
+/* 4. One at a time */
+(() => {
+  let step = 0;
+  actions.n4next = () => { S.read.add('pr'); step++; rerender(); };
+  V({ short: 'Focus', name: 'One thing at a time', why: 'Opens on the one thing that needs an answer, then the next. When both are done you see “all caught up” and the rest, quietly.',
+    html: () => { const need = [S.chat === 'pending' || S.chat === 'confirm' ? 'chat' : null, !S.read.has('pr') ? 'pr' : null].filter(Boolean); const cur = need[0];
+      return `<div class="app">${nav()}<div class="wrap n4">${cur ? `<div class="small muted">${need.length} ${need.length === 1 ? 'thing needs' : 'things need'} you</div>` : ''}
+      ${cur === 'chat' ? `<div class="n4-card">${chatCard('n4-big')}</div>` : cur === 'pr' ? `<div class="n4-card">${presPanel('n4-big')}<div class="row" style="margin-top:12px"><button class="pill primary" data-act="n4next">Got it</button></div></div>` : `<div class="card n4-done"><div class="h2">You're all caught up</div><div class="muted small">Next: ${logo('Scotiabank')} Grand Hall ${PRES[0].room}, Sunday at ${PRES[0].t}</div>${mapPill(PRES[0].room)}</div>`}
+      <div class="h3 muted">Everything else</div><ul class="card n2-list">${NOTIFS.filter(n => n.id !== 'cc1' && n.id !== 'pr').map(n => nItem(n, false)).join('')}</ul></div></div>`; } });
+})();
+
+/* 5. Drawer / sheet */
+(() => {
+  let open = true;
+  actions.n5 = () => { open = !open; rerender(); };
+  V({ short: 'Drawer', name: 'Side drawer / bottom sheet', why: 'A drawer on desktop and a bottom sheet on a phone: roomy enough for the chat card and all three presentation slots, still over the page.',
+    html: () => `<div class="app n5">${nav({ bellAct: 'n5' })}${homeBg()}${open ? `<div class="n5-scrim" data-act="n5"></div><aside class="n5-d" role="dialog" aria-label="Notifications"><div class="n5-grab"></div><div class="row between"><b class="h2">Notifications</b><button class="pill" data-act="n5">Close</button></div>
+      <div class="h3 muted">Needs you</div>${S.chat === 'pending' || S.chat === 'confirm' ? chatCard() : '<div class="small muted">Nothing right now.</div>'}
+      <div class="h3 muted">Your presentations</div>${presPanel('flat')}
+      <div class="h3 muted">Updates</div><ul class="n2-list">${NOTIFS.filter(n => n.kind === 'update' || n.id === 'cc0' || (n.id === 'cc1' && S.chat !== 'pending' && S.chat !== 'confirm')).map(n => nItem(n, false)).join('')}</ul></aside>` : ''}</div>` });
+})();
+
+/* 6. Home tiles */
+V({ short: 'Tiles', name: 'Home tiles', why: 'No separate inbox: the live home is the notification center. Each kind gets a tile, and the bell just scrolls to whatever is new.',
+  html: () => `<div class="app">${nav()}<div class="wrap"><div><div class="h1">Saturday</div><div class="muted">${unread()} new for you</div></div><div class="n6-g">
+    <div class="n6-a"><div class="h3 n6-lab">Coffee chats</div>${chatCard()}${pastCard()}</div>
+    <div class="n6-b">${presPanel()}</div>
+    <div class="n6-c card"><div class="h3">Updates</div><ul class="n2-list">${NOTIFS.filter(n => n.kind === 'update').map(n => nItem(n, false)).join('')}</ul></div>
+  </div></div></div>` });
+
+/* 7. Chat thread */
+V({ short: 'Thread', name: 'Bot thread', why: 'Feels like the Slack DM hackers already get: messages from Hack Western in order, with Accept / Decline right in the bubble.',
+  html: () => { const msgs = [
+      ['Yesterday 1:12 PM', `You accepted Sun Life's group chat. ${PAST.when} · ${PAST.room}.`],
+      ['Yesterday 11:58 PM', 'Midnight snack: noodles in Grand Hall Rm 1110, while they last.'],
+      ['8:00 AM', `Sponsor Bay opens at 10:00 AM in Rm 1235, Floor 1. ${mapPill('Rm 1235')}`],
+      ['11:20 AM', `Lunch is in Grand Hall Rm 1110 at 12:00. ${mapPill('Grand Hall Rm 1110')}`],
+      ['11:30 AM', `Your Sunday presentation times are in. Judging is in Grand Hall Rm 1110. Team ${ME.team}, 5 minutes each:<ul class="stack" style="margin-top:8px">${PRES.map(presRow).join('')}</ul>`],
+      ['11:41 AM', `StarTech offered you a coffee chat: ${CHAT.when} · ${CHAT.room}. Reply by ${CHAT.replyBy}.<div style="margin-top:8px">${chatActions()}</div>`],
+    ];
+    return `<div class="app n7">${nav()}<div class="n7-top row between"><span><b>Hack Western</b> <span class="small muted">· your messages</span></span><span class="small muted">${unread()} new</span></div><div class="wrap n7-feed">${msgs.map(([t, b], i) => `${i === 2 ? '<div class="n7-day">Today</div>' : ''}${i === 3 && unread() ? '<div class="n7-new">New</div>' : ''}<div class="n7-m"><div class="n7-av">HW</div><div class="n7-b"><div class="small muted">${t}</div><div>${b}</div></div></div>`).join('')}${S.chat === 'accepted' ? `<div class="n7-me">Accepted ✓</div>` : S.chat === 'declined' ? `<div class="n7-me">Declined</div>` : ''}</div></div>`; },
+  init: () => { NOTIFS.forEach(n => { if (n.id !== 'cc1') S.read.add(n.id); }); } });
+
+/* 8. Split view */
+(() => {
+  let sel = 'cc1';
+  const detail = (n) => !n ? '' : `<button class="pill ghost show-phone" data-act="n8back">← Notifications</button><div class="small muted">${n.day} ${n.at} · ${KIND[n.kind]}</div><div class="h2">${n.title}</div>${n.id === 'cc1' ? chatCard('flat') : n.id === 'pr' ? presPanel('flat') : n.id === 'cc0' ? pastCard() : `<p>${n.body}</p>${n.room ? mapPill(n.room) : ''}`}`;
+  actions.n8pick = (el) => { sel = el.dataset.pick; S.read.add(sel); rerender(); };
+  actions.n8back = () => { sel = null; rerender(); };
+  V({ short: 'Split', name: 'List + detail', why: 'Mail-app model: short list on the left, the full thing on the right. On a phone the list and the detail are two screens.',
+    html: () => `<div class="app">${nav()}<div class="wrap"><div class="n8" data-open="${sel ? 1 : ''}"><ul class="card n8-l" data-picklist="n8pick">${NOTIFS.map(n => `<li class="n8-i ${n.id === sel ? 'sel' : ''} ${S.read.has(n.id) ? '' : 'unread'}" data-pick="${n.id}" role="button" tabindex="0"><span class="n-icw">${nIcon(n)}</span><span class="grow"><span class="n-tt">${n.title}</span><span class="small muted">${n.day === 'Today' ? '' : n.day + ' '}${n.at}</span></span>${S.read.has(n.id) ? '' : '<span class="n-udot"></span>'}</li>`).join('')}</ul><div class="card stack n8-r">${detail(NOTIFS.find(n => n.id === sel))}</div></div></div></div>`,
+    init: () => { if (sel) S.read.add(sel); } });
+})();
+
+/* 9. Banner first */
+V({ short: 'Banner', name: 'Banner first', why: 'The one thing with a deadline is pinned above everything, and a strip shows your first judging slot tomorrow. The list is small and secondary.',
+  html: () => `<div class="app">${nav()}${S.chat === 'pending' || S.chat === 'confirm' ? `<div class="n9-ban"><div class="row grow">${logo('StarTech')}<span><b>Coffee chat offer</b> · ${CHAT.when} · ${CHAT.room}<span class="small" style="display:block;color:var(--text-warning)">Reply by ${CHAT.replyBy}</span></span></div>${chatActions()}</div>` : S.chat === 'accepted' ? `<div class="n9-ban ok"><span><b>Chat with StarTech at ${CHAT.t}</b> · ${CHAT.room}</span>${mapPill(CHAT.room)}</div>` : ''}
+    <div class="n9-next"><span class="small muted">Judging</span><b class="tnum">tomorrow</b><span class="row">${logo('Scotiabank')} Grand Hall ${PRES[0].room} · ${PRES[0].t}</span>${mapPill(PRES[0].room)}<span class="small muted hide-phone">then ${PRES[1].sp} ${PRES[1].t}, ${PRES[2].sp} ${PRES[2].t}</span></div>
+    <div class="wrap"><div class="n9-g"><div>${presPanel()}</div><div class="card"><div class="row between"><span class="h3">Notifications</span><button class="pill ghost" data-act="markAll">Mark all read</button></div><ul class="n2-list">${NOTIFS.map(n => nItem(n, false)).join('')}</ul></div></div></div></div>` });
+
+/* 10. Passes */
+V({ short: 'Passes', name: 'Passes', why: 'Each commitment is a ticket you can show at the door: time and room big, Map pill on every pass. Unanswered offers are a pass waiting to be claimed.',
+  html: () => { const pass = (o) => `<article class="n10-p ${o.cls || ''}"><div class="n10-top">${logo(o.sp)}<span class="small">${o.kind}</span></div><div class="n10-mid"><div><div class="small muted">Time</div><div class="n10-big tnum">${o.t}</div></div><div><div class="small muted">Room</div><div class="n10-big">${o.room.replace('Rm ', '')}</div></div></div><div class="n10-bot"><span class="small">${o.note}</span>${o.room ? mapPill(o.room) : ''}</div>${o.extra || ''}</article>`;
+    return `<div class="app">${nav()}<div class="wrap"><div class="row between"><div class="h1">Your passes</div><span class="small muted">${unread()} new</span></div><div class="n10-g">
+      ${S.chat !== 'declined' ? pass({ sp: 'StarTech', kind: S.chat === 'accepted' ? 'Coffee chat' : 'Coffee chat offer', t: CHAT.t, room: CHAT.room, note: S.chat === 'accepted' ? '15 min · with a StarTech rep' : `Reply by ${CHAT.replyBy} · ${CHAT.left}`, cls: S.chat === 'accepted' ? '' : 'pending', extra: S.chat === 'accepted' ? '' : `<div class="n10-act">${chatActions()}</div>` }) : ''}
+      ${PRES.map(p => pass({ sp: p.sp, kind: 'Sunday presentation · 5 min', t: p.t, room: p.room, note: `Grand Hall, ${p.sp} table · be there 5 min early` })).join('')}
+      ${pass({ sp: 'Sun Life', kind: 'Group chat · done', t: '10:00 AM', room: PAST.room, note: PAST.with, cls: 'past' })}
+    </div><div class="card"><div class="h3">Updates</div><ul class="n2-list">${NOTIFS.filter(n => n.kind === 'update').map(n => nItem(n, false)).join('')}</ul></div></div></div>`; } });
+
+/* ===== Harness wiring (PICKER.md behaviour) ===== */
+const stage = document.getElementById('stage');
+const frame = document.getElementById('frame');
+const note = document.getElementById('h-note');
+const picker = document.querySelector('.proto-picker');
+const highlight = picker.querySelector('.proto-picker-highlight');
+variants.forEach((v, i) => {
+  const b = document.createElement('button');
+  b.className = 'proto-picker-item';
+  b.textContent = (i + 1) % 10 + ' ' + v.short;
+  picker.appendChild(b);
+});
+const items = [...picker.querySelectorAll('.proto-picker-item')];
+let current = 0;
+function moveHighlight() {
+  const el = items[current];
+  highlight.style.width = el.offsetWidth + 'px';
+  highlight.style.transform = `translateX(${el.offsetLeft}px)`;
+}
+function mount(i) {
+  stage.innerHTML = '';
+  requestAnimationFrame(() => {
+    stage.innerHTML = variants[i].html();
+    variants[i].init && variants[i].init(stage);
+  });
+}
+function setActive(i) {
+  if (i < 0 || i >= variants.length) return;
+  current = i;
+  items.forEach((el, j) => {
+    el.toggleAttribute('data-active', j === i);
+    if (j === i) el.setAttribute('aria-current', 'true'); else el.removeAttribute('aria-current');
+  });
+  moveHighlight();
+  items[i].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  note.innerHTML = `<b>${i + 1}. ${variants[i].name}</b> — ${variants[i].why}`;
+  const url = new URL(location);
+  url.searchParams.set('v', i + 1);
+  history.replaceState(null, '', url);
+  mount(i);
+}
+items.forEach((el, i) => el.addEventListener('click', () => setActive(i)));
+window.addEventListener('resize', moveHighlight);
+document.addEventListener('keydown', (e) => {
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const num = e.key === '0' ? 10 : parseInt(e.key, 10);
+  if (num >= 1 && num <= variants.length) setActive(num - 1);
+  else if (e.key === 'ArrowRight') setActive((current + 1) % variants.length);
+  else if (e.key === 'ArrowLeft') setActive((current - 1 + variants.length) % variants.length);
+});
+/* Desktop / Phone frame */
+const frameBtns = [...document.querySelectorAll('[data-frame]')];
+function setFrame(mode) {
+  frame.dataset.mode = mode;
+  frameBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.frame === mode)));
+  const url = new URL(location); url.searchParams.set('f', mode); history.replaceState(null, '', url);
+}
+frameBtns.forEach(b => b.addEventListener('click', () => setFrame(b.dataset.frame)));
+setFrame(new URLSearchParams(location.search).get('f') === 'phone' ? 'phone' : 'desktop');
+
+/* ===== Shared interaction kit (event delegation on the stage) =====
+   .seg[data-filter] buttons[data-val] → show [data-cat~=val] inside closest [data-scope]
+   [data-show=id] toggles #id hidden; [data-act=name] → actions[name](el, e)
+   [data-pick] inside [data-picklist] → marks .sel, calls actions[list value] */
+stage.addEventListener('click', (e) => {
+  const segBtn = e.target.closest('.seg button');
+  if (segBtn) {
+    const seg = segBtn.closest('.seg');
+    seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b === segBtn)));
+    if (seg.dataset.filter !== undefined) {
+      const scope = seg.closest('[data-scope]') || stage;
+      const val = segBtn.dataset.val;
+      scope.querySelectorAll('[data-cat]').forEach(el => {
+        el.hidden = !(val === 'all' || el.dataset.cat.split(' ').includes(val));
+      });
+    }
+    if (seg.dataset.act && actions[seg.dataset.act]) actions[seg.dataset.act](segBtn, e);
+    if (segBtn.dataset.act && actions[segBtn.dataset.act]) actions[segBtn.dataset.act](segBtn, e);
+    return;
+  }
+  const show = e.target.closest('[data-show]');
+  if (show) { const t = stage.querySelector('#' + show.dataset.show); if (t) t.hidden = !t.hidden; }
+  const pick = e.target.closest('[data-pick]');
+  if (pick) {
+    const list = pick.closest('[data-picklist]');
+    list.querySelectorAll('[data-pick]').forEach(x => x.classList.toggle('sel', x === pick));
+    if (actions[list.dataset.picklist]) actions[list.dataset.picklist](pick, e);
+  }
+  const act = e.target.closest('[data-act]');
+  if (act && !act.classList.contains('seg') && actions[act.dataset.act]) actions[act.dataset.act](act, e);
+});
+
+const requested = parseInt(new URLSearchParams(location.search).get('v'), 10);
+setActive(requested >= 1 && requested <= variants.length ? requested - 1 : 0);
+requestAnimationFrame(() => requestAnimationFrame(() => picker.setAttribute('data-ready', '')));
+</script>
+</body>
+</html>

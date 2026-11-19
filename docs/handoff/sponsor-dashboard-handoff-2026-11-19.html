@@ -1,0 +1,209 @@
+<title>Sponsor Dashboard Handoff</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column, a sticky section index on wide screens, tables in their own scroll boxes. */
+:root{
+  --bg:#ffffff; --bg-sub:#f3f7fc; --ink:#0b2b4a; --ink-2:#1c3550; --ink-3:#516476;
+  --line:#e0eaf3; --accent:#0b6bc4; --ok:#16803c; --warn:#8a4300; --code-bg:#eef3f9;
+  --f-body:Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1722; --bg-sub:#132131; --ink:#e8eef5; --ink-2:#c9d5e2; --ink-3:#8fa3b8;
+  --line:#22354a; --accent:#5aa9f0; --ok:#5ccf86; --warn:#f0a35e; --code-bg:#172738; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1722; --bg-sub:#132131; --ink:#e8eef5; --ink-2:#c9d5e2; --ink-3:#8fa3b8;
+  --line:#22354a; --accent:#5aa9f0; --ok:#5ccf86; --warn:#f0a35e; --code-bg:#172738; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink-2);font:16px/1.6 var(--f-body)}
+.wrap{max-width:1080px;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:40px}
+@media (min-width:960px){.wrap{grid-template-columns:200px minmax(0,1fr)}}
+nav{display:none}
+@media (min-width:960px){nav{display:block;position:sticky;top:calc(24px + env(safe-area-inset-top,0px));align-self:start;font-size:14px}}
+nav ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+nav a{color:var(--ink-3);text-decoration:none}
+nav a:hover,nav a:focus-visible{color:var(--accent)}
+main{min-width:0;max-width:720px}
+header{display:grid;gap:8px;padding-bottom:24px;border-bottom:1px solid var(--line)}
+.eyebrow{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)}
+h1{margin:0;font-size:32px;line-height:1.2;font-weight:700;color:var(--ink);text-wrap:balance}
+.lede{margin:0;font-size:18px;color:var(--ink-2)}
+section{padding-top:32px;display:grid;gap:12px}
+h2{margin:0;font-size:22px;line-height:1.3;color:var(--ink);text-wrap:balance}
+h3{margin:12px 0 0;font-size:17px;color:var(--ink)}
+p{margin:0}
+ul,ol.steps{margin:0;padding-left:20px;display:grid;gap:6px}
+a{color:var(--accent)}
+code{font-family:var(--f-mono);font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+pre{margin:0;background:var(--code-bg);padding:12px 14px;border-radius:8px;overflow-x:auto;font:13px/1.5 var(--f-mono)}
+pre code{background:none;padding:0}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-weight:600;color:var(--ink-3);background:var(--bg-sub);padding:8px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.ok{color:var(--ok)} .warn{color:var(--warn)} .muted{color:var(--ink-3)}
+.note{border-left:3px solid var(--warn);padding:10px 14px;background:var(--bg-sub);border-radius:0 8px 8px 0}
+.note b{color:var(--ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+</style>
+
+<div class="wrap">
+<nav aria-label="Sections">
+  <ol>
+    <li><a href="#code">Where the code is</a></li>
+    <li><a href="#run">Running it</a></li>
+    <li><a href="#mocks">Mocks</a></li>
+    <li><a href="#decisions">Decisions</a></li>
+    <li><a href="#sheet">The Google Sheet</a></li>
+    <li><a href="#fix">Sheet things to fix</a></li>
+    <li><a href="#open">Open questions</a></li>
+    <li><a href="#next">What's next</a></li>
+  </ol>
+</nav>
+
+<main>
+<header>
+  <p class="eyebrow">Hack Western 13 · Sponsor dashboard · Nov 19, 2026</p>
+  <h1>Sponsor dashboard handoff</h1>
+  <p class="lede">Where the sponsor dashboard and coffee chat work stands, so you can pick it up. The event is Fri Nov 20 to Sun Nov 22. Coffee chats run Saturday.</p>
+</header>
+
+<section id="code">
+  <h2>Where the code is</h2>
+  <p>Repo: <code>hackwestern</code>. The sponsor work happens in git worktrees next to it (separate checkouts, one branch each). The main one is <code>hackwestern-sponsor-dash</code> on branch <code>sponsor-dashboard</code>.</p>
+  <ul>
+    <li><b>PR #1165</b> (draft, work in progress, base <code>spon-judging</code>): app code only. Docs, mocks, <code>_to_delete</code>, NEXT.md and <code>context/</code> are kept out of git with <code>.git/info/exclude</code>, and <code>docs/decisions.md</code> is marked skip-worktree.</li>
+    <li><b>PR #1164</b> (live site maps): ready for review.</li>
+    <li><code>NEXT.md</code> in the worktree has the running to-do list and open questions. <code>docs/decisions.md</code> has every decision with the reason.</li>
+    <li>Checks last run: <code>tsc</code> clean, vitest 116 of 117 (the one failure is a known Apple Wallet test).</li>
+  </ul>
+  <h3>Dev servers that were running</h3>
+  <p>One per worktree, each on its own port. Pages: <code>/sponsors/&lt;sponsor-uuid&gt;</code> for sponsors, <code>/internal/sponsors</code> for organizers (needs a login).</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Port</th><th>Worktree</th><th>What it is</th></tr></thead>
+    <tbody>
+      <tr><td class="num">3013</td><td><code>hackwestern-sponsor-dash</code></td><td>Main sponsor dashboard branch</td></tr>
+      <tr><td class="num">3012</td><td><code>hackwestern-spon-judging</code></td><td>Lucas's judging work</td></tr>
+      <tr><td class="num">3016</td><td><code>hackwestern-sd-chat</code></td><td>Schedule focus, coffee chat room table</td></tr>
+      <tr><td class="num">3021</td><td><code>hackwestern-sd-presentations</code></td><td>Judging round 2</td></tr>
+      <tr><td class="num">3022, 3217</td><td><code>hackwestern-sd-help</code></td><td>Sponsor scoring (running twice, one can go)</td></tr>
+      <tr><td class="num">3023</td><td><code>hackwestern-sd-hackers</code></td><td>Organizer redesign</td></tr>
+      <tr><td class="num">3026</td><td><code>hackwestern-sd-notify-center</code></td><td>Hacker notification center</td></tr>
+      <tr><td class="num">3029</td><td><code>hackwestern-sd-availability</code></td><td>Availability</td></tr>
+      <tr><td class="num">3035</td><td><code>hackwestern-sd-sidenav</code></td><td>Sponsor side nav</td></tr>
+      <tr><td class="num">3040</td><td><code>hackwestern-sponsor-dash</code></td><td>Plain file server for the HTML mocks</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="run">
+  <h2>Running it</h2>
+  <p>The <code>.env</code> database URL (Neon) fails auth locally, so point at the local Postgres in Docker instead. The local DB <code>hackwestern_spon</code> is migrated through 0057.</p>
+  <pre><code>DATABASE_URL="postgresql://postgres:postgres@localhost:5432/hackwestern_spon" \
+SKIP_ENV_VALIDATION=1 npx next dev -p 3013</code></pre>
+  <p>Mocks are plain HTML. From the worktree root:</p>
+  <pre><code>python -m http.server 3040 --bind 127.0.0.1
+# then open http://127.0.0.1:3040/mocks/</code></pre>
+  <p>Test sponsors on the side-nav server (3035): Scotiabank <code>11111111-1111-4111-8111-111111111111</code>, Accenture <code>22222222-2222-4222-8222-222222222222</code>.</p>
+  <p class="note"><b>Careful with the sheet.</b> The app writes to the real Google Sheet only in production or with <code>SHEET_WRITES=1</code>. Leave that off locally.</p>
+</section>
+
+<section id="mocks">
+  <h2>Mocks</h2>
+  <p>All in <code>hackwestern-sponsor-dash/mocks/</code>. Each version is a new folder, old ones are never overwritten. They share one design system (from <code>sponsor-coffee-chats-v7</code>): type and spacing make the hierarchy, few pills, blue means action, green means confirmed, amber means needs attention. No ranking is ever shown to sponsors.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Mock</th><th>Who it's for</th><th>What it shows</th></tr></thead>
+    <tbody>
+      <tr><td><code>sponsor-coffee-chats-v7</code></td><td>Sponsors</td><td>Approved. Shortlist, hacker list, read-only "Your chats".</td></tr>
+      <tr><td><code>organizer-coffee-autofill-v3</code></td><td>Organizers</td><td>Redesign from Jazz's UX feedback. Rooms as rows, time left to right, sponsors grouped by what they need, auto-fill preview, confirm before send.</td></tr>
+      <tr><td><code>organizer-coffee-autofill-v4</code></td><td>Organizers</td><td>v3 plus: drag a booking to change room (up/down) or time (sideways, 15 min steps), an Edit booking panel, organizer events with their own hackers, and locking once invites go out.</td></tr>
+      <tr><td><code>sponsor-chat-setup-v1</code></td><td>Sponsors</td><td>The coffee chat preferences form: reps, format, length, availability, slot preview, notes, shortlist, submit. Has mock states for draft, empty, submitted, organizer note and locked.</td></tr>
+    </tbody>
+  </table></div>
+  <p>The mocks hardcode their text. In the real app, user-facing copy goes in <code>src/content/</code>.</p>
+</section>
+
+<section id="decisions">
+  <h2>Decisions</h2>
+  <p>Logged in <code>docs/decisions.md</code> on Nov 18. The short version:</p>
+  <ul>
+    <li><b>Sponsors send preferences, organizers decide.</b> Sponsors say how many reps, 1-on-1 or group or both, 15 or 30 min, when they're free, and who they want to meet (up to 40). Organizers run auto-fill over everyone, then assign and approve by hand.</li>
+    <li><b>Preferences live in the Google Sheet</b> too, not only the database.</li>
+    <li><b>Rooms run Saturday 10 AM to 5 PM.</b> Max 6 people per room, reps and hackers together. Each 1-on-1 rep gets their own room. That's on purpose.</li>
+    <li><b>Sponsors can't ask for more than their contracted chatting hours.</b> Blocks are at least 1 hour. A warning shows past 3 hours with no break.</li>
+    <li><b>Shortlisted hackers are placed directly by organizers.</b> Hackers never find out who shortlisted them. They just get an invite. Shortlist order doesn't matter.</li>
+    <li><b>Room clashes are resolved by hand.</b> Organizers can message a sponsor back, like "rooms are tight at 10, can you start at 10:30".</li>
+    <li><b>Confirming the shortlist locks it,</b> along with that sponsor's rooms and times. Once invites go out, a booking can't be dragged or deleted. Moving it takes Request change, which says how many hackers get notified.</li>
+    <li><b>Organizers can make their own events</b> (owned by Organizer or assigned to a sponsor), book rooms, and add hackers. Auto-fill never double-books someone who's in an event.</li>
+    <li><b>QR scan reminder:</b> when an organizer scans a hacker's QR code (scavenger hunt, food), pop up a reminder if that hacker has an unanswered coffee chat invite. Not built yet.</li>
+  </ul>
+</section>
+
+<section id="sheet">
+  <h2>The Google Sheet</h2>
+  <p>"Spon Team RUN OF SHOW" is the one source of truth for organizer info. The app's service account has Editor on it. Before changing a tab's layout, check this table: several tabs are read by fixed column or fixed header row, and moving things there breaks the live dashboard.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Tab</th><th>App</th><th>Safe to change</th></tr></thead>
+    <tbody>
+      <tr><td>RUN OF SHOW</td><td>Reads <code>A1:X200</code></td><td>Headers found by name. Don't go past column X or row 200.</td></tr>
+      <tr><td>Coffee Chats</td><td>Reads</td><td>Header must stay in row 1. Sponsor names matched loosely.</td></tr>
+      <tr><td>Workshops, Opening + Closing Ceremonies</td><td>Read</td><td>Headers found by name. Reads <code>A1:J100</code>.</td></tr>
+      <tr><td>live sponsor info</td><td>Reads and writes</td><td><span class="warn">Don't move columns.</span> Status is written to column B, dropdowns sit on B, E and I. Names must match the database exactly ("Sun Life", not "Sunlife").</td></tr>
+      <tr><td>Judging</td><td>Reads and writes</td><td><span class="warn">Header fixed at row 2.</span> Duplicate rows get deleted whole.</td></tr>
+      <tr><td>HW Contacts</td><td>Reads</td><td>Names in column A from row 2, phones in B.</td></tr>
+      <tr><td>Coffee Chat Room Grid</td><td>Reads and writes</td><td>Only columns A to D (rooms 2241 to 2243).</td></tr>
+      <tr><td>Contract Breakdown, Team Assignments</td><td>Not used</td><td>Free to change.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>What changed on Nov 18</h3>
+  <ul>
+    <li><b>Contract Breakdown</b> is now what each lead checks on the day for their sponsor. New columns: HW lead, lead phone (looked up from HW Contacts), stage, workshop, coffee chats, judging, and a "To do / mismatches" column. A footer row has what every on-site sponsor needs. The original checkboxes and tier colors are untouched.</li>
+    <li><b>Team Assignments</b> is one row per spon team member: phone, the sponsors they lead, Fri/Sat/Sun availability and on-call shift. It's all formulas. To reassign a sponsor, change column B in Contract Breakdown.</li>
+    <li><b>live sponsor info</b> went from 2 sponsors to 7: added Canada Life, CSE, Scotiabank, StarTech and Sun Life with HW contact and workshop and judging rooms from RUN OF SHOW.</li>
+    <li>RUN OF SHOW wasn't touched.</li>
+  </ul>
+</section>
+
+<section id="fix">
+  <h2>Sheet things to fix</h2>
+  <p>These are also in Contract Breakdown's "To do / mismatches" column.</p>
+  <ol class="steps">
+    <li><b>Commure</b> has a workshop and coffee chats in its contract but neither is scheduled. It has a prize track that isn't in its contract.</li>
+    <li><b>Manulife</b> has opening stage time in its contract but no speaker on the Ceremonies tab. The dashboard shows a Manulife workshop and coffee chats that aren't in its contract. Its judging room "RM 555" (and Commure's "RM 44") look like placeholders.</li>
+    <li><b>CSE</b> is on the Coffee Chats tab, but coffee chats aren't in its contract.</li>
+    <li><b>HW contacts disagree:</b> live sponsor info has Lucas for Manulife and Brittney for Commure. Team Assignments has Caroline and Alice.</li>
+    <li><b>Coffee Chats hours don't add up:</b> Canada Life has 3 chatting hours in a 2 hour window, Sun Life has 3 in a 6 hour window, and StarTech starts at 9 AM before rooms open at 10.</li>
+    <li><b>Missing:</b> Scotiabank's speaker onboarding, both Scotiabank workshop titles, Sun Life's speaker slides.</li>
+    <li><b>No HW lead:</b> Autodesk, uBit, Shopify, PCBWay, Celsius. Aniya has no sponsors yet.</li>
+    <li><b>Not on the dashboard yet:</b> QNX, TinyFish, Accenture and the rest. Add their live sponsor info rows once they're registered, with the exact registered spelling.</li>
+    <li><b>Coffee Chat Room Grid</b> only has 2241 to 2243, so the Ivey rooms (1348 to 1358) can't show on it.</li>
+  </ol>
+</section>
+
+<section id="open">
+  <h2>Open questions</h2>
+  <ul>
+    <li>The sponsor edit deadline for coffee chat preferences. The mock uses Thu Nov 19, 11:59 PM as a placeholder.</li>
+    <li>The new colored floor map: the original file is needed (only a screenshot exists) to swap it into the app and re-place the room pins.</li>
+    <li>Rooms 1348 to 1358 look like they're in Ivey, not on the main building map. Labeled "Ivey · Floor 1" in the v4 mock for now. Pins need an Ivey floor plan.</li>
+    <li>Sponsor track judging: Grand Hall (per the map) or Rm 2110, 2230 and 2235 (per the run of show)?</li>
+    <li>Registering PCBWay, QNX, Accenture, Manulife and TinyFish as sponsors (Lucas).</li>
+    <li>Should the "Coffee Chat Room Grid" tab be retired, and the fields "live sponsor info" duplicates cleaned up?</li>
+  </ul>
+</section>
+
+<section id="next">
+  <h2>What's next</h2>
+  <ol class="steps">
+    <li><b>Build coffee chat setup in the app</b> from <code>sponsor-chat-setup-v1</code> and <code>organizer-coffee-autofill-v4</code>, in its own worktree with a code review before merging. The plan: new tables for preferences, reps, units (one unit is one 1-on-1 rep or one group, which is one room), availability blocks and per-slot seats; add a position to the existing shortlist table; mirror preferences into a new sheet tab.</li>
+    <li><b>QR scan reminder</b> for unanswered coffee chat invites.</li>
+    <li><b>Map update</b> once the new map file is in <code>context/refs-img/</code>.</li>
+    <li><b>Ship ops-pings</b> (worktree <code>hackwestern-ops-pings</code>, done, needs its own PR) and the queued admin page for the web team.</li>
+  </ol>
+</section>
+</main>
+</div>
