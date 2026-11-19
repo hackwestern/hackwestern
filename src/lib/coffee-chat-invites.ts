@@ -26,8 +26,10 @@
  *   20 min; 35 for Ivey, a 15-min walk). Under 10 minutes to answer: that
  *   seat waits. Rounds run when triggered, so a late or missed round just
  *   catches up as the current one.
- * - A seat answered "no" (declined, expired) in a round waits for the next
- *   round; it is never re-offered inside the same round.
+ * - A seat answered "no" (declined, expired) is offered again at once, to
+ *   the next candidate, with the current round's answer-by time (decision
+ *   2026-11-19, "Declines re-send at once…"). Every seat is filled while an
+ *   eligible candidate is left; a seat stays empty only when none is.
  */
 import {
   COFFEE_CHAT_DATE,
@@ -253,8 +255,6 @@ export type PlanChat = {
   seats: number;
   /** Invites holding a seat now (pending and not expired, or accepted). */
   live: number;
-  /** Invites in this round that no longer hold a seat (declined, expired). */
-  spentThisRound: number;
 };
 
 export const chatKey = (c: { placementId: string; start: number }) =>
@@ -303,7 +303,11 @@ export type PlannedInvite = {
 
 export type PlanResult = {
   invites: PlannedInvite[];
-  /** Seats still open after this round, per chat key (only chats with any). */
+  /**
+   * Seats left empty, per chat (only chats with any): no eligible candidate
+   * is left, or the chat is too close to offer now. Not a normal state:
+   * the board shows it as a problem.
+   */
   unfilled: { placementId: string; start: number; open: number }[];
 };
 
@@ -313,8 +317,10 @@ const overlaps = (
 ) => a.start < b.start + b.minutes && b.start < a.start + a.minutes;
 
 /**
- * Plan one round: one invite per open seat this round can offer, in the
- * order above. Pure: returns what to write.
+ * Plan one round: one invite per empty seat this round can offer, in the
+ * order above. Pure: returns what to write. Greedy but maximal: a seat is
+ * left empty only when no remaining candidate can take it (each hacker is
+ * tried against every seat of the sponsor, and seats only fill up).
  */
 export function planInviteRound(input: PlanInput): PlanResult {
   const { round, now } = input;
@@ -324,7 +330,7 @@ export function planInviteRound(input: PlanInput): PlanResult {
   const open: Open[] = [];
   const unfillable: Open[] = [];
   for (const c of input.chats) {
-    const free = c.seats - c.live - c.spentThisRound;
+    const free = c.seats - c.live;
     if (free <= 0) continue;
     const expiresAt = inviteExpiresAt(round, c.start, c.building, now);
     if (expiresAt) open.push({ ...c, open: free, expiresAt });

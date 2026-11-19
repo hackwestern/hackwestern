@@ -493,17 +493,20 @@ describe("Saturday rounds", () => {
     ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
-  test("round 2 at 10:30: declines and expired seats pass on, 10-11 AM never refilled, drafts never touched", async () => {
+  test("round 2 at 10:00: a decline with no one left stays empty; expired seats refill as round 1 closes; drafts never touched", async () => {
     process.env.COFFEE_INVITES_ENABLED = "1";
     const before = await chatsOf(alpha.id);
     const h1 = before.find((c) => c.userId === ids.h1)!;
     const h5 = before.find((c) => c.userId === ids.h5)!;
+    // h1 declines Saturday morning: everyone else Alpha could ask already
+    // holds an Alpha seat, so nobody is invited in its place.
     await respondToCoffeeChat(
       ids.h1!,
       { chatId: h1.id, answer: "decline" },
       at("08:00"),
       0,
     );
+    expect(await chatsOf(alpha.id)).toHaveLength(before.length);
     await respondToCoffeeChat(
       ids.h5!,
       { chatId: h5.id, answer: "accept" },
@@ -513,21 +516,27 @@ describe("Saturday rounds", () => {
     // A new interested hacker shows up Saturday morning.
     await interested(alpha.id, ["h9"]);
 
-    vi.setSystemTime(at("10:30"));
-    const out = await runDueInviteRounds(at("10:30"));
+    // Round 1 closes at 10:00 and round 2 opens at once (not 10:30).
+    vi.setSystemTime(at("10:00"));
+    const out = await runDueInviteRounds(at("10:00"));
     expect(out.status).toBe("ran");
     const rows = await chatsOf(alpha.id);
     const round2 = rows.filter((c) => c.round === 2);
-    // h9 takes the earliest open seat: 11:15 (h6 let it expire), answer by
-    // its last call 10:55. 11:30 (declined by h1) and 11:45 (h2 let it
-    // expire) have no one left; 13:xx expired too.
+    // h9 takes the earliest empty seat: 11:15 (h6 let it expire), answer by
+    // round 2's close, 10:30. 11:30 (declined by h1), 11:45 and 1:xx have no
+    // one left: those who let them expire aren't asked again.
     expect(
       round2.map((c) => [
         c.slotTime,
         keyOf(c.userId),
         c.expiresAt?.toISOString(),
       ]),
-    ).toEqual([["11:15", "h9", at("10:55").toISOString()]]);
+    ).toEqual([["11:15", "h9", at("10:30").toISOString()]]);
+    expect(
+      out.status === "ran" &&
+        out.result.status === "ok" &&
+        out.result.unfilled.map((u) => u.open),
+    ).toEqual([1, 1, 1, 1]);
     // Delivered by the round's sweep.
     expect(dm).toHaveBeenCalledTimes(1);
     expect(round2[0]!.notifiedAt).not.toBeNull();
@@ -540,27 +549,138 @@ describe("Saturday rounds", () => {
     // Gamma was never sent: no invites, even though h9 etc. are interested.
     expect(await chatsOf(gamma.id)).toEqual([]);
 
-    // Running again inside the same round changes nothing.
+    // Running again changes nothing: every empty seat has no one left.
     resetInviteRoundThrottle();
-    const again = await runDueInviteRounds(at("10:40"));
+    const again = await runDueInviteRounds(at("10:10"));
     expect(
       again.status === "ran" &&
         again.result.status === "ok" &&
         again.result.created,
     ).toEqual([]);
 
-    // If h9 declines, the seat waits for round 3 (nobody is left, so it stays open).
+    // h9 declines: nobody is left, so the seat stays empty (and the next
+    // round doesn't invent anyone either).
     await respondToCoffeeChat(
       ids.h9!,
       { chatId: round2[0]!.id, answer: "decline" },
-      at("10:45"),
+      at("10:15"),
       0,
     );
     resetInviteRoundThrottle();
-    const r3 = await runDueInviteRounds(at("11:00"));
+    const r3 = await runDueInviteRounds(at("10:30"));
     expect(
       r3.status === "ran" && r3.result.status === "ok" && r3.result.created,
     ).toEqual([]);
+    vi.setSystemTime(FRI_10PM);
+  });
+
+  test("declines re-send at once, in a chain: scanned, shortlist, interested, each with the current round's answer-by", async () => {
+    process.env.COFFEE_INVITES_ENABLED = "1";
+    vi.setSystemTime(FRI_10PM);
+    // One 1-on-1 seat at 3:00.
+    const theta = await sponsor(
+      `Theta${Date.now()}`,
+      { hackersPerChat: 1 },
+      { chats: 1 },
+      [{ sessionId: "15", room: "2244", status: "sent" }],
+    );
+    for (const k of ["t1", "t2", "t3", "t4", "t5"]) await hacker(k);
+    await db
+      .insert(sponsorScans)
+      .values({ sponsorId: theta.id, userId: ids.t1! });
+    await db
+      .insert(sponsorShortlists)
+      .values({ sponsorId: theta.id, userId: ids.t2! });
+    await interested(theta.id, ["t3", "t4", "t5"]);
+    await db.transaction((tx) =>
+      sendRoundOneInvites(tx, { sponsorIds: [theta.id], now: FRI_10PM }),
+    );
+    const live = async () =>
+      (await chatsOf(theta.id))
+        .filter((c) => c.status === "pending" || c.status === "accepted")
+        .map((c) => [keyOf(c.userId), c.source, c.round, c.expiresAt]);
+    expect(await live()).toEqual([["t1", "scanned", 1, at("10:00")]]);
+
+    // Friday 11 PM: t1 declines. t2 (shortlist) is invited in the same
+    // transaction, answer by Sat 10 AM (round 1), and hears right away.
+    dm.mockClear();
+    const fri = new Date("2026-11-20T23:00:00-05:00");
+    vi.setSystemTime(fri);
+    const t1 = (await chatsOf(theta.id))[0]!;
+    await respondToCoffeeChat(
+      ids.t1!,
+      { chatId: t1.id, answer: "decline" },
+      fri,
+      2000,
+    );
+    expect(await live()).toEqual([["t2", "shortlist", 1, at("10:00")]]);
+    expect(dm).toHaveBeenCalledTimes(1);
+    expect(
+      (dm.mock.calls[0] as unknown as [{ chatId: string }])[0].chatId,
+    ).toBe((await chatsOf(theta.id)).find((c) => c.userId === ids.t2)!.id);
+
+    // Sat 9:30, still round 1: t2 declines; t3 also answers by 10 AM.
+    vi.setSystemTime(at("09:30"));
+    const t2 = (await chatsOf(theta.id)).find((c) => c.userId === ids.t2)!;
+    await respondToCoffeeChat(
+      ids.t2!,
+      { chatId: t2.id, answer: "decline" },
+      at("09:30"),
+      0,
+    );
+    expect(await live()).toEqual([["t3", "interested", 1, at("10:00")]]);
+
+    // t3 accepts, then backs out at 10:40 (round 3): t4 gets 30 minutes.
+    const t3 = (await chatsOf(theta.id)).find((c) => c.userId === ids.t3)!;
+    await respondToCoffeeChat(
+      ids.t3!,
+      { chatId: t3.id, answer: "accept" },
+      at("09:40"),
+      0,
+    );
+    vi.setSystemTime(at("10:40"));
+    await respondToCoffeeChat(
+      ids.t3!,
+      { chatId: t3.id, answer: "decline" },
+      at("10:40"),
+      0,
+    );
+    expect(await live()).toEqual([["t4", "interested", 3, at("11:10")]]);
+
+    // t4 lets it expire: the next round (its expiry sweep) asks t5, with
+    // 30 minutes from when it ran (round 4 closes 11:30).
+    vi.setSystemTime(at("11:12"));
+    resetInviteRoundThrottle();
+    const out = await runDueInviteRounds(at("11:12"));
+    expect(out.status).toBe("ran");
+    expect(await live()).toEqual([["t5", "interested", 4, at("11:42")]]);
+
+    // t5 declines: nobody is left. Nobody who said no is asked again.
+    await respondToCoffeeChat(
+      ids.t5!,
+      {
+        chatId: (await chatsOf(theta.id)).find((c) => c.userId === ids.t5)!
+          .id,
+        answer: "decline",
+      },
+      at("11:20"),
+      0,
+    );
+    expect(await live()).toEqual([]);
+    const all = await chatsOf(theta.id);
+    expect(all.map((c) => keyOf(c.userId))).toEqual([
+      "t1",
+      "t2",
+      "t3",
+      "t4",
+      "t5",
+    ]);
+    // Clean up so later tests (and their counts) don't see Theta.
+    await db.delete(coffeeChats).where(eq(coffeeChats.sponsorId, theta.id));
+    await db
+      .update(coffeeChatPlacements)
+      .set({ status: "draft" })
+      .where(eq(coffeeChatPlacements.repId, theta.repId));
     vi.setSystemTime(FRI_10PM);
   });
 

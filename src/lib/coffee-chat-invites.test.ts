@@ -33,7 +33,6 @@ function chat(
     building: "near",
     seats: 1,
     live: 0,
-    spentThisRound: 0,
     ...p,
   };
 }
@@ -496,7 +495,7 @@ describe("planner", () => {
     expect(invites.map((i) => i.userId)).toEqual(["u2"]);
   });
 
-  test("declines pass on in the next round, not the same one", () => {
+  test("a declined seat goes to the next candidate at once, with the round's answer-by", () => {
     const chats = [chat({ placementId: "p", start: min("14:00"), seats: 2 })];
     const c = cands({
       A: [
@@ -508,30 +507,66 @@ describe("planner", () => {
     // Round 1: u1 and u2.
     const r1 = plan({ chats, candidates: c });
     expect(r1.invites.map((i) => i.userId)).toEqual(["u1", "u2"]);
-    // u1 declines in round 1. Round 1 again (e.g. Send pressed twice): nothing.
-    const again = plan({
-      chats: [{ ...chats[0]!, live: 1, spentThisRound: 1 }],
+    // u1 declines Friday night: still round 1, so u3 answers by Sat 10 AM.
+    const after = {
+      chats: [{ ...chats[0]!, live: 1 }],
       candidates: c,
       blocked: new Set(["A|u1", "A|u2"]),
       busy: [
         { userId: "u2", sponsorId: "A", start: min("14:00"), minutes: 15 },
       ],
-    });
-    expect(again.invites).toEqual([]);
-    // Round 2 at 10:30: the seat goes to u3, answer by 11:00.
-    const r2 = plan({
-      round: 2,
-      now: at("10:30"),
-      chats: [{ ...chats[0]!, live: 1, spentThisRound: 0 }],
-      candidates: c,
-      blocked: new Set(["A|u1", "A|u2"]),
-      busy: [
-        { userId: "u2", sponsorId: "A", start: min("14:00"), minutes: 15 },
-      ],
-    });
-    expect(r2.invites.map((i) => [i.userId, i.round, i.expiresAt])).toEqual([
-      ["u3", 2, at("11:00")],
+    };
+    const fri = plan({ ...after, now: new Date("2026-11-20T23:30:00-05:00") });
+    expect(fri.invites.map((i) => [i.userId, i.round, i.expiresAt])).toEqual([
+      ["u3", 1, at("10:00")],
     ]);
+    expect(fri.unfilled).toEqual([]);
+    // Declined Saturday at 10:40 (round 3): 30 minutes, until 11:10.
+    const sat = plan({ ...after, round: 3, now: at("10:40") });
+    expect(sat.invites.map((i) => [i.userId, i.round, i.expiresAt])).toEqual([
+      ["u3", 3, at("11:10")],
+    ]);
+    // Close to the chat: capped at its last call (13:40 for 14:00).
+    const late = plan({ ...after, round: 8, now: at("13:20") });
+    expect(late.invites.map((i) => i.expiresAt)).toEqual([at("13:40")]);
+    // Nobody left: the seat is reported empty, never invented.
+    const none = plan({
+      ...after,
+      blocked: new Set(["A|u1", "A|u2", "A|u3"]),
+    });
+    expect(none.invites).toEqual([]);
+    expect(none.unfilled).toEqual([
+      { placementId: "p", start: min("14:00"), open: 1 },
+    ]);
+  });
+
+  test("every seat fills while an eligible hacker is left (interested hackers too)", () => {
+    // Nothing scanned or shortlisted: interested hackers fill every seat,
+    // and each hacker tries every seat (u1 is busy at 2:00, so takes 2:15).
+    const chats = [
+      chat({ placementId: "p", start: min("14:00") }),
+      chat({ placementId: "p", start: min("14:15") }),
+      chat({ placementId: "p", start: min("14:30"), seats: 2 }),
+    ];
+    const { invites, unfilled } = plan({
+      chats,
+      candidates: cands({
+        A: [
+          ["u1", "interested"],
+          ["u2", "interested"],
+          ["u3", "interested"],
+          ["u4", "interested"],
+        ],
+      }),
+      busy: [{ userId: "u1", sponsorId: "X", start: min("14:00"), minutes: 15 }],
+    });
+    expect(invites.map((i) => [i.start, i.userId])).toEqual([
+      [min("14:15"), "u1"],
+      [min("14:00"), "u2"],
+      [min("14:30"), "u3"],
+      [min("14:30"), "u4"],
+    ]);
+    expect(unfilled).toEqual([]);
   });
 
   test("round 3 (10:30) leaves 10:00-10:45 seats unfilled; 11:00 gets its last 10 minutes", () => {

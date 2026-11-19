@@ -15,7 +15,13 @@
  * run-coffee-invite-round.ts), by traffic (the organizer invite status
  * query, the hacker's /live chats query, without waiting for it), and by an
  * organizer "run now" button. A round is idempotent: re-running it only
- * fills seats that haven't been offered this round yet.
+ * fills empty seats (no live invite).
+ *
+ * No open seats (decision 2026-11-19, "Declines re-send at once…"): a
+ * decline offers the seat to the next candidate in the same transaction
+ * (refillSeatsAfterNo, from respondToCoffeeChat), a sponsor change refills
+ * what it frees (reconcileInvitesAfterChange), and every round refills
+ * expired seats, all with the current round's answer-by time.
  *
  * Delivery: a session invite's DM or email is sent once. Each row is
  * claimed (notified_at set) before its send and released (back to null) if
@@ -126,8 +132,12 @@ export type InviteJob = {
   notice: CoffeeChatNotice;
 };
 
-/** Same lock as every board write, so placements can't move under a round. */
-async function lockBoard(tx: InviteTx): Promise<void> {
+/**
+ * Same lock as every board write, so placements can't move under a round.
+ * Re-entrant within a transaction. Take it before locking any coffee_chat
+ * row (a round updates rows while holding it).
+ */
+export async function lockBoard(tx: InviteTx): Promise<void> {
   await tx.execute(
     sql`select pg_advisory_xact_lock(${sql.raw(BOARD_LOCK_KEY)})`,
   );
@@ -196,7 +206,6 @@ export function layoutOf(
           building,
           seats: sponsor.hackersPerChat,
           live: 0,
-          spentThisRound: 0,
           room: inviteRoomLabel(p.room),
           repName: rep.name,
           repId,
@@ -392,21 +401,32 @@ export type RoundResult =
       round: number;
       /** New coffee_chat ids. */
       created: string[];
-      /** Seats still open after the round. */
+      /**
+       * Seats left empty: no eligible hacker left, or too close to the
+       * chat to offer. A problem, not a normal state.
+       */
       unfilled: { placementId: string; start: number; open: number }[];
       /** Notices to deliver after the transaction commits. */
       jobs: InviteJob[];
     };
 
+type RoundOpts = {
+  round?: number;
+  now?: Date;
+  sponsorIds?: readonly string[];
+  /** Placements about to be deleted: never offered. */
+  excludePlacementIds?: readonly string[];
+};
+
 /**
- * Run one invite round inside `tx`: one invite per open seat of every
+ * Run one invite round inside `tx`: one invite per empty seat of every
  * sponsor with sent placements (optionally only `sponsorIds`). Takes the
  * board lock (re-entrant, so it's fine inside boardWrite). Writes rows only;
  * deliver `jobs` with deliverInviteNotices() after the commit.
  */
 export async function runInviteRound(
   tx: InviteTx,
-  opts: { round?: number; now?: Date; sponsorIds?: readonly string[] } = {},
+  opts: RoundOpts = {},
 ): Promise<RoundResult> {
   const now = opts.now ?? new Date();
   const round = opts.round ?? currentRound(now);
@@ -417,7 +437,7 @@ export async function runInviteRound(
 /** The round itself, past the kill switch (also run by the dry run). */
 async function writeInviteRound(
   tx: InviteTx,
-  opts: { round: number; now: Date; sponsorIds?: readonly string[] },
+  opts: RoundOpts & { round: number; now: Date },
 ): Promise<RoundResult> {
   const { round, now } = opts;
   await lockBoard(tx);
@@ -425,23 +445,23 @@ async function writeInviteRound(
   if (!state.workshopsAvailable)
     return { status: "workshopsUnknown", round, jobs: [] };
   const only = opts.sponsorIds ? new Set(opts.sponsorIds) : null;
+  const skip = new Set(opts.excludePlacementIds ?? []);
   // The safety gate: only placements an organizer has sent.
   const layout = layoutOf(
     state,
-    (p) => p.status === "sent" && (!only || only.has(p.sponsorId)),
+    (p) =>
+      p.status === "sent" &&
+      (!only || only.has(p.sponsorId)) &&
+      !skip.has(p.id),
   );
   if (layout.length === 0) return { status: "nothingSent", round, jobs: [] };
 
   const rows = await sweepExpired(tx, await loadChatRows(tx), now);
   const live = rows.filter(isLive);
+  // A seat whose invite was declined or expired is empty again: it goes to
+  // the next candidate now, not in a later round.
   for (const c of layout) {
-    const here = rows.filter((r) => atChat(r, c));
-    c.live = here.filter(isLive).length;
-    c.spentThisRound = here.filter(
-      (r) =>
-        r.round === round &&
-        (r.status === "declined" || r.status === "expired"),
-    ).length;
+    c.live = rows.filter((r) => atChat(r, c) && isLive(r)).length;
   }
   const blocked = new Set(
     rows
@@ -551,6 +571,37 @@ export function sendRoundOneInvites(
   return runInviteRound(tx, opts);
 }
 
+/**
+ * A hacker said no to one of `sponsorId`'s session invites (or a change
+ * freed seats): offer the empty seats to the next candidates now, inside
+ * the caller's transaction (it should hold the board lock already; taken
+ * here too). The new invites get the current round's answer-by: Sat 10 AM
+ * on Friday night, else the round's close or 30 minutes from now, capped at
+ * the chat's last call. Runs in a savepoint, so a failure here never undoes
+ * the caller's write: it logs, and the next round fills the seat. Returns
+ * the notices to deliver after the commit (none while invites are off).
+ */
+export async function refillSeatsAfterNo(
+  tx: InviteTx,
+  sponsorId: string,
+  opts: { now?: Date; excludePlacementIds?: readonly string[] } = {},
+): Promise<InviteJob[]> {
+  const now = opts.now ?? new Date();
+  if (!invitesEnabled() || now >= LAST_CHAT_STARTS_AT) return [];
+  try {
+    const r = await tx.transaction((sp) =>
+      runInviteRound(sp, { ...opts, now, sponsorIds: [sponsorId] }),
+    );
+    return r.jobs;
+  } catch (error) {
+    console.error(
+      "coffee chat invites: refill after a decline failed",
+      errorMessage(error),
+    );
+    return [];
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Changes after invites
 // ---------------------------------------------------------------------------
@@ -574,7 +625,7 @@ export type ReconcileResult = {
  *   sponsor (same placement first, then the earliest) where the hacker is
  *   free, back to pending with a new answer-by (reconfirm); else cancelled.
  * Accepted invites keep their seat before pending ones. Seats freed here
- * pass on at the next round. Call it inside the transaction that made the
+ * go to the next candidates at once (refillSeatsAfterNo). Call it inside the transaction that made the
  * change, after the change; for a deleted placement or rep, call it BEFORE
  * the delete with `removingPlacementIds` (the delete cascades the rows).
  * Deliver `jobs` after the commit.
@@ -702,15 +753,24 @@ export async function reconcileInvitesAfterChange(
     tx,
   );
   const byId = new Map(notices.map((n) => [n.chatId, n]));
+  // Seats this change freed or added go to the next candidates now (never
+  // on a placement about to be deleted).
+  const refill = await refillSeatsAfterNo(tx, sponsorId, {
+    now,
+    excludePlacementIds: [...removing],
+  });
   return {
     status: "ok",
     kept: keep.length,
     reconfirm: changed.length + moves.length,
     cancelled: cancels.length,
-    jobs: jobsOf.flatMap((j) => {
-      const notice = byId.get(j.id);
-      return notice ? [{ event: j.event, notice }] : [];
-    }),
+    jobs: [
+      ...jobsOf.flatMap((j) => {
+        const notice = byId.get(j.id);
+        return notice ? [{ event: j.event, notice }] : [];
+      }),
+      ...refill,
+    ],
   };
 }
 
@@ -997,7 +1057,7 @@ export type RoundPreview = {
   round: number;
   /** Invites the round would create now. */
   invites: number;
-  /** Seats it would leave open. */
+  /** Seats it would leave empty (no eligible hacker left). */
   unfilled: number;
 };
 
