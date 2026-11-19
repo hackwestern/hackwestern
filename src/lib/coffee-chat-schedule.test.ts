@@ -232,7 +232,10 @@ describe("randomized invariants", () => {
       const sponsors: SchedSponsor[] = Array.from({ length: 2 + Math.floor(rand() * 7) }, (_, i) => {
         const ws = rand() < 0.5 ? [] : [{ start: 600 + Math.floor(rand() * 7) * 60, end: 0 }];
         for (const w of ws) w.end = w.start + 60;
-        return sp(
+        // Workshops on the hour cut the sessions next to them at :15 / :45,
+        // so with 15- or 30-min chats some sessions are partial.
+        const chatMinutes = rand() < 0.5 ? 15 : 30;
+        const base = sp(
           `s${i}`,
           1 + Math.floor(rand() * 4),
           Array.from({ length: 1 + Math.floor(rand() * 4) }, () =>
@@ -241,6 +244,7 @@ describe("randomized invariants", () => {
           ws,
           rand() < 0.9,
         );
+        return { ...base, chatMinutes };
       });
       const pins: Pin[] = [];
       if (rand() < 0.5) pins.push({ room: "2241", session: "13", type: "booking", ref: "b" });

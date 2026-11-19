@@ -17,6 +17,7 @@ import {
 } from "~/lib/coffee-chat-sessions";
 import { createTRPCRouter, protectedOrganizerProcedure } from "~/server/api/trpc";
 import { mirrorRoomGrid } from "~/server/api/utils/coffee-chat-room-grid-mirror";
+import { checkCoffeeSender, type SenderCheck } from "~/server/api/utils/coffee-chat-sender";
 import { sheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
 import {
   assertCellFree,
@@ -60,8 +61,15 @@ const sessionId = z.enum(COFFEE_SESSION_IDS);
  * through boardWrite(): one board lock, then checks on a fresh read.
  */
 export const coffeeChatSessionsRouter = createTRPCRouter({
+  /** The board, plus whether this organizer may press Send (Noah only). */
   getBoard: protectedOrganizerProcedure.query(
-    async (): Promise<SessionBoard> => sessionBoardOf(await loadBoardState()),
+    async ({ ctx }): Promise<SessionBoard & { sender: SenderCheck }> => {
+      const [state, sender] = await Promise.all([
+        loadBoardState(),
+        checkCoffeeSender(ctx.session.user.email),
+      ]);
+      return { ...sessionBoardOf(state), sender };
+    },
   ),
 
   /** Run the scheduler: keeps pinned, sent and booked cells; replaces drafts. */
@@ -253,10 +261,19 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
     }),
 
   /**
-   * Send: every draft chat becomes sent (sentAt now), then the Room Grid tab
-   * is mirrored (only when sheetWritesEnabled(); locally nothing is written).
+   * Send: only Noah Medland (matched by login email on HW Contacts, read
+   * fresh). Every draft chat becomes sent (sentAt now), then the Room Grid
+   * tab is mirrored (only when sheetWritesEnabled(); locally nothing is
+   * written). If HW Contacts can't be read, nobody can send.
    */
-  send: protectedOrganizerProcedure.mutation(async () => {
+  send: protectedOrganizerProcedure.mutation(async ({ ctx }) => {
+    const sender = await checkCoffeeSender(ctx.session.user.email, { fresh: true });
+    if (!sender.canSend) {
+      throw new TRPCError({
+        code: sender.reason === "notSender" ? "FORBIDDEN" : "PRECONDITION_FAILED",
+        message: errors.sender[sender.reason],
+      });
+    }
     const now = new Date();
     const sent = await boardWrite(async (tx, state) => {
       assertWorkshopsKnown(state);

@@ -49,8 +49,8 @@ export const WORKSHOP_BUFFER_MIN = 15;
 /** Hackers per chat, 1-5 (the room holds 6 with the rep). */
 export const MIN_HACKERS_PER_CHAT = 1;
 export const MAX_HACKERS_PER_CHAT = 5;
-/** Each rep says how many chats they want (at least 1). */
-export const MIN_CHATS_WANTED = 1;
+/** Each rep says how many chats they want; 0 = that rep doesn't chat. */
+export const MIN_CHATS_WANTED = 0;
 export const MAX_CHATS_WANTED = 40;
 
 export function isSessionId(id: string): id is CoffeeSessionId {
@@ -101,22 +101,93 @@ export function minutesOfClock(time: string | null | undefined): number | null {
   return Number(m[1]) * 60 + Number(m[2]);
 }
 
+/** A sponsor workshop in minutes after midnight; `setup` is when they must be in the room. */
+export type WorkshopTime = { setup?: number | null; start: number; end: number };
+
+/** Minutes a workshop blocks: (setup, or start) - 15 to end + 15. */
+export function workshopBlock(w: WorkshopTime): { from: number; to: number } {
+  return { from: (w.setup ?? w.start) - WORKSHOP_BUFFER_MIN, to: w.end + WORKSHOP_BUFFER_MIN };
+}
+
+/** Start and end of the part of a session a rep can use, minutes after midnight. */
+export type UsableWindow = { start: number; end: number };
+
 /**
- * How many chats each of a rep's sessions holds: full sessions in time order,
- * then whatever is left of their wanted chats.
+ * The part of a session a sponsor's rep can use (docs/decisions.md
+ * 2026-11-19, Q1-Q11: partial sessions). The whole hour when no workshop
+ * window touches it. When a workshop's travel buffer cuts it, the longest
+ * part before or after the cut, trimmed to whole chats and kept against the
+ * session's own edge: Sun Life sets up at 2:00 (blocked from 1:45), so with
+ * 30-minute chats its 1-2 session is 1:00-1:30. Null when not one whole chat
+ * fits, or for an unknown session.
+ *
+ * Track B: a placement's seat times come from this window (its start, then
+ * every `chatMinutes`), not from the session's full hour.
+ */
+export function usableWindow(
+  sessionId: string,
+  workshops: readonly WorkshopTime[],
+  chatMinutes: number,
+): UsableWindow | null {
+  const s = COFFEE_SESSIONS.find((x) => x.id === sessionId);
+  return s ? sessionWindow(s, workshops, chatMinutes) : null;
+}
+
+/** usableWindow for any session's times (the scheduler passes its own list). */
+export function sessionWindow(
+  s: { start: number; end: number },
+  workshops: readonly WorkshopTime[],
+  chatMinutes: number,
+): UsableWindow | null {
+  if (chatMinutes <= 0) return null;
+  // Free stretches of the hour once every workshop window is cut out.
+  let free: UsableWindow[] = [{ start: s.start, end: s.end }];
+  for (const w of workshops) {
+    const { from, to } = workshopBlock(w);
+    free = free.flatMap((f) =>
+      to <= f.start || from >= f.end
+        ? [f]
+        : [
+            ...(from > f.start ? [{ start: f.start, end: from }] : []),
+            ...(to < f.end ? [{ start: to, end: f.end }] : []),
+          ],
+    );
+  }
+  // Longest stretch first; on a tie, the earlier one.
+  const best = [...free].sort((a, b) => b.end - b.start - (a.end - a.start) || a.start - b.start)[0];
+  if (!best) return null;
+  const chats = Math.floor((best.end - best.start) / chatMinutes);
+  if (chats === 0) return null;
+  const len = chats * chatMinutes;
+  // After the cut, the chats run up to the session's end; otherwise from its start.
+  return best.end === s.end && best.start !== s.start
+    ? { start: best.end - len, end: best.end }
+    : { start: best.start, end: best.start + len };
+}
+
+/** Whole chats that fit in a window. */
+export function chatsInWindow(w: UsableWindow | null, chatMinutes: number): number {
+  return w && chatMinutes > 0 ? Math.floor((w.end - w.start) / chatMinutes) : 0;
+}
+
+/**
+ * How many chats each of a rep's sessions holds: sessions in time order,
+ * each up to what it fits (`perSession`, or a function of the session id
+ * for partial sessions), until the rep's wanted chats run out.
  */
 export function chatsBySession(
   sessionIds: readonly string[],
   chatsWanted: number,
-  perSession: number,
+  perSession: number | ((sessionId: string) => number),
 ): Map<string, number> {
   const ordered = COFFEE_SESSIONS.map((s) => s.id as string).filter((id) =>
     sessionIds.includes(id),
   );
+  const fits = typeof perSession === "number" ? () => perSession : perSession;
   const out = new Map<string, number>();
   let left = chatsWanted;
   for (const id of ordered) {
-    const n = Math.max(0, Math.min(perSession, left));
+    const n = Math.max(0, Math.min(fits(id), left));
     out.set(id, n);
     left -= n;
   }
