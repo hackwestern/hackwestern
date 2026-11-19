@@ -2,12 +2,18 @@ import { useEffect, useState } from "react";
 import { trackEnum } from "~/server/db/schema";
 import { type RouterOutputs } from "~/utils/api";
 
-// Shape the old queue API returned (removed in #1155); kept so the screens
-// still render. Not backed by anything right now.
+export type Progress = RouterOutputs["judging"]["admin"]["getProgress"];
+
+// The "still to judge" view the control room cards render, built from the
+// table-section engine's progress read (see queueFromProgress).
 export type QueueTeam = {
   teamId: string;
   teamName: string;
+  tableId: number;
+  tableNumber: number;
+  /** Judges at this table who haven't finished yet. */
   roundsRemaining: number;
+  /** Judges at this table who have scored the team. */
   seenJudges: number;
   tracks: (typeof trackEnum.enumValues)[number][];
   currentJudgeId: string | null;
@@ -18,7 +24,42 @@ export type QueueState = {
   teams: QueueTeam[];
   submittedTeams: number;
   regularMarks: number;
+  settings: Progress["settings"];
+  started: boolean;
 };
+
+/** Teams whose table still has judges to go, plus the headline totals. */
+export function queueFromProgress(p: Progress): QueueState {
+  const teams: QueueTeam[] = [];
+  for (const t of p.tables) {
+    if (!t.team || !t.isActive) continue;
+    const remaining = t.judges.filter(
+      (j) => j.status === "assigned" || j.status === "in_progress",
+    );
+    // A table with nobody assigned yet is still waiting for its judges.
+    if (t.judges.length > 0 && remaining.length === 0) continue;
+    const current = t.judges.find((j) => j.status === "in_progress");
+    teams.push({
+      teamId: t.team.id,
+      teamName: t.team.name,
+      tableId: t.id,
+      tableNumber: t.number,
+      roundsRemaining: remaining.length,
+      seenJudges: t.judgesDone,
+      tracks: [],
+      currentJudgeId: current?.judgeId ?? null,
+      currentJudgeName: current?.name ?? null,
+      assignedAt: current?.startedAt ?? null,
+    });
+  }
+  return {
+    teams,
+    submittedTeams: p.teams.submitted,
+    regularMarks: p.totals.done,
+    settings: p.settings,
+    started: p.started,
+  };
+}
 export type JudgeRow =
   RouterOutputs["judging"]["admin"]["getAllJudges"][number];
 export type RankingRow =
