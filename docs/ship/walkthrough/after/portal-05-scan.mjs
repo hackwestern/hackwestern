@@ -28,7 +28,7 @@ for (const W of [1280, 390]) {
   // New hacker: one filled button, then Add, then Scan next.
   await go();
   await wait(page, 1200);
-  await lookup(W === 1280 ? "walkthrough-hacker-2" : "walkthrough-hacker-3");
+  await lookup(W === 1280 ? "walkthrough-hacker-4" : "walkthrough-hacker-5");
   await text(page, "#sponsor-main", 1500);
   console.log("filled:", await filledButtons(main));
   await shot(page, `portal-05-scan-found${tag}`);
