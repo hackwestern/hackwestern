@@ -1,0 +1,1 @@
+ALTER TABLE "coffee_chat" ADD COLUMN "notified_at" timestamp (3);
