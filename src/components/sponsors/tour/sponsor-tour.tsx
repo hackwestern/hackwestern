@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import * as Popover from "@radix-ui/react-popover";
 import { CircleHelp, Compass } from "lucide-react";
@@ -20,17 +20,27 @@ import {
   resolveStep,
   saveProgress,
   targetSelector,
+  type TourDef,
   type TourProgress,
 } from "~/lib/sponsor-tour";
 import {
-  HOW_TO_TOURS,
-  SPONSOR_TOURS,
+  howToToursFor,
+  toursFor,
   tourName,
   WELCOME_TOUR_ID,
   type SponsorTourId,
 } from "~/lib/sponsor-tours";
 import { uuidRegex } from "~/utils/urls";
 import { cn } from "~/lib/utils";
+
+/** Window event other controls (the side nav's "How this works") fire to
+ * start a tour, so the page keeps a single tour instance. */
+const START_EVENT = "sponsor-tour:start";
+
+/** Start a tour from anywhere on a sponsor page. */
+export function startSponsorTour(id: SponsorTourId) {
+  window.dispatchEvent(new CustomEvent(START_EVENT, { detail: id }));
+}
 
 /** How long a step waits for its target to render before centring. */
 const TARGET_GRACE_MS = 1200;
@@ -99,10 +109,14 @@ function useTarget(target: string | undefined, stepKey: string) {
  */
 export function SponsorTour({
   offerWelcome = false,
+  hasPrizeTrack,
 }: {
   offerWelcome?: boolean;
+  /** False drops the Judging steps and how-to (no Judging in the nav). */
+  hasPrizeTrack?: boolean;
 }) {
   const router = useRouter();
+  const tours = useMemo(() => toursFor(hasPrizeTrack), [hasPrizeTrack]);
   const sponsor =
     typeof router.query.uuid === "string" && uuidRegex.test(router.query.uuid)
       ? router.query.uuid
@@ -115,21 +129,23 @@ export function SponsorTour({
 
   useEffect(() => {
     if (!sponsor) return;
-    const saved = loadProgress(getStorage("session"), SPONSOR_TOURS, sponsor);
+    const saved = loadProgress(
+      getStorage("session"),
+      tours as Record<string, TourDef>,
+      sponsor,
+    );
     setProgress(saved);
     setOffer(
       offerWelcome && !saved && !hasSeenWelcome(getStorage("local"), sponsor),
     );
-  }, [sponsor, offerWelcome]);
+  }, [sponsor, offerWelcome, tours]);
 
   const update = useCallback((next: TourProgress | null) => {
     saveProgress(getStorage("session"), next);
     setProgress(next);
   }, []);
 
-  const def = progress
-    ? SPONSOR_TOURS[progress.tour as SponsorTourId]
-    : undefined;
+  const def = progress ? tours[progress.tour as SponsorTourId] : undefined;
   const step = def && progress ? def.steps[progress.step] : undefined;
   const { el, settled } = useTarget(
     step?.placement === "center" ? undefined : step?.target,
@@ -162,14 +178,28 @@ export function SponsorTour({
   );
 
   const start = (id: SponsorTourId) => {
+    const tourDef = tours[id];
+    if (!tourDef) return;
     setOffer(false);
     setMenuOpen(false);
     if (id === WELCOME_TOUR_ID) markWelcomeSeen(getStorage("local"), sponsor);
     const next = { tour: id, step: 0, sponsor };
     update(next);
-    const href = hrefForMove(SPONSOR_TOURS[id], 0, current, sponsor);
+    const href = hrefForMove(tourDef, 0, current, sponsor);
     if (href) void router.push(href);
   };
+  const startRef = useRef(start);
+  startRef.current = start;
+  useEffect(() => {
+    const onStart = (e: Event) => {
+      const id = (e as CustomEvent<unknown>).detail;
+      if (typeof id === "string") {
+        startRef.current(id as SponsorTourId);
+      }
+    };
+    window.addEventListener(START_EVENT, onStart);
+    return () => window.removeEventListener(START_EVENT, onStart);
+  }, []);
 
   // waitForClick: advance on the sponsor's own click on the target. The
   // listener only watches; the click still reaches the app (a link
@@ -274,7 +304,7 @@ export function SponsorTour({
               {copy.menu.heading}
             </p>
             <ul className="m-0 flex list-none flex-col p-0">
-              {HOW_TO_TOURS.map((id) => (
+              {howToToursFor(hasPrizeTrack).map((id) => (
                 <li key={id}>
                   <MenuItem onClick={() => start(id)}>{tourName(id)}</MenuItem>
                 </li>
@@ -341,7 +371,7 @@ function TourOffer({
   return (
     <section
       aria-label={copy.offer.title}
-      className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex flex-col gap-3 rounded-dashboard-2xl bg-dashboard-bg-surface p-4 font-figtree font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card duration-300 ease-out animate-in fade-in-0 slide-in-from-bottom-4 motion-reduce:animate-none sm:inset-x-auto sm:right-6 sm:w-[340px]"
+      className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 flex flex-col gap-3 rounded-dashboard-2xl bg-dashboard-bg-surface p-4 font-figtree font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card duration-300 ease-out animate-in fade-in-0 slide-in-from-bottom-4 motion-reduce:animate-none sm:inset-x-auto sm:right-6 sm:w-[340px] md:bottom-6"
     >
       <div className="flex flex-col gap-0.5">
         <h2 className="m-0 text-base font-semibold">{copy.offer.title}</h2>

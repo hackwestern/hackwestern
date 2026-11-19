@@ -162,17 +162,33 @@ export function TourOverlay({
     height: rect.height + RING_PAD * 2,
   };
 
+  // A target in the sponsor shell's bottom tab bar (below md, which is
+  // wider than this overlay's own phone breakpoint) always gets its
+  // callout above it, whatever the step asks for: beside a bottom tab
+  // there's no room.
+  const inTabBar = !!anchor?.closest("[data-sponsor-tabbar]");
+
   let calloutStyle: React.CSSProperties | undefined;
   if (!narrow && hole && size && viewport.width) {
     const placed = placeCallout(
       hole,
       size,
       viewport,
-      (step.placement ?? "bottom") as Exclude<TourPlacement, "center">,
+      inTabBar
+        ? "top"
+        : ((step.placement ?? "bottom") as Exclude<TourPlacement, "center">),
     );
     calloutStyle = { top: placed.top, left: placed.left };
   }
   const centred = !narrow && !hole;
+  // Phones dock the callout as a bottom sheet; for a tab bar target, or
+  // any target down where that sheet would cover it, dock it to the top.
+  const dockTop =
+    narrow &&
+    !!hole &&
+    (inTabBar ||
+      (viewport.height > 0 &&
+        hole.top + hole.height > viewport.height - (size?.height ?? 0)));
   const waiting = step.waitForClick && !!hole;
   const last = index === total - 1;
 
@@ -255,9 +271,11 @@ export function TourOverlay({
           layer,
           "flex flex-col gap-3 bg-dashboard-bg-surface p-5 font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card focus:outline-none",
           "duration-200 ease-out animate-in fade-in-0 motion-reduce:animate-none",
-          narrow
-            ? "inset-x-0 bottom-0 rounded-t-dashboard-2xl pb-[max(1.25rem,env(safe-area-inset-bottom))] slide-in-from-bottom-4"
-            : "w-[min(340px,calc(100vw-32px))] rounded-dashboard-2xl zoom-in-95",
+          narrow && dockTop
+            ? "inset-x-0 top-0 rounded-b-dashboard-2xl pt-[max(1.25rem,env(safe-area-inset-top))] slide-in-from-top-4"
+            : narrow
+              ? "inset-x-0 bottom-0 rounded-t-dashboard-2xl pb-[max(1.25rem,env(safe-area-inset-bottom))] slide-in-from-bottom-4"
+              : "w-[min(340px,calc(100vw-32px))] rounded-dashboard-2xl zoom-in-95",
           centred && "inset-0 m-auto h-fit",
           // Hidden until measured, so it never flashes at 0,0.
           !narrow && hole && !calloutStyle && "invisible",

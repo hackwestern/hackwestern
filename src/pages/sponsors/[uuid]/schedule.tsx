@@ -74,11 +74,7 @@ export default function SponsorSchedulePage() {
   );
 
   const shell = (children: React.ReactNode) => (
-    <SponsorShell
-      wide
-      title={copy.seoTitle}
-      backHref={validUuid ? `/sponsors/${id}` : undefined}
-    >
+    <SponsorShell wide title={copy.seoTitle}>
       {children}
     </SponsorShell>
   );
@@ -184,7 +180,10 @@ export default function SponsorSchedulePage() {
         sponsorName={data.sponsorName}
         workshops={data.workshops}
       />
-      <SponsorHelp sponsor={id} />
+      {/* In the side nav from tablets up. */}
+      <div className="md:hidden">
+        <SponsorHelp />
+      </div>
       <ReadAt iso={data.readAt} />
     </>,
   );

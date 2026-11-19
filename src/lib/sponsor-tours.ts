@@ -2,6 +2,10 @@
 // `data-tour` target, where the callout sits and whether it waits for the
 // sponsor's own click. Copy comes from src/content/sponsor-tour.ts.
 //
+// The nav steps (nav-*) point at the side nav on tablets and up and at the
+// phone tab bar otherwise; whichever is visible is the target, and the
+// callout goes beside it when there's room, else above.
+//
 // The coffee chat steps target the coffee chats v2 page (sd-room-blocks):
 // the Your chats / Candidates tabs and the Candidates panel.
 
@@ -33,30 +37,30 @@ const tours = {
       },
       {
         id: "scan",
-        page: "home",
-        target: "tile-scan",
-        placement: "bottom",
+        page: "any",
+        target: "nav-scan",
+        placement: "right",
         ...t.welcome.steps.scan,
       },
       {
         id: "chats",
-        page: "home",
-        target: "tile-chats",
-        placement: "bottom",
+        page: "any",
+        target: "nav-chats",
+        placement: "right",
         ...t.welcome.steps.chats,
       },
       {
         id: "schedule",
-        page: "home",
-        target: "tile-schedule",
-        placement: "bottom",
+        page: "any",
+        target: "nav-schedule",
+        placement: "right",
         ...t.welcome.steps.schedule,
       },
       {
         id: "judging",
-        page: "home",
-        target: "tile-judging",
-        placement: "top",
+        page: "any",
+        target: "nav-judging",
+        placement: "right",
         ...t.welcome.steps.judging,
       },
       {
@@ -88,9 +92,9 @@ const tours = {
     steps: [
       {
         id: "scan",
-        page: "home",
-        target: "tile-scan",
-        placement: "bottom",
+        page: "any",
+        target: "nav-scan",
+        placement: "right",
         waitForClick: true,
         ...t.coffeeChat.steps.scan,
       },
@@ -192,11 +196,11 @@ const tours = {
     id: "judging",
     steps: [
       {
-        id: "tile",
-        page: "home",
-        target: "tile-judging",
-        placement: "top",
-        ...t.judging.steps.tile,
+        id: "nav",
+        page: "any",
+        target: "nav-judging",
+        placement: "right",
+        ...t.judging.steps.nav,
       },
       {
         id: "intro",
@@ -258,3 +262,33 @@ export const HOW_TO_TOURS: readonly SponsorTourId[] = [
 ];
 
 export const tourName = (id: SponsorTourId): string => t[id].name;
+
+/** Welcome tour steps about Judging (gone for sponsors who don't judge). */
+const JUDGING_STEP_IDS = new Set(["judging"]);
+
+/**
+ * The tours a sponsor gets. Without a prize track there's no Judging in
+ * the nav, so the welcome tour skips its Judging step and the "Judging on
+ * Sunday" how-to is left out. `undefined` (still loading) keeps them all.
+ */
+export function toursFor(
+  hasPrizeTrack: boolean | undefined,
+): Partial<Record<SponsorTourId, TourDef>> {
+  if (hasPrizeTrack !== false) return SPONSOR_TOURS;
+  const { judging: _judging, ...rest } = SPONSOR_TOURS;
+  return {
+    ...rest,
+    welcome: {
+      ...rest.welcome,
+      steps: rest.welcome.steps.filter((s) => !JUDGING_STEP_IDS.has(s.id)),
+    },
+  };
+}
+
+/** The "?" menu's how-tos for a sponsor, in menu order. */
+export function howToToursFor(
+  hasPrizeTrack: boolean | undefined,
+): readonly SponsorTourId[] {
+  const tours = toursFor(hasPrizeTrack);
+  return HOW_TO_TOURS.filter((id) => id in tours);
+}

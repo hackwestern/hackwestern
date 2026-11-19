@@ -141,9 +141,9 @@ export const sponsorTourCopy = {
     judging: {
       name: "Judging on Sunday",
       steps: {
-        tile: {
+        nav: {
           title: "Judging opens Sunday",
-          body: "This tile unlocks at 9:00 AM on Sunday. Come to the judging debrief at 8:30 AM first.",
+          body: "Judging unlocks at 9:00 AM on Sunday. Come to the judging debrief at 8:30 AM first.",
         },
         intro: {
           title: "Your judging page",
