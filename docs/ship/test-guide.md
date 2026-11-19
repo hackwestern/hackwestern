@@ -2,7 +2,7 @@
 
 Written 2026-11-19 from the code, not the briefs. Where a handoff and the code disagree, this guide follows the code and says so.
 
-`coffee-prefs` (HEAD 4ba0a61b) has tracks B (invites), C (coffee board), D (My sponsors, Help, Now and next) and E (sheet). Tracks A (sponsor setup) and F (judging) are still in their own worktrees, with uncommitted review fixes. Flows marked "needs A" or "needs F" only work in that worktree until it merges. Until A merges, `/sponsors/[uuid]/coffee-chats` on `coffee-prefs` still shows the old per-slot screens. While this was being written, someone was wiring Send to invites in the `coffee-prefs` working tree. That work isn't committed yet, and the Send flow covers both versions.
+All six tracks (A to F), the integration wiring and both fix loops are merged into `coffee-prefs` and `sponsor-dashboard` (PR #1165). Every flow below runs on either branch. To try invites without messaging anyone, start the app with `COFFEE_INVITES_ENABLED=dry`.
 
 ## Setup
 
