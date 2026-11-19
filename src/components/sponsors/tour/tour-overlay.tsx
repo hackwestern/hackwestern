@@ -162,25 +162,33 @@ export function TourOverlay({
     height: rect.height + RING_PAD * 2,
   };
 
+  // A target in the sponsor shell's bottom tab bar (below md, which is
+  // wider than this overlay's own phone breakpoint) always gets its
+  // callout above it, whatever the step asks for: beside a bottom tab
+  // there's no room.
+  const inTabBar = !!anchor?.closest("[data-sponsor-tabbar]");
+
   let calloutStyle: React.CSSProperties | undefined;
   if (!narrow && hole && size && viewport.width) {
     const placed = placeCallout(
       hole,
       size,
       viewport,
-      (step.placement ?? "bottom") as Exclude<TourPlacement, "center">,
+      inTabBar
+        ? "top"
+        : ((step.placement ?? "bottom") as Exclude<TourPlacement, "center">),
     );
     calloutStyle = { top: placed.top, left: placed.left };
   }
   const centred = !narrow && !hole;
-  // Phones dock the callout as a bottom sheet; when the target is down
-  // where that sheet would cover it (the bottom tab bar), dock it to the
-  // top instead.
+  // Phones dock the callout as a bottom sheet; for a tab bar target, or
+  // any target down where that sheet would cover it, dock it to the top.
   const dockTop =
     narrow &&
     !!hole &&
-    viewport.height > 0 &&
-    hole.top + hole.height > viewport.height - (size?.height ?? 0);
+    (inTabBar ||
+      (viewport.height > 0 &&
+        hole.top + hole.height > viewport.height - (size?.height ?? 0)));
   const waiting = step.waitForClick && !!hole;
   const last = index === total - 1;
 

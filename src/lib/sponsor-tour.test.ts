@@ -17,7 +17,11 @@ import {
   type TourDef,
   type TourStorage,
 } from "~/lib/sponsor-tour";
-import { SPONSOR_TOURS } from "~/lib/sponsor-tours";
+import {
+  howToToursFor,
+  SPONSOR_TOURS,
+  toursFor,
+} from "~/lib/sponsor-tours";
 
 const SPONSOR = "89170676-4186-4912-8a06-fa0eda0ff309";
 
@@ -290,5 +294,22 @@ describe("clickTargetOf", () => {
   it("falls back to the target when nothing inside is clickable", () => {
     const section = node("section", [node("p")]);
     expect(clickTargetOf(section)).toBe(section);
+  });
+});
+
+describe("tours by prize track", () => {
+  it("drops Judging for sponsors without a prize track", () => {
+    const tours = toursFor(false);
+    expect(tours.judging).toBeUndefined();
+    expect(tours.welcome?.steps.map((s) => s.target)).not.toContain(
+      "nav-judging",
+    );
+    expect(howToToursFor(false)).not.toContain("judging");
+  });
+
+  it("keeps everything for prize track sponsors and while loading", () => {
+    expect(toursFor(true)).toBe(SPONSOR_TOURS);
+    expect(toursFor(undefined)).toBe(SPONSOR_TOURS);
+    expect(howToToursFor(true)).toContain("judging");
   });
 });

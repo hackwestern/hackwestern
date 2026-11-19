@@ -14,7 +14,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import SEO from "~/components/seo";
-import { SponsorHelp } from "~/components/sponsors/help-button";
+import {
+  SponsorHelp,
+  SponsorHelpProvider,
+} from "~/components/sponsors/help-button";
 import { VenueMapButton } from "~/components/sponsors/venue-map";
 import {
   SponsorTour,
@@ -53,6 +56,8 @@ type NavItem = {
   href: string;
   /** Judging before Sunday 9:00 AM: greyed, says when it opens on tap. */
   locked?: boolean;
+  /** Small status beside the label in the side nav ("Sun 9 AM", "Sent"). */
+  note?: string;
   /** Side nav only (phones reach the venue through the Map button). */
   sideOnly?: boolean;
 };
@@ -97,12 +102,17 @@ export function SponsorShell({
   );
   const sponsorName = info.data?.sponsorName ?? null;
 
-  // Venue is a section of Home; it's the current item when the URL points
-  // there.
+  // Venue is a section of Home, not a page: Home stays the current page
+  // there, and Venue is marked as the current location while the URL
+  // points at it.
   const hash = router.asPath.split("#")[1] ?? "";
-  const pathActive = NAV_BY_PATH[router.pathname] ?? null;
-  const active: NavId | null =
-    pathActive === "home" && hash === "venue" ? "venue" : pathActive;
+  const active = NAV_BY_PATH[router.pathname] ?? null;
+  const currentOf = (item: NavId): "page" | "location" | undefined =>
+    item === active
+      ? "page"
+      : item === "venue" && active === "home" && hash === "venue"
+        ? "location"
+        : undefined;
 
   const base = `/sponsors/${id}`;
   const withPreview = (href: string) => {
@@ -140,6 +150,11 @@ export function SponsorShell({
                 icon: judgingOpen ? Trophy : Lock,
                 href: `${base}/picks`,
                 locked: !judgingOpen,
+                note: !judgingOpen
+                  ? sponsorVenueCopy.judgingLocked.short
+                  : (info.data?.picksCount ?? 0) > 0
+                    ? copy.judgingSent
+                    : copy.judgingNotSent,
               },
             ]
           : []),
@@ -154,12 +169,14 @@ export function SponsorShell({
     : [];
   const tabs = items.filter((i) => !i.sideOnly);
 
-  return (
+  const frame = (
     <>
       <SEO title={title} noindex />
       <div
         className={cn(
-          "min-h-dvh bg-dashboard-bg-page font-figtree font-medium leading-default text-dashboard-text-heavy md:grid md:grid-cols-[232px_minmax(0,1fr)]",
+          "min-h-dvh bg-dashboard-bg-page font-figtree font-medium leading-default text-dashboard-text-heavy",
+          // No side rail for a missing or invalid link.
+          id && "md:grid md:grid-cols-[232px_minmax(0,1fr)]",
           // Sticky bars at the bottom of a page (judging's send bar) sit
           // above the phone tab bar.
           id &&
@@ -174,29 +191,23 @@ export function SponsorShell({
         </a>
 
         {/* Side nav: tablets and up */}
-        <aside className="hidden md:sticky md:top-0 md:flex md:h-dvh md:flex-col md:gap-4 md:overflow-y-auto md:border-r md:border-dashboard-border-subtle md:bg-dashboard-bg-surface md:px-3 md:py-5">
-          <SponsorMark name={sponsorName} loading={!!id && info.isLoading} />
-          {id && (
+        {id && (
+          <aside className="hidden md:sticky md:top-0 md:flex md:h-dvh md:flex-col md:gap-4 md:overflow-y-auto md:border-r md:border-dashboard-border-subtle md:bg-dashboard-bg-surface md:px-3 md:py-5">
+            <SponsorMark name={sponsorName} loading={info.isLoading} />
             <nav aria-label={copy.label}>
               <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
                 {items.map((item) => (
                   <li key={item.id}>
                     <SideNavItem
                       item={{ ...item, href: withPreview(item.href) }}
-                      current={active === item.id}
+                      current={currentOf(item.id)}
                     />
                   </li>
                 ))}
               </ul>
             </nav>
-          )}
-          {id && (
             <div className="mt-auto flex flex-col gap-1 pt-4">
-              <SponsorHelp
-                sponsor={id}
-                boothLocation={info.data?.boothLocation}
-                variant="nav"
-              />
+              <SponsorHelp variant="nav" />
               <button
                 type="button"
                 onClick={() => startSponsorTour(WELCOME_TOUR_ID)}
@@ -210,13 +221,16 @@ export function SponsorShell({
                 {copy.howItWorks}
               </button>
             </div>
-          )}
-        </aside>
+          </aside>
+        )}
 
         <div className="flex min-w-0 flex-col">
           <header className="flex min-h-14 items-center gap-2 border-b border-dashboard-border-subtle bg-dashboard-bg-surface px-4 py-2 sm:px-5 md:px-8">
             <TopBarWhen />
-            <SponsorTour offerWelcome={active === "home"} />
+            <SponsorTour
+              offerWelcome={active === "home"}
+              hasPrizeTrack={info.data?.hasPrizeTrack}
+            />
             <VenueMapButton />
           </header>
 
@@ -245,6 +259,7 @@ export function SponsorShell({
         {tabs.length > 0 && (
           <nav
             aria-label={copy.label}
+            data-sponsor-tabbar=""
             className="fixed inset-x-0 bottom-0 z-30 border-t border-dashboard-border-subtle bg-dashboard-bg-surface pb-[env(safe-area-inset-bottom)] md:hidden"
           >
             <ul
@@ -257,7 +272,7 @@ export function SponsorShell({
                 <li key={item.id} className="flex">
                   <TabItem
                     item={{ ...item, href: withPreview(item.href) }}
-                    current={active === item.id}
+                    current={currentOf(item.id)}
                   />
                 </li>
               ))}
@@ -266,6 +281,16 @@ export function SponsorShell({
         )}
       </div>
     </>
+  );
+
+  // One help request for the whole page, shared by the side nav and the
+  // page's own card on phones.
+  return id ? (
+    <SponsorHelpProvider sponsor={id} boothLocation={info.data?.boothLocation}>
+      {frame}
+    </SponsorHelpProvider>
+  ) : (
+    frame
   );
 }
 
@@ -326,7 +351,9 @@ function TopBarWhen() {
   );
 }
 
-function SideNavItem({ item, current }: { item: NavItem; current: boolean }) {
+type Current = "page" | "location" | undefined;
+
+function SideNavItem({ item, current }: { item: NavItem; current: Current }) {
   const Icon = item.icon;
   const row =
     "flex min-h-11 w-full items-center gap-2.5 rounded-dashboard-lg px-3 text-left text-[15px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary";
@@ -334,6 +361,16 @@ function SideNavItem({ item, current }: { item: NavItem; current: boolean }) {
     <>
       <Icon aria-hidden className="size-[18px] shrink-0" strokeWidth={1.75} />
       <span className="min-w-0 flex-1 truncate">{item.label}</span>
+      {item.note && (
+        <span
+          className={cn(
+            "shrink-0 text-xs font-medium",
+            !item.locked && "text-dashboard-text-light",
+          )}
+        >
+          {item.note}
+        </span>
+      )}
     </>
   );
   if (item.locked) {
@@ -350,9 +387,6 @@ function SideNavItem({ item, current }: { item: NavItem; current: boolean }) {
           )}
         >
           {inner}
-          <span className="shrink-0 text-xs font-medium">
-            {sponsorVenueCopy.judgingLocked.short}
-          </span>
         </button>
       </LockedJudging>
     );
@@ -361,12 +395,14 @@ function SideNavItem({ item, current }: { item: NavItem; current: boolean }) {
     <Link
       href={item.href}
       data-tour={`nav-${item.id}`}
-      aria-current={current ? "page" : undefined}
+      aria-current={current}
       className={cn(
         row,
-        current
+        current === "page"
           ? "bg-dashboard-bg-nav text-dashboard-text-active"
-          : "text-dashboard-text-medium [@media(hover:hover)]:hover:bg-dashboard-bg-inset",
+          : current === "location"
+            ? "text-dashboard-text-active [@media(hover:hover)]:hover:bg-dashboard-bg-inset"
+            : "text-dashboard-text-medium [@media(hover:hover)]:hover:bg-dashboard-bg-inset",
         pressable,
       )}
     >
@@ -375,7 +411,7 @@ function SideNavItem({ item, current }: { item: NavItem; current: boolean }) {
   );
 }
 
-function TabItem({ item, current }: { item: NavItem; current: boolean }) {
+function TabItem({ item, current }: { item: NavItem; current: Current }) {
   const Icon = item.icon;
   const cell =
     "flex min-h-14 w-full flex-col items-center justify-center gap-0.5 rounded-dashboard-lg px-1 text-[11px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary";
@@ -403,7 +439,7 @@ function TabItem({ item, current }: { item: NavItem; current: boolean }) {
     <Link
       href={item.href}
       data-tour={`nav-${item.id}`}
-      aria-current={current ? "page" : undefined}
+      aria-current={current}
       className={cn(
         cell,
         current ? "text-dashboard-action-primary" : "text-dashboard-text-light",
@@ -432,6 +468,7 @@ function LockedJudging({
           align={side === "top" ? "end" : "start"}
           sideOffset={8}
           collisionPadding={16}
+          aria-label={copy.judgingLockedTitle}
           className="z-50 w-[min(280px,calc(100vw-32px))] rounded-dashboard-lg bg-dashboard-bg-surface p-4 font-figtree text-sm font-medium leading-relaxed text-dashboard-text-medium shadow-dashboard-card duration-150 ease-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:animate-none"
         >
           <p role="status" className="m-0">

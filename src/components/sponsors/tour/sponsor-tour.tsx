@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import * as Popover from "@radix-ui/react-popover";
 import { CircleHelp, Compass } from "lucide-react";
@@ -20,11 +20,12 @@ import {
   resolveStep,
   saveProgress,
   targetSelector,
+  type TourDef,
   type TourProgress,
 } from "~/lib/sponsor-tour";
 import {
-  HOW_TO_TOURS,
-  SPONSOR_TOURS,
+  howToToursFor,
+  toursFor,
   tourName,
   WELCOME_TOUR_ID,
   type SponsorTourId,
@@ -108,10 +109,14 @@ function useTarget(target: string | undefined, stepKey: string) {
  */
 export function SponsorTour({
   offerWelcome = false,
+  hasPrizeTrack,
 }: {
   offerWelcome?: boolean;
+  /** False drops the Judging steps and how-to (no Judging in the nav). */
+  hasPrizeTrack?: boolean;
 }) {
   const router = useRouter();
+  const tours = useMemo(() => toursFor(hasPrizeTrack), [hasPrizeTrack]);
   const sponsor =
     typeof router.query.uuid === "string" && uuidRegex.test(router.query.uuid)
       ? router.query.uuid
@@ -124,21 +129,23 @@ export function SponsorTour({
 
   useEffect(() => {
     if (!sponsor) return;
-    const saved = loadProgress(getStorage("session"), SPONSOR_TOURS, sponsor);
+    const saved = loadProgress(
+      getStorage("session"),
+      tours as Record<string, TourDef>,
+      sponsor,
+    );
     setProgress(saved);
     setOffer(
       offerWelcome && !saved && !hasSeenWelcome(getStorage("local"), sponsor),
     );
-  }, [sponsor, offerWelcome]);
+  }, [sponsor, offerWelcome, tours]);
 
   const update = useCallback((next: TourProgress | null) => {
     saveProgress(getStorage("session"), next);
     setProgress(next);
   }, []);
 
-  const def = progress
-    ? SPONSOR_TOURS[progress.tour as SponsorTourId]
-    : undefined;
+  const def = progress ? tours[progress.tour as SponsorTourId] : undefined;
   const step = def && progress ? def.steps[progress.step] : undefined;
   const { el, settled } = useTarget(
     step?.placement === "center" ? undefined : step?.target,
@@ -171,12 +178,14 @@ export function SponsorTour({
   );
 
   const start = (id: SponsorTourId) => {
+    const tourDef = tours[id];
+    if (!tourDef) return;
     setOffer(false);
     setMenuOpen(false);
     if (id === WELCOME_TOUR_ID) markWelcomeSeen(getStorage("local"), sponsor);
     const next = { tour: id, step: 0, sponsor };
     update(next);
-    const href = hrefForMove(SPONSOR_TOURS[id], 0, current, sponsor);
+    const href = hrefForMove(tourDef, 0, current, sponsor);
     if (href) void router.push(href);
   };
   const startRef = useRef(start);
@@ -184,7 +193,7 @@ export function SponsorTour({
   useEffect(() => {
     const onStart = (e: Event) => {
       const id = (e as CustomEvent<unknown>).detail;
-      if (typeof id === "string" && id in SPONSOR_TOURS) {
+      if (typeof id === "string") {
         startRef.current(id as SponsorTourId);
       }
     };
@@ -295,7 +304,7 @@ export function SponsorTour({
               {copy.menu.heading}
             </p>
             <ul className="m-0 flex list-none flex-col p-0">
-              {HOW_TO_TOURS.map((id) => (
+              {howToToursFor(hasPrizeTrack).map((id) => (
                 <li key={id}>
                   <MenuItem onClick={() => start(id)}>{tourName(id)}</MenuItem>
                 </li>

@@ -182,7 +182,7 @@ export default function SponsorSchedulePage() {
       />
       {/* In the side nav from tablets up. */}
       <div className="md:hidden">
-        <SponsorHelp sponsor={id} />
+        <SponsorHelp />
       </div>
       <ReadAt iso={data.readAt} />
     </>,

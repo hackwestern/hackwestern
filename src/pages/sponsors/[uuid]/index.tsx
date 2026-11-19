@@ -111,10 +111,17 @@ export default function SponsorHubPage() {
           </p>
         </section>
 
+        {/* Judging isn't in the nav for them, so say why, once, quietly. */}
+        {data?.hasPrizeTrack === false && (
+          <p className="m-0 text-sm text-dashboard-text-light">
+            {copy.noPrizeTrack}
+          </p>
+        )}
+
         {/* Need help: pings the sponsor team in Slack. In the side nav
             from tablets up. */}
         <div className="md:hidden">
-          <SponsorHelp sponsor={id} boothLocation={boothLocation} />
+          <SponsorHelp />
         </div>
 
         {/* Venue (the side nav's Venue item): important places, then the

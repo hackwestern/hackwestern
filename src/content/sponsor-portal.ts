@@ -27,32 +27,15 @@ export const sponsorPortalCopy = {
     venue: "Venue",
     howItWorks: "How this works",
     judgingLocked: (opens: string) => `Judging, locked. ${opens}`,
+    judgingLockedTitle: "When judging opens",
+    /** Beside Judging once it's open: has the team sent its top picks? */
+    judgingSent: "Sent",
+    judgingNotSent: "Not sent",
     /** Slim top bar: "Hack Western 13 · Sat 2:14 PM". */
     now: (when: string) => `Hack Western 13 · ${when}`,
   },
-  // The action tiles under the welcome card.
-  actions: {
-    label: "Quick actions",
-    scan: { title: "Scan a badge", body: "Offer a hacker a coffee chat" },
-    chats: { title: "Coffee chats", body: "Your chats and candidates" },
-    schedule: {
-      title: "Your schedule",
-      body: "Booth, workshop and judging times",
-    },
-    picks: {
-      title: "Judging",
-      body: (top: number) => `Score projects and submit your top ${top}`,
-      picked: (n: number) => `${n} submitted`,
-      pending: "Not submitted",
-      /** Sponsors without a prize track (src/content/sponsor-prize-tracks.ts). */
-      noTrack: {
-        badge: "No prize track",
-        body: "Judging is for prize track sponsors",
-        message:
-          "Your team doesn't have a prize track this year, so there's no judging to do. If that's wrong, tell your Hack Western contact.",
-      },
-    },
-  },
+  /** Home, for sponsors without a prize track (no Judging in the nav). */
+  noPrizeTrack: "No prize track: you're not judging this weekend.",
   details: {
     heading: "Event details",
     booth: { label: "Booth", hint: "Your assigned sponsor booth table" },
