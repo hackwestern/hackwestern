@@ -650,6 +650,15 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 - Hacker invites and each primary contact's confirmed schedule from Send (a TODO in the router's `send`).
 - Coffee Chat Setup tab columns for the session model (hackers per chat, reps with chats wanted and free sessions, primary rep).
 - Room Grid tab: merged 4-row blocks and grey organizer bookings (needs batchUpdate). Desktop drag to move isn't built yet (tap Move works everywhere). The organizer tour's coffee steps still describe the old board.
+
+**Code-review fixes (same day):**
+- If the run of show can't be read, every write (auto-schedule, apply fix, move, book, move booking, send) fails with PRECONDITION_FAILED and the UI turns those buttons off with "Can't read the run of show…". Removing a chat or booking still works.
+- All board writes take one Postgres advisory lock (`BOARD_LOCK_KEY`), then re-read and re-check the board in the same transaction, because chats and bookings are separate tables with no shared constraint. Unique violations become CONFLICT ("Someone else just changed the board…"), foreign key violations BAD_REQUEST. bookRoom checks its sponsor exists.
+- Every chat on the board (pinned and sent included) is re-checked on each load: sponsor unsubmitted, now in their workshop window, or rep no longer free. Each becomes a "move to … / remove" suggested fix and doesn't count in "Scheduled N of M".
+- Every list the scheduler reads is ordered down to id, so the same rows give the same board.
+- A submitted sponsor whose reps have no usable session shows "No availability", not "0 of 0".
+- Send is labelled "Save & confirm schedule" and its toast says hacker invites aren't sent yet. Removing a sent chat, or moving/removing a booking after Send, re-mirrors the Room Grid tab (only when `sheetWritesEnabled()`).
+- Deferred: manual moves can split a sponsor across buildings in one session (when built, a warning only, never a block). A `maxSessions` cap from a "fewer chats" fix stays until someone changes it, by design. The Help sheet's Send paragraph still describes the invite step that isn't built.
 ## 2026-11-19: Jazz's answers to the full plan (Q1–Q11): simplifications locked in
 
 **Coffee chats, sponsor side:**
