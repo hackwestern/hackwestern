@@ -128,25 +128,15 @@ const _getUserScans = async (userId: string) => {
 };
 
 // * Helper Functions *
-// (anyone can use this function) Gets the scavenger hunt item while keeping in mind soft-deletion
-const getScavengerHuntItemByItemCode = async (itemCode: string) => {
-  const now = new Date();
+// A future deletedAt is a scheduled close
+const notDeleted = () =>
+  or(
+    isNull(scavengerHuntItems.deletedAt),
+    gt(scavengerHuntItems.deletedAt, new Date()),
+  );
 
-  const item = await db.query.scavengerHuntItems.findFirst({
-    where: and(
-      eq(scavengerHuntItems.code, itemCode),
-      or(
-        isNull(scavengerHuntItems.deletedAt),
-        gt(scavengerHuntItems.deletedAt, now),
-      ),
-    ),
-  });
-  if (!item) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
-  }
-
-  return item;
-};
+// Scannable: not deleted and not a draft or disabled
+const isOpen = () => and(eq(scavengerHuntItems.status, "active"), notDeleted());
 
 // * Safe Functions: Check is done within the transaction to avoid race conditions */
 const redeemPrize = async (
@@ -273,7 +263,8 @@ export const scavengerHuntRouter = createTRPCRouter({
   getAllScavengerHuntItems: publicProcedure.query(async () => {
     try {
       const items = await db.query.scavengerHuntItems.findMany({
-        orderBy: (items, { asc }) => [asc(items.code)],
+        where: isOpen(),
+        orderBy: (items, { asc }) => [asc(items.name)],
       });
 
       return items;
@@ -330,24 +321,14 @@ export const scavengerHuntRouter = createTRPCRouter({
       }
     }),
 
-  // Get Scavenger Hunt Item by Code
-  getScavengerHuntItem: publicProcedure
-    .input(z.object({ code: z.string() }))
-    .query(async ({ input }) => {
-      return withErrorHandling(async () => {
-        const { code } = input;
-        return await getScavengerHuntItemByItemCode(code);
-      }, "Failed to fetch item");
-    }),
-
   // Get Scavenger Hunt Item by ID
-  getScavengerHuntItemById: publicProcedure
+  getScavengerHuntItemById: protectedOrganizerProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       try {
         const { id } = input;
         const item = await db.query.scavengerHuntItems.findFirst({
-          where: eq(scavengerHuntItems.id, id),
+          where: and(eq(scavengerHuntItems.id, id), isOpen()),
         });
 
         if (!item) {
@@ -356,6 +337,7 @@ export const scavengerHuntRouter = createTRPCRouter({
 
         return item;
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to fetch item: " + JSON.stringify(error),
@@ -368,41 +350,29 @@ export const scavengerHuntRouter = createTRPCRouter({
     .input(
       z.object({
         userId: z.string(),
-        itemId: z.number().optional(),
-        itemCode: z.string().optional(),
+        itemId: z.number(),
         activityType: z.enum(scavengerHuntActivityType.enumValues).optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
       try {
-        const { itemId, itemCode } = input;
+        const { itemId } = input;
         const userId = await resolveScannedUserId(input.userId);
         const scannerId = ctx.session.user.id; // Get the organizer who is scanning
 
-        // Check if item exists - prefer itemId over itemCode. Deleted items
-        // can't be scanned; a future deletedAt is a scheduled close.
-        const isOpen = or(
-          isNull(scavengerHuntItems.deletedAt),
-          gt(scavengerHuntItems.deletedAt, new Date()),
-        );
-        let item;
-        if (itemId) {
-          item = await db.query.scavengerHuntItems.findFirst({
-            where: and(eq(scavengerHuntItems.id, itemId), isOpen),
-          });
-        } else if (itemCode) {
-          item = await db.query.scavengerHuntItems.findFirst({
-            where: and(eq(scavengerHuntItems.code, itemCode), isOpen),
-          });
-        } else {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Either itemId or itemCode must be provided",
-          });
-        }
+        // Deleted items can't be scanned; a future deletedAt is a scheduled close.
+        const item = await db.query.scavengerHuntItems.findFirst({
+          where: and(eq(scavengerHuntItems.id, itemId), notDeleted()),
+        });
 
         if (!item) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+        }
+        if (item.status !== "active") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `This activity is ${item.status === "draft" ? "a draft" : "disabled"} and can't be scanned`,
+          });
         }
 
         // Check if user exists
@@ -589,8 +559,7 @@ export const scavengerHuntRouter = createTRPCRouter({
         userId: scavengerHuntScans.userId,
         itemId: scavengerHuntScans.itemId,
         createdAt: scavengerHuntScans.createdAt,
-        itemCode: scavengerHuntItems.code,
-        itemDescription: scavengerHuntItems.description,
+        itemName: scavengerHuntItems.name,
         itemPoints: scavengerHuntItems.points,
         itemWinPoints: scavengerHuntItems.winPoints,
         itemType: scavengerHuntItems.type,
@@ -625,9 +594,8 @@ export const scavengerHuntRouter = createTRPCRouter({
       id: `scan-${scan.userId}-${scan.itemId}-${scan.activityType}`,
       type: "scan" as const,
       itemId: scan.itemId,
-      itemCode: scan.itemCode,
       itemType: scan.itemType,
-      itemDescription: scan.itemDescription,
+      itemName: scan.itemName,
       points:
         (scan.activityType === "win" ? scan.itemWinPoints : scan.itemPoints) ??
         0,
@@ -638,9 +606,8 @@ export const scavengerHuntRouter = createTRPCRouter({
       id: `redemption-${redemption.userId}-${redemption.rewardId}-${redemption.createdAt?.getTime()}`,
       type: "redemption" as const,
       rewardId: redemption.rewardId,
-      itemCode: null,
       itemType: null,
-      itemDescription:
+      itemName:
         redemption.rewardName ?? redemption.rewardDescription ?? "Reward",
       points: -(redemption.costPoints ?? 0), // Negative points for redemptions
       createdAt: redemption.createdAt,
@@ -760,7 +727,7 @@ export const scavengerHuntRouter = createTRPCRouter({
             or(
               ilike(users.name, pattern),
               ilike(users.email, pattern),
-              ilike(scavengerHuntItems.description, pattern),
+              ilike(scavengerHuntItems.name, pattern),
               ilike(scannerUsers.name, pattern),
             )!,
           );
@@ -777,8 +744,7 @@ export const scavengerHuntRouter = createTRPCRouter({
               createdAt: scavengerHuntScans.createdAt,
               userName: users.name,
               userEmail: users.email,
-              itemCode: scavengerHuntItems.code,
-              itemDescription: scavengerHuntItems.description,
+              itemName: scavengerHuntItems.name,
               itemType: scavengerHuntItems.type,
               activityType: scavengerHuntScans.activityType,
               scannerName: scannerUsers.name,
@@ -823,7 +789,7 @@ export const scavengerHuntRouter = createTRPCRouter({
         const scans = pageScans.map((scan) => ({
           id: `${scan.userId}-${scan.itemId}-${scan.activityType}`,
           hackerName: scan.userName ?? scan.userEmail ?? scan.userId,
-          event: `${scan.itemDescription ?? scan.itemCode ?? "Unknown"}${scan.activityType === "win" ? " (Win)" : ""}`,
+          event: `${scan.itemName}${scan.activityType === "win" ? " (Win)" : ""}`,
           type: scan.itemType,
           activityType: scan.activityType,
           scanner:

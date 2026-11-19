@@ -1261,18 +1261,24 @@ export const scavengerHuntActivityType = pgEnum(
   ["attendance", "win"],
 );
 
+export const scavengerHuntItemStatus = pgEnum("scavenger_hunt_item_status", [
+  "draft",
+  "active",
+  "disabled",
+]);
+
 export const scavengerHuntItems = pgTable(
   "scavenger_hunt_item",
   {
     id: serial("id").primaryKey(),
-    code: varchar("code", { length: 12 }).unique().notNull(),
     points: smallint("points").default(1).notNull(),
-    description: text("description"),
+    name: text("name").notNull(),
     type: scavengerHuntItemType("type").notNull(),
     winPoints: smallint("win_points"),
     startsAt: timestamp("starts_at", { mode: "date", precision: 3 }).notNull(),
     endsAt: timestamp("ends_at", { mode: "date", precision: 3 }).notNull(),
     room: varchar("room", { length: 255 }),
+    status: scavengerHuntItemStatus("status").default("active").notNull(),
     deletedAt: timestamp("deleted_at", { mode: "date", precision: 3 }),
   },
   (t) => [
@@ -1280,6 +1286,9 @@ export const scavengerHuntItems = pgTable(
       "scavenger_hunt_item_win_points_activity_only",
       sql`${t.winPoints} IS NULL OR ${t.type} = 'activity'`,
     ),
+    uniqueIndex("scavenger_hunt_item_name_unique")
+      .on(sql`lower(${t.name})`)
+      .where(sql`${t.deletedAt} IS NULL`),
   ],
 );
 

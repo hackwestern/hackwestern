@@ -14,13 +14,12 @@ export class ScavengerHuntItemSeeder
   createRandom() {
     const startsAt = faker.date.soon({ days: 3 });
     return {
-      code: faker.string.alphanumeric(6).toUpperCase(), // fake scan code
       points: faker.number.int({ min: 1, max: 50 }), // assign random points
       type: faker.helpers.arrayElement(scavengerHuntItemType.enumValues),
       startsAt,
       endsAt: new Date(startsAt.getTime() + 60 * 60 * 1000),
       deletedAt: null,
-      description: faker.lorem.text(), // assign random text as description
+      name: `${faker.lorem.words(2)} ${faker.string.alphanumeric(4)}`,
     };
   }
 }

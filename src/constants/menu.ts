@@ -29,8 +29,9 @@ export interface AllMealData {
   sunday: DailyMeals;
 }
 
-// From Events' "Catering FINAL Details" doc (Nov 2026). null = not confirmed
-// by the vendor yet, shown as TBD. Ask Events before changing a value.
+// From Events' "Catering FINAL Details" doc and the HW13 hacker package
+// (Nov 2026). null = not confirmed by the vendor yet, shown as TBD. Ask
+// Events before changing a value.
 export const allMeals: AllMealData = {
   friday: {
     breakfast: [],
@@ -112,26 +113,26 @@ export const allMeals: AllMealData = {
         name: "Mango Green Tea with Coconut Jelly",
         vendor: "Chatime",
         allergens: {
-          Halal: null,
+          Halal: true,
           Meat: false,
-          Eggs: null,
-          Nuts: null,
+          Eggs: false,
+          Nuts: false,
           Pork: false,
           Beef: false,
-          Gluten: null,
+          Gluten: false,
         },
       },
       {
         name: "Pearl Milk Tea",
         vendor: "Chatime",
         allergens: {
-          Halal: null,
+          Halal: true,
           Meat: false,
           Eggs: null,
-          Nuts: null,
+          Nuts: false,
           Pork: false,
           Beef: false,
-          Gluten: null,
+          Gluten: false,
         },
       },
     ],
@@ -142,7 +143,7 @@ export const allMeals: AllMealData = {
         name: "Baked Goods (Scones, Muffins, Mini Croissants)",
         vendor: "Black Walnut Bakery Cafe",
         allergens: {
-          Halal: null,
+          Halal: false,
           Meat: false,
           Eggs: null,
           Nuts: false,
@@ -156,7 +157,7 @@ export const allMeals: AllMealData = {
         name: "Fruit Platter",
         vendor: "Black Walnut Bakery Cafe",
         allergens: {
-          Halal: null,
+          Halal: true,
           Meat: false,
           Eggs: false,
           Nuts: false,
@@ -175,7 +176,7 @@ export const allMeals: AllMealData = {
           Halal: false,
           Meat: true,
           Eggs: null,
-          Nuts: false,
+          Nuts: "May Contain",
           Pork: null,
           Beef: null,
           Gluten: true,
@@ -189,7 +190,7 @@ export const allMeals: AllMealData = {
           Halal: true,
           Meat: true,
           Eggs: null,
-          Nuts: false,
+          Nuts: "May Contain",
           Pork: false,
           Beef: null,
           Gluten: true,
@@ -203,7 +204,7 @@ export const allMeals: AllMealData = {
           Halal: null,
           Meat: false,
           Eggs: null,
-          Nuts: false,
+          Nuts: "May Contain",
           Pork: false,
           Beef: false,
           Gluten: true,
@@ -345,17 +346,60 @@ export const allMeals: AllMealData = {
   sunday: {
     breakfast: [
       {
-        name: "Baked Goods",
+        name: "Sesame Shaobing",
         vendor: "Daniel's Bake Bar",
         allergens: {
-          Halal: null,
-          Meat: null,
+          Halal: true,
+          Meat: true,
           Eggs: null,
-          Nuts: null,
-          Pork: null,
+          Nuts: false,
+          Pork: false,
           Beef: null,
-          Gluten: null,
+          Gluten: true,
         },
+        note: "Contains sesame.",
+      },
+      {
+        name: "Ube Brownies",
+        vendor: "Daniel's Bake Bar",
+        allergens: {
+          Halal: true,
+          Meat: false,
+          Eggs: null,
+          Nuts: false,
+          Pork: false,
+          Beef: false,
+          Gluten: true,
+        },
+        note: "Vegetarian. Sesame-free.",
+      },
+      {
+        name: "Black Sesame Banana Muffin",
+        vendor: "Daniel's Bake Bar",
+        allergens: {
+          Halal: true,
+          Meat: false,
+          Eggs: false,
+          Nuts: false,
+          Pork: false,
+          Beef: false,
+          Gluten: true,
+        },
+        note: "Vegan. Contains sesame.",
+      },
+      {
+        name: "Pandan Coconut Muffin",
+        vendor: "Daniel's Bake Bar",
+        allergens: {
+          Halal: true,
+          Meat: false,
+          Eggs: false,
+          Nuts: false,
+          Pork: false,
+          Beef: false,
+          Gluten: false,
+        },
+        note: "Vegan and gluten-free. Sesame-free.",
       },
     ],
     lunch: [

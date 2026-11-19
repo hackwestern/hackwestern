@@ -14,7 +14,7 @@ vi.mock("next-auth", () => ({ getServerSession: vi.fn() }));
 vi.mock("~/server/auth", () => ({ authOptions: {} }));
 vi.mock("~/server/db", () => ({ db: {} }));
 vi.mock("next/router", () => ({
-  useRouter: () => ({ query: { activity: "booth" }, push: vi.fn() }),
+  useRouter: () => ({ query: { activity: "1" }, push: vi.fn() }),
 }));
 // Every frame "contains" the same QR code.
 vi.mock("jsqr", () => ({ default: () => ({ data: "brave-otter-kite" }) }));
@@ -24,11 +24,8 @@ vi.mock("~/utils/api", () => ({
     scavengerHunt: {
       scan: { useMutation: () => ({ mutateAsync }) },
       getScavengerHuntItemById: {
-        useQuery: () => ({ data: undefined, isLoading: false }),
-      },
-      getScavengerHuntItem: {
         useQuery: () => ({
-          data: { id: 1, code: "booth", description: "Booth" },
+          data: { id: 1, name: "Booth", status: "active" },
           isLoading: false,
         }),
       },

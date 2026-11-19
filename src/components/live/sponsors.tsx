@@ -22,9 +22,13 @@ const SponsorCard = ({
   scale?: number;
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  // Width / height of the logo file, known once it loads
+  const [aspect, setAspect] = useState(3.5);
 
   const logoSize = 200 * scale;
-  const maxHeight = 20 * scale;
+  // Every logo gets the same area, so wide wordmarks and square badges look
+  // equally heavy (instead of filling the card or rendering at file size)
+  const logoArea = 6000 * scale * scale;
   const textSize = scale > 1.5 ? "text-base" : "text-sm";
 
   return (
@@ -59,7 +63,7 @@ const SponsorCard = ({
           href={link}
           target="_blank"
           rel="noopener noreferrer"
-          className={`flex flex-1 cursor-pixel-hover items-center justify-center rounded-dashboard-lg bg-dashboard-bg-surface p-4 transition-all duration-300 ${
+          className={`flex flex-1 cursor-pixel-hover items-center justify-center rounded-dashboard-lg bg-dashboard-bg-surface px-10 py-4 transition-all duration-300 ${scale >= 3 ? "h-48" : scale > 1 ? "h-36" : scale < 1 ? "h-24" : "h-28"} ${
             isExpanded
               ? "border border-transparent"
               : "border border-dashboard-border-subtle hover:border-dashboard-border-outline hover:shadow-dashboard-card"
@@ -70,8 +74,13 @@ const SponsorCard = ({
             alt={name}
             width={logoSize}
             height={logoSize * 0.5}
-            className="h-auto w-auto object-contain"
-            style={{ maxHeight: `${maxHeight * 4}px` }}
+            onLoad={(e) => {
+              const img = e.currentTarget;
+              if (img.naturalWidth && img.naturalHeight)
+                setAspect(img.naturalWidth / img.naturalHeight);
+            }}
+            className="h-auto max-w-full object-contain"
+            style={{ width: `${Math.round(Math.sqrt(logoArea * aspect))}px` }}
           />
         </Link>
       </div>
@@ -119,15 +128,22 @@ const Sponsors = () => {
               scale: 3.0,
             };
           }
-          if (tierName === "Diamond Sponsors" || tierName === "Gold Sponsors") {
+          if (tierName === "Silver Sponsors") {
             return {
-              gridCols: "grid-cols-1 max-w-2xl mx-auto",
+              gridCols: "grid-cols-1 sm:grid-cols-2 max-w-4xl mx-auto",
               titleSize: "text-2xl",
-              scale: 2.16,
+              scale: 1.6,
+            };
+          }
+          if (tierName === "In-Kind Sponsors") {
+            return {
+              gridCols: "grid-cols-2 lg:grid-cols-4",
+              titleSize: "text-xl",
+              scale: 0.8,
             };
           }
 
-          // Bronze and In-Kind use default
+          // Bronze uses default
           return {
             gridCols: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
             titleSize: "text-xl",
