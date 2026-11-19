@@ -630,6 +630,7 @@ describe("sponsorScoring round 2", () => {
         anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
       ).resolves.toMatchObject({ teamIds: ids.slice(0, 3) });
     } finally {
+      // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
       await db.delete(sponsorPresentations);
     }
   });
@@ -664,6 +665,7 @@ describe("sponsorScoring round 2", () => {
         anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
       ).resolves.toMatchObject({ teamIds: ids.slice(0, 3) });
     } finally {
+      // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
       await db.delete(sponsorPresentations);
     }
   });
@@ -704,6 +706,7 @@ describe("sponsorScoring round 2", () => {
         (await anon.sponsorScoring.get({ sponsor: s.id })).final,
       ).toBeNull();
     } finally {
+      // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
       await db.delete(sponsorPresentations);
     }
   });
@@ -726,6 +729,7 @@ describe("sponsorScoring round 2", () => {
         anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
       ).rejects.toMatchObject(noSlot);
     } finally {
+      // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
       await db.delete(sponsorPresentations);
     }
   });
@@ -772,6 +776,7 @@ describe("sponsorScoring round 2", () => {
         anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
       ).resolves.toMatchObject({ teamIds: ids.slice(0, 3) });
     } finally {
+      // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
       await db.delete(sponsorPresentations);
     }
   });

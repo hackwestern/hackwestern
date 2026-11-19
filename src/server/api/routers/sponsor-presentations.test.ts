@@ -80,8 +80,11 @@ beforeEach(async () => {
   mail.mockReset().mockResolvedValue(mailOk);
   rooms.mockReset().mockResolvedValue(new Map());
   dm.mockReset().mockResolvedValue("sent");
+  // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
   await db.delete(sponsorPresentationNotices);
+  // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
   await db.delete(sponsorPresentations);
+  // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
   await db.delete(sponsorShortlistSends);
   organizer = createCaller(
     createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
@@ -276,7 +279,7 @@ describe("sponsorPresentations.notify", () => {
     await expect(organizer.sponsorPresentations.notify()).rejects.toMatchObject(
       {
         code: "PRECONDITION_FAILED",
-        message: expect.stringContaining("SLACK_BOT_TOKEN"),
+        message: expect.stringContaining("SLACK_BOT_TOKEN") as string,
       },
     );
     expect(dm).not.toHaveBeenCalled();

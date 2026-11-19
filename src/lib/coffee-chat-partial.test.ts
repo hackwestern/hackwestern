@@ -101,8 +101,8 @@ describe("scheduling partial sessions", () => {
     expect(Object.fromEntries(partialSessions(sp, SESS))).toEqual({
       "13": { start: 780, end: 810 },
     });
-    expect(chatsAt(sp, SESS[2]!)).toBe(1);
-    expect(chatsAt(sp, SESS[0]!)).toBe(2);
+    expect(chatsAt(sp, SESS[2])).toBe(1);
+    expect(chatsAt(sp, SESS[0])).toBe(2);
   });
 
   test("a rep free only 1-2 gets the 1:00-1:30 part", () => {
