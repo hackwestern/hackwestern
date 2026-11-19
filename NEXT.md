@@ -14,7 +14,7 @@ Build the approved organizer Home from mock `hackwestern-sponsor-dash/mocks/orga
 - sponsor-today-v4 (sponsor Home: chevron Up next, Help bottom left) — likely superseded by sponsor-chats-v3's Home
 - organizer-coffee-v12 (drag, fixed cells, red warnings, modal, per-chat counts, contact-the-rep step, edit hackers, first in line; 6 real sponsors)
 - organizer-invite-preview-v2 (preview + edit invites before Send; only "invited by 2 sponsors" list)
-- organizer-judging-board-v2 (3 rooms, room select, only "Text lead" warning, team modal with members/attendance/links) — agent was still building at wrap; check it finished
+- organizer-judging-board-v2 (3 rooms, room select, only "Text lead" warning, team modal with members/attendance/links) — finished, ready for review
 
 ## Open questions for Jazz
 - Who merges PR #1165 to main (runs prod migrations 0059/0060) before Fri 5 PM; add Production secrets (Slack token, run-of-show sheet creds) and arm `COFFEE_ROUNDS_LIVE` Sat morning.
