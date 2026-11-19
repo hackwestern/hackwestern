@@ -18,6 +18,7 @@ import {
 } from "~/server/api/utils/sponsor-sheets";
 import {
   sponsorStatusCell,
+  writeSponsorCcWorkshop,
   writeSponsorStatus,
 } from "~/server/api/utils/sponsor-info-tab";
 import { prizeTrackNamesFromSheet } from "~/server/api/utils/sponsor-prize-track-sheet";
@@ -137,6 +138,8 @@ describe("Sponsor Day-Of reads", () => {
       maxCoffeeChatMinutes: 0,
       track: "Best Domain",
       hasPrizeTrack: true,
+      // This header has no "At CC workshop" column yet: unknown, not false.
+      atCcWorkshop: null,
     });
     // Blank cells read as before: Not arrived, TBD, an em dash, empty.
     expect(info.get("globex")).toMatchObject({
@@ -327,5 +330,54 @@ describe("sponsor status writes", () => {
       writeSponsorStatus(sheets, "id", "Acme", "Left"),
     ).resolves.toEqual({ ok: false, reason: "no-tab" });
     expect(updates).toHaveLength(0);
+  });
+});
+
+describe("At CC workshop (coffee chat workshop attendance)", () => {
+  // The live sheet: a checkbox column right after "Team track filter".
+  const WITH_CC = [...HEADER.slice(0, 10), "At CC workshop", ...HEADER.slice(10)];
+  const ccRows = [
+    WITH_CC,
+    ["Acme", "In person", "Pat Lead", "", "Checked in", "", "", "", "", "", "TRUE"],
+    ["Globex", "In person", "Sam Lead", "", "", "", "", "", "", "", "FALSE"],
+  ];
+  afterEach(() => {
+    writes.on = false;
+  });
+
+  test("read like Status: ticked, unticked, or null when the column is missing", () => {
+    expect(parseSponsorDayOfColumns(WITH_CC).ccWorkshop).toBe(10);
+    // Adding it doesn't move the fields found by name.
+    expect(parseSponsorDayOfColumns(WITH_CC)).toMatchObject({ status: 4, track: 9, prizeTrack: 16 });
+    const info = sponsorInfoFromDayOf(parseSponsorDayOfRows("Sponsor Day-Of", ccRows)!)!;
+    expect(info.get("acme")!.atCcWorkshop).toBe(true);
+    expect(info.get("globex")!.atCcWorkshop).toBe(false);
+    const without = sponsorInfoFromDayOf(parseSponsorDayOfRows("Sponsor Day-Of", ROWS)!)!;
+    expect(without.get("acme")!.atCcWorkshop).toBeNull();
+  });
+
+  test("written as a checkbox in the sponsor's own row, only with sheet writes on", async () => {
+    const off = fakeSheets({ "Sponsor Day-Of": ccRows });
+    await expect(writeSponsorCcWorkshop(off.sheets, "id", "Globex", true)).resolves.toEqual({
+      ok: true,
+      written: false,
+      reason: "sheet-writes-off",
+    });
+    expect(off.updates).toHaveLength(0);
+
+    writes.on = true;
+    const on = fakeSheets({ "Sponsor Day-Of": ccRows });
+    await expect(writeSponsorCcWorkshop(on.sheets, "id", "Globex", true)).resolves.toEqual({
+      ok: true,
+      range: "'Sponsor Day-Of'!K3",
+    });
+    expect(on.updates).toEqual([{ range: "'Sponsor Day-Of'!K3", values: [[true]] }]);
+    // No column yet: reported, nothing written.
+    const old = fakeSheets({ "Sponsor Day-Of": ROWS });
+    await expect(writeSponsorCcWorkshop(old.sheets, "id", "Acme", true)).resolves.toEqual({
+      ok: false,
+      reason: "no-column",
+    });
+    expect(old.updates).toHaveLength(0);
   });
 });

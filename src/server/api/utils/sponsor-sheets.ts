@@ -7,7 +7,6 @@ import {
 import { google } from "googleapis";
 import { eq } from "drizzle-orm";
 
-import { env } from "~/env";
 import { normalizeCoffeeChatMinutes } from "~/lib/coffee-chats";
 import {
   SPONSOR_STATUS_VALUES,
@@ -170,6 +169,8 @@ const DAY_OF_HEADERS = {
   judgingRoom: ["judging room", "judging room number"],
   track: ["team track filter", "sponsor track"],
   prizeTrack: ["custom api / prize track", "prize track"],
+  /** Checkbox: the sponsor came to the Friday coffee chat workshop. */
+  ccWorkshop: ["at cc workshop"],
   maxMinutes: ["coffee chat max minutes"],
   notes: ["to do / mismatches"],
 } as const;
@@ -419,6 +420,11 @@ export interface SponsorInfoRecord {
    * known (the old Sponsor Status tab, or no such column).
    */
   hasPrizeTrack: boolean | null;
+  /**
+   * Sponsor Day-Of's "At CC workshop" checkbox (came to the Friday coffee
+   * chat workshop). Null when the tab has no such column.
+   */
+  atCcWorkshop: boolean | null;
 }
 
 const warned = new Set<string>();
@@ -455,6 +461,11 @@ export function sponsorInfoFromDayOf(
       `sponsor info: "${dayOf.tab}" has no "Judging room" column; every judging room reads as blank`,
     );
   }
+  if (c.ccWorkshop === -1) {
+    warnOnce(
+      `sponsor info: "${dayOf.tab}" has no "At CC workshop" column; coffee chat workshop attendance can't be read or saved`,
+    );
+  }
   const at = (row: string[], col: number) => (col === -1 ? "" : cell(row, col));
   const map = new Map<string, SponsorInfoRecord>();
   for (const { name, row } of sponsorDayOfRows(dayOf)) {
@@ -471,6 +482,8 @@ export function sponsorInfoFromDayOf(
       track: normalizeSponsorTrack(at(row, c.track)),
       hasPrizeTrack:
         c.prizeTrack === -1 ? null : isTicked(at(row, c.prizeTrack)),
+      atCcWorkshop:
+        c.ccWorkshop === -1 ? null : isTicked(at(row, c.ccWorkshop)),
     });
   }
   return map;
@@ -661,6 +674,7 @@ export async function fetchAllSponsorInfo(
           ),
           track: normalizeSponsorTrack(cell(row, cols.trackCol)),
           hasPrizeTrack: null,
+          atCcWorkshop: null,
         });
       }
     }

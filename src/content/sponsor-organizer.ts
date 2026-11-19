@@ -130,7 +130,8 @@ export const sponsorOrganizerCopy = {
         `${label} for ${sponsor}: ${now}. Press to mark ${to}.`,
       saving: "Saving…",
       failed: (message: string) => `Couldn't save: ${message}`,
-      ccNotTracked: "Not tracked in the app yet",
+      /** Sponsor Day-Of has no "At CC workshop" column yet. */
+      ccNoColumn: 'Add an "At CC workshop" checkbox column to Sponsor Day-Of to track this',
     },
     value: {
       none: "—",

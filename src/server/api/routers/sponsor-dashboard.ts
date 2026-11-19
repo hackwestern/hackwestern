@@ -17,8 +17,38 @@ import {
   getSheetsClient,
   getSpreadsheetId,
 } from "~/server/api/utils/sponsor-sheets";
-import { writeSponsorStatus } from "~/server/api/utils/sponsor-info-tab";
+import {
+  writeSponsorCcWorkshop,
+  writeSponsorStatus,
+  type SponsorStatusWriteResult,
+} from "~/server/api/utils/sponsor-info-tab";
 import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
+
+/**
+ * A Sponsor Day-Of cell write's result: true when written, false when sheet
+ * writes are off (dev, tests: success, nothing reached the sheet). Throws
+ * when the tab, column or sponsor row is missing. A sponsor missing from
+ * Sponsor Day-Of gets no new row there: that tab is the sponsor list,
+ * edited by the spon team.
+ */
+function sheetWriteOk(
+  result: SponsorStatusWriteResult,
+  sponsorName: string,
+  noColumn: string,
+): boolean {
+  if (!result.ok) {
+    throw new TRPCError({
+      code: result.reason === "not-found" ? "NOT_FOUND" : "INTERNAL_SERVER_ERROR",
+      message:
+        result.reason === "not-found"
+          ? statusCopy.errors.notFound(sponsorName)
+          : result.reason === "no-tab"
+            ? statusCopy.errors.noTab
+            : noColumn,
+    });
+  }
+  return !("written" in result);
+}
 
 export const sponsorDashboardRouter = createTRPCRouter({
   /**
@@ -92,6 +122,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
           status: info?.status ?? "Not arrived",
           roomNumber: info?.roomNumber ?? "TBD",
           boothLocation: info?.boothLocation ?? "TBD",
+          atCcWorkshop: info?.atCcWorkshop ?? null,
           onMasterSheet: true,
         };
       });
@@ -114,6 +145,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
           status: info?.status ?? "Not arrived",
           roomNumber: info?.roomNumber ?? "TBD",
           boothLocation: info?.boothLocation ?? "TBD",
+          atCcWorkshop: info?.atCcWorkshop ?? null,
           onMasterSheet: false,
         });
       }
@@ -149,26 +181,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
           input.sponsorName,
           input.status,
         );
-        if (!result.ok) {
-          // A sponsor missing from Sponsor Day-Of gets no new row there:
-          // that tab is the sponsor list, edited by the spon team.
-          throw new TRPCError({
-            code:
-              result.reason === "not-found"
-                ? "NOT_FOUND"
-                : "INTERNAL_SERVER_ERROR",
-            message:
-              result.reason === "not-found"
-                ? statusCopy.errors.notFound(input.sponsorName)
-                : result.reason === "no-tab"
-                  ? statusCopy.errors.noTab
-                  : statusCopy.errors.noColumn,
-          });
-        }
-
-        // Sheet writes off (dev, tests): nothing reached the sheet, which
-        // the caller sees as success with sheetWritten false.
-        const sheetWritten = !("written" in result);
+        const sheetWritten = sheetWriteOk(result, input.sponsorName, statusCopy.errors.noColumn);
         return {
           sponsorName: input.sponsorName,
           status: input.status,
@@ -183,6 +196,44 @@ export const sponsorDashboardRouter = createTRPCRouter({
             error instanceof Error
               ? error.message
               : statusCopy.errors.writeFailed,
+        });
+      }
+    }),
+
+  /**
+   * Tick or untick a sponsor's "At CC workshop" checkbox on Sponsor Day-Of
+   * (came to the Friday coffee chat workshop; My sponsors' pill).
+   * Organizer-only. With sheet writes off nothing is written: success with
+   * sheetWritten false, like setSponsorStatus.
+   */
+  setSponsorCcWorkshop: protectedOrganizerProcedure
+    .input(
+      z.object({
+        sponsorName: z.string().trim().min(1).max(255),
+        attended: z.boolean(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const sheets = await getSheetsClient();
+        const result = await writeSponsorCcWorkshop(
+          sheets,
+          getSpreadsheetId(),
+          input.sponsorName,
+          input.attended,
+        );
+        const sheetWritten = sheetWriteOk(result, input.sponsorName, statusCopy.errors.noCcColumn);
+        return {
+          sponsorName: input.sponsorName,
+          attended: input.attended,
+          sheetWritten,
+          ...(sheetWritten ? {} : { note: statusCopy.notWritten }),
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: error instanceof Error ? error.message : statusCopy.errors.writeFailed,
         });
       }
     }),

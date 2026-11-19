@@ -25,21 +25,24 @@ export function columnLetter(columnNumber: number): string {
 }
 
 /**
- * The A1 cell holding a sponsor's Status on Sponsor Day-Of, matched by name
- * (case and outer spaces ignored); "no-column" when the tab has no Status
- * column, "not-found" when the sponsor has no row.
+ * The A1 cell holding one of a sponsor's Sponsor Day-Of fields (Status by
+ * default, or the "At CC workshop" checkbox), matched by name (case and
+ * outer spaces ignored); "no-column" when the tab has no such column,
+ * "not-found" when the sponsor has no row.
  */
 export function sponsorStatusCell(
   dayOf: SponsorDayOfTab,
   sponsorName: string,
+  field: "status" | "ccWorkshop" = "status",
 ): SponsorStatusWrite {
-  if (dayOf.cols.status === -1) return { ok: false, reason: "no-column" };
+  const col = dayOf.cols[field];
+  if (col === -1) return { ok: false, reason: "no-column" };
   const target = sponsorName.trim().toLowerCase();
   const hit = sponsorDayOfRows(dayOf).find(
     (r) => r.name.toLowerCase() === target,
   );
   if (!hit) return { ok: false, reason: "not-found" };
-  const range = `'${dayOf.tab.replace(/'/g, "''")}'!${columnLetter(dayOf.cols.status + 1)}${hit.sheetRow}`;
+  const range = `'${dayOf.tab.replace(/'/g, "''")}'!${columnLetter(col + 1)}${hit.sheetRow}`;
   return { ok: true, range };
 }
 
@@ -80,4 +83,33 @@ export async function writeSponsorStatus(
     requestBody: { majorDimension: "ROWS", values: [[status]] },
   });
   return { ok: true, range };
+}
+
+/**
+ * Tick or untick a sponsor's "At CC workshop" checkbox on Sponsor Day-Of
+ * (came to the Friday coffee chat workshop). Same rules as
+ * writeSponsorStatus: one cell in their own row, never a new row, and no
+ * Sheets call at all while sheet writes are off.
+ */
+export async function writeSponsorCcWorkshop(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+  sponsorName: string,
+  attended: boolean,
+): Promise<SponsorStatusWriteResult> {
+  if (!sheetWritesEnabled()) {
+    return { ok: true, written: false, reason: "sheet-writes-off" };
+  }
+  const dayOf = await fetchSponsorDayOfTab(sheets, spreadsheetId);
+  if (!dayOf) return { ok: false, reason: "no-tab" };
+  const target = sponsorStatusCell(dayOf, sponsorName, "ccWorkshop");
+  if (!target.ok) return target;
+  // Same accepted risk as writeSponsorStatus (rows moved between read and write).
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: target.range,
+    valueInputOption: "RAW",
+    requestBody: { majorDimension: "ROWS", values: [[attended]] },
+  });
+  return { ok: true, range: target.range };
 }

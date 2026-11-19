@@ -26,6 +26,8 @@ export type MySponsor = {
   sponsorId: string | null;
   status: string;
   boothLocation: string;
+  /** Sponsor Day-Of "At CC workshop"; null when the tab has no such column. */
+  atCcWorkshop: boolean | null;
   /** False when the sheet didn't load (status unknown). */
   fromSheet: boolean;
 };
@@ -62,6 +64,7 @@ export function MySponsors({
   workshops,
   pending,
   onPill,
+  onCcWorkshop,
   copyLink,
 }: {
   sponsors: MySponsor[];
@@ -73,6 +76,8 @@ export function MySponsors({
   /** Sponsor names with a status write in flight. */
   pending: (name: string) => boolean;
   onPill: (sponsor: MySponsor, pill: StatusPill, done: boolean) => void;
+  /** Tick or untick "At CC workshop" on Sponsor Day-Of. */
+  onCcWorkshop: (sponsor: MySponsor, attended: boolean) => void;
   /** The portal link's copy button (shared with All sponsors). */
   copyLink: (sponsor: MySponsor) => React.ReactNode;
 }) {
@@ -173,6 +178,7 @@ export function MySponsors({
             workshops={workshops}
             pending={pending(current.name)}
             onPill={(pill, done) => onPill(current, pill, done)}
+            onCcWorkshop={(attended) => onCcWorkshop(current, attended)}
             copyLink={copyLink(current)}
           />
         </div>
@@ -314,6 +320,7 @@ function SponsorTables({
   workshops,
   pending,
   onPill,
+  onCcWorkshop,
   copyLink,
 }: {
   sponsor: MySponsor;
@@ -323,6 +330,7 @@ function SponsorTables({
   workshops: readonly WorkshopInfo[] | null;
   pending: boolean;
   onPill: (pill: StatusPill, done: boolean) => void;
+  onCcWorkshop: (attended: boolean) => void;
   copyLink: React.ReactNode;
 }) {
   const a = copy.attrs;
@@ -426,14 +434,24 @@ function SponsorTables({
             {copyLink}
           </span>
         </Row>
-        <Row id="cc-workshop" label={a.ccWorkshop} sub={copy.pill.ccNotTracked}>
-          <Pill
-            label={a.ccWorkshop}
-            sponsor={sponsor.name}
-            states={copy.pill.ccWorkshop}
-            done={false}
-            disabled
-          />
+        <Row
+          id="cc-workshop"
+          label={a.ccWorkshop}
+          sub={status !== null && sponsor.atCcWorkshop === null ? copy.pill.ccNoColumn : undefined}
+        >
+          {status === null ? (
+            <Muted>{dayCopy.noSheet}</Muted>
+          ) : (
+            <Pill
+              label={a.ccWorkshop}
+              sponsor={sponsor.name}
+              states={copy.pill.ccWorkshop}
+              done={sponsor.atCcWorkshop === true}
+              busy={pending}
+              disabled={sponsor.atCcWorkshop === null}
+              onToggle={() => onCcWorkshop(!sponsor.atCcWorkshop)}
+            />
+          )}
         </Row>
         <Row id="their-workshop" label={a.theirWorkshop}>
           {workshops === null ? (

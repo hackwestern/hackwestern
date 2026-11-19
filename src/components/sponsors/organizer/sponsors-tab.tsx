@@ -44,7 +44,6 @@ import {
   withSponsorStatus,
 } from "~/components/sponsors/organizer/status-writes";
 import { sponsorOrganizerCopy } from "~/content/sponsor-organizer";
-import { COFFEE_CHAT_ROOMS } from "~/lib/coffee-chat-requests";
 import {
   formatClock,
   type RunOfShowDay,
@@ -345,6 +344,7 @@ function withoutSheet(s: SponsorSummary): BoardSponsor {
     status: "Not arrived",
     roomNumber: "",
     boothLocation: "",
+    atCcWorkshop: null,
     onMasterSheet: true,
     fromSheet: false,
   };
@@ -459,6 +459,40 @@ export function SponsorsTab({
     if (inFlightRef.current.has(sponsorKey(sponsorName))) return;
     setInFlightBoth(addInFlight(inFlightRef.current, sponsorName));
     updateStatus.mutate({ sponsorName, status });
+  };
+
+  // "At CC workshop" (My sponsors' pill): the same optimistic save and
+  // per-sponsor lock as Status.
+  const withCcWorkshop = (
+    old: Sponsor[] | undefined,
+    sponsorName: string,
+    attended: boolean,
+  ) =>
+    old?.map((s) => (s.name === sponsorName ? { ...s, atCcWorkshop: attended } : s));
+  const updateCcWorkshop = api.sponsorDashboard.setSponsorCcWorkshop.useMutation({
+    onMutate: async ({ sponsorName, attended }) => {
+      await utils.sponsorDashboard.getSponsors.cancel();
+      utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
+        withCcWorkshop(old, sponsorName, attended),
+      );
+    },
+    onError: (err, { sponsorName, attended }) => {
+      utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
+        withCcWorkshop(old, sponsorName, !attended),
+      );
+      setNote({ tone: "error", text: copy.statusFailed(err.message) });
+    },
+    onSettled: async (_data, _err, { sponsorName }) => {
+      setInFlightBoth(removeInFlight(inFlightRef.current, sponsorName));
+      if (inFlightRef.current.size === 0) {
+        await utils.sponsorDashboard.getSponsors.invalidate();
+      }
+    },
+  });
+  const changeCcWorkshop = (sponsorName: string, attended: boolean) => {
+    if (inFlightRef.current.has(sponsorKey(sponsorName))) return;
+    setInFlightBoth(addInFlight(inFlightRef.current, sponsorName));
+    updateCcWorkshop.mutate({ sponsorName, attended });
   };
 
   const sync = api.sponsorDashboard.syncSponsors.useMutation({
@@ -1266,6 +1300,7 @@ export function SponsorsTab({
           statusAfterPill(pill, done ? "undo" : "advance"),
         )
       }
+      onCcWorkshop={(sponsor, attended) => changeCcWorkshop(sponsor.name, attended)}
       copyLink={(sponsor) => (
         <CopyLinkButton sponsorId={sponsor.sponsorId} name={sponsor.name} />
       )}
