@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import {
@@ -36,13 +36,7 @@ import {
   type MySponsor,
   type MySponsorData,
 } from "~/components/sponsors/organizer/my-sponsors";
-import {
-  addInFlight,
-  removeInFlight,
-  sponsorKey,
-  sponsorStatusIn,
-  withSponsorStatus,
-} from "~/components/sponsors/organizer/status-writes";
+import { useSponsorWrites } from "~/components/sponsors/organizer/use-sponsor-writes";
 import { sponsorOrganizerCopy } from "~/content/sponsor-organizer";
 import {
   formatClock,
@@ -146,7 +140,7 @@ function getNextStatus(current: SponsorStatus): SponsorStatus | null {
   return null;
 }
 
-function CopyLinkButton({
+export function CopyLinkButton({
   sponsorId,
   name,
 }: {
@@ -325,8 +319,6 @@ function useTargetRow(ready: boolean): [string | null, () => void] {
   return [target, () => setTarget(null)];
 }
 
-type Note = { tone: "ok" | "error"; text: string };
-
 /** A board row: the sheet's sponsor, or a registered one without it. */
 type BoardSponsor = Sponsor & { fromSheet: boolean };
 
@@ -409,104 +401,15 @@ export function SponsorsTab({
   const [statusFilter, setStatusFilter] = useState<"ALL" | SponsorStatus>(
     "ALL",
   );
-  const [note, setNote] = useState<Note | null>(null);
 
   const utils = api.useUtils();
   const sponsorsQ = api.sponsorDashboard.getSponsors.useQuery(undefined, {
     refetchInterval: 30000,
   });
 
-  // Sponsors with a status write in flight: their row is locked until it
-  // settles (a ref for the synchronous double-click check, state to render).
-  const inFlightRef = useRef<ReadonlySet<string>>(new Set());
-  const [inFlight, setInFlight] = useState<ReadonlySet<string>>(new Set());
-  const setInFlightBoth = (next: ReadonlySet<string>) => {
-    inFlightRef.current = next;
-    setInFlight(next);
-  };
-
-  const updateStatus = api.sponsorDashboard.setSponsorStatus.useMutation({
-    onMutate: async ({ sponsorName, status }) => {
-      await utils.sponsorDashboard.getSponsors.cancel();
-      const prevStatus = sponsorStatusIn(
-        utils.sponsorDashboard.getSponsors.getData(),
-        sponsorName,
-      );
-      utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
-        withSponsorStatus(old, sponsorName, status),
-      );
-      return { prevStatus };
-    },
-    onError: (err, { sponsorName }, context) => {
-      // Undo just this sponsor; others changed meanwhile keep theirs.
-      const prevStatus = context?.prevStatus;
-      if (prevStatus) {
-        utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
-          withSponsorStatus(old, sponsorName, prevStatus),
-        );
-      }
-      setNote({ tone: "error", text: copy.statusFailed(err.message) });
-    },
-    // Sheet writes off: nothing was written, so the pill goes back on the
-    // refetch. Say why instead of snapping back silently.
-    onSuccess: (data) => {
-      if (!data.sheetWritten && data.note) {
-        setNote({ tone: "ok", text: copy.statusNote(data.sponsorName, data.note) });
-      }
-    },
-    onSettled: async (_data, _err, { sponsorName }) => {
-      setInFlightBoth(removeInFlight(inFlightRef.current, sponsorName));
-      // Refetch once nothing else is saving, so a refetch can't briefly
-      // undo another sponsor's optimistic change.
-      if (inFlightRef.current.size === 0) {
-        await utils.sponsorDashboard.getSponsors.invalidate();
-      }
-    },
-  });
-  const changeStatus = (sponsorName: string, status: SponsorStatus) => {
-    if (inFlightRef.current.has(sponsorKey(sponsorName))) return;
-    setInFlightBoth(addInFlight(inFlightRef.current, sponsorName));
-    updateStatus.mutate({ sponsorName, status });
-  };
-
-  // "At CC workshop" (My sponsors' pill): the same optimistic save and
-  // per-sponsor lock as Status.
-  const withCcWorkshop = (
-    old: Sponsor[] | undefined,
-    sponsorName: string,
-    attended: boolean,
-  ) =>
-    old?.map((s) => (s.name === sponsorName ? { ...s, atCcWorkshop: attended } : s));
-  const updateCcWorkshop = api.sponsorDashboard.setSponsorCcWorkshop.useMutation({
-    onMutate: async ({ sponsorName, attended }) => {
-      await utils.sponsorDashboard.getSponsors.cancel();
-      utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
-        withCcWorkshop(old, sponsorName, attended),
-      );
-    },
-    onError: (err, { sponsorName, attended }) => {
-      utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
-        withCcWorkshop(old, sponsorName, !attended),
-      );
-      setNote({ tone: "error", text: copy.statusFailed(err.message) });
-    },
-    onSuccess: (data) => {
-      if (!data.sheetWritten && data.note) {
-        setNote({ tone: "ok", text: copy.statusNote(data.sponsorName, data.note) });
-      }
-    },
-    onSettled: async (_data, _err, { sponsorName }) => {
-      setInFlightBoth(removeInFlight(inFlightRef.current, sponsorName));
-      if (inFlightRef.current.size === 0) {
-        await utils.sponsorDashboard.getSponsors.invalidate();
-      }
-    },
-  });
-  const changeCcWorkshop = (sponsorName: string, attended: boolean) => {
-    if (inFlightRef.current.has(sponsorKey(sponsorName))) return;
-    setInFlightBoth(addInFlight(inFlightRef.current, sponsorName));
-    updateCcWorkshop.mutate({ sponsorName, attended });
-  };
+  // Status and "At CC workshop" saves (shared with the Home).
+  const { note, setNote, pending, changeStatus, changeCcWorkshop } =
+    useSponsorWrites();
 
   const sync = api.sponsorDashboard.syncSponsors.useMutation({
     onSuccess: async (registered) => {
@@ -732,7 +635,7 @@ export function SponsorsTab({
       currentStatus={sponsor.status}
       onStatusChange={(status) => changeStatus(sponsor.name, status)}
       // Only sponsors being saved wait; the rest stay usable.
-      isPending={inFlight.has(sponsorKey(sponsor.name))}
+      isPending={pending(sponsor.name)}
     />
   );
   const clearFilters = () => {
@@ -1306,7 +1209,7 @@ export function SponsorsTab({
       data={mine}
       summaries={summaries}
       workshops={workshops}
-      pending={(name) => inFlight.has(sponsorKey(name))}
+      pending={pending}
       onPill={(sponsor, pill, done) =>
         changeStatus(
           sponsor.name,
