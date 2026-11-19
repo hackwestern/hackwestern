@@ -265,7 +265,10 @@ export function StepFooter({
     <div className="flex flex-col gap-3 border-t border-dashboard-border-subtle pt-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="order-2 sm:order-1">{back}</div>
       <div className="order-1 flex flex-col gap-2 sm:order-2 sm:flex-row sm:items-center sm:gap-4">
-        {note && <p className="m-0 text-sm text-dashboard-text-medium sm:text-right">{note}</p>}
+        {/* Always mounted, so "Saving…" / "Saved." are read out. */}
+        <p role="status" className={cn("m-0 text-sm text-dashboard-text-medium sm:text-right", !note && "sr-only")}>
+          {note}
+        </p>
         {primary}
       </div>
     </div>

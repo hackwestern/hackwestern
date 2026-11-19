@@ -90,6 +90,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: the grey line "Up to 6 people a chat: 1 rep and up to 5 hackers." stays the same whatever you pick and reads like a second rule.
 - Fix: show "Saved" next to the footer after each autosave (the copy already exists). Delete the grey line, or change it to fit the pick ("Each chat: 1 rep + 3 hackers").
 - Screens: `03-sponsor-prefs-step2.png`, `03-sponsor-prefs-groups-of-3.png`
+- **Fixed (B6):** the footer shows "Saving…", then "Saved." once the autosave lands, until the next edit. The footer note is now a live region, so both are read out. (`after/portal-03-prefs-saved*.png`)
 
 ### Sponsor · Chatting preferences · Step 2 · When is each rep free (grid)
 - Expected: every session ticked for new reps, the workshop hatched and not tickable, edge messages. **Happened:** as expected. Sun Life shows "Your workshop 2:30–3:30" hatched (the live run of show now says 2:30, so the guide's "1:00–1:30 only" example doesn't show up today). "…isn't free any time Saturday." and "…is free for 1 hour, so up to 2 chats." both show. Changes survived a reload.
@@ -488,6 +489,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Expected: "Saving…", then "Saved." (guide).
 - Actual: "Saving…" for a moment, then nothing. `copy.saved` is never rendered.
 - Where: `src/components/sponsors/coffee-setup/prefs-step.tsx:330-336`.
+- **Fixed:** `prefs-step.tsx` keeps a `saved` flag set after a save with nothing newer waiting, cleared on the next edit; the footer renders `copy.saved`.
 
 **B7 · My sponsors status and CC-workshop pills snap back with no note when sheet writes are off.**
 - Steps: My sponsors (as a lead) → tap "Not arrived" or "Not attended".

@@ -73,6 +73,8 @@ export function PrefsStep({
 
   const save = api.coffeeChatSetup.savePrefs.useMutation();
   const [retrying, setRetrying] = useState(false);
+  // "Saved." after an autosave lands, until the next edit (B6).
+  const [saved, setSaved] = useState(false);
   // One save at a time: each flush waits for the one in flight, so saves
   // land in order and the last one always carries the latest draft.
   const inflight = useRef<Promise<boolean> | null>(null);
@@ -95,6 +97,8 @@ export function PrefsStep({
       });
       setError(null);
       setRetrying(false);
+      // A newer edit may be waiting: only say Saved once nothing is.
+      if (!dirty.current) setSaved(true);
       // A rep removed elsewhere was skipped: drop it from the draft.
       if (res.skipped > 0) {
         const fresh = await utils.coffeeChatSetup.get.fetch({ sponsor });
@@ -145,6 +149,7 @@ export function PrefsStep({
       (confirm) => {
         if (confirm) confirmed.current = true;
         dirty.current = true;
+        setSaved(false);
         setDraft((d) => fn(d));
         if (timer.current) clearTimeout(timer.current);
         timer.current = setTimeout(() => void flush(), 800);
@@ -346,6 +351,8 @@ export function PrefsStep({
             <span className="font-semibold text-dashboard-text-warning">{copy.retrying}</span>
           ) : save.isPending ? (
             copy.saving
+          ) : saved ? (
+            <span className="font-semibold text-dashboard-text-heavy">{copy.saved}</span>
           ) : undefined
         }
         primary={
