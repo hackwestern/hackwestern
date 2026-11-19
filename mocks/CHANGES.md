@@ -4,6 +4,9 @@ Every change Jazz asked for, which mock it belongs to, and whether it's in. Newe
 
 Status: **Done** = in the mock and checked. **Building** = a subagent is adding it now. **Not yet** = asked for, not in any mock.
 
+## Default style for every mock (Jazz, 2026-11-19)
+Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /live site style; its README lists every source file:line) for ALL mocks, unless Jazz explicitly names another look for that mock. Current exception: `organizer-coffee-autofill-v6a/b/c` build on autofill-v5's look because Jazz asked for that explicitly.
+
 ## Final mocks
 - **Sponsor portal (final):** `sponsor-portal-flow-hacker-v3` (hacker-v2's look + everything below)
 - **Organizer coffee chats (final candidates):** `organizer-coffee-autofill-v6a`, `-v6b`, `-v6c` (autofill-v5's look; three ways to show sponsor info on the same page)
