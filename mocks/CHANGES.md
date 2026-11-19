@@ -229,6 +229,7 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 - `organizer-coffee-autofill-v4`, `-v5`, `organizer-coffee-cards-grid-v1`, `-v2`: organizer board experiments; v5's look won; cards-grid-v2 has the Contact panel to reuse
 
 ## Not in any mock yet
+- Build: remove all tracked sponsor-help UI (Now help rows, Needs attention help request, I'm on it/Resolved) from My sponsors; design parked in hackwestern-coffee-prefs/docs/specs/parked-sponsor-help-requests.md.
 - From Jazz's answers (2026-11-19), to apply in the BUILD (no new mock versions): sponsor side 0 chats allowed, no 30-min 1-on-1, no "hackers free" counts, Help = lead's number + Noah emergency (no tracked help); organizer board copy icon beside phones (no Contact/Text/Call), chats asked per rep, Noah-only Send, partial session 1:00–1:30 for Sun Life; My sponsors People = reps only; judging = one at a time or list, top 3.
 - Sponsor portal Help screen for the tracked help flow ("Get help" → "Noah is on the way").
 - Sponsor v5: block Sun Life's 1–2 session (overlaps the 1:45 travel buffer before workshop setup) so the sponsor page matches the organizer rule (pending Jazz's OK)
