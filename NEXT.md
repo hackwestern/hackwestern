@@ -32,3 +32,10 @@ Review `mocks/sponsor-chat-calendar-v1` with Jazz (spec: `docs/specs/sponsor-cha
 - Keep SHEET_WRITES off locally.
 - Read prize tracks from Sponsor Day-Of "Custom API / Prize Track" checkbox instead of the hardcoded src/content/sponsor-prize-tracks.ts (today: Canada Life, QNX, Scotiabank, Sun Life, TinyFish, PCBWay). TinyFish judges remotely (decision 2026-11-19).
 - My sponsors: read HW Contacts "Login email" (column C, header match) to map the signed-in organizer to their name, then Sponsor Day-Of HW lead to their sponsors; on-call from RUN OF SHOW shifts.
+
+## Jazz's to-do list (2026-11-19)
+1. Judging view: pick the final design (mocks A–D; D = Holia slider, rubric modal, 3 modes, several reps) and decide whether a sent top 5 can be changed.
+2. Hacker coffee chat invites on Slack: Accept / Decline DM (exists) updated for the session model, expiry 20 min (35 Ivey), auto-refill, reconfirm after changes.
+3. Spon team task pings on Slack: owner DM / team channel (exists) + "Text" on overdue tasks + failure-only delivery status.
+4. Sponsor help comms: "Text your lead" from the portal; lead off shift → "Leave a message" posts to Slack tagging whoever's on call (on-call from RUN OF SHOW, Slack user found by login email).
+5. Done 2026-11-19: "Rationale + Decisions" tab in the sheet (first tab) summarizing every decision; keep it in sync with docs/decisions.md.

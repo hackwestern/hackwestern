@@ -614,3 +614,7 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 ## 2026-11-19: HW Contacts shows each organizer's Slack name as "[ORGANIZER] Name" (Jazz)
 
 **Decision:** HW Contacts column D "Slack name" is a formula, `"[ORGANIZER] " & Name`, matching the Slack display-name convention, so it can't drift from column A. It's for people reading the sheet. For @mentions (help "Leave a message", task pings), the app finds the Slack user by email (`users.lookupByEmail`, as the hacker DMs already do) using the "Login email" column, because Slack mentions need a user ID, not a display name. If someone's Slack account uses a different email, add a "Slack email" column then.
+
+## 2026-11-19: "Rationale + Decisions" tab in the sheet (Jazz)
+
+**Decision:** The sheet's first tab, "Rationale + Decisions", is a skimmable table (Area · What we decided · Why · Status) of every sponsor-side decision, grouped by The sheet, Coffee chats, Judging, Comms, Organizer dashboard, and Still to do. Open items are yellow. It's the short version of this log; update both when a decision changes.
