@@ -110,6 +110,7 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 | 3 | "Your next tasks" at the top (overdue first) | Building |
 | 4 | On call = covering all sponsors (banner); lead with no sponsors = empty state | Building |
 | 5 | Build need: HW Contacts gets an email column to match logins to leads | Not yet |
+| 6 | Always-visible "Help" top right → "How it works" sheet (Sponsors · Coffee chats · Judging · Task pings · Where data lives), content from `_data/organizer-help.md` incl. the auto-schedule checks | Building |
 
 ## Organizer coffee board v8: `organizer-coffee-v8` (Jazz likes v7)
 | # | Change | Status |
@@ -122,6 +123,7 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 | 6 | Status chips with counts, e.g. "Needs scheduling · 1 of 3" | Building |
 | 7 | One-line legend "■ Scheduled (room) · ✓ Free · ▨ Their event" above the availability grid; cells show "Rm 2243" | Building |
 | 8 | Company logos instead of names | Building |
+| 9 | Always-visible "Help" → "How coffee chats work" (same text as `_data/organizer-help.md`; schedule() must match the checklist) | Building |
 
 ## Organizer coffee board v7: `organizer-coffee-v7` (from the audit + fixed sessions)
 | # | Change | Status |
