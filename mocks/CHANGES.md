@@ -120,10 +120,10 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 ## Organizer "My sponsors" v3: `organizer-my-sponsors-v3` (from the Fable critique)
 | # | Change | Status |
 |---|---|---|
-| 1 | Sponsor tab = two-column attribute tables, no Time/Action columns: Needs attention, People, Logistics, Coffee chats, Judging | Building |
-| 2 | People lists every point of contact (reps with crown, speakers, workshop presenters) with Text/Call | Building |
-| 3 | Only Arrival, Booth, Coffee chat workshop are human-set, as tap-to-advance pills; everything else automatic | Building |
-| 4 | All sponsors tables use the same attributes as columns | Building |
+| 1 | Sponsor tab = two-column attribute tables, no Time/Action columns: Needs attention, People, Logistics, Coffee chats, Judging | Done |
+| 2 | People lists every point of contact (reps with crown, speakers, workshop presenters) with Text/Call | Done |
+| 3 | Only Arrival, Booth, Coffee chat workshop are human-set, as tap-to-advance pills; everything else automatic | Done |
+| 4 | All sponsors tables use the same attributes as columns | Done |
 
 ## Organizer "My sponsors" v2: `organizer-my-sponsors-v2` (tables, not cards)
 | # | Change | Status |
