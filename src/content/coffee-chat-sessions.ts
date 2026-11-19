@@ -293,6 +293,9 @@ export const coffeeSessionsCopy = {
     fixApplied: "Fix applied.",
     moved: "Moved.",
     removed: "Removed.",
+    /** On the "Removed." toast for a draft chat or a booking. */
+    undo: "Undo",
+    restored: "Put back.",
     booked: "Room booked.",
     sent: (chats: number, invited: number, open: number) =>
       `Sent ${plural(chats, "chat")}. Invited ${plural(invited, "hacker")}` +

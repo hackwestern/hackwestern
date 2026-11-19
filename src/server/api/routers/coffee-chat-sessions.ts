@@ -263,6 +263,24 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       return { ok: true };
     }),
 
+  /**
+   * Put a draft chat back by hand: the "Undo" after removing one. Pinned,
+   * like a move. Same checks as a move (rep free, cell empty).
+   */
+  placeChat: protectedOrganizerProcedure
+    .input(z.object({ repId: z.string().uuid(), room, sessionId }))
+    .mutation(async ({ input }) => {
+      return boardWrite(async (tx, state) => {
+        assertRepCanChat(state, input.repId, input.sessionId);
+        assertCellFree(state, input.room, input.sessionId);
+        const [row] = await tx
+          .insert(coffeeChatPlacements)
+          .values({ repId: input.repId, room: input.room, sessionId: input.sessionId, pinned: true })
+          .returning({ id: coffeeChatPlacements.id });
+        return { id: row!.id };
+      });
+    }),
+
   /** Ad hoc room booking on an empty cell (a sponsor, mentors, organizers). */
   bookRoom: protectedOrganizerProcedure
     .input(

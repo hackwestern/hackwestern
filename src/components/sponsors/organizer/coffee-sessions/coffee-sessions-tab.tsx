@@ -90,13 +90,58 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   });
   const movePlacement = api.coffeeChatSessions.movePlacement.useMutation({ onError, onSettled: refresh });
   const moveBooking = api.coffeeChatSessions.moveBooking.useMutation({ onError, onSettled: refresh });
+  const placeChat = api.coffeeChatSessions.placeChat.useMutation({
+    onSuccess: () => toast.success(copy.toast.restored),
+    onError,
+    onSettled: refresh,
+  });
+  // A draft chat or a booking can be put back from the toast. A sent chat
+  // can't: its hackers were already told.
   const removePlacement = api.coffeeChatSessions.removePlacement.useMutation({
-    onSuccess: () => toast.success(copy.toast.removed),
+    onSuccess: (_r, input) => {
+      const p = board.data?.placements.find((x) => x.id === input.placementId);
+      toast.success(
+        copy.toast.removed,
+        p && p.status === "draft"
+          ? {
+              action: {
+                label: copy.toast.undo,
+                onClick: () =>
+                  placeChat.mutate({
+                    repId: p.repId,
+                    room: p.room as CoffeeRoomId,
+                    sessionId: p.sessionId as CoffeeSessionId,
+                  }),
+              },
+            }
+          : undefined,
+      );
+    },
     onError,
     onSettled: refresh,
   });
   const removeBooking = api.coffeeChatSessions.removeBooking.useMutation({
-    onSuccess: () => toast.success(copy.toast.removed),
+    onSuccess: (_r, input) => {
+      const b = board.data?.bookings.find((x) => x.id === input.bookingId);
+      toast.success(
+        copy.toast.removed,
+        b
+          ? {
+              action: {
+                label: copy.toast.undo,
+                onClick: () =>
+                  bookRoom.mutate({
+                    room: b.room as CoffeeRoomId,
+                    sessionId: b.sessionId as CoffeeSessionId,
+                    label: b.label,
+                    note: b.note ?? "",
+                    forSponsorId: b.forSponsorId,
+                  }),
+              },
+            }
+          : undefined,
+      );
+    },
     onError,
     onSettled: refresh,
   });
@@ -237,7 +282,25 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
         </div>
       </header>
 
-      <BoardSummary board={data} />
+      <BoardSummary
+        board={data}
+        action={
+          // The line says "Run Auto-schedule": the button sits right beside it.
+          !data.scheduled && data.sponsors.some((sp) => sp.submitted) ? (
+            <DashboardButton
+              variant="primary"
+              disabled={busy || locked}
+              onClick={() => {
+                setSelected(null);
+                auto.mutate();
+              }}
+              className="shrink-0 sm:w-auto"
+            >
+              {busy ? copy.bar.working : copy.bar.autoSchedule}
+            </DashboardButton>
+          ) : undefined
+        }
+      />
 
       {!data.workshopsAvailable && (
         <p role="alert" className="m-0 rounded-dashboard-lg bg-dashboard-bg-task/40 px-4 py-3 text-sm text-dashboard-text-task">

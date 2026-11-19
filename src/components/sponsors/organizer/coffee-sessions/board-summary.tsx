@@ -37,7 +37,14 @@ export function summaryLine(board: SessionBoardData): string {
  * scheduled or sent ("Sun Life edited reps or times after Send · 9:58 PM"),
  * newest first, with when the board was last scheduled and sent.
  */
-export function BoardSummary({ board }: { board: SessionBoardData }) {
+export function BoardSummary({
+  board,
+  action,
+}: {
+  board: SessionBoardData;
+  /** A button beside the line when it names the next step (Auto-schedule). */
+  action?: React.ReactNode;
+}) {
   const c = copy.changes;
   const changes = board.sponsors
     .flatMap((sp) => (sp.change ? [{ sp, change: sp.change }] : []))
@@ -48,7 +55,10 @@ export function BoardSummary({ board }: { board: SessionBoardData }) {
   ].filter(Boolean);
   return (
     <section aria-label={c.heading} className="flex flex-col gap-2 rounded-dashboard-lg bg-dashboard-bg-surface px-4 py-3 shadow-dashboard-card md:px-5">
-      <p className="m-0 text-[17px] font-semibold text-dashboard-text-heavy">{summaryLine(board)}</p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <p className="m-0 text-[17px] font-semibold text-dashboard-text-heavy">{summaryLine(board)}</p>
+        {action}
+      </div>
       {(changes.length > 0 || stamps.length > 0) && (
         <div className="flex flex-col gap-1 text-sm text-dashboard-text-medium">
           {changes.length > 0 && (

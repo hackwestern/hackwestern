@@ -261,7 +261,13 @@ describe("guards", () => {
     expect(await db.select().from(coffeeChatRoomBookings)).toHaveLength(0);
 
     const [tom] = await placementOf("Tom");
+    // Undo puts a removed draft chat back, pinned; a taken cell is refused.
     await organizer.coffeeChatSessions.removePlacement({ placementId: tom!.id });
+    const back = { repId: tom!.repId, room: tom!.room as "2241", sessionId: tom!.sessionId as "10" };
+    await organizer.coffeeChatSessions.placeChat(back);
+    expect((await placementOf("Tom"))[0]).toMatchObject({ room: tom!.room, sessionId: tom!.sessionId, pinned: true, status: "draft" });
+    expect(await code(organizer.coffeeChatSessions.placeChat(back))).toBe("CONFLICT");
+    await organizer.coffeeChatSessions.removePlacement({ placementId: (await placementOf("Tom"))[0]!.id });
     const board = await organizer.coffeeChatSessions.getBoard();
     const fix = board.fixes.find((f) => f.sponsor === ids[names.team]);
     expect(fix?.suggestion.kind).toBe("session");

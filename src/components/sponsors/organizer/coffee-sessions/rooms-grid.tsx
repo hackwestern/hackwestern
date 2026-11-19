@@ -104,6 +104,13 @@ export function RoomsGrid({
   onCell: (key: string) => void;
   detail: React.ReactNode;
 }) {
+  // The detail opens under the grid: bring it into view (above the sticky
+  // Send bar) when a cell is picked or the booking form opens.
+  const detailRef = useRef<HTMLDivElement>(null);
+  const detailOpen = !!detail;
+  useEffect(() => {
+    if (detailOpen) detailRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selected, detailOpen]);
   const group = (b: "near" | "ivey", label: string) => (
     <>
       <tr>
@@ -150,7 +157,8 @@ export function RoomsGrid({
           </tbody>
         </table>
       </div>
-      <div aria-live="polite">{detail}</div>
+      {/* scroll-mb: room for the sticky Send bar. */}
+      <div ref={detailRef} aria-live="polite" className="scroll-mb-32 sm:scroll-mb-20">{detail}</div>
     </Card>
   );
 }
