@@ -43,11 +43,11 @@ export const sponsorTourCopy = {
         },
         scan: {
           title: "Scan a badge",
-          body: "Met a hacker you like? Scan their badge to offer them a coffee chat.",
+          body: "Met a hacker you like? Scan their badge to add them to your list. We invite them to a coffee chat first.",
         },
         chats: {
           title: "Coffee chats",
-          body: "Your booked chats and the hackers who want to meet you.",
+          body: "Tell us when your reps can chat (required), then see your chats here.",
         },
         schedule: {
           title: "Your schedule",
@@ -73,31 +73,23 @@ export const sponsorTourCopy = {
     },
 
     coffeeChat: {
-      name: "Offer a coffee chat",
+      name: "Coffee chats",
       steps: {
+        setup: {
+          title: "Tell us when your reps can chat",
+          body: "Open Chats and tap Start: add your team, then when each rep is free. It's required, and organizers confirm your chat times Friday evening.",
+        },
         scan: {
-          title: "Start with a scan",
-          body: "Tap Scan a badge when you're talking to a hacker.",
+          title: "Met someone at your booth?",
+          body: "Tap Scan when you're talking to a hacker.",
         },
         camera: {
           title: "Point at their badge",
           body: "Scan the QR code on their badge or their live site. No camera? Type their hacker code instead.",
         },
-        offer: {
-          title: "Pick a time and send",
-          body: "Choose an open start time and send the offer. Nothing is booked until they accept.",
-        },
-        candidates: {
-          title: "Or pick from your candidates",
-          body: "Tap Candidates to see the hackers who want to meet you.",
-        },
-        pick: {
-          title: "Offer from the list",
-          body: "Shortlist the hackers you like, then tap Offer coffee chat. You pick the time next.",
-        },
-        accept: {
-          title: "They accept on their live site",
-          body: "The hacker gets your offer on /live and accepts or declines. Your chats shows every offer and its answer.",
+        add: {
+          title: "Add them to your list",
+          body: "Tap Add to my list. We invite people you met at your booth to a coffee chat first. Nothing to book.",
         },
       },
     },

@@ -5,7 +5,8 @@ import { ArrowRight, Check, ChevronLeft, CircleAlert, Clock } from "lucide-react
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { pressable } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorSetupCopy as copy } from "~/content/sponsor-coffee-setup";
-import { setupEvents, setupState } from "~/lib/coffee-chat-setup";
+import { roundClosesAt } from "~/lib/coffee-chat-invites";
+import { chatChanges, setupEvents, setupState, type SeenChat } from "~/lib/coffee-chat-setup";
 import { cn } from "~/lib/utils";
 import type { RouterOutputs } from "~/utils/api";
 
@@ -40,32 +41,106 @@ export const clockOf = (min: number) =>
 export const cardClass =
   "flex flex-col gap-4 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card sm:p-6";
 
-/** When this device last opened this sponsor's coffee chats (per device). */
-function useLastSeen(sponsor: string, ready: boolean): Date | null | undefined {
-  const [lastSeen, setLastSeen] = useState<Date | null | undefined>(undefined);
+/**
+ * When this device last opened this sponsor's coffee chats (per device),
+ * and when this visit started: changes made during this visit are the
+ * sponsor's own, so they're never "Since you were last here".
+ */
+function useLastSeen(sponsor: string): { lastSeen: Date | null; visit: Date } | undefined {
+  const [seen, setSeen] = useState<{ lastSeen: Date | null; visit: Date } | undefined>(undefined);
+  // Read once per mount: a second run (React strict mode in dev) would read
+  // back the time the first run just wrote.
+  const read = useRef(false);
   const key = `hw-coffee-setup-seen:${sponsor}`;
   useEffect(() => {
-    if (!ready || lastSeen !== undefined) return;
+    if (seen !== undefined || read.current) return;
+    read.current = true;
+    const visit = new Date();
     let prev: Date | null = null;
     try {
       const raw = window.localStorage.getItem(key);
       prev = raw ? new Date(raw) : null;
-      window.localStorage.setItem(key, new Date().toISOString());
+      window.localStorage.setItem(key, visit.toISOString());
     } catch {
       prev = null;
     }
-    setLastSeen(prev && !Number.isNaN(prev.getTime()) ? prev : null);
-  }, [key, ready, lastSeen]);
-  return lastSeen;
+    setSeen({ lastSeen: prev && !Number.isNaN(prev.getTime()) ? prev : null, visit });
+  }, [key, seen]);
+  return seen;
+}
+
+type MoveNote = { text: string; at: string };
+
+/**
+ * Organizer moves of sent chats, worked out on this device (chatChanges):
+ * the sent chats it last saw are kept in localStorage, and each change
+ * found is remembered (newest 5) so "Last change" keeps showing it.
+ */
+function useChatMoves(
+  sponsor: string,
+  data: SetupData,
+  visit: Date | undefined,
+): { text: string; at: Date }[] {
+  const [notes, setNotes] = useState<MoveNote[]>([]);
+  const key = `hw-coffee-chats-seen:${sponsor}`;
+  const signature = data.chats.map((c) => `${c.placementId}:${c.sessionId}:${c.room}`).join(",");
+  useEffect(() => {
+    if (!data.confirmed || !visit) return;
+    let stored: { chats?: Record<string, SeenChat>; notes?: MoveNote[] } = {};
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (raw) stored = JSON.parse(raw) as typeof stored;
+    } catch {
+      // Blocked or bad storage: nothing to compare against.
+    }
+    const repName = (id: string) => data.reps.find((r) => r.id === id)?.name ?? "";
+    // Found on this visit: just before it, so it's "since you were last
+    // here" now and "Last change" next time.
+    const now = new Date(visit.getTime() - 1).toISOString();
+    const found = chatChanges(stored.chats ?? {}, data.chats).map((c) => ({
+      text:
+        c.kind === "removed"
+          ? copy.status.removed(repName(c.repId), shortClock(c.from))
+          : copy.status.moved(repName(c.repId), shortClock(c.from), c.to ? shortClock(c.to) : null, c.room),
+      at: now,
+    }));
+    const next = {
+      chats: Object.fromEntries(
+        data.chats.map((c) => [c.placementId, { repId: c.repId, sessionId: c.sessionId, room: c.room, start: c.start }]),
+      ),
+      notes: [...found, ...(stored.notes ?? [])].slice(0, 5),
+    };
+    try {
+      window.localStorage.setItem(key, JSON.stringify(next));
+    } catch {
+      // Not remembered on this device; still shown this time.
+    }
+    setNotes(next.notes);
+    // `signature` stands for the chats' ids, sessions and rooms.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, data.confirmed, signature, visit]);
+  return notes.map((n) => ({ text: n.text, at: new Date(n.at) }));
 }
 
 /**
  * Big, plain status at the top of every coffee chat screen: where things
  * stand, what changed (and who did it), whether they need to act, and
  * what happens next. Sponsors come back cold, hours after organizers act.
+ * After Send it shows live invite counts and only organizers' changes
+ * (simplify-decisions, "Hacker activity as counts, not a change log").
  */
-export function SetupStatus({ sponsor, data }: { sponsor: string; data: SetupData }) {
-  const lastSeen = useLastSeen(sponsor, true);
+export function SetupStatus({
+  sponsor,
+  data,
+  flowStep,
+}: {
+  sponsor: string;
+  data: SetupData;
+  /** On a preferences step (1-3): before a submit, say which step. */
+  flowStep?: number;
+}) {
+  const seen = useLastSeen(sponsor);
+  const moves = useChatMoves(sponsor, data, seen?.visit);
   const state = setupState({
     repCount: data.reps.length,
     updatedAt: data.updatedAt,
@@ -73,12 +148,33 @@ export function SetupStatus({ sponsor, data }: { sponsor: string; data: SetupDat
     confirmed: data.confirmed,
     seats: data.seats,
   });
-  const events = setupEvents(data);
-  const fresh = lastSeen ? events.filter((e) => e.at > lastSeen) : [];
-  const shown = fresh.length ? fresh : events.slice(0, 1);
   const s = copy.status;
-  const title =
-    state.kind === "accepted" ? s.state.accepted(state.accepted, state.seats) : s.state[state.kind];
+  // After Send, "Last change" is what organizers did: Send (and re-sends)
+  // and moves of sent chats. Before, it's the sponsor's own submits and
+  // saves, which are never "Since you were last here".
+  const events: { key: string; text: string; at: Date; mine: boolean }[] = data.confirmed
+    ? [
+        ...setupEvents({ sentAt: data.sentAt, submittedAt: null, shortlistSubmittedAt: null, updatedAt: null }).map(
+          (e) => ({ key: e.kind, text: s.at(s.changes[e.kind] ?? e.kind, whenEastern(e.at)), at: e.at, mine: false }),
+        ),
+        ...moves.map((m, i) => ({ key: `move-${i}`, text: m.text, at: m.at, mine: false })),
+      ].sort((a, b) => b.at.getTime() - a.at.getTime())
+    : setupEvents(data).map((e) => ({
+        key: e.kind,
+        text: s.at(s.changes[e.kind] ?? e.kind, whenEastern(e.at)),
+        at: e.at,
+        mine: true,
+      }));
+  const lastSeen = seen?.lastSeen ?? null;
+  const fresh = lastSeen && seen ? events.filter((e) => !e.mine && e.at > lastSeen && e.at <= seen.visit) : [];
+  const shown = fresh.length ? fresh : events.slice(0, 1);
+  // Still filling in preferences: where they are, not "Draft saved".
+  const inFlow = !!flowStep && (state.kind === "notStarted" || state.kind === "draft");
+  const title = inFlow
+    ? s.inFlow(flowStep, s.flowSteps.length, s.flowSteps[flowStep - 1] ?? "")
+    : state.kind === "accepted"
+      ? s.state.accepted(state.accepted, state.seats)
+      : s.state[state.kind];
   const todo =
     state.kind === "notStarted"
       ? s.todo.notStarted
@@ -96,9 +192,10 @@ export function SetupStatus({ sponsor, data }: { sponsor: string; data: SetupDat
         ? s.next.draft
         : state.kind === "waiting"
           ? s.next.waiting
-          : s.next.scheduled;
+          : s.next.scheduled(Date.now() < roundClosesAt(1).getTime() ? s.roundOneAnswerBy : null);
   const needsAction = state.kind === "notStarted" || state.kind === "draft";
   const done = state.kind === "invitesGoingOut" || state.kind === "accepted";
+  const waiting = data.chats.flatMap((c) => c.hackers).filter((h) => h.status === "pending").length;
 
   return (
     <section
@@ -124,26 +221,33 @@ export function SetupStatus({ sponsor, data }: { sponsor: string; data: SetupDat
         </span>
         <p className="m-0 text-xl font-bold leading-snug text-dashboard-text-heavy sm:text-2xl">{title}</p>
       </div>
+      {data.confirmed && (
+        <p className="m-0 text-base font-semibold text-dashboard-text-heavy">
+          {s.invites(data.seats.accepted, waiting, Math.max(0, data.seats.total - data.seats.accepted - waiting))}
+        </p>
+      )}
       {shown.length > 0 && (
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
             {fresh.length ? s.changes.since : s.changes.last}
           </span>
           {shown.map((e) => (
-            <p key={e.kind} className="m-0 text-base text-dashboard-text-medium">
-              {s.at(s.changes[e.kind] ?? e.kind, whenEastern(e.at))}
+            <p key={e.key} className="m-0 text-base text-dashboard-text-medium">
+              {e.text}
             </p>
           ))}
         </div>
       )}
       {data.editedAfterSend && (
         <p className="m-0 rounded-dashboard-md bg-dashboard-bg-task p-3 text-base text-dashboard-text-task">
-          {s.editedAfterSend}
+          {s.editedAfterSend(data.seats.changed)}
         </p>
       )}
-      <p className={cn("m-0 text-base font-semibold", needsAction ? "text-dashboard-text-warning" : "text-dashboard-text-heavy")}>
-        {todo}
-      </p>
+      {!inFlow && (
+        <p className={cn("m-0 text-base font-semibold", needsAction ? "text-dashboard-text-warning" : "text-dashboard-text-heavy")}>
+          {todo}
+        </p>
+      )}
       <p className="m-0 text-base text-dashboard-text-medium">{next}</p>
     </section>
   );
@@ -265,7 +369,10 @@ export function StepFooter({
     <div className="flex flex-col gap-3 border-t border-dashboard-border-subtle pt-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="order-2 sm:order-1">{back}</div>
       <div className="order-1 flex flex-col gap-2 sm:order-2 sm:flex-row sm:items-center sm:gap-4">
-        {note && <p className="m-0 text-sm text-dashboard-text-medium sm:text-right">{note}</p>}
+        {/* Always mounted, so "Saving…" / "Saved." are read out. */}
+        <p role="status" className={cn("m-0 text-sm text-dashboard-text-medium sm:text-right", !note && "sr-only")}>
+          {note}
+        </p>
         {primary}
       </div>
     </div>
@@ -293,18 +400,19 @@ export function LinkButton({
 
 /**
  * Once invites are out, every change asks first ("Invites are already
- * out…"). `guard(run)` calls run(false) before Send, or opens the warning
- * and calls run(true) when they choose Change anyway.
+ * out…"). `guard(run, affected)` calls run(false) before Send, or opens the
+ * warning and calls run(true) when they choose Change anyway. `affected` is
+ * the invited hackers in the chats this change touches (invitesAffected).
  */
 export function useAfterInvites(data: SetupData | undefined) {
-  const [pending, setPending] = useState<((confirm: boolean) => void) | null>(null);
+  const [pending, setPending] = useState<{ run: (confirm: boolean) => void; affected: number } | null>(null);
   // Agreed once on this screen: don't ask again for every tick.
   const agreed = useRef(false);
   const guard = useCallback(
-    (run: (confirm: boolean) => void) => {
+    (run: (confirm: boolean) => void, affected = 0) => {
       if (!data?.confirmed) return run(false);
       if (agreed.current) return run(true);
-      setPending(() => run);
+      setPending({ run, affected });
     },
     [data?.confirmed],
   );
@@ -317,7 +425,7 @@ export function useAfterInvites(data: SetupData | undefined) {
             {copy.afterInvites.title}
           </AlertDialog.Title>
           <AlertDialog.Description className="m-0 text-base text-dashboard-text-medium">
-            {copy.afterInvites.body(data?.seats.invited ?? 0)}
+            {copy.afterInvites.body(pending?.affected ?? 0)}
           </AlertDialog.Description>
           <div className="flex flex-col gap-2 sm:flex-row-reverse">
             <AlertDialog.Action asChild>
@@ -325,7 +433,7 @@ export function useAfterInvites(data: SetupData | undefined) {
                 className={cn("min-h-11", pressable)}
                 onClick={() => {
                   agreed.current = true;
-                  pending?.(true);
+                  pending?.run(true);
                   setPending(null);
                 }}
               >
@@ -345,6 +453,62 @@ export function useAfterInvites(data: SetupData | undefined) {
   return { guard, dialog };
 }
 
+/**
+ * A table that may be wider than the screen: scrolls inside its box, and
+ * while there's more to the right it says so ("Scroll for later times")
+ * with a fade on the right edge, so no column hides without a cue.
+ */
+export function ScrollHint({ label, children }: { label: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => setMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 4);
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(check);
+    observer?.observe(el);
+    if (el.firstElementChild) observer?.observe(el.firstElementChild);
+    return () => {
+      el.removeEventListener("scroll", check);
+      observer?.disconnect();
+    };
+  }, []);
+  return (
+    <div className="flex flex-col gap-1">
+      <p
+        aria-hidden
+        className={cn(
+          "m-0 flex items-center justify-end gap-1 text-sm font-semibold text-dashboard-text-link",
+          !more && "invisible",
+        )}
+      >
+        {copy.scrollHint}
+        <ArrowRight className="size-4" />
+      </p>
+      <div className="relative">
+        {/* Focusable so keyboard users can scroll it too. */}
+        <div
+          ref={ref}
+          role="region"
+          aria-label={label}
+          tabIndex={0}
+          className="overflow-x-auto rounded-dashboard-md border border-dashboard-border-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+        >
+          {children}
+        </div>
+        {more && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-px right-px w-12 rounded-r-dashboard-md bg-gradient-to-l from-dashboard-bg-surface to-transparent"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** Screen reader announcements (a polite live region). */
 export function useAnnounce() {
   const [message, setMessage] = useState("");
@@ -352,10 +516,11 @@ export function useAnnounce() {
     setMessage("");
     requestAnimationFrame(() => setMessage(text));
   }, []);
+  const clear = useCallback(() => setMessage(""), []);
   const region = (
     <p role="status" className="sr-only">
       {message}
     </p>
   );
-  return { announce, region };
+  return { announce, clear, region };
 }

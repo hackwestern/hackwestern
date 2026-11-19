@@ -26,6 +26,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   - "Use this portal to check your booth and judging details and pick your top projects." → "Use this portal to set up coffee chats, find your booth and, if you have a prize track, judge projects."
   - "Reach out to your HW contact." → "Text or call your Hack Western contact."
 - Screens: `01-sponsor-firstvisit-home.png`, `01-sponsor-firstvisit-home-390*.png`
+- **Fixed:** a "What to do now" card sits under the banner. Before preferences are submitted it's the filled, full-width "Tell us when your reps can chat · Required · at the Friday 5 PM workshop" link to Chats; after, it's a white "Your coffee chats" link. The banner reads "…set up coffee chats, find your booth and, if you have a prize track, judge projects.", so it no longer contradicts "No prize track". The footer reads "Need help during the hackathon? Text or call your Hack Western contact." The contact is fixed under B11. Still as before: the tour starts from the "New here?" card, not by itself. (`after/portal-01-home*.png`, `after/portal-01-home-not-submitted*.png`)
 
 ### Sponsor · First visit and Help · Step 2 · Welcome tour (8 steps)
 - What to do: clear. Big "Next" button, "Step N of 8".
@@ -36,6 +37,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Plain wording:
   - "Your booked chats and the hackers who want to meet you." → "Tell us when your reps can chat (required), then see your chats here."
 - Screens: `01-sponsor-firstvisit-tour-01..08.png` (and `-390`)
+- **Fixed:** step 4 reads "Tell us when your reps can chat (required), then see your chats here." Step 3 no longer promises a chat offer: "Scan their badge to add them to your list. We invite them to a coffee chat first." The "How to" coffee chat guide was still the old per-slot flow (pick a time, Candidates tab, targets that no longer exist); it's now "Coffee chats": set up on Chats, scan, point at the badge, Add to my list.
 
 ### Sponsor · First visit and Help · Step 3 · Need help? dialog
 - What to do: clear.
@@ -44,6 +46,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: Escape closes the dialog, but focus goes back to the page body, not to the "Need help?" button.
 - Fix: return focus to the button that opened the dialog.
 - Screens: `01-sponsor-firstvisit-help.png`, `01-sponsor-firstvisit-help-390.png`
+- **Fixed:** Help remembers the button that opened it, and Escape or Close puts focus back on it.
 
 ### Sponsor · Your team · Step 1 · Chats home, Not started
 - What to do: unclear. "Add a hacker" is the first and boldest button, but the required job is "Start" on the Chatting preferences card further down.
@@ -54,6 +57,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Plain wording:
   - "Two separate jobs: tell us when your reps can chat (required), then shortlist hackers you'd like to meet (optional)." → "First, tell us when your reps can chat. Then, if you like, pick hackers to meet."
 - Screens: `02-sponsor-team-chats-home.png`
+- **Fixed:** before submit, the preferences card comes first and its "Start"/"Continue" is the only filled button; the shortlist card follows (locked), and "Add a hacker" is an outline button under the cards. After submit the status card leads, then the shortlist, then preferences. The intro reads "First, tell us when your reps can chat. Then, if you like, pick hackers to meet." (`after/portal-02-chats-home-not-submitted*.png`, `after/portal-02-chats-home-submitted*.png`)
 
 ### Sponsor · Your team · Step 2 · Add reps (step 1 of 3)
 - Expected: blank Save gives an error, a short phone gives "That phone number looks too short.", "<name> added.", the first rep gets the crown. **Happened:** all as expected.
@@ -66,9 +70,12 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   - At 390 the rep name wraps mid-word ("Walkthr / ough Dana") because Primary, Edit and Remove take the row.
   - The page has two `<main>` landmarks (site wrapper and `#sponsor-main`).
 - Fix: show both field errors at once. While the user is still in the setup steps, have the status card say "Step 1 of 3: add your team". Put the rep's actions on their own line at phone width. Drop the outer `<main>`.
+- **Fixed ("Since you were last here"):** the sponsor's own saves and submits are never listed under "Since you were last here", only as "Last change".
+- **Fixed (the rest):** a blank Save shows both "Add their name." and "Add a phone number we can call or text." at once, each field marked invalid. Until preferences are submitted, the status card on a preferences step reads "Step 1 of 3: add your team" (then "say when they're free", "review and submit") with no "You need to" line. The portal shell's content area is now a `div` with the same `#sponsor-main` id, so the page has one `main` landmark (the app root's). (`after/portal-07-team-both-errors*.png`)
 - Plain wording:
   - "Next: Chatting preferences" (button) → "Next: When they're free"
 - Screens: `02-sponsor-team-step1-empty.png`, `02-sponsor-team-blank-save.png`, `02-sponsor-team-short-phone.png`, `02-sponsor-team-added-first.png`, `02-sponsor-team-two-reps-dana-primary-390.png`
+- **Fixed (wording, phone row):** the button reads "Next: When they're free". At 390 the crown, Edit and Remove sit on their own line under the name, so "Walkthrough Dana" no longer breaks mid-word. (`after/portal-02-team-390.png`)
 
 ### Sponsor · Your team · Step 3 · Move the crown, edit, remove
 - Expected: "Walkthrough Kevin is now the primary contact.", edit saves, removing the primary passes the crown on. **Happened:** all as expected.
@@ -81,6 +88,8 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   - "Primary" (badge) → "Main contact"
   - "The crown marks your primary contact. Organizers use their name and phone…" → "The crown marks your main contact. Organizers call this person."
 - Screens: `02-sponsor-team-crown-moved.png`, `02-sponsor-team-edit-open.png`, `02-sponsor-team-remove-confirm.png`, `02-sponsor-team-after-remove.png`
+- **Fixed (crown and wording):** the crown button says "Main contact" on the main contact and "Make main contact" on everyone else. "Main contact" replaces "Primary" / "primary contact" everywhere on the sponsor side (badge, review, errors, "<name> is now the main contact."). The hint reads "The crown marks your main contact. Organizers call this person…". (`after/portal-02-team*.png`)
+- **Fixed (Undo):** before Send, "Walkthrough Kevin removed. Undo" shows above the list; Undo adds the rep back with the same name, phone, free sessions and chats (and the crown, if they had it). After Send there's no Undo: the warning dialog already asked, and their invites were moved or cancelled. (`after/portal-07-team-undo*.png`)
 
 ### Sponsor · Chatting preferences · Step 1 · Hackers per chat
 - Expected: "Groups of 3 · 30 min · 6 hackers an hour per rep" and an autosave ("Saving…", "Saved."). **Happened:** the summary line is right. **"Saved." never appears**, and "Saving…" flashes for under a second in the footer (bug B6).
@@ -90,6 +99,8 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: the grey line "Up to 6 people a chat: 1 rep and up to 5 hackers." stays the same whatever you pick and reads like a second rule.
 - Fix: show "Saved" next to the footer after each autosave (the copy already exists). Delete the grey line, or change it to fit the pick ("Each chat: 1 rep + 3 hackers").
 - Screens: `03-sponsor-prefs-step2.png`, `03-sponsor-prefs-groups-of-3.png`
+- **Fixed (grey line):** it now follows the pick: "Each chat: 1 rep + 3 hackers".
+- **Fixed (B6):** the footer shows "Saving…", then "Saved." once the autosave lands, until the next edit. The footer note is now a live region, so both are read out. (`after/portal-03-prefs-saved*.png`)
 
 ### Sponsor · Chatting preferences · Step 2 · When is each rep free (grid)
 - Expected: every session ticked for new reps, the workshop hatched and not tickable, edge messages. **Happened:** as expected. Sun Life shows "Your workshop 2:30–3:30" hatched (the live run of show now says 2:30, so the guide's "1:00–1:30 only" example doesn't show up today). "…isn't free any time Saturday." and "…is free for 1 hour, so up to 2 chats." both show. Changes survived a reload.
@@ -105,6 +116,8 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Plain wording:
   - "Your day" (row label) → "Your events"
 - Screens: `03-sponsor-prefs-sunlife-workshop.png`, `03-sponsor-prefs-sunlife-workshop-390-b.png`, `03-sponsor-prefs-dana-not-free.png`, `03-sponsor-prefs-too-many-chats.png`, `03-sponsor-prefs-after-reload.png`
+- **Fixed (headers, row label, scroll):** headers read "10–11 AM" … "4–5 PM", the row label is "Your events", and when the grid is wider than its box a "Scroll for later times →" line and a right-edge fade show (390 px; 1280 now fits). (`after/portal-03-prefs-grid*.png`)
+- **Fixed (legend, 0 chats):** the legend shows only when the grid has a hatched cell, as one readable item: "Your workshop, with 15 minutes' travel time either side". A rep at 0 chats has their row greyed with "Doesn't chat" in place of "6 of 6 sessions". (`after/portal-07-prefs-zero-chats*.png`)
 
 ### Sponsor · Chatting preferences · Step 3 · How many chats
 - Expected: 4 chats each to start, 0 gives "Doesn't chat", totals "Up to N chats · up to M hackers". **Happened:** as expected.
@@ -114,6 +127,8 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: a rep free for no sessions still shows "4 chats · 2 h" next to the red "isn't free any time" message.
 - Fix: when a rep has no free time, show "No free time" in place of the chats-and-hours label.
 - Plain wording: "Need something different? Contact organizers" → "Something doesn't fit? Ask an organizer". It opens Help, as the guide expects.
+- **Fixed (wording):** "Something doesn't fit? Ask an organizer", still opening Help.
+- **Fixed (no free time):** a rep with chats but no free session shows "No free time" (in the warning colour) in place of "4 chats · 2 h". (`after/portal-07-prefs-zero-chats*.png`)
 
 ### Sponsor · Review & submit · Step 1 · Review (step 3 of 3)
 - Expected: "Everything checks out.", "Groups of 3 · 30 min · up to 6 chats · up to 18 hackers", "Organizers call <name> at <phone>." **Happened:** as expected.
@@ -123,6 +138,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: the read-only grid uses the same filled checkboxes as the editable one, so it looks clickable. "Organizers call … at …" is small grey text but it's the key fact.
 - Fix: show the review grid as plain ticks (no box). Make the call line normal body text.
 - Screens: `04-sponsor-review-step3.png`, `04-sponsor-review-390*.png`
+- **Fixed:** the read-only grid shows plain ticks with no box, and "Organizers call <name> at <phone>." is bold body text. (`after/portal-07-review*.png`)
 
 ### Sponsor · Review & submit · Step 2 · Submitted
 - Expected: "Preferences submitted", status card "Submitted, waiting for organizers to schedule", Shortlist unlocks. **Happened:** as expected.
@@ -140,6 +156,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - 5-year-old says: "I type the three words and press Look up."
 - Fix: show "No camera found" once.
 - Screens: `05-sponsor-scan-open.png`, `05-sponsor-scan-not-a-hacker.png`
+- **Fixed:** the heading says "No camera found" once; the box under it says only what to do, and the live region no longer repeats the title. (`after/portal-05-scan-open.png`)
 
 ### Sponsor · Scan a hacker · Step 2 · Hacker card and rep picker
 - Expected: "Which rep wants to talk to them?" plus "Add to Met at Hacker Fair". **Happened:** shown, **but the card also says "15-minute chat" and "No open times"**, from the old per-slot model. Test Sponsor runs 30-minute groups (bug B1).
@@ -153,6 +170,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   - "Add to Met at Hacker Fair" → "Add to my list"
   - "Met at Hacker Fair" (everywhere) → "Met at your booth"
 - Screens: `05-sponsor-scan-found.png`, `05-sponsor-scan-found-390.png`, `05-sponsor-scan-again.png`
+- **Fixed:** the card does one job ("Met at your booth" · "You met Alex"), with an optional "Who talked to them?" and "Add to my list" as the only filled button (a picked rep is tinted, not filled). The time offer, chat length, room and "No open times" are gone. "Not now" is a text button; "Scan next" appears only after the add. A repeat scan shows "Already on your list · added Thu 10:12 AM · talked to Walkthrough Kevin" and the button reads "Save". (`after/portal-05-scan-found*.png`, `after/portal-05-scan-again*.png`)
 
 ### Sponsor · Scan a hacker · Step 3 · Added
 - Expected: "Alex is on your Met at Hacker Fair list. We'll invite them first." and the Chats home count. **Happened:** as expected ("2 people you scanned" after two scans). A second scan kept the first time and cleared the rep (DB checked).
@@ -161,6 +179,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - 5-year-old says: "It says Alex is on my list."
 - Clear, no changes (apart from the wording above).
 - Screens: `05-sponsor-scan-added.png`, `05-sponsor-scan-chats-home-390.png`
+- **Fixed (wording):** "Alex is on your list. We'll invite them first." as the card's heading, with a text "Scan next" under it. (`after/portal-05-scan-added*.png`)
 
 ### Sponsor · Shortlist · Step 1 · Shortlist hackers
 - Expected: scanned hackers first and read-only; "N seats · M taken by people you scanned · shortlist up to N−M". **Happened:** "18 seats · 2 taken by people you scanned · shortlist up to 16". As expected.
@@ -172,6 +191,8 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Plain wording:
   - "People you scanned · First choice" → "People you met · invited first"
 - Screens: `06-sponsor-shortlist-open.png`, `06-sponsor-shortlist-one-at-a-time.png`, `06-sponsor-shortlist-list.png`
+- **Fixed (wording, steps box):** the block is "People you met · invited first", each row "Met at your booth · Talked to <rep>", and the cap line "N seats · M taken by people you met · shortlist up to K". The scan line is out of the steps box (two steps now).
+- **Fixed (message):** the "<name> shortlisted." announcement is cleared when the step changes.
 
 ### Sponsor · Shortlist · Step 2 · Review, submit, edit
 - Expected: "Shortlist submitted", Edit reopens. **Happened:** as expected.
@@ -181,6 +202,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: in the submitted view, the Remove buttons look half-disabled next to the line "Tap Edit shortlist to change it."
 - Fix: say it up front: "Editing un-submits your shortlist until you submit again." Hide the Remove buttons while it's submitted.
 - Screens: `06-sponsor-shortlist-review.png`, `06-sponsor-shortlist-submitted.png`, `06-sponsor-shortlist-submitted-390.png`
+- **Fixed:** the submitted banner says it up front: "Your shortlist is submitted. Editing un-submits it until you submit again." The Remove and Shortlist buttons are hidden while it's submitted. (`after/portal-07-shortlist-submitted*.png`)
 
 ### Sponsor · Shortlist · Step 3 · Over the cap (edge)
 - Expected: "Your shortlist has 5 people but you now have 3 seats. Remove 2." **Happened:** "3 of 1 shortlisted", "Your shortlist has 3 people but you now have 1 seat. Remove 2." **and** "All 1 seats are shortlisted…" at the same time. The home card reads "3 of 1 seats" (bug B5).
@@ -192,6 +214,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   - "Your shortlist has 3 people but you now have 1 seat." → "You now have room for 1 on your shortlist. Remove 2."
   - "All 1 seats are shortlisted." → "Your shortlist is full."
 - Screens: `06-sponsor-shortlist-over-cap.png`, `06-sponsor-shortlist-over-cap-home.png`
+- **Fixed:** over the cap, the big line is only "You now have room for 1 on your shortlist. Remove 2." ("…no room… Remove 3." at 0); "3 of 1" and "Your shortlist is full" no longer show with it. The home card reads "3 shortlisted, room for 1. Remove 2." even after a submit. At the cap: "Your shortlist is full. Remove someone to add another." (`after/portal-06-shortlist-over-cap*.png`, with the shortlist answer patched in the browser, so the shared DB wasn't changed)
 
 ### Sponsor · Your chats · Step 1 · Chats home after Send
 - Expected: preferences card "Confirmed"; status "Scheduled, invites going out", then "Scheduled, 1 of N seats accepted"; calendar with rooms, format, count and first names marked Invited or Confirmed. **Happened:** as expected ("Scheduled, 1 of 18 seats accepted", "Alex · Confirmed").
@@ -201,6 +224,8 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: "Your chats", the thing they came for, is the last section, under two setup cards and "Add a hacker". At 1280 the calendar shows only 10–11 to 2–3. The 3–4 and 4–5 columns sit behind a sideways scroll with no cue. With several hackers per hour, the names stack into a tall narrow cell.
 - Fix: once Sent, put "Your chats" first and shrink the setup cards into one line of links. Default to List at phone width. Fade the calendar's right edge.
 - Screens: `14-sponsor-yourchats-after-send.png`, `14-sponsor-yourchats-list.png`, `14-sponsor-yourchats-filter-kevin.png`, `20-sponsor-yourchats-after-answers.png`
+- **Fixed (order and columns):** after Send, "Your chats" comes right after the status card, and the setup cards fold into one "Your setup" list: "Change your team or times", "Shortlist" and "Add a hacker". The calendar now has sessions down the side and reps across, so all six sessions show at 1280 and at 390 with two reps (no sideways scroll); a wider team scrolls with a "Scroll for later times →" line and a fade on the right edge. Session labels have AM/PM. The selected rep filter is tinted, not filled. "Last change" is covered in the status-card fix below. (`after/portal-02-chats-home-sent*.png`)
+- **Fixed (status card):** after Send the card adds live counts ("Invites: 1 accepted · 8 waiting · 9 open"), and "Last change" lists only what organizers did: "Organizers confirmed your chats · Thu 10:28 AM" (every Send or re-send) and "Organizers moved Walkthrough Dana's 1:00 chat to 3:00, Rm 1348" (or "…removed…") when a sent chat's session or room changed. Moves are worked out on the device by comparing the sent chats it saw last time (no move history in the DB, no schema change), so they show without a time. "Next" now says "hackers answer their invites by Sat 10 AM" until round 1 closes. (`after/portal-14-status-card*.png`)
 
 ### Sponsor · Your chats · Step 2 · List and rep filter
 - Expected: List and Calendar switch, and filtering by rep works. **Happened:** as expected.
@@ -213,12 +238,14 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - 5-year-old says: "Uh oh, 9 people. I press Keep it as is."
 - Fix: count only the hackers in chats this edit touches, and say who acts next. If the edit only makes a chat invalid (the chat stays until organizers move it): "Dana's 1–2 chat has 3 invited hackers. Organizers will move it and tell them."
 - Screens: `15-sponsor-change-dialog.png`
+- **Fixed:** the dialog counts only invites in the chats this edit changes (an unticked session, chats that shrink, a new group size, or a removed rep's chats) and uses the one shared sentence: "This affects 3 invited hackers. They'll be told and asked to confirm again." An edit that touches no sent chat says "This doesn't affect any invited hackers." (`after/portal-15-change-dialog*.png`)
 
 ### Sponsor · Change after invites · Step 2 · Keep / Change anyway
 - Expected: Keep changes nothing. Change saves and doesn't ask again on that screen. The status card adds "You changed your setup after invites went out…". **Happened:** as expected.
 - What's happening: clear.
 - Clear, no changes (beyond B4).
 - Screens: `15-sponsor-change-saved.png`
+- **Fixed (B4):** the status card now uses the dialog's sentence: "You changed your setup after invites went out. This affects N invited hackers. They'll be told and asked to confirm again.", where N is the invites in sent chats the new setup no longer fits.
 
 ### Sponsor · Judging · Step 1 · Who's judging?
 - Expected: pick a name or "Someone else". **Happened:** as expected. Picking a name goes straight in. "Start judging" is only for "Someone else".
@@ -228,6 +255,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: Sun Life's side nav shows "Judging · Sun 9 AM" with a lock, yet the page opens fine from the link.
 - Fix: either open the page from the nav, or show a "Opens Sun 9 AM" screen. Don't do one in the nav and the other on the page.
 - Screens: `21-sponsor-judging-whos-judging.png`, `21-sponsor-judging-whos-judging-390*.png`
+- **Fixed:** the page follows the nav. Before Sunday 9:00 AM `/picks` shows "Judging opens Sunday 9:00 AM", the debrief note and "Back to Home"; `?preview=judging` (which the nav keeps) still opens it for testing. The judging components weren't changed. (`after/portal-07-judging-locked*.png`)
 
 ### Sponsor · Judging · Step 2 · Score, rubric, second rep, list
 - Expected: 1–10 strip in half points, dimmed until touched; "Dana 9.5 · Kevin 6", the average, an amber flag; split "Your N / Everyone's N". **Happened:** all as expected ("avg 7.8", "Dana 9.5 · Kevin 6: talk it through", "Your 5 / Everyone's 14").
@@ -427,6 +455,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   4. Next: "hackers answer their invites. If someone can't make it, we invite the next person on your list." Clear, but it gives no time ("by Sat 10 AM").
 - After an organizer moved Dana's chat and Noah re-sent: "Last change" still reads "Organizers scheduled your chats · 10:28 AM". It doesn't say **Dana's 1–2 chat moved to 3–4**. Question 2 is unclear. (`18-handoff-sponsor-after-move-resend.png`)
 - Fix: write moves into "Last change" ("Organizers moved Dana's chat to 3–4, Rm 1348"). Add "Hackers answer by Sat 10 AM" to Next.
+- **Fixed:** "Last change" shows "Organizers confirmed your chats · <time>" for each Send and "Organizers moved <rep>'s 1:00 chat to 3:00, Rm 1348" when a sent chat moved (detected per device, no time shown); "Next" says "by Sat 10 AM". Question 2 is answered. (`after/portal-14-status-card*.png`)
 
 ### Both · Sponsor changes after invites → organizer notices · Organizer side, fresh
 1. State: the summary says "1 sponsor changed after invites. Check their chats, then Noah sends again." The chip shows "Changed after invites". Clear.
@@ -442,10 +471,12 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 ### Both · Sponsor asks for help → organizer contact
 - The sponsor sees the lead (or "not assigned yet") and Noah. Nothing reaches the dashboard. As expected. The organizer calls back from My sponsors or the board row (phones with copy icons work).
 - Gap: the Home page's "Event details" names a different contact than Help (see First visit, Step 1).
+- **Fixed (B11):** Home, Help and the tour now name the same lead (or the same "hasn't been assigned yet"), with Noah as the emergency contact on Home and in Help.
 
 ### Both · Invites: hacker invited → answers → both sides see it
 - Hacker side (`/live`): toast "Test Sponsor wants to chat with you · Sat 10:00 AM, 30 min · View". The Coffee chats tab shows "Needs your answer · Reply by 9:25 AM · 46 h 55 min left" with Accept and Decline. Accepting gives "Accepted. You're chatting with Test Sponsor at 10:00 AM." Declining asks inline ("Decline Sun Life's chat? The time goes to another hacker. Yes, decline / Keep"). Clear on both counts. (`19-hacker-*.png`)
 - Sponsor side: "Scheduled, 1 of 18 seats accepted", "Alex · Confirmed". As expected. "Last change" doesn't mention the acceptance (same fix as above).
+- **Fixed (by decision):** acceptances show as live counts on the status card ("Invites: 1 accepted · 8 waiting · 9 open") and as names in "Your chats", not as change-log lines.
 - Organizer side: "Invites: 0 accepted · 9 waiting · 9 open" before the answers. The status endpoint shows the accept.
 
 ---
@@ -458,6 +489,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Actual: also "15-minute chat" and the pill "No open times". Both come from the old per-slot `freeTimes` query and the Coffee Chat Setup sheet, not the session model.
 - Where: `src/components/sponsors/badge-scanner.tsx:402` (`freeTimes` query), `:437`, `:515` (`timesHint`); copy `src/content/sponsor-scan.ts:53`, `:61-62`.
 - Screen: `05-sponsor-scan-found.png`
+- **Fixed:** the card no longer reads `freeTimes` or offers a time; it records the scan only (`HackerStep` in `badge-scanner.tsx`, new read-only `coffeeChatSetup.scanOf` for the "Already on your list" line). The scan page checks the link with `coffeeChatSetup.get`.
 
 **B2 · Digital sponsors (PCBWay) show up in coffee-chat "Needs attention" and in Presentations.**
 - Steps: open the judging tab's Digital sponsors and type a link for PCBWay (this creates its DB row), then open Sponsors.
@@ -481,6 +513,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Actual: "Changing this will ask 9 hackers to confirm again". All 9 stay pending with unchanged answer-by times. The status card then says "Organizers will check it and ask affected hackers to confirm again."
 - Where: copy `src/content/sponsor-coffee-setup.ts:112-116`, `:361-362`, `:106`; the count is passed in by the preferences step.
 - Screens: `15-sponsor-change-dialog.png`, `15-sponsor-change-saved.png`
+- **Fixed:** the dialog's N comes from `invitesAffected` (`src/lib/coffee-chat-setup.ts`), comparing the saved setup with the edit, per chat. The status card's N comes from `coffeeChatSetup.get` (`seats.changed`). Both use `afterInvitesEffect` in `sponsor-coffee-setup.ts`. The server's refusal without the confirm flag now says "Invites are already out. Confirm the change to save it." with no count.
 
 **B5 · Shortlist over-cap text: "3 of 1 shortlisted", "All 1 seats", "1 seat".**
 - Steps: shortlist 3 (with 2 scanned), then lower chats to 3 seats.
@@ -488,12 +521,14 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Actual: "3 of 1 shortlisted", "Your shortlist has 3 people but you now have 1 seat. Remove 2.", and "All 1 seats are shortlisted…" both show. Home: "3 of 1 seats".
 - Where: `src/content/sponsor-coffee-setup.ts:290`, `:373`, `:376`.
 - Screens: `06-sponsor-shortlist-over-cap.png`, `06-sponsor-shortlist-over-cap-home.png`
+- **Fixed:** `overCap`, `full`, `shortlistFull` and the home card's line say "shortlist", not "seats"; the shortlist step shows the over-cap line in place of the count.
 
 **B6 · Preferences autosave never shows "Saved."**
 - Steps: step 2 → change anything → wait.
 - Expected: "Saving…", then "Saved." (guide).
 - Actual: "Saving…" for a moment, then nothing. `copy.saved` is never rendered.
 - Where: `src/components/sponsors/coffee-setup/prefs-step.tsx:330-336`.
+- **Fixed:** `prefs-step.tsx` keeps a `saved` flag set after a save with nothing newer waiting, cleared on the next edit; the footer renders `copy.saved`.
 
 **B7 · My sponsors status and CC-workshop pills snap back with no note when sheet writes are off.**
 - Steps: My sponsors (as a lead) → tap "Not arrived" or "Not attended".
@@ -530,6 +565,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Expected: one answer.
 - Actual: Event details says "Hack Western Organizer Team · On-site support". Help says "Your contact hasn't been assigned yet."
 - Screens: `01-sponsor-firstvisit-home.png`, `01-sponsor-firstvisit-help.png`
+- **Fixed:** Event details reads the same `useHelpContacts` as Help (the HW lead from Sponsor Day-Of; Noah from HW Contacts), so both say "Your contact hasn't been assigned yet." for Test Sponsor, and the lead's name and phone when there is one. The "Hack Western Organizer Team · On-site support" fallback is gone. (`after/portal-01-home*.png`, `after/portal-01-help*.png`)
 
 ---
 

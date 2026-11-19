@@ -22,27 +22,44 @@ const chatsAndTime = (chats: number, minutes: number) =>
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
 
+/**
+ * The one sentence for a change after invites (simplify-decisions, "Changes
+ * after invites"), used by the warning dialog and the status card. N counts
+ * only invites in the chats being changed.
+ */
+const afterInvitesEffect = (n: number) =>
+  n === 0
+    ? "This doesn't affect any invited hackers."
+    : `This affects ${plural(n, "invited hacker")}. They'll be told and asked to confirm again.`;
+
 export const sponsorSetupCopy = {
   seoTitle: "Coffee chats",
 
   /** Session labels by id (src/lib/coffee-chat-sessions.ts). */
   sessions: {
-    "10": "10–11",
-    "11": "11–12",
-    "13": "1–2",
-    "14": "2–3",
-    "15": "3–4",
-    "16": "4–5",
+    "10": "10–11 AM",
+    "11": "11 AM–12 PM",
+    "13": "1–2 PM",
+    "14": "2–3 PM",
+    "15": "3–4 PM",
+    "16": "4–5 PM",
   } as Record<string, string>,
   day: "Saturday",
   daySubtitle: "Sat",
+  /** Above a table wider than the screen (ScrollHint). */
+  scrollHint: "Scroll for later times",
 
   home: {
     title: "Coffee chats",
-    intro:
-      "Two separate jobs: tell us when your reps can chat (required), then shortlist hackers you'd like to meet (optional).",
+    intro: "First, tell us when your reps can chat. Then, if you like, pick hackers to meet.",
     scan: "Add a hacker",
-    scanHint: "Scan a hacker you met at your booth. We invite people you scan first.",
+    scanHint: "Met someone at your booth? Add them and we'll invite them first.",
+    /** After Send: the setup cards collapse into links under Your chats. */
+    afterSend: {
+      heading: "Your setup",
+      change: "Change your team or times",
+      shortlist: "Shortlist",
+    },
     prefs: {
       tag: "Required",
       title: "Chatting preferences",
@@ -58,15 +75,17 @@ export const sponsorSetupCopy = {
     shortlist: {
       tag: "Optional",
       title: "Shortlist",
-      body: "Hackers you'd like to meet. We invite people you scan first.",
+      body: "Hackers you'd like to meet. People you met at your booth are invited first.",
       locked: "Opens once your chatting preferences are submitted.",
-      seats: (n: number, max: number) => `${n} of ${max} seats`,
-      submitted: (n: number, max: number) => `Submitted · ${n} of ${max} seats`,
+      /** Shortlist places (seats minus people met at the booth), not seats. */
+      seats: (n: number, max: number) =>
+        n > max ? `${n} shortlisted, room for ${max}. Remove ${n - max}.` : `${n} of ${max} shortlisted`,
+      submitted: (n: number, max: number) => `Submitted · ${n} of ${max} shortlisted`,
       start: "Start",
       continue: "Continue",
       view: "View shortlist",
     },
-    scanned: (n: number) => `${plural(n, "person", "people")} you scanned`,
+    scanned: (n: number) => `${plural(n, "person", "people")} met at your booth`,
   },
 
   /** The status card at the top of every coffee chat screen. */
@@ -91,29 +110,44 @@ export const sponsorSetupCopy = {
       notStarted: "Next: you submit your preferences. Then organizers confirm chat times Friday evening.",
       draft: "Next: you submit. Then organizers confirm chat times Friday evening.",
       waiting: "Next: organizers confirm chat times Friday evening, then invite hackers.",
-      scheduled:
-        "Next: hackers answer their invites. If someone can't make it, we invite the next person on your list.",
+      scheduled: (answerBy: string | null) =>
+        answerBy
+          ? `Next: hackers answer their invites by ${answerBy}. If someone can't make it, we invite the next person on your list.`
+          : "Next: hackers answer their invites. If someone can't make it, we invite the next person on your list.",
     },
     changes: {
       since: "Since you were last here",
       last: "Last change",
-      scheduled: "Organizers scheduled your chats",
+      scheduled: "Organizers confirmed your chats",
       submittedPrefs: "You submitted your chatting preferences",
       submittedShortlist: "You submitted your shortlist",
       saved: "You saved changes",
     } as Record<string, string>,
-    editedAfterSend:
-      "You changed your setup after invites went out. Organizers will check it and ask affected hackers to confirm again.",
+    /** While filling in preferences (not submitted yet): where they are. */
+    inFlow: (n: number, total: number, what: string) => `Step ${n} of ${total}: ${what}`,
+    flowSteps: ["add your team", "say when they're free", "review and submit"],
+    editedAfterSend: (n: number) =>
+      `You changed your setup after invites went out. ${afterInvitesEffect(n)}`,
     at: (what: string, when: string) => `${what} · ${when}`,
+    /** Round 1's answer-by time (Sat 10:00 AM), in "Next". */
+    roundOneAnswerBy: "Sat 10 AM",
+    /** After Send: live invite counts, not a change log. */
+    invites: (accepted: number, waiting: number, open: number) =>
+      `Invites: ${accepted} accepted · ${waiting} waiting · ${open} open`,
+    /** A sent chat organizers moved or removed (from, to: "2:00"). */
+    moved: (rep: string, from: string, to: string | null, room: string | null) =>
+      to && room
+        ? `Organizers moved ${rep}'s ${from} chat to ${to}, Rm ${room}`
+        : to
+          ? `Organizers moved ${rep}'s ${from} chat to ${to}`
+          : `Organizers moved ${rep}'s ${from} chat to Rm ${room ?? ""}`,
+    removed: (rep: string, from: string) => `Organizers removed ${rep}'s ${from} chat`,
   },
 
   /** Before any change once invites are out (spec: "Changes after invites"). */
   afterInvites: {
     title: "Invites are already out",
-    body: (n: number) =>
-      n === 0
-        ? "Changing this may ask hackers to confirm again, and some may drop off."
-        : `Changing this will ask ${plural(n, "hacker")} to confirm again, and some may drop off.`,
+    body: afterInvitesEffect,
     confirm: "Change anyway",
     cancel: "Keep it as is",
   },
@@ -122,8 +156,8 @@ export const sponsorSetupCopy = {
   backStep: "Back",
   /** Opens the portal Help (HW lead + emergency contact). */
   help: {
-    question: "Need something different?",
-    contact: "Contact organizers",
+    question: "Something doesn't fit?",
+    contact: "Ask an organizer",
   },
   rail: {
     stepOf: (n: number, total: number) => `Step ${n} of ${total}`,
@@ -142,7 +176,7 @@ export const sponsorSetupCopy = {
   team: {
     heading: (sponsor: string) => `Add each rep from ${sponsor}.`,
     crownNote:
-      "The crown marks your primary contact. Organizers use their name and phone. The first rep you add gets it; tap another rep's crown to move it.",
+      "The crown marks your main contact. Organizers call this person. The first rep you add gets it; tap Make main contact on another rep to move it.",
     count: (n: number) => `Reps · ${n}`,
     empty: "No reps yet. Add the people from your team who'll chat with hackers.",
     name: "Name",
@@ -157,19 +191,24 @@ export const sponsorSetupCopy = {
     editLabel: (name: string) => `Edit ${name}`,
     remove: "Remove",
     removeLabel: (name: string) => `Remove ${name}`,
-    primary: "Primary",
-    primaryContact: "Primary contact",
-    makePrimary: (name: string) => `Make ${name} the primary contact`,
-    isPrimary: (name: string) => `${name} is the primary contact`,
-    nowPrimary: (name: string) => `${name} is now the primary contact.`,
+    primary: "Main contact",
+    primaryContact: "Main contact",
+    /** The crown button's visible text on a rep who isn't the main contact. */
+    makePrimaryShort: "Make main contact",
+    makePrimary: (name: string) => `Make ${name} the main contact`,
+    isPrimary: (name: string) => `${name} is the main contact`,
+    nowPrimary: (name: string) => `${name} is now the main contact.`,
     added: (name: string) => `${name} added.`,
     removed: (name: string) => `${name} removed.`,
+    undo: "Undo",
+    undoLabel: (name: string) => `Undo removing ${name}`,
+    restored: (name: string) => `${name} is back.`,
     saved: (name: string) => `${name} saved.`,
     needName: "Add their name.",
     needPhone: "Add a phone number we can call or text.",
     shortPhone: "That phone number looks too short.",
     full: (max: number) => `You can add up to ${max} reps.`,
-    next: "Next: Chatting preferences",
+    next: "Next: When they're free",
     needRep: "Add at least one rep to continue.",
   },
 
@@ -181,12 +220,19 @@ export const sponsorSetupCopy = {
     q1Label: "Hackers per chat",
     format: (n: number) =>
       n === 1 ? "1-on-1 · 15 min · 4 hackers an hour per rep" : `Groups of ${n} · 30 min · ${n * 2} hackers an hour per rep`,
-    roomCap: "Up to 6 people a chat: 1 rep and up to 5 hackers.",
+    /** Under the hackers-per-chat pick; follows the pick. */
+    roomCap: (n: number) => `Each chat: 1 rep + ${plural(n, "hacker")}`,
     q2: "When is each rep free?",
     q2Hint: "Untick any time a rep isn't free.",
     editTeam: "Edit your team",
-    yourDay: "Your day",
+    yourDay: "Your events",
     yourWorkshop: "Your workshop",
+    /** Legend for the hatched cells, shown only when the grid has one. */
+    legend: "Your workshop, with 15 minutes' travel time either side",
+    /** A rep at 0 chats: their row is greyed. */
+    doesntChat: "Doesn't chat",
+    /** A rep free no time at all, in place of "4 chats · 2 h". */
+    noFreeTime: "No free time",
     workshopAt: (when: string) => `Your workshop ${when}`,
     buffer: "Buffer · travel time",
     workshopsUnknown:
@@ -252,7 +298,7 @@ export const sponsorSetupCopy = {
     resubmit: "Submit changes",
     shortlistNext: "Next: Shortlist hackers",
     noChats: "No rep has a chat at a time they're free. Tick a session or add chats.",
-    noPrimary: "Pick a primary contact (the crown) in Your team.",
+    noPrimary: "Pick a main contact (the crown) in Your team.",
   },
 
   shortlist: {
@@ -260,20 +306,16 @@ export const sponsorSetupCopy = {
     title: "Shortlist",
     body: "Hackers you'd like to meet.",
     steps: ["Shortlist hackers", "Review & submit shortlist"],
-    how: [
-      "Shortlist hackers you'd like to meet here.",
-      "Scan hackers at your booth Friday night. We invite people you scan first.",
-      "Submit your shortlist when you're happy with it.",
-    ],
+    how: ["Shortlist hackers you'd like to meet here.", "Submit your shortlist when you're happy with it."],
     locked: "Submit your chatting preferences first. Your seats come from them.",
     goPrefs: "Go to chatting preferences",
     seats: (n: number, max: number) => `${n} of ${max}`,
     seatsSuffix: "shortlisted",
-    /** "14 seats · 3 taken by people you scanned · shortlist up to 11" */
+    /** "14 seats · 3 taken by people you met · shortlist up to 11" */
     capLine: (seats: number, scanned: number, cap: number) =>
       scanned === 0
         ? `${plural(seats, "seat")} · shortlist up to ${cap}`
-        : `${plural(seats, "seat")} · ${scanned} taken by people you scanned · shortlist up to ${cap}`,
+        : `${plural(seats, "seat")} · ${scanned} taken by people you met · shortlist up to ${cap}`,
     sentNote:
       "Your chats are scheduled. Changes here only affect who's offered seats in later rounds.",
     noSeats: "Your preferences have no chats yet, so there are no seats to fill.",
@@ -287,14 +329,14 @@ export const sponsorSetupCopy = {
     remove: "Remove",
     addLabel: (name: string) => `Shortlist ${name}`,
     removeLabel: (name: string) => `Remove ${name} from your shortlist`,
-    full: (max: number) => `All ${max} seats are shortlisted. Remove someone to add another.`,
+    full: "Your shortlist is full. Remove someone to add another.",
     added: (name: string) => `${name} shortlisted.`,
     removed: (name: string) => `${name} removed.`,
     toggleError: "Couldn't update your shortlist. Try again.",
-    scannedHeading: "People you scanned · First choice",
-    scannedNote: "We invite people you scan first, before your shortlist.",
-    scannedBy: (rep: string) => `Scanned by ${rep}`,
-    scannedTag: "Met at Hacker Fair",
+    scannedHeading: "People you met · invited first",
+    scannedNote: "We invite people you met at your booth first, before your shortlist.",
+    scannedBy: (rep: string) => `Talked to ${rep}`,
+    scannedTag: "Met at your booth",
     filters: { shortlisted: "Shortlisted", not: "Not shortlisted", all: "Everyone" },
     filterLabel: "Show",
     noneShortlisted: "Nobody shortlisted yet.",
@@ -309,9 +351,9 @@ export const sponsorSetupCopy = {
     submit: "Submit shortlist",
     submitting: "Submitting…",
     submitted: "Shortlist submitted",
-    submittedBody: "Thanks! We'll invite people you scan first, then your shortlist.",
+    submittedBody: "Thanks! We'll invite people you met at your booth first, then your shortlist.",
     edit: "Edit shortlist",
-    lockedSubmitted: "Your shortlist is submitted. Tap Edit shortlist to change it.",
+    lockedSubmitted: "Your shortlist is submitted. Editing un-submits it until you submit again.",
     skipForNow: "Skip for now",
   },
 
@@ -343,37 +385,40 @@ export const sponsorSetupCopy = {
     emptyRep: "No chats for this rep.",
   },
 
+  /** The scan card: one job, add the hacker to "Met at your booth". */
   scan: {
     heading: (name: string) => `You met ${name}`,
-    metLegend: "Which rep wants to talk to them?",
+    already: (when: string, rep: string | null) =>
+      rep ? `Already on your list · added ${when} · talked to ${rep}` : `Already on your list · added ${when}`,
+    metLegend: "Who talked to them? (optional)",
     noRep: "Anyone",
-    add: "Add to Met at Hacker Fair",
+    add: "Add to my list",
+    save: "Save",
     adding: "Adding…",
-    added: (name: string) => `${name} is on your Met at Hacker Fair list. We'll invite them first.`,
+    added: (name: string) => `${name} is on your list. We'll invite them first.`,
     error: "Couldn't add them. Try again.",
   },
 
   errors: {
     unknownSponsor: "This private link isn't valid.",
     unknownRep: "That rep isn't on your team anymore. Refresh and try again.",
-    afterInvites: (n: number) =>
-      n === 0
-        ? "Invites are already out. Changing this may ask hackers to confirm again, and some may drop off."
-        : `Invites are already out. Changing this will ask ${plural(n, "hacker")} to confirm again, and some may drop off.`,
+    afterInvites: "Invites are already out. Confirm the change to save it.",
     tooManyReps: (max: number) => `You can add up to ${max} reps.`,
     shortPhone: "That phone number looks too short.",
     badSession: "That isn't one of the chat sessions.",
     noReps: "Add at least one rep in Your team first.",
-    noPrimary: "Pick a primary contact (the crown) in Your team.",
+    noPrimary: "Pick a main contact (the crown) in Your team.",
     noChats: "No rep has a chat at a time they're free. Tick a session or add chats.",
     notAHacker: "That isn't a Hack Western hacker's badge.",
     prefsFirst: "Submit your chatting preferences first.",
     shortlistSubmitted: "Your shortlist is submitted. Tap Edit shortlist to change it.",
-    shortlistFull: (max: number) =>
-      `All ${max} seats are shortlisted. Remove someone to add another.`,
+    shortlistFull: "Your shortlist is full. Remove someone to add another.",
     notCandidate: "This hacker isn't on your list.",
+    /** Fewer chats after shortlisting: shortlist places, not seats (B5). */
     overCap: (picked: number, cap: number) =>
-      `Your shortlist has ${plural(picked, "person", "people")} but you now have ${plural(cap, "seat")}. Remove ${picked - cap}.`,
+      cap === 0
+        ? `You now have no room on your shortlist. Remove ${picked}.`
+        : `You now have room for ${cap} on your shortlist. Remove ${picked - cap}.`,
     loadError: "Couldn't load your coffee chat setup.",
     saveError: "Couldn't save. Try again.",
     scheduleUnknown:

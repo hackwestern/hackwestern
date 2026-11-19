@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CircleCheck, ScanLine } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
@@ -39,7 +39,9 @@ export function ShortlistFlow({
 }) {
   const utils = api.useUtils();
   const q = api.sponsorShortlist.list.useQuery({ sponsor }, { retry: 1, refetchOnWindowFocus: false });
-  const { announce, region } = useAnnounce();
+  const { announce, clear, region } = useAnnounce();
+  // "<name> shortlisted." belongs to the step it happened on.
+  useEffect(() => clear(), [step, clear]);
   const [view, setView] = useState<View>("one");
   const [filter, setFilter] = useState<Filter>("shortlisted");
   const [skipped, setSkipped] = useState<Set<string>>(() => new Set());
@@ -103,18 +105,20 @@ export function ShortlistFlow({
 
   const seats = (
     <div className="flex flex-col gap-1">
-      <p className="m-0 text-base text-dashboard-text-medium">
-        <span className="text-xl font-bold text-dashboard-text-heavy">{copy.seats(data.picked, max)}</span>{" "}
-        {copy.seatsSuffix}
-      </p>
+      {/* Over the cap: only the over-cap line, never "3 of 1" (B5). */}
+      {over ? (
+        <p role="alert" className="m-0 text-xl font-bold text-dashboard-text-warning">
+          {sponsorSetupCopy.errors.overCap(data.picked, max)}
+        </p>
+      ) : (
+        <p className="m-0 text-base text-dashboard-text-medium">
+          <span className="text-xl font-bold text-dashboard-text-heavy">{copy.seats(data.picked, max)}</span>{" "}
+          {copy.seatsSuffix}
+        </p>
+      )}
       <p className="m-0 text-sm text-dashboard-text-light">
         {copy.capLine(data.seats, data.scanned.length, max)}
       </p>
-      {over && (
-        <p role="alert" className="m-0 text-base font-semibold text-dashboard-text-warning">
-          {sponsorSetupCopy.errors.overCap(data.picked, max)}
-        </p>
-      )}
       {data.sent && <p className="m-0 text-sm text-dashboard-text-medium">{copy.sentNote}</p>}
     </div>
   );
@@ -164,7 +168,7 @@ export function ShortlistFlow({
         ) : (
           <ul className="m-0 flex list-none flex-col p-0">
             {picked.map((h) => (
-              <HackerRow key={h.userId} hacker={h} disabled={busy || submitted} canAdd={!full} onToggle={() => toggle(h)} />
+              <HackerRow key={h.userId} hacker={h} disabled={busy} hidden={submitted} canAdd={!full} onToggle={() => toggle(h)} />
             ))}
           </ul>
         )}
@@ -232,7 +236,7 @@ export function ShortlistFlow({
         </div>
       </div>
       {max === 0 && <p className="m-0 text-base text-dashboard-text-warning">{copy.noSeats}</p>}
-      {full && max > 0 && <p className="m-0 text-sm text-dashboard-text-medium">{copy.full(max)}</p>}
+      {full && !over && max > 0 && <p className="m-0 text-sm text-dashboard-text-medium">{copy.full}</p>}
 
       {scannedSection}
 
@@ -293,7 +297,7 @@ export function ShortlistFlow({
           ) : (
             <ul className="m-0 flex list-none flex-col p-0">
               {listed.map((h) => (
-                <HackerRow key={h.userId} hacker={h} disabled={busy || submitted} canAdd={!full} onToggle={() => toggle(h)} />
+                <HackerRow key={h.userId} hacker={h} disabled={busy} hidden={submitted} canAdd={!full} onToggle={() => toggle(h)} />
               ))}
             </ul>
           )}
@@ -336,11 +340,14 @@ function HackerCard({ hacker }: { hacker: InterestedHacker }) {
 function HackerRow({
   hacker,
   disabled,
+  hidden,
   canAdd,
   onToggle,
 }: {
   hacker: InterestedHacker;
   disabled: boolean;
+  /** Submitted: no Shortlist / Remove until they tap Edit shortlist. */
+  hidden: boolean;
   canAdd: boolean;
   onToggle: () => void;
 }) {
@@ -356,6 +363,7 @@ function HackerRow({
           </span>
           {studyLine(hacker) && <span className="text-sm text-dashboard-text-medium">{studyLine(hacker)}</span>}
         </span>
+        {!hidden && (
         <DashboardButton
           variant={hacker.shortlisted ? "outline" : "small"}
           className={cn("h-11 shrink-0", pressable, blocked && "opacity-dashboard-disabled")}
@@ -365,6 +373,7 @@ function HackerRow({
         >
           {hacker.shortlisted ? copy.remove : copy.add}
         </DashboardButton>
+        )}
       </div>
       <HackerLinks name={hacker.name} links={hacker} />
     </li>

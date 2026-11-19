@@ -1,7 +1,14 @@
 import { describe, expect, test } from "vitest";
 
 import { windowAt, workshopWindows } from "~/lib/coffee-chat-schedule";
-import { availChats, repChatCap, setupTotals, setupWindows } from "~/lib/coffee-chat-setup";
+import {
+  availChats,
+  chatChanges,
+  invitesAffected,
+  repChatCap,
+  setupTotals,
+  setupWindows,
+} from "~/lib/coffee-chat-setup";
 import { COFFEE_SESSIONS } from "~/lib/coffee-chat-sessions";
 
 // Sun Life sets up at 2:00: the travel buffer blocks from 1:45 to 3:15.
@@ -56,5 +63,68 @@ describe("setupWindows: partial sessions on the sponsor side", () => {
         { chatsWanted: 0, availChats: 4 },
       ]),
     ).toEqual({ chats: 3, hackers: 9 });
+  });
+});
+
+describe("invitesAffected: the change-after-invites count (B4)", () => {
+  // Dana: 4 chats wanted in groups of 3 (2 per session), free 1-2 and 2-3,
+  // both placed with 3 invited hackers each. Kevin: one chat at 10-11.
+  const h = (n: number) => Array.from({ length: n }, () => ({}));
+  const chats = [
+    { repId: "dana", sessionId: "13", hackers: h(3) },
+    { repId: "dana", sessionId: "14", hackers: h(3) },
+    { repId: "kevin", sessionId: "10", hackers: h(2) },
+  ];
+  const saved = {
+    hackersPerChat: 3,
+    reps: [
+      { id: "dana", chatsWanted: 4, free: ["13", "14", "15"] },
+      { id: "kevin", chatsWanted: 2, free: ["10"] },
+    ],
+  };
+  const withRep = (id: string, patch: object) => ({
+    ...saved,
+    reps: saved.reps.map((r) => (r.id === id ? { ...r, ...patch } : r)),
+  });
+
+  test("unticking one session counts only that chat's hackers", () => {
+    expect(invitesAffected(chats, [], saved, withRep("dana", { free: ["14", "15"] }))).toBe(3);
+  });
+  test("ticking a free session no chat sits in changes nothing", () => {
+    expect(invitesAffected(chats, [], saved, withRep("kevin", { free: ["10", "11"] }))).toBe(0);
+  });
+  test("fewer chats counts only the chats that shrink", () => {
+    expect(invitesAffected(chats, [], saved, withRep("dana", { chatsWanted: 3 }))).toBe(3);
+  });
+  test("a new group size touches every chat", () => {
+    expect(invitesAffected(chats, [], saved, { ...saved, hackersPerChat: 2 })).toBe(8);
+  });
+  test("a removed rep's chats all count", () => {
+    expect(invitesAffected(chats, [], saved, { ...saved, reps: saved.reps.slice(1) })).toBe(6);
+  });
+});
+
+describe("chatChanges: organizer moves for the sponsor's Last change", () => {
+  const seen = {
+    p1: { repId: "dana", sessionId: "13", room: "2242", start: "13:00" },
+    p2: { repId: "dana", sessionId: "14", room: "1348", start: "14:00" },
+    p3: { repId: "kevin", sessionId: "10", room: "1352", start: "10:00" },
+  };
+  test("a new session, a new room and a removed chat", () => {
+    expect(
+      chatChanges(seen, [
+        { placementId: "p1", repId: "dana", sessionId: "15", room: "1348", start: "15:00" },
+        { placementId: "p2", repId: "dana", sessionId: "14", room: "2241", start: "14:00" },
+      ]),
+    ).toEqual([
+      { kind: "moved", repId: "dana", from: "13:00", to: "15:00", room: "1348" },
+      { kind: "moved", repId: "dana", from: "14:00", to: null, room: "2241" },
+      { kind: "removed", repId: "kevin", from: "10:00" },
+    ]);
+  });
+  test("nothing changed, or a first look, is no change", () => {
+    const now = Object.entries(seen).map(([placementId, c]) => ({ placementId, ...c }));
+    expect(chatChanges(seen, now)).toEqual([]);
+    expect(chatChanges({}, now)).toEqual([]);
   });
 });

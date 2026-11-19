@@ -3,7 +3,7 @@ import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
 import type { SetupWindows } from "~/lib/coffee-chat-setup";
 import { COFFEE_SESSIONS } from "~/lib/coffee-chat-sessions";
 import { cn } from "~/lib/utils";
-import { clockOf, sessionLabel, shortClock, type SetupData } from "./shared";
+import { clockOf, ScrollHint, sessionLabel, shortClock, type SetupData } from "./shared";
 
 const copy = sponsorSetupCopy.prefs;
 
@@ -35,6 +35,7 @@ export function AvailabilityGrid({
   data,
   windows,
   free,
+  chatsWanted,
   onToggle,
 }: {
   data: SetupData;
@@ -42,13 +43,15 @@ export function AvailabilityGrid({
   windows: SetupWindows;
   /** repId -> ticked session ids. */
   free: Record<string, string[]>;
+  /** repId -> chats wanted; a rep at 0 has their row greyed. */
+  chatsWanted?: Record<string, number>;
   onToggle?: (repId: string, sessionId: string) => void;
 }) {
   const when = workshopWhen(data);
   return (
     <div className="flex flex-col gap-2">
-      <div className="relative overflow-x-auto rounded-dashboard-md border border-dashboard-border-default">
-        <table className="w-full min-w-[560px] border-collapse text-sm">
+      <ScrollHint label={copy.q2}>
+        <table className="w-full min-w-[520px] border-collapse text-sm">
           <thead>
             <tr className="bg-dashboard-bg-inset">
               <th scope="col" className="sticky left-0 z-10 w-28 bg-dashboard-bg-inset p-2 text-left font-medium text-dashboard-text-light">
@@ -84,12 +87,13 @@ export function AvailabilityGrid({
               const ticked = free[rep.id] ?? [];
               const open = COFFEE_SESSIONS.filter((s) => !windows.blocked.includes(s.id));
               const count = open.filter((s) => ticked.includes(s.id)).length;
+              const off = (chatsWanted?.[rep.id] ?? rep.chatsWanted) === 0;
               return (
-                <tr key={rep.id} className="border-t border-dashboard-border-subtle">
+                <tr key={rep.id} className={cn("border-t border-dashboard-border-subtle", off && "opacity-50")}>
                   <th scope="row" className="sticky left-0 z-10 bg-dashboard-bg-surface p-2 text-left align-middle">
                     <span className="block break-words font-semibold text-dashboard-text-heavy">{rep.name}</span>
                     <span className="block text-xs font-normal text-dashboard-text-light">
-                      {copy.sessionsOf(count, open.length)}
+                      {off ? copy.doesntChat : copy.sessionsOf(count, open.length)}
                     </span>
                   </th>
                   {COFFEE_SESSIONS.map((s) => {
@@ -119,7 +123,8 @@ export function AvailabilityGrid({
                           </button>
                         ) : (
                           <span className="inline-flex size-11 items-center justify-center">
-                            {on ? <Box on /> : null}
+                            {/* Read-only: a plain tick, not a box that looks clickable. */}
+                            {on ? <Check aria-hidden className="size-5 text-dashboard-action-primary" strokeWidth={3} /> : null}
                             <span className="sr-only">{copy.cellLabel(rep.name, label, on)}</span>
                           </span>
                         )}
@@ -131,11 +136,11 @@ export function AvailabilityGrid({
             })}
           </tbody>
         </table>
-      </div>
-      {when && (
-        <p className="m-0 flex items-center gap-2 self-end text-xs text-dashboard-text-medium">
-          <span aria-hidden className={cn("inline-block size-3 rounded-sm border border-dashboard-border-control", hatch)} />
-          {copy.yourWorkshop} · {copy.buffer}
+      </ScrollHint>
+      {windows.blocked.length > 0 && (
+        <p className="m-0 flex items-center gap-2 self-end text-sm text-dashboard-text-medium">
+          <span aria-hidden className={cn("inline-block size-4 rounded-sm border border-dashboard-border-control", hatch)} />
+          {copy.legend}
         </p>
       )}
       {!data.workshopsKnown && (

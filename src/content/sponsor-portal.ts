@@ -11,7 +11,7 @@ export const sponsorPortalCopy = {
   },
   welcome: {
     title: (sponsor: string) => `Welcome, ${sponsor}!`,
-    body: "We're thrilled to have you with us this weekend. Use this portal to check your booth and judging details and pick your top projects.",
+    body: "We're thrilled to have you with us this weekend. Use this portal to set up coffee chats, find your booth and, if you have a prize track, judge projects.",
     fallbackName: "Sponsor",
     logoAlt: (sponsor: string) => `${sponsor} logo`,
   },
@@ -45,13 +45,18 @@ export const sponsorPortalCopy = {
       hint: "Head here when judging deliberations start",
     },
     workshop: { label: "Workshop", location: "Location", time: "Time" },
+    /** Name and phone come from the Help contacts (sponsor-help.ts). */
     contact: {
       label: "Your Hack Western contact",
-      fallback: "Hack Western Organizer Team",
-      tag: "On-site support",
-      call: (phone: string) => `Call ${phone}`,
     },
   },
-  footer:
-    "Need immediate assistance during the hackathon? Reach out to your HW contact.",
+  footer: "Need help during the hackathon? Text or call your Hack Western contact.",
+  /** Under the welcome banner: the one thing to do now. */
+  todo: {
+    label: "What to do now",
+    chats: "Tell us when your reps can chat",
+    chatsHint: "Required · at the Friday 5 PM workshop",
+    chatsDone: "Your coffee chats",
+    chatsDoneHint: "See your chats, or add a hacker you met at your booth",
+  },
 } as const;

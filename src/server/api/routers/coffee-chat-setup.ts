@@ -85,23 +85,6 @@ export type YourChat = {
 const clock = (min: number) =>
   `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 
-/** Hackers holding a live invite (pending or accepted) to this sponsor's sent chats. */
-async function invitedHackers(conn: Pick<typeof db, "select">, sponsorId: string) {
-  const [row] = await conn
-    .select({ n: sql<number>`count(*)::int` })
-    .from(coffeeChats)
-    .innerJoin(coffeeChatPlacements, eq(coffeeChatPlacements.id, coffeeChats.placementId))
-    .innerJoin(coffeeChatReps, eq(coffeeChatReps.id, coffeeChatPlacements.repId))
-    .where(
-      and(
-        eq(coffeeChatReps.sponsorId, sponsorId),
-        eq(coffeeChatPlacements.status, "sent"),
-        inArray(coffeeChats.status, ["pending", "accepted"]),
-      ),
-    );
-  return row?.n ?? 0;
-}
-
 /**
  * Inside a write: lock the sponsor row (so two tabs can't both take the
  * crown or pass a cap). Once organizers sent the sponsor's schedule, a
@@ -143,7 +126,7 @@ async function lockForWrite(
   if (sent && !confirmAfterInvites) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: errors.afterInvites(await invitedHackers(tx, sponsor.id)),
+      message: errors.afterInvites,
     });
   }
   if (bump) {
@@ -305,6 +288,15 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         );
       const sentAt = sentTimes[0]?.at ?? null;
       const hackers = chats.flatMap((c) => c.hackers);
+      // Invites in sent chats the sponsor's current setup no longer fits
+      // (rep not free that session, or no chats wanted there): organizers
+      // move those chats and the hackers are asked again.
+      const changedInvites = chats
+        .filter((c) => {
+          const rep = setup.reps.find((r) => r.id === c.repId);
+          return !rep?.free.includes(c.sessionId) || c.chats === 0;
+        })
+        .reduce((n, c) => n + c.hackers.length, 0);
       return {
         ...setup,
         scannedCount: scanned[0]?.n ?? 0,
@@ -317,6 +309,8 @@ export const coffeeChatSetupRouter = createTRPCRouter({
           total: chats.reduce((n, c) => n + c.chats * setup.hackersPerChat, 0),
           accepted: hackers.filter((h) => h.status === "accepted").length,
           invited: hackers.length,
+          /** Live invites in sent chats that no longer fit the setup. */
+          changed: changedInvites,
         },
       };
     }),
@@ -574,8 +568,20 @@ export const coffeeChatSetupRouter = createTRPCRouter({
       return { submittedAt: now };
     }),
 
+  /** Is this hacker already on the sponsor's "Met at your booth" list? */
+  scanOf: publicProcedure
+    .input(z.object({ sponsor: sponsorInput, userId: z.string().trim().min(1).max(255) }))
+    .query(async ({ input }) => {
+      const sponsor = await findSponsor(input.sponsor);
+      const [row] = await db
+        .select({ scannedAt: sponsorScans.scannedAt, repName: sponsorScans.repName })
+        .from(sponsorScans)
+        .where(and(eq(sponsorScans.sponsorId, sponsor.id), eq(sponsorScans.userId, input.userId)));
+      return row ?? null;
+    }),
+
   /**
-   * A sponsor scanned a hacker at their booth ("Met at Hacker Fair"):
+   * A sponsor scanned a hacker at their booth ("Met at your booth"):
    * record it so they're invited first. Scanning twice keeps the first
    * time; picking a rep later updates who wants to talk to them. The rep
  * is chosen by id from Your team; the name is looked up here.

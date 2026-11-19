@@ -234,7 +234,10 @@ export function SponsorShell({
             <VenueMapButton />
           </header>
 
-          <main
+          {/* A div, not <main>: the app root (_app.tsx) is already the one
+              main landmark, and two read as a nesting error. The skip link
+              still lands here. */}
+          <div
             id="sponsor-main"
             tabIndex={-1}
             className={cn(
@@ -252,7 +255,7 @@ export function SponsorShell({
             >
               {children}
             </div>
-          </main>
+          </div>
         </div>
 
         {/* Bottom tab bar: phones only */}

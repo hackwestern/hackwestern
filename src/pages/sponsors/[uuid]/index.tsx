@@ -1,6 +1,9 @@
+import Link from "next/link";
 import { useRouter } from "next/router";
 import {
+  ArrowRight,
   Clock,
+  Coffee,
   Luggage,
   MapPin,
   Phone,
@@ -15,6 +18,7 @@ import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { sponsorVenueCopy as venue } from "~/content/sponsor-venue";
 import { VenueMapDialog } from "~/components/sponsors/venue-map";
 import { sponsorPortalCopy as copy } from "~/content/sponsor-portal";
+import { sponsorHelpCopy as helpCopy } from "~/content/sponsor-help";
 import {
   SponsorHelp,
   useHelpContacts,
@@ -23,6 +27,8 @@ import { PhoneCopy } from "~/components/sponsors/phone-copy";
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { sponsorLogo } from "~/lib/sponsor-logos";
 import { BoothLayout } from "~/components/sponsors/booth-layout";
+import { pressable } from "~/components/sponsors/sponsor-shell-styles";
+import { cn } from "~/lib/utils";
 
 export default function SponsorHubPage() {
   const router = useRouter();
@@ -39,8 +45,16 @@ export default function SponsorHubPage() {
   );
 
   const data = sponsorQ.data;
-  // Noah's name and number from HW Contacts at runtime (never in the repo).
-  const { emergency } = useHelpContacts(validUuid ? id : "");
+  // "What to do now": coffee chat preferences until they're submitted.
+  const setupQ = api.coffeeChatSetup.get.useQuery(
+    { sponsor: id },
+    { enabled: validUuid, retry: false, refetchOnWindowFocus: false },
+  );
+  const prefsIn = !!setupQ.data?.submittedAt;
+  // One answer to "who do I contact?" (B11): the same HW lead (Sponsor
+  // Day-Of) and emergency contact (Noah, HW Contacts) as the Help dialog,
+  // read at runtime (never in the repo).
+  const { lead, emergency } = useHelpContacts(validUuid ? id : "");
 
   if (!router.isReady) {
     return (
@@ -74,9 +88,6 @@ export default function SponsorHubPage() {
   const logo = data?.sponsorName ? sponsorLogo(data.sponsorName) : null;
   const roomNumber = data?.roomNumber ?? "TBD";
   const boothLocation = data?.boothLocation ?? "TBD";
-  const hwContact =
-    data?.hwContact && data.hwContact !== "—" ? data.hwContact : null;
-  const hwContactPhone = data?.hwContactPhone ?? null;
   const workshopLocation = data?.workshopLocation ?? null;
   const workshopTime = data?.workshopTime ?? null;
   // Not every sponsor runs a workshop — omit the row entirely when blank.
@@ -115,6 +126,46 @@ export default function SponsorHubPage() {
             {copy.welcome.body}
           </p>
         </section>
+
+        {/* The one thing to do now (filled until preferences are in). */}
+        {setupQ.data && (
+          <section aria-labelledby="todo-heading" className="flex flex-col gap-2">
+            <h2
+              id="todo-heading"
+              className="dashboard-section-label m-0 text-dashboard-text-light"
+            >
+              {copy.todo.label}
+            </h2>
+            <Link
+              href={`/sponsors/${id}/coffee-chats`}
+              className={cn(
+                "flex min-h-16 items-center gap-3 rounded-dashboard-2xl p-4 shadow-dashboard-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2 sm:p-5",
+                prefsIn
+                  ? "bg-dashboard-bg-surface text-dashboard-text-heavy [@media(hover:hover)]:hover:bg-dashboard-bg-highlight"
+                  : "bg-dashboard-action-primary text-dashboard-text-inverse",
+                pressable,
+              )}
+            >
+              <Coffee aria-hidden className="size-6 shrink-0" strokeWidth={1.67} />
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-lg font-semibold">
+                  {prefsIn ? copy.todo.chatsDone : copy.todo.chats}
+                </span>
+                <span
+                  className={cn(
+                    "text-sm font-medium",
+                    prefsIn
+                      ? "text-dashboard-text-medium"
+                      : "text-dashboard-text-inverse/90",
+                  )}
+                >
+                  {prefsIn ? copy.todo.chatsDoneHint : copy.todo.chatsHint}
+                </span>
+              </span>
+              <ArrowRight aria-hidden className="size-5 shrink-0" />
+            </Link>
+          </section>
+        )}
 
         {/* Judging isn't in the nav for them, so say why, once, quietly. */}
         {data?.hasPrizeTrack === false && (
@@ -176,7 +227,7 @@ export default function SponsorHubPage() {
                     {venue.important.emergency.label}
                   </dt>
                   <dd className="m-0 break-words text-base font-semibold text-dashboard-text-heavy">
-                    {emergency?.name ?? copy.details.contact.fallback}
+                    {emergency?.name ?? helpCopy.contacts.noEmergency}
                   </dd>
                 </div>
                 {emergency?.phone ? (
@@ -256,19 +307,20 @@ export default function SponsorHubPage() {
                   {copy.details.contact.label}
                 </dt>
                 <dd className="m-0 break-words text-base font-semibold text-dashboard-text-heavy">
-                  {hwContact ?? copy.details.contact.fallback}
+                  {lead?.name ?? helpCopy.contacts.noLead}
                 </dd>
+                {lead && !lead.phone && (
+                  <dd className="m-0 text-sm font-medium text-dashboard-text-light">
+                    {helpCopy.contacts.noPhone}
+                  </dd>
+                )}
               </div>
-              {hwContact && hwContactPhone ? (
+              {lead?.phone && (
                 <PhoneCopy
-                  name={hwContact}
-                  phone={hwContactPhone}
+                  name={lead.name}
+                  phone={lead.phone}
                   className="shrink-0"
                 />
-              ) : (
-                <span className="shrink-0 rounded-dashboard-sm bg-dashboard-bg-nav px-2 py-1 text-xs font-medium text-dashboard-text-light">
-                  {copy.details.contact.tag}
-                </span>
               )}
             </div>
           </dl>

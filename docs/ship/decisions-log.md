@@ -77,6 +77,9 @@ Calls made during the unattended build, and anything blocked or left for Jazz. P
   5. *Digital sponsors* are filtered by the fixed list (`isDigitalJudging`), the same source as Integration 6, in Needs attention, the coffee board, Presentations, and My sponsors' coffee chat and presentation rows.
   6. *The summary card's Auto-schedule button* wasn't checked in the browser: the shared walkthrough DB is already scheduled and sent, and clearing it would break the sponsor-side agent's walk. Its condition (sponsors submitted, nothing placed) matches the line that tells you to press it.
   7. *Lint* had errors in files outside this run's changes (test table resets, a redundant union type). They were fixed so the check is clean: the resets keep an `eslint-disable-next-line` with the reason.
+- **Portal fix loop (sponsor side, Step 5):**
+  1. *"Organizers moved <rep>'s chat" is worked out per device.* There's no move history (placements are updated in place, no timestamp) and the brief rules out schema changes. The portal keeps the sent chats it last saw in localStorage and compares; a move shows under "Since you were last here", then as "Last change", without a time. Considered: a new `moved_at` column (schema change, not allowed), reading `coffee_chat` answer-by times (only set when hackers are re-asked, so moves with no invites would be missed).
+  2. *"Change your team or times" goes straight to Your team.* The "Invites are already out" dialog still shows at the first edit, with the exact count for that edit. Considered: showing the dialog on the link itself (it can't count anything yet, so it would be a vaguer second warning).
 
 ## Blocked / for Jazz
 

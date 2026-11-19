@@ -219,7 +219,7 @@ describe("sponsorShortlist: seats, submit, scanned", () => {
     expect([res.picked, res.maxShortlist]).toEqual([3, 1]);
     await expect(anon.sponsorShortlist.submit({ sponsor: mine.id })).rejects.toMatchObject({
       code: "CONFLICT",
-      message: "Your shortlist has 3 people but you now have 1 seat. Remove 2.",
+      message: "You now have room for 1 on your shortlist. Remove 2.",
     });
     await anon.sponsorShortlist.remove({ sponsor: mine.id, userId: ids[0]! });
     await anon.sponsorShortlist.remove({ sponsor: mine.id, userId: ids[1]! });

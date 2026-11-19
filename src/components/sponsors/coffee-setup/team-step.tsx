@@ -40,6 +40,8 @@ export function TeamStep({
     data.reps.length === 0 ? "new" : null,
   );
   const [error, setError] = useState<string | null>(null);
+  // Before Send, a removed rep can come back (with their times and chats).
+  const [removed, setRemoved] = useState<SetupData["reps"][number] | null>(null);
   const refresh = () => utils.coffeeChatSetup.get.invalidate({ sponsor });
   const onError = (e: { message: string }) => {
     setError(e.message);
@@ -50,6 +52,26 @@ export function TeamStep({
   const update = api.coffeeChatSetup.updateRep.useMutation({ onError });
   const remove = api.coffeeChatSetup.removeRep.useMutation({ onError });
   const crown = api.coffeeChatSetup.setPrimary.useMutation({ onError });
+  const restorePrefs = api.coffeeChatSetup.savePrefs.useMutation({ onError });
+  const undo = async () => {
+    const rep = removed;
+    if (!rep || add.isPending) return;
+    setRemoved(null);
+    setError(null);
+    try {
+      const back = await add.mutateAsync({ sponsor, name: rep.name, phone: rep.phone });
+      await restorePrefs.mutateAsync({
+        sponsor,
+        hackersPerChat: data.hackersPerChat,
+        reps: [{ id: back.id, chatsWanted: rep.chatsWanted, free: rep.free as ("10" | "11" | "13" | "14" | "15" | "16")[] }],
+      });
+      if (rep.isPrimary && !back.isPrimary) await crown.mutateAsync({ sponsor, repId: back.id });
+      await refresh();
+      announce(copy.restored(rep.name));
+    } catch {
+      // onError already shows what went wrong.
+    }
+  };
 
   const save = (form: { name: string; phone: string }, repId: string | null) => {
     setError(null);
@@ -85,6 +107,19 @@ export function TeamStep({
         {copy.crownNote}
       </p>
       <h3 className="m-0 text-base font-semibold text-dashboard-text-heavy">{copy.count(data.reps.length)}</h3>
+      {removed && (
+        <p className="m-0 flex flex-wrap items-center gap-x-2 rounded-dashboard-md bg-dashboard-bg-inset px-3 py-1 text-base text-dashboard-text-heavy">
+          {copy.removed(removed.name)}
+          <button
+            type="button"
+            aria-label={copy.undoLabel(removed.name)}
+            onClick={() => void undo()}
+            className="min-h-11 rounded-dashboard-md px-1 font-semibold text-dashboard-text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+          >
+            {copy.undo}
+          </button>
+        </p>
+      )}
       {data.reps.length === 0 && editing !== "new" && (
         <p className="m-0 text-base text-dashboard-text-medium">{copy.empty}</p>
       )}
@@ -114,7 +149,7 @@ export function TeamStep({
                 <span className="break-words text-base font-semibold text-dashboard-text-heavy">{rep.name}</span>
                 <span className="whitespace-nowrap text-sm text-dashboard-text-light">{rep.phone}</span>
               </span>
-              <span className="flex items-center gap-1">
+              <span className="flex w-full flex-wrap items-center gap-1 sm:w-auto">
                 <button
                   type="button"
                   aria-pressed={rep.isPrimary}
@@ -139,7 +174,7 @@ export function TeamStep({
                   )}
                 >
                   <Crown aria-hidden className="size-4" />
-                  {rep.isPrimary && copy.primary}
+                  {rep.isPrimary ? copy.primary : copy.makePrimaryShort}
                 </button>
                 <DashboardButton
                   variant="link"
@@ -155,11 +190,22 @@ export function TeamStep({
                   disabled={remove.isPending}
                   onClick={() => {
                     setError(null);
-                    guard((confirmAfterInvites) =>
-                      remove.mutate(
-                        { sponsor, repId: rep.id, confirmAfterInvites },
-                        { onSuccess: () => void refresh().then(() => announce(copy.removed(rep.name))) },
-                      ),
+                    guard(
+                      (confirmAfterInvites) =>
+                        remove.mutate(
+                          { sponsor, repId: rep.id, confirmAfterInvites },
+                          {
+                            onSuccess: () =>
+                              void refresh().then(() => {
+                                // After Send their invites were moved or
+                                // cancelled, so there's nothing to undo.
+                                setRemoved(data.confirmed ? null : rep);
+                                announce(copy.removed(rep.name));
+                              }),
+                          },
+                        ),
+                      // Their chats go, so all their invited hackers are affected.
+                      data.chats.filter((c) => c.repId === rep.id).reduce((n, c) => n + c.hackers.length, 0),
                     );
                   }}
                 >
@@ -226,7 +272,7 @@ function RepForm({
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [phone, setPhone] = useState(initial?.phone ?? "");
-  const [problem, setProblem] = useState<string | null>(null);
+  const [problem, setProblem] = useState<{ name: string | null; phone: string | null }>({ name: null, phone: null });
   const id = initial ? "edit" : "new";
   return (
     <form
@@ -236,15 +282,13 @@ function RepForm({
         e.preventDefault();
         const n = name.trim();
         const p = phone.trim();
-        const why = !n
-          ? copy.needName
-          : !p
-            ? copy.needPhone
-            : phoneDigits(p) < MIN_PHONE_DIGITS
-              ? copy.shortPhone
-              : null;
+        // Every problem at once, not one per press.
+        const why = {
+          name: n ? null : copy.needName,
+          phone: !p ? copy.needPhone : phoneDigits(p) < MIN_PHONE_DIGITS ? copy.shortPhone : null,
+        };
         setProblem(why);
-        if (!why && !busy) onSave({ name: n, phone: p });
+        if (!why.name && !why.phone && !busy) onSave({ name: n, phone: p });
       }}
     >
       <label className="flex flex-1 flex-col gap-1 text-sm font-semibold text-dashboard-text-heavy" htmlFor={`${id}-name`}>
@@ -256,6 +300,7 @@ function RepForm({
           maxLength={255}
           autoComplete="off"
           required
+          aria-invalid={!!problem.name || undefined}
           placeholder={copy.namePlaceholder}
           onChange={(e) => setName(e.target.value)}
         />
@@ -271,6 +316,7 @@ function RepForm({
           maxLength={32}
           autoComplete="off"
           required
+          aria-invalid={!!problem.phone || undefined}
           placeholder={copy.phonePlaceholder}
           onChange={(e) => setPhone(e.target.value)}
         />
@@ -285,10 +331,14 @@ function RepForm({
           </DashboardButton>
         )}
       </div>
-      {problem && (
-        <p role="alert" className="m-0 text-sm font-semibold text-dashboard-text-warning sm:basis-full">
-          {problem}
-        </p>
+      {(problem.name ?? problem.phone) && (
+        <div role="alert" className="flex flex-col gap-1 sm:basis-full">
+          {[problem.name, problem.phone].filter(Boolean).map((p) => (
+            <p key={p} className="m-0 text-sm font-semibold text-dashboard-text-warning">
+              {p}
+            </p>
+          ))}
+        </div>
       )}
     </form>
   );

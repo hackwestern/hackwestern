@@ -40,8 +40,8 @@ function screenOf(query: Record<string, string | string[] | undefined>): Screen 
 // then two separate flows picked by ?flow=: chatting preferences (Your
 // team → preferences → Review & submit) and the shortlist (pick → Review
 // & submit). Every screen opens with the status card, because sponsors
-// come back hours after organizers act. "Your chats" shows on the home
-// once organizers send.
+// come back hours after organizers act. Once organizers send, "Your chats"
+// leads the home and setup folds into links (ChatsHome).
 export default function SponsorCoffeeChatsPage() {
   const router = useRouter();
   const id = typeof router.query.uuid === "string" ? router.query.uuid : "";
@@ -70,7 +70,7 @@ export default function SponsorCoffeeChatsPage() {
     return shell(
       <>
         <BackToChats href={base} />
-        {status}
+        <SetupStatus sponsor={id} data={data} flowStep={screen.step} />
         <FlowHeader
           tag={f.tag}
           title={f.title}
@@ -132,6 +132,7 @@ export default function SponsorCoffeeChatsPage() {
         sponsor={id}
         data={data}
         prefsHref={data.submittedAt ? prefsHref(3) : prefsHref(1)}
+        teamHref={prefsHref(1)}
         shortlistHref={shortlistHref(data.shortlistSubmittedAt ? 2 : 1)}
         scanHref={`/sponsors/${id}/scan`}
       />

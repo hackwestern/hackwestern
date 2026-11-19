@@ -9,6 +9,7 @@ import {
   MAX_SETUP_CHATS,
   availChats,
   availableFree,
+  invitesAffected,
   repChatCap,
   setupTotals,
   setupWindows,
@@ -31,6 +32,12 @@ const draftOf = (data: SetupData): Draft => ({
   reps: Object.fromEntries(
     data.reps.map((r) => [r.id, { chatsWanted: r.chatsWanted, free: r.free }]),
   ),
+});
+
+/** A draft in the shape invitesAffected compares. */
+const snapshotOf = (d: Draft) => ({
+  hackersPerChat: d.hackersPerChat,
+  reps: Object.entries(d.reps).map(([id, r]) => ({ id, ...r })),
 });
 
 /** 1-on-1s are always 15 minutes now (no "longer chats", Q1–Q11). */
@@ -66,6 +73,8 @@ export function PrefsStep({
 
   const save = api.coffeeChatSetup.savePrefs.useMutation();
   const [retrying, setRetrying] = useState(false);
+  // "Saved." after an autosave lands, until the next edit (B6).
+  const [saved, setSaved] = useState(false);
   // One save at a time: each flush waits for the one in flight, so saves
   // land in order and the last one always carries the latest draft.
   const inflight = useRef<Promise<boolean> | null>(null);
@@ -88,6 +97,8 @@ export function PrefsStep({
       });
       setError(null);
       setRetrying(false);
+      // A newer edit may be waiting: only say Saved once nothing is.
+      if (!dirty.current) setSaved(true);
       // A rep removed elsewhere was skipped: drop it from the draft.
       if (res.skipped > 0) {
         const fresh = await utils.coffeeChatSetup.get.fetch({ sponsor });
@@ -134,13 +145,20 @@ export function PrefsStep({
   );
 
   const edit = (fn: (d: Draft) => Draft) =>
-    guard((confirm) => {
-      if (confirm) confirmed.current = true;
-      dirty.current = true;
-      setDraft((d) => fn(d));
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => void flush(), 800);
-    });
+    guard(
+      (confirm) => {
+        if (confirm) confirmed.current = true;
+        dirty.current = true;
+        setSaved(false);
+        setDraft((d) => fn(d));
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(() => void flush(), 800);
+      },
+      // Hackers in the sent chats this edit changes, against what's saved.
+      data.confirmed
+        ? invitesAffected(data.chats, data.workshops, snapshotOf(draftOf(data)), snapshotOf(fn(latest.current)))
+        : 0,
+    );
 
   /** A rep's draft row, or their saved values (a rep added since the draft). */
   const repDraft = (d: Draft, repId: string) => {
@@ -214,7 +232,7 @@ export function PrefsStep({
           })}
         </div>
         <p className="m-0 text-base font-semibold text-dashboard-text-link">{copy.format(draft.hackersPerChat)}</p>
-        <p className="m-0 text-sm text-dashboard-text-light">{copy.roomCap}</p>
+        <p className="m-0 text-sm text-dashboard-text-light">{copy.roomCap(draft.hackersPerChat)}</p>
       </fieldset>
 
       <hr className="m-0 border-dashboard-border-subtle" />
@@ -239,6 +257,7 @@ export function PrefsStep({
           data={data}
           windows={windows}
           free={Object.fromEntries(repState.map((r) => [r.rep.id, r.free]))}
+          chatsWanted={Object.fromEntries(repState.map((r) => [r.rep.id, r.chatsWanted]))}
           onToggle={(repId, sessionId) =>
             edit((d) => {
               const r = repDraft(d, repId);
@@ -289,8 +308,14 @@ export function PrefsStep({
                         <Plus aria-hidden className="size-4" />
                       </StepBtn>
                     </span>
-                    <span className="min-w-[9rem] text-sm font-semibold text-dashboard-text-link" aria-live="polite">
-                      {copy.chatsAndTime(chatsWanted, minutes)}
+                    <span
+                      className={cn(
+                        "min-w-[9rem] text-sm font-semibold",
+                        chatsWanted > 0 && avail === 0 ? "text-dashboard-text-warning" : "text-dashboard-text-link",
+                      )}
+                      aria-live="polite"
+                    >
+                      {chatsWanted > 0 && avail === 0 ? copy.noFreeTime : copy.chatsAndTime(chatsWanted, minutes)}
                     </span>
                   </span>
                 </div>
@@ -333,6 +358,8 @@ export function PrefsStep({
             <span className="font-semibold text-dashboard-text-warning">{copy.retrying}</span>
           ) : save.isPending ? (
             copy.saving
+          ) : saved ? (
+            <span className="font-semibold text-dashboard-text-heavy">{copy.saved}</span>
           ) : undefined
         }
         primary={

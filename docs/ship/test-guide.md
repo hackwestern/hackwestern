@@ -54,59 +54,59 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 - Goal: a rep opens the private link, gets oriented and knows who to call.
 - Starting point: `/sponsors/<uuid>` in a fresh browser profile, so the welcome tour runs.
 - Steps: 1. Open the link. 2. Go through the tour. 3. Tap "Need help?" (side nav, home or schedule).
-- Expected result: the tour's help step describes the new Help. The modal lists "Your Hack Western contact" (the HW lead on Sponsor Day-Of) and "Emergency contact" (Noah Medland, phone from HW Contacts). Each has a phone link and a copy icon. Nothing is sent or tracked.
+- Expected result: Home shows "What to do now" under the banner: a filled "Tell us when your reps can chat" link until preferences are submitted, then "Your coffee chats". The tour's help step describes the new Help, and its Coffee chats step says setting up chats is required. The modal lists "Your Hack Western contact" (the HW lead on Sponsor Day-Of) and "Emergency contact" (Noah Medland, phone from HW Contacts). Each has a phone link and a copy icon. Nothing is sent or tracked.
 - Edge cases: no lead assigned ("Your contact hasn't been assigned yet."). HW Contacts unreadable ("Couldn't load the emergency contact. Ask at the sponsor lounge (Rm 2110)."). A missing number ("Number not available…"). The old tracked request API now refuses with "Help requests are switched off…".
 
 ### Sponsor · Your team (needs A)
-- Goal: add the reps and pick a primary contact.
-- Starting point: Test Sponsor's `/sponsors/<uuid>/coffee-chats`. The status card says "Not started".
+- Goal: add the reps and pick a main contact.
+- Starting point: Test Sponsor's `/sponsors/<uuid>/coffee-chats`. The status card says "Not started". The preferences card's "Start" is the only filled button; the shortlist card is locked and "Add a hacker" is an outline button below.
 - Steps: 1. Start "Chatting preferences". 2. Add two reps with names and phones. 3. Tap the second rep's crown. 4. Edit, then remove a rep.
-- Expected result: "<name> added." The first rep gets the crown, and a tap moves it ("<name> is now the primary contact."). If you remove the primary, the crown goes to the next rep. The status card changes to "Draft saved, not submitted".
-- Edge cases: a blank name or phone, a phone under 7 digits ("That phone number looks too short."), a 13th rep (max 12), and Next with no reps ("Add at least one rep to continue."). There's no email field.
+- Expected result: "<name> added." The first rep gets the crown, labelled "Main contact"; the others show "Make main contact", and a tap moves it ("<name> is now the main contact."). If you remove the main contact, the crown goes to the next rep. The status card changes to "Draft saved, not submitted". The button to go on reads "Next: When they're free".
+- Edge cases: a blank name and phone (both errors show at once), a phone under 7 digits ("That phone number looks too short."), a 13th rep (max 12), and Next with no reps ("Add at least one rep to continue."). There's no email field. Before Send, Remove shows "<name> removed. Undo", and Undo brings the rep back with their times, chats and crown. While on a preferences step before submitting, the status card says "Step N of 3: …".
 
 ### Sponsor · Chatting preferences (needs A)
 - Goal: hackers per chat, when each rep is free, and how many chats each wants.
 - Starting point: step 2. Use Sun Life to see its workshop blocked. The workshop comes from the run of show.
 - Steps: 1. Pick 1 to 5 hackers per chat. 2. Untick some sessions. 3. Change chats per rep, including 0. 4. Reload.
-- Expected result: "1-on-1 · 15 min · 4 hackers an hour per rep" or "Groups of 3 · 30 min · 6 hackers an hour per rep". New reps start at 4 chats with every open session ticked. The workshop session shows "Your workshop <time>", hatched and not tickable. Changes save 0.8 s later ("Saving…", "Saved.") and survive the reload. The totals read "Up to N chats · up to M hackers". A rep at 0 reads "Doesn't chat".
-- Edge cases: a rep with nothing ticked ("…isn't free any time Saturday."), more chats than the free sessions hold ("…is free for 2 hours, so up to 8 chats."), and the DB going down mid-edit ("Not saved, retrying…", retried every 3 s). If the run of show is unreadable, nothing is blocked and you see "We can't read the event schedule right now…". A session the workshop buffer only cuts can be ticked and says which part is left, e.g. "1:00–1:30 only" (Sun Life, groups). Switching between 1-on-1s and groups changes that part, and a session with no whole chat left becomes blocked. Below the chats: "Need something different? Contact organizers" opens the portal Help.
+- Expected result: "1-on-1 · 15 min · 4 hackers an hour per rep" or "Groups of 3 · 30 min · 6 hackers an hour per rep". New reps start at 4 chats with every open session ticked. Headers read "10–11 AM" … "4–5 PM", and the workshop row is "Your events": its session shows "Your workshop <time>", hatched and not tickable. Under the 1–5 pick: "Each chat: 1 rep + N hackers". Changes save 0.8 s later ("Saving…", "Saved.") and survive the reload. The totals read "Up to N chats · up to M hackers". A rep at 0 reads "Doesn't chat".
+- Edge cases: a rep with nothing ticked ("…isn't free any time Saturday.", and "No free time" beside their chats), a rep at 0 chats (row greyed, "Doesn't chat"), more chats than the free sessions hold ("…is free for 2 hours, so up to 8 chats."), and the DB going down mid-edit ("Not saved, retrying…", retried every 3 s). If the run of show is unreadable, nothing is blocked and you see "We can't read the event schedule right now…". A session the workshop buffer only cuts can be ticked and says which part is left, e.g. "1:00–1:30 only" (Sun Life, groups). Switching between 1-on-1s and groups changes that part, and a session with no whole chat left becomes blocked. Below the chats: "Something doesn't fit? Ask an organizer" opens the portal Help. At 390 px the grid scrolls inside its box, with "Scroll for later times →" above it.
 
 ### Sponsor · Review & submit (needs A)
 - Goal: check the summary and submit.
 - Steps: 1. Open step 3. 2. Tap "Submit preferences".
-- Expected result: "Everything checks out." The summary reads like "Groups of 3 · 30 min · up to 6 chats · up to 18 hackers", plus "Organizers call <name> at <phone>." After submitting: "Preferences submitted". The status card says "Submitted, waiting for organizers to schedule", and Shortlist unlocks.
+- Expected result: "Everything checks out." The read-only grid shows plain ticks. The summary reads like "Groups of 3 · 30 min · up to 6 chats · up to 18 hackers", plus "Organizers call <name> at <phone>." in bold. After submitting: "Preferences submitted". The status card says "Submitted, waiting for organizers to schedule", and Shortlist unlocks.
 - Edge cases: no chats possible ("No rep has a chat at a time they're free…"), no crown, and no reps. Editing after a submit turns the button into "Submit changes". The preferences stay submitted, and a resubmit moves the submit time forward.
 
 ### Sponsor · Scan a hacker (needs A)
 - Goal: record a hacker met at the booth so they're invited first.
 - Starting point: "Add a hacker" opens `/sponsors/<uuid>/scan`. On a laptop, use "Type their hacker code". A user id like `demo-hacker-1` also works.
-- Steps: 1. Look up the hacker. 2. Pick a rep under "Which rep wants to talk to them?" (or Anyone). 3. Tap "Add to Met at Hacker Fair".
-- Expected result: "Alex is on your Met at Hacker Fair list. We'll invite them first." The Chats home then shows "1 person you scanned".
-- Edge cases: a second scan keeps the first time, and a rep picked later replaces the old one. A non-hacker code shows "That isn't a Hack Western hacker's badge."
+- Steps: 1. Look up the hacker. 2. Optionally pick a rep under "Who talked to them? (optional)" (or Anyone). 3. Tap "Add to my list", the only filled button. 4. Tap "Scan next".
+- Expected result: the card says "Met at your booth · You met Alex", with no times, rooms or chat length. After the add: "Alex is on your list. We'll invite them first." and a text "Scan next". The Chats home then shows "1 person met at your booth".
+- Edge cases: a repeat scan shows "Already on your list · added <time> · talked to <rep>" and the button reads "Save"; the first time is kept and a newly picked rep replaces the old one. "Not now" goes back to scanning without adding. A non-hacker code shows "That isn't a Hack Western hacker's badge." With no camera, "No camera found" shows once.
 
 ### Sponsor · Shortlist (needs A)
 - Goal: pick hackers to invite after the scanned ones.
 - Starting point: preferences submitted. Open "Shortlist".
 - Steps: 1. Use "One at a time" (Skip / Shortlist) or List. 2. Shortlist a few. 3. Submit. 4. Tap "Edit shortlist".
-- Expected result: scanned hackers come first in a read-only block. The cap line reads "14 seats · 3 taken by people you scanned · shortlist up to 11". Submitting shows "Shortlist submitted", and Edit reopens the list.
-- Edge cases: locked before preferences are submitted. At the cap: "All N seats are shortlisted…". Lowering chats after shortlisting: "Your shortlist has 5 people but you now have 3 seats. Remove 2." An empty submit is allowed. With no candidates you see "No hackers to show yet. Check back soon." The handoff says scans don't count against the cap. The code subtracts them, which matches the decisions log.
+- Expected result: scanned hackers come first in a read-only block. The block is headed "People you met · invited first". The cap line reads "14 seats · 3 taken by people you met · shortlist up to 11". Submitting shows "Shortlist submitted"; the banner says "Editing un-submits it until you submit again." and the Remove buttons are hidden. Edit reopens the list.
+- Edge cases: locked before preferences are submitted. At the cap: "Your shortlist is full. Remove someone to add another." Lowering chats after shortlisting: only "You now have room for 3 on your shortlist. Remove 2." (no "5 of 3"), and the home card reads "5 shortlisted, room for 3. Remove 2.". An empty submit is allowed. With no candidates you see "No hackers to show yet. Check back soon." The handoff says scans don't count against the cap. The code subtracts them, which matches the decisions log.
 
 ### Sponsor · Your chats (needs A)
 - Goal: see the confirmed schedule.
 - Starting point: organizers sent this sponsor (see the hand-off flows).
 - Steps: 1. Open the Chats home. 2. Switch between Calendar and List. 3. Filter by rep.
-- Expected result: the preferences card says "Confirmed". The status card says "Scheduled, invites going out", or "Scheduled, X of Y seats accepted" once a hacker accepts. "Since you were last here" shows "Organizers scheduled your chats · <time>", tracked per device. The calendar shows each rep's room ("Rm 2241", "Main building" or "Ivey, 15 min walk"), the format, the chat count and invited first names marked Invited or Confirmed.
+- Expected result: the status card comes first, then "Your chats", then "Your setup" (links: "Change your team or times", "Shortlist" with its count, "Add a hacker" with the booth count). The status card says "Scheduled, invites going out", or "Scheduled, X of Y seats accepted" once a hacker accepts, then "Invites: A accepted · W waiting · O open". "Last change" lists only organizers' actions: "Organizers confirmed your chats · <time>" (each Send or re-send) and, once this device has seen the chats before, "Organizers moved <rep>'s 1:00 chat to 3:00, Rm 1348" or "Organizers removed <rep>'s 1:00 chat". "Next" says hackers answer "by Sat 10 AM" until round 1 closes. The calendar has the six sessions down the side ("10–11 AM" … "4–5 PM") and one column per rep, each chat with its room ("Rm 2241", "Main building" or "Ivey, 15 min walk"), the format, the chat count and invited first names marked Invited or Confirmed. At 390 px all six sessions show; with more reps than fit, "Scroll for later times →" shows above the table with a fade on its right edge.
 - Edge cases: a sent chat that organizers move stays here with its new room or time. A session cut by the workshop shows its real times (e.g. "2:30–3:00"), the same times hackers are invited to.
 
 ### Sponsor · Change after invites (needs A)
 - Goal: an edit after Send needs a strong warning.
 - Steps: 1. On a sent sponsor, edit a rep, a session or the chats. 2. Pick "Keep it as is". 3. Do it again and pick "Change anyway".
-- Expected result: the dialog says "Invites are already out", then "Changing this will ask N hackers to confirm again…" (N = pending plus accepted invites), or "may ask hackers" when N is 0. Keep changes nothing. Change saves, and that screen doesn't ask again. The status card adds "You changed your setup after invites went out…".
-- Edge cases: removing a rep moves their invited hackers to another open seat of the sponsor (they must confirm again) or cancels their invite, and tells them. Fewer chats or a new group size re-asks or cancels the invites that no longer fit. With the run of show unreadable, those edits are refused ("We can't read the event schedule right now…"). A submit or a shortlist change doesn't count as an edit. An API call without the confirm flag gets PRECONDITION_FAILED.
+- Expected result: the dialog says "Invites are already out", then "This affects N invited hackers. They'll be told and asked to confirm again." N counts only invites in the chats this edit changes (an unticked session with a sent chat, chats that shrink, a new group size, or a removed rep's chats). An edit that touches no sent chat (a phone, the crown, ticking an empty session) says "This doesn't affect any invited hackers." Keep changes nothing. Change saves, and that screen doesn't ask again. The status card adds "You changed your setup after invites went out." plus the same sentence, counting invites in sent chats the new setup no longer fits.
+- Edge cases: removing a rep moves their invited hackers to another open seat of the sponsor (they must confirm again) or cancels their invite, and tells them. Fewer chats or a new group size re-asks or cancels the invites that no longer fit. With the run of show unreadable, those edits are refused ("We can't read the event schedule right now…"). A submit or a shortlist change doesn't count as an edit. An API call without the confirm flag gets PRECONDITION_FAILED ("Invites are already out. Confirm the change to save it.").
 
 ### Sponsor · Judging (needs F)
 - Goal: score, shortlist, then rank a top 3.
-- Starting point: `/sponsors/<uuid>/picks` for a sponsor whose prize track box is ticked on Sponsor Day-Of, with seeded teams.
+- Starting point: `/sponsors/<uuid>/picks?preview=judging` for a sponsor whose prize track box is ticked on Sponsor Day-Of, with seeded teams. Without `?preview=judging`, before Sun 9:00 AM the page shows "Judging opens Sunday 9:00 AM", the same as the locked nav item.
 - Steps: 1. Pick a name in "Who's judging?" (Your team reps, or "Someone else"). 2. Score in One at a time or in List. 3. Open Rubric. 4. Score as a second rep. 5. Send the shortlist. 6. In round 2, submit exactly 3.
 - Expected result: a 1 to 10 strip in half points, dimmed until touched. Each project shows "Dana 9.5 · Kevin 6" and the average. Reps 3 or more points apart get an amber flag. Two reps split the list alphabetically ("Your 2" / "Everyone's 6").
 - Edge cases: no prize track, PCBWay ("Digital sponsors don't judge in the portal…"), an empty shortlist, round 2 closed or no presentation slot, and the wrong count ("Submit exactly 3 teams."). A name in different case replaces the score instead of adding one. TinyFish shows "Remote (judges online)".
@@ -173,8 +173,8 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 
 ### Both · Organizer schedules → sponsor sees the schedule (needs A)
 - Steps: 1. Auto-schedule. 2. The sponsor reloads. 3. Send (or the SQL). 4. The sponsor reloads.
-- Expected result: after step 2 the sponsor still sees "Submitted, waiting for organizers…". After step 4 they see "Scheduled, invites going out", "Confirmed" and the calendar. The primary contact gets no message (not built).
-- Edge cases: moving a sent chat keeps it on the portal with its new room or time. Removing one takes it off right away, and its hackers move to another seat or are told it's cancelled.
+- Expected result: after step 2 the sponsor still sees "Submitted, waiting for organizers…". After step 4 they see "Scheduled, invites going out", "Invites: 0 accepted · N waiting · M open", "Organizers confirmed your chats · <time>" and the calendar. The main contact gets no message (not built).
+- Edge cases: moving a sent chat keeps it on the portal with its new room or time, and a device that saw it before shows "Organizers moved <rep>'s <time> chat to …" under "Since you were last here" (then "Last change"). Removing one takes it off right away ("Organizers removed …"), and its hackers move to another seat or are told it's cancelled.
 
 ### Both · Sponsor changes after invites → organizer notices (needs A)
 - Steps: 1. On a sent sponsor, untick a session that has a sent chat and pick "Change anyway". 2. Look at the board.
@@ -184,7 +184,7 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 ### Both · Sponsor asks for help → organizer contact
 - Steps: 1. The sponsor opens "Need help?". 2. They call or text the lead, or Noah.
 - Expected result: the sponsor sees the lead's name and number, then Noah's. The organizer gets a normal call or text, and nothing appears on the dashboard. To call back, use the reps' phones on My sponsors or on the board row.
-- Edge cases: "Need something different? Contact organizers" on the preferences step opens the same Help.
+- Edge cases: "Something doesn't fit? Ask an organizer" on the preferences step opens the same Help.
 
 ### Both · Invites: hacker invited → answers → both sides see it
 - Starting point: `COFFEE_INVITES_ENABLED=1` and Sun Life sent (both demo hackers are interested), or scan `demo-hacker-1` first. Check `.env` has no `SLACK_BOT_TOKEN` or Mailjet keys. Dev normally has neither.
