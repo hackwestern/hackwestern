@@ -32,7 +32,7 @@ Anything that can't be placed becomes a **suggested fix** (another free session,
 ## Task pings
 - Run-of-show tasks ping their owner by Slack DM; tasks without a clear owner go to the team channel. A failed ping shows "Text instead".
 - Overdue tasks show first in "Needs you now" with Text and Mark done.
-- Sponsor help doesn't come here: sponsors text their HW lead, or leave a message that posts to Slack for whoever's on call.
+- **Sponsor requested help:** a sponsor taps Get help (message, name, call-back phone). Their HW lead gets a Slack DM (or whoever is on call, if the lead is off shift) with an "I'm on it" button. It shows at the top of the Now table with a timer. Tap I'm on it (Slack or here), then Resolved. If nobody takes it in 5 minutes, it's posted to the spon team channel. Your own sponsors' requests are highlighted; anyone can take any request.
 
 ## Where data lives
 Spon Team RUN OF SHOW sheet: RUN OF SHOW, Sponsor Day-Of, Workshops, Opening + Closing Ceremonies, Coffee Chat Setup, Coffee Chat Room Grid (app-written, locked), Sponsor Status, HW Contacts, Sponsor Judging (app-written). Edits to grey tabs are overwritten by the app.

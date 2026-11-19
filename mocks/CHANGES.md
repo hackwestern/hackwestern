@@ -111,10 +111,10 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 ## Organizer "My sponsors" v2: `organizer-my-sponsors-v2` (tables, not cards)
 | # | Change | Status |
 |---|---|---|
-| 1 | No cards (Jazz hates them): everything as restyle-v2-style tables; no Set up / Coffee chats / Judging switch | Building |
-| 2 | "Now" table at the top merges Happening now + Your next tasks: help requests, overdue tasks, now, next 3 | Building |
-| 3 | Sponsor tabs with logos + "All sponsors"; a selected sponsor = one table of everything across Fri / Sat / Sun with actions | Building |
-| 4 | "Sponsor requested help" flow: I'm on it → "Noah is on it" → Resolved; 5-min escalation; Help text updated | Building |
+| 1 | No cards (Jazz hates them): everything as restyle-v2-style tables; no Set up / Coffee chats / Judging switch | Done |
+| 2 | "Now" table at the top merges Happening now + Your next tasks: help requests, overdue tasks, now, next 3 | Done |
+| 3 | Sponsor tabs with logos + "All sponsors"; a selected sponsor = one table of everything across Fri / Sat / Sun with actions | Done |
+| 4 | "Sponsor requested help" flow: I'm on it → "Noah is on it" → Resolved; 5-min escalation; Help text updated | Done |
 
 ## Organizer "My sponsors": `organizer-my-sponsors-v1`
 | # | Change | Status |
