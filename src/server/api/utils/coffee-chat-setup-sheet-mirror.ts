@@ -1,3 +1,4 @@
+import { waitUntil } from "@vercel/functions";
 import { asc, count } from "drizzle-orm";
 import { google } from "googleapis";
 
@@ -442,4 +443,13 @@ export function mirrorCoffeeChatSetup(
   const next = queue.then(run);
   queue = next;
   return next;
+}
+
+/**
+ * After a sponsor's save commits: start the mirror without making the
+ * request wait for it (waitUntil keeps a Vercel function alive until it
+ * finishes). Gated like mirrorCoffeeChatSetup; never throws.
+ */
+export function mirrorCoffeeChatSetupLater(): void {
+  waitUntil(mirrorCoffeeChatSetup());
 }

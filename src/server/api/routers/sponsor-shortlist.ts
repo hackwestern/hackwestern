@@ -19,6 +19,7 @@ import {
   type CandidateSource,
   type SponsorCandidate,
 } from "~/server/api/utils/sponsor-shortlist";
+import { mirrorCoffeeChatSetupLater } from "~/server/api/utils/coffee-chat-setup-sheet-mirror";
 import { db } from "~/server/db";
 import {
   applications,
@@ -342,7 +343,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
           .values({ sponsorId: sponsor.id, userId: eligible.userId })
           .onConflictDoNothing();
       });
-      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      mirrorCoffeeChatSetupLater();
       return { userId: eligible.userId, shortlisted: true };
     }),
 
@@ -366,7 +367,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
             ),
           );
       });
-      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      mirrorCoffeeChatSetupLater();
       return { userId: input.userId, shortlisted: false };
     }),
 
@@ -399,7 +400,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
           .set({ shortlistSubmittedAt: now })
           .where(eq(coffeeChatPrefs.sponsorId, sponsor.id));
       });
-      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      mirrorCoffeeChatSetupLater();
       return { submittedAt: now };
     }),
 
@@ -415,7 +416,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
           .set({ shortlistSubmittedAt: null })
           .where(eq(coffeeChatPrefs.sponsorId, sponsor.id));
       });
-      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      mirrorCoffeeChatSetupLater();
       return { ok: true };
     }),
 

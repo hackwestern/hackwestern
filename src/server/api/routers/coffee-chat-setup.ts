@@ -31,6 +31,7 @@ import {
   loadSponsorSetup,
   type SponsorSetup,
 } from "~/server/api/utils/coffee-chat-setup";
+import { mirrorCoffeeChatSetupLater } from "~/server/api/utils/coffee-chat-setup-sheet-mirror";
 import { db } from "~/server/db";
 import {
   applications,
@@ -349,7 +350,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         }
         return { id: rep!.id, isPrimary: rep!.isPrimary };
       });
-      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      mirrorCoffeeChatSetupLater();
       return added;
     }),
 
@@ -373,7 +374,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
           .where(eq(coffeeChatReps.id, input.repId));
         return { ok: true };
       });
-      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      mirrorCoffeeChatSetupLater();
       return result;
     }),
 
@@ -417,7 +418,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         return { primaryId: null, jobs };
       });
       await deliver(jobs);
-      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      mirrorCoffeeChatSetupLater();
       return result;
     }),
 
@@ -438,7 +439,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
           .where(eq(coffeeChatReps.id, input.repId));
         return { ok: true };
       });
-      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      mirrorCoffeeChatSetupLater();
       return result;
     }),
 
@@ -511,7 +512,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         return { ok: true, skipped, jobs: await reconcileIfSent(tx, locked) };
       });
       await deliver(jobs);
-      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      mirrorCoffeeChatSetupLater();
       return result;
     }),
 
@@ -548,7 +549,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
             set: { submittedAt: now },
           });
       });
-      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      mirrorCoffeeChatSetupLater();
       return { submittedAt: now };
     }),
 
