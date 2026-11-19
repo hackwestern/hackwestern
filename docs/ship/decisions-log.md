@@ -52,6 +52,17 @@ Calls made during the unattended build, and anything blocked or left for Jazz. P
   4. *The Run-of-show judging panel* reads pick counts from the deleted tab and always shows "unknown". It now counts saved picks from the database (fix at merge).
   5. *"No portal link for digital sponsors"* is decided by the sheet's In person / Digital column, not by whether a DB row exists. Checked at merge.
 
+- **Integration (gaps from the test guide):**
+  1. *Moving or fixing a sent chat keeps it sent.* Invited hackers are asked to reconfirm the new room or time straight away. Today it goes back to draft and disappears from the sponsor's "Your chats" until Noah sends again, so the sponsor and the hackers would see a gap. Noah's Send stays the Friday batch; after that, organizers move chats and hackers hear right away. Considered: back to draft until the next Send (sponsor sees it vanish; only Noah can fix it).
+  2. *Send also re-confirms sponsors who changed after invites.* Their sent chats get a new sent time and the flag clears. Today the flag stays forever when the change needs no new chats, because Send only looks at drafts.
+  3. *Sponsor edits after Send update invites right away* (`reconcileInvitesAfterChange`), and removing a rep cancels their hackers' invites first. New reps or sessions aren't placed until an organizer re-runs Auto-schedule and Noah sends.
+  4. *A partial session can be ticked on the sponsor side.* A session the workshop buffer only cuts shows "1:00–1:30 only" instead of being blocked. Without this, Sun Life's 1:00–1:30 can never reach the board.
+  5. *Each sponsor's confirmed schedule is the portal's "Your chats".* Nothing is emailed or texted to the primary contact: no rep emails are collected, and the sponsor is told at the workshop to check the portal.
+  6. *Digital sponsors* come from a fixed list in the content file (PCBWay), not the sheet's In person / Digital column. One sponsor, one weekend.
+  7. *Sponsor edits after Send are refused while the run of show is unreadable* (removing a rep, saving preferences). Without workshop times invites can't be checked, and a removed rep would drop their invites silently. Considered: save and skip the invite update (stale invites nobody fixes).
+  8. *The Ivey-together fix doesn't reconcile invites:* it only moves unpinned chats, and a sent chat counts as pinned on the board, so it never touches an invited chat.
+  9. *"At CC workshop" live column* added as K on Sponsor Day-Of (checkboxes on the 15 sponsor rows, header note). The contract checkboxes shifted one column right; the app finds every column by header.
+
 ## Blocked / for Jazz
 
 - **Task pings already in Slack:** if any were synced in production before pings were turned off, those scheduled Slack messages will still send. Check Slack's scheduled messages for the ping bot and cancel them. (I can't see production Slack.)
