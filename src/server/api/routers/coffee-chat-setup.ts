@@ -11,6 +11,7 @@ import {
   MIN_PHONE_DIGITS,
   availableFree,
   phoneDigits,
+  setupWindows,
 } from "~/lib/coffee-chat-setup";
 import {
   COFFEE_SESSIONS,
@@ -18,6 +19,7 @@ import {
   MAX_HACKERS_PER_CHAT,
   MIN_HACKERS_PER_CHAT,
   buildingOf,
+  chatMinutes,
   chatsBySession,
 } from "~/lib/coffee-chat-sessions";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
@@ -446,8 +448,8 @@ export const coffeeChatSetupRouter = createTRPCRouter({
   /**
    * Save the chatting preferences step: hackers per chat (1-5; 1-on-1s are
    * always 15 min), and for every rep the sessions they're free and how
-   * many chats they want (0 = doesn't chat). Sessions blocked by their
-   * workshop are dropped. Doesn't change whether they've submitted. After
+   * many chats they want (0 = doesn't chat). Sessions their workshop
+   * blocks (no whole chat left) are dropped; sessions it only cuts stay. Doesn't change whether they've submitted. After
    * Send, invites are reconciled with fewer chats or a new chat length.
    */
   savePrefs: publicProcedure
@@ -496,13 +498,19 @@ export const coffeeChatSetupRouter = createTRPCRouter({
               updatedAt: new Date(),
             },
           });
+        // Blocked for the chat length being saved: a session the buffer
+        // only cuts stays (its usable part), one with no whole chat left goes.
+        const { blocked } = setupWindows(
+          setup.workshops,
+          chatMinutes({ hackersPerChat: input.hackersPerChat }),
+        );
         for (const r of known) {
           await tx
             .update(coffeeChatReps)
             .set({ chatsWanted: r.chatsWanted })
             .where(eq(coffeeChatReps.id, r.id));
           await tx.delete(coffeeChatRepSessions).where(eq(coffeeChatRepSessions.repId, r.id));
-          const free = [...new Set(availableFree(r.free, setup.blocked))];
+          const free = [...new Set(availableFree(r.free, blocked))];
           if (free.length) {
             await tx
               .insert(coffeeChatRepSessions)

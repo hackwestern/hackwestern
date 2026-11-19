@@ -1,8 +1,9 @@
 import { Check } from "lucide-react";
 import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
+import type { SetupWindows } from "~/lib/coffee-chat-setup";
 import { COFFEE_SESSIONS } from "~/lib/coffee-chat-sessions";
 import { cn } from "~/lib/utils";
-import { sessionLabel, shortClock, type SetupData } from "./shared";
+import { clockOf, sessionLabel, shortClock, type SetupData } from "./shared";
 
 const copy = sponsorSetupCopy.prefs;
 
@@ -17,18 +18,28 @@ export function workshopWhen(data: Pick<SetupData, "workshops">): string | null 
   return `${shortClock(start)}–${shortClock(end)}`;
 }
 
+/** "1:00–1:30 only" for a session the workshop buffer cuts, else null. */
+function partialText(windows: SetupWindows, sessionId: string): string | null {
+  const w = windows.partial[sessionId];
+  return w ? copy.partialOnly(shortClock(clockOf(w.start)), shortClock(clockOf(w.end))) : null;
+}
+
 /**
  * Reps x fixed 1-hour sessions. Editable: every cell is a 44px toggle;
- * sessions their workshop blocks show it and can't be ticked. Read-only
- * (review): ticks only. Scrolls inside its card on phones, rep column
- * stays put.
+ * sessions their workshop blocks show it and can't be ticked. A session the
+ * travel buffer only cuts can be ticked and says which part is left
+ * ("1:00–1:30 only"). Read-only (review): ticks only. Scrolls inside its
+ * card on phones, rep column stays put.
  */
 export function AvailabilityGrid({
   data,
+  windows,
   free,
   onToggle,
 }: {
   data: SetupData;
+  /** Blocked and cut sessions for the chat length shown (setupWindows). */
+  windows: SetupWindows;
   /** repId -> ticked session ids. */
   free: Record<string, string[]>;
   onToggle?: (repId: string, sessionId: string) => void;
@@ -61,17 +72,17 @@ export function AvailabilityGrid({
                     key={s.id}
                     className={cn(
                       "p-1 text-center text-xs text-dashboard-text-medium",
-                      data.blocked.includes(s.id) && cn(hatch, "font-semibold"),
+                      windows.blocked.includes(s.id) && cn(hatch, "font-semibold"),
                     )}
                   >
-                    {data.blocked.includes(s.id) ? copy.workshopAt(when) : null}
+                    {windows.blocked.includes(s.id) ? copy.workshopAt(when) : partialText(windows, s.id)}
                   </td>
                 ))}
               </tr>
             )}
             {data.reps.map((rep) => {
               const ticked = free[rep.id] ?? [];
-              const open = COFFEE_SESSIONS.filter((s) => !data.blocked.includes(s.id));
+              const open = COFFEE_SESSIONS.filter((s) => !windows.blocked.includes(s.id));
               const count = open.filter((s) => ticked.includes(s.id)).length;
               return (
                 <tr key={rep.id} className="border-t border-dashboard-border-subtle">
@@ -82,8 +93,9 @@ export function AvailabilityGrid({
                     </span>
                   </th>
                   {COFFEE_SESSIONS.map((s) => {
-                    const label = sessionLabel(s.id);
-                    if (data.blocked.includes(s.id)) {
+                    const only = partialText(windows, s.id);
+                    const label = only ? copy.partialLabel(sessionLabel(s.id), only) : sessionLabel(s.id);
+                    if (windows.blocked.includes(s.id)) {
                       return (
                         <td key={s.id} className={cn("p-1 text-center text-xs text-dashboard-text-medium", hatch)}>
                           <span aria-hidden>{copy.yourWorkshop}</span>

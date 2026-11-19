@@ -4,7 +4,7 @@ import { CircleCheck, Crown, TriangleAlert } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { pressable } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
-import { availableFree, repChatCap } from "~/lib/coffee-chat-setup";
+import { availChats, availableFree, repChatCap, setupWindows } from "~/lib/coffee-chat-setup";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { AvailabilityGrid, workshopWhen } from "./availability-grid";
@@ -57,11 +57,11 @@ export function ReviewStep({
     onError: (e) => announce(e.message),
   });
 
-  const format = { hackersPerChat: data.hackersPerChat, longerOneOnOne: false };
+  const windows = setupWindows(data.workshops, data.chatMinutes);
   const reps = [...data.reps].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
   const rows = reps.map((rep) => {
-    const avail = availableFree(rep.free, data.blocked);
-    const cap = repChatCap(format, rep.chatsWanted, avail.length);
+    const avail = availableFree(rep.free, windows.blocked);
+    const cap = repChatCap(rep.chatsWanted, availChats(rep.free, windows));
     return { rep, avail, cap };
   });
   const primary = data.reps.find((r) => r.isPrimary);
@@ -127,7 +127,7 @@ export function ReviewStep({
       )}
 
       <h3 className="m-0 text-base font-semibold text-dashboard-text-heavy">{copy.whenFree}</h3>
-      <AvailabilityGrid data={data} free={Object.fromEntries(data.reps.map((r) => [r.id, r.free]))} />
+      <AvailabilityGrid data={data} windows={windows} free={Object.fromEntries(data.reps.map((r) => [r.id, r.free]))} />
 
       <p className="m-0 text-lg font-semibold text-dashboard-text-heavy">
         {copy.summary(data.hackersPerChat, data.chatMinutes, data.totals.chats, data.totals.hackers)}

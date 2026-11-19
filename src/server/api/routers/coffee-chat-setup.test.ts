@@ -32,7 +32,10 @@ vi.mock("~/server/api/utils/coffee-chat-invites", async (importOriginal) => ({
   deliverInviteNotices: deliver,
 }));
 
-// "WorkCo<stamp>"'s workshop is 13:00-14:00 -> sessions 1-2 and 2-3 blocked.
+// "WorkCo<stamp>"'s workshop is 13:00-14:00 -> 1-2 blocked; with 15-min
+// chats 2-3 is cut to 2:15-3:00 (with 30-min chats, 2:30-3:00).
+// "LateCo<stamp>"'s runs 13:00-14:20 -> 2-3 keeps 2:45-3:00: one 15-min
+// chat, no 30-min one.
 vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
   ...(await importOriginal<typeof import("~/server/api/utils/run-of-show-sheet")>()),
   getRunOfShow: () =>
@@ -47,6 +50,16 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
           column: "sponsor-workshop",
           title: `WorkCo${stamp} Workshop`,
           location: "Rm 2230",
+          sponsors: [],
+        },
+        {
+          id: "Saturday-13:00-sponsor-workshop-late",
+          day: "Saturday",
+          start: "13:00",
+          end: "14:20",
+          column: "sponsor-workshop",
+          title: `LateCo${stamp} Workshop`,
+          location: "Rm 2231",
           sponsors: [],
         },
       ],
@@ -100,10 +113,12 @@ describe("coffeeChatSetup: Your team", () => {
     expect(a.isPrimary).toBe(true);
     expect(b.isPrimary).toBe(false);
     const res = await setup.get({ sponsor: id });
-    expect(res.blocked).toEqual(["13", "14"]);
+    // 1-2 is blocked; 2-3 is only cut (2:15-3:00), so it's open and ticked.
+    expect(res.blocked).toEqual(["13"]);
+    expect(res.partial).toEqual({ "14": { start: 855, end: 900 } });
     expect(res.workshops).toHaveLength(1);
     expect(res.reps.map((r) => r.name)).toEqual(["Dana W.", "Leo T."]);
-    expect(res.reps[0]!.free).toEqual(["10", "11", "15", "16"]);
+    expect(res.reps[0]!.free).toEqual(["10", "11", "14", "15", "16"]);
     expect(res.reps[0]!.chatsWanted).toBe(4);
     // 1-on-1 by default: 4 chats each, 4 hackers each.
     expect(res.totals).toEqual({ chats: 8, hackers: 8 });
@@ -161,7 +176,7 @@ describe("coffeeChatSetup: preferences", () => {
     expect(res.submittedAt).toBeInstanceOf(Date);
   });
 
-  test("blocked sessions are dropped for the workshop sponsor", async () => {
+  test("blocked sessions are dropped for the workshop sponsor; cut ones stay", async () => {
     const [work] = await db
       .select()
       .from(sponsorJudgingSponsors)
@@ -174,7 +189,30 @@ describe("coffeeChatSetup: preferences", () => {
       reps: [{ id: rep.id, chatsWanted: 4, free: ["13", "14", "16"] }],
     });
     const res = await setup.get({ sponsor: work!.id });
-    expect(res.reps.find((r) => r.id === rep.id)!.free).toEqual(["16"]);
+    expect(res.reps.find((r) => r.id === rep.id)!.free).toEqual(["14", "16"]);
+    // 4 at 4-5 is enough; the cut 2-3 holds 3 more.
+    expect(res.totals.chats).toBe(4 + 4);
+  });
+
+  test("a cut session holds only its whole chats, for the chat length being saved", async () => {
+    const id = await sponsor(`LateCo${stamp}`);
+    const a = await setup.addRep({ sponsor: id, name: "Lu", phone: "5195550001" });
+    // 1-on-1s: 2:45-3:00 fits one chat, so 2-3 can be ticked.
+    await setup.savePrefs({ sponsor: id, hackersPerChat: 1, reps: [{ id: a.id, chatsWanted: 6, free: ["14", "16"] }] });
+    let res = await setup.get({ sponsor: id });
+    expect(res.blocked).toEqual(["13"]);
+    expect(res.partial).toEqual({ "14": { start: 885, end: 900 } });
+    expect(res.reps[0]!.free).toEqual(["14", "16"]);
+    // 1 chat at 2:45 + 4 at 4-5: Lu asked for 6, gets up to 5.
+    expect(res.totals).toEqual({ chats: 5, hackers: 5 });
+
+    // Groups of 2 (30 min) in the same save: 2-3 no longer fits a chat and is dropped.
+    await setup.savePrefs({ sponsor: id, hackersPerChat: 2, reps: [{ id: a.id, chatsWanted: 6, free: ["14", "16"] }] });
+    res = await setup.get({ sponsor: id });
+    expect(res.blocked).toEqual(["13", "14"]);
+    expect(res.partial).toEqual({});
+    expect(res.reps[0]!.free).toEqual(["16"]);
+    expect(res.totals).toEqual({ chats: 2, hackers: 4 });
   });
 
   test("submit needs a rep with a chat at a free time", async () => {

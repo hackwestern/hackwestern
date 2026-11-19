@@ -9,8 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { and, asc, eq, inArray } from "drizzle-orm";
 
 import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
-import { blockedSessions, workshopWindows } from "~/lib/coffee-chat-schedule";
-import { availableFree, setupTotals } from "~/lib/coffee-chat-setup";
+import { availChats, setupTotals, setupWindows } from "~/lib/coffee-chat-setup";
 import {
   COFFEE_SESSIONS,
   chatMinutes,
@@ -67,6 +66,11 @@ export type SponsorSetup = {
   workshops: SetupWorkshop[];
   /** Sessions their workshop (with 15-min travel buffers) blocks. */
   blocked: string[];
+  /**
+   * Sessions the buffer only cuts, with the part left ("1:00-1:30 only").
+   * Tickable; for the saved chat length.
+   */
+  partial: Record<string, { start: number; end: number }>;
   /** "Up to N chats · up to N hackers"; hackers = shortlist seats. */
   totals: { chats: number; hackers: number };
   /** Organizers sent this sponsor's schedule (any chat is sent). */
@@ -121,24 +125,6 @@ async function workshopsOf(
   }
 }
 
-/** Blocked session ids for these workshops (same rule as the board). */
-export function blockedFor(
-  sponsorName: string,
-  workshops: readonly SetupWorkshop[],
-): string[] {
-  const windows = workshopWindows(
-    workshops.map((w) => ({
-      day: "Saturday",
-      column: "sponsor-workshop",
-      start: w.start,
-      end: w.end,
-      sponsors: [sponsorName],
-    })),
-    sponsorName,
-  );
-  return [...blockedSessions({ workshops: windows }, COFFEE_SESSIONS)];
-}
-
 /** Everything the portal's coffee chat setup pages show, in one read. */
 export async function loadSponsorSetup(
   sponsor: { id: string; name: string },
@@ -185,7 +171,8 @@ export async function loadSponsorSetup(
     hackersPerChat: pref?.hackersPerChat ?? 1,
     longerOneOnOne: pref?.longerOneOnOne ?? false,
   };
-  const blocked = workshops ? blockedFor(sponsor.name, workshops) : [];
+  const minutes = chatMinutes(format);
+  const windows = setupWindows(workshops ?? [], minutes);
   const reps: SetupRep[] = repRows.map((r) => {
     const ticked = new Set(
       sessionRows.filter((s) => s.repId === r.id).map((s) => s.sessionId),
@@ -206,7 +193,7 @@ export async function loadSponsorSetup(
     sponsorId: sponsor.id,
     sponsorName: sponsor.name,
     ...format,
-    chatMinutes: chatMinutes(format),
+    chatMinutes: minutes,
     chatsPerSession: chatsPerSession(format),
     submittedAt: pref?.submittedAt ?? null,
     shortlistSubmittedAt: pref?.shortlistSubmittedAt ?? null,
@@ -214,13 +201,11 @@ export async function loadSponsorSetup(
     reps,
     workshopsKnown: workshops !== null,
     workshops: workshops ?? [],
-    blocked,
+    blocked: windows.blocked,
+    partial: windows.partial,
     totals: setupTotals(
       format,
-      reps.map((r) => ({
-        chatsWanted: r.chatsWanted,
-        availSessions: availableFree(r.free, blocked).length,
-      })),
+      reps.map((r) => ({ chatsWanted: r.chatsWanted, availChats: availChats(r.free, windows) })),
     ),
     confirmed: sent.length > 0,
   };

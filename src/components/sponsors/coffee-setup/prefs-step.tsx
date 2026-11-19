@@ -7,9 +7,11 @@ import { pressable } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
 import {
   MAX_SETUP_CHATS,
+  availChats,
   availableFree,
   repChatCap,
   setupTotals,
+  setupWindows,
 } from "~/lib/coffee-chat-setup";
 import { MAX_HACKERS_PER_CHAT, MIN_HACKERS_PER_CHAT, isSessionId } from "~/lib/coffee-chat-sessions";
 import { cn } from "~/lib/utils";
@@ -152,14 +154,16 @@ export function PrefsStep({
 
   const format = formatOf(draft.hackersPerChat);
   const minutes = draft.hackersPerChat === 1 ? 15 : 30;
+  // For the chat length picked above: a cut session holds fewer chats.
+  const windows = setupWindows(data.workshops, minutes);
   const repState = data.reps.map((rep) => {
     const r = draft.reps[rep.id] ?? { chatsWanted: rep.chatsWanted, free: rep.free };
-    const avail = availableFree(r.free, data.blocked).length;
-    return { rep, ...r, avail, cap: repChatCap(format, r.chatsWanted, avail) };
+    const avail = availableFree(r.free, windows.blocked).length;
+    return { rep, ...r, avail, cap: repChatCap(r.chatsWanted, availChats(r.free, windows)) };
   });
   const totals = setupTotals(
     format,
-    repState.map((r) => ({ chatsWanted: r.chatsWanted, availSessions: r.avail })),
+    repState.map((r) => ({ chatsWanted: r.chatsWanted, availChats: availChats(r.free, windows) })),
   );
 
   if (data.reps.length === 0) {
@@ -233,6 +237,7 @@ export function PrefsStep({
         </div>
         <AvailabilityGrid
           data={data}
+          windows={windows}
           free={Object.fromEntries(repState.map((r) => [r.rep.id, r.free]))}
           onToggle={(repId, sessionId) =>
             edit((d) => {

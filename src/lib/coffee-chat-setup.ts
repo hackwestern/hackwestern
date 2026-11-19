@@ -5,7 +5,13 @@
  * chat-length rules come from src/lib/coffee-chat-sessions.ts; see
  * docs/decisions.md 2026-11-19 ("Chats per rep instead of hours", Q1–Q11).
  */
-import { chatsPerSession } from "~/lib/coffee-chat-sessions";
+import {
+  COFFEE_SESSIONS,
+  chatsInWindow,
+  minutesOfClock,
+  usableWindow,
+  type UsableWindow,
+} from "~/lib/coffee-chat-sessions";
 
 /** Reps a sponsor can list in Your team. */
 export const MAX_SETUP_REPS = 12;
@@ -23,19 +29,55 @@ export function phoneDigits(phone: string): number {
 
 export type SetupFormat = { hackersPerChat: number; longerOneOnOne: boolean };
 
+/** What a sponsor's workshop leaves of each session, for one chat length. */
+export type SetupWindows = {
+  /** Sessions where not one whole chat fits outside the workshop window. */
+  blocked: string[];
+  /**
+   * Sessions the workshop's travel buffer only cuts: the part left, in
+   * minutes after midnight (Sun Life, setup 2:00, 30-min chats: 1:00-1:30).
+   */
+  partial: Record<string, UsableWindow>;
+  /** Whole chats one rep fits in each session (0 = blocked). */
+  chats: Record<string, number>;
+};
+
 /**
- * The most chats a rep can get: what they asked for, capped by the sessions
- * they're free (outside their workshop) times chats per session.
+ * Blocked and partial sessions for these workshops ("HH:MM", Saturday) and
+ * chat length. Same rule as the organizer board and the invites
+ * (usableWindow), so a session the sponsor can tick is one organizers can
+ * place and hackers can be invited to.
  */
-export function repChatCap(
-  format: SetupFormat,
-  chatsWanted: number,
-  availSessions: number,
-): number {
-  return Math.max(
-    0,
-    Math.min(chatsWanted, availSessions * chatsPerSession(format)),
-  );
+export function setupWindows(
+  workshops: readonly { start: string; end: string }[],
+  chatMinutes: number,
+): SetupWindows {
+  const times = workshops.flatMap((w) => {
+    const start = minutesOfClock(w.start);
+    const end = minutesOfClock(w.end);
+    return start === null || end === null ? [] : [{ start, end }];
+  });
+  const out: SetupWindows = { blocked: [], partial: {}, chats: {} };
+  for (const s of COFFEE_SESSIONS) {
+    const w = usableWindow(s.id, times, chatMinutes);
+    out.chats[s.id] = chatsInWindow(w, chatMinutes);
+    if (!w) out.blocked.push(s.id);
+    else if (w.start !== s.start || w.end !== s.end) out.partial[s.id] = w;
+  }
+  return out;
+}
+
+/** Whole chats a rep fits in the sessions they ticked (partial ones hold fewer). */
+export function availChats(free: readonly string[], windows: SetupWindows): number {
+  return availableFree(free, windows.blocked).reduce((n, id) => n + (windows.chats[id] ?? 0), 0);
+}
+
+/**
+ * The most chats a rep can get: what they asked for, capped by the chats
+ * their free sessions hold (outside their workshop).
+ */
+export function repChatCap(chatsWanted: number, availChats: number): number {
+  return Math.max(0, Math.min(chatsWanted, availChats));
 }
 
 /**
@@ -45,12 +87,9 @@ export function repChatCap(
  */
 export function setupTotals(
   format: SetupFormat,
-  reps: readonly { chatsWanted: number; availSessions: number }[],
+  reps: readonly { chatsWanted: number; availChats: number }[],
 ): { chats: number; hackers: number } {
-  const chats = reps.reduce(
-    (n, r) => n + repChatCap(format, r.chatsWanted, r.availSessions),
-    0,
-  );
+  const chats = reps.reduce((n, r) => n + repChatCap(r.chatsWanted, r.availChats), 0);
   return { chats, hackers: chats * format.hackersPerChat };
 }
 

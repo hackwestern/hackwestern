@@ -196,6 +196,10 @@ export const sponsorSetupCopy = {
       `${rep}, ${session}: ${free ? "free" : "not free"}`,
     blockedLabel: (rep: string, session: string) =>
       `${rep}, ${session}: your workshop`,
+    /** A session the workshop's travel buffer only cuts: the part left. */
+    partialOnly: (from: string, to: string) => `${from}–${to} only`,
+    /** Screen-reader session name for a cut session: "1–2, 1:00–1:30 only". */
+    partialLabel: (session: string, only: string) => `${session}, ${only}`,
     q3: "How many chats?",
     q3Hint: "For each rep. Organizers won't schedule a rep for more than this. 0 means they won't chat.",
     fewer: (name: string) => `Fewer chats for ${name}`,
