@@ -775,3 +775,9 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Decision:** At phone widths the sponsor portal's top bar shows only the logo, a left-aligned truncating title and Help, like the v6 mock. The How to tours are listed inside the Help dialog under "Show me how" (every size); tablets and up keep the How to button in the header.
 **Why:** logo, title, How to and Help didn't fit at 390px. Help is where a lost sponsor looks first.
 **Alternatives:** an icon-only How to button (a bare compass reads as nothing); shortening the title (still overflows on long section names).
+
+## 2026-11-19: Several reps in one chat are handled by hand (Jazz)
+
+**Decision:** The model stays one rep per chat (1 rep + 1–5 hackers). If a sponsor wants two reps together, they ask organizers (Help / "Message organizers") and an organizer handles it by hand: book the room for them on the board, or tell the second rep to join the first rep's room. No co-host feature.
+**Why:** one rep-session = one room keeps auto-schedule, room counts and invites simple, and shared chats should be rare.
+**Alternatives:** enter the pair as one rep ("Dana & Marcus"); a real co-host field on chats (scheduler and UI work this close to the event).
