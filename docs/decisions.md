@@ -571,3 +571,11 @@ Supersedes "lead's phone + Send to the sponsor team" as equal options (2026-11-1
 **Why:** Jazz wants hackers to get invites earlier in the evening, while they're awake and checking Slack, rather than around midnight. 30 minutes is enough for auto-fill plus a quick check.
 
 **Supersedes:** the 11:59 PM deadline and "invites ~midnight" (same day).
+
+## 2026-11-19: Sponsors give chatting preferences at the Friday workshop; no deadline messaging; keep preferences (Jazz)
+
+**Decision:** Sponsors fill in their coffee chat preferences live at the Friday 5 PM sponsor dashboard and coffee chat workshop (Rm 2110), with organizers there. The sponsor UI shows no deadline or auto-submit messaging. Keep the preferences model (reps' chat blocks), not availability: conflicts get sorted in the room at the workshop. Organizers still send all invites Friday evening (by 10 PM); the 9:30 PM cutoff and auto-submit remain an internal fallback for anyone who didn't finish at the workshop, not shown to sponsors.
+
+**Why:** with organizers in the room, preferences can be adjusted on the spot, so the extra complexity of availability isn't needed and a deadline banner just adds noise.
+
+**Alternatives:** collect availability and let auto-fill place chats (rejected for now); show the deadline and auto-submit note (removed as noise).
