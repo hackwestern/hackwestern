@@ -27,8 +27,9 @@ const sc = copy.sponsors;
 export const sponsorRowId = (sponsorId: string) => `coffee-sponsor-${sponsorId}`;
 
 /**
- * Sponsors band: logo + status chip ("Submitted, needs scheduling"), how
- * many reps are placed, and a "Changed after invites" flag. Opening a row
+ * Sponsors band: logo + name, the stage chip ("Needs scheduling", "Sent")
+ * and problem flags beside it ("1 rep not placed", "Changed after
+ * invites"). Opening a row
  * shows its availability grid, preferences and people (phones with a copy
  * icon) inline (no drawer).
  */

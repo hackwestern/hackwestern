@@ -168,7 +168,7 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 - Goal: an organizer arriving cold sees the new submit.
 - Starting point: Test Sponsor's portal in one window, the board in another.
 - Steps: 1. The sponsor submits. 2. Wait up to 15 s.
-- Expected result: Test Sponsor joins the board (it does once it has reps) as "Submitted, needs scheduling". "Since last time" lists "Test Sponsor submitted · <time>". Needs attention says "…only 0 of N reps are scheduled". Every setup save starts the Coffee Chat Setup mirror; with dev sheet writes off it logs once and writes nothing.
+- Expected result: Test Sponsor joins the board (it does once it has reps) as "Needs scheduling". "Since last time" lists "Test Sponsor submitted · <time>". Needs attention says "Test Sponsor: 0 of N reps scheduled". Every setup save starts the Coffee Chat Setup mirror; with dev sheet writes off it logs once and writes nothing.
 - Edge cases: edits before scheduling show "edited reps or times since the last new chat". A sponsor with reps but no submit stays "Not submitted".
 
 ### Both · Organizer schedules → sponsor sees the schedule (needs A)
