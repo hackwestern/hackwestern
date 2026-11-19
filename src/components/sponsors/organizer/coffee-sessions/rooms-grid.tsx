@@ -334,7 +334,7 @@ export function CellDetail({
         {sent && <span className="inline-flex min-h-7 items-center rounded-dashboard-lg bg-dashboard-schedule-green px-2.5 text-sm font-semibold text-dashboard-status-live">{dc.sent}</span>}
       </div>
       <p className="m-0 text-[15px] tabular-nums">{dc.toInvite(n)}</p>
-      {sent && <p className="m-0 text-sm font-medium text-dashboard-text-warning">{dc.afterSend(n)}</p>}
+      {sent && <p className="m-0 text-sm font-medium text-dashboard-text-warning">{dc.afterSend}</p>}
       {c.placement.pinned && <p className="m-0 text-sm text-dashboard-text-medium">{dc.pinned}</p>}
       {actions}
     </div>

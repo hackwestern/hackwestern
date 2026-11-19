@@ -15,19 +15,20 @@ import {
 import { roomGridRows } from "~/server/api/utils/coffee-chat-room-grid-mirror";
 import { loadBoardState } from "~/server/api/utils/coffee-chat-sessions-board";
 
-const { names, ros } = vi.hoisted(() => {
+const { names, ros, mirror } = vi.hoisted(() => {
   const stamp = Date.now();
   return {
     names: { work: `WorkCo${stamp}`, team: `TeamCo${stamp}`, late: `LateCo${stamp}`, busy: `BusyCo${stamp}` },
-    /** Flip to make the run-of-show read fail. */
-    ros: { fail: false },
+    /** Flip to make the run-of-show read fail, or to turn sheet writes on. */
+    ros: { fail: false, writes: false },
+    mirror: vi.fn(() => Promise.resolve({ ok: false as const, error: "disabled" })),
   };
 });
 
 // WorkCo's workshop is 13:00-14:00 -> sessions 1-2 and 2-3 are blocked.
 vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
   ...(await importOriginal<typeof import("~/server/api/utils/run-of-show-sheet")>()),
-  sheetWritesEnabled: () => false,
+  sheetWritesEnabled: () => ros.writes,
   getRunOfShow: () =>
     ros.fail ? Promise.reject(new Error("sheet down")) : Promise.resolve({
       readAt: "2026-11-21T12:00:00.000Z",
@@ -49,6 +50,12 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
       workshops: [],
       availability: { people: [], slots: [] },
     }),
+}));
+
+// Spy on the Room Grid mirror (it never writes here: no sheet in tests).
+vi.mock("~/server/api/utils/coffee-chat-room-grid-mirror", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("~/server/api/utils/coffee-chat-room-grid-mirror")>()),
+  mirrorRoomGrid: mirror,
 }));
 
 const organizer = createCaller(createInnerTRPCContext({ session: await mockOrganizerSession(db) }));
@@ -273,5 +280,30 @@ describe("run of show unreadable", () => {
       ros.fail = false;
     }
     await organizer.coffeeChatSessions.removeBooking({ bookingId });
+  });
+});
+
+describe("sent changes re-mirror the Room Grid tab", () => {
+  test("removing a sent chat or moving a booking after Send re-runs it, only with sheet writes on", async () => {
+    const rows = await db.select().from(coffeeChatPlacements);
+    const draft = rows.find((r) => r.status === "draft")!;
+    const sent = rows.filter((r) => r.status === "sent");
+    expect(sent.length).toBeGreaterThan(1);
+    ros.writes = true;
+    try {
+      mirror.mockClear();
+      await organizer.coffeeChatSessions.removePlacement({ placementId: draft.id });
+      expect(mirror).not.toHaveBeenCalled();
+      await organizer.coffeeChatSessions.removePlacement({ placementId: sent[0]!.id });
+      expect(mirror).toHaveBeenCalledTimes(1);
+      const { id } = await organizer.coffeeChatSessions.bookRoom({ room: "2243", sessionId: "16", label: "Mentors" });
+      await organizer.coffeeChatSessions.moveBooking({ bookingId: id, room: "2242", sessionId: "16" });
+      expect(mirror).toHaveBeenCalledTimes(2);
+      ros.writes = false;
+      await organizer.coffeeChatSessions.removeBooking({ bookingId: id });
+      expect(mirror).toHaveBeenCalledTimes(2);
+    } finally {
+      ros.writes = false;
+    }
   });
 });

@@ -37,7 +37,7 @@ export const coffeeSessionsCopy = {
       not: "Not submitted",
       /** Submitted, but no rep has a session they can do. */
       unavailable: "No availability",
-      sent: "Sent",
+      sent: "Confirmed",
       need: (done: number, total: number) =>
         `Needs scheduling · ${done} of ${total}`,
       scheduled: (done: number, total: number) =>
@@ -170,9 +170,9 @@ export const coffeeSessionsCopy = {
         ? `1-on-1 · ${p.longerOneOnOne ? 30 : 15} min`
         : `Group of ${p.hackersPerChat}`,
     toInvite: (n: number) => `${n} hackers to invite`,
-    sent: "Sent",
-    afterSend: (n: number) =>
-      `Invites are out. Changing this asks ${n} hackers to confirm again.`,
+    // Until hacker invites are built, Send only saves and confirms.
+    sent: "Confirmed",
+    afterSend: "Confirmed. Hacker invites aren't sent yet.",
     pinned: "Pinned: Auto-schedule keeps it here.",
   },
 
@@ -196,10 +196,10 @@ export const coffeeSessionsCopy = {
     fixesOpen: (n: number) => `${n} fix${n === 1 ? "" : "es"} open`,
     autoSchedule: "Auto-schedule",
     rerun: "Re-run auto-schedule",
-    send: "Send confirmed schedules & invites",
+    send: "Save & confirm schedule",
     working: "Working…",
-    sentAt: (time: string) => `Sent ${time}`,
-    nothingToSend: "Nothing new to send.",
+    sentAt: (time: string) => `Confirmed ${time}`,
+    nothingToSend: "Nothing new to confirm.",
   },
 
   toast: {
@@ -208,7 +208,8 @@ export const coffeeSessionsCopy = {
     moved: "Moved.",
     removed: "Removed.",
     booked: "Room booked.",
-    sent: (n: number) => `Sent ${plural(n, "chat")}.`,
+    sent: (n: number) =>
+      `Schedule confirmed (${plural(n, "chat")}). Hacker invites aren't sent yet.`,
     sheetOff: "Sheet writes are off here, so the Room Grid tab wasn't updated.",
     sheetFailed: "Couldn't update the Room Grid tab. The schedule is saved.",
   },

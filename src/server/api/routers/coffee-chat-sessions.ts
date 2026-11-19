@@ -17,6 +17,7 @@ import {
 } from "~/lib/coffee-chat-sessions";
 import { createTRPCRouter, protectedOrganizerProcedure } from "~/server/api/trpc";
 import { mirrorRoomGrid } from "~/server/api/utils/coffee-chat-room-grid-mirror";
+import { sheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
 import {
   assertCellFree,
   assertRepCanChat,
@@ -35,6 +36,18 @@ import {
 } from "~/server/db/schema";
 
 const errors = coffeeSessionsCopy.errors;
+
+/**
+ * Re-mirror the Room Grid tab after a change to something already sent
+ * (after the write commits). Only when sheet writes are on.
+ */
+async function remirrorIf(changedSent: boolean): Promise<void> {
+  if (!changedSent || !sheetWritesEnabled()) return;
+  await mirrorRoomGrid(await loadBoardState());
+}
+
+const anySent = (state: { placements: { status: string }[] }) =>
+  state.placements.some((p) => p.status === "sent");
 
 const room = z.enum(COFFEE_ROOM_IDS);
 const sessionId = z.enum(COFFEE_SESSION_IDS);
@@ -148,18 +161,23 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       });
     }),
 
-  /** Remove a chat. It shows up as a suggested fix until it's placed again. */
+  /**
+   * Remove a chat. It shows up as a suggested fix until it's placed again.
+   * Removing a sent chat re-mirrors the Room Grid tab.
+   */
   removePlacement: protectedOrganizerProcedure
     .input(z.object({ placementId: z.string().uuid() }))
     .mutation(async ({ input }) => {
-      return boardWrite(async (tx) => {
+      const wasSent = await boardWrite(async (tx) => {
         const gone = await tx
           .delete(coffeeChatPlacements)
           .where(eq(coffeeChatPlacements.id, input.placementId))
-          .returning({ id: coffeeChatPlacements.id });
+          .returning({ status: coffeeChatPlacements.status });
         if (!gone.length) throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownPlacement });
-        return { ok: true };
+        return gone[0]!.status === "sent";
       });
+      await remirrorIf(wasSent);
+      return { ok: true };
     }),
 
   /** Ad hoc room booking on an empty cell (a sponsor, mentors, organizers). */
@@ -199,10 +217,11 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       });
     }),
 
+  /** Once the schedule was sent, booking changes re-mirror the Room Grid tab. */
   moveBooking: protectedOrganizerProcedure
     .input(z.object({ bookingId: z.string().uuid(), room, sessionId }))
     .mutation(async ({ input }) => {
-      return boardWrite(async (tx, state) => {
+      const sent = await boardWrite(async (tx, state) => {
         assertWorkshopsKnown(state);
         if (!state.bookings.some((b) => b.id === input.bookingId)) {
           throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownBooking });
@@ -212,21 +231,25 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
           .update(coffeeChatRoomBookings)
           .set({ room: input.room, sessionId: input.sessionId })
           .where(eq(coffeeChatRoomBookings.id, input.bookingId));
-        return { ok: true };
+        return anySent(state);
       });
+      await remirrorIf(sent);
+      return { ok: true };
     }),
 
   removeBooking: protectedOrganizerProcedure
     .input(z.object({ bookingId: z.string().uuid() }))
     .mutation(async ({ input }) => {
-      return boardWrite(async (tx) => {
+      const sent = await boardWrite(async (tx, state) => {
         const gone = await tx
           .delete(coffeeChatRoomBookings)
           .where(eq(coffeeChatRoomBookings.id, input.bookingId))
           .returning({ id: coffeeChatRoomBookings.id });
         if (!gone.length) throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownBooking });
-        return { ok: true };
+        return anySent(state);
       });
+      await remirrorIf(sent);
+      return { ok: true };
     }),
 
   /**
