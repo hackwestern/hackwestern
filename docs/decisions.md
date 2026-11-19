@@ -579,3 +579,19 @@ Supersedes "lead's phone + Send to the sponsor team" as equal options (2026-11-1
 **Why:** with organizers in the room, preferences can be adjusted on the spot, so the extra complexity of availability isn't needed and a deadline banner just adds noise.
 
 **Alternatives:** collect availability and let auto-fill place chats (rejected for now); show the deadline and auto-submit note (removed as noise).
+
+## 2026-11-19: Coffee chats switch to fixed 1-hour sessions (Daniel's spec), reconciled with Jazz's choices
+
+**Decision:** Adopt `docs/specs/coffee-chat-sessions.md` (Daniel Wang): sponsors answer three questions (hackers per chat 1–5 with a "longer chats" option for 1-on-1s; which fixed 1-hour sessions each rep is free: 10–11, 11–12, 1–2, 2–3, 3–4, 4–5; about how many hours per rep 1/2/3/4+). Organizers pick final sessions (one rep-session = one room for one hour) and send a confirmed schedule; hackers are invited after. Unusual requests go through "Message organizers" and are handled by hand.
+
+Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
+- Primary contact = a crowned rep, not separate main-contact fields; rep phone required.
+- Reps are only created in "Your team" (no "+ Add rep" in the availability grid).
+- "Your day" row shows only their own workshop (and its 15-min travel buffers), no lunch, dinner or snack wagon.
+- Two separate flows, each with its own Review & submit: Chatting preferences (required) and Shortlist (optional, capped at their hacker seats; scanned hackers first; auto-assign at 9:30 PM if not submitted).
+- No hours totals or package-hours meter; the "hours per rep" question stays (it caps scheduling).
+- Figtree only (no pixel font).
+
+**Supersedes:** reps-as-rows chat blocks with inline editing (`docs/specs/inline-chat-block-editing.md`), per-block chat length/size, the flexibility question, shared multi-rep blocks.
+
+**Why:** the simplest model for sponsors to understand and for organizers to schedule; rooms map one-to-one to rep-sessions.
