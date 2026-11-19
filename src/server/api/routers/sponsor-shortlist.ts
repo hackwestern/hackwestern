@@ -297,6 +297,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
           .values({ sponsorId: sponsor.id, userId: eligible.userId })
           .onConflictDoNothing();
       });
+      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
       return { userId: eligible.userId, shortlisted: true };
     }),
 
@@ -319,6 +320,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
             ),
           );
       });
+      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
       return { userId: input.userId, shortlisted: false };
     }),
 
@@ -339,6 +341,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
           .set({ shortlistSubmittedAt: now, updatedAt: now })
           .where(eq(coffeeChatPrefs.sponsorId, sponsor.id));
       });
+      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
       return { submittedAt: now };
     }),
 
@@ -351,6 +354,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
         .update(coffeeChatPrefs)
         .set({ shortlistSubmittedAt: null, updatedAt: new Date() })
         .where(eq(coffeeChatPrefs.sponsorId, sponsor.id));
+      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
       return { ok: true };
     }),
 

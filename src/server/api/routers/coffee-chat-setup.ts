@@ -272,7 +272,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const sponsor = await findSponsor(input.sponsor);
       const setup = await loadSponsorSetup(sponsor);
-      return db.transaction(async (tx) => {
+      const added = await db.transaction(async (tx) => {
         await lockForWrite(tx, sponsor.id, input.confirmAfterInvites);
         const existing = await tx
           .select({ id: coffeeChatReps.id, isPrimary: coffeeChatReps.isPrimary })
@@ -306,6 +306,8 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         }
         return { id: rep!.id, isPrimary: rep!.isPrimary };
       });
+      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      return added;
     }),
 
   updateRep: publicProcedure
@@ -319,7 +321,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
-      return db.transaction(async (tx) => {
+      const result = await db.transaction(async (tx) => {
         const sponsor = await lockForWrite(tx, input.sponsor, input.confirmAfterInvites);
         await repOf(tx, sponsor.id, input.repId);
         await tx
@@ -328,13 +330,15 @@ export const coffeeChatSetupRouter = createTRPCRouter({
           .where(eq(coffeeChatReps.id, input.repId));
         return { ok: true };
       });
+      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      return result;
     }),
 
   /** Remove a rep (and their ticks). The crown moves to the first rep left. */
   removeRep: publicProcedure
     .input(z.object({ sponsor: sponsorInput, repId: z.string().uuid(), ...confirmInput }))
     .mutation(async ({ input }) => {
-      return db.transaction(async (tx) => {
+      const result = await db.transaction(async (tx) => {
         const sponsor = await lockForWrite(tx, input.sponsor, input.confirmAfterInvites);
         const rep = await repOf(tx, sponsor.id, input.repId);
         await tx.delete(coffeeChatReps).where(eq(coffeeChatReps.id, rep.id));
@@ -355,13 +359,15 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         }
         return { primaryId: null };
       });
+      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      return result;
     }),
 
   /** Move the crown: exactly one primary contact per sponsor. */
   setPrimary: publicProcedure
     .input(z.object({ sponsor: sponsorInput, repId: z.string().uuid(), ...confirmInput }))
     .mutation(async ({ input }) => {
-      return db.transaction(async (tx) => {
+      const result = await db.transaction(async (tx) => {
         const sponsor = await lockForWrite(tx, input.sponsor, input.confirmAfterInvites);
         await repOf(tx, sponsor.id, input.repId);
         await tx
@@ -374,6 +380,8 @@ export const coffeeChatSetupRouter = createTRPCRouter({
           .where(eq(coffeeChatReps.id, input.repId));
         return { ok: true };
       });
+      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      return result;
     }),
 
   /**
@@ -402,7 +410,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const sponsor = await findSponsor(input.sponsor);
       const setup = await loadSponsorSetup(sponsor);
-      return db.transaction(async (tx) => {
+      const result = await db.transaction(async (tx) => {
         await lockForWrite(tx, sponsor.id, input.confirmAfterInvites);
         const reps = await tx
           .select({ id: coffeeChatReps.id })
@@ -442,6 +450,8 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         }
         return { ok: true };
       });
+      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
+      return result;
     }),
 
   /**
@@ -474,6 +484,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
             set: { submittedAt: now, updatedAt: now },
           });
       });
+      // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
       return { submittedAt: now };
     }),
 

@@ -61,3 +61,66 @@ export function availableFree(
 ): string[] {
   return free.filter((id) => !blocked.includes(id));
 }
+
+/**
+ * Where a sponsor's coffee chats stand right now (the status card at the
+ * top of every coffee chat screen). Sponsors and organizers are never in
+ * the app at the same time, so a sponsor coming back cold needs this.
+ */
+export type SetupState =
+  | { kind: "notStarted" }
+  | { kind: "draft" }
+  | { kind: "waiting" }
+  | { kind: "invitesGoingOut" }
+  | { kind: "accepted"; accepted: number; seats: number };
+
+export function setupState(s: {
+  repCount: number;
+  updatedAt: Date | null;
+  submittedAt: Date | null;
+  confirmed: boolean;
+  seats: { total: number; accepted: number };
+}): SetupState {
+  if (s.confirmed) {
+    return s.seats.accepted > 0
+      ? { kind: "accepted", accepted: s.seats.accepted, seats: s.seats.total }
+      : { kind: "invitesGoingOut" };
+  }
+  if (s.submittedAt) return { kind: "waiting" };
+  if (s.repCount === 0 && !s.updatedAt) return { kind: "notStarted" };
+  return { kind: "draft" };
+}
+
+export type SetupEvent = {
+  kind: "scheduled" | "submittedPrefs" | "submittedShortlist" | "saved";
+  at: Date;
+};
+
+/**
+ * What changed, newest first, from timestamps we already store: organizers'
+ * Send (placement sent_at), the sponsor's submits, and their last save
+ * (pref updated_at, shown only when it isn't just the submit itself).
+ */
+export function setupEvents(s: {
+  sentAt: Date | null;
+  submittedAt: Date | null;
+  shortlistSubmittedAt: Date | null;
+  updatedAt: Date | null;
+}): SetupEvent[] {
+  const events: SetupEvent[] = [];
+  if (s.sentAt) events.push({ kind: "scheduled", at: s.sentAt });
+  if (s.submittedAt) events.push({ kind: "submittedPrefs", at: s.submittedAt });
+  if (s.shortlistSubmittedAt) {
+    events.push({ kind: "submittedShortlist", at: s.shortlistSubmittedAt });
+  }
+  const near = (a: Date | null, b: Date) =>
+    !!a && Math.abs(a.getTime() - b.getTime()) < 5_000;
+  if (
+    s.updatedAt &&
+    !near(s.submittedAt, s.updatedAt) &&
+    !near(s.shortlistSubmittedAt, s.updatedAt)
+  ) {
+    events.push({ kind: "saved", at: s.updatedAt });
+  }
+  return events.sort((a, b) => b.at.getTime() - a.at.getTime());
+}

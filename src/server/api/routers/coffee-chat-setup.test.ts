@@ -184,6 +184,39 @@ describe("coffeeChatSetup: preferences", () => {
   });
 });
 
+describe("coffeeChatSetup: every write bumps coffee_chat_pref.updated_at", () => {
+  test("add, edit, crown, prefs, remove each move updated_at; longer 1-on-1s stay off", async () => {
+    const id = await sponsor();
+    const stamp = async () => {
+      const [pref] = await db.select().from(coffeeChatPrefs).where(eq(coffeeChatPrefs.sponsorId, id));
+      return pref;
+    };
+    // Each write must land after the one before.
+    const tick = () => new Promise((r) => setTimeout(r, 5));
+    const a = await setup.addRep({ sponsor: id, name: "A", phone: "5195550001" });
+    let before = (await stamp())!.updatedAt.getTime();
+    const writes: (() => Promise<unknown>)[] = [
+      () => setup.addRep({ sponsor: id, name: "B", phone: "5195550002" }),
+      () => setup.updateRep({ sponsor: id, repId: a.id, name: "A2", phone: "5195550003" }),
+      async () => {
+        const res = await setup.get({ sponsor: id });
+        const b = res.reps.find((r) => r.name === "B")!;
+        return setup.setPrimary({ sponsor: id, repId: b.id });
+      },
+      () => setup.savePrefs({ sponsor: id, hackersPerChat: 1, reps: [{ id: a.id, chatsWanted: 2, free: ["10"] }] }),
+      () => setup.removeRep({ sponsor: id, repId: a.id }),
+    ];
+    for (const write of writes) {
+      await tick();
+      await write();
+      const after = (await stamp())!.updatedAt.getTime();
+      expect(after).toBeGreaterThan(before);
+      before = after;
+    }
+    expect((await stamp())!.longerOneOnOne).toBe(false);
+  });
+});
+
 describe("coffeeChatSetup: after organizers send", () => {
   test("Your chats, seats and the after-invites warning", async () => {
     const id = await sponsor();

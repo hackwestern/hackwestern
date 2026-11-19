@@ -69,6 +69,55 @@ export const sponsorSetupCopy = {
     scanned: (n: number) => `${plural(n, "person", "people")} you scanned`,
   },
 
+  /** The status card at the top of every coffee chat screen. */
+  status: {
+    label: "Where things stand",
+    state: {
+      notStarted: "Not started",
+      draft: "Draft saved, not submitted",
+      waiting: "Submitted, waiting for organizers to schedule",
+      invitesGoingOut: "Scheduled, invites going out",
+      accepted: (accepted: number, seats: number) =>
+        `Scheduled, ${accepted} of ${plural(seats, "seat")} accepted`,
+    } as const,
+    todo: {
+      notStarted: "You need to: add your team and give us your chatting preferences.",
+      draft: "You need to: review and submit your chatting preferences.",
+      shortlist: "Nothing required. Optional: shortlist hackers you'd like to meet.",
+      waiting: "Nothing to do. You're waiting on organizers.",
+      scheduled: "Nothing to do. Your chats are below.",
+    },
+    next: {
+      notStarted: "Next: you submit your preferences. Then organizers confirm chat times Friday evening.",
+      draft: "Next: you submit. Then organizers confirm chat times Friday evening.",
+      waiting: "Next: organizers confirm chat times Friday evening, then invite hackers.",
+      scheduled:
+        "Next: hackers answer their invites. If someone can't make it, we invite the next person on your list.",
+    },
+    changes: {
+      since: "Since you were last here",
+      last: "Last change",
+      scheduled: "Organizers scheduled your chats",
+      submittedPrefs: "You submitted your chatting preferences",
+      submittedShortlist: "You submitted your shortlist",
+      saved: "You saved changes",
+    } as Record<string, string>,
+    editedAfterSend:
+      "You changed your setup after invites went out. Organizers will check it and ask affected hackers to confirm again.",
+    at: (what: string, when: string) => `${what} · ${when}`,
+  },
+
+  /** Before any change once invites are out (spec: "Changes after invites"). */
+  afterInvites: {
+    title: "Invites are already out",
+    body: (n: number) =>
+      n === 0
+        ? "Changing this may ask hackers to confirm again, and some may drop off."
+        : `Changing this will ask ${plural(n, "hacker")} to confirm again, and some may drop off.`,
+    confirm: "Change anyway",
+    cancel: "Keep it as is",
+  },
+
   back: "Back to Chats",
   backStep: "Back",
   help: {
@@ -295,7 +344,9 @@ export const sponsorSetupCopy = {
     unknownSponsor: "This private link isn't valid.",
     unknownRep: "That rep isn't on your team anymore. Refresh and try again.",
     afterInvites: (n: number) =>
-      `Invites are already out. Changing this will ask ${plural(n, "hacker")} to confirm again, and some may drop off.`,
+      n === 0
+        ? "Invites are already out. Changing this may ask hackers to confirm again, and some may drop off."
+        : `Invites are already out. Changing this will ask ${plural(n, "hacker")} to confirm again, and some may drop off.`,
     tooManyReps: (max: number) => `You can add up to ${max} reps.`,
     shortPhone: "That phone number looks too short.",
     badSession: "That isn't one of the chat sessions.",
