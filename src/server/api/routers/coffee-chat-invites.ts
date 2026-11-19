@@ -7,9 +7,9 @@ import {
   currentRound,
   nextRoundAt,
   roundClosesAt,
+  seatStillOfferable,
 } from "~/lib/coffee-chat-invites";
 import {
-  coffeeChatStartsAt,
   coffeeChatTimeOf,
   effectiveCoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
@@ -51,8 +51,10 @@ export type InviteChatStatus = {
   filled: number;
   accepted: number;
   /**
-   * Seats no eligible hacker could fill (before the chat starts). Seats are
-   * re-offered at once, so this is a problem to show, not a normal count.
+   * Seats no eligible hacker could fill. Seats are re-offered at once, so
+   * this is a problem to show, not a normal count. Always 0 while invites
+   * are off (kill switch, previews) or the run of show is unreadable (no
+   * round runs then), and for a chat too close to offer any more.
    */
   unfilled: number;
   /** The live invites (waiting or accepted), oldest first. */
@@ -103,6 +105,8 @@ export const coffeeChatInvitesRouter = createTRPCRouter({
         loadBoardState(),
         sessionInviteRows(),
       ]);
+      // Only a seat a round could still fill but didn't is a problem.
+      const flagUnfilled = invitesEnabled() && state.workshopsAvailable;
       const layout = layoutOf(
         state,
         (p) =>
@@ -147,7 +151,8 @@ export const coffeeChatInvitesRouter = createTRPCRouter({
               (i) => i.status === "accepted",
             ).length;
             const slotTime = coffeeChatTimeOf(c.start);
-            const ahead = coffeeChatStartsAt(slotTime) > now;
+            const flag =
+              flagUnfilled && seatStillOfferable(c.start, c.building, now);
             return {
               placementId: c.placementId,
               repName: c.repName,
@@ -157,7 +162,7 @@ export const coffeeChatInvitesRouter = createTRPCRouter({
               seats: c.seats,
               filled,
               accepted,
-              unfilled: ahead ? Math.max(0, c.seats - filled) : 0,
+              unfilled: flag ? Math.max(0, c.seats - filled) : 0,
               invites,
             };
           });

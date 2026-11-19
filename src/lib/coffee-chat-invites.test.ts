@@ -10,6 +10,7 @@ import {
   roundClosesAt,
   roundOpensAt,
   saturdayAt,
+  seatStillOfferable,
   sessionChatStarts,
   type InviteSource,
   type PlanChat,
@@ -301,6 +302,20 @@ describe("round timing", () => {
 
   test("saturdayAt is Eastern time", () => {
     expect(saturdayAt(600).toISOString()).toBe("2026-11-21T15:00:00.000Z");
+  });
+});
+
+describe("seatStillOfferable", () => {
+  test("a seat can be offered until 10 minutes before its last call (20 min before; 35 for Ivey)", () => {
+    // 11:00 near: last call 10:40, so offerable until 10:30.
+    expect(seatStillOfferable(min("11:00"), "near", FRI_10PM)).toBe(true);
+    expect(seatStillOfferable(min("11:00"), "near", at("10:30"))).toBe(true);
+    expect(seatStillOfferable(min("11:00"), "near", at("10:31"))).toBe(false);
+    // Within 10 minutes of starting: never.
+    expect(seatStillOfferable(min("11:00"), "near", at("10:55"))).toBe(false);
+    // Ivey: last call 10:25, so offerable until 10:15.
+    expect(seatStillOfferable(min("11:00"), "ivey", at("10:15"))).toBe(true);
+    expect(seatStillOfferable(min("11:00"), "ivey", at("10:16"))).toBe(false);
   });
 });
 

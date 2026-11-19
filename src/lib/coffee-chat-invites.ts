@@ -120,6 +120,21 @@ export function lastCallAt(startMin: number, building: Building): Date {
 }
 
 /**
+ * Whether a seat at this chat can still be offered at all (in this round or
+ * a later one): its last call leaves at least MIN_ANSWER_MINUTES to answer.
+ */
+export function seatStillOfferable(
+  startMin: number,
+  building: Building,
+  now: Date,
+): boolean {
+  return (
+    lastCallAt(startMin, building).getTime() - now.getTime() >=
+    MIN_ANSWER_MINUTES * 60_000
+  );
+}
+
+/**
  * `close` capped at the chat's last call, or null when that leaves under
  * MIN_ANSWER_MINUTES from `now`.
  */

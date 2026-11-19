@@ -18,6 +18,7 @@ import {
   deliverUnnotifiedInvites,
   invitesDeliveryLive,
   invitesEnabled,
+  kickDueInviteRounds,
   type InviteJob,
   previewDueInviteRound,
   reconcileInvitesAfterChange,
@@ -27,6 +28,7 @@ import {
   sendRoundOneInvites,
 } from "~/server/api/utils/coffee-chat-invites";
 import { loadCoffeeChatNotices } from "~/server/api/utils/coffee-chat-notify";
+import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { db } from "~/server/db";
 import {
   applications,
@@ -94,7 +96,7 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
     typeof import("~/server/api/utils/run-of-show-sheet")
   >()),
   sheetWritesEnabled: () => false,
-  getRunOfShow: () =>
+  getRunOfShow: vi.fn(() =>
     Promise.resolve({
       readAt: "2026-11-20T12:00:00.000Z",
       items: [
@@ -115,7 +117,20 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
       workshops: [],
       availability: { people: [], slots: [] },
     }),
+  ),
 }));
+
+// The real kick; the status test stops it once so no round runs behind it.
+vi.mock("~/server/api/utils/coffee-chat-invites", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("~/server/api/utils/coffee-chat-invites")
+    >();
+  return {
+    ...actual,
+    kickDueInviteRounds: vi.fn(actual.kickDueInviteRounds),
+  };
+});
 
 const FRI_10PM = new Date("2026-11-20T22:00:00-05:00");
 const at = (hhmm: string) => new Date(`2026-11-21T${hhmm}:00-05:00`);
@@ -726,9 +741,13 @@ describe("coffeeChatInvites router", () => {
       { code: "FORBIDDEN" },
     );
 
-    const status = await organizer.coffeeChatInvites.status({
-      sponsorId: alpha.id,
-    });
+    vi.setSystemTime(FRI_10PM);
+    const statusOf = async () => {
+      // No round or sweep behind the read: this test only reads.
+      vi.mocked(kickDueInviteRounds).mockImplementationOnce(() => undefined);
+      return organizer.coffeeChatInvites.status({ sponsorId: alpha.id });
+    };
+    const status = await statusOf();
     expect(status.enabled).toBe(false);
     expect(status.sponsors.map((s) => s.name)).toEqual([names.alpha]);
     const a = status.sponsors[0]!;
@@ -750,17 +769,35 @@ describe("coffeeChatInvites router", () => {
     expect(a.chats[0]!.invites.map((i) => [i.name, i.status])).toEqual([
       ["h5 Person", "accepted"],
     ]);
-    // Declined and expired invites aren't listed: they were replaced. The
-    // seats no one could take are counted as unfilled (a board problem).
+    // Declined and expired invites aren't listed: they were replaced.
     expect(a.chats[1]!.invites).toEqual([]);
     expect(a.chats[2]!.invites).toEqual([]);
-    expect(a.chats[1]).toMatchObject({ filled: 0, unfilled: 1 });
+    // The kill switch is off: no round fills seats, so none is flagged.
+    expect(a.chats[1]).toMatchObject({ filled: 0, unfilled: 0 });
     expect(a.totals).toEqual({
       seats: 6,
       accepted: 1,
       pending: 0,
-      unfilled: 5,
+      unfilled: 0,
     });
+
+    // On (dry counts too): the seats no one could take are a board problem.
+    process.env.COFFEE_INVITES_ENABLED = "dry";
+    const on = (await statusOf()).sponsors[0]!;
+    expect(on.chats[1]).toMatchObject({ filled: 0, unfilled: 1 });
+    expect(on.totals.unfilled).toBe(5);
+    // Sat 10:46: 11:15's last call (10:55) leaves under 10 minutes, so its
+    // seat can't be offered any more and isn't flagged.
+    vi.setSystemTime(at("10:46"));
+    const late = (await statusOf()).sponsors[0]!;
+    expect(late.chats.map((c) => c.unfilled)).toEqual([0, 0, 1, 1, 1, 1]);
+    vi.setSystemTime(FRI_10PM);
+    // The run of show unreadable: no round runs, so nothing is flagged.
+    vi.mocked(getRunOfShow).mockRejectedValueOnce(new Error("sheet down"));
+    expect((await statusOf()).sponsors.every((s) => s.totals.unfilled === 0)).toBe(
+      true,
+    );
+    delete process.env.COFFEE_INVITES_ENABLED;
     // The kill switch is off here: Run now writes nothing.
     expect(await organizer.coffeeChatInvites.runRoundNow()).toMatchObject({
       status: "disabled",
