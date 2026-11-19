@@ -185,6 +185,8 @@ const config = {
         "sm-p": ".875rem", //p3
         "lg-b": "1rem", //button-lg
         "sm-b": "0.875rem", //button-sm
+        "dashboard-caption": "0.8125rem", // 13px: sponsor side nav footer and logo card
+        "dashboard-micro": "0.6875rem", // 11px: booth names on the phone booth grid
       },
       lineHeight: {
         default: "1.2",

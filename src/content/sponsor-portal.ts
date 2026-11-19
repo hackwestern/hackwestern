@@ -1,6 +1,20 @@
 // User-facing copy for the sponsor portal home (/sponsors/[uuid]) and the
 // shared bits of its sub-pages. Keep wording here, not in components.
 
+import { RUN_OF_SHOW_DATES } from "~/lib/run-of-show-time";
+
+/** "Nov 20 to 22, 2026", from the event dates. */
+function eventDateRange(): string {
+  const day = (iso: string) => new Date(`${iso}T12:00:00Z`);
+  const start = day(RUN_OF_SHOW_DATES.Friday);
+  const end = day(RUN_OF_SHOW_DATES.Sunday);
+  const month = start.toLocaleString("en-US", {
+    month: "short",
+    timeZone: "UTC",
+  });
+  return `${month} ${start.getUTCDate()} to ${end.getUTCDate()}, ${end.getUTCFullYear()}`;
+}
+
 export const sponsorPortalCopy = {
   seoTitle: "Sponsor Portal",
   brand: "Hack Western 13",
@@ -30,7 +44,7 @@ export const sponsorPortalCopy = {
     portal: "Sponsor portal",
     homeLink: "Hack Western 13 sponsor portal home",
     /** Bottom of the side nav. */
-    footer: "Times are Eastern · Nov 20 to 22, 2026",
+    footer: `Times are Eastern · ${eventDateRange()}`,
     judgingLocked: (opens: string) => `Judging, locked. ${opens}`,
     judgingLockedTitle: "When judging opens",
     /** Beside Judging once it's open: has the team sent its top picks? */
@@ -53,7 +67,8 @@ export const sponsorPortalCopy = {
       label: "Your Hack Western contact",
     },
   },
-  footer: "Need help during the hackathon? Text or call your Hack Western contact.",
+  footer:
+    "Need help during the hackathon? Text or call your Hack Western contact.",
   /** Under the welcome banner: the one thing to do now. */
   todo: {
     label: "What to do now",

@@ -769,3 +769,9 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Why:** sponsors and organizers care about who's coming, not who said no. Filling every seat at once keeps chats full.
 **Supersedes:** "Friday-night declines wait for round 2 (10:30)" and the round-2 start time of 10:30 (decisions-log, invites D5).
 **Still possible:** a seat stays empty only if no eligible hacker is left (nobody interested and free at that time). The board shows that as a problem, not as a normal count.
+
+## 2026-11-19: Phone top bar is logo, title, Help; the How to guides move into Help on phones
+
+**Decision:** At phone widths the sponsor portal's top bar shows only the logo, a left-aligned truncating title and Help, like the v6 mock. The How to tours are listed inside the Help dialog under "Show me how" (every size); tablets and up keep the How to button in the header.
+**Why:** logo, title, How to and Help didn't fit at 390px. Help is where a lost sponsor looks first.
+**Alternatives:** an icon-only How to button (a bare compass reads as nothing); shortening the title (still overflows on long section names).

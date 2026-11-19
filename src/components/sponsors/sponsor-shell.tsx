@@ -27,7 +27,7 @@ import { sponsorLogo } from "~/lib/sponsor-logos";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
-import { pressable } from "./sponsor-shell-styles";
+import { pressable, tapRow } from "./sponsor-shell-styles";
 
 export { pressable, hoverTint } from "./sponsor-shell-styles";
 
@@ -75,8 +75,9 @@ type NavItem = {
  * with the page title and a bottom tab bar. Help is a button in the
  * header on every page and opens a dialog over the page you're on.
  *
- * The header is one element for both: the sticky top bar on phones, the
- * page's title row (big heading, How to, Help) from tablets up, so the
+ * The header is one element for both: the sticky top bar on phones (logo,
+ * title, Help, like the mock; the How to guides sit inside Help there),
+ * the page's title row (big heading, How to, Help) from tablets up, so the
  * tour and Help mount once.
  *
  * Judging only shows for prize track sponsors, greyed and locked until
@@ -97,7 +98,9 @@ export function SponsorShell({
    * Leave it out when the page has its own h1 (the coffee chat flows). */
   heading?: string;
   /** The phone top bar's title when it should differ from the heading (or
-   * there's none); defaults to the heading, else the nav section's name. */
+   * there's none); defaults to the heading, else the nav section's name.
+   * Passed without a heading, it's hidden from screen readers: those pages
+   * (the coffee chat flows) have their own h1 saying the same. */
   barTitle?: string;
   /** Desktop only, left of How to and Help when there's no heading (the
    * flows' "Back to Chats"). */
@@ -179,7 +182,8 @@ export function SponsorShell({
   // The section's name, even when its nav item is hidden (Judging for a
   // sponsor without a prize track).
   const activeLabel = active ? NAV_LABELS[active] : undefined;
-  const topTitle = barTitle ?? heading ?? activeLabel ?? sponsorPortalCopy.brand;
+  const topTitle =
+    barTitle ?? heading ?? activeLabel ?? sponsorPortalCopy.brand;
 
   const frame = (
     <>
@@ -216,6 +220,8 @@ export function SponsorShell({
                   alt=""
                   width={34}
                   height={50}
+                  // The /live sidebar's nudge (sidebar.tsx has no shared
+                  // logo block to reuse).
                   className="-my-[2.5px] mx-[7px] shrink-0"
                 />
                 {sponsorPortalCopy.brand}
@@ -234,7 +240,7 @@ export function SponsorShell({
                 </ul>
               </nav>
             </div>
-            <p className="m-0 pt-6 text-[13px] text-dashboard-text-light">
+            <p className="m-0 pt-6 text-dashboard-caption text-dashboard-text-light">
               {copy.footer}
             </p>
           </aside>
@@ -259,9 +265,10 @@ export function SponsorShell({
             {heading ? (
               <h1
                 className={cn(
-                  "m-0 min-w-0 flex-1 truncate text-center text-base font-semibold leading-default",
-                  "md:whitespace-normal md:text-left md:font-bold md:leading-[1.2]",
-                  display ? "md:text-[48px]" : "md:text-[32px]",
+                  "m-0 min-w-0 flex-1 truncate text-base font-semibold leading-default",
+                  // The mock's display (48px) and h1 (32px) from tablets up.
+                  "md:whitespace-normal md:font-bold",
+                  display ? "md:text-md-display" : "md:text-sm-display",
                 )}
               >
                 {barTitle && barTitle !== heading ? (
@@ -276,8 +283,8 @@ export function SponsorShell({
             ) : (
               <>
                 <p
-                  aria-hidden
-                  className="m-0 min-w-0 flex-1 truncate text-center text-base font-semibold md:hidden"
+                  aria-hidden={barTitle ? true : undefined}
+                  className="m-0 min-w-0 flex-1 truncate text-base font-semibold md:hidden"
                 >
                   {topTitle}
                 </p>
@@ -346,7 +353,11 @@ export function SponsorShell({
 
   // One help dialog for the whole page, opened from the header.
   return id ? (
-    <SponsorHelpProvider sponsor={id} boothLocation={info.data?.boothLocation}>
+    <SponsorHelpProvider
+      sponsor={id}
+      boothLocation={info.data?.boothLocation}
+      hasPrizeTrack={info.data?.hasPrizeTrack}
+    >
       {frame}
     </SponsorHelpProvider>
   ) : (
@@ -382,7 +393,7 @@ function SponsorCard({
           {name}
         </span>
       ) : null}
-      <span className="whitespace-nowrap text-[13px] text-dashboard-text-light">
+      <span className="whitespace-nowrap text-dashboard-caption text-dashboard-text-light">
         {copy.portal}
       </span>
     </div>
@@ -400,7 +411,9 @@ function SideNavItem({ item, current }: { item: NavItem; current: boolean }) {
           "size-5 shrink-0 transition-colors",
           current
             ? "text-dashboard-text-active"
-            : "text-dashboard-text-light group-hover:text-dashboard-text-heavy",
+            : item.locked
+              ? "text-dashboard-text-placeholder"
+              : "text-dashboard-text-light group-hover:text-dashboard-text-heavy",
         )}
       />
       <span className="min-w-0 flex-1 truncate">{item.label}</span>
@@ -420,8 +433,10 @@ function SideNavItem({ item, current }: { item: NavItem; current: boolean }) {
           type="button"
           data-tour={tour}
           aria-label={copy.judgingLocked(sponsorVenueCopy.judgingLocked.badge)}
+          // navLinkClass's layout without its hover surface: locked
+          // Judging only says when it opens.
           className={cn(
-            navLinkClass(false),
+            "flex items-center gap-2.5 rounded-dashboard-sm px-4 py-3 leading-default",
             ring,
             "text-dashboard-text-placeholder",
           )}
@@ -447,7 +462,8 @@ function TabItem({ item, current }: { item: NavItem; current: boolean }) {
   const Icon = item.icon;
   const tour = item.tour ?? `nav-${item.id}`;
   const cell =
-    "flex min-h-[52px] w-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-dashboard-lg px-0.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary";
+    "flex w-full min-w-0 flex-col items-center justify-center gap-0.5 rounded-dashboard-lg px-0.5 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary";
+  const cellClass = cn(cell, tapRow);
   const inner = (
     <>
       <Icon
@@ -469,7 +485,7 @@ function TabItem({ item, current }: { item: NavItem; current: boolean }) {
           data-tour={tour}
           aria-label={copy.judgingLocked(sponsorVenueCopy.judgingLocked.badge)}
           className={cn(
-            cell,
+            cellClass,
             "font-medium text-dashboard-text-placeholder",
             pressable,
           )}
@@ -485,7 +501,7 @@ function TabItem({ item, current }: { item: NavItem; current: boolean }) {
       data-tour={tour}
       aria-current={current ? "page" : undefined}
       className={cn(
-        cell,
+        cellClass,
         current
           ? "bg-dashboard-bg-navSelected font-semibold text-dashboard-text-active"
           : "font-medium text-dashboard-text-medium",

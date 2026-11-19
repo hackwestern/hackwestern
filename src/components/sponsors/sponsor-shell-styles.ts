@@ -11,3 +11,11 @@ export const pressable =
 /** Hover tint only on devices that really hover, so taps don't stick. */
 export const hoverTint =
   "[@media(hover:hover)]:hover:bg-dashboard-bg-highlight";
+
+/** A white sponsor card (the mock's .card): the Map page's booth layout
+ * and floor plans. */
+export const sponsorCard =
+  "rounded-dashboard-lg bg-dashboard-bg-surface p-5 shadow-dashboard-card md:p-6";
+
+/** The 52px tap row shared by the phone tab bar and the booth grid. */
+export const tapRow = "min-h-[52px]";
