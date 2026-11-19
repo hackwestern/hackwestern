@@ -30,4 +30,4 @@ Review `mocks/sponsor-chat-calendar-v1` with Jazz (spec: `docs/specs/sponsor-cha
 - Tests: `SKIP_ENV_VALIDATION=1 npx vitest run` (baseline: 1 known Apple Wallet failure)
 - Mocks: http://127.0.0.1:3040/mocks/ (served from hackwestern-sponsor-dash)
 - Keep SHEET_WRITES off locally.
-- Read prize tracks from Sponsor Day-Of "Custom API / Prize Track" checkbox instead of the hardcoded src/content/sponsor-prize-tracks.ts (today: Canada Life, QNX, Scotiabank, Sun Life, TinyFish, PCBWay). Ask Jazz: does TinyFish judge remotely (judging room "Digital")?
+- Read prize tracks from Sponsor Day-Of "Custom API / Prize Track" checkbox instead of the hardcoded src/content/sponsor-prize-tracks.ts (today: Canada Life, QNX, Scotiabank, Sun Life, TinyFish, PCBWay). TinyFish judges remotely (decision 2026-11-19).

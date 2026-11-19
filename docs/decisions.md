@@ -595,3 +595,7 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Supersedes:** reps-as-rows chat blocks with inline editing (`docs/specs/inline-chat-block-editing.md`), per-block chat length/size, the flexibility question, shared multi-rep blocks.
 
 **Why:** the simplest model for sponsors to understand and for organizers to schedule; rooms map one-to-one to rep-sessions.
+
+## 2026-11-19: TinyFish judges remotely (Jazz)
+
+**Decision:** TinyFish has a prize track (Sponsor Day-Of "Custom API / Prize Track" ticked) and judges remotely. It stays an in-person sponsor (booth, Saturday workshop, portal link) and submits its own shortlist and top 5 through the portal; its judging room is "Remote (judges online)" and its presentations are online. Unlike PCBWay (digital-only, no portal), whose top 5 the spon team enters.
