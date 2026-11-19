@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Crown, Plus } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { initialsOf } from "~/components/sponsors/hacker-avatar";
@@ -43,6 +43,9 @@ export function TeamStep({
   const [error, setError] = useState<string | null>(null);
   // Before Send, a removed rep can come back (with their times and chats).
   const [removed, setRemoved] = useState<SetupData["reps"][number] | null>(null);
+  // The rep Undo already added back, so a retry after a failed step
+  // doesn't add them twice.
+  const restored = useRef<{ rep: SetupData["reps"][number]; id: string; isPrimary: boolean } | null>(null);
   const refresh = () => utils.coffeeChatSetup.get.invalidate({ sponsor });
   // Saves that can move or drop sent chats: remember the result as seen,
   // so the sponsor's own change isn't shown as an organizer's.
@@ -62,22 +65,47 @@ export function TeamStep({
   const restorePrefs = api.coffeeChatSetup.savePrefs.useMutation({ onError });
   const undo = async () => {
     const rep = removed;
-    if (!rep || add.isPending) return;
-    setRemoved(null);
+    if (!rep || add.isPending || restorePrefs.isPending) return;
     setError(null);
+    // Organizers may have sent since the removal: check first, so Undo
+    // asks before changing a sent setup instead of failing and losing the rep.
+    let fresh: SetupData;
     try {
-      const back = await add.mutateAsync({ sponsor, name: rep.name, phone: rep.phone });
-      await restorePrefs.mutateAsync({
-        sponsor,
-        hackersPerChat: data.hackersPerChat,
-        reps: [{ id: back.id, chatsWanted: rep.chatsWanted, free: rep.free as ("10" | "11" | "13" | "14" | "15" | "16")[] }],
-      });
-      if (rep.isPrimary && !back.isPrimary) await crown.mutateAsync({ sponsor, repId: back.id });
-      await refresh();
-      announce(copy.restored(rep.name));
-    } catch {
-      // onError already shows what went wrong.
+      fresh = await utils.client.coffeeChatSetup.get.query({ sponsor });
+    } catch (e) {
+      return onError(e instanceof Error ? e : { message: sponsorSetupCopy.errors.saveError });
     }
+    guard(
+      (confirmAfterInvites) =>
+        void (async () => {
+          try {
+            const back =
+              restored.current?.rep === rep
+                ? restored.current
+                : await add.mutateAsync({ sponsor, name: rep.name, phone: rep.phone, confirmAfterInvites });
+            restored.current = { rep, id: back.id, isPrimary: back.isPrimary };
+            await restorePrefs.mutateAsync({
+              sponsor,
+              hackersPerChat: fresh.hackersPerChat,
+              reps: [{ id: back.id, chatsWanted: rep.chatsWanted, free: rep.free as ("10" | "11" | "13" | "14" | "15" | "16")[] }],
+              confirmAfterInvites,
+            });
+            if (rep.isPrimary && !back.isPrimary) {
+              await crown.mutateAsync({ sponsor, repId: back.id, confirmAfterInvites });
+            }
+            // Only now is the rep back: until then Undo stays offered.
+            restored.current = null;
+            setRemoved(null);
+            await refreshOwn();
+            announce(copy.restored(rep.name));
+          } catch {
+            // onError already shows what went wrong; Undo stays offered.
+            await refresh();
+          }
+        })(),
+      0,
+      fresh.confirmed,
+    );
   };
 
   const save = (form: { name: string; phone: string }, repId: string | null) => {

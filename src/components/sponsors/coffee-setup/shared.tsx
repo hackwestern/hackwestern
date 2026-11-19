@@ -432,14 +432,15 @@ export function LinkButton({
  * out…"). `guard(run, affected)` calls run(false) before Send, or opens the
  * warning and calls run(true) when they choose Change anyway. `affected` is
  * the invited hackers in the chats this change touches (invitesAffected).
+ * `confirmed` overrides data.confirmed when the caller just refetched.
  */
 export function useAfterInvites(data: SetupData | undefined) {
   const [pending, setPending] = useState<{ run: (confirm: boolean) => void; affected: number } | null>(null);
   // Agreed once on this screen: don't ask again for every tick.
   const agreed = useRef(false);
   const guard = useCallback(
-    (run: (confirm: boolean) => void, affected = 0) => {
-      if (!data?.confirmed) return run(false);
+    (run: (confirm: boolean) => void, affected = 0, confirmed = data?.confirmed) => {
+      if (!confirmed) return run(false);
       if (agreed.current) return run(true);
       setPending({ run, affected });
     },
