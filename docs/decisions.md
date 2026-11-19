@@ -368,3 +368,11 @@
 **Why:** A teammate needs to pull the full picture. The repo is public, so files were scanned for secrets, phone numbers, the sheet link and full names first.
 
 **Alternatives:** A companion docs branch (keeps the PR diff app-only); leaving the sd-* branches local.
+
+## 2026-11-19: Spon Team sheet tabs grouped and color coded; "live sponsor info" is now "Sponsor Status" (Jazz)
+
+**Decision:** The Spon Team RUN OF SHOW sheet got a "Start here" tab (what each tab is for, who edits it, whether the app reads it) and a new tab order: Start here, Sponsor Day-Of (was Contract Breakdown), Spon Team (was Team Assignments), then the tabs the app reads (RUN OF SHOW, Workshops, Opening + Closing Ceremonies, Coffee Chats, Coffee Chat Room Grid, Judging, Sponsor Status, HW Contacts). Blue tabs are free to edit, orange tabs are read by the app (change values, never columns, header rows or names). Empty cells that still need info are filled light yellow, never typed as "TBD", because the app reads any text as real data. "Sunlife" and "Tinyfish" were respelled to the registered names. The app finds the sponsor info tab under "Sponsor Status", then the old names ("live sponsor info", "sponsor info"); a missing tab is created as "Sponsor Status". No columns or header rows moved in any tab the app reads.
+
+**Why:** Jazz asked for tabs that make sense and for the app to match the sheet. The sheet is not read by production yet (only the sponsor-dashboard branch and local dev), so renaming was safe the day before the event. An .xlsx backup from before the change is in `_local/` and the sheet's version history has every earlier state.
+
+**Alternatives:** Move the team availability block out of RUN OF SHOW and merge Workshops and Ceremonies into one tab (rejected for now: the parsers find those blocks and tabs by position and name, so it means parser changes the day before the event); reorganize a copy of the sheet (rejected by Jazz); put "TBD" in empty cells (rejected: the app shows it as data, the way booth "TBD" already shows).

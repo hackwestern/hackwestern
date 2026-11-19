@@ -2,13 +2,16 @@ import { type sheets_v4 } from "googleapis";
 
 import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
 import { TRACK_VALUES } from "~/lib/sponsor-track";
-import { type SheetsClient } from "~/server/api/utils/sponsor-sheets";
+import {
+  SPONSOR_INFO_TAB_NAMES,
+  type SheetsClient,
+} from "~/server/api/utils/sponsor-sheets";
 import { fetchHwContactNames } from "~/server/api/utils/sponsor-hw-contacts";
 
-// Jazz renamed the tab "live sponsor info" in the merged sheet (2026-11-18);
-// either name is found, and a new tab is only made when neither exists.
-const SPONSOR_INFO_TAB = "live sponsor info";
-export const SPONSOR_INFO_TAB_NAMES = ["live sponsor info", "sponsor info"];
+// Any of the tab's names is found (newest first); a new tab is only made,
+// with the current name, when none exists.
+const SPONSOR_INFO_TAB = "Sponsor Status";
+export { SPONSOR_INFO_TAB_NAMES };
 
 /** 1-based column number -> A1-notation letters (1 -> "A", 9 -> "I"). */
 function columnLetter(columnNumber: number): string {

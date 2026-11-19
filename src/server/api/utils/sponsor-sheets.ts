@@ -373,13 +373,27 @@ export async function findTabTitle(
   }
 }
 
-function findSponsorInfoTabTitle(
+/**
+ * The sponsor info tab's title, newest first. The tab was "sponsor info",
+ * then "live sponsor info", and is "Sponsor Status" since the 2026-11-19
+ * sheet reorganization. Older names are still found so a server on older
+ * code and a sheet on the new names (or the reverse) keep working.
+ */
+export const SPONSOR_INFO_TAB_NAMES = [
+  "sponsor status",
+  "live sponsor info",
+  "sponsor info",
+];
+
+async function findSponsorInfoTabTitle(
   sheets: SheetsClient,
   spreadsheetId: string,
 ): Promise<string | null> {
-  return findTabTitle(sheets, spreadsheetId, "live sponsor info").then(
-    (title) => title ?? findTabTitle(sheets, spreadsheetId, "sponsor info"),
-  );
+  for (const name of SPONSOR_INFO_TAB_NAMES) {
+    const title = await findTabTitle(sheets, spreadsheetId, name);
+    if (title) return title;
+  }
+  return null;
 }
 
 export async function fetchAllSponsorInfo(
