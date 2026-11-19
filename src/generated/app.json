@@ -20,6 +20,14 @@
       ]
     },
     {
+      "auth": "none-detected",
+      "dynamic": false,
+      "file": "src/pages/clock.tsx",
+      "hasGetServerSideProps": false,
+      "route": "/clock",
+      "serverGuards": []
+    },
+    {
       "auth": "session",
       "dynamic": false,
       "file": "src/pages/dashboard-design-system.tsx",
@@ -94,6 +102,16 @@
       "route": "/internal/cheat-check",
       "serverGuards": [
         "disabledRedirect"
+      ]
+    },
+    {
+      "auth": "organizer",
+      "dynamic": false,
+      "file": "src/pages/internal/clock.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/internal/clock",
+      "serverGuards": [
+        "authRedirectOrganizer"
       ]
     },
     {
@@ -6534,6 +6552,350 @@
       "type": "mutation"
     },
     {
+      "auth": "public",
+      "errors": [
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/clock.get?input=<superjson>",
+      "input": null,
+      "output": {
+        "properties": {
+          "durationMs": {
+            "type": "number"
+          },
+          "endsAtMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "pausedRemainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "serverNowMs": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "endsAtMs",
+          "pausedRemainingMs",
+          "durationMs",
+          "serverNowMs"
+        ],
+        "type": "object"
+      },
+      "path": "clock.get",
+      "source": "src/server/api/routers/clock.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/clock.pause",
+      "input": null,
+      "output": {
+        "properties": {
+          "durationMs": {
+            "type": "number"
+          },
+          "endsAtMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "pausedRemainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "serverNowMs": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "endsAtMs",
+          "pausedRemainingMs",
+          "durationMs",
+          "serverNowMs"
+        ],
+        "type": "object"
+      },
+      "path": "clock.pause",
+      "source": "src/server/api/routers/clock.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/clock.reset",
+      "input": null,
+      "output": {
+        "properties": {
+          "durationMs": {
+            "type": "number"
+          },
+          "endsAtMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "pausedRemainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "serverNowMs": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "endsAtMs",
+          "pausedRemainingMs",
+          "durationMs",
+          "serverNowMs"
+        ],
+        "type": "object"
+      },
+      "path": "clock.reset",
+      "source": "src/server/api/routers/clock.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/clock.resume",
+      "input": null,
+      "output": {
+        "properties": {
+          "durationMs": {
+            "type": "number"
+          },
+          "endsAtMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "pausedRemainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "serverNowMs": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "endsAtMs",
+          "pausedRemainingMs",
+          "durationMs",
+          "serverNowMs"
+        ],
+        "type": "object"
+      },
+      "path": "clock.resume",
+      "source": "src/server/api/routers/clock.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/clock.start",
+      "input": null,
+      "output": {
+        "properties": {
+          "durationMs": {
+            "type": "number"
+          },
+          "endsAtMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "pausedRemainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "serverNowMs": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "endsAtMs",
+          "pausedRemainingMs",
+          "durationMs",
+          "serverNowMs"
+        ],
+        "type": "object"
+      },
+      "path": "clock.start",
+      "source": "src/server/api/routers/clock.ts",
+      "type": "mutation"
+    },
+    {
       "auth": "organizer",
       "errors": [
         {
@@ -10748,10 +11110,10 @@
             "status",
             "id",
             "name",
+            "endsAt",
             "points",
             "winPoints",
             "startsAt",
-            "endsAt",
             "room",
             "deletedAt"
           ],
@@ -11332,10 +11694,10 @@
           "status",
           "id",
           "name",
+          "endsAt",
           "points",
           "winPoints",
           "startsAt",
-          "endsAt",
           "room",
           "deletedAt"
         ],
