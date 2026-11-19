@@ -19,7 +19,7 @@ Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /li
 | 7 | Rep timeline: reps as rows, time across; rows above for workshop, hacker demand/room availability, "Counts as hours"; group block spans its reps' rows; no rooms, no date | Building |
 | 8 | Edit on the block: expand in place for reps, 15/30 toggle, − / + hackers per chat, live chats line; drag edges for start/end | Building |
 | 9 | Step label "Give us your chatting preferences" | Building |
-| 10 | One deadline Fri 11:59 PM for team + preferences + optional shortlist; auto-submit at the deadline; scanned hackers are first choice; all invites sent Friday night; Saturday scans only fill open seats | Building |
+| 10 | One deadline Fri 9:30 PM (invites out by 10 PM) for team + preferences + optional shortlist; auto-submit at the deadline; scanned hackers are first choice; all invites sent Friday night; Saturday scans only fill open seats | Building |
 | 11 | Map works exactly like the hacker live site map (pinch / ⌘-Ctrl + scroll zoom, drag to move, same buttons and text) | Building |
 
 ## Final mocks
