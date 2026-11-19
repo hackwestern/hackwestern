@@ -1,3 +1,4 @@
+import { keepNamesTogether } from "~/lib/keep-names-together";
 import { useRef, useState } from "react";
 import { Crown, Plus } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -140,7 +141,7 @@ export function TeamStep({
       {region}
       {dialog}
       <h2 id="team-heading" className="m-0 text-xl font-semibold text-dashboard-text-heavy">
-        {copy.heading(data.sponsorName)}
+        {copy.heading(keepNamesTogether(data.sponsorName, [data.sponsorName]))}
       </h2>
       <p className="m-0 flex gap-2 rounded-dashboard-md bg-dashboard-bg-inset p-3 text-sm text-dashboard-text-medium">
         <Crown aria-hidden className="mt-0.5 size-4 shrink-0 text-dashboard-text-light" />

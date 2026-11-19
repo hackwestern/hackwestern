@@ -1,3 +1,4 @@
+import { keepNamesTogether } from "~/lib/keep-names-together";
 import { Clock, MapPin, Presentation, Users } from "lucide-react";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import { formatClock, type WorkshopInfo } from "~/lib/run-of-show";
@@ -27,11 +28,11 @@ export function WorkshopDetails({ workshops }: { workshops: WorkshopInfo[] }) {
       <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 md:grid-cols-2">
         {workshops.map((w) => (
           <li
-            key={w.title}
+            key={keepNamesTogether(w.title, [w.sponsor])}
             className="flex flex-col gap-3 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card sm:p-6"
           >
             <h3 className="m-0 break-words text-base font-semibold text-dashboard-text-heavy">
-              {w.title}
+              {keepNamesTogether(w.title, [w.sponsor])}
             </h3>
             <dl className="m-0 flex flex-col gap-2 text-sm">
               <Row icon={<Clock aria-hidden className="size-4" />} label={copy.when}>
@@ -99,7 +100,7 @@ export function WorkshopsTable({ workshops }: { workshops: WorkshopInfo[] }) {
             {workshops.map((w) => (
               <tr key={w.title} className="border-b border-dashboard-border-subtle last:border-0">
                 <th scope="row" className="p-3 font-semibold text-dashboard-text-heavy">
-                  {w.title}
+                  {keepNamesTogether(w.title, [w.sponsor])}
                 </th>
                 <td className="p-3">{w.sponsor ?? table.none}</td>
                 <td className="p-3">
