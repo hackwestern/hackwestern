@@ -973,3 +973,159 @@ describe("kill switch default", () => {
     expect(invitesDeliveryLive()).toBe(true);
   });
 });
+
+/**
+ * The SQL the app runs inside transactions while `fn` runs, in order. Every
+ * transaction's session reads the logger from the db's shared options when
+ * it starts, so swapping it in records them. The logger runs just before
+ * each statement, so `onQuery` can also make one fail (a Postgres error).
+ */
+async function queriesDuring(
+  fn: () => Promise<unknown>,
+  onQuery: (query: string) => void = () => undefined,
+): Promise<string[]> {
+  const { session } = db as unknown as {
+    session: { options: { logger?: unknown } };
+  };
+  const before = session.options.logger;
+  const log: string[] = [];
+  session.options.logger = {
+    logQuery: (query: string) => {
+      log.push(query);
+      onQuery(query);
+    },
+  };
+  try {
+    await fn();
+  } finally {
+    session.options.logger = before;
+  }
+  return log;
+}
+
+const BOARD_LOCK = /pg_advisory_xact_lock\(4812026112\)/;
+const SPONSOR_ROW_LOCK = /from "sponsor_judging_sponsor"[\s\S]*for update/;
+const CHAT_ROW_LOCK = /from "coffee_chat"[\s\S]*for update/;
+const firstOf = (log: string[], re: RegExp) => log.findIndex((q) => re.test(q));
+/** An error as the Postgres driver throws it, with its SQLSTATE. */
+const pgError = (code: string) =>
+  Object.assign(new Error(`postgres error ${code}`), { code });
+
+describe("lock order: board, sponsor, chat", () => {
+  test("a decline, an organizer room move and a cancel all take the board lock first", async () => {
+    process.env.COFFEE_INVITES_ENABLED = "1";
+    vi.setSystemTime(FRI_10PM);
+    const { createCaller } = await import("~/server/api/root");
+    const { createInnerTRPCContext } = await import("~/server/api/trpc");
+    const { mockOrganizerSession } = await import("~/server/auth");
+    const organizer = createCaller(
+      createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
+    );
+    // Two 1-on-1 seats at 3:00 and 3:15, both taken in round 1.
+    const kappa = await sponsor(
+      `Kappa${Date.now()}`,
+      { hackersPerChat: 1 },
+      { chats: 2 },
+      [{ sessionId: "15", room: "2245", status: "sent" }],
+    );
+    for (const k of ["k1", "k2"]) {
+      await hacker(k);
+      await db
+        .insert(sponsorScans)
+        .values({ sponsorId: kappa.id, userId: ids[k]! });
+    }
+    await db.transaction((tx) =>
+      sendRoundOneInvites(tx, { sponsorIds: [kappa.id], now: FRI_10PM }),
+    );
+    const chatOf = async (key: string) =>
+      (await chatsOf(kappa.id)).find((c) => c.userId === ids[key])!;
+
+    const decline = await queriesDuring(async () => {
+      const k2 = await chatOf("k2");
+      await respondToCoffeeChat(
+        ids.k2!,
+        { chatId: k2.id, answer: "decline" },
+        FRI_10PM,
+        0,
+      );
+    });
+    expect(firstOf(decline, BOARD_LOCK)).toBeGreaterThanOrEqual(0);
+    expect(firstOf(decline, BOARD_LOCK)).toBeLessThan(
+      firstOf(decline, CHAT_ROW_LOCK),
+    );
+
+    const k1 = await chatOf("k1");
+    for (const action of [
+      () =>
+        organizer.coffeeChatRequests.moveRoom({
+          chatId: k1.id,
+          room: "Rm 2243",
+        }),
+      () => organizer.coffeeChatRequests.cancel({ chatId: k1.id }),
+    ]) {
+      const log = await queriesDuring(action);
+      const board = firstOf(log, BOARD_LOCK);
+      expect(board).toBeGreaterThanOrEqual(0);
+      expect(board).toBeLessThan(firstOf(log, SPONSOR_ROW_LOCK));
+      expect(firstOf(log, SPONSOR_ROW_LOCK)).toBeLessThan(
+        firstOf(log, CHAT_ROW_LOCK),
+      );
+    }
+    expect((await chatOf("k1")).status).toBe("cancelled");
+
+    await db.delete(coffeeChats).where(eq(coffeeChats.sponsorId, kappa.id));
+    await db
+      .update(coffeeChatPlacements)
+      .set({ status: "draft" })
+      .where(eq(coffeeChatPlacements.repId, kappa.repId));
+    // Importing the whole app router is slow on a busy machine.
+  }, 30_000);
+
+  test("a decline picked as a deadlock victim runs once more and still refills", async () => {
+    process.env.COFFEE_INVITES_ENABLED = "1";
+    vi.setSystemTime(FRI_10PM);
+    const lambda = await sponsor(
+      `Lambda${Date.now()}`,
+      { hackersPerChat: 1 },
+      { chats: 1 },
+      [{ sessionId: "15", room: "2246", status: "sent" }],
+    );
+    for (const k of ["l1", "l2"]) await hacker(k);
+    await db
+      .insert(sponsorScans)
+      .values({ sponsorId: lambda.id, userId: ids.l1! });
+    await interested(lambda.id, ["l2"]);
+    await db.transaction((tx) =>
+      sendRoundOneInvites(tx, { sponsorIds: [lambda.id], now: FRI_10PM }),
+    );
+    const [l1] = await chatsOf(lambda.id);
+    let deadlocks = 0;
+    const log = await queriesDuring(
+      () =>
+        respondToCoffeeChat(
+          ids.l1!,
+          { chatId: l1!.id, answer: "decline" },
+          FRI_10PM,
+          0,
+        ),
+      (query) => {
+        if (BOARD_LOCK.test(query) && deadlocks++ === 0) {
+          throw pgError("40P01");
+        }
+      },
+    );
+    expect(log.filter((q) => BOARD_LOCK.test(q)).length).toBeGreaterThan(1);
+    expect(
+      (await chatsOf(lambda.id)).map((c) => [keyOf(c.userId), c.status]),
+    ).toEqual([
+      ["l1", "declined"],
+      ["l2", "pending"],
+    ]);
+
+    await db.delete(coffeeChats).where(eq(coffeeChats.sponsorId, lambda.id));
+    await db
+      .update(coffeeChatPlacements)
+      .set({ status: "draft" })
+      .where(eq(coffeeChatPlacements.repId, lambda.repId));
+  });
+});

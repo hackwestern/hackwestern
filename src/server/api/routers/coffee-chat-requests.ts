@@ -64,7 +64,10 @@ import {
 } from "~/server/api/utils/coffee-chat-capacity";
 import { buildChatBoard } from "~/server/api/utils/coffee-chat-board";
 import { coffeeChatTimes } from "~/server/api/utils/coffee-chat-expiry";
-import { kickDueInviteRounds } from "~/server/api/utils/coffee-chat-invites";
+import {
+  kickDueInviteRounds,
+  lockBoard,
+} from "~/server/api/utils/coffee-chat-invites";
 import { notifyCoffeeChat } from "~/server/api/utils/coffee-chat-notify";
 import { respondToCoffeeChat } from "~/server/api/utils/coffee-chat-respond";
 import { resolveScannedUserId } from "~/server/api/utils/hacker-id";
@@ -368,17 +371,24 @@ export type OrganizerCoffeeChat = {
 
 /**
  * Lock a chat for an organizer change: its sponsor row first (same order as
- * offers), then the chat. 404 when missing; 409 once it no longer holds a
- * seat (declined, expired, cancelled).
+ * offers), then the chat. A session invite (it has a placement) takes the
+ * board lock before both, as a decline and a round do (board, sponsor,
+ * chat), so a cancel or room move can't deadlock with a decline's refill.
+ * 404 when missing; 409 once it no longer holds a seat (declined, expired,
+ * cancelled).
  */
 async function lockActiveChat(tx: Tx, chatId: string, now: Date) {
   const [found] = await tx
-    .select({ sponsorId: coffeeChats.sponsorId })
+    .select({
+      sponsorId: coffeeChats.sponsorId,
+      placementId: coffeeChats.placementId,
+    })
     .from(coffeeChats)
     .where(eq(coffeeChats.id, chatId));
   if (!found) {
     throw new TRPCError({ code: "NOT_FOUND", message: errors.chatNotFound });
   }
+  if (found.placementId) await lockBoard(tx);
   await findSponsor(tx, found.sponsorId, true);
   const [chat] = await tx
     .select()

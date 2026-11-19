@@ -39,7 +39,28 @@ export async function respondToCoffeeChat(
   now: Date = new Date(),
   notifyTimeoutMs: number = NOTIFY_TIMEOUT_MS,
 ) {
-  const result = await db.transaction(async (tx) => {
+  const { answer, jobs } = await onceMoreOnDeadlock(() =>
+    answerInTransaction(userId, input, now),
+  );
+  // After the commit; capped in time, never throws. The next hacker's
+  // invite keeps going after the cap (waitUntil); the sweep retries it.
+  const delivery = jobs.length ? deliverInviteNotices(jobs) : null;
+  if (delivery) waitUntil(delivery);
+  const event = answer.status === "accepted" ? "accepted" : "declined";
+  await Promise.all([
+    notifyCoffeeChat(event, { id: answer.chatId }, notifyTimeoutMs),
+    delivery && capped(delivery, notifyTimeoutMs),
+  ]);
+  return answer;
+}
+
+/** Record the answer (and a decline's refill) in one transaction. */
+async function answerInTransaction(
+  userId: string,
+  input: { chatId: string; answer: CoffeeChatAnswer },
+  now: Date,
+) {
+  return db.transaction(async (tx) => {
     const mine = and(
       eq(coffeeChats.id, input.chatId),
       eq(coffeeChats.userId, userId),
@@ -93,17 +114,33 @@ export async function respondToCoffeeChat(
       jobs,
     };
   });
-  const { answer, jobs } = result;
-  // After the commit; capped in time, never throws. The next hacker's
-  // invite keeps going after the cap (waitUntil); the sweep retries it.
-  const delivery = jobs.length ? deliverInviteNotices(jobs) : null;
-  if (delivery) waitUntil(delivery);
-  const event = answer.status === "accepted" ? "accepted" : "declined";
-  await Promise.all([
-    notifyCoffeeChat(event, { id: answer.chatId }, notifyTimeoutMs),
-    delivery && capped(delivery, notifyTimeoutMs),
-  ]);
-  return answer;
+}
+
+/** Postgres SQLSTATE for a deadlock: the victim's transaction is rolled back. */
+const DEADLOCK_DETECTED = "40P01";
+
+/** True when `error` (or anything down its cause chain) has this SQLSTATE. */
+export function hasPgCode(error: unknown, code: string): boolean {
+  let e: unknown = error;
+  for (let depth = 0; e && typeof e === "object" && depth < 5; depth++) {
+    if ((e as { code?: unknown }).code === code) return true;
+    e = (e as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
+/**
+ * Run `work` (one whole transaction) once more when Postgres rolled it back
+ * as a deadlock victim. Every writer takes the board lock, then the sponsor
+ * row, then the chat row, so this is a safety net, not the plan.
+ */
+async function onceMoreOnDeadlock<T>(work: () => Promise<T>): Promise<T> {
+  try {
+    return await work();
+  } catch (error) {
+    if (!hasPgCode(error, DEADLOCK_DETECTED)) throw error;
+    return work();
+  }
 }
 
 /** Wait for `work` at most `ms`. */
