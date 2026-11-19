@@ -2,6 +2,10 @@
 // `data-tour` target, where the callout sits and whether it waits for the
 // sponsor's own click. Copy comes from src/content/sponsor-tour.ts.
 //
+// The nav steps (nav-*) point at the side nav on tablets and up and at the
+// phone tab bar otherwise; whichever is visible is the target, and the
+// callout goes beside it when there's room, else above.
+//
 // The coffee chat steps target the coffee chats v2 page (sd-room-blocks):
 // the Your chats / Candidates tabs and the Candidates panel.
 
@@ -33,30 +37,30 @@ const tours = {
       },
       {
         id: "scan",
-        page: "home",
-        target: "tile-scan",
-        placement: "bottom",
+        page: "any",
+        target: "nav-scan",
+        placement: "right",
         ...t.welcome.steps.scan,
       },
       {
         id: "chats",
-        page: "home",
-        target: "tile-chats",
-        placement: "bottom",
+        page: "any",
+        target: "nav-chats",
+        placement: "right",
         ...t.welcome.steps.chats,
       },
       {
         id: "schedule",
-        page: "home",
-        target: "tile-schedule",
-        placement: "bottom",
+        page: "any",
+        target: "nav-schedule",
+        placement: "right",
         ...t.welcome.steps.schedule,
       },
       {
         id: "judging",
-        page: "home",
-        target: "tile-judging",
-        placement: "top",
+        page: "any",
+        target: "nav-judging",
+        placement: "right",
         ...t.welcome.steps.judging,
       },
       {
@@ -88,9 +92,9 @@ const tours = {
     steps: [
       {
         id: "scan",
-        page: "home",
-        target: "tile-scan",
-        placement: "bottom",
+        page: "any",
+        target: "nav-scan",
+        placement: "right",
         waitForClick: true,
         ...t.coffeeChat.steps.scan,
       },
@@ -193,9 +197,9 @@ const tours = {
     steps: [
       {
         id: "tile",
-        page: "home",
-        target: "tile-judging",
-        placement: "top",
+        page: "any",
+        target: "nav-judging",
+        placement: "right",
         ...t.judging.steps.tile,
       },
       {

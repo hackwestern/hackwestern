@@ -64,6 +64,8 @@ export const sponsorVenueCopy = {
   },
   judgingLocked: {
     badge: "Opens Sunday 9:00 AM",
+    /** Beside Judging in the side nav. */
+    short: "Sun 9 AM",
     message:
       "This will be unlocked on Sunday at 9:00 AM. Please come to the sponsor judging debrief at 8:30 AM. There will be coffee!",
   },

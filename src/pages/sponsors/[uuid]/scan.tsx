@@ -39,12 +39,7 @@ export default function SponsorScanPage() {
   );
 
   const shell = (children: React.ReactNode) => (
-    <SponsorShell
-      title={copy.seoTitle}
-      backHref={validUuid ? `/sponsors/${id}` : undefined}
-    >
-      {children}
-    </SponsorShell>
+    <SponsorShell title={copy.seoTitle}>{children}</SponsorShell>
   );
 
   if (!router.isReady) return shell(<ScheduleSkeleton />);

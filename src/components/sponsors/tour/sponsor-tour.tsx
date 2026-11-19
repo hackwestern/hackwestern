@@ -32,6 +32,15 @@ import {
 import { uuidRegex } from "~/utils/urls";
 import { cn } from "~/lib/utils";
 
+/** Window event other controls (the side nav's "How this works") fire to
+ * start a tour, so the page keeps a single tour instance. */
+const START_EVENT = "sponsor-tour:start";
+
+/** Start a tour from anywhere on a sponsor page. */
+export function startSponsorTour(id: SponsorTourId) {
+  window.dispatchEvent(new CustomEvent(START_EVENT, { detail: id }));
+}
+
 /** How long a step waits for its target to render before centring. */
 const TARGET_GRACE_MS = 1200;
 /** How long to wait for a click's own navigation before offering a link. */
@@ -170,6 +179,18 @@ export function SponsorTour({
     const href = hrefForMove(SPONSOR_TOURS[id], 0, current, sponsor);
     if (href) void router.push(href);
   };
+  const startRef = useRef(start);
+  startRef.current = start;
+  useEffect(() => {
+    const onStart = (e: Event) => {
+      const id = (e as CustomEvent<unknown>).detail;
+      if (typeof id === "string" && id in SPONSOR_TOURS) {
+        startRef.current(id as SponsorTourId);
+      }
+    };
+    window.addEventListener(START_EVENT, onStart);
+    return () => window.removeEventListener(START_EVENT, onStart);
+  }, []);
 
   // waitForClick: advance on the sponsor's own click on the target. The
   // listener only watches; the click still reaches the app (a link
@@ -341,7 +362,7 @@ function TourOffer({
   return (
     <section
       aria-label={copy.offer.title}
-      className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex flex-col gap-3 rounded-dashboard-2xl bg-dashboard-bg-surface p-4 font-figtree font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card duration-300 ease-out animate-in fade-in-0 slide-in-from-bottom-4 motion-reduce:animate-none sm:inset-x-auto sm:right-6 sm:w-[340px]"
+      className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 flex flex-col gap-3 rounded-dashboard-2xl bg-dashboard-bg-surface p-4 font-figtree font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card duration-300 ease-out animate-in fade-in-0 slide-in-from-bottom-4 motion-reduce:animate-none sm:inset-x-auto sm:right-6 sm:w-[340px] md:bottom-6"
     >
       <div className="flex flex-col gap-0.5">
         <h2 className="m-0 text-base font-semibold">{copy.offer.title}</h2>

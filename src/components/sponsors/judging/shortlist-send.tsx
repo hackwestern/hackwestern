@@ -137,7 +137,7 @@ export function ShortlistSend({
         {locked ? copy.round.locked : copy.round.waiting}
       </p>
 
-      <div className="sticky bottom-0 z-10 -mx-4 border-t border-dashboard-border-subtle bg-dashboard-bg-page/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm sm:-mx-5 sm:px-5">
+      <div className="sticky bottom-[var(--sponsor-tabbar,0px)] z-10 -mx-4 border-t border-dashboard-border-subtle bg-dashboard-bg-page/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm sm:-mx-5 sm:px-5">
         {!data.open ? (
           <p className="m-0 text-sm font-medium text-dashboard-text-medium">
             {copy.submit.closed}

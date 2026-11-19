@@ -4,6 +4,7 @@
 export const sponsorPortalCopy = {
   seoTitle: "Sponsor Portal",
   brand: "Hack Western 13",
+  skipToContent: "Skip to content",
   invalid: {
     title: "Link not recognised",
     body: "This private link isn't valid. If you believe this is an error, please reach out to your Hack Western organizer contact for assistance.",
@@ -13,6 +14,21 @@ export const sponsorPortalCopy = {
     body: "We're thrilled to have you with us this weekend. Use this portal to check your booth and judging details and pick your top projects.",
     fallbackName: "Sponsor",
     logoAlt: (sponsor: string) => `${sponsor} logo`,
+  },
+  // The portal's one nav: a side nav on tablets and up, a bottom tab bar on
+  // phones (Venue is side nav only; phones have the Map button).
+  nav: {
+    label: "Sponsor portal",
+    home: "Home",
+    scan: "Scan",
+    chats: "Chats",
+    schedule: "Schedule",
+    judging: "Judging",
+    venue: "Venue",
+    howItWorks: "How this works",
+    judgingLocked: (opens: string) => `Judging, locked. ${opens}`,
+    /** Slim top bar: "Hack Western 13 · Sat 2:14 PM". */
+    now: (when: string) => `Hack Western 13 · ${when}`,
   },
   // The action tiles under the welcome card.
   actions: {

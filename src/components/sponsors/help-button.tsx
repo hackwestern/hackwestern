@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { LifeBuoy } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { cn } from "~/lib/utils";
-import { pressable } from "~/components/sponsors/sponsor-shell";
+import {
+  hoverTint,
+  pressable,
+} from "~/components/sponsors/sponsor-shell-styles";
 import { HelpSheet } from "~/components/sponsors/help-sheet";
 import { HelpStatus, helpStatusText } from "~/components/sponsors/help-status";
 import { sponsorHelpCopy } from "~/content/sponsor-help";
@@ -14,14 +17,19 @@ const copy = sponsorHelpCopy;
 // "Need help?" for a sponsor page: the button and sheet when there's no
 // request, otherwise the status card. Polls every 15s while a request is
 // open or claimed (each poll also lets the server send a due Slack re-ping).
+// `variant="nav"` is the side nav's quiet version: a nav-row button and a
+// compact status card, same request and sheet.
 export function SponsorHelp({
   sponsor,
   boothLocation,
+  variant = "card",
 }: {
   sponsor: string;
   /** Booth from the sponsor sheet; the sheet shows it as a placeholder. */
   boothLocation?: string | null;
+  variant?: "card" | "nav";
 }) {
+  const nav = variant === "nav";
   const utils = api.useUtils();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [dismissedId, setDismissedId] = useState<string | null>(null);
@@ -90,6 +98,7 @@ export function SponsorHelp({
         <HelpStatus
           ref={statusRef}
           request={current}
+          compact={nav}
           onCancel={() => cancel.mutate({ sponsor, id: current.id })}
           cancelling={cancel.isPending}
           cancelError={cancel.isError}
@@ -100,27 +109,52 @@ export function SponsorHelp({
         />
       ) : (
         <>
-          <DashboardButton
-            ref={triggerRef}
-            variant="outline"
-            // Secondary to each page's main action, but full width and
-            // always in the same place, so it's easy to find in a hurry.
-            className={cn(
-              "h-12 w-full rounded-dashboard-lg text-base font-semibold [&_svg]:size-5 [&_svg]:text-dashboard-action-primary",
-              pressable,
-            )}
-            onClick={() => {
-              request.reset();
-              setSheetOpen(true);
-            }}
-            aria-haspopup="dialog"
-          >
-            <LifeBuoy aria-hidden />
-            {copy.button}
-          </DashboardButton>
-          <p className="m-0 text-center text-sm text-dashboard-text-light">
-            {copy.buttonHint}
-          </p>
+          {nav ? (
+            <button
+              ref={triggerRef}
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => {
+                request.reset();
+                setSheetOpen(true);
+              }}
+              className={cn(
+                "flex min-h-11 w-full items-center gap-2.5 rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-left text-sm font-semibold text-dashboard-text-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                hoverTint,
+                pressable,
+              )}
+            >
+              <LifeBuoy
+                aria-hidden
+                className="size-4 shrink-0 text-dashboard-action-primary"
+              />
+              {copy.button}
+            </button>
+          ) : (
+            <DashboardButton
+              ref={triggerRef}
+              variant="outline"
+              // Secondary to each page's main action, but full width and
+              // always in the same place, so it's easy to find in a hurry.
+              className={cn(
+                "h-12 w-full rounded-dashboard-lg text-base font-semibold [&_svg]:size-5 [&_svg]:text-dashboard-action-primary",
+                pressable,
+              )}
+              onClick={() => {
+                request.reset();
+                setSheetOpen(true);
+              }}
+              aria-haspopup="dialog"
+            >
+              <LifeBuoy aria-hidden />
+              {copy.button}
+            </DashboardButton>
+          )}
+          {!nav && (
+            <p className="m-0 text-center text-sm text-dashboard-text-light">
+              {copy.buttonHint}
+            </p>
+          )}
           <HelpSheet
             sponsor={sponsor}
             boothLocation={boothLocation}

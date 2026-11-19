@@ -87,10 +87,7 @@ export default function SponsorJudgingPage() {
 
   if (!router.isReady || (validUuid && query.isLoading)) {
     return (
-      <SponsorShell
-        title={copy.seoTitle}
-        backHref={uuid ? `/sponsors/${uuid}` : undefined}
-      >
+      <SponsorShell title={copy.seoTitle}>
         <div className="flex flex-col gap-3" aria-busy="true">
           <div className="h-8 w-40 animate-pulse rounded-dashboard-sm bg-dashboard-bg-nav motion-reduce:animate-none" />
           <div className="h-12 w-full animate-pulse rounded-dashboard-lg bg-dashboard-bg-nav motion-reduce:animate-none" />
@@ -121,7 +118,7 @@ export default function SponsorJudgingPage() {
   // Sponsors without a prize track don't judge: a quiet note, no retry.
   if (query.error?.data?.code === "FORBIDDEN") {
     return (
-      <SponsorShell title={copy.seoTitle} backHref={`/sponsors/${uuid}`}>
+      <SponsorShell title={copy.seoTitle}>
         <DashboardPanel className="items-start">
           <h1 className="dashboard-h1 m-0">{copy.noPrizeTrack.title}</h1>
           <p className="m-0 text-base leading-relaxed text-dashboard-text-medium">
@@ -134,7 +131,7 @@ export default function SponsorJudgingPage() {
 
   if (!data) {
     return (
-      <SponsorShell title={copy.seoTitle} backHref={`/sponsors/${uuid}`}>
+      <SponsorShell title={copy.seoTitle}>
         <DashboardPanel className="items-start">
           <p className="m-0 text-base text-dashboard-text-medium">
             {query.error?.message ?? copy.loadFailed}
@@ -153,7 +150,7 @@ export default function SponsorJudgingPage() {
   };
 
   return (
-    <SponsorShell title={copy.seoTitle} backHref={`/sponsors/${uuid}`}>
+    <SponsorShell title={copy.seoTitle}>
       <div data-tour="judging-intro" className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-1.5">
           <DashboardTag>{data.sponsorName}</DashboardTag>

@@ -1,7 +1,7 @@
 import { forwardRef, useId } from "react";
 import { CheckCircle2, Clock, UserCheck } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { pressable } from "~/components/sponsors/sponsor-shell";
+import { pressable } from "~/components/sponsors/sponsor-shell-styles";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { sponsorHelpCopy } from "~/content/sponsor-help";
 import type { SponsorHelpView } from "~/server/api/routers/sponsor-help";
@@ -40,13 +40,15 @@ export const HelpStatus = forwardRef<
   HTMLDivElement,
   {
     request: SponsorHelpView;
+    /** Narrow version for the side nav. */
+    compact?: boolean;
     onCancel: () => void;
     cancelling: boolean;
     cancelError: boolean;
     onDismiss: () => void;
   }
 >(function HelpStatus(
-  { request, onCancel, cancelling, cancelError, onDismiss },
+  { request, compact = false, onCancel, cancelling, cancelError, onDismiss },
   ref,
 ) {
   const titleId = useId();
@@ -66,7 +68,8 @@ export const HelpStatus = forwardRef<
     >
       <DashboardPanel
         className={cn(
-          "gap-4 rounded-dashboard-2xl p-5 sm:p-6",
+          "gap-4 rounded-dashboard-2xl",
+          compact ? "gap-3 p-3" : "p-5 sm:p-6",
           status === "claimed" && "bg-dashboard-bg-highlight",
         )}
       >
@@ -74,6 +77,7 @@ export const HelpStatus = forwardRef<
           <span
             className={cn(
               "inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-nav",
+              compact && "hidden",
               status === "resolved"
                 ? "text-dashboard-status-live"
                 : "text-dashboard-action-primary",
@@ -91,10 +95,23 @@ export const HelpStatus = forwardRef<
             <span className="text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
               {sponsorHelpCopy.reasons[request.reason]}
             </span>
-            <h2 id={titleId} className="m-0 break-words text-xl font-semibold">
+            <h2
+              id={titleId}
+              className={cn(
+                "m-0 break-words font-semibold",
+                compact ? "text-sm" : "text-xl",
+              )}
+            >
               {title}
             </h2>
-            <p className="m-0 text-base text-dashboard-text-medium">{body}</p>
+            <p
+              className={cn(
+                "m-0 text-dashboard-text-medium",
+                compact ? "text-xs" : "text-base",
+              )}
+            >
+              {body}
+            </p>
             {request.note && (
               <p className="m-0 mt-1 whitespace-pre-line break-words border-l-2 border-dashboard-border-default pl-3 text-sm text-dashboard-text-light">
                 {request.note}
@@ -115,7 +132,11 @@ export const HelpStatus = forwardRef<
           <div className="flex flex-col gap-2">
             <DashboardButton
               variant="outline"
-              className={cn("h-11 w-full sm:w-auto sm:self-start", pressable)}
+              className={cn(
+                "h-11 w-full",
+                !compact && "sm:w-auto sm:self-start",
+                pressable,
+              )}
               onClick={onCancel}
               disabled={cancelling}
             >
@@ -133,7 +154,11 @@ export const HelpStatus = forwardRef<
         ) : (
           <DashboardButton
             variant="outline"
-            className={cn("h-11 w-full sm:w-auto sm:self-start", pressable)}
+            className={cn(
+              "h-11 w-full",
+              !compact && "sm:w-auto sm:self-start",
+              pressable,
+            )}
             onClick={onDismiss}
           >
             {copy.dismiss}

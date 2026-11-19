@@ -109,10 +109,7 @@ export default function SponsorCoffeeChatsPage() {
   };
 
   const shell = (children: React.ReactNode) => (
-    <SponsorShell
-      title={copy.seoTitle}
-      backHref={validUuid ? `/sponsors/${id}` : undefined}
-    >
+    <SponsorShell title={copy.seoTitle}>
       <p role="status" className="sr-only">
         {announcement}
       </p>
