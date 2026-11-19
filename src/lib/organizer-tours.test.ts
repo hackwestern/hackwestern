@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   markOrganizerTourSeen,
@@ -39,6 +41,50 @@ const throwing: TourStorage = {
     throw new Error("blocked");
   },
 };
+
+// Each tab's targets carry that tab's prefix, so a tour wired to the wrong
+// tab (or two tabs' steps swapped) fails here.
+const TARGET_PREFIX: Record<string, string> = {
+  sponsors: "org-",
+  schedule: "ros-",
+  coffee: "coffee-",
+  judging: "judging-",
+  pings: "pings-",
+};
+
+function allSourceText(dir: string): string {
+  let out = "";
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) out += allSourceText(full);
+    else if (/\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name))
+      out += readFileSync(full, "utf8");
+  }
+  return out;
+}
+
+describe("ORGANIZER_TOURS targets", () => {
+  it("points each tab's steps at that tab's own targets", () => {
+    for (const tab of ORGANIZER_TABS) {
+      for (const step of ORGANIZER_TOURS[tab].steps) {
+        expect((step.target ?? "").startsWith(TARGET_PREFIX[tab] ?? "?")).toBe(
+          true,
+        );
+      }
+    }
+  });
+
+  it("only uses targets that some component renders as data-tour", () => {
+    const source = allSourceText(join(process.cwd(), "src", "components"));
+    for (const tab of ORGANIZER_TABS) {
+      for (const step of ORGANIZER_TOURS[tab].steps) {
+        expect(source, `data-tour "${step.target ?? ""}"`).toMatch(
+          new RegExp(`["'\`]${step.target}["'\`]`),
+        );
+      }
+    }
+  });
+});
 
 describe("ORGANIZER_TOURS", () => {
   it("has one tour of 3-5 steps for every dashboard tab", () => {

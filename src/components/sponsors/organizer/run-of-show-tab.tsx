@@ -104,9 +104,14 @@ export function RunOfShowTab({
 
   return (
     <>
-      <div data-tour="ros-sheet">
-        <SheetEditButton href={data.sheetUrl} />
-      </div>
+      {/* Only wrap a real button: an empty wrapper still has width, so the
+          tour would ring a blank strip instead of falling back to a
+          centred callout. */}
+      {data.sheetUrl && (
+        <div data-tour="ros-sheet">
+          <SheetEditButton href={data.sheetUrl} />
+        </div>
+      )}
       {shownDay === COFFEE_CHAT_DAY_LABEL && (
         <div className="flex justify-end">
           <DashboardButton variant="link" asChild className="-mr-2">

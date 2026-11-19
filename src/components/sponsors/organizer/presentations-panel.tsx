@@ -128,7 +128,9 @@ export function PresentationsPanel({
       {/* Who has sent a shortlist. */}
       <ul
         aria-label={copy.sentLabel}
-        data-tour="judging-sent"
+        // An empty list still has width; leave the target off so the tour
+        // shows a centred callout instead of ringing nothing.
+        data-tour={data.sponsors.length > 0 ? "judging-sent" : undefined}
         className="m-0 flex list-none flex-wrap gap-2 p-0"
       >
         {data.sponsors.map((s) => (
