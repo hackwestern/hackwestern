@@ -1,0 +1,83 @@
+name: Coffee Chat Invite Rounds
+
+# Saturday coffee chat session invites (track B, docs/handoff/build-b-cc-invites.md).
+# Every 10 minutes on Sat Nov 21 2026, 9 AM to 5 PM Eastern (clocks fell back
+# Nov 1, so ET = UTC-5: 14:00 to 22:00 UTC), runs scripts/run-coffee-invite-round.ts:
+#   1. the current invite round (runDueInviteRounds): a no-op before round 2
+#      (10:30 AM) and after the last chat; a late or missed round catches up;
+#   2. the delivery sweep: DMs (or emails) every pending invite not sent yet,
+#      including failed sends from earlier. Each invite goes out once.
+# The app also runs rounds from page traffic; this makes them certain.
+#
+# SAFETY / ARMING:
+#   - Every run is a DRY RUN (counts only: nothing written, nothing sent)
+#     unless the repo variable COFFEE_ROUNDS_LIVE is 'true':
+#       gh variable set COFFEE_ROUNDS_LIVE --body true
+#     Disarm: gh variable set COFFEE_ROUNDS_LIVE --body false
+#   - Manual run: Actions → this workflow → Run workflow (same rule).
+#   - Needs these Production environment secrets (the names src/env.js reads):
+#     DATABASE_URL, SLACK_BOT_TOKEN, MAILJET_API_KEY, MAILJET_SECRET_KEY,
+#     RUN_OF_SHOW_SHEET, RUN_OF_SHOW_SHEETS_CLIENT_EMAIL,
+#     RUN_OF_SHOW_SHEETS_PRIVATE_KEY (or SPONSOR_SHEETS_CLIENT_EMAIL /
+#     SPONSOR_SHEETS_PRIVATE_KEY). Without the run of show a round does nothing.
+#   - Logs show counts only, never names or emails: this repo's Actions logs
+#     are public (the script drops the db's query log lines).
+
+on:
+  schedule:
+    - cron: "*/10 14-21 21 11 *" # Sat Nov 21, 9:00 AM to 4:50 PM ET
+    - cron: "0 22 21 11 *" # Sat Nov 21, 5:00 PM ET
+  workflow_dispatch:
+
+concurrency:
+  group: coffee-invite-rounds
+  cancel-in-progress: false
+
+jobs:
+  round:
+    runs-on: ubuntu-latest
+    environment: Production
+    timeout-minutes: 9
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      MAILJET_API_KEY: ${{ secrets.MAILJET_API_KEY }}
+      MAILJET_SECRET_KEY: ${{ secrets.MAILJET_SECRET_KEY }}
+      RUN_OF_SHOW_SHEET: ${{ secrets.RUN_OF_SHOW_SHEET }}
+      RUN_OF_SHOW_SHEETS_CLIENT_EMAIL: ${{ secrets.RUN_OF_SHOW_SHEETS_CLIENT_EMAIL }}
+      RUN_OF_SHOW_SHEETS_PRIVATE_KEY: ${{ secrets.RUN_OF_SHOW_SHEETS_PRIVATE_KEY }}
+      SPONSOR_SHEETS_CLIENT_EMAIL: ${{ secrets.SPONSOR_SHEETS_CLIENT_EMAIL }}
+      SPONSOR_SHEETS_PRIVATE_KEY: ${{ secrets.SPONSOR_SHEETS_PRIVATE_KEY }}
+      SKIP_ENV_VALIDATION: "1"
+      # Armed only when 'true'; anything else is a dry run.
+      COFFEE_ROUNDS_LIVE: ${{ vars.COFFEE_ROUNDS_LIVE }}
+      # Live runs update the Coffee Chat Bookings mirror like the app does.
+      SHEET_WRITES: ${{ vars.COFFEE_ROUNDS_LIVE == 'true' && '1' || '0' }}
+    steps:
+      - name: Only on chat day
+        id: day
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          # The cron has no year, so never let it fire after this event.
+          if [ "$EVENT" = "schedule" ] && [ "$(date -u +%Y-%m-%d)" != "2026-11-21" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "Not Nov 21 2026; skipping."; exit 0
+          fi
+          echo "Live: ${COFFEE_ROUNDS_LIVE:-false}"
+
+      - uses: actions/checkout@v4
+        if: steps.day.outputs.skip != 'true'
+      - uses: actions/setup-node@v4
+        if: steps.day.outputs.skip != 'true'
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+        if: steps.day.outputs.skip != 'true'
+
+      - name: Run the round and the delivery sweep
+        if: steps.day.outputs.skip != 'true'
+        run: |
+          set -o pipefail
+          npx tsx scripts/run-coffee-invite-round.ts | tee out.log
+          cat out.log >> "$GITHUB_STEP_SUMMARY"

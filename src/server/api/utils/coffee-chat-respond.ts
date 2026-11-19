@@ -33,6 +33,7 @@ export async function respondToCoffeeChat(
         id: coffeeChats.id,
         status: coffeeChats.status,
         slotTime: coffeeChats.slotTime,
+        expiresAt: coffeeChats.expiresAt,
       })
       .from(coffeeChats)
       .where(

@@ -439,6 +439,10 @@ export const coffeeChats = pgTable(
       .defaultNow()
       .notNull(),
     respondedAt: timestamp("responded_at", { mode: "date", precision: 3 }),
+    // Session invites: when the DM or email about the current invite went
+    // out. Null = not sent yet (or a send failed); the delivery sweep in
+    // src/server/api/utils/coffee-chat-invites.ts claims and sends those.
+    notifiedAt: timestamp("notified_at", { mode: "date", precision: 3 }),
   },
   (t) => [
     // A hacker can't hold two live (pending or accepted) chats in one slot.

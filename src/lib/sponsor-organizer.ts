@@ -18,7 +18,7 @@ import {
   type SlotLimit,
 } from "~/lib/coffee-chat-request";
 import {
-  coffeeChatExpiresAt,
+  chatExpiresAt,
   effectiveCoffeeChatStatus,
   type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
@@ -307,7 +307,7 @@ function seatsLeftToday(
     holds.flatMap((h) => holdStartTimes(h, durationMinutes)),
   );
   return [...times]
-    .filter((t) => now < coffeeChatExpiresAt(t))
+    .filter((t) => now < chatExpiresAt({ slotTime: t }))
     .reduce(
       (sum, slotTime) =>
         sum +
