@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import { CircleCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ import { FixesBand } from "./fixes-band";
 import { HelpSheet } from "./help-sheet";
 import { type SessionBoardData } from "./parts";
 import { BookingForm, CellDetail, RoomsGrid, cellAt, keyOf, moveCheck, splitKey } from "./rooms-grid";
-import { SponsorsBand } from "./sponsors-band";
+import { SponsorsBand, sponsorRowId } from "./sponsors-band";
 
 const copy = coffeeSessionsCopy;
 
@@ -42,13 +42,23 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   const [applying, setApplying] = useState<string | null>(null);
   const [confirmSend, setConfirmSend] = useState(false);
 
-  // ?sponsor= (an id or name) opens that sponsor's row once.
+  // ?sponsor= (an id or name) opens that sponsor's row once, scrolls it into
+  // view and moves focus there ("Open coffee chats" from Needs attention or
+  // My sponsors). Once per link: the 15 s refetch doesn't re-open it.
+  const jumpedTo = useRef<string | null>(null);
   useEffect(() => {
-    if (!sponsor || !board.data) return;
+    if (!sponsor || !board.data || jumpedTo.current === sponsor) return;
     const s = board.data.sponsors.find(
       (x) => x.id === sponsor.toLowerCase() || x.name.toLowerCase() === sponsor.toLowerCase(),
     );
-    if (s) setOpen(s.id);
+    if (!s) return;
+    jumpedTo.current = sponsor;
+    setOpen(s.id);
+    requestAnimationFrame(() => {
+      const row = document.getElementById(sponsorRowId(s.id));
+      row?.scrollIntoView({ block: "start", behavior: "smooth" });
+      row?.focus({ preventScroll: true });
+    });
   }, [sponsor, board.data]);
 
   // Esc leaves move mode or closes the detail.

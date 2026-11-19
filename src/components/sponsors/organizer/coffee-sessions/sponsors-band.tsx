@@ -22,6 +22,9 @@ import {
 const copy = coffeeSessionsCopy;
 const sc = copy.sponsors;
 
+/** The row button's id, so a ?sponsor= link can scroll to it and focus it. */
+export const sponsorRowId = (sponsorId: string) => `coffee-sponsor-${sponsorId}`;
+
 /**
  * Sponsors band: logo + status chip ("Submitted, needs scheduling"), how
  * many reps are placed, and a "Changed after invites" flag. Opening a row
@@ -62,11 +65,12 @@ export function SponsorsBand({
               <li key={sp.id} className="border-t border-dashboard-border-subtle first:border-t-0">
                 <button
                   type="button"
+                  id={sponsorRowId(sp.id)}
                   aria-expanded={isOpen}
                   aria-label={sc.openLabel(sp.name, status, flags)}
                   onClick={() => onOpen(sp.id)}
                   className={cn(
-                    "flex min-h-16 w-full min-w-0 cursor-pixel-hover items-center gap-2 rounded-dashboard-md py-1.5 text-left",
+                    "flex min-h-16 w-full min-w-0 scroll-mt-4 cursor-pixel-hover items-center gap-2 rounded-dashboard-md py-1.5 text-left",
                     focusRing,
                   )}
                 >
