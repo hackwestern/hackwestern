@@ -3,7 +3,12 @@ import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import {
+  fetchHwContactPhones,
+  lookupHwContactPhones,
+} from "~/server/api/utils/sponsor-hw-contacts";
+import {
   dueHelpReping,
+  EMERGENCY_CONTACT_NAME,
   helpLocationNoteSchema,
   helpPhoneSchema,
   helpRepNameSchema,
@@ -180,6 +185,21 @@ function isUniqueViolation(error: unknown): boolean {
 const sponsorInput = z.object({ sponsor: z.string().uuid() });
 
 export const sponsorHelpRouter = createTRPCRouter({
+  /**
+   * The portal Help's emergency contact (decisions 2026-11-19, Q1–Q11):
+   * Noah's name and his phone from HW Contacts, read at runtime so no
+   * number is in the repo. The sponsor's own HW lead comes from
+   * getSponsorPortalInfo. Public, but only for a real sponsor link.
+   */
+  contacts: publicProcedure.input(sponsorInput).query(async ({ input }) => {
+    await findSponsor(input.sponsor);
+    const phones = await fetchHwContactPhones();
+    const [phone] = lookupHwContactPhones(EMERGENCY_CONTACT_NAME, phones);
+    return {
+      emergency: { name: EMERGENCY_CONTACT_NAME, phone: phone ?? null },
+    };
+  }),
+
   /** Ask for help. One live request per sponsor. Public (UUID). */
   request: publicProcedure
     .input(

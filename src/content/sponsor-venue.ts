@@ -44,13 +44,9 @@ export const sponsorVenueCopy = {
     },
     emergency: {
       label: "Emergency contact",
-      name: "Noah",
-      // REMINDER (Jazz, 2026-11-18): add Noah's number here before the
-      // event. Until then the row shows the placeholder; once set, a call
-      // button replaces it. Also listed in NEXT.md.
-      phone: null as string | null,
-      phonePlaceholder: "Phone number coming soon",
-      call: (phone: string) => `Call Noah at ${phone}`,
+      // The name and number come from the HW Contacts sheet at runtime
+      // (sponsorHelp.contacts); no phone number lives in the repo.
+      phonePlaceholder: "Ask at the sponsor lounge (Rm 2110)",
     },
     openMap: "See it on the map",
   },

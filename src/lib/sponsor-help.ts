@@ -5,6 +5,13 @@
 
 import { z } from "zod";
 
+/**
+ * The sponsor portal Help's emergency contact when a sponsor can't reach
+ * their HW lead (decisions 2026-11-19, Q1–Q11). The phone is looked up by
+ * this name in HW Contacts at runtime.
+ */
+export const EMERGENCY_CONTACT_NAME = "Noah Medland";
+
 export const SPONSOR_HELP_REASONS = [
   "swag",
   "tech",
