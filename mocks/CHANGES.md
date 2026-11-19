@@ -7,16 +7,30 @@ Status: **Done** = in the mock and checked. **Building** = a subagent is adding 
 ## Default style for every mock (Jazz, 2026-11-19)
 Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /live site style; its README lists every source file:line) for ALL mocks, unless Jazz explicitly names another look for that mock. Current exception: `organizer-coffee-autofill-v6a/b/c` build on autofill-v5's look because Jazz asked for that explicitly.
 
-## Sponsor portal v5: `sponsor-portal-flow-hacker-v5` (queued: starts when v4 finishes)
+## Sponsor portal v5: `sponsor-portal-flow-hacker-v5` (latest final, building)
 | # | Change | Status |
 |---|---|---|
-| 1 | Copy of v4 with every v4 change | Queued |
-| 3 | Shortlist capped at the sponsor's number of hacker seats (from their preferences), not 40 | Queued |
-| 4 | Explain the flow at the top: 1 Shortlist hackers here · 2 Scan hackers at your booth Friday night · 3 Submit your shortlist by 9:30 PM or earlier; otherwise at 9:30 PM we assign hackers who requested coffee chats with you | Queued |
-| 5 | Views: Shortlisted / Not shortlisted (plus everyone) | Queued |
-| 6 | Shortlist one hacker at a time (swipe or tap Shortlist / Skip) as the default, with a list view to review | Queued |
-| 7 | Every hacker card shows all sources: résumé, LinkedIn, GitHub, website (application "other link"), Devpost; one "Open profile" button opens them together (see popup note) | Queued |
-| 2 | Chat blocks edited inline per `hackwestern-coffee-prefs/docs/specs/inline-chat-block-editing.md`: drag edges/move for time (times shown above edges), reps as avatar circles + "+ rep", "15 min \| 30 min" pill, −/+ stepper labelled "1-on-1" / "group of N" (max 5 hackers, 6 people), live "N chats · N hackers", trash; dashed lines per chat; resting one-line summary vs selected two-line controls (row grows); narrow blocks get an attached strip under the block; keyboard support. No popup or modal | Queued |
+| 1 | Copy of v4 with every v4 change | Building |
+| 3 | Shortlist capped at the sponsor's number of hacker seats (from their preferences), not 40 | Building |
+| 4 | Explain the flow at the top: 1 Shortlist hackers here · 2 Scan hackers at your booth Friday night · 3 Submit your shortlist by 9:30 PM or earlier; otherwise at 9:30 PM we assign hackers who requested coffee chats with you | Building |
+| 5 | Views: Shortlisted / Not shortlisted (plus everyone) | Building |
+| 6 | Shortlist one hacker at a time (swipe or tap Shortlist / Skip) as the default, with a list view to review | Building |
+| 7 | Every hacker card shows all sources: résumé, LinkedIn, GitHub, website (application "other link"), Devpost; one "Open profile" button opens them together (see popup note) | Building |
+| 2 | Chat blocks edited inline per `hackwestern-coffee-prefs/docs/specs/inline-chat-block-editing.md`: drag edges/move for time (times shown above edges), reps as avatar circles + "+ rep", "15 min \| 30 min" pill, −/+ stepper labelled "1-on-1" / "group of N" (max 5 hackers, 6 people), live "N chats · N hackers", trash; dashed lines per chat; resting one-line summary vs selected two-line controls (row grows); narrow blocks get an attached strip under the block; keyboard support. No popup or modal | Building |
+
+## Default style for every mock (Jazz, 2026-11-19)
+Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /live site style; its README lists every source file:line) for ALL mocks, unless Jazz explicitly names another look for that mock. Current exception: `organizer-coffee-autofill-v6a/b/c` build on autofill-v5's look because Jazz asked for that explicitly.
+
+## Sponsor portal v5: `sponsor-portal-flow-hacker-v5` (latest final, building)
+| # | Change | Status |
+|---|---|---|
+| 1 | Copy of v4 with every v4 change | Building |
+| 3 | Shortlist capped at the sponsor's number of hacker seats (from their preferences), not 40 | Building |
+| 4 | Explain the flow at the top: 1 Shortlist hackers here · 2 Scan hackers at your booth Friday night · 3 Submit your shortlist by 9:30 PM or earlier; otherwise at 9:30 PM we assign hackers who requested coffee chats with you | Building |
+| 5 | Views: Shortlisted / Not shortlisted (plus everyone) | Building |
+| 6 | Shortlist one hacker at a time (swipe or tap Shortlist / Skip) as the default, with a list view to review | Building |
+| 7 | Every hacker card shows all sources: résumé, LinkedIn, GitHub, website (application "other link"), Devpost; one "Open profile" button opens them together (see popup note) | Building |
+| 2 | Chat blocks edited inline per `hackwestern-coffee-prefs/docs/specs/inline-chat-block-editing.md`: drag edges/move for time (times shown above edges), reps as avatar circles + "+ rep", "15 min \| 30 min" pill, −/+ stepper labelled "1-on-1" / "group of N" (max 5 hackers, 6 people), live "N chats · N hackers", trash; dashed lines per chat; resting one-line summary vs selected two-line controls (row grows); narrow blocks get an attached strip under the block; keyboard support. No popup or modal | Building |
 
 ## Sponsor portal v4: `sponsor-portal-flow-hacker-v4` (latest final)
 | # | Change | Status |
