@@ -26,7 +26,7 @@ import {
   holdMinutes,
 } from "~/lib/coffee-chat-holds";
 import {
-  coffeeChatExpiresAt,
+  chatExpiresAt,
   coffeeChatRoomOf,
   coffeeChatsOverlap,
 } from "~/lib/coffee-chat-requests";
@@ -242,7 +242,7 @@ export function BlockDetails({
             const time = formatClock(slot.slotTime);
             const open =
               slot.booked < slot.needed &&
-              now < coffeeChatExpiresAt(slot.slotTime);
+              now < chatExpiresAt(slot);
             return (
               <li
                 key={slot.slotTime}

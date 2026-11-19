@@ -58,20 +58,20 @@ export const organizerTourCopy = {
     },
     coffee: {
       strip: {
-        title: "What each sponsor asked for",
-        body: "One card per sponsor. Tap a card to light up their blocks below.",
+        title: "Sponsors",
+        body: "Each sponsor's status in plain words. Open one to see when each rep is free, how many chats they asked for, and their phone numbers to copy.",
+      },
+      fixes: {
+        title: "Suggested fixes",
+        body: "Anything Auto-schedule couldn't place, with why and a fix you can apply. If a fix needs the sponsor's OK, call their main contact.",
       },
       table: {
-        title: "Rooms by time",
-        body: "Rooms run across, times run down. Each coloured block is a room a sponsor holds.",
+        title: "Rooms",
+        body: "Rooms down the side, 1-hour sessions across. Tap a chat to move or remove it, or tap an empty cell to book the room.",
       },
-      block: {
-        title: "Open a block",
-        body: "See the hackers in each slot, invite or cancel a chat, change the length, or release the room.",
-      },
-      free: {
-        title: "Give a room",
-        body: "Tap a free cell to give a sponsor that room, for example a last-minute booking.",
+      send: {
+        title: "Auto-schedule, then send",
+        body: "Auto-schedule places everyone. Only Noah can press Send, by 10 PM Friday.",
       },
     },
     judging: {
@@ -92,18 +92,22 @@ export const organizerTourCopy = {
         body: "See each sponsor's picks, or every team in one list.",
       },
     },
-    pings: {
-      help: {
-        title: "Sponsor help requests",
-        body: "When a sponsor taps Need help, it lands here and in Slack. Resolve it once it's handled.",
+    mine: {
+      now: {
+        title: "Now and next",
+        body: "What's on now and what's next on the run of show, with the team task now and the next one and who owns it.",
       },
-      next: {
-        title: "Up next",
-        body: "The task pings Slack sends next. Owners get a DM; tasks with no clear owner go to the team channel.",
+      view: {
+        title: "Your sponsors or everyone",
+        body: "My sponsors shows the sponsors you lead, one tab each. All sponsors shows every sponsor, day by day.",
       },
-      log: {
-        title: "Ping log",
-        body: "Every ping that went out, so you can check who was told and when.",
+      people: {
+        title: "Who to call",
+        body: "Each rep the sponsor gave us, with their phone. The crown is their main contact. Tap the copy icon to copy a number.",
+      },
+      pills: {
+        title: "Tap to update",
+        body: "Arrival and Booth move on with one tap. Tap one that's done to undo it.",
       },
     },
   },

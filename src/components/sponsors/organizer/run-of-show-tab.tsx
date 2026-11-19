@@ -112,7 +112,7 @@ export function RunOfShowTab({
           <SheetEditButton href={data.sheetUrl} />
         </div>
       )}
-      {shownDay === COFFEE_CHAT_DAY_LABEL && (
+      {SHOW_ROOM_BLOCKS && shownDay === COFFEE_CHAT_DAY_LABEL && (
         <div className="flex justify-end">
           <DashboardButton variant="link" asChild className="-mr-2">
             <a href="#rooms">{roomCopy.jump}</a>
@@ -182,7 +182,7 @@ export function RunOfShowTab({
       />
 
       {/* Coffee chats are Saturday only: other days have no rooms section. */}
-      {shownDay === COFFEE_CHAT_DAY_LABEL && (
+      {SHOW_ROOM_BLOCKS && shownDay === COFFEE_CHAT_DAY_LABEL && (
         <RoomsSection jump={jumpToRooms} onJumped={onJumped} />
       )}
       {/* Not while loading: the day isn't known yet (no Sunday flash). */}
@@ -203,6 +203,13 @@ export function RunOfShowTab({
     </>
   );
 }
+
+/**
+ * The old coffee chat room-block editor (room-blocks.tsx, add-coffee-chat.tsx
+ * via CoffeeChatRoomTable) is hidden: the Coffee chats tab's session board
+ * replaces it (decisions 2026-11-19). The code stays; flip to show it again.
+ */
+const SHOW_ROOM_BLOCKS = false;
 
 // The coffee chat rooms as a booking table, right under the run of show,
 // with the floor 2 plan beside it (it replaced the "Where is everyone"

@@ -1,5 +1,11 @@
 import { useEffect, useId, useState } from "react";
-import { Bookmark, BookmarkCheck, ExternalLink } from "lucide-react";
+import {
+  Bookmark,
+  BookmarkCheck,
+  ExternalLink,
+  TriangleAlert,
+  Users,
+} from "lucide-react";
 import {
   DashboardButton,
   dashboardButtonVariants,
@@ -8,7 +14,14 @@ import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
-import { NOTE_MAX, type TeamReview } from "~/lib/sponsor-scoring";
+import {
+  NOTE_MAX,
+  formatScore,
+  judgeKey,
+  teamIdAndLink,
+  type TeamReview,
+  type TeamScores as TeamScoresData,
+} from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
 import { ScoreControl } from "./score-control";
 import {
@@ -55,21 +68,100 @@ export function ProjectLinks({ team }: { team: JudgingTeam }) {
 }
 
 /**
- * One project on the Browse step: who built it, its tracks and links, a
- * 1-10 score, Save to shortlist and an optional private note. Every change
+ * Every rep's score for a team ("Dana 9 · Marcus 5 · avg 7"), with an
+ * amber "talk it through" flag when two reps are 3 or more apart.
+ */
+export function TeamScores({
+  scores,
+  me,
+}: {
+  scores: TeamScoresData | undefined;
+  me: string | null;
+}) {
+  const t = copy.team;
+  if (!scores) {
+    return (
+      <p className="m-0 flex items-center gap-1.5 text-sm font-medium text-dashboard-text-light">
+        <Users aria-hidden className="size-4 shrink-0" />
+        {t.none}
+      </p>
+    );
+  }
+  const d = scores.disagreement;
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p
+        aria-label={t.label}
+        className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-dashboard-text-medium"
+      >
+        <Users
+          aria-hidden
+          className="size-4 shrink-0 text-dashboard-text-light"
+        />
+        {scores.byJudge.map((j, i) => (
+          <span key={j.judge} className="inline-flex items-center gap-2">
+            {i > 0 && <span aria-hidden>·</span>}
+            <span
+              className={cn(
+                "tabular-nums",
+                me !== null &&
+                  judgeKey(me) === judgeKey(j.judge) &&
+                  "font-semibold text-dashboard-text-heavy",
+              )}
+            >
+              {t.scoreOf(j.judge, formatScore(j.score))}
+            </span>
+          </span>
+        ))}
+        {scores.byJudge.length > 1 && (
+          <span className="rounded-full bg-dashboard-bg-highlight px-2 text-xs font-semibold tabular-nums leading-5 text-dashboard-text-active">
+            {t.average(formatScore(Math.round(scores.average * 10) / 10))}
+          </span>
+        )}
+      </p>
+      {d && (
+        <p className="m-0 flex items-start gap-1.5 rounded-dashboard-md bg-dashboard-status-iconBadge px-3 py-2 text-sm font-semibold text-dashboard-text-warning">
+          <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+          {t.disagree(
+            t.scoreOf(d.high.judge, formatScore(d.high.score)),
+            t.scoreOf(d.low.judge, formatScore(d.low.score)),
+          )}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * One project: who built it, its team ID and Devpost link, tracks and
+ * links, this rep's 1-10 score (half points) with the rubric, every rep's
+ * score, Save to shortlist and an optional private note. Every change
  * autosaves; the status at the end of the action row says when it's
- * saved or failed (and is announced politely).
+ * saved or failed (and is announced politely). `owner` is the rep whose
+ * part of the split list this is, shown when it isn't `me`.
  */
 export function ProjectCard({
   team,
   review,
   saveState,
   onSave,
+  me,
+  myScore,
+  scores,
+  owner,
+  onScore,
+  onRubric,
 }: {
   team: JudgingTeam;
   review: TeamReview | undefined;
   saveState: SaveState | undefined;
   onSave: (patch: ReviewPatch) => void;
+  me: string | null;
+  myScore: number | null;
+  scores: TeamScoresData | undefined;
+  owner: string | null;
+  onScore: (score: number | null) => void;
+  onRubric: () => void;
 }) {
   const noteId = useId();
   const savedNote = review?.note ?? "";
@@ -95,12 +187,22 @@ export function ProjectCard({
       )}
     >
       <div className="flex flex-col gap-2">
-        <h3
-          id={`${noteId}-name`}
-          className="m-0 break-words text-lg font-semibold leading-snug text-dashboard-text-heavy"
-        >
-          {team.name}
-        </h3>
+        <div className="flex items-start justify-between gap-2">
+          <h3
+            id={`${noteId}-name`}
+            className="m-0 min-w-0 break-words text-lg font-semibold leading-snug text-dashboard-text-heavy"
+          >
+            {team.name}
+          </h3>
+          {owner && (me === null || judgeKey(owner) !== judgeKey(me)) && (
+            <DashboardTag className="shrink-0">
+              {copy.scope.owner(owner)}
+            </DashboardTag>
+          )}
+        </div>
+        <p className="m-0 break-all text-xs font-medium tabular-nums text-dashboard-text-light">
+          {teamIdAndLink(team.id, team.devpostUrl)}
+        </p>
         <div className="flex items-center gap-2.5">
           {team.members.length > 0 && (
             <span className="flex shrink-0 -space-x-2" aria-hidden>
@@ -137,9 +239,11 @@ export function ProjectCard({
 
       <ScoreControl
         team={team.name}
-        value={review?.score ?? null}
-        onChange={(score) => onSave({ score })}
+        value={myScore}
+        onChange={onScore}
+        onRubric={onRubric}
       />
+      <TeamScores scores={scores} me={me} />
 
       <div className="flex flex-wrap items-center gap-2">
         <button

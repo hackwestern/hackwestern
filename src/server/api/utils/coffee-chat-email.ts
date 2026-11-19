@@ -1,6 +1,8 @@
+import { coffeeChatInvitesCopy } from "~/content/coffee-chat-invites";
 import { LIVE_URL, coffeeChatNotifyCopy } from "~/content/coffee-chat-notify";
 import { env } from "~/env";
 import { formatCoffeeChatTime } from "~/lib/coffee-chats";
+import { inviteText } from "~/server/api/utils/coffee-chat-invite-text";
 import type { CoffeeChatNotice } from "~/server/api/utils/coffee-chat-notify";
 import { sendViaMailjet } from "~/server/mail-mailjet";
 import {
@@ -39,9 +41,64 @@ export const emailShell = (blocks: readonly string[]) =>
 type OfferDetails = Pick<
   CoffeeChatNotice,
   "sponsorName" | "hackerFirstName" | "slotTime" | "durationMinutes" | "room"
->;
+> &
+  Partial<Pick<CoffeeChatNotice, "placementId" | "repName" | "expiresAt">> & {
+    /** A changed session invite the hacker must confirm again. */
+    reconfirm?: boolean;
+  };
+
+/** A session invite (coffee-chat-invites): rep, building, answer-by. */
+export function sessionInviteEmail(chat: OfferDetails) {
+  const inv = coffeeChatInvitesCopy.email;
+  const { when, where, answerBy } = inviteText({
+    sponsorName: chat.sponsorName,
+    slotTime: chat.slotTime,
+    durationMinutes: chat.durationMinutes,
+    room: chat.room,
+    repName: chat.repName ?? null,
+    expiresAt: chat.expiresAt ?? null,
+  });
+  const subject = chat.reconfirm
+    ? inv.reconfirmSubject(chat.sponsorName)
+    : inv.subject(chat.sponsorName);
+  const intro = inv.intro(chat.sponsorName, chat.repName ?? null);
+  const deadline = inv.deadline(answerBy ?? when);
+  const lines: [string, string][] = [
+    [copy.whenLabel, when],
+    [copy.whereLabel, where],
+    ...(chat.repName ? ([[inv.repLabel, chat.repName]] as [string, string][]) : []),
+    ...(answerBy ? ([[inv.answerByLabel, answerBy]] as [string, string][]) : []),
+  ];
+  const text = [
+    copy.greeting(chat.hackerFirstName),
+    "",
+    ...(chat.reconfirm ? [inv.reconfirm, ""] : []),
+    intro,
+    "",
+    ...lines.map(([k, v]) => `${k}: ${v}`),
+    "",
+    `${copy.action}: ${LIVE_URL}`,
+    "",
+    deadline,
+    "",
+    copy.signoff,
+    "",
+  ].join("\n");
+  const p = emailParagraph;
+  const html = emailShell([
+    p(escapeHtml(copy.greeting(chat.hackerFirstName))),
+    ...(chat.reconfirm ? [p(`<strong>${escapeHtml(inv.reconfirm)}</strong>`)] : []),
+    p(escapeHtml(intro)),
+    p(lines.map(([k, v]) => `<strong>${escapeHtml(k)}:</strong> ${escapeHtml(v)}`).join("<br>")),
+    emailButton(LIVE_URL, copy.action),
+    p(escapeHtml(deadline)),
+    p(escapeHtml(copy.signoff)),
+  ]);
+  return { subject, html, text };
+}
 
 export function coffeeChatOfferEmail(chat: OfferDetails) {
+  if (chat.placementId) return sessionInviteEmail(chat);
   const when = coffeeChatNotifyCopy.when(
     formatCoffeeChatTime(chat.slotTime),
     chat.durationMinutes,
@@ -129,7 +186,7 @@ export async function sendCoffeeChatChangeEmail(
  * Mailjet rejects the send, so the caller logs it.
  */
 export async function sendCoffeeChatOfferEmail(
-  chat: CoffeeChatNotice,
+  chat: CoffeeChatNotice & { reconfirm?: boolean },
 ): Promise<boolean> {
   if (!chat.admitted || !chat.hackerEmail) return false;
   if (!env.MAILJET_API_KEY || !env.MAILJET_SECRET_KEY) return false;

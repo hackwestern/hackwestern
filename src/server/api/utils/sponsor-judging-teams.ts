@@ -4,22 +4,19 @@ import { and, arrayOverlaps, eq, inArray } from "drizzle-orm";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { type TrackValue } from "~/lib/sponsor-track";
 import { db } from "~/server/db";
+import { assertSheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
 import { applications, teams, users } from "~/server/db/schema";
 import {
-  SHEET_TAB,
   fetchAllSponsorInfo,
-  fetchColumnA,
-  findSponsorRows,
-  getJudgingSheetId,
   getSheetsClient,
   getSpreadsheetId,
 } from "~/server/api/utils/sponsor-sheets";
 
-// Which teams a sponsor may judge, and the write of their picks to the
-// judging sheet. Shared by Lucas's sponsorJudging router (listAllTeams) and
-// the sponsorScoring router, so both apply the same privacy rule and the
-// sheet stays the one place his rotation reads. Only sponsorScoring.submit
-// (and its sync retry) writes picks.
+// Which teams a sponsor may judge. Shared by Lucas's sponsorJudging router
+// (listAllTeams) and the sponsorScoring router, so both apply the same
+// privacy rule. Picks are stored in the database and mirrored to the
+// Sponsor Judging tab (sponsor-judging-sheet-mirror.ts); the old "Judging"
+// tab and its writer are gone (deleted 2026-11-19).
 
 export type EligibleTeam = {
   id: string;
@@ -213,87 +210,4 @@ export async function eligibleTeamIds(
     .from(teams)
     .where(and(eligibleWhere(track), inArray(teams.id, [...ids])));
   return new Set(rows.map((r) => r.id));
-}
-
-/**
- * Write a sponsor's picks to column B of the judging sheet (moved here from
- * Lucas's old setChosenTeams route). Overwrites the sponsor's row, or appends one if they
- * aren't in the sheet yet. An empty list clears the picks.
- */
-export async function writeChosenTeams(
-  sponsorName: string,
-  teamIds: readonly string[],
-) {
-  const sheets = await getSheetsClient();
-  const spreadsheetId = getSpreadsheetId();
-
-  const columnA = await fetchColumnA(sheets, spreadsheetId);
-  const [existingRow] = findSponsorRows(columnA, sponsorName);
-
-  const cellValue = teamIds.join(", ");
-
-  if (existingRow) {
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: `${SHEET_TAB}!B${existingRow}`,
-      valueInputOption: "RAW",
-      requestBody: {
-        majorDimension: "ROWS",
-        values: [[cellValue]],
-      },
-    });
-    return;
-  }
-
-  // No row yet. The append below races with any other first write for
-  // the same sponsor: both can see "no row" and both append, leaving a
-  // duplicate row that would silently shadow picks. Re-read column A
-  // afterwards and collapse any extra rows onto the first one.
-  await sheets.spreadsheets.values.append({
-    spreadsheetId,
-    range: `${SHEET_TAB}!A:B`,
-    valueInputOption: "RAW",
-    insertDataOption: "INSERT_ROWS",
-    requestBody: {
-      majorDimension: "ROWS",
-      values: [[sponsorName, cellValue]],
-    },
-  });
-
-  const rowsAfterAppend = findSponsorRows(
-    await fetchColumnA(sheets, spreadsheetId),
-    sponsorName,
-  );
-  const [canonicalRow, ...duplicates] = rowsAfterAppend;
-  if (canonicalRow && duplicates.length > 0) {
-    const sheetId = await getJudgingSheetId(sheets, spreadsheetId);
-    // Delete highest row numbers first so earlier indices stay valid.
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      requestBody: {
-        requests: [...duplicates]
-          .sort((a, b) => b - a)
-          .map((rowNumber) => ({
-            deleteDimension: {
-              range: {
-                sheetId,
-                dimension: "ROWS",
-                startIndex: rowNumber - 1,
-                endIndex: rowNumber,
-              },
-            },
-          })),
-      },
-    });
-    // The surviving row may hold the other writer's picks; assert ours.
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range: `${SHEET_TAB}!B${canonicalRow}`,
-      valueInputOption: "RAW",
-      requestBody: {
-        majorDimension: "ROWS",
-        values: [[cellValue]],
-      },
-    });
-  }
 }

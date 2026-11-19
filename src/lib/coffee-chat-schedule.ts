@@ -13,38 +13,58 @@
  *   sessionsForChats() in coffee-chat-sessions.ts;
  * - only sessions the rep ticked free and that don't overlap their own
  *   sponsor's workshop, counted from 15 min before setup (or start) to 15 min
- *   after the end;
+ *   after the end; a session that window only cuts is still usable for the
+ *   part before or after the cut, in whole chats (usableWindow in
+ *   coffee-chat-sessions.ts), after the rep's full sessions;
  * - pinned cells (organizer bookings, manual moves, applied fixes, sent
  *   chats) stay exactly where they are and count toward a rep's sessions;
  * - most-constrained sponsors first, then the most-constrained rep;
  * - near rooms (2241-2243) before Ivey, and a sponsor's reps in the same
  *   session stay in one building;
+ * - a rep's back-to-back chats stay in one building when they can (a
+ *   preference, never a block: buildingSwitches() lists the rest);
  * - never two things in one room, never one rep in two places;
  * - anything short becomes a suggested fix.
  */
-import { WORKSHOP_BUFFER_MIN, type Building } from "~/lib/coffee-chat-sessions";
+import {
+  chatsInWindow,
+  sessionWindow,
+  type Building,
+  type UsableWindow,
+  type WorkshopTime,
+} from "~/lib/coffee-chat-sessions";
 
 export type SchedSession = { id: string; start: number; end: number };
 export type SchedRoom = { id: string; building: Building };
 /** Minutes after midnight. `setup` is when they must be in the room. */
-export type SchedWorkshop = {
-  setup?: number | null;
-  start: number;
-  end: number;
-};
+export type SchedWorkshop = WorkshopTime;
 export type SchedRep = {
   id: string;
   /** Session ids the rep ticked free. */
   free: readonly string[];
   /** Sessions the rep's wanted chats need (sessionsForChats). */
   sessionsWanted: number;
-  /** Organizer override from a "fewer chats" fix, in sessions. */
+  /**
+   * Organizer override in sessions, from a "fewer chats" or "add a session"
+   * fix. Set = the organizer decided, so a partial-session shortfall is no
+   * longer flagged.
+   */
   maxSessions?: number | null;
+  /**
+   * Chats the rep asked for. With it, a rep whose partial sessions hold
+   * fewer chats than this gets a "partial" suggested fix.
+   */
+  chatsWanted?: number;
 };
 export type SchedSponsor = {
   id: string;
   submitted: boolean;
   workshops: readonly SchedWorkshop[];
+  /**
+   * Chat length (15 or 30). A session a workshop window cuts is usable in
+   * whole chats of this length. Omitted: whole sessions only.
+   */
+  chatMinutes?: number;
   reps: readonly SchedRep[];
 };
 
@@ -61,23 +81,39 @@ export type Pin = { room: string; session: string } & (
 
 export type Place = { rep: string; room: string; session: string };
 
-/** Why a chat on the board now breaks a rule (pins are never re-run). */
-export type ChatProblem = "notSubmitted" | "workshop" | "notFree";
+/**
+ * Why a chat on the board now breaks a rule (pins are never re-run).
+ * "overCap": the rep has more sessions than they now want (e.g. changed to
+ * 0 chats after Send).
+ */
+export type ChatProblem = "notSubmitted" | "workshop" | "notFree" | "overCap";
 /**
  * Why a fix's reps couldn't be placed (text key for the "why" line), or,
  * for an "invalid" fix, what's wrong with the chat that's there.
  */
-export type FixReason = "full" | "near" | "ivey" | "open" | ChatProblem;
+export type FixReason = "full" | "near" | "ivey" | "open" | "partial" | ChatProblem;
 /**
  * "short": one rep short with a room free elsewhere; "group": several, or
  * no room; "invalid": a chat already on the board breaks a rule now.
  */
 export type FixProblem = "short" | "group" | "invalid";
-export type FixItem = { rep: string; got: number; want: number };
+export type FixItem = {
+  rep: string;
+  /** Sessions placed and wanted. */
+  got: number;
+  want: number;
+  /** For a "partial" fix: chats the placed sessions hold, and chats asked. */
+  chats?: { got: number; want: number };
+};
 export type Suggestion =
   | { kind: "session"; places: Place[] }
   | { kind: "ivey"; session: string; remove: string[]; places: Place[] }
   | { kind: "fewer"; caps: { rep: string; sessions: number; want: number }[] }
+  /**
+   * One more session for a rep short of chats because of a partial session:
+   * place them, and raise their session cap to fit it.
+   */
+  | { kind: "extra"; place: Place; cap: { rep: string; sessions: number } }
   /** Move the chat at cell `from` to `to`, or remove it when `to` is null. */
   | { kind: "move"; from: string; to: Place | null };
 export type Fix = {
@@ -98,33 +134,57 @@ export function parseKey(key: string): { room: string; session: string } {
 }
 
 
+/** Omitted chat length: only whole sessions count. */
+const WHOLE_SESSION = 60;
+type Timed = Pick<SchedSponsor, "workshops" | "chatMinutes">;
+
+/** The usable part of session `s` for this sponsor, or null (blocked). */
+export function windowAt(sponsor: Timed, s: SchedSession): UsableWindow | null {
+  return sessionWindow(s, sponsor.workshops, sponsor.chatMinutes ?? WHOLE_SESSION);
+}
+
+/** Whole chats one rep of this sponsor fits in session `s` (0 = blocked). */
+export function chatsAt(sponsor: Timed, s: SchedSession): number {
+  return chatsInWindow(windowAt(sponsor, s), sponsor.chatMinutes ?? WHOLE_SESSION);
+}
+
 /**
- * Sessions a sponsor can never use: any that overlap one of their workshop
- * windows, from (setup, or start) minus 15 min to end plus 15 min.
+ * Sessions a sponsor can never use: a workshop window, from (setup, or
+ * start) minus 15 min to end plus 15 min, leaves no whole chat in them.
  */
-export function blockedSessions(
-  sponsor: Pick<SchedSponsor, "workshops">,
+export function blockedSessions(sponsor: Timed, sessions: readonly SchedSession[]): Set<string> {
+  return new Set(sessions.filter((s) => !windowAt(sponsor, s)).map((s) => s.id));
+}
+
+/** Sessions a workshop window cuts but leaves usable, with the part left. */
+export function partialSessions(
+  sponsor: Timed,
   sessions: readonly SchedSession[],
-): Set<string> {
-  const out = new Set<string>();
-  for (const w of sponsor.workshops) {
-    const from = (w.setup ?? w.start) - WORKSHOP_BUFFER_MIN;
-    const to = w.end + WORKSHOP_BUFFER_MIN;
-    for (const s of sessions) if (s.start < to && from < s.end) out.add(s.id);
+): Map<string, UsableWindow> {
+  const out = new Map<string, UsableWindow>();
+  for (const s of sessions) {
+    const w = windowAt(sponsor, s);
+    if (w && (w.start !== s.start || w.end !== s.end)) out.set(s.id, w);
   }
   return out;
 }
 
-/** Sessions a rep can be placed in: ticked free and not blocked. Time order. */
+/**
+ * Sessions a rep can be placed in: ticked free and not blocked. Full
+ * sessions first, then partial ones, each in time order, so a partial
+ * session is only used when the full ones run out or have no room.
+ */
 export function availSessions(
-  sponsor: Pick<SchedSponsor, "workshops">,
+  sponsor: Timed,
   rep: SchedRep,
   sessions: readonly SchedSession[],
 ): string[] {
   const blocked = blockedSessions(sponsor, sessions);
-  return sessions
-    .filter((s) => rep.free.includes(s.id) && !blocked.has(s.id))
-    .map((s) => s.id);
+  const partial = partialSessions(sponsor, sessions);
+  const ok = sessions.filter((s) => rep.free.includes(s.id) && !blocked.has(s.id));
+  return [...ok.filter((s) => !partial.has(s.id)), ...ok.filter((s) => partial.has(s.id))].map(
+    (s) => s.id,
+  );
 }
 
 /** The most sessions this rep may have (the cap, before availability). */
@@ -162,6 +222,24 @@ export function repCount(board: Board, rep: string): number {
   return chatsOf(board).filter(([, v]) => v.rep === rep).length;
 }
 
+/** Whole chats this rep's placed sessions hold (a partial session holds fewer). */
+export function placedChats(
+  sponsor: Timed,
+  rep: Pick<SchedRep, "id">,
+  sessions: readonly SchedSession[],
+  board: Board,
+): { chats: number; partial: string[] } {
+  const partial = partialSessions(sponsor, sessions);
+  let chats = 0;
+  const cut: string[] = [];
+  for (const s of sessions) {
+    if (!repKeyAt(board, rep.id, s.id)) continue;
+    chats += chatsAt(sponsor, s);
+    if (partial.has(s.id)) cut.push(s.id);
+  }
+  return { chats, partial: cut };
+}
+
 /** rep id -> sponsor id. */
 function sponsorIndex(sponsors: readonly SchedSponsor[]): Map<string, string> {
   return new Map(sponsors.flatMap((sp) => sp.reps.map((r) => [r.id, sp.id])));
@@ -170,7 +248,55 @@ function sponsorIndex(sponsors: readonly SchedSponsor[]): Map<string, string> {
 type Ctx = {
   rooms: readonly SchedRoom[];
   sponsorOf: Map<string, string>;
+  /** In time order, to find a rep's back-to-back sessions. */
+  sessions: readonly SchedSession[];
 };
+
+/**
+ * Rooms of this rep's chats right before and right after session s (no gap
+ * between the hours, so 11-12 and 1-2 aren't back to back), before first.
+ */
+export function backToBackRooms(
+  board: Board,
+  sessions: readonly SchedSession[],
+  rep: string,
+  s: string,
+): string[] {
+  const i = sessions.findIndex((x) => x.id === s);
+  const cur = sessions[i];
+  if (!cur) return [];
+  const out: string[] = [];
+  for (const n of [sessions[i - 1], sessions[i + 1]]) {
+    if (!n || (n.end !== cur.start && n.start !== cur.end)) continue;
+    const k = repKeyAt(board, rep, n.id);
+    if (k) out.push(parseKey(k).room);
+  }
+  return out;
+}
+
+/**
+ * Reps booked back to back in two buildings (a 15-minute walk between
+ * chats). Allowed, never blocked: the scheduler avoids it when it can and
+ * the board shows a note. rep id -> the later session of each such pair.
+ */
+export function buildingSwitches(
+  board: Board,
+  rooms: readonly SchedRoom[],
+  sessions: readonly SchedSession[],
+): Map<string, string[]> {
+  const building = (room: string) => rooms.find((r) => r.id === room)?.building ?? null;
+  const out = new Map<string, string[]>();
+  for (const [k, v] of chatsOf(board)) {
+    const { room, session } = parseKey(k);
+    const i = sessions.findIndex((x) => x.id === session);
+    const prev = sessions[i - 1];
+    if (!prev || prev.end !== sessions[i]!.start) continue;
+    const pk = repKeyAt(board, v.rep, prev.id);
+    if (!pk || building(parseKey(pk).room) === building(room)) continue;
+    out.set(v.rep, [...(out.get(v.rep) ?? []), session]);
+  }
+  return out;
+}
 
 /** The building this sponsor's other reps use in session s, or null. */
 function teamBuilding(
@@ -191,9 +317,11 @@ function teamBuilding(
 
 /**
  * A room for this rep in session s: their team's building if a teammate is
- * already there, else near before Ivey. Keeps `prevRoom` (the rep's room the
- * hour before) when it's free. No room: `reason` is "full" (nothing free at
- * all) or the team's building that is full.
+ * already there (a hard rule). Otherwise the building of the rep's chat
+ * right before or after (so they don't walk 15 minutes between chats), else
+ * near before Ivey. Keeps the rep's room from the hour before or after when
+ * it's free. No room: `reason` is "full" (nothing free at all) or the
+ * team's building that is full.
  */
 function pickRoom(
   ctx: Ctx,
@@ -201,16 +329,21 @@ function pickRoom(
   sponsorId: string,
   rep: string,
   s: string,
-  prevRoom: string | null = null,
 ): { room: string } | { room: null; reason: "full" | Building } {
   const team = teamBuilding(ctx, board, sponsorId, s, rep);
-  const order: Building[] = team ? [team] : ["near", "ivey"];
+  const nextTo = backToBackRooms(board, ctx.sessions, rep, s);
+  const own = ctx.rooms.find((r) => r.id === nextTo[0])?.building ?? null;
+  const order: Building[] = team
+    ? [team]
+    : own === "ivey"
+      ? ["ivey", "near"]
+      : ["near", "ivey"];
   for (const g of order) {
     const free = ctx.rooms.filter(
       (r) => r.building === g && !board[cellKey(r.id, s)],
     );
     if (free.length > 0) {
-      return { room: (free.find((r) => r.id === prevRoom) ?? free[0]!).id };
+      return { room: (free.find((r) => nextTo.includes(r.id)) ?? free[0]!).id };
     }
   }
   const anyFree = ctx.rooms.some((r) => !board[cellKey(r.id, s)]);
@@ -241,7 +374,7 @@ export function schedule(
   sessions: readonly SchedSession[],
   pins: readonly Pin[],
 ): { board: Board; fixes: Fix[] } {
-  const ctx: Ctx = { rooms, sponsorOf: sponsorIndex(sponsors) };
+  const ctx: Ctx = { rooms, sponsorOf: sponsorIndex(sponsors), sessions };
   const board: Board = {};
   // 1. Pinned cells first, exactly as they are.
   placePins(board, pins);
@@ -272,16 +405,7 @@ export function schedule(
       for (const s of availSessions(sp, rep, sessions)) {
         if (left <= 0) break;
         if (repKeyAt(board, rep.id, s)) continue;
-        const i = sessions.findIndex((x) => x.id === s);
-        const prevKey = i > 0 ? repKeyAt(board, rep.id, sessions[i - 1]!.id) : null;
-        const pick = pickRoom(
-          ctx,
-          board,
-          sp.id,
-          rep.id,
-          s,
-          prevKey ? parseKey(prevKey).room : null,
-        );
+        const pick = pickRoom(ctx, board, sp.id, rep.id, s);
         // 5. No room in the right building: try their next session.
         if (!pick.room) continue;
         board[cellKey(pick.room, s)] = { type: "chat", rep: rep.id };
@@ -305,18 +429,28 @@ export function invalidChats(
   board: Board,
 ): { key: string; rep: string; sponsor: string; session: string; pinned: boolean; problem: ChatProblem }[] {
   const out: ReturnType<typeof invalidChats> = [];
-  for (const [key, v] of chatsOf(board)) {
+  const at = (key: string) => sessions.findIndex((x) => x.id === parseKey(key).session);
+  // Valid chats so far per rep; past their cap the later ones are "overCap".
+  const kept = new Map<string, number>();
+  // Time order, so the chats over a rep's cap are their latest ones.
+  const chats = chatsOf(board).sort(([a], [b]) => at(a) - at(b));
+  for (const [key, v] of chats) {
     const sp = sponsors.find((x) => x.reps.some((r) => r.id === v.rep));
     const rep = sp?.reps.find((r) => r.id === v.rep);
     if (!sp || !rep) continue;
     const { session } = parseKey(key);
-    const problem: ChatProblem | null = !sp.submitted
+    let problem: ChatProblem | null = !sp.submitted
       ? "notSubmitted"
       : blockedSessions(sp, sessions).has(session)
         ? "workshop"
         : !rep.free.includes(session)
           ? "notFree"
           : null;
+    if (!problem) {
+      const n = (kept.get(rep.id) ?? 0) + 1;
+      kept.set(rep.id, n);
+      if (n > sessionCap(rep)) problem = "overCap";
+    }
     if (problem) {
       out.push({ key, rep: rep.id, sponsor: sp.id, session, pinned: !!v.pinned, problem });
     }
@@ -342,7 +476,7 @@ export function boardFixes(
   sessions: readonly SchedSession[],
   board: Board,
 ): Fix[] {
-  const ctx: Ctx = { rooms, sponsorOf: sponsorIndex(sponsors) };
+  const ctx: Ctx = { rooms, sponsorOf: sponsorIndex(sponsors), sessions };
   const invalid = invalidChats(sponsors, sessions, board);
   // Cells already suggested to an earlier fix count as taken.
   const taken: Board = { ...board };
@@ -352,7 +486,8 @@ export function boardFixes(
     const sp = sponsors.find((x) => x.id === bad.sponsor)!;
     const rep = sp.reps.find((r) => r.id === bad.rep)!;
     let to: Place | null = null;
-    if (bad.problem !== "notSubmitted") {
+    // Not submitted or one too many: the suggestion is to remove it.
+    if (bad.problem !== "notSubmitted" && bad.problem !== "overCap") {
       for (const s of availSessions(sp, rep, sessions)) {
         if (repKeyAt(clean, rep.id, s)) continue;
         const pick = pickRoom(ctx, clean, sp.id, rep.id, s);
@@ -385,7 +520,7 @@ export function findFixes(
   sessions: readonly SchedSession[],
   board: Board,
 ): Fix[] {
-  const ctx: Ctx = { rooms, sponsorOf: sponsorIndex(sponsors) };
+  const ctx: Ctx = { rooms, sponsorOf: sponsorIndex(sponsors), sessions };
   const fixes: Fix[] = [];
   for (const sp of sponsors.filter((x) => x.submitted)) {
     const groups = new Map<
@@ -395,7 +530,11 @@ export function findFixes(
     for (const rep of sp.reps) {
       const want = sessionsNeeded(sp, rep, sessions);
       const got = repCount(board, rep.id);
-      if (got >= want) continue;
+      if (got >= want) {
+        const short = partialShortfall(ctx, sp, rep, sessions, board, got);
+        if (short) fixes.push(short);
+        continue;
+      }
       const tries = availSessions(sp, rep, sessions).filter(
         (s) => !repKeyAt(board, rep.id, s),
       );
@@ -426,6 +565,53 @@ export function findFixes(
     }
   }
   return fixes;
+}
+
+/**
+ * A rep with all their sessions placed, but a partial session leaves them
+ * short of the chats they asked for: "add a session" when a free session
+ * with a room is left, else "fewer chats" (keeps what they have). Skipped
+ * once an organizer set the rep's cap (maxSessions), or with no chatsWanted.
+ */
+function partialShortfall(
+  ctx: Ctx,
+  sp: SchedSponsor,
+  rep: SchedRep,
+  sessions: readonly SchedSession[],
+  board: Board,
+  got: number,
+): Fix | null {
+  if (rep.chatsWanted === undefined || rep.maxSessions != null) return null;
+  const placed = placedChats(sp, rep, sessions, board);
+  if (placed.partial.length === 0 || placed.chats >= rep.chatsWanted) return null;
+  const session = placed.partial[0]!;
+  const item: FixItem = {
+    rep: rep.id,
+    got,
+    want: got,
+    chats: { got: placed.chats, want: rep.chatsWanted },
+  };
+  let suggestion: Suggestion = { kind: "fewer", caps: [{ rep: rep.id, sessions: got, want: got }] };
+  for (const s of availSessions(sp, rep, sessions)) {
+    if (repKeyAt(board, rep.id, s)) continue;
+    const pick = pickRoom(ctx, board, sp.id, rep.id, s);
+    if (!pick.room) continue;
+    suggestion = {
+      kind: "extra",
+      place: { rep: rep.id, room: pick.room, session: s },
+      cap: { rep: rep.id, sessions: got + 1 },
+    };
+    break;
+  }
+  return {
+    id: `${sp.id}|${rep.id}|partial`,
+    sponsor: sp.id,
+    session,
+    reason: "partial",
+    problem: "short",
+    items: [item],
+    suggestion,
+  };
 }
 
 /**
@@ -518,6 +704,10 @@ export function applySuggestion(
   if (sug.kind === "fewer") {
     for (const c of sug.caps) caps[c.rep] = c.sessions;
     return { board: out, maxSessions: caps };
+  }
+  if (sug.kind === "extra") {
+    caps[sug.cap.rep] = sug.cap.sessions;
+    sug = { kind: "session", places: [sug.place] };
   }
   if (sug.kind === "move") {
     const from = out[sug.from];

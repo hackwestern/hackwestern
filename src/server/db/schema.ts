@@ -423,10 +423,26 @@ export const coffeeChats = pgTable(
     durationMinutes: smallint("duration_minutes").default(15).notNull(),
     status: coffeeChatStatusEnum("status").default("pending").notNull(),
     repName: varchar("rep_name", { length: 255 }),
+    // Session model invites (track B): the rep-session this seat belongs
+    // to; null = an old per-slot request.
+    placementId: uuid("placement_id").references(
+      () => coffeeChatPlacements.id,
+      { onDelete: "cascade" },
+    ),
+    // Invite round: 1 = Fri 10 PM batch, 2+ = Saturday 30-minute rounds.
+    round: smallint("round"),
+    // Pending invites expire at this time and the seat passes on.
+    expiresAt: timestamp("expires_at", { mode: "date", precision: 3 }),
+    // Why they were invited: "scanned" | "shortlist" | "interested".
+    source: varchar("source", { length: 16 }),
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
       .notNull(),
     respondedAt: timestamp("responded_at", { mode: "date", precision: 3 }),
+    // Session invites: when the DM or email about the current invite went
+    // out. Null = not sent yet (or a send failed); the delivery sweep in
+    // src/server/api/utils/coffee-chat-invites.ts claims and sends those.
+    notifiedAt: timestamp("notified_at", { mode: "date", precision: 3 }),
   },
   (t) => [
     // A hacker can't hold two live (pending or accepted) chats in one slot.
@@ -435,6 +451,7 @@ export const coffeeChats = pgTable(
       .where(sql`${t.status} in ('pending', 'accepted')`),
     index("coffee_chat_sponsor_slot_idx").on(t.sponsorId, t.slotTime),
     index("coffee_chat_user_idx").on(t.userId),
+    index("coffee_chat_placement_idx").on(t.placementId),
   ],
 );
 
@@ -512,6 +529,12 @@ export const coffeeChatPrefs = pgTable(
     // 1-on-1s only: 30 minutes instead of 15.
     longerOneOnOne: boolean("longer_one_on_one").default(false).notNull(),
     submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 }),
+    // The separate Shortlist flow's Review & submit; null = not submitted
+    // (at 9:30 PM Friday interested hackers fill their seats instead).
+    shortlistSubmittedAt: timestamp("shortlist_submitted_at", {
+      mode: "date",
+      precision: 3,
+    }),
     updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
       .defaultNow()
       .notNull(),
@@ -535,6 +558,7 @@ export const coffeeChatReps = pgTable(
     name: varchar("name", { length: 255 }).notNull(),
     phone: varchar("phone", { length: 32 }).notNull(),
     isPrimary: boolean("is_primary").default(false).notNull(),
+    // 0 = this rep doesn't chat (decisions 2026-11-19, Q1–Q11).
     chatsWanted: smallint("chats_wanted").default(1).notNull(),
     // Organizer cap in sessions from a "fewer chats" suggested fix; null =
     // what their chats need.
@@ -547,7 +571,7 @@ export const coffeeChatReps = pgTable(
   },
   (t) => [
     index("coffee_chat_rep_sponsor_idx").on(t.sponsorId),
-    check("coffee_chat_rep_chats_check", sql`${t.chatsWanted} >= 1`),
+    check("coffee_chat_rep_chats_check", sql`${t.chatsWanted} >= 0`),
     uniqueIndex("coffee_chat_rep_primary_idx")
       .on(t.sponsorId)
       .where(sql`${t.isPrimary}`),
@@ -668,6 +692,30 @@ export const sponsorShortlists = pgTable(
   (t) => [primaryKey({ columns: [t.sponsorId, t.userId] })],
 );
 
+// A hacker a sponsor scanned at the Sponsor Bay ("Met at Hacker Fair").
+// Scanned hackers are first choice for that sponsor's coffee chat seats,
+// before the shortlist and interested hackers (decisions 2026-11-19).
+export const sponsorScans = pgTable(
+  "sponsor_scan",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // The rep who scanned them, if picked.
+    repName: varchar("rep_name", { length: 255 }),
+    scannedAt: timestamp("scanned_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sponsorId, t.userId] }),
+    index("sponsor_scan_user_idx").on(t.userId),
+  ],
+);
+
 // A sponsor's review of one submitted team on /sponsors/[uuid]/picks
 // ("Judging"): a 1-10 score, whether it's on their shortlist, and a short
 // private note. One row per (sponsor, team), written by autosave. Only teams
@@ -696,6 +744,33 @@ export const sponsorTeamReviews = pgTable(
     check(
       "sponsor_team_review_score_range",
       sql`${t.score} IS NULL OR (${t.score} BETWEEN 1 AND 10)`,
+    ),
+  ],
+);
+
+// One rep's score for one team ("Who's judging?"): several reps share a
+// sponsor login, each scores separately, 1-10 in half points. Stored as
+// halves (2-20) so it stays an integer. Track F, docs/decisions.md.
+export const sponsorTeamScores = pgTable(
+  "sponsor_team_score",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 12 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    judgeName: varchar("judge_name", { length: 255 }).notNull(),
+    scoreHalves: smallint("score_halves").notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sponsorId, t.teamId, t.judgeName] }),
+    check(
+      "sponsor_team_score_range",
+      sql`${t.scoreHalves} BETWEEN 2 AND 20`,
     ),
   ],
 );

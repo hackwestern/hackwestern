@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 import { isAdmittedStatus } from "~/lib/admission";
 import {
@@ -52,12 +52,29 @@ export type CoffeeChatNotice = {
   durationMinutes: number;
   room: string | null;
   status: CoffeeChatStatus;
+  /** Session invites only (null for old per-slot requests). */
+  placementId: string | null;
+  repName: string | null;
+  /** A session invite's answer-by time; null = 20 min before the chat. */
+  expiresAt: Date | null;
 };
 
 export async function loadCoffeeChatNotice(
   chatId: string,
 ): Promise<CoffeeChatNotice | null> {
-  const [row] = await db
+  return (await loadCoffeeChatNotices([chatId]))[0] ?? null;
+}
+
+/**
+ * Notices for several chats in one read. `conn` may be a transaction, so a
+ * caller can snapshot rows it is about to change or delete.
+ */
+export async function loadCoffeeChatNotices(
+  chatIds: readonly string[],
+  conn: Pick<typeof db, "select"> = db,
+): Promise<CoffeeChatNotice[]> {
+  if (chatIds.length === 0) return [];
+  const rows = await conn
     .select({
       chatId: coffeeChats.id,
       sponsorName: sponsorJudgingSponsors.name,
@@ -68,9 +85,12 @@ export async function loadCoffeeChatNotice(
       firstName: applications.firstName,
       appStatus: applications.status,
       slotTime: coffeeChats.slotTime,
+      expiresAt: coffeeChats.expiresAt,
       durationMinutes: coffeeChats.durationMinutes,
       room: coffeeChats.room,
       status: coffeeChats.status,
+      placementId: coffeeChats.placementId,
+      repName: coffeeChats.repName,
     })
     .from(coffeeChats)
     .innerJoin(
@@ -79,24 +99,28 @@ export async function loadCoffeeChatNotice(
     )
     .innerJoin(users, eq(users.id, coffeeChats.userId))
     .leftJoin(applications, eq(applications.userId, coffeeChats.userId))
-    .where(eq(coffeeChats.id, chatId));
-  if (!row) return null;
-  const hackerFirstName =
-    [row.firstName, row.userName?.trim().split(/\s+/)[0]]
-      .map((name) => name?.trim() ?? "")
-      .find((name) => name.length > 0) ?? "";
-  return {
-    chatId: row.chatId,
-    sponsorName: row.sponsorName,
-    hackerEmail: row.email,
-    hackerSlackEmail: row.slackEmail,
-    hackerFirstName,
-    admitted: row.userType === "hacker" && isAdmittedStatus(row.appStatus),
-    slotTime: row.slotTime,
-    durationMinutes: row.durationMinutes,
-    room: row.room,
-    status: row.status,
-  };
+    .where(inArray(coffeeChats.id, [...chatIds]));
+  return rows.map((row) => {
+    const hackerFirstName =
+      [row.firstName, row.userName?.trim().split(/\s+/)[0]]
+        .map((name) => name?.trim() ?? "")
+        .find((name) => name.length > 0) ?? "";
+    return {
+      chatId: row.chatId,
+      sponsorName: row.sponsorName,
+      hackerEmail: row.email,
+      hackerSlackEmail: row.slackEmail,
+      hackerFirstName,
+      admitted: row.userType === "hacker" && isAdmittedStatus(row.appStatus),
+      slotTime: row.slotTime,
+      durationMinutes: row.durationMinutes,
+      room: row.room,
+      status: row.status,
+      placementId: row.placementId,
+      repName: row.repName,
+      expiresAt: row.expiresAt,
+    };
+  });
 }
 
 /** The error's message only: never the request, headers, or credentials. */

@@ -92,11 +92,14 @@ const fixture: JudgingSheetInput = {
   tracks: [
     { name: "Scotiabank", sponsorId: "s-scotia" },
     { name: "QNX", sponsorId: "s-qnx" },
+    { name: "TinyFish", sponsorId: "s-tiny" },
     { name: "PCBWay", sponsorId: null },
   ],
   rooms: new Map([
     ["s-scotia", "Rm 2110"],
     ["s-qnx", "Rm 2235"],
+    // The sheet's old "Digital" room; remote judging wins.
+    ["s-tiny", "Digital"],
   ]),
   sends: [
     {
@@ -108,7 +111,7 @@ const fixture: JudgingSheetInput = {
   finals: [
     {
       sponsorId: "s-scotia",
-      teamIds: ["t1", "t3", "t4", "t5", "t2"],
+      teamIds: ["t1", "t3", "t5"],
       submittedAt: new Date("2026-11-22T12:05:00-05:00"),
     },
   ],
@@ -126,6 +129,11 @@ const fixture: JudgingSheetInput = {
     ["t3", "Charlie"],
     ["t4", "Delta"],
   ]),
+  teamLinks: new Map([
+    ["t1", "https://devpost.com/software/alpha"],
+    ["t2", "https://devpost.com/software/bravo/"],
+    ["t3", null],
+  ]),
   members: new Map([
     ["t1", ["Ada Lovelace", "Alan Turing"]],
     ["t2", ["Grace Hopper"]],
@@ -134,13 +142,15 @@ const fixture: JudgingSheetInput = {
     ["t1", "Slack, Email"],
     ["t2", "failed"],
   ]),
+  scoring: new Set(["s-tiny"]),
+  round2Open: true,
   writtenAt: new Date("2026-11-22T12:10:00-05:00"),
 };
 
 describe("judgingSheetRows", () => {
-  test("lays out the three tables from fixture data", () => {
+  test("one wide row per sponsor with 1st-3rd place, then presentations", () => {
     const rows = judgingSheetRows(fixture);
-    const pad = (row: string[]) => [...row, ...blank(7 - row.length)];
+    const pad = (row: string[]) => [...row, ...blank(12 - row.length)];
     expect(rows).toEqual(
       [
         [
@@ -148,31 +158,84 @@ describe("judgingSheetRows", () => {
           `Updated ${ts("2026-11-22T12:10:00-05:00")}`,
         ],
         [],
-        ["Tracks"],
         [
           "Sponsor",
-          "Has track",
+          "In person / Digital",
           "Judging room",
-          "Round 1 shortlist sent",
-          "Round 2 top 5 sent",
+          "Round 1 status",
+          "Shortlist sent",
+          "Shortlist (team IDs)",
+          "Round 2 status",
+          "Top 3 sent",
+          "1st place",
+          "2nd place",
+          "3rd place",
+          "Notes",
         ],
         [
           "Scotiabank",
-          "Yes",
+          "In person",
           "Rm 2110",
+          "Shortlist sent",
           ts("2026-11-22T09:50:00-05:00"),
+          "t2, t1, t3",
+          "Top 3 sent",
           ts("2026-11-22T12:05:00-05:00"),
+          // Team ID + Devpost link; no link = ID only; never invented.
+          "t1 · devpost.com/software/alpha",
+          "t3",
+          "t5",
+          "",
         ],
-        ["QNX", "Yes", "Rm 2235", "", ""],
-        // Not registered yet: on the list, everything else blank.
-        ["PCBWay", "Yes", "", "", ""],
+        [
+          "QNX",
+          "In person",
+          "Rm 2235",
+          "Not started",
+          "",
+          "",
+          "Ranking",
+          "",
+          "",
+          "",
+          "",
+          "",
+        ],
+        [
+          "TinyFish",
+          "In person",
+          "Remote (judges online)",
+          "Scoring",
+          "",
+          "",
+          "Locked: no presentations",
+          "",
+          "",
+          "",
+          "",
+          "Judges remotely; presentations are online.",
+        ],
+        [
+          "PCBWay",
+          "Digital",
+          "",
+          "No round 1 (digital)",
+          "",
+          "",
+          "Waiting for the spon team",
+          "",
+          "",
+          "",
+          "",
+          "Digital sponsor: top 3 entered by the spon team from Devpost links.",
+        ],
         [],
-        ["Chosen teams and presentation schedule"],
-        ["Sponsor", "Round", "Team", "Members", "Time", "Room", "Notified"],
+        ["Presentations"],
+        ["Sponsor", "Team ID", "Team", "Members", "Time", "Room", "Notified"],
         // Placed slots in time order, then teams with no slot.
         [
           "Scotiabank",
-          "Round 1",
+          "t2 · devpost.com/software/bravo",
           "Bravo",
           "Grace Hopper",
           "10:00 AM",
@@ -181,58 +244,65 @@ describe("judgingSheetRows", () => {
         ],
         [
           "Scotiabank",
-          "Round 1",
+          "t1 · devpost.com/software/alpha",
           "Alpha",
           "Ada Lovelace, Alan Turing",
           "10:05 AM",
           "Rm 2110",
           "Slack, Email",
         ],
-        ["Scotiabank", "Round 1", "Charlie", "", "", "", ""],
+        ["Scotiabank", "t3", "Charlie", "", "", "", ""],
         [
           "QNX",
-          "Round 1",
+          "t1 · devpost.com/software/alpha",
           "Alpha",
           "Ada Lovelace, Alan Turing",
           "10:20 AM",
           "Rm 2235",
           "Slack, Email",
         ],
-        [],
-        ["Final results"],
-        ["Sponsor", "Rank", "Team", "Members"],
-        ["Scotiabank", "1", "Alpha", "Ada Lovelace, Alan Turing"],
-        ["Scotiabank", "2", "Charlie", ""],
-        ["Scotiabank", "3", "Delta", ""],
-        // A team with no stored name shows its id; never invented.
-        ["Scotiabank", "4", "t5", ""],
-        ["Scotiabank", "5", "Bravo", "Grace Hopper"],
       ].map(pad),
     );
   });
 
-  test("with nothing stored, only the track list is filled", () => {
+  test("with nothing stored, every sponsor row is still listed", () => {
     const rows = judgingSheetRows({
       ...fixture,
       rooms: new Map(),
       sends: [],
       finals: [],
       presentations: [],
+      scoring: new Set(),
+      round2Open: false,
     });
-    expect(
-      rows.filter((r) => r[1] === "Yes").map((r) => r.slice(0, 5)),
-    ).toEqual([
-      ["Scotiabank", "Yes", "", "", ""],
-      ["QNX", "Yes", "", "", ""],
-      ["PCBWay", "Yes", "", "", ""],
+    expect(rows.slice(3, 7).map((r) => [r[0], r[3], r[6]])).toEqual([
+      ["Scotiabank", "Not started", "Not open"],
+      ["QNX", "Not started", "Not open"],
+      ["TinyFish", "Not started", "Not open"],
+      ["PCBWay", "No round 1 (digital)", "Waiting for the spon team"],
     ]);
-    expect(rows.filter((r) => r[1] === "Round 1")).toEqual([]);
-    // Ends on the final results header: no rows under it.
-    expect(rows.at(-1)!.slice(0, 4)).toEqual([
-      "Sponsor",
-      "Rank",
-      "Team",
-      "Members",
+    // Ends on the presentations header: no rows under it.
+    expect(rows.at(-1)!.slice(0, 2)).toEqual(["Sponsor", "Team ID"]);
+  });
+
+  test("a digital sponsor's entered top 3 fills the place cells", () => {
+    const rows = judgingSheetRows({
+      ...fixture,
+      tracks: [{ name: "PCBWay", sponsorId: "s-pcb" }],
+      finals: [
+        {
+          sponsorId: "s-pcb",
+          teamIds: ["t2", "t1", "t3"],
+          submittedAt: new Date("2026-11-23T09:05:00-05:00"),
+        },
+      ],
+    });
+    expect(rows[3]!.slice(6, 11)).toEqual([
+      "Entered by the spon team",
+      ts("2026-11-23T09:05:00-05:00"),
+      "t2 · devpost.com/software/bravo",
+      "t1 · devpost.com/software/alpha",
+      "t3",
     ]);
   });
 });
@@ -269,7 +339,11 @@ describe("writeJudgingSheet", () => {
     ]);
 
     // A shorter rewrite drops the old rows; the tab isn't added twice.
-    const shorter = await writeJudgingSheet(sheet, { ...fixture, finals: [] });
+    const shorter = await writeJudgingSheet(sheet, {
+      ...fixture,
+      sends: [],
+      presentations: [],
+    });
     expect(shorter).toBeLessThan(n);
     expect(grid).toHaveLength(shorter);
     expect(tabs.filter((t) => t === JUDGING_TAB)).toHaveLength(1);
@@ -444,21 +518,16 @@ describe("loadJudgingSheetInput", () => {
     const rows = judgingSheetRows(input);
     expect(rows).toContainEqual([
       scotia!.name,
-      "Round 1",
+      teamIds[0],
       `Team 1 ${suffix}`,
       "Ada Lovelace",
       "10:00 AM",
       "Rm 2110",
       "Slack",
+      ...blank(5),
     ]);
-    expect(rows).toContainEqual([
-      scotia!.name,
-      "1",
-      `Team 2 ${suffix}`,
-      "",
-      "",
-      "",
-      "",
-    ]);
+    const row = rows.find((r) => r[0] === scotia!.name)!;
+    expect(row.slice(8, 10)).toEqual([teamIds[1], teamIds[0]]);
+    expect(input.round2Open).toBe(false);
   });
 });

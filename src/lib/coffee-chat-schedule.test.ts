@@ -9,6 +9,7 @@ import {
   applySuggestion,
   blockedSessions,
   boardFixes,
+  buildingSwitches,
   cellKey,
   checkBoard,
   findFixes,
@@ -179,6 +180,39 @@ describe("ordering and rooms", () => {
     expect(at10 && at11 && parseKey(at10).room).toBe(at11 && parseKey(at11).room);
   });
 
+  test("a rep's back-to-back chats stay in one building (B8)", () => {
+    // Dana is pinned in Ivey at 2-3; her 1-2 chat goes to Ivey too, not near.
+    const dana = mini("t", [["13", "14"]], 2);
+    const pin: Pin = { room: "1348", session: "14", type: "chat", rep: "t:0" };
+    const r = schedule([dana], ROOMS, SESS, [pin]);
+    const at13 = repKeyAt(r.board, "t:0", "13");
+    expect(at13 && parseKey(at13).room).toBe("1348");
+    expect(buildingSwitches(r.board, ROOMS, SESS).size).toBe(0);
+  });
+
+  test("a building switch is allowed when the building is full, and listed", () => {
+    const dana = mini("t", [["13", "14"]], 2);
+    const ivey = ROOMS.filter((x) => x.building === "ivey");
+    const pins: Pin[] = [
+      { room: "1348", session: "14", type: "chat", rep: "t:0" },
+      ...ivey.map((x): Pin => ({ room: x.id, session: "13", type: "booking", ref: `b${x.id}` })),
+    ];
+    const r = schedule([dana], ROOMS, SESS, pins);
+    const at13 = repKeyAt(r.board, "t:0", "13");
+    // Never blocked: she still gets 1-2, in a near room.
+    expect(at13 && ROOMS.find((x) => x.id === parseKey(at13).room)?.building).toBe("near");
+    expect(r.fixes).toEqual([]);
+    expect(buildingSwitches(r.board, ROOMS, SESS).get("t:0")).toEqual(["14"]);
+  });
+
+  test("11-12 and 1-2 aren't back to back", () => {
+    const board: Board = {
+      [cellKey("1348", "11")]: { type: "chat", rep: "a:0" },
+      [cellKey("2241", "13")]: { type: "chat", rep: "a:0" },
+    };
+    expect(buildingSwitches(board, ROOMS, SESS).size).toBe(0);
+  });
+
   test("no room anywhere -> fewer chats", () => {
     const r = schedule([mini("a", [["10"]]), mini("b", [["10"]])], oneRoom, two.slice(0, 1), []);
     expect(r.fixes).toHaveLength(1);
@@ -232,7 +266,10 @@ describe("randomized invariants", () => {
       const sponsors: SchedSponsor[] = Array.from({ length: 2 + Math.floor(rand() * 7) }, (_, i) => {
         const ws = rand() < 0.5 ? [] : [{ start: 600 + Math.floor(rand() * 7) * 60, end: 0 }];
         for (const w of ws) w.end = w.start + 60;
-        return sp(
+        // Workshops on the hour cut the sessions next to them at :15 / :45,
+        // so with 15- or 30-min chats some sessions are partial.
+        const chatMinutes = rand() < 0.5 ? 15 : 30;
+        const base = sp(
           `s${i}`,
           1 + Math.floor(rand() * 4),
           Array.from({ length: 1 + Math.floor(rand() * 4) }, () =>
@@ -241,6 +278,7 @@ describe("randomized invariants", () => {
           ws,
           rand() < 0.9,
         );
+        return { ...base, chatMinutes };
       });
       const pins: Pin[] = [];
       if (rand() < 0.5) pins.push({ room: "2241", session: "13", type: "booking", ref: "b" });
@@ -289,7 +327,8 @@ describe("sessionsForChats", () => {
     const oneOnOne = chatMinutes({ hackersPerChat: 1, longerOneOnOne: false });
     const longer = chatMinutes({ hackersPerChat: 1, longerOneOnOne: true });
     const group = chatMinutes({ hackersPerChat: 3, longerOneOnOne: false });
-    expect([oneOnOne, longer, group]).toEqual([15, 30, 30]);
+    // longer_one_on_one is ignored: a 1-on-1 is always 15 minutes.
+    expect([oneOnOne, longer, group]).toEqual([15, 15, 30]);
     expect(sessionsForChats(4, oneOnOne)).toBe(1);
     expect(sessionsForChats(6, oneOnOne)).toBe(2);
     expect(sessionsForChats(3, group)).toBe(2);

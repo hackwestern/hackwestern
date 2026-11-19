@@ -64,12 +64,9 @@ export function useOrganizerLocation() {
 export function OrganizerTabList({
   tab,
   onSelect,
-  openHelp,
 }: {
   tab: OrganizerTab;
   onSelect: (tab: OrganizerTab) => void;
-  /** Unclaimed help requests, shown as a count on the Task pings tab. */
-  openHelp: number;
 }) {
   const refs = useRef<Partial<Record<OrganizerTab, HTMLButtonElement | null>>>(
     {},
@@ -100,9 +97,9 @@ export function OrganizerTabList({
       role="tablist"
       aria-label={copy.tabsLabel}
       onKeyDown={onKeyDown}
-      // Five equal tabs on phones so all of them fit without scrolling;
+      // Four equal tabs on phones so all of them fit without scrolling;
       // two-word labels wrap onto two lines there.
-      className="-mx-1 grid grid-cols-5 gap-0.5 overflow-x-auto border-b border-dashboard-border-default px-1 sm:flex sm:gap-1"
+      className="-mx-1 grid grid-cols-4 gap-0.5 overflow-x-auto border-b border-dashboard-border-default px-1 sm:flex sm:gap-1"
     >
       {ORGANIZER_TABS.map((t) => {
         const selected = t === tab;
@@ -132,14 +129,6 @@ export function OrganizerTabList({
             )}
           >
             {copy.tabs[t]}
-            {t === "pings" && openHelp > 0 && (
-              <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-dashboard-status-iconBadge px-1.5 text-xs font-bold leading-5 text-dashboard-text-warning">
-                {openHelp}
-                <span className="sr-only">
-                  , {copy.openHelpCount(openHelp)}
-                </span>
-              </span>
-            )}
           </button>
         );
       })}
@@ -148,7 +137,7 @@ export function OrganizerTabList({
 }
 
 /**
- * Shown on Run of show, Coffee chats and Task pings when they're focused on one
+ * Shown on Run of show, Coffee chats and Sponsor judging when they're focused on one
  * sponsor: who, a link back to that sponsor's row, and a way to see everyone.
  */
 export function SponsorFocusBar({

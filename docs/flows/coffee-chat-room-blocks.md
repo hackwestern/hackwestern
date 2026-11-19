@@ -1,3 +1,5 @@
+> Superseded (2026-11-19): see docs/specs/coffee-chat-sessions.md
+
 # Coffee chats: sponsor requests, rooms given to sponsors, one view (Jazz, 2026-11-18, v2)
 
 v1 (parked in `_to_delete/coffee-chat-room-blocks.v1.md`) computed hackers per

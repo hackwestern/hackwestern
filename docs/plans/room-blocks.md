@@ -1,3 +1,5 @@
+> Superseded (2026-11-19): see docs/specs/coffee-chat-sessions.md
+
 # Plan: coffee chat room blocks
 
 Spec: `docs/flows/coffee-chat-room-blocks.md`. Decision log: docs/decisions.md 2026-11-18 "room blocks".

@@ -266,8 +266,12 @@ describe("judgingStatus", () => {
     expect(judgingStatus({ registered: false, room: null, picks: 0 })).toBe(
       "not-registered",
     );
-    expect(judgingStatus({ registered: true, room: "Rm 1", picks: 4 })).toBe(
-      "too-few-picks",
-    );
+    expect(
+      judgingStatus({
+        registered: true,
+        room: "Rm 1",
+        picks: MIN_SPONSOR_PICKS - 1,
+      }),
+    ).toBe("too-few-picks");
   });
 });

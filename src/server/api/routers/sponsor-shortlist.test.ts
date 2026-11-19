@@ -8,9 +8,13 @@ import { mockOrganizerSession, mockSession } from "~/server/auth";
 import { db } from "~/server/db";
 import {
   applications,
+  coffeeChatPrefs,
+  coffeeChatRepSessions,
+  coffeeChatReps,
   coffeeChats,
   sponsorInterests,
   sponsorJudgingSponsors,
+  sponsorScans,
 } from "~/server/db/schema";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 
@@ -23,6 +27,23 @@ async function sponsor() {
     .values({ name: `Sponsor ${faker.string.alphanumeric(10)}` })
     .returning();
   return row!;
+}
+
+/**
+ * Submitted chatting preferences worth `seats` hacker seats (one rep,
+ * 1-on-1, free all morning and afternoon), which opens the shortlist.
+ */
+async function withSeats(sponsorId: string, seats: number) {
+  await db
+    .insert(coffeeChatPrefs)
+    .values({ sponsorId, hackersPerChat: 1, submittedAt: new Date() });
+  const [rep] = await db
+    .insert(coffeeChatReps)
+    .values({ sponsorId, name: "Dana", phone: "5195550142", isPrimary: true, chatsWanted: seats })
+    .returning();
+  await db
+    .insert(coffeeChatRepSessions)
+    .values(["10", "11", "15", "16"].map((sessionId) => ({ repId: rep!.id, sessionId })));
 }
 
 async function hackerRanking(
@@ -94,6 +115,7 @@ describe("sponsorShortlist.add / remove", () => {
 
   test("adds an interested hacker once, and remove takes them off", async () => {
     const mine = await sponsor();
+    await withSeats(mine.id, 4);
     const userId = await hackerRanking(mine.id, true);
 
     await anon.sponsorShortlist.add({ sponsor: mine.id, userId });
@@ -126,6 +148,117 @@ describe("sponsorShortlist.add / remove", () => {
     await expect(
       anon.sponsorShortlist.add({ sponsor: faker.string.uuid(), userId }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+});
+
+describe("sponsorShortlist: seats, submit, scanned", () => {
+  test("locked until chatting preferences are submitted", async () => {
+    const mine = await sponsor();
+    const userId = await hackerRanking(mine.id, true);
+    await expect(
+      anon.sponsorShortlist.add({ sponsor: mine.id, userId }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
+    expect(res.prefsSubmitted).toBe(false);
+    expect(res.maxShortlist).toBe(0);
+  });
+
+  test("capped at the sponsor's hacker seats", async () => {
+    const mine = await sponsor();
+    await withSeats(mine.id, 1);
+    const a = await hackerRanking(mine.id, true);
+    const b = await hackerRanking(mine.id, true);
+    await anon.sponsorShortlist.add({ sponsor: mine.id, userId: a });
+    await expect(
+      anon.sponsorShortlist.add({ sponsor: mine.id, userId: b }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    expect((await anon.sponsorShortlist.list({ sponsor: mine.id })).maxShortlist).toBe(1);
+  });
+
+  test("shortlist submit, reopen and picks leave coffee_chat_pref.updated_at alone", async () => {
+    const mine = await sponsor();
+    await withSeats(mine.id, 4);
+    const a = await hackerRanking(mine.id, true);
+    const updatedAt = async () =>
+      (await db.select().from(coffeeChatPrefs).where(eq(coffeeChatPrefs.sponsorId, mine.id)))[0]!.updatedAt.getTime();
+    const before = await updatedAt();
+    await new Promise((r) => setTimeout(r, 5));
+    await anon.sponsorShortlist.add({ sponsor: mine.id, userId: a });
+    await anon.sponsorShortlist.remove({ sponsor: mine.id, userId: a });
+    await anon.sponsorShortlist.submit({ sponsor: mine.id });
+    await anon.sponsorShortlist.reopen({ sponsor: mine.id });
+    expect(await updatedAt()).toBe(before);
+  });
+
+  test("people you scanned take seats: cap = seats - scanned", async () => {
+    const mine = await sponsor();
+    await withSeats(mine.id, 2);
+    const scannedOne = await hackerRanking(null, true);
+    await db.insert(sponsorScans).values({ sponsorId: mine.id, userId: scannedOne });
+    const a = await hackerRanking(mine.id, true);
+    const b = await hackerRanking(mine.id, true);
+    const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
+    expect([res.seats, res.maxShortlist]).toEqual([2, 1]);
+    await anon.sponsorShortlist.add({ sponsor: mine.id, userId: a });
+    await expect(
+      anon.sponsorShortlist.add({ sponsor: mine.id, userId: b }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  test("seats lowered below the shortlist: kept, but submit is refused with how many to remove", async () => {
+    const mine = await sponsor();
+    await withSeats(mine.id, 3);
+    const ids = [
+      await hackerRanking(mine.id, true),
+      await hackerRanking(mine.id, true),
+      await hackerRanking(mine.id, true),
+    ];
+    for (const userId of ids) await anon.sponsorShortlist.add({ sponsor: mine.id, userId });
+    await db.update(coffeeChatReps).set({ chatsWanted: 1 }).where(eq(coffeeChatReps.sponsorId, mine.id));
+    const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
+    expect([res.picked, res.maxShortlist]).toEqual([3, 1]);
+    await expect(anon.sponsorShortlist.submit({ sponsor: mine.id })).rejects.toMatchObject({
+      code: "CONFLICT",
+      message: "You now have room for 1 on your shortlist. Remove 2.",
+    });
+    await anon.sponsorShortlist.remove({ sponsor: mine.id, userId: ids[0]! });
+    await anon.sponsorShortlist.remove({ sponsor: mine.id, userId: ids[1]! });
+    await anon.sponsorShortlist.submit({ sponsor: mine.id });
+  });
+
+  test("submit locks the list; reopen unlocks it", async () => {
+    const mine = await sponsor();
+    await withSeats(mine.id, 4);
+    const a = await hackerRanking(mine.id, true);
+    await anon.sponsorShortlist.submit({ sponsor: mine.id });
+    const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
+    expect(res.submittedAt).toBeInstanceOf(Date);
+    await expect(
+      anon.sponsorShortlist.add({ sponsor: mine.id, userId: a }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    await anon.sponsorShortlist.reopen({ sponsor: mine.id });
+    await anon.sponsorShortlist.add({ sponsor: mine.id, userId: a });
+    const after = await anon.sponsorShortlist.list({ sponsor: mine.id });
+    expect(after.submittedAt).toBeNull();
+    expect(after.hackers.find((h) => h.userId === a)?.shortlisted).toBe(true);
+  });
+
+  test("scanned hackers are listed first, on their own, first name only without consent", async () => {
+    const mine = await sponsor();
+    await withSeats(mine.id, 4);
+    const scannedShared = await hackerRanking(mine.id, true);
+    const scannedPrivate = await hackerRanking(null, false);
+    await db.insert(sponsorScans).values([
+      { sponsorId: mine.id, userId: scannedShared, repName: "Dana" },
+      { sponsorId: mine.id, userId: scannedPrivate, scannedAt: new Date(Date.now() + 1000) },
+    ]);
+    const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
+    expect(res.scanned.map((h) => [h.name, h.repName])).toEqual([
+      ["Shared Hacker", "Dana"],
+      ["Private", null],
+    ]);
+    expect(res.scanned[1]).toMatchObject({ shared: false, github: null });
+    expect(res.hackers.map((h) => h.userId)).not.toContain(scannedShared);
   });
 });
 
@@ -175,6 +308,7 @@ describe("sponsorShortlist.forSponsor (organizers)", () => {
       createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
     );
     const mine = await sponsor();
+    await withSeats(mine.id, 4);
     const keep = await hackerRanking(mine.id, true);
     const withdraws = await hackerRanking(mine.id, true);
     await anon.sponsorShortlist.add({ sponsor: mine.id, userId: keep });

@@ -3,9 +3,18 @@ import { buildJudgingBoard } from "~/lib/sponsor-judging-rooms";
 import { coffeeChatExpiresAt } from "./coffee-chat-requests";
 import {
   buildSponsorSummaries,
+  contactRowsNamed,
+  leadsSponsor,
   legacyScheduleDestination,
+  mySponsorChats,
+  needsAttention,
+  ORGANIZER_TABS,
+  orderReps,
   organizerHomeHref,
+  organizerForEmail,
   parseOrganizerLocation,
+  pillDone,
+  statusAfterPill,
   sponsorNameForParam,
   summaryTotals,
 } from "./sponsor-organizer";
@@ -18,36 +27,34 @@ describe("parseOrganizerLocation", () => {
     expect(parseOrganizerLocation({})).toEqual({
       tab: "sponsors",
       jumpToRooms: false,
-      jumpToHelp: false,
       sponsor: null,
     });
     expect(parseOrganizerLocation({ tab: "coffee" }).tab).toBe("coffee");
-    expect(parseOrganizerLocation({ tab: "pings" })).toMatchObject({
-      tab: "pings",
-      jumpToHelp: false,
-    });
     expect(parseOrganizerLocation({ tab: "schedule" }).tab).toBe("schedule");
+    expect(parseOrganizerLocation({ tab: "judging" }).tab).toBe("judging");
     expect(parseOrganizerLocation({ tab: "nope" }).tab).toBe("sponsors");
-    expect(parseOrganizerLocation({ tab: ["pings", "coffee"] }).tab).toBe(
-      "pings",
+    expect(parseOrganizerLocation({ tab: ["coffee", "judging"] }).tab).toBe(
+      "coffee",
     );
   });
 
-  it("sends the old Help tab links to Task pings, scrolled to help", () => {
+  it("sends the old Task pings and Help links to Sponsors (pings are off)", () => {
     for (const loc of [
+      parseOrganizerLocation({ tab: "pings" }),
       parseOrganizerLocation({ tab: "help" }),
       parseOrganizerLocation({ view: "help" }),
       parseOrganizerLocation({ tab: "pings" }, "#help"),
       parseOrganizerLocation({ tab: ["help", "coffee"] }),
     ]) {
-      expect(loc.tab).toBe("pings");
-      expect(loc.jumpToHelp).toBe(true);
+      expect(loc.tab).toBe("sponsors");
     }
-    // #help only means something on Task pings.
-    expect(parseOrganizerLocation({ tab: "help" }, "#rooms")).toMatchObject({
-      tab: "schedule",
-      jumpToHelp: false,
-    });
+    expect(parseOrganizerLocation({ tab: "help" }, "#rooms").tab).toBe(
+      "schedule",
+    );
+  });
+
+  it("has no Task pings tab", () => {
+    expect(ORGANIZER_TABS as readonly string[]).not.toContain("pings");
   });
 
   it("sends the old Where is everyone links to the rooms", () => {
@@ -64,7 +71,7 @@ describe("parseOrganizerLocation", () => {
 
   it("reads the sponsor focus, ignoring blanks", () => {
     expect(parseOrganizerLocation({ tab: "help", sponsor: A }).sponsor).toBe(A);
-    expect(parseOrganizerLocation({ tab: "pings", sponsor: A }).sponsor).toBe(
+    expect(parseOrganizerLocation({ tab: "coffee", sponsor: A }).sponsor).toBe(
       A,
     );
     expect(parseOrganizerLocation({ sponsor: "  " }).sponsor).toBeNull();
@@ -80,11 +87,8 @@ describe("organizerHomeHref", () => {
     expect(organizerHomeHref({ tab: "schedule", rooms: true })).toBe(
       "/internal/sponsors?tab=schedule#rooms",
     );
-    expect(organizerHomeHref({ tab: "pings" })).toBe(
-      "/internal/sponsors?tab=pings",
-    );
-    expect(organizerHomeHref({ tab: "pings", sponsor: A, help: true })).toBe(
-      `/internal/sponsors?tab=pings&sponsor=${A}#help`,
+    expect(organizerHomeHref({ tab: "judging" })).toBe(
+      "/internal/sponsors?tab=judging",
     );
   });
 
@@ -95,18 +99,13 @@ describe("organizerHomeHref", () => {
   });
 
   it("round-trips through parseOrganizerLocation", () => {
-    const href = organizerHomeHref({ tab: "pings", sponsor: B, help: true });
+    const href = organizerHomeHref({ tab: "coffee", sponsor: B });
     const url = new URL(href, "https://x.test");
     const loc = parseOrganizerLocation(
       Object.fromEntries(url.searchParams),
       url.hash,
     );
-    expect(loc).toEqual({
-      tab: "pings",
-      jumpToRooms: false,
-      jumpToHelp: true,
-      sponsor: B,
-    });
+    expect(loc).toEqual({ tab: "coffee", jumpToRooms: false, sponsor: B });
   });
 });
 
@@ -122,10 +121,10 @@ describe("legacyScheduleDestination", () => {
       "/internal/sponsors?tab=coffee",
     );
     expect(legacyScheduleDestination({ view: "help" })).toBe(
-      "/internal/sponsors?tab=pings#help",
+      "/internal/sponsors",
     );
     expect(legacyScheduleDestination({ tab: "pings" })).toBe(
-      "/internal/sponsors?tab=pings",
+      "/internal/sponsors",
     );
     expect(legacyScheduleDestination({ tab: "where" })).toBe(
       "/internal/sponsors?tab=schedule#rooms",
@@ -133,6 +132,272 @@ describe("legacyScheduleDestination", () => {
     expect(legacyScheduleDestination({ tab: "coffee", sponsor: A })).toBe(
       `/internal/sponsors?tab=coffee&sponsor=${A}`,
     );
+  });
+});
+
+describe("My sponsors matching", () => {
+  const contacts = [
+    { name: "Noah Medland", loginEmail: "Noah@Example.test " },
+    { name: "Caroline Ge", loginEmail: "" },
+    { name: "Daniel Wang", loginEmail: "daniel@example.test" },
+  ];
+  const names = contacts.map((c) => c.name);
+  const noah = { row: 0, name: "Noah Medland" };
+  it("matches the login email case-insensitively, to a row", () => {
+    expect(organizerForEmail("noah@example.test", contacts)).toEqual(noah);
+    expect(organizerForEmail("other@example.test", contacts)).toBeNull();
+    expect(organizerForEmail("", contacts)).toBeNull();
+    expect(organizerForEmail(null, contacts)).toBeNull();
+  });
+  it("matches the HW lead cell by full name, first name or one of several", () => {
+    expect(leadsSponsor("Noah Medland", noah, names)).toBe(true);
+    expect(leadsSponsor("noah  medland", noah, names)).toBe(true);
+    expect(leadsSponsor("Noah", noah, names)).toBe(true);
+    expect(leadsSponsor("Daniel Wang / Noah Medland", noah, names)).toBe(true);
+    expect(leadsSponsor("Noah Smith", noah, names)).toBe(false);
+    expect(leadsSponsor("—", noah, names)).toBe(false);
+    expect(leadsSponsor("Caroline Ge", noah, names)).toBe(false);
+  });
+  it("a first name alone matches only when one row has that first name", () => {
+    const two = [...names, "Noah Kim"];
+    const kim = { row: 3, name: "Noah Kim" };
+    expect(leadsSponsor("Noah", noah, two)).toBe(false);
+    expect(leadsSponsor("Noah", kim, two)).toBe(false);
+    // The full name still picks the right Noah.
+    expect(leadsSponsor("Noah Kim", kim, two)).toBe(true);
+    expect(leadsSponsor("Noah Kim", noah, two)).toBe(false);
+    // Several Noahs, but one row is just "Noah": that row is preferred.
+    const bare = [...two, "Noah"];
+    expect(leadsSponsor("Noah", { row: 4, name: "Noah" }, bare)).toBe(true);
+    expect(leadsSponsor("Noah", noah, bare)).toBe(false);
+  });
+  it("same full name twice: matches by row, never the wrong one", () => {
+    const dup = [
+      { name: "Jessica Wang", loginEmail: "jess.a@example.test" },
+      { name: "Jessica Wang", loginEmail: "jess.b@example.test" },
+    ];
+    const a = organizerForEmail("jess.a@example.test", dup)!;
+    const b = organizerForEmail("jess.b@example.test", dup)!;
+    expect(a.row).toBe(0);
+    expect(b.row).toBe(1);
+    const dupNames = dup.map((c) => c.name);
+    // The cell can't say which Jessica, so neither is claimed.
+    expect(contactRowsNamed("Jessica Wang", dupNames).size).toBe(0);
+    expect(leadsSponsor("Jessica Wang", a, dupNames)).toBe(false);
+    expect(leadsSponsor("Jessica Wang", b, dupNames)).toBe(false);
+  });
+  it("reads task Owner cells with team tags", () => {
+    expect([...contactRowsNamed("[SPON] Noah", names)]).toEqual([0]);
+    expect([...contactRowsNamed("Caroline & Daniel", names)].sort()).toEqual([
+      1, 2,
+    ]);
+    expect(contactRowsNamed(null, names).size).toBe(0);
+  });
+});
+
+describe("status pills", () => {
+  it("reads Arrival and Booth from the one sheet status", () => {
+    expect(pillDone("arrival", "Not arrived")).toBe(false);
+    expect(pillDone("arrival", "Checked in")).toBe(true);
+    expect(pillDone("booth", "Checked in")).toBe(false);
+    expect(pillDone("booth", "Booth set up")).toBe(true);
+    expect(pillDone("arrival", "Booth set up")).toBe(true);
+  });
+  it("advances and undoes", () => {
+    expect(statusAfterPill("arrival", "advance")).toBe("Checked in");
+    expect(statusAfterPill("arrival", "undo")).toBe("Not arrived");
+    expect(statusAfterPill("booth", "advance")).toBe("Booth set up");
+    expect(statusAfterPill("booth", "undo")).toBe("Checked in");
+  });
+});
+
+describe("mySponsorChats", () => {
+  const reps = [
+    { id: "r1", chatsWanted: 4 },
+    { id: "r2", chatsWanted: 2 },
+    { id: "r3", chatsWanted: 0 },
+  ];
+  it("counts reps placed, invites and changes after Send", () => {
+    const c = mySponsorChats({
+      pref: {
+        submittedAt: new Date("2026-11-20T22:00:00Z"),
+        shortlistSubmittedAt: null,
+        updatedAt: new Date("2026-11-21T03:00:00Z"),
+      },
+      reps,
+      placements: [
+        {
+          repId: "r1",
+          status: "sent",
+          sentAt: new Date("2026-11-21T02:00:00Z"),
+        },
+      ],
+      invites: [
+        { status: "accepted" },
+        { status: "pending" },
+        { status: "declined" },
+      ],
+    });
+    expect(c).toMatchObject({
+      repsChatting: 2,
+      repsPlaced: 1,
+      scheduleSent: true,
+      changedAfterSend: true,
+      invites: 2,
+      accepted: 1,
+    });
+  });
+  it("is not changed after Send without a Send", () => {
+    const c = mySponsorChats({
+      pref: {
+        submittedAt: null,
+        shortlistSubmittedAt: null,
+        updatedAt: new Date(),
+      },
+      reps,
+      placements: [{ repId: "r1", status: "draft" }],
+      invites: [],
+    });
+    expect(c.changedAfterSend).toBe(false);
+    expect(c.prefsSubmittedAt).toBeNull();
+  });
+  it("orders the primary rep first", () => {
+    const ordered = orderReps([
+      { id: "a", name: "B", phone: "1", isPrimary: false, position: 0 },
+      { id: "b", name: "A", phone: "2", isPrimary: true, position: 1 },
+    ]);
+    expect(ordered.map((r) => r.id)).toEqual(["b", "a"]);
+  });
+});
+
+describe("needsAttention", () => {
+  const base = {
+    prefsSubmittedAt: "x",
+    repsChatting: 2,
+    repsPlaced: 2,
+    changedAfterSend: false,
+  };
+  const start = (t: { start: string }) =>
+    new Date(`2026-11-20T${t.start}:00-05:00`);
+  const now = new Date("2026-11-20T19:00:00-05:00");
+  it("lists changed, unscheduled, no preferences, then recent overdue tasks", () => {
+    const items = needsAttention({
+      sponsors: [
+        {
+          sponsorId: "1",
+          name: "Zed",
+          chats: { ...base, prefsSubmittedAt: null },
+        },
+        { sponsorId: "2", name: "Ace", chats: { ...base, repsPlaced: 1 } },
+        {
+          sponsorId: "3",
+          name: "Bee",
+          chats: { ...base, changedAfterSend: true },
+        },
+        { sponsorId: "4", name: "Done", chats: base },
+      ],
+      tasks: [
+        {
+          day: "Friday",
+          start: "18:00",
+          task: "Sponsor Bay coverage",
+          owner: "Daniel",
+        },
+        { day: "Friday", start: "16:00", task: "Too old", owner: null },
+        { day: "Friday", start: "18:45", task: "Still on", owner: null },
+      ],
+      now,
+      taskStart: start,
+      taskMinutes: 30,
+    });
+    expect(items.map((i) => i.kind)).toEqual([
+      "changed",
+      "not-scheduled",
+      "no-prefs",
+      "overdue-task",
+    ]);
+    expect(items[3]).toMatchObject({ task: "Sponsor Bay coverage" });
+  });
+  it("leaves digital sponsors (PCBWay) out: they don't do coffee chats", () => {
+    const items = needsAttention({
+      sponsors: [
+        { sponsorId: "1", name: "PCBWay", chats: { ...base, prefsSubmittedAt: null } },
+        { sponsorId: "2", name: "Ace", chats: { ...base, prefsSubmittedAt: null } },
+      ],
+      tasks: [],
+      now,
+      taskStart: start,
+      taskMinutes: 30,
+    });
+    expect(items).toEqual([
+      { kind: "no-prefs", mine: false, sponsorId: "2", sponsor: "Ace" },
+    ]);
+  });
+  it("lists the organizer's own sponsors first, then everyone else's", () => {
+    const items = needsAttention({
+      sponsors: [
+        { sponsorId: "1", name: "Ace", chats: { ...base, repsPlaced: 1 } },
+        {
+          sponsorId: "2",
+          name: "Bee",
+          chats: { ...base, prefsSubmittedAt: null },
+        },
+        {
+          sponsorId: "3",
+          name: "Cat",
+          chats: { ...base, changedAfterSend: true },
+        },
+      ],
+      tasks: [],
+      now,
+      taskStart: start,
+      taskMinutes: 30,
+      isMine: (id) => id === "2",
+    });
+    expect(items.map((i) => [i.mine, i.kind])).toEqual([
+      [true, "no-prefs"],
+      [false, "changed"],
+      [false, "not-scheduled"],
+    ]);
+  });
+  it("lists the organizer's own overdue tasks first, still at most 3", () => {
+    const task = (s: string, owner: string) => ({
+      day: "Friday" as const,
+      start: s,
+      task: `Task ${s}`,
+      owner,
+    });
+    const items = needsAttention({
+      sponsors: [],
+      tasks: [
+        task("18:20", "Daniel"),
+        task("18:15", "Caroline"),
+        task("18:10", "Noah"),
+        task("18:05", "Daniel"),
+        task("18:00", "Noah"),
+      ],
+      now,
+      taskStart: start,
+      taskMinutes: 30,
+      isMyTask: (owner) => owner === "Noah",
+    });
+    expect(items.map((i) => i.kind === "overdue-task" && i.start)).toEqual([
+      "18:10",
+      "18:00",
+      "18:20",
+    ]);
+    expect(items.map((i) => i.mine)).toEqual([true, true, false]);
+  });
+  it("is empty when all is well", () => {
+    expect(
+      needsAttention({
+        sponsors: [{ sponsorId: "4", name: "Done", chats: base }],
+        tasks: [],
+        now,
+        taskStart: start,
+        taskMinutes: 30,
+      }),
+    ).toEqual([]);
   });
 });
 

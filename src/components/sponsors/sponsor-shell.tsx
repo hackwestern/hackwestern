@@ -124,7 +124,8 @@ export function SponsorShell({
   // Hidden for sponsors without a prize track, and while we don't know yet,
   // so it never flashes in for someone who doesn't judge.
   const showJudging = info.data?.hasPrizeTrack === true;
-  const judgingOpen = preview || judgingUnlocked(now) || active === "judging";
+  // Same rule as the Judging page, so the nav shows it locked while the page is.
+  const judgingOpen = preview || judgingUnlocked(now);
 
   const items: NavItem[] = id
     ? [
@@ -234,7 +235,10 @@ export function SponsorShell({
             <VenueMapButton />
           </header>
 
-          <main
+          {/* A div, not <main>: the app root (_app.tsx) is already the one
+              main landmark, and two read as a nesting error. The skip link
+              still lands here. */}
+          <div
             id="sponsor-main"
             tabIndex={-1}
             className={cn(
@@ -252,7 +256,7 @@ export function SponsorShell({
             >
               {children}
             </div>
-          </main>
+          </div>
         </div>
 
         {/* Bottom tab bar: phones only */}

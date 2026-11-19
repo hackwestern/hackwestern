@@ -14,6 +14,7 @@ import {
   runOfShowColumns,
 } from "~/server/api/utils/spon-availability-parse";
 import type { SponAvailability } from "~/lib/spon-availability";
+import { TASK_PINGS_ENABLED } from "~/lib/task-pings";
 
 /**
  * The run-of-show Google Sheet is the single source of truth for sponsor
@@ -35,6 +36,20 @@ const READONLY_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
 export function sheetWritesEnabled(): boolean {
   if (process.env.VITEST) return false;
   return env.NODE_ENV === "production" || env.SHEET_WRITES === "1";
+}
+
+/**
+ * Throw before any Sheets write call when sheetWritesEnabled() is false.
+ * The read-only scope on getSheetsClient is a second line of defence, not
+ * the gate: every util that calls values.update / values.append /
+ * values.clear / batchUpdate checks this (or sheetWritesEnabled) first.
+ */
+export function assertSheetWritesEnabled(what: string): void {
+  if (!sheetWritesEnabled()) {
+    throw new Error(
+      `${what}: not written (sheet writes off; set SHEET_WRITES=1 to write)`,
+    );
+  }
 }
 
 /** Undo .env escaping: surrounding quotes and literal "\n" line breaks. */
@@ -222,11 +237,12 @@ export function createCachedLoader<T>(
 
 /**
  * After a fresh read, keep the task reminders in step with the sheet (T49).
- * Not awaited, so the request never waits; skipped when Slack isn't set up.
+ * Not awaited, so the request never waits; skipped when Slack isn't set up
+ * or task pings are switched off (TASK_PINGS_ENABLED).
  * Imported lazily: task-reminders imports this module.
  */
 function afterRunOfShowFetch(snapshot: RunOfShowSnapshot): void {
-  if (!env.SLACK_BOT_TOKEN) return;
+  if (!TASK_PINGS_ENABLED || !env.SLACK_BOT_TOKEN) return;
   void import("~/server/api/utils/task-reminders")
     .then((m) => m.maybeAutoSyncTaskReminders(snapshot))
     .catch((error: unknown) =>

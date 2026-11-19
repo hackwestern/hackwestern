@@ -12,6 +12,8 @@ import {
   availSessions,
   blockedSessions,
   boardFixes,
+  buildingSwitches,
+  partialSessions,
   cellKey,
   invalidChats,
   repTally,
@@ -30,8 +32,11 @@ import {
   isRoomId,
   isSessionId,
   sessionsForChats,
+  usableWindow,
+  type UsableWindow,
 } from "~/lib/coffee-chat-sessions";
 import type { RunOfShowItem } from "~/lib/run-of-show";
+import { isDigitalJudging } from "~/lib/sponsor-prize-tracks";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { db } from "~/server/db";
@@ -71,15 +76,40 @@ export type BoardRep = {
 
 export type BoardSponsorStatus =
   | { kind: "not" }
-  /** Submitted, but no rep has a free session outside their workshops. */
+  /** Submitted, and every rep asked for 0 chats (or there are no reps). */
+  | { kind: "none" }
+  /**
+   * Submitted, but no rep who asked for chats has a free session outside
+   * their workshops (reps at 0 chats don't count).
+   */
   | { kind: "unavailable" }
-  | { kind: "need" | "scheduled"; done: number; total: number }
-  | { kind: "sent"; done: number; total: number };
+  /**
+   * The stage once they submitted with reps who want chats: nothing placed
+   * ("need"), placed with drafts not sent yet ("scheduled"), or every chat
+   * placed is sent ("sent"). Problems ride along as separate counts: reps who
+   * want chats but have none that count (`total - done`), and chats on the
+   * board that break a rule now (`broken`).
+   */
+  | { kind: "need" | "scheduled" | "sent"; done: number; total: number; broken: number };
+
+/**
+ * The sponsor's latest change the board hasn't caught up with: their
+ * submit, or an edit after the board was last scheduled or sent.
+ */
+export type BoardSponsorChange = {
+  kind: "submitted" | "editedAfterSchedule" | "editedAfterSend";
+  at: Date;
+};
 
 export type BoardSessionSponsor = {
   id: string;
   name: string;
   submitted: boolean;
+  submittedAt: Date | null;
+  /** Null when nothing changed since the board was last scheduled or sent. */
+  change: BoardSponsorChange | null;
+  /** Their chats were sent, and they changed preferences or reps after. */
+  changedAfterSend: boolean;
   hackersPerChat: number;
   longerOneOnOne: boolean;
   chatMinutes: 15 | 30;
@@ -87,6 +117,11 @@ export type BoardSessionSponsor = {
   workshops: BoardWorkshop[];
   /** Session ids blocked by their workshop windows (with travel buffers). */
   blocked: string[];
+  /**
+   * Sessions a workshop window cuts but leaves usable, with the usable part
+   * (minutes after midnight), e.g. Sun Life's 1-2 -> 1:00-1:30.
+   */
+  partial: Record<string, UsableWindow>;
   status: BoardSponsorStatus;
   reps: BoardRep[];
 };
@@ -100,6 +135,11 @@ export type BoardPlacement = {
   pinned: boolean;
   status: "draft" | "sent";
   sentAt: Date | null;
+  /**
+   * When the rep's chats run (minutes after midnight): the whole session, or
+   * the part a workshop cut leaves. Null if the session is now blocked.
+   */
+  window: UsableWindow | null;
 };
 
 export type BoardBooking = {
@@ -121,13 +161,25 @@ export type SessionBoard = {
   scheduled: boolean;
   fixes: Fix[];
   draftCount: number;
+  /**
+   * Reps booked back to back in two buildings: `session` is the later chat,
+   * `toIvey` whether that one is in Ivey. Allowed; the board shows a note.
+   */
+  walks: { repId: string; sessionId: string; toIvey: boolean }[];
   /** Latest Send, or null. */
   sentAt: Date | null;
+  /**
+   * When the newest chat on the board was placed (Auto-schedule, a fix, a
+   * move keeps its time), or null. A re-run that places nothing new doesn't
+   * change it, so the page says "last new chat", not "last scheduled".
+   */
+  lastScheduledAt: Date | null;
 };
 
 /** Everything the board and the writes need, in one read. */
 export type BoardState = {
   workshopsAvailable: boolean;
+  lastScheduledAt: Date | null;
   sponsors: BoardSessionSponsor[];
   sched: SchedSponsor[];
   placements: BoardPlacement[];
@@ -222,12 +274,13 @@ export async function loadBoardState(
   const sponsorOfRep = new Map(reps.map((r) => [r.id, r.sponsorId]));
 
   // Sponsors doing coffee chats: in the Coffee Chat Setup tab, or with
-  // preferences or reps saved.
+  // preferences or reps saved. Digital sponsors (PCBWay) never do.
   const doing = registered.filter(
     (s) =>
-      prefOf.has(s.id) ||
-      reps.some((r) => r.sponsorId === s.id) ||
-      sheetNames.has(s.name.toLowerCase()),
+      !isDigitalJudging(s.name) &&
+      (prefOf.has(s.id) ||
+        reps.some((r) => r.sponsorId === s.id) ||
+        sheetNames.has(s.name.toLowerCase())),
   );
 
   const placements: BoardPlacement[] = placementRows.map((p) => ({
@@ -239,6 +292,8 @@ export async function loadBoardState(
     pinned: p.pinned,
     status: p.status,
     sentAt: p.sentAt,
+    // Filled in below, once each sponsor's workshops are known.
+    window: null,
   }));
   const boardBookings: BoardBooking[] = bookings.map((b) => ({
     id: b.id,
@@ -249,6 +304,12 @@ export async function loadBoardState(
     note: b.note,
   }));
   const board = boardOf(placements, boardBookings);
+  const latest = (ds: (Date | null | undefined)[]) => {
+    const t = ds.filter((d): d is Date => !!d).map((d) => d.getTime());
+    return t.length ? new Date(Math.max(...t)) : null;
+  };
+  const lastScheduledAt = latest(placementRows.map((p) => p.createdAt));
+  const lastSentAt = latest(placementRows.map((p) => p.sentAt));
 
   const sched: SchedSponsor[] = [];
   const sponsors: BoardSessionSponsor[] = doing.map((s) => {
@@ -281,41 +342,73 @@ export async function loadBoardState(
       id: s.id,
       submitted,
       workshops: windows,
+      chatMinutes: minutes,
       reps: boardReps.map((r) => ({
         id: r.id,
         free: r.free,
         sessionsWanted: r.sessionsWanted,
         maxSessions: r.maxSessions,
+        chatsWanted: r.chatsWanted,
       })),
     };
     sched.push(sp);
     const mine = placements.filter((p) => p.sponsorId === s.id);
+    for (const p of mine) p.window = usableWindow(p.sessionId, windows, minutes);
     // Chats that break a rule now don't count as scheduled.
     const bad = invalidChats([sp], COFFEE_SESSIONS, board).map((x) => x.key);
     const tally = repTally(sp, COFFEE_SESSIONS, withoutCells(board, bad));
-    const free = sp.reps.reduce((n, r) => n + availSessions(sp, r, COFFEE_SESSIONS).length, 0);
+    // Reps at 0 chats don't chat: they never make a sponsor "No availability".
+    const chatting = sp.reps.filter((r) => r.sessionsWanted > 0);
+    const free = chatting.reduce((n, r) => n + availSessions(sp, r, COFFEE_SESSIONS).length, 0);
     const status: BoardSponsorStatus = !submitted
       ? { kind: "not" }
-      : free === 0
+      : chatting.length === 0
+        ? { kind: "none" }
+        : free === 0
         ? { kind: "unavailable" }
-        : mine.length > 0 &&
-          mine.every((p) => p.status === "sent") &&
-          tally.done === tally.total
-        ? { kind: "sent", ...tally }
         : {
-            kind: tally.done === tally.total && tally.total > 0 ? "scheduled" : "need",
+            kind:
+              mine.length === 0
+                ? "need"
+                : mine.every((p) => p.status === "sent")
+                  ? "sent"
+                  : "scheduled",
             ...tally,
+            broken: mine.filter((p) => bad.includes(cellKey(p.room, p.sessionId))).length,
+          };
+    // Sponsors are the only ones who write their preferences, so an update
+    // after the board was scheduled or sent is the sponsor's change.
+    // (Track A bumps coffee_chat_pref.updated_at on every reps/times edit.)
+    const theirSent = latest(mine.map((p) => p.sentAt));
+    const changedAt = latest([pref?.submittedAt, pref?.updatedAt]);
+    const since = theirSent ?? lastSentAt ?? lastScheduledAt;
+    const justSubmitted =
+      !!pref?.submittedAt && pref.updatedAt.getTime() - pref.submittedAt.getTime() <= 1000;
+    const change: BoardSponsorChange | null =
+      !submitted || !changedAt || (since && changedAt <= since)
+        ? null
+        : {
+            kind: justSubmitted || !since
+              ? "submitted"
+              : (theirSent ?? lastSentAt)
+                ? "editedAfterSend"
+                : "editedAfterSchedule",
+            at: changedAt,
           };
     return {
       id: s.id,
       name: s.name,
       submitted,
+      submittedAt: pref?.submittedAt ?? null,
+      change,
+      changedAfterSend: !!theirSent && !!changedAt && changedAt > theirSent,
       hackersPerChat: format.hackersPerChat,
       longerOneOnOne: format.longerOneOnOne,
       chatMinutes: minutes,
       chatsPerSession: chatsPerSession(format),
       workshops: items.map((i) => ({ start: i.start, end: i.end, location: i.location })),
       blocked: [...blockedSessions(sp, COFFEE_SESSIONS)],
+      partial: Object.fromEntries(partialSessions(sp, COFFEE_SESSIONS)),
       status,
       reps: boardReps,
     };
@@ -323,6 +416,7 @@ export async function loadBoardState(
 
   return {
     workshopsAvailable: ros !== null,
+    lastScheduledAt,
     sponsors,
     sched,
     placements,
@@ -346,7 +440,21 @@ export function sessionBoardOf(state: BoardState): SessionBoard {
       ? boardFixes(state.sched, COFFEE_ROOMS, COFFEE_SESSIONS, state.board)
       : [],
     draftCount: state.placements.filter((p) => p.status === "draft").length,
+    walks: [...buildingSwitches(state.board, COFFEE_ROOMS, COFFEE_SESSIONS)].flatMap(
+      ([repId, later]) =>
+        later.map((sessionId) => {
+          const room = state.placements.find(
+            (p) => p.repId === repId && p.sessionId === sessionId,
+          )?.room;
+          return {
+            repId,
+            sessionId,
+            toIvey: COFFEE_ROOMS.find((r) => r.id === room)?.building === "ivey",
+          };
+        }),
+    ),
     sentAt: sent.length ? new Date(Math.max(...sent.map((d) => d.getTime()))) : null,
+    lastScheduledAt: state.lastScheduledAt,
   };
 }
 

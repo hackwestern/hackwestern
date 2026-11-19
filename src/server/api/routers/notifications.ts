@@ -28,6 +28,7 @@ async function noticeSources(userId: string): Promise<NoticeSources> {
         sponsorName: sponsorJudgingSponsors.name,
         status: coffeeChats.status,
         slotTime: coffeeChats.slotTime,
+        expiresAt: coffeeChats.expiresAt,
         durationMinutes: coffeeChats.durationMinutes,
         room: coffeeChats.room,
         createdAt: coffeeChats.createdAt,

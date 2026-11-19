@@ -1,11 +1,12 @@
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
+import { coffeeSessionsCopy, type ChatHow } from "~/content/coffee-chat-sessions";
 import { COFFEE_ROOMS } from "~/lib/coffee-chat-sessions";
 import {
   Card,
   CardHead,
-  ContactList,
   Logo,
+  PhoneCopy,
+  PrimaryCrown,
   sessionLabel,
   type BoardFix,
   type BoardSponsor,
@@ -15,12 +16,13 @@ import {
 const copy = coffeeSessionsCopy;
 const fc = copy.fixes;
 
-/** Problem → why → Suggested → [Apply fix] [Contact], as text. */
+/** Problem → why → Suggested → [Apply fix], as text. */
 export function fixView(fix: BoardFix, sp: BoardSponsor, board: Pick<SessionBoardData, "placements">) {
-  const pinnedAt = (key: string) => {
+  // Sent first: a sent chat is kept whether or not it was moved by hand.
+  const howAt = (key: string): ChatHow => {
     const [room, session] = key.split("|");
     const p = board.placements.find((x) => x.room === room && x.sessionId === session);
-    return !!p && (p.pinned || p.status === "sent");
+    return !p ? null : p.status === "sent" ? "sent" : p.pinned ? "hand" : null;
   };
   const rep = (id: string) => sp.reps.find((r) => r.id === id);
   const name = (id: string) => rep(id)?.name ?? "";
@@ -31,52 +33,48 @@ export function fixView(fix: BoardFix, sp: BoardSponsor, board: Pick<SessionBoar
   const g = fix.suggestion;
   const r = fix.reason;
   const problem =
-    g.kind === "move" && (r === "workshop" || r === "notFree" || r === "notSubmitted")
-      ? fc.invalid[r](name(first.rep), sessionLabel(fix.session), pinnedAt(g.from), sp.name)
+    r === "partial" && first.chats
+      ? fc.partialShort(name(first.rep), first.chats.got, first.chats.want)
+      : g.kind === "move" && (r === "workshop" || r === "notFree" || r === "notSubmitted" || r === "overCap")
+      ? fc.invalid[r](name(first.rep), sessionLabel(fix.session), howAt(g.from), sp.name)
       : fix.problem === "short"
         ? fc.short(name(first.rep), chats(first.rep, first.got), chats(first.rep, first.want))
         : fc.group(fix.items.length, sessionLabel(fix.session));
   const k = (b: "near" | "ivey") => COFFEE_ROOMS.filter((x) => x.building === b).length;
   const why = r === "near" || r === "ivey" ? fc.why[r](k(r)) : fc.why[r];
-  const d = copy.contact.draft;
   let suggestion: string;
-  let draft: (firstName: string) => string;
-  if (g.kind === "move") {
+  if (g.kind === "extra") {
+    suggestion = fc.extra(name(g.place.rep), copy.rooms.rm(g.place.room), sessionLabel(g.place.session));
+  } else if (g.kind === "fewer" && r === "partial" && first.chats) {
+    suggestion = fc.fewer([{ rep: name(first.rep), got: first.chats.got, want: first.chats.want }]);
+  } else if (g.kind === "move") {
     const to = g.to;
     suggestion = to ? fc.move(copy.rooms.rm(to.room), sessionLabel(to.session)) : fc.removeIt;
-    draft = to ? (f) => d.session(f, name(first.rep), sessionLabel(to.session)) : (f) => d.any(f, sp.name);
   } else if (g.kind === "session") {
     suggestion = fc.session(g.places.map((p) => ({ rep: name(p.rep), room: p.room, s: sessionLabel(p.session) })));
-    draft = (f) => d.session(f, name(g.places[0]!.rep), sessionLabel(g.places[0]!.session));
   } else if (g.kind === "ivey") {
     suggestion = fc.ivey(g.places.length, g.places.map((p) => p.room), sessionLabel(g.session));
-    draft = (f) => d.ivey(f, sp.name, g.places.length, sessionLabel(g.session));
   } else {
     const items = g.caps.map((c) => ({ rep: name(c.rep), got: chats(c.rep, c.sessions), want: chats(c.rep, c.want) }));
     suggestion = fc.fewer(items);
-    draft = (f) => d.fewer(f, items[0]!.rep, items[0]!.got, items[0]!.want);
   }
-  return { problem, why, suggestion, draft };
+  return { problem, why, suggestion };
 }
 
 export function FixesBand({
   board,
-  contact,
-  onContact,
   onApply,
   applying,
   locked = false,
 }: {
   board: SessionBoardData;
-  contact: string | null;
-  onContact: (key: string) => void;
   onApply: (fixId: string) => void;
   applying: string | null;
   /** The run of show can't be read: fixes can't be applied. */
   locked?: boolean;
 }) {
   return (
-    <Card labelledBy="coffee-fixes">
+    <Card labelledBy="coffee-fixes" tour="coffee-fixes">
       <CardHead id="coffee-fixes" title={fc.heading} />
       {board.fixes.length === 0 ? (
         <p className="m-0 text-[15px] text-dashboard-text-light">
@@ -88,7 +86,8 @@ export function FixesBand({
             const sp = board.sponsors.find((s) => s.id === fix.sponsor);
             if (!sp) return null;
             const v = fixView(fix, sp, board);
-            const key = `fix:${fix.id}`;
+            // Who to call about it: the primary contact, number with a copy icon.
+            const primary = sp.reps.find((r) => r.isPrimary) ?? sp.reps[0];
             return (
               <li
                 key={fix.id}
@@ -111,19 +110,14 @@ export function FixesBand({
                   >
                     {applying === fix.id ? fc.applying : fc.apply}
                   </DashboardButton>
-                  <DashboardButton
-                    variant="small"
-                    aria-expanded={contact === key}
-                    onClick={() => onContact(key)}
-                  >
-                    {copy.contact.button}
-                  </DashboardButton>
+                  {primary && (
+                    <span className="inline-flex min-w-0 flex-wrap items-center gap-x-1.5 text-sm">
+                      <PrimaryCrown />
+                      <b className="font-semibold">{primary.name}</b>
+                      <PhoneCopy name={primary.name} phone={primary.phone} />
+                    </span>
+                  )}
                 </div>
-                {contact === key && (
-                  <div className="rounded-dashboard-md bg-dashboard-bg-surface px-2.5 py-1">
-                    <ContactList sponsor={sp} draft={v.draft} />
-                  </div>
-                )}
               </li>
             );
           })}

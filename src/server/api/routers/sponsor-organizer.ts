@@ -5,8 +5,14 @@ import { z } from "zod";
 import { ACTIVE_COFFEE_CHAT_STATUSES } from "~/lib/coffee-chat-requests";
 import {
   buildSponsorSummaries,
+  mySponsorChats,
+  orderReps,
+  organizerForEmail,
+  type MySponsorChats,
+  type SponsorRep,
   type SponsorSummaries,
 } from "~/lib/sponsor-organizer";
+import { fetchHwContacts } from "~/server/api/utils/sponsor-hw-contacts";
 import {
   createTRPCRouter,
   protectedOrganizerProcedure,
@@ -21,6 +27,9 @@ import type { SundayJudging } from "~/lib/sponsor-day-board";
 import { db } from "~/server/db";
 import {
   applications,
+  coffeeChatPlacements,
+  coffeeChatPrefs,
+  coffeeChatReps,
   coffeeChatHolds,
   coffeeChatLimits,
   coffeeChats,
@@ -136,6 +145,7 @@ export const sponsorOrganizerRouter = createTRPCRouter({
             sponsorId: coffeeChats.sponsorId,
             room: coffeeChats.room,
             slotTime: coffeeChats.slotTime,
+            expiresAt: coffeeChats.expiresAt,
             durationMinutes: coffeeChats.durationMinutes,
             status: coffeeChats.status,
             firstName: applications.firstName,
@@ -226,6 +236,98 @@ export const sponsorOrganizerRouter = createTRPCRouter({
       });
     },
   ),
+
+  /**
+   * My sponsors: who the signed-in organizer is (their HW Contacts "Login
+   * email" matched to their account email, case-insensitive; null = no
+   * match, so the page shows All sponsors only), and per registered sponsor
+   * the coffee chat reps (People: name, phone, crown) and coffee chat
+   * progress. Which sponsors are theirs is matched on the page against
+   * Sponsor Day-Of's HW lead (getSponsors) via `contactNames`, the HW
+   * Contacts names in row order (`me.row` indexes it). HW Contacts is
+   * cached (HW_CONTACTS_CACHE_MS); a failed read keeps the last good rows,
+   * and `contactsError` is true only when it has never been read. Organizers
+   * only; phones come from the database and emails never leave the server.
+   */
+  mySponsors: protectedOrganizerProcedure.query(async ({ ctx }) => {
+    const [user, contacts, sponsors, prefs, reps, placements, invites] =
+      await Promise.all([
+        db.query.users.findFirst({
+          where: eq(users.id, ctx.session.user.id),
+          columns: { email: true },
+        }),
+        fetchHwContacts(),
+        db
+          .select({ id: sponsorJudgingSponsors.id })
+          .from(sponsorJudgingSponsors),
+        db
+          .select({
+            sponsorId: coffeeChatPrefs.sponsorId,
+            submittedAt: coffeeChatPrefs.submittedAt,
+            shortlistSubmittedAt: coffeeChatPrefs.shortlistSubmittedAt,
+            updatedAt: coffeeChatPrefs.updatedAt,
+          })
+          .from(coffeeChatPrefs),
+        db
+          .select({
+            id: coffeeChatReps.id,
+            sponsorId: coffeeChatReps.sponsorId,
+            name: coffeeChatReps.name,
+            phone: coffeeChatReps.phone,
+            isPrimary: coffeeChatReps.isPrimary,
+            position: coffeeChatReps.position,
+            chatsWanted: coffeeChatReps.chatsWanted,
+          })
+          .from(coffeeChatReps),
+        db
+          .select({
+            repId: coffeeChatPlacements.repId,
+            status: coffeeChatPlacements.status,
+            sentAt: coffeeChatPlacements.sentAt,
+          })
+          .from(coffeeChatPlacements),
+        // Session invites: chats tied to a placement (track B's rounds).
+        db
+          .select({
+            sponsorId: coffeeChats.sponsorId,
+            status: coffeeChats.status,
+          })
+          .from(coffeeChats)
+          .where(isNotNull(coffeeChats.placementId)),
+      ]);
+    const sponsorOfRep = new Map(reps.map((r) => [r.id, r.sponsorId]));
+    const out: Record<string, { reps: SponsorRep[]; chats: MySponsorChats }> =
+      {};
+    for (const { id } of sponsors) {
+      const mine = reps.filter((r) => r.sponsorId === id);
+      out[id] = {
+        reps: orderReps(mine).map(
+          ({ id: repId, name, phone, isPrimary, position }) => ({
+            id: repId,
+            name,
+            phone,
+            isPrimary,
+            position,
+          }),
+        ),
+        chats: mySponsorChats({
+          pref: prefs.find((p) => p.sponsorId === id) ?? null,
+          reps: mine,
+          placements: placements.filter(
+            (p) => sponsorOfRep.get(p.repId) === id,
+          ),
+          invites: invites.filter((i) => i.sponsorId === id),
+        }),
+      };
+    }
+    const rows = contacts?.value ?? [];
+    return {
+      me: organizerForEmail(user?.email, rows),
+      contactNames: rows.map((c) => c.name),
+      contactsError: contacts === null,
+      sponsors: out,
+    };
+  }),
 
   /**
    * Friday: mark a sponsor's private portal link as handed over (or undo

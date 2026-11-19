@@ -11,7 +11,8 @@ import {
   schedulePresentations,
   slotsKey,
 } from "~/lib/sponsor-presentations";
-import { hasPrizeTrack } from "~/lib/sponsor-prize-tracks";
+import { hasPrizeTrack, isDigitalJudging } from "~/lib/sponsor-prize-tracks";
+import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
 import {
   createTRPCRouter,
@@ -288,8 +289,12 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         db.select().from(sponsorPresentationNotices),
         round2OpenedAt(),
       ]);
-    // Only prize track sponsors take part in judging.
-    const sponsors = registered.filter((s) => hasPrizeTrack(s.name));
+    // Only in-person prize track sponsors present: digital ones (PCBWay)
+    // never use the portal, so they have no shortlist to send.
+    const prizeTracks = await prizeTrackSponsors();
+    const sponsors = registered.filter(
+      (s) => hasPrizeTrack(s.name, prizeTracks) && !isDigitalJudging(s.name),
+    );
     const names = await teamNames([
       ...new Set([...rows.map((r) => r.teamId), ...topIds]),
     ]);
@@ -457,7 +462,9 @@ export const sponsorPresentationsRouter = createTRPCRouter({
       // The sheets are slow, so every sponsor's room is read before the
       // transaction; the sends are read inside it, so the stored schedule
       // always matches one consistent set of shortlists.
-      // Only prize track sponsors present (src/content/sponsor-prize-tracks.ts).
+      // Only in-person prize track sponsors present
+      // (src/content/sponsor-prize-tracks.ts); digital ones never send.
+      const prizeTracks = await prizeTrackSponsors();
       const trackSponsors = (
         await db
           .select({
@@ -465,7 +472,7 @@ export const sponsorPresentationsRouter = createTRPCRouter({
             name: sponsorJudgingSponsors.name,
           })
           .from(sponsorJudgingSponsors)
-      ).filter((s) => hasPrizeTrack(s.name));
+      ).filter((s) => hasPrizeTrack(s.name, prizeTracks) && !isDigitalJudging(s.name));
       const trackIds = new Set(trackSponsors.map((s) => s.id));
       const rooms = await judgingRoomsById(trackSponsors);
 

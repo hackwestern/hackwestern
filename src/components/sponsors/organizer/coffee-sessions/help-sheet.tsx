@@ -52,6 +52,7 @@ export function HelpSheet() {
             </ul>
             <p className="m-0">{h.fixes.before}<b>{h.fixes.bold}</b>{h.fixes.after}</p>
             <p className="m-0"><b>{h.send.lead}</b>{h.send.before}<b>{h.send.bold}</b>{h.send.after}</p>
+            <p className="m-0">{h.sameWord}</p>
             <p className="m-0"><b>{h.after.lead}</b>{h.after.rest}</p>
             <h3 className="m-0 mt-1 text-base font-bold text-dashboard-text-heavy">{h.dataTitle}</h3>
             <p className="m-0">{h.data}</p>

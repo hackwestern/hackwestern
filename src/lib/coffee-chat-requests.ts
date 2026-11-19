@@ -42,7 +42,8 @@ export const COFFEE_CHAT_EXPIRY_MINUTES_BEFORE = 20;
  * Eastern time is UTC-5 in November (daylight saving ended Nov 1).
  */
 export const COFFEE_CHAT_DATE = "2026-11-21";
-const COFFEE_CHAT_UTC_OFFSET = "-05:00";
+/** Eastern time on chat day (daylight saving ended Nov 1): the one offset. */
+export const COFFEE_CHAT_UTC_OFFSET = "-05:00";
 
 /** People a coffee chat room fits at once. */
 export const COFFEE_CHAT_ROOM_PEOPLE = 6;
@@ -169,16 +170,32 @@ export function coffeeChatsOverlap(
  * write it back later (e.g. for the sheet mirror).
  */
 export function effectiveCoffeeChatStatus(
-  chat: { status: CoffeeChatStatus; slotTime: string },
+  chat: CoffeeChatClock,
   now: Date = new Date(),
 ): CoffeeChatStatus {
   if (chat.status !== "pending") return chat.status;
-  return now >= coffeeChatExpiresAt(chat.slotTime) ? "expired" : "pending";
+  return now >= chatExpiresAt(chat) ? "expired" : "pending";
+}
+
+/**
+ * A chat's status and times. Session invites (src/lib/coffee-chat-invites.ts)
+ * carry their own `expiresAt` (the invite round's answer-by time); old
+ * per-slot requests leave it null and expire 20 minutes before the chat.
+ */
+export type CoffeeChatClock = {
+  status: CoffeeChatStatus;
+  slotTime: string;
+  expiresAt?: Date | null;
+};
+
+/** When a pending chat stops being answerable. */
+export function chatExpiresAt(chat: Pick<CoffeeChatClock, "slotTime" | "expiresAt">): Date {
+  return chat.expiresAt ?? coffeeChatExpiresAt(chat.slotTime);
 }
 
 /** True when the chat still holds a seat right now. */
 export function isActiveCoffeeChat(
-  chat: { status: CoffeeChatStatus; slotTime: string },
+  chat: CoffeeChatClock,
   now: Date = new Date(),
 ): boolean {
   const status = effectiveCoffeeChatStatus(chat, now);

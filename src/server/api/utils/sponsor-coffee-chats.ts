@@ -13,6 +13,7 @@ import {
   type CoffeeChatBooking,
   type CoffeeChatCellChange,
 } from "~/lib/coffee-chats";
+import { assertSheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
 import {
   findTabTitle,
   type SheetsClient,
@@ -159,6 +160,7 @@ export async function writeCoffeeChatGridFull(
   sheetId: number,
   bookings: readonly CoffeeChatBooking[],
 ): Promise<void> {
+  assertSheetWritesEnabled("coffee chat grid");
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
     requestBody: {
@@ -187,6 +189,7 @@ export async function writeCoffeeChatGridDiff(
   changes: readonly CoffeeChatCellChange[],
 ): Promise<void> {
   if (changes.length === 0) return;
+  assertSheetWritesEnabled("coffee chat grid");
 
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
@@ -231,6 +234,7 @@ export async function ensureCoffeeChatTab(
   let created = false;
 
   if (sheetId === null) {
+    assertSheetWritesEnabled(`"${COFFEE_CHAT_TAB}" tab`);
     const addRes = await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
       requestBody: {
@@ -264,6 +268,7 @@ export async function ensureCoffeeChatTab(
   // (narrow time column, wider room columns so names fit). Only worth
   // running right after creation/seeding.
   if (created) {
+    assertSheetWritesEnabled(`"${COFFEE_CHAT_TAB}" tab`);
     try {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId,

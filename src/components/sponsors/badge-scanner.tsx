@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import {
   CameraOff,
   Check,
   CircleCheck,
-  Clock,
   Coffee,
-  MapPin,
   ScanLine,
   UserX,
 } from "lucide-react";
@@ -14,8 +11,9 @@ import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { hoverTint, pressable } from "~/components/sponsors/sponsor-shell";
+import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
 import { sponsorScanCopy } from "~/content/sponsor-scan";
-import { formatClock } from "~/lib/run-of-show";
+import { whenEastern } from "~/components/sponsors/coffee-setup/shared";
 import {
   badgeCodeOf,
   typedBadgeCodeOf,
@@ -23,7 +21,6 @@ import {
   type QrScannerStatus,
 } from "~/lib/use-qr-scanner";
 import { cn } from "~/lib/utils";
-import type { CoffeeChatOffer } from "~/server/api/routers/coffee-chat-requests";
 import { api } from "~/utils/api";
 
 const copy = sponsorScanCopy;
@@ -31,8 +28,7 @@ const copy = sponsorScanCopy;
 type Phase =
   | { kind: "scan" }
   | { kind: "hacker"; code: string }
-  | { kind: "notHacker" }
-  | { kind: "sent"; offer: CoffeeChatOffer };
+  | { kind: "notHacker" };
 
 const enterMotion =
   "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-200";
@@ -59,25 +55,20 @@ function useAnnouncer() {
 }
 
 // Scan a hacker's badge, wallet pass or /live QR (or type their hacker
-// code), then offer them a coffee chat at one of the sponsor's open times.
-// `initialCode` (a hacker code or user id, e.g. from the candidates list)
-// skips the camera and opens the offer card for that hacker.
+// code), then add them to "Met at your booth" so they're invited first.
+// `initialCode` (a hacker code or user id) skips the camera and opens the
+// card for that hacker.
 export function BadgeScanner({
   sponsor,
   initialCode,
-  preferredTime = null,
 }: {
   sponsor: string;
   initialCode?: string | null;
-  /** Start time to preselect when it's open (e.g. a room hold's). */
-  preferredTime?: string | null;
 }) {
   const [phase, setPhase] = useState<Phase>(() =>
     initialCode ? { kind: "hacker", code: initialCode } : { kind: "scan" },
   );
   const { message, announce } = useAnnouncer();
-  // The sponsor's own name sticks between scans.
-  const [repName, setRepName] = useState("");
   // Each step's heading takes focus so keyboard and screen reader users
   // land on the new content.
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -117,34 +108,13 @@ export function BadgeScanner({
         <NotHackerPanel headingRef={headingRef} onScanNext={scanNext} />
       )}
       {phase.kind === "hacker" && (
-        <OfferStep
+        <HackerStep
           key={phase.code}
           sponsor={sponsor}
           code={phase.code}
-          preferredTime={preferredTime}
-          repName={repName}
-          onRepName={setRepName}
           headingRef={headingRef}
           announce={announce}
           onFocusHeading={focusHeading}
-          onSent={(offer) =>
-            go(
-              { kind: "sent", offer },
-              copy.sent.body(
-                offer.firstName,
-                formatClock(offer.slotTime),
-                offer.room,
-              ),
-            )
-          }
-          onScanNext={scanNext}
-        />
-      )}
-      {phase.kind === "sent" && (
-        <SentPanel
-          sponsor={sponsor}
-          offer={phase.offer}
-          headingRef={headingRef}
           onScanNext={scanNext}
         />
       )}
@@ -202,8 +172,9 @@ function CameraPanel({
     if (status === "starting") announce(copy.camera.starting);
     else if (status === "scanning") announce(copy.camera.scanning);
     else if (failed) {
-      const problem = cameraProblem(status);
-      announce(`${problem.title}. ${problem.body}`);
+      // The focused heading names the problem; announce only what to do,
+      // so "No camera found" is said once.
+      announce(cameraProblem(status).body);
       onFocusHeading();
     }
   }, [status, failed, announce, onFocusHeading]);
@@ -371,80 +342,72 @@ function NotHackerPanel({
   );
 }
 
-function OfferStep({
+/**
+ * The hacker card does one job: add them to "Met at your booth" (invited
+ * first), with an optional "Who talked to them?" rep. "Add to my list" is
+ * the only filled button; "Scan next" shows once they're added. Seats come
+ * from the invite rounds, so nothing is booked here.
+ */
+function HackerStep({
   sponsor,
   code,
-  preferredTime,
-  repName,
-  onRepName,
   headingRef,
   announce,
   onFocusHeading,
-  onSent,
   onScanNext,
 }: {
   sponsor: string;
   code: string;
-  preferredTime: string | null;
-  repName: string;
-  onRepName: (name: string) => void;
   headingRef: HeadingRef;
   announce: (message: string) => void;
   onFocusHeading: () => void;
-  onSent: (offer: CoffeeChatOffer) => void;
   onScanNext: () => void;
 }) {
+  const metCopy = sponsorSetupCopy.scan;
   const hackerQ = api.coffeeChatRequests.hackerByCode.useQuery(
     { sponsor, code },
     { retry: false, refetchOnWindowFocus: false },
   );
-  const timesQ = api.coffeeChatRequests.freeTimes.useQuery(
-    { sponsor, userId: hackerQ.data?.userId },
-    { enabled: hackerQ.isSuccess, retry: false, refetchOnWindowFocus: false },
+  const userId = hackerQ.data?.userId;
+  const scanQ = api.coffeeChatSetup.scanOf.useQuery(
+    { sponsor, userId: userId ?? "" },
+    { enabled: !!userId, retry: false, refetchOnWindowFocus: false },
   );
-  const [picked, setPicked] = useState<string | null>(preferredTime);
-  const [offerError, setOfferError] = useState<string | null>(null);
-  const offer = api.coffeeChatRequests.offer.useMutation({
-    onSuccess: onSent,
-    onError: (error) => {
-      const code = error.data?.code;
-      // Capacity and window problems carry copy from src/content/coffee-chat.
-      const message =
-        code === "CONFLICT" || code === "BAD_REQUEST"
-          ? error.message
-          : copy.card.offerError;
-      setOfferError(message);
-      announce(message);
-      // A seat may have just gone: show what's still open.
-      void timesQ.refetch();
+  const setupQ = api.coffeeChatSetup.get.useQuery(
+    { sponsor },
+    { retry: false, refetchOnWindowFocus: false },
+  );
+  const utils = api.useUtils();
+  // A rep from Your team, by id (the server looks up the name); null = Anyone.
+  const [repId, setRepId] = useState<string | null>(null);
+  // Scanned before: start from the rep already credited, not "Anyone".
+  const creditedRep = scanQ.data?.repName ?? null;
+  const repList = setupQ.data?.reps;
+  useEffect(() => {
+    if (!creditedRep || !repList) return;
+    const match = repList.find((r) => r.name === creditedRep);
+    if (match) setRepId(match.id);
+  }, [creditedRep, repList]);
+  const record = api.coffeeChatSetup.recordScan.useMutation({
+    onSuccess: () => {
+      if (hackerQ.data) announce(metCopy.added(hackerQ.data.firstName));
+      void utils.coffeeChatSetup.get.invalidate({ sponsor });
+      void utils.coffeeChatSetup.scanOf.invalidate({ sponsor });
+      onFocusHeading();
     },
+    onError: () => announce(metCopy.error),
   });
 
   // Once the lookup settles, say what happened and move focus to it.
-  const settled = hackerQ.isError || (hackerQ.isSuccess && !timesQ.isLoading);
+  const settled = hackerQ.isError || (hackerQ.isSuccess && !scanQ.isLoading);
   const announced = useRef(false);
   useEffect(() => {
     if (!settled || announced.current) return;
     announced.current = true;
-    if (hackerQ.isError) {
-      announce(copy.notHacker.title);
-    } else if (hackerQ.data) {
-      const count = timesQ.data?.times.length ?? 0;
-      announce(
-        count > 0
-          ? copy.card.heading(hackerQ.data.firstName)
-          : copy.card.noTimes.title,
-      );
-    }
+    if (hackerQ.isError) announce(copy.notHacker.title);
+    else if (hackerQ.data) announce(metCopy.heading(hackerQ.data.firstName));
     onFocusHeading();
-  }, [
-    settled,
-    hackerQ.isError,
-    hackerQ.data,
-    timesQ.data,
-    announce,
-    onFocusHeading,
-  ]);
+  }, [settled, hackerQ.isError, hackerQ.data, announce, onFocusHeading, metCopy]);
 
   if (!settled) {
     return (
@@ -466,23 +429,52 @@ function OfferStep({
       <NotHackerPanel
         headingRef={headingRef}
         title={notHacker ? copy.notHacker.title : copy.camera.error.title}
-        body={
-          notHacker
-            ? copy.notHacker.body
-            : (hackerQ.error?.message ?? copy.card.offerError)
-        }
+        body={notHacker ? copy.notHacker.body : copy.card.lookupError}
         onScanNext={onScanNext}
       />
     );
   }
 
   const hacker = hackerQ.data;
-  const free = timesQ.data;
-  const times = free?.times ?? [];
-  // Earliest open time is picked unless the sponsor chose another that's
-  // still open.
-  const slot =
-    times.find((t) => t.slotTime === picked)?.slotTime ?? times[0]?.slotTime;
+  const reps = setupQ.data?.reps ?? [];
+  const already = scanQ.data ?? null;
+  const chip = (on: boolean) =>
+    cn(
+      "min-h-11 rounded-full border px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+      // Picked: tinted, not filled, so "Add to my list" stays the one
+      // filled button on the card.
+      on
+        ? "inline-flex items-center gap-1.5 border-2 border-dashboard-action-primary bg-dashboard-bg-highlight text-dashboard-text-active"
+        : cn(
+            "border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-medium",
+            hoverTint,
+          ),
+      pressable,
+    );
+  const tick = (on: boolean) =>
+    on ? <Check aria-hidden className="size-4 shrink-0" /> : null;
+
+  if (record.isSuccess) {
+    return (
+      <DashboardPanel className={cn("gap-4", enterMotion)}>
+        <div className="flex items-center gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-highlight">
+            <CircleCheck
+              aria-hidden
+              className="size-6 text-dashboard-status-live"
+            />
+          </span>
+          <StepHeading headingRef={headingRef}>
+            {metCopy.added(hacker.firstName)}
+          </StepHeading>
+        </div>
+        <TextButton onClick={onScanNext}>
+          <ScanLine aria-hidden className="size-5" />
+          {copy.scanNext}
+        </TextButton>
+      </DashboardPanel>
+    );
+  }
 
   return (
     <DashboardPanel className={cn("gap-5", enterMotion)}>
@@ -500,225 +492,98 @@ function OfferStep({
             {copy.card.eyebrow}
           </span>
           <StepHeading headingRef={headingRef}>
-            {times.length > 0 || timesQ.isError
-              ? copy.card.heading(hacker.firstName)
-              : copy.card.noTimes.title}
+            {metCopy.heading(hacker.firstName)}
           </StepHeading>
-          {free && (
-            <p className="m-0 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-dashboard-text-medium">
-              <span className="inline-flex items-center gap-1.5">
-                <Clock
-                  aria-hidden
-                  className="size-4 text-dashboard-text-light"
-                />
-                {copy.card.timesHint(free.durationMinutes)}
-              </span>
+          {already && (
+            <p className="m-0 text-base font-semibold text-dashboard-text-heavy">
+              {metCopy.already(
+                whenEastern(already.scannedAt),
+                already.repName,
+              )}
             </p>
           )}
         </div>
       </div>
 
-      {timesQ.isError ? (
-        <p className="m-0 rounded-dashboard-lg bg-dashboard-bg-inset p-4 text-base text-dashboard-text-medium">
-          {copy.card.timesError}
+      {reps.length > 0 && (
+        <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
+          <legend className="mb-2 p-0 text-sm font-semibold text-dashboard-text-heavy">
+            {metCopy.metLegend}
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              aria-pressed={repId === null}
+              className={chip(repId === null)}
+              onClick={() => setRepId(null)}
+            >
+              {tick(repId === null)}
+              {metCopy.noRep}
+            </button>
+            {reps.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                aria-pressed={repId === r.id}
+                className={chip(repId === r.id)}
+                onClick={() => setRepId(r.id)}
+              >
+                {tick(repId === r.id)}
+                {r.name}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
+      {record.isError && (
+        <p
+          role="alert"
+          className="m-0 text-sm font-semibold text-dashboard-text-warning"
+        >
+          {metCopy.error}
         </p>
-      ) : times.length === 0 ? (
-        <p className="m-0 rounded-dashboard-lg bg-dashboard-bg-inset p-4 text-base text-dashboard-text-medium">
-          {copy.card.noTimes.body(hacker.firstName)}
-        </p>
-      ) : (
-        <form
-          className="flex flex-col gap-5"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!slot || offer.isPending) return;
-            setOfferError(null);
-            offer.mutate({
-              sponsor,
-              userId: hacker.userId,
-              slotTime: slot,
-              repName: repName.trim() || undefined,
-            });
+      )}
+
+      <div className="flex flex-col items-stretch gap-1 sm:flex-row sm:items-center sm:gap-4">
+        <DashboardButton
+          className={cn("h-12 text-base md:h-12", pressable)}
+          aria-disabled={record.isPending || undefined}
+          onClick={() => {
+            if (record.isPending) return;
+            record.mutate({ sponsor, userId: hacker.userId, repId });
           }}
         >
-          <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
-            <legend className="mb-2 p-0 text-sm font-semibold text-dashboard-text-heavy">
-              {copy.card.timesLegend}
-            </legend>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {times.map((t) => {
-                const checked = t.slotTime === slot;
-                return (
-                  <label
-                    key={t.slotTime}
-                    className={cn(
-                      "flex min-h-11 cursor-pointer flex-col justify-center rounded-dashboard-lg border px-3 py-2",
-                      pressable,
-                      "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-dashboard-action-primary has-[:focus-visible]:ring-offset-2",
-                      checked
-                        ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
-                        : cn(
-                            "border-dashboard-border-default bg-dashboard-bg-surface text-dashboard-text-heavy",
-                            hoverTint,
-                          ),
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="slot"
-                      value={t.slotTime}
-                      checked={checked}
-                      onChange={() => setPicked(t.slotTime)}
-                      className="sr-only"
-                    />
-                    <span className="flex items-center gap-1.5 text-base font-semibold">
-                      {checked && (
-                        <Check aria-hidden className="size-4 shrink-0" />
-                      )}
-                      {formatClock(t.slotTime)}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-xs",
-                        checked
-                          ? "text-dashboard-text-inverse/90"
-                          : "text-dashboard-text-light",
-                      )}
-                    >
-                      {copy.card.seatsLeft(t.seatsLeft)}
-                    </span>
-                    <span
-                      className={cn(
-                        "flex items-center gap-1 text-xs",
-                        checked
-                          ? "text-dashboard-text-inverse/90"
-                          : "text-dashboard-text-light",
-                      )}
-                    >
-                      <MapPin aria-hidden className="size-3 shrink-0" />
-                      {t.room ? copy.card.room(t.room) : copy.card.roomTbd}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
-
-          <div className="flex flex-col gap-1.5">
-            <label
-              htmlFor="rep-name"
-              className="text-sm font-semibold text-dashboard-text-heavy"
-            >
-              {copy.card.repLabel}
-            </label>
-            <input
-              id="rep-name"
-              type="text"
-              autoComplete="name"
-              maxLength={255}
-              value={repName}
-              onChange={(event) => onRepName(event.target.value)}
-              aria-describedby="rep-name-hint"
-              className="h-11 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-base text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
-            />
-            <p
-              id="rep-name-hint"
-              className="m-0 text-sm text-dashboard-text-light"
-            >
-              {copy.card.repHint}
-            </p>
-          </div>
-
-          {offerError && (
-            <p className="m-0 rounded-dashboard-lg border border-dashboard-border-muted bg-dashboard-bg-inset p-3 text-sm font-semibold text-dashboard-text-warning">
-              {offerError}
-            </p>
-          )}
-
-          <div className="flex flex-col gap-2 sm:flex-row-reverse sm:justify-start">
-            <DashboardButton
-              type="submit"
-              disabled={!slot}
-              aria-disabled={offer.isPending || undefined}
-              className={cn("md:h-11", pressable)}
-            >
-              {offer.isPending ? copy.card.offering : copy.card.offer}
-            </DashboardButton>
-            <DashboardButton
-              type="button"
-              variant="outline"
-              className={cn("h-11 w-full sm:w-auto", pressable)}
-              onClick={onScanNext}
-            >
-              {copy.cancel}
-            </DashboardButton>
-          </div>
-        </form>
-      )}
-
-      {(times.length === 0 || timesQ.isError) && (
-        <DashboardButton
-          className={cn("md:w-full", pressable)}
-          onClick={onScanNext}
-        >
-          <ScanLine aria-hidden />
-          {copy.scanNext}
+          {record.isPending
+            ? metCopy.adding
+            : already
+              ? metCopy.save
+              : metCopy.add}
         </DashboardButton>
-      )}
+        <TextButton onClick={onScanNext}>{copy.cancel}</TextButton>
+      </div>
     </DashboardPanel>
   );
 }
 
-function SentPanel({
-  sponsor,
-  offer,
-  headingRef,
-  onScanNext,
+/** A plain text button: the secondary action next to the one filled button. */
+function TextButton({
+  onClick,
+  children,
 }: {
-  sponsor: string;
-  offer: CoffeeChatOffer;
-  headingRef: HeadingRef;
-  onScanNext: () => void;
+  onClick: () => void;
+  children: React.ReactNode;
 }) {
   return (
-    <DashboardPanel className={cn("gap-4", enterMotion)}>
-      <div className="flex items-center gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-highlight">
-          <CircleCheck
-            aria-hidden
-            className="size-6 text-dashboard-status-live"
-          />
-        </span>
-        <StepHeading headingRef={headingRef}>{copy.sent.title}</StepHeading>
-      </div>
-      <p className="m-0 text-lg font-semibold text-dashboard-text-heavy">
-        {copy.sent.body(
-          offer.firstName,
-          formatClock(offer.slotTime),
-          offer.room,
-        )}
-      </p>
-      <p className="m-0 text-base text-dashboard-text-medium">
-        {copy.sent.next}
-      </p>
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <DashboardButton
-          className={cn("md:h-11", pressable)}
-          onClick={onScanNext}
-        >
-          <ScanLine aria-hidden />
-          {copy.scanNext}
-        </DashboardButton>
-        <DashboardButton
-          variant="outline"
-          asChild
-          className={cn("h-11 w-full sm:w-auto", pressable)}
-        >
-          <Link href={`/sponsors/${sponsor}/coffee-chats`}>
-            {copy.sent.viewChats}
-          </Link>
-        </DashboardButton>
-      </div>
-    </DashboardPanel>
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex min-h-11 w-fit items-center justify-center gap-2 self-center rounded-dashboard-md px-2 text-base font-semibold text-dashboard-text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary sm:self-auto [@media(hover:hover)]:hover:underline",
+        pressable,
+      )}
+    >
+      {children}
+    </button>
   );
 }

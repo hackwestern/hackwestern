@@ -1,11 +1,12 @@
 // The organizer sponsor dashboard's tours as data: one short tour per tab
-// (ORGANIZER_TABS), each step a `data-tour` target on that tab. They reuse
+// (ORGANIZER_TABS), plus "mine" for the Sponsors tab's My sponsors view,
+// each step a `data-tour` target on that tab. They reuse
 // the sponsor portal's tour types and overlay; every step is on the tab
 // that's open, so steps are `page: "any"` and never navigate. Copy comes
 // from src/content/organizer-tour.ts.
 
 import { organizerTourCopy } from "~/content/organizer-tour";
-import type { OrganizerTab } from "~/lib/sponsor-organizer";
+import { ORGANIZER_TABS, type OrganizerTab } from "~/lib/sponsor-organizer";
 import {
   hasSeen,
   markSeen,
@@ -15,7 +16,22 @@ import {
 
 const t = organizerTourCopy.tours;
 
-export const ORGANIZER_TOURS: Record<OrganizerTab, TourDef> = {
+/**
+ * A tour per tab, and "mine" for the Sponsors tab while it shows My
+ * sponsors (its own steps and its own "seen" flag).
+ */
+export const ORGANIZER_TOUR_IDS = ["mine", ...ORGANIZER_TABS] as const;
+export type OrganizerTourId = (typeof ORGANIZER_TOUR_IDS)[number];
+
+/** The tour for the open tab, given whether Sponsors shows My sponsors. */
+export function organizerTourIdFor(
+  tab: OrganizerTab,
+  mySponsors: boolean,
+): OrganizerTourId {
+  return tab === "sponsors" && mySponsors ? "mine" : tab;
+}
+
+export const ORGANIZER_TOURS: Record<OrganizerTourId, TourDef> = {
   sponsors: {
     id: "sponsors",
     steps: [
@@ -92,33 +108,35 @@ export const ORGANIZER_TOURS: Record<OrganizerTab, TourDef> = {
   coffee: {
     id: "coffee",
     steps: [
+      // The v8 board: every target is always on the page (Sponsors band,
+      // Suggested fixes, Rooms grid, Send bar).
       {
         id: "strip",
         page: "any",
         target: "coffee-strip",
-        placement: "bottom",
+        placement: "right",
         ...t.coffee.strip,
+      },
+      {
+        id: "fixes",
+        page: "any",
+        target: "coffee-fixes",
+        placement: "right",
+        ...t.coffee.fixes,
       },
       {
         id: "table",
         page: "any",
         target: "coffee-table",
-        placement: "top",
+        placement: "left",
         ...t.coffee.table,
       },
       {
-        id: "block",
+        id: "send",
         page: "any",
-        target: "coffee-block",
-        placement: "right",
-        ...t.coffee.block,
-      },
-      {
-        id: "free",
-        page: "any",
-        target: "coffee-free",
-        placement: "right",
-        ...t.coffee.free,
+        target: "coffee-send",
+        placement: "top",
+        ...t.coffee.send,
       },
     ],
   },
@@ -155,56 +173,63 @@ export const ORGANIZER_TOURS: Record<OrganizerTab, TourDef> = {
       },
     ],
   },
-  pings: {
-    id: "pings",
+  mine: {
+    id: "mine",
     steps: [
       {
-        id: "help",
+        id: "now",
         page: "any",
-        target: "pings-help",
+        target: "org-now-next",
         placement: "bottom",
-        ...t.pings.help,
+        ...t.mine.now,
       },
       {
-        id: "next",
+        id: "view",
         page: "any",
-        target: "pings-next",
-        placement: "top",
-        ...t.pings.next,
+        target: "org-view",
+        placement: "bottom",
+        ...t.mine.view,
       },
       {
-        id: "log",
+        id: "people",
         page: "any",
-        target: "pings-log",
+        target: "org-people",
         placement: "top",
-        ...t.pings.log,
+        ...t.mine.people,
+      },
+      {
+        id: "pills",
+        page: "any",
+        target: "org-pills",
+        placement: "top",
+        ...t.mine.pills,
       },
     ],
   },
 };
 
 /** localStorage key for "this organizer answered the offer on this tab". */
-export const organizerTourSeenKey = (tab: OrganizerTab) =>
+export const organizerTourSeenKey = (tab: OrganizerTourId) =>
   `hw-organizer-tour-seen:${tab}`;
 
 /** Offer the tab's tour unless it was answered (or storage is blocked). */
 export function shouldOfferOrganizerTour(
   storage: TourStorage | null,
-  tab: OrganizerTab,
+  tab: OrganizerTourId,
 ): boolean {
   return !hasSeen(storage, organizerTourSeenKey(tab));
 }
 
 export function markOrganizerTourSeen(
   storage: TourStorage | null,
-  tab: OrganizerTab,
+  tab: OrganizerTourId,
 ): void {
   markSeen(storage, organizerTourSeenKey(tab));
 }
 
 /** A running organizer tour: the tab it belongs to and the step shown. */
 export interface OrganizerTourState {
-  tab: OrganizerTab;
+  tab: OrganizerTourId;
   step: number;
 }
 
@@ -214,7 +239,7 @@ export interface OrganizerTourState {
  */
 export function tourAfterTabChange(
   state: OrganizerTourState | null,
-  tab: OrganizerTab,
+  tab: OrganizerTourId,
 ): OrganizerTourState | null {
   return state && state.tab === tab ? state : null;
 }

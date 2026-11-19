@@ -3,8 +3,10 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   markOrganizerTourSeen,
+  ORGANIZER_TOUR_IDS,
   ORGANIZER_TOURS,
   organizerStepAt,
+  organizerTourIdFor,
   organizerTourSeenKey,
   shouldOfferOrganizerTour,
   tourAfterTabChange,
@@ -49,7 +51,7 @@ const TARGET_PREFIX: Record<string, string> = {
   schedule: "ros-",
   coffee: "coffee-",
   judging: "judging-",
-  pings: "pings-",
+  mine: "org-",
 };
 
 function allSourceText(dir: string): string {
@@ -65,7 +67,7 @@ function allSourceText(dir: string): string {
 
 describe("ORGANIZER_TOURS targets", () => {
   it("points each tab's steps at that tab's own targets", () => {
-    for (const tab of ORGANIZER_TABS) {
+    for (const tab of ORGANIZER_TOUR_IDS) {
       for (const step of ORGANIZER_TOURS[tab].steps) {
         expect((step.target ?? "").startsWith(TARGET_PREFIX[tab] ?? "?")).toBe(
           true,
@@ -76,7 +78,7 @@ describe("ORGANIZER_TOURS targets", () => {
 
   it("only uses targets that some component renders as data-tour", () => {
     const source = allSourceText(join(process.cwd(), "src", "components"));
-    for (const tab of ORGANIZER_TABS) {
+    for (const tab of ORGANIZER_TOUR_IDS) {
       for (const step of ORGANIZER_TOURS[tab].steps) {
         expect(source, `data-tour "${step.target ?? ""}"`).toMatch(
           new RegExp(`["'\`]${step.target}["'\`]`),
@@ -88,7 +90,7 @@ describe("ORGANIZER_TOURS targets", () => {
 
 describe("ORGANIZER_TOURS", () => {
   it("has one tour of 3-5 steps for every dashboard tab", () => {
-    for (const tab of ORGANIZER_TABS) {
+    for (const tab of ORGANIZER_TOUR_IDS) {
       const def = ORGANIZER_TOURS[tab];
       expect(def.id).toBe(tab);
       expect(def.steps.length).toBeGreaterThanOrEqual(3);
@@ -97,7 +99,7 @@ describe("ORGANIZER_TOURS", () => {
   });
 
   it("keeps every step on the open tab, with a target and copy", () => {
-    for (const tab of ORGANIZER_TABS) {
+    for (const tab of ORGANIZER_TOUR_IDS) {
       const ids = new Set<string>();
       for (const step of ORGANIZER_TOURS[tab].steps) {
         expect(step.page).toBe("any");
@@ -142,8 +144,8 @@ describe("organizer tour offer", () => {
   });
 
   it("doesn't nag or throw when storage is blocked", () => {
-    expect(shouldOfferOrganizerTour(throwing, "pings")).toBe(false);
-    expect(() => markOrganizerTourSeen(throwing, "pings")).not.toThrow();
+    expect(shouldOfferOrganizerTour(throwing, "mine")).toBe(false);
+    expect(() => markOrganizerTourSeen(throwing, "mine")).not.toThrow();
   });
 });
 
@@ -151,16 +153,27 @@ describe("organizer tour state", () => {
   it("keeps a tour on its own tab and stops it on another", () => {
     const state = { tab: "judging" as const, step: 2 };
     expect(tourAfterTabChange(state, "judging")).toBe(state);
-    expect(tourAfterTabChange(state, "pings")).toBeNull();
-    expect(tourAfterTabChange(null, "pings")).toBeNull();
+    expect(tourAfterTabChange(state, "mine")).toBeNull();
+    expect(tourAfterTabChange(null, "mine")).toBeNull();
   });
 
   it("moves between steps and ends past either end", () => {
-    const state = { tab: "pings" as const, step: 0 };
-    const last = ORGANIZER_TOURS.pings.steps.length - 1;
-    expect(organizerStepAt(state, 1)).toEqual({ tab: "pings", step: 1 });
+    const state = { tab: "mine" as const, step: 0 };
+    const last = ORGANIZER_TOURS.mine.steps.length - 1;
+    expect(organizerStepAt(state, 1)).toEqual({ tab: "mine", step: 1 });
     expect(organizerStepAt(state, last + 1)).toBeNull();
     expect(organizerStepAt(state, -1)).toBeNull();
     expect(organizerStepAt(null, 0)).toBeNull();
+  });
+});
+
+describe("organizerTourIdFor", () => {
+  it("uses the My sponsors tour only on Sponsors in My sponsors", () => {
+    expect(organizerTourIdFor("sponsors", true)).toBe("mine");
+    expect(organizerTourIdFor("sponsors", false)).toBe("sponsors");
+    expect(organizerTourIdFor("coffee", true)).toBe("coffee");
+  });
+  it("has no Task pings tour", () => {
+    expect(ORGANIZER_TOUR_IDS as readonly string[]).not.toContain("pings");
   });
 });

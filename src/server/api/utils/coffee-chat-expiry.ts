@@ -1,8 +1,8 @@
 import {
-  coffeeChatExpiresAt,
+  chatExpiresAt,
   coffeeChatStartsAt,
   effectiveCoffeeChatStatus,
-  type CoffeeChatStatus,
+  type CoffeeChatClock,
 } from "~/lib/coffee-chat-requests";
 
 /**
@@ -14,14 +14,15 @@ import {
 
 export type CoffeeChatAnswer = "accept" | "decline";
 
-type ChatClock = { status: CoffeeChatStatus; slotTime: string };
+/** Session invites carry their own expiresAt; old requests leave it null. */
+type ChatClock = CoffeeChatClock;
 
 /** A chat as shown right now: effective status plus its key times (ISO). */
 export function coffeeChatTimes(chat: ChatClock, now: Date = new Date()) {
   return {
     status: effectiveCoffeeChatStatus(chat, now),
     startsAt: coffeeChatStartsAt(chat.slotTime).toISOString(),
-    expiresAt: coffeeChatExpiresAt(chat.slotTime).toISOString(),
+    expiresAt: chatExpiresAt(chat).toISOString(),
   };
 }
 

@@ -14,8 +14,12 @@ export const dashboardButtonVariants = cva(
   {
     variants: {
       variant: {
-        primary:
+        primary: cn(
           "h-11 w-full gap-2.5 rounded-dashboard-lg bg-dashboard-action-primary px-4 pb-3 pt-2.5 text-base text-dashboard-text-inverse shadow-dashboard-primary-btn hover:bg-dashboard-text-active md:h-auto md:w-auto",
+          // Disabled: faded, a not-allowed cursor, and no hover colour (pointer
+          // events stay on so the cursor shows; a disabled button never clicks).
+          "disabled:pointer-events-auto disabled:cursor-not-allowed disabled:opacity-dashboard-disabled disabled:hover:bg-dashboard-action-primary",
+        ),
         secondary:
           "gap-0 rounded-full border border-dashboard-border-default bg-dashboard-bg-surface p-[10px] text-[0px] text-dashboard-text-medium shadow-dashboard-secondary-btn hover:bg-dashboard-bg-highlight disabled:opacity-dashboard-disabled md:gap-2 md:px-4 md:py-[9px] md:text-[16px]",
         tertiary:

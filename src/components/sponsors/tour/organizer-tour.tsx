@@ -15,9 +15,9 @@ import {
   organizerStepAt,
   shouldOfferOrganizerTour,
   tourAfterTabChange,
+  type OrganizerTourId,
   type OrganizerTourState,
 } from "~/lib/organizer-tours";
-import type { OrganizerTab } from "~/lib/sponsor-organizer";
 import { clickTargetOf, getStorage, resolveStep } from "~/lib/sponsor-tour";
 import { cn } from "~/lib/utils";
 
@@ -27,13 +27,17 @@ import { cn } from "~/lib/utils";
  * offer the first time an organizer opens each tab, and the tour itself,
  * drawn with the sponsor portal's overlay. Answering the offer either way
  * (or starting the tour) is remembered per tab in localStorage. Every step
- * is on the open tab, so switching tabs ends a running tour.
+ * is on the open tab, so switching tabs ends a running tour. `tab` is the
+ * tour id: the open tab, or "mine" while Sponsors shows My sponsors.
  */
-export function OrganizerTour({ tab }: { tab: OrganizerTab }) {
+export function OrganizerTour({ tab }: { tab: OrganizerTourId }) {
   const [state, setState] = useState<OrganizerTourState | null>(null);
   const [offer, setOffer] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const tabName = sponsorOrganizerCopy.tabs[tab];
+  const tabName =
+    tab === "mine"
+      ? sponsorOrganizerCopy.mine.title
+      : sponsorOrganizerCopy.tabs[tab];
 
   useEffect(() => {
     setState((s) => tourAfterTabChange(s, tab));
