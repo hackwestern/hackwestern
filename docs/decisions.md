@@ -610,3 +610,7 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 ## 2026-11-19: HW Contacts has a "Login email" column to match organizers to the sponsors they lead (Jazz)
 
 **Decision:** HW Contacts column C "Login email" holds each spon team member's sign-in email (filled for the spon team and Jasmine; blank and yellow for Lucas and Brittney). The "My sponsors" view matches the signed-in user's email (case-insensitive) to this column, then to Sponsor Day-Of's HW lead name. No match = the All sponsors view only. The emails live only in the private sheet, never in the repo.
+
+## 2026-11-19: HW Contacts shows each organizer's Slack name as "[ORGANIZER] Name" (Jazz)
+
+**Decision:** HW Contacts column D "Slack name" is a formula, `"[ORGANIZER] " & Name`, matching the Slack display-name convention, so it can't drift from column A. It's for people reading the sheet. For @mentions (help "Leave a message", task pings), the app finds the Slack user by email (`users.lookupByEmail`, as the hacker DMs already do) using the "Login email" column, because Slack mentions need a user ID, not a display name. If someone's Slack account uses a different email, add a "Slack email" column then.
