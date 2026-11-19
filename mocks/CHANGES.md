@@ -52,6 +52,15 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 | 9 | 8 rooms: 2241–2243 near, Ivey 1348–1358 (15 min walk); organizers decide rooms and clashes | Done |
 | 10 | "Couldn't be placed" as a clickable warning | Done |
 
+## Organizer dashboard restyle: `organizer-dashboard-restyle-v1` (replaces nav-a/b/c as the direction)
+| # | Change | Status |
+|---|---|---|
+| 1 | Jazz disliked the new layouts (nav-a/b/c). Keep the ORIGINAL live dashboard layout, section by section | Building |
+| 2 | Restyle each component in the hacker-v1 look | Building |
+| 3 | Keep nav-a-v1's sidebar (desktop) / bottom tabs (phone) | Building |
+| 4 | Coffee chats and Sponsor judging: current layout, marked WIP | Building |
+| 5 | Keep decided content: no "Left" status; overdue task "Text <owner>" + "Mark done"; no Slack nudges for sponsors | Building |
+
 ## Organizer dashboard redesign (all sections, phone first): `organizer-dashboard-nav-a/b/c-v1`
 | # | Change | Status |
 |---|---|---|
