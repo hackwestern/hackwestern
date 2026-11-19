@@ -10,6 +10,7 @@ import {
   type CoffeeSessionId,
 } from "~/lib/coffee-chat-sessions";
 import { api } from "~/utils/api";
+import { BoardSummary, timeOf } from "./board-summary";
 import { FixesBand } from "./fixes-band";
 import { HelpSheet } from "./help-sheet";
 import { type SessionBoardData } from "./parts";
@@ -33,7 +34,6 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     refetchOnWindowFocus: true,
   });
   const [open, setOpen] = useState<string | null>(null);
-  const [contact, setContact] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [moving, setMoving] = useState<string | null>(null);
   const [booking, setBooking] = useState<{ room: string; session: string } | null>(null);
@@ -72,7 +72,6 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     onError,
     onSettled: () => {
       setApplying(null);
-      setContact(null);
       return refresh();
     },
   });
@@ -215,6 +214,8 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
         </div>
       </header>
 
+      <BoardSummary board={data} />
+
       {!data.workshopsAvailable && (
         <p role="alert" className="m-0 rounded-dashboard-lg bg-dashboard-bg-task/40 px-4 py-3 text-sm text-dashboard-text-task">
           {copy.workshopsUnavailable}
@@ -226,20 +227,10 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
           <SponsorsBand
             board={data}
             open={open}
-            onOpen={(id) => {
-              setOpen((o) => (o === id ? null : id));
-              setContact(null);
-            }}
-            contact={contact}
-            onContact={(key) => {
-              setContact((c) => (c === key ? null : key));
-              if (key.startsWith("sp:")) setOpen(null);
-            }}
+            onOpen={(id) => setOpen((o) => (o === id ? null : id))}
           />
           <FixesBand
             board={data}
-            contact={contact}
-            onContact={(key) => setContact((c) => (c === key ? null : key))}
             applying={applying}
             locked={locked}
             onApply={(fixId) => {
@@ -284,9 +275,15 @@ function ActionBar({
   const b = copy.bar;
   const nFix = board.fixes.length;
   const allSent = board.scheduled && board.draftCount === 0 && board.sentAt;
-  const sentTime = board.sentAt
-    ? new Date(board.sentAt).toLocaleTimeString("en-US", { timeZone: "America/Toronto", hour: "numeric", minute: "2-digit" })
-    : "";
+  const sentTime = board.sentAt ? timeOf(board.sentAt) : "";
+  // Only Noah sends (checked again on the server). If HW Contacts can't be
+  // read, nobody can: say why instead of "Only Noah sends".
+  const sender = board.sender;
+  const whyNot = sender.canSend
+    ? null
+    : sender.reason === "notSender"
+      ? b.onlyNoah
+      : copy.errors.sender[sender.reason];
   return (
     <div className="fixed inset-x-0 bottom-0 z-20 border-t border-dashboard-border-default bg-dashboard-bg-surface px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 shadow-dashboard-card lg:px-12">
       <div className="mx-auto flex max-w-[1440px] flex-col items-stretch gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
@@ -308,9 +305,23 @@ function ActionBar({
               {nFix ? <span className="font-medium text-dashboard-text-warning">{b.fixesOpen(nFix)}</span> : b.review}
               <DashboardButton variant="link" disabled={busy || locked} onClick={onAuto}>{b.rerun}</DashboardButton>
             </span>
-            <DashboardButton variant="primary" disabled={busy || locked} onClick={onSend} className="sm:w-auto">
-              {busy ? b.working : b.send}
-            </DashboardButton>
+            <span className="flex flex-col items-stretch gap-1 sm:flex-row sm:items-center sm:gap-2">
+              {whyNot && (
+                <span id="coffee-send-why" className="text-center text-sm font-medium text-dashboard-text-medium sm:text-right">
+                  {whyNot}
+                </span>
+              )}
+              <DashboardButton
+                variant="primary"
+                disabled={busy || locked || !sender.canSend}
+                aria-describedby={whyNot ? "coffee-send-why" : undefined}
+                onClick={onSend}
+                // The shared primary button has no disabled look of its own.
+                className="disabled:opacity-dashboard-disabled sm:w-auto"
+              >
+                {busy ? b.working : b.send}
+              </DashboardButton>
+            </span>
           </>
         )}
       </div>

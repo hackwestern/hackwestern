@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Crown } from "lucide-react";
-import { DashboardButton } from "~/components/internals/dashboard-button";
+import { Check, Copy, Crown } from "lucide-react";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import { sponsorLogo } from "~/lib/sponsor-logos";
 import { cn } from "~/lib/utils";
@@ -23,16 +22,17 @@ export const hatch =
   "bg-[repeating-linear-gradient(135deg,theme(colors.dashboard.border.subtle)_0_3px,theme(colors.dashboard.bg.surface)_3px_8px)]";
 
 export const sessionLabel = (id: string) => copy.sessions[id] ?? id;
-export const firstName = (name: string) => name.split(" ")[0] ?? name;
+
+/** Minutes after midnight -> "1:30" (no AM/PM: the board is daytime). */
+export function clockOf(min: number): string {
+  const h = Math.floor(min / 60);
+  return `${h > 12 ? h - 12 : h}:${String(min % 60).padStart(2, "0")}`;
+}
 
 /** "5195550101" -> "(519) 555-0101"; anything else as typed. */
 export function formatPhone(phone: string): string {
   const d = phone.replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
   return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : phone;
-}
-export function telOf(phone: string): string {
-  const d = phone.replace(/\D/g, "");
-  return d.length === 10 ? `+1${d}` : `+${d}`;
 }
 
 /** The sponsor's logo (name as alt and tooltip), or a text wordmark. */
@@ -81,8 +81,8 @@ export function PrimaryCrown() {
   return (
     <span
       role="img"
-      aria-label={copy.contact.primary}
-      title={copy.contact.primary}
+      aria-label={copy.phone.primary}
+      title={copy.phone.primary}
       className="inline-flex text-dashboard-border-task"
     >
       <Crown aria-hidden className="size-4 fill-current" strokeWidth={1.5} />
@@ -92,6 +92,7 @@ export function PrimaryCrown() {
 
 const STATUS_STYLE: Record<BoardSponsor["status"]["kind"], string> = {
   not: "border border-dashed border-dashboard-border-task text-dashboard-text-warning",
+  none: "bg-dashboard-bg-inset text-dashboard-text-medium",
   unavailable: "border border-dashed border-dashboard-border-task text-dashboard-text-warning",
   need: "bg-dashboard-bg-task text-dashboard-text-task",
   scheduled: "bg-dashboard-bg-nav text-dashboard-text-active",
@@ -99,19 +100,7 @@ const STATUS_STYLE: Record<BoardSponsor["status"]["kind"], string> = {
 };
 
 export function statusText(status: BoardSponsor["status"]): string {
-  const s = copy.sponsors.status;
-  switch (status.kind) {
-    case "not":
-      return s.not;
-    case "unavailable":
-      return s.unavailable;
-    case "sent":
-      return s.sent;
-    case "scheduled":
-      return s.scheduled(status.done, status.total);
-    case "need":
-      return s.need(status.done, status.total);
-  }
+  return copy.sponsors.status[status.kind];
 }
 
 export function StatusChip({ status }: { status: BoardSponsor["status"] }) {
@@ -128,73 +117,67 @@ export function StatusChip({ status }: { status: BoardSponsor["status"] }) {
 }
 
 /**
- * Everyone to contact at a sponsor, primary first: name (+ crown) and phone
- * on the left, Copy / Text / Call in one fixed column on the right. Text
- * opens Messages with `draft` filled in; Copy stays for laptops where sms:
- * does nothing.
+ * A phone number with a copy icon beside it (44 px target). The icon turns
+ * into a check and "Copied" shows for a moment; screen readers hear it too.
  */
-export function ContactList({
-  sponsor,
-  draft,
-}: {
-  sponsor: BoardSponsor;
-  draft: (first: string) => string;
-}) {
-  const [copied, setCopied] = useState<string | null>(null);
+export function PhoneCopy({ name, phone }: { name: string; phone: string }) {
+  const [copied, setCopied] = useState(false);
   useEffect(() => {
     if (!copied) return;
-    const t = setTimeout(() => setCopied(null), 1500);
+    const t = setTimeout(() => setCopied(false), 1500);
     return () => clearTimeout(t);
   }, [copied]);
+  const shown = formatPhone(phone);
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      <span className="text-[13px] tabular-nums text-dashboard-text-medium">{shown}</span>
+      <button
+        type="button"
+        aria-label={copied ? copy.phone.copiedLabel(shown) : copy.phone.copyLabel(name, shown)}
+        onClick={() => {
+          const done = () => setCopied(true);
+          void navigator.clipboard?.writeText(shown).then(done, done);
+        }}
+        className={cn(
+          "inline-flex size-11 shrink-0 cursor-pixel-hover items-center justify-center rounded-dashboard-md text-dashboard-text-light [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
+          focusRing,
+        )}
+      >
+        {copied ? (
+          <Check aria-hidden className="size-4 text-dashboard-status-live" />
+        ) : (
+          <Copy aria-hidden className="size-4" />
+        )}
+      </button>
+      <span aria-live="polite" className="text-[13px] font-medium text-dashboard-status-live">
+        {copied ? copy.phone.copied : ""}
+      </span>
+    </span>
+  );
+}
+
+/**
+ * A sponsor's reps, primary first: name (+ crown), how many chats they
+ * asked for, and their phone with a copy icon. No Text or Call buttons.
+ */
+export function PeopleList({ sponsor }: { sponsor: BoardSponsor }) {
   const reps = [...sponsor.reps].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
   return (
-    <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
-      {reps.map((r) => {
-        const phone = formatPhone(r.phone);
-        const body = encodeURIComponent(draft(firstName(r.name)));
-        return (
-          <li
-            key={r.id}
-            className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1.5"
-          >
-            <div className="min-w-0">
-              <b className="inline-flex flex-wrap items-center gap-1 text-[15px] font-semibold [overflow-wrap:anywhere]">
-                {r.name}
-                {r.isPrimary && <PrimaryCrown />}
-              </b>
-              <span className="block text-[13px] tabular-nums text-dashboard-text-light">
-                {phone}
-              </span>
-            </div>
-            <div className="flex flex-nowrap gap-0.5">
-              <DashboardButton
-                variant="link"
-                className="min-w-[66px] px-2"
-                aria-label={copied === r.id ? copy.contact.copiedLabel(phone) : undefined}
-                onClick={() => {
-                  const done = () => setCopied(r.id);
-                  void navigator.clipboard?.writeText(phone).then(done, done);
-                }}
-              >
-                {copied === r.id ? (
-                  <>
-                    <Check aria-hidden className="text-dashboard-status-live" />
-                    {copy.contact.copied}
-                  </>
-                ) : (
-                  copy.contact.copy
-                )}
-              </DashboardButton>
-              <DashboardButton variant="link" className="px-2" asChild>
-                <a href={`sms:${telOf(r.phone)}?&body=${body}`}>{copy.contact.text}</a>
-              </DashboardButton>
-              <DashboardButton variant="link" className="px-2" asChild>
-                <a href={`tel:${telOf(r.phone)}`}>{copy.contact.call}</a>
-              </DashboardButton>
-            </div>
-          </li>
-        );
-      })}
+    <ul aria-label={copy.sponsors.people} className="m-0 flex list-none flex-col gap-1 p-0">
+      {reps.map((r) => (
+        <li key={r.id} className="flex min-w-0 flex-col py-1">
+          <b className="inline-flex flex-wrap items-center gap-1 text-[15px] font-semibold [overflow-wrap:anywhere]">
+            {r.name}
+            {r.isPrimary && <PrimaryCrown />}
+          </b>
+          {sponsor.submitted && (
+            <span className="text-[13px] text-dashboard-text-light">
+              {copy.sponsors.asked(copy.sponsors.repWants(r.chatsWanted, sponsor.chatMinutes))}
+            </span>
+          )}
+          <PhoneCopy name={r.name} phone={r.phone} />
+        </li>
+      ))}
     </ul>
   );
 }

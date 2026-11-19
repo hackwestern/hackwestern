@@ -7,6 +7,7 @@ import {
   COFFEE_SESSIONS,
   buildingOf,
   chatsBySession,
+  chatsInWindow,
   minutesOfClock,
 } from "~/lib/coffee-chat-sessions";
 import { formatClock } from "~/lib/run-of-show";
@@ -14,6 +15,7 @@ import { cn } from "~/lib/utils";
 import {
   Card,
   CardHead,
+  clockOf,
   focusRing,
   hatch,
   Logo,
@@ -71,13 +73,22 @@ export function moveCheck(board: SessionBoardData, moving: string, target: strin
   return elsewhere ? "no" : "ok";
 }
 
-/** Chats a placement holds and so how many hackers it invites. */
+/** Chats a placement holds (a partial session fits fewer), times hackers per chat. */
 function hackersAt(board: SessionBoardData, c: Extract<CellContent, { kind: "chat" }>): number {
   const rep = c.sponsor.reps.find((r) => r.id === c.placement.repId);
   if (!rep) return 0;
-  const sessions = board.placements.filter((p) => p.repId === rep.id).map((p) => p.sessionId);
-  const chats = chatsBySession(sessions, rep.chatsWanted, c.sponsor.chatsPerSession).get(c.placement.sessionId) ?? 0;
+  const mine = board.placements.filter((p) => p.repId === rep.id);
+  const fits = (id: string) =>
+    chatsInWindow(mine.find((p) => p.sessionId === id)?.window ?? null, c.sponsor.chatMinutes);
+  const chats = chatsBySession(mine.map((p) => p.sessionId), rep.chatsWanted, fits).get(c.placement.sessionId) ?? 0;
   return chats * c.sponsor.hackersPerChat;
+}
+
+/** "1:00–1:30" when a chat uses only part of its session, else null. */
+export function partialTimeOf(c: CellContent): string | null {
+  if (c?.kind !== "chat") return null;
+  const part = c.sponsor.partial[c.placement.sessionId];
+  return part ? rc.partialTime(clockOf(part.start), clockOf(part.end)) : null;
 }
 
 export function RoomsGrid({
@@ -192,13 +203,15 @@ function Cell({
       </button>
     );
   }
+  const part = partialTimeOf(c);
   return (
-    <button type="button" onClick={() => onCell(k)} aria-label={rc.chatLabel(c.sponsor.name, c.repName, where)}
+    <button type="button" onClick={() => onCell(k)} aria-label={rc.chatLabel(c.sponsor.name, c.repName, part ? rc.where(room, part) : where)}
       data-tour={k === firstChatKey(board) ? "coffee-block" : undefined}
       className={cn(cellBase, sel, drag,
         "cursor-pixel-hover border border-dashboard-border-outline bg-dashboard-bg-surface text-dashboard-text-active shadow-[inset_3px_0_0_theme(colors.dashboard.action.primary)] [@media(hover:hover)]:hover:bg-dashboard-bg-highlight")}>
       <Logo name={c.sponsor.name} size="sm" />
       <span>{c.repName}</span>
+      {part && <span className="text-xs font-semibold tabular-nums text-dashboard-text-warning">{part}</span>}
     </button>
   );
 }
@@ -274,7 +287,8 @@ export function CellDetail({
   const c = cellAt(board, k);
   if (!c) return null;
   const { room, session } = splitKey(k);
-  const where = `${buildingOf(room) === "ivey" ? rc.iveyRm(room) : rc.rm(room)} · ${sessionLabel(session)}`;
+  const part = partialTimeOf(c);
+  const where = `${buildingOf(room) === "ivey" ? rc.iveyRm(room) : rc.rm(room)} · ${part ?? sessionLabel(session)}`;
   const title =
     c.kind === "chat" ? (
       <>
@@ -334,6 +348,7 @@ export function CellDetail({
         {sent && <span className="inline-flex min-h-7 items-center rounded-dashboard-lg bg-dashboard-schedule-green px-2.5 text-sm font-semibold text-dashboard-status-live">{dc.sent}</span>}
       </div>
       <p className="m-0 text-[15px] tabular-nums">{dc.toInvite(n)}</p>
+      {part && <p className="m-0 text-sm text-dashboard-text-medium">{rc.partialNote}</p>}
       {sent && <p className="m-0 text-sm font-medium text-dashboard-text-warning">{dc.afterSend}</p>}
       {c.placement.pinned && <p className="m-0 text-sm text-dashboard-text-medium">{dc.pinned}</p>}
       {actions}
