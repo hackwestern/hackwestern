@@ -6,6 +6,9 @@
 const plural = (n: number, one: string, many = `${one}s`) =>
   `${n} ${n === 1 ? one : many}`;
 
+const workshopsUnknown =
+  "Can't read the run of show, so workshop times are unknown. Try again in a minute.";
+
 export const coffeeSessionsCopy = {
   title: "Coffee chats",
   day: "Saturday, Nov 21",
@@ -13,8 +16,8 @@ export const coffeeSessionsCopy = {
   loading: "Loading coffee chats…",
   loadError: "Couldn't load the coffee chat board.",
   retry: "Try again",
-  workshopsUnavailable:
-    "Couldn't read the run of show, so sponsors' workshops aren't blocked out. Check before sending.",
+  /** Shown while the run of show can't be read; every write is paused. */
+  workshopsUnavailable: workshopsUnknown,
 
   /** Session labels by id (src/lib/coffee-chat-sessions.ts). */
   sessions: {
@@ -205,6 +208,7 @@ export const coffeeSessionsCopy = {
     unknownPlacement: "That chat is gone. The board changed.",
     unknownBooking: "That booking is gone. The board changed.",
     badCell: "Unknown room or session.",
+    workshopsUnknown,
   },
 
   help: {

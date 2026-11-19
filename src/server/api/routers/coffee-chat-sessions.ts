@@ -20,6 +20,7 @@ import { mirrorRoomGrid } from "~/server/api/utils/coffee-chat-room-grid-mirror"
 import {
   assertCellFree,
   assertRepCanChat,
+  assertWorkshopsKnown,
   loadBoardState,
   pinsOf,
   sessionBoardOf,
@@ -52,6 +53,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
   autoSchedule: protectedOrganizerProcedure.mutation(async () => {
     return db.transaction(async (tx) => {
       const state = await loadBoardState(tx);
+      assertWorkshopsKnown(state);
       const result = schedule(state.sched, COFFEE_ROOMS, COFFEE_SESSIONS, pinsOf(state));
       const kept = new Set(
         state.placements.filter((p) => p.pinned || p.status === "sent").map((p) => p.id),
@@ -76,6 +78,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       return db.transaction(async (tx) => {
         const state = await loadBoardState(tx);
+        assertWorkshopsKnown(state);
         const fix = findFixes(state.sched, COFFEE_ROOMS, COFFEE_SESSIONS, state.board).find(
           (f) => f.id === input.fixId,
         );
@@ -157,6 +160,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       return db.transaction(async (tx) => {
         const state = await loadBoardState(tx);
+        assertWorkshopsKnown(state);
         assertCellFree(state, input.room, input.sessionId);
         const [row] = await tx
           .insert(coffeeChatRoomBookings)
@@ -178,6 +182,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       return db.transaction(async (tx) => {
         const state = await loadBoardState(tx);
+        assertWorkshopsKnown(state);
         if (!state.bookings.some((b) => b.id === input.bookingId)) {
           throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownBooking });
         }
@@ -206,6 +211,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
    * is mirrored (only when sheetWritesEnabled(); locally nothing is written).
    */
   send: protectedOrganizerProcedure.mutation(async () => {
+    assertWorkshopsKnown(await loadBoardState());
     const now = new Date();
     const sent = await db
       .update(coffeeChatPlacements)

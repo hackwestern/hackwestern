@@ -332,6 +332,16 @@ export function sessionBoardOf(state: BoardState): SessionBoard {
   };
 }
 
+/**
+ * Every board write needs the workshop windows: without the run of show a
+ * chat could land in a sponsor's workshop. Throws PRECONDITION_FAILED.
+ */
+export function assertWorkshopsKnown(state: Pick<BoardState, "workshopsAvailable">): void {
+  if (!state.workshopsAvailable) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: errors.workshopsUnknown });
+  }
+}
+
 /** Throws a clear error unless (room, session) is a real, empty cell. */
 export function assertCellFree(
   state: BoardState,
@@ -367,6 +377,7 @@ export function assertRepCanChat(
   sessionId: string,
   exceptPlacementId?: string,
 ): void {
+  assertWorkshopsKnown(state);
   const sponsor = state.sponsors.find((s) => s.reps.some((r) => r.id === repId));
   const rep = sponsor?.reps.find((r) => r.id === repId);
   if (!sponsor || !rep) {

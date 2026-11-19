@@ -118,6 +118,9 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     );
   }
   const data = board.data;
+  // No run of show = no workshop windows: the server refuses every write
+  // that places or moves something, so those buttons are off too.
+  const locked = !data.workshopsAvailable;
 
   const onCell = (k: string) => {
     if (moving) {
@@ -148,7 +151,7 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     <BookingForm
       board={data}
       initial={booking}
-      busy={bookRoom.isPending}
+      busy={bookRoom.isPending || locked}
       onClose={() => {
         setBooking(null);
         setSelected(null);
@@ -171,6 +174,7 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
       k={detailKey}
       moving={!!moving}
       busy={busy}
+      locked={locked}
       onClose={() => setSelected(null)}
       onCancelMove={() => setMoving(null)}
       onMove={() => setMoving(detailKey)}
@@ -194,6 +198,7 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
           <DashboardButton
             variant="small"
             className="col-span-2 row-start-2 min-h-11 px-4 text-base sm:col-auto sm:row-auto md:min-h-11"
+            disabled={locked}
             onClick={() => {
               const free = COFFEE_ROOMS.flatMap((r) => COFFEE_SESSIONS.map((s) => keyOf(r.id, s.id))).find((k) => !cellAt(data, k));
               if (!free) return;
@@ -211,7 +216,7 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
       </header>
 
       {!data.workshopsAvailable && (
-        <p role="status" className="m-0 rounded-dashboard-lg bg-dashboard-bg-task/40 px-4 py-3 text-sm text-dashboard-text-task">
+        <p role="alert" className="m-0 rounded-dashboard-lg bg-dashboard-bg-task/40 px-4 py-3 text-sm text-dashboard-text-task">
           {copy.workshopsUnavailable}
         </p>
       )}
@@ -236,6 +241,7 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
             contact={contact}
             onContact={(key) => setContact((c) => (c === key ? null : key))}
             applying={applying}
+            locked={locked}
             onApply={(fixId) => {
               setApplying(fixId);
               applyFix.mutate({ fixId });
@@ -250,6 +256,7 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
       <ActionBar
         board={data}
         busy={busy}
+        locked={locked}
         onAuto={() => {
           setSelected(null);
           auto.mutate();
@@ -263,11 +270,14 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
 function ActionBar({
   board,
   busy,
+  locked,
   onAuto,
   onSend,
 }: {
   board: SessionBoardData;
   busy: boolean;
+  /** The run of show can't be read: nothing can be scheduled or sent. */
+  locked: boolean;
   onAuto: () => void;
   onSend: () => void;
 }) {
@@ -288,7 +298,7 @@ function ActionBar({
         ) : !board.scheduled ? (
           <>
             <span className="text-center text-[15px] text-dashboard-text-medium sm:text-left">{b.start}</span>
-            <DashboardButton variant="primary" disabled={busy} onClick={onAuto} className="sm:w-auto">
+            <DashboardButton variant="primary" disabled={busy || locked} onClick={onAuto} className="sm:w-auto">
               {busy ? b.working : b.autoSchedule}
             </DashboardButton>
           </>
@@ -296,9 +306,9 @@ function ActionBar({
           <>
             <span className="flex flex-wrap items-center justify-center gap-1 text-[15px] text-dashboard-text-medium sm:justify-start">
               {nFix ? <span className="font-medium text-dashboard-text-warning">{b.fixesOpen(nFix)}</span> : b.review}
-              <DashboardButton variant="link" disabled={busy} onClick={onAuto}>{b.rerun}</DashboardButton>
+              <DashboardButton variant="link" disabled={busy || locked} onClick={onAuto}>{b.rerun}</DashboardButton>
             </span>
-            <DashboardButton variant="primary" disabled={busy} onClick={onSend} className="sm:w-auto">
+            <DashboardButton variant="primary" disabled={busy || locked} onClick={onSend} className="sm:w-auto">
               {busy ? b.working : b.send}
             </DashboardButton>
           </>

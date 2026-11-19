@@ -15,9 +15,13 @@ import {
 import { roomGridRows } from "~/server/api/utils/coffee-chat-room-grid-mirror";
 import { loadBoardState } from "~/server/api/utils/coffee-chat-sessions-board";
 
-const { names } = vi.hoisted(() => {
+const { names, ros } = vi.hoisted(() => {
   const stamp = Date.now();
-  return { names: { work: `WorkCo${stamp}`, team: `TeamCo${stamp}`, late: `LateCo${stamp}` } };
+  return {
+    names: { work: `WorkCo${stamp}`, team: `TeamCo${stamp}`, late: `LateCo${stamp}` },
+    /** Flip to make the run-of-show read fail. */
+    ros: { fail: false },
+  };
 });
 
 // WorkCo's workshop is 13:00-14:00 -> sessions 1-2 and 2-3 are blocked.
@@ -25,7 +29,7 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
   ...(await importOriginal<typeof import("~/server/api/utils/run-of-show-sheet")>()),
   sheetWritesEnabled: () => false,
   getRunOfShow: () =>
-    Promise.resolve({
+    ros.fail ? Promise.reject(new Error("sheet down")) : Promise.resolve({
       readAt: "2026-11-21T12:00:00.000Z",
       items: [
         {
@@ -191,5 +195,31 @@ describe("send", () => {
     expect(rows.at(-1)![0]).toBe("4:45 PM");
     expect(rows[4]![7]).toBe(`${names.work} · Wes · 1-on-1 · 15 min · 4 chats`);
     expect(rows[5]![7]).toBe("");
+  });
+});
+
+describe("run of show unreadable", () => {
+  test("board says so and every write is refused with PRECONDITION_FAILED", async () => {
+    const { id: bookingId } = await organizer.coffeeChatSessions.bookRoom({ room: "2243", sessionId: "16", label: "Mentors" });
+    ros.fail = true;
+    try {
+      expect((await organizer.coffeeChatSessions.getBoard()).workshopsAvailable).toBe(false);
+      const [wes] = await placementOf("Wes");
+      const failed = (p: Promise<unknown>) =>
+        p.then(() => "ok", (e: { code?: string; message?: string }) => `${e.code}: ${e.message}`);
+      const want = "PRECONDITION_FAILED: Can't read the run of show, so workshop times are unknown. Try again in a minute.";
+      const before = await db.select().from(coffeeChatPlacements);
+      expect(await failed(organizer.coffeeChatSessions.autoSchedule())).toBe(want);
+      expect(await failed(organizer.coffeeChatSessions.applyFix({ fixId: "x" }))).toBe(want);
+      expect(await failed(organizer.coffeeChatSessions.movePlacement({ placementId: wes!.id, room: "2241", sessionId: "13" }))).toBe(want);
+      expect(await failed(organizer.coffeeChatSessions.bookRoom({ room: "2242", sessionId: "16", label: "Mentors" }))).toBe(want);
+      expect(await failed(organizer.coffeeChatSessions.moveBooking({ bookingId, room: "2242", sessionId: "16" }))).toBe(want);
+      expect(await failed(organizer.coffeeChatSessions.send())).toBe(want);
+      expect(await db.select().from(coffeeChatPlacements)).toEqual(before);
+      expect(await db.select().from(coffeeChatRoomBookings)).toHaveLength(1);
+    } finally {
+      ros.fail = false;
+    }
+    await organizer.coffeeChatSessions.removeBooking({ bookingId });
   });
 });

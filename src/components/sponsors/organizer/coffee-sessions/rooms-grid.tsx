@@ -254,6 +254,7 @@ export function CellDetail({
   k,
   moving,
   busy,
+  locked = false,
   onClose,
   onMove,
   onRemove,
@@ -263,6 +264,8 @@ export function CellDetail({
   k: string;
   moving: boolean;
   busy: boolean;
+  /** The run of show can't be read: no moves (removing is still fine). */
+  locked?: boolean;
   onClose: () => void;
   onMove: () => void;
   onRemove: () => void;
@@ -308,7 +311,7 @@ export function CellDetail({
   }
   const actions = (
     <div className="flex flex-wrap gap-2">
-      <DashboardButton variant="small" disabled={busy} onClick={onMove}>{dc.move}</DashboardButton>
+      <DashboardButton variant="small" disabled={busy || locked} onClick={onMove}>{dc.move}</DashboardButton>
       <DashboardButton variant="small" disabled={busy} onClick={onRemove}>{dc.remove}</DashboardButton>
     </div>
   );

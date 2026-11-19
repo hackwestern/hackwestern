@@ -58,12 +58,15 @@ export function FixesBand({
   onContact,
   onApply,
   applying,
+  locked = false,
 }: {
   board: SessionBoardData;
   contact: string | null;
   onContact: (key: string) => void;
   onApply: (fixId: string) => void;
   applying: string | null;
+  /** The run of show can't be read: fixes can't be applied. */
+  locked?: boolean;
 }) {
   return (
     <Card labelledBy="coffee-fixes">
@@ -96,7 +99,7 @@ export function FixesBand({
                   <DashboardButton
                     variant="primary"
                     className="h-auto min-h-11 w-auto px-3 py-0 text-sm md:min-h-9"
-                    disabled={applying !== null}
+                    disabled={applying !== null || locked}
                     onClick={() => onApply(fix.id)}
                   >
                     {applying === fix.id ? fc.applying : fc.apply}
