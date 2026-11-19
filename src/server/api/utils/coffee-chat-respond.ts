@@ -47,8 +47,17 @@ export async function respondToCoffeeChat(
     options.boardLockTimeoutMs,
   );
   // After the commit; capped in time, never throws. The next hacker's
-  // invite keeps going after the cap (waitUntil); the sweep retries it.
-  const delivery = jobs.length ? deliverInviteNotices(jobs) : null;
+  // invite keeps going after the cap (waitUntil); the sweep retries it. A
+  // delivery that rejects anyway is logged, never turned into a failed
+  // answer (the answer is already saved).
+  const delivery = jobs.length
+    ? deliverInviteNotices(jobs).catch((error: unknown) => {
+        console.error(
+          "coffee chat answer: invite delivery failed",
+          error instanceof Error ? error.message : String(error),
+        );
+      })
+    : null;
   if (delivery) waitUntil(delivery);
   const event = answer.status === "accepted" ? "accepted" : "declined";
   await Promise.all([

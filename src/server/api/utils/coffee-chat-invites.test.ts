@@ -120,7 +120,8 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
   ),
 }));
 
-// The real kick; the status test stops it once so no round runs behind it.
+// The real kick and delivery; the status test stops the kick once so no
+// round runs behind it, and one test makes a delivery reject.
 vi.mock("~/server/api/utils/coffee-chat-invites", async (importOriginal) => {
   const actual =
     await importOriginal<
@@ -129,6 +130,7 @@ vi.mock("~/server/api/utils/coffee-chat-invites", async (importOriginal) => {
   return {
     ...actual,
     kickDueInviteRounds: vi.fn(actual.kickDueInviteRounds),
+    deliverInviteNotices: vi.fn(actual.deliverInviteNotices),
   };
 });
 
@@ -1238,5 +1240,44 @@ describe("lock order: board, sponsor, chat", () => {
       .set({ status: "draft" })
       .where(eq(coffeeChatPlacements.repId, mu.repId));
     vi.setSystemTime(FRI_10PM);
+  });
+
+  test("a delivery that rejects after the commit doesn't fail the decline", async () => {
+    process.env.COFFEE_INVITES_ENABLED = "1";
+    vi.setSystemTime(FRI_10PM);
+    const nu = await sponsor(
+      `Nu${Date.now()}`,
+      { hackersPerChat: 1 },
+      { chats: 1 },
+      [{ sessionId: "15", room: "2248", status: "sent" }],
+    );
+    for (const k of ["n1", "n2"]) await hacker(k);
+    await db.insert(sponsorScans).values({ sponsorId: nu.id, userId: ids.n1! });
+    await interested(nu.id, ["n2"]);
+    await db.transaction((tx) =>
+      sendRoundOneInvites(tx, { sponsorIds: [nu.id], now: FRI_10PM }),
+    );
+    const [n1] = await chatsOf(nu.id);
+    vi.mocked(deliverInviteNotices).mockRejectedValueOnce(new Error("boom"));
+    await expect(
+      respondToCoffeeChat(
+        ids.n1!,
+        { chatId: n1!.id, answer: "decline" },
+        FRI_10PM,
+        1000,
+      ),
+    ).resolves.toMatchObject({ chatId: n1!.id, status: "declined" });
+    expect(
+      (await chatsOf(nu.id)).map((c) => [keyOf(c.userId), c.status]),
+    ).toEqual([
+      ["n1", "declined"],
+      ["n2", "pending"],
+    ]);
+
+    await db.delete(coffeeChats).where(eq(coffeeChats.sponsorId, nu.id));
+    await db
+      .update(coffeeChatPlacements)
+      .set({ status: "draft" })
+      .where(eq(coffeeChatPlacements.repId, nu.repId));
   });
 });
