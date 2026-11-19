@@ -380,7 +380,11 @@ export function OrganizerHome({
             {copy.sponsorsOn(view === "mine" && !!me, day)}
           </h2>
           {day !== "Sunday" || allOnDay.some((s) => s.prizeTrack) ? (
-            <DashboardButton asChild className="md:h-11 md:py-0">
+            <DashboardButton
+              asChild
+              // Wraps on phones so the count never runs out of the card.
+              className="h-auto min-h-11 flex-wrap justify-center gap-x-2.5 gap-y-1 py-2 md:h-11 md:flex-nowrap md:py-0"
+            >
               <Link href={organizerHomeHref({ tab: board })} shallow scroll={false}>
                 {board === "coffee" ? (
                   <Coffee aria-hidden className="size-5" />
@@ -389,7 +393,7 @@ export function OrganizerHome({
                 )}
                 {board === "coffee" ? copy.board.coffee : copy.board.judging}
                 {count > 0 && (
-                  <span className="rounded-full bg-dashboard-text-inverse/20 px-2 py-0.5 text-sm tabular-nums">
+                  <span className="whitespace-nowrap rounded-full bg-dashboard-text-inverse/20 px-2 py-0.5 text-sm tabular-nums">
                     {board === "coffee"
                       ? copy.board.coffeeCount(count)
                       : copy.board.judgingCount(count)}
@@ -779,8 +783,8 @@ function Muted({ children }: { children: React.ReactNode }) {
 function Flag({ flag, sponsorId }: { flag: HomeFlag; sponsorId: string | null }) {
   const f = copy.flags;
   const text =
-    flag.kind === "emptyBlock"
-      ? f.emptyBlock(flag.rep, clockOf(flag.start))
+    flag.kind === "emptyBlocks"
+      ? f.emptyBlocks(flag.count, flag.first.rep, clockOf(flag.first.start))
       : f[flag.kind];
   const tab =
     flag.kind === "notHere"

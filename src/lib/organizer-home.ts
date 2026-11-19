@@ -113,7 +113,8 @@ export type HomeFlag =
   | { kind: "noAvailability" }
   | { kind: "invitesNotOut" }
   | { kind: "changedAfterSend" }
-  | { kind: "emptyBlock"; rep: string; start: number }
+  /** Sent chats nobody has accepted or is answering; `first` is the earliest. */
+  | { kind: "emptyBlocks"; count: number; first: { rep: string; start: number } }
   | { kind: "shortlistLate" }
   | { kind: "noRoom" }
   | { kind: "topLate" };
@@ -198,12 +199,18 @@ export function flagsFor(
       const out: HomeFlag[] = [];
       if (s.chats && !s.chats.prefsSubmittedAt) out.push({ kind: "noAvailability" });
       if (s.chats?.changedAfterSend) out.push({ kind: "changedAfterSend" });
-      // A sent chat nobody has accepted or is answering, before it starts.
+      // Sent chats nobody has accepted or is answering, before they start:
+      // one flag for all of them, so a sponsor with many reads as one fix.
       const nowMin = minutesInto("Saturday", now);
-      for (const b of s.blocks) {
-        if (b.accepted + b.waiting === 0 && nowMin < b.start) {
-          out.push({ kind: "emptyBlock", rep: b.repName, start: b.start });
-        }
+      const empty = s.blocks.filter(
+        (b) => b.accepted + b.waiting === 0 && nowMin < b.start,
+      );
+      if (empty[0]) {
+        out.push({
+          kind: "emptyBlocks",
+          count: empty.length,
+          first: { rep: empty[0].repName, start: empty[0].start },
+        });
       }
       return out;
     }

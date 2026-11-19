@@ -68,17 +68,18 @@ describe("flagsFor", () => {
     ]);
   });
 
-  it("flags changed reps and an empty chat that hasn't started on Saturday", () => {
+  it("flags changed reps and the empty chats that haven't started on Saturday, as one flag", () => {
     const s = sponsor({
       chats: { ...chats, changedAfterSend: true },
       blocks: [
         { repName: "Ken", sessionId: "15", room: "2241", start: 900, end: 960, accepted: 0, waiting: 0 },
         { repName: "Tom", sessionId: "10", room: "2241", start: 600, end: 660, accepted: 0, waiting: 0 },
+        { repName: "Sara", sessionId: "16", room: "2242", start: 960, end: 1020, accepted: 0, waiting: 0 },
       ],
     });
     expect(flagsFor("chats", s, "Saturday", at("Saturday", "12:05"))).toEqual([
       { kind: "changedAfterSend" },
-      { kind: "emptyBlock", rep: "Ken", start: 900 },
+      { kind: "emptyBlocks", count: 2, first: { rep: "Ken", start: 900 } },
     ]);
   });
 

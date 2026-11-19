@@ -586,7 +586,10 @@ export const sponsorOrganizerCopy = {
       noAvailability: "No availability yet: chats can't be scheduled",
       invitesNotOut: "Invites aren't out",
       changedAfterSend: "Changed reps after invites: resend",
-      emptyBlock: (rep: string, time: string) => `${rep}'s ${time} chat has no hackers yet`,
+      emptyBlocks: (count: number, rep: string, time: string) =>
+        count === 1
+          ? `${rep}'s ${time} chat has no hackers yet`
+          : `${count} chats have no hackers yet, first ${rep}'s at ${time}`,
       shortlistLate: "Shortlist not in",
       noRoom: "No judging room",
       topLate: "Top 5 not in",
