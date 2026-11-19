@@ -502,3 +502,11 @@ Supersedes "lead's phone + Send to the sponsor team" as equal options (2026-11-1
 **Why:** texting the lead is faster and doesn't depend on anyone watching Slack; off-shift leads shouldn't be woken, and sponsors only ever get their own lead's number. Apps can't send iMessages, and automatic SMS (e.g. Twilio) needs a paid number and business sender registration that can take days, so automatic pings stay on Slack.
 
 **Needs:** leads agree to their number being shown to their sponsors; the team turns on Slack notifications for DMs and the sponsor channel for the weekend.
+
+## 2026-11-19: Sponsor Judging sheet tab is wide, with 1st–5th place columns (Jazz)
+
+**Decision:** The app-owned "Sponsor Judging" tab (created in the sheet 2026-11-19, grey) has one row per sponsor: Sponsor, Prize track, Judging room, Round 1 status, Shortlist sent, Shortlist (team IDs), Round 2 status, Top 5 sent, 1st place, 2nd place, 3rd place, 4th place, 5th place, Notes. Place cells read "<team ID> · <team name>". A Presentations table sits below (Sponsor, Team ID, Team, Members, Time, Room, Notified). `sponsor-judging-sheet-mirror.ts` must be changed to write this layout (it currently writes three stacked tables with a long-format Final results). The existing "Judging" tab is unchanged (fixed layout; Luka's rotation reads it).
+
+**Why:** organizers read one row per sponsor to see each sponsor's ranked picks and team IDs at a glance.
+
+**Alternatives:** add 1st–5th columns to the "Judging" tab (rejected: fixed layout read by the app and the judging rotation); keep the long Rank table (harder to scan).
