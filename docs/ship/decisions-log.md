@@ -10,6 +10,45 @@ Calls made during the unattended build, and anything blocked or left for Jazz. P
 - **Invites can't fire by accident:** nothing is sent until an organizer presses Send for that sponsor, plus a `COFFEE_INVITES_ENABLED` kill switch that defaults to off outside production.
 - **Live sheet:** edited directly only to simplify it. A full Drive copy is made first, retired tabs are hidden with an "(old)" prefix rather than deleted, sharing is unchanged, and the Rationale + Decisions tab is kept in sync.
 
+- **Invites (track B's open questions):**
+  1. *Cap per hacker:* at most **2 live invites** (pending or accepted) per hacker at a time. Otherwise the top-ranked hackers collect seats and decline late. Considered: no cap (unfair), a cap of 1 (too few chats for keen hackers).
+  2. *Delivery record:* add `coffee_chat.notified_at` (migration 0060, in track B's branch only). Rounds retry invites that were never notified and never DM twice. Considered: no record (a failed DM is never retried; a resend double-DMs).
+  3. *Timed rounds:* keep the page-traffic trigger and "Run now", and add a GitHub Actions workflow every 10 minutes on Saturday that runs a round. Like `incomplete-reminder.yml`, it's a dry run unless the repo variable `COFFEE_ROUNDS_LIVE` is `true`. Considered: page traffic only (stalls if nobody has the page open).
+  4. *Partial sessions:* the rule stays: a session cut by the workshop buffer keeps only whole chats that end by the buffer. For Sun Life (setup 2:00, buffer from 1:45), 30-minute chats give 1:00–1:30, which matches Jazz's note.
+  5. *Friday declines:* seats freed overnight wait for round 2 at 10:30 AM. Jazz already accepted that 10–11 AM chats are filled only in round 1.
+
+- **Live sheet restructured (track E):**
+  - A backup copy was made first. Its link is kept out of the repo because the repo is public.
+  - Sponsor Day-Of gained Status, Booth location, Workshop room, Workshop time, Judging room and Team track filter, with values moved from Sponsor Status.
+  - Sponsor Status is now hidden as "(old) Sponsor Status".
+  - Coffee Chat Setup was rebuilt for sessions; the old version is hidden as "(old) Coffee Chat Setup".
+  - Five rows of Rationale + Decisions were updated. One write overwrote two rows; both were restored with their exact text.
+- **Track B's agent couldn't be resumed** after finishing (its session record was gone). A fresh agent applies the review fixes from the handoff doc.
+
+- **Organizer board (track C's open questions):**
+  1. *Partial sessions* end at the last whole chat: 15-minute chats give 1:00–1:45 and 30-minute chats give 1:00–1:30. This is the same rule as invites (D4).
+  2. *A sponsor whose reps all asked for 0 chats* still counts as submitted, shown as "Submitted, no chats asked". They did their part.
+  3. *No organizer names on board changes*: showing which sponsor changed something is enough. Considered: a new placements column (another migration for little gain).
+  4. *The Help sheet's "30-minute 1-on-1s" goes now*, and the scheduler ignores `longer_one_on_one`. Jazz removed that option, so 1-on-1s are always 15 minutes.
+  5. *Disabled look on the shared primary `DashboardButton`*, not only on Send, so every disabled button looks disabled.
+
+- **My sponsors (track D's open questions):**
+  1. *People* shows phone + copy only, no Text/Call, the same as the coffee board (Jazz's answer).
+  2. *All sponsors* stays the existing day board without help; rebuilding it as the mock's three tables is skipped before the freeze. My sponsors is the new view.
+  3. *Needs attention* shows every sponsor's items, with the organizer's own sponsors first. Someone arriving cold (and Noah, who sends) needs the whole picture. Considered: own sponsors only (hides problems from Noah).
+  4. *A task counts as overdue* for one hour after its window, since nothing marks tasks done. Accepted.
+  5. *CC workshop pill:* attendance is stored in a new Sponsor Day-Of column "At CC workshop" (checkbox), read and written like Status. It's wired at merge. Considered: dropping the pill (Jazz asked for it), a DB column (the sheet is where the team already looks).
+- **Sheet writes were not fully gated:** saving a sponsor status wrote to the live sheet even with SHEET_WRITES off. This predates the build. Fixed in track E, and every write call is now checked to be gated.
+
 ## Blocked / for Jazz
+
+- **Task pings already in Slack:** if any were synced in production before pings were turned off, those scheduled Slack messages will still send. Check Slack's scheduled messages for the ping bot and cancel them. (I can't see production Slack.)
+
+- **Sheet data questions (from track E):**
+  - CSE is on Coffee Chat Setup, but its "Coffee Chats & Interviews" box on Sponsor Day-Of isn't ticked. Which is right?
+  - Manulife's and Commure's judging rooms ("RM 555", "RM 44") and track filters were moved as they were, but neither has a prize track. Test values?
+- **Backup sheet ownership:** the backup copy is owned by the connected Google account. Check its sharing if the team needs it.
+
+- **Arm invite rounds on Saturday morning:** `gh variable set COFFEE_ROUNDS_LIVE --body true`. Production must also have `COFFEE_INVITES_ENABLED` unset or `1`. Left unarmed, because arming sends real DMs.
 
 _(filled in as the run goes)_

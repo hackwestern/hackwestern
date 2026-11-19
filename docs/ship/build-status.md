@@ -1,6 +1,6 @@
 # Build status
 
-Started 2026-11-19, 08:06. Six tracks build in parallel worktrees (A–F); each is code-reviewed, fixed and merged into `coffee-prefs`. Status: **Building**, **Done**, **Simplified** (with note) or **Blocked** (with reason).
+Started 2026-11-19, 08:06. Merged: C (08:54). Six tracks build in parallel worktrees (A–F); each is code-reviewed, fixed and merged into `coffee-prefs`. Status: **Building**, **Done**, **Simplified** (with note) or **Blocked** (with reason).
 
 Intended features follow `docs/decisions.md`. Where Jazz's ship brief lists something a logged decision removed, the decision wins:
 - **No 30-min 1-on-1 option.** 1-on-1 = 15 min, groups = 30 min.
@@ -33,9 +33,9 @@ Intended features follow `docs/decisions.md`. Where Jazz's ship brief lists some
 | O2 | Now and next (event + task + owner) under Happening now | D | Building | Missing today. |
 | O3 | Hide Task pings tab (pings off) | D | Building | Still visible. |
 | O4 | My sponsors (login-email match, reps, Arrival/Booth/CC workshop pills) | D | Building | |
-| O5 | Which sponsors submitted / need scheduling | C | Building | Board shows it, but only seed data ever submits (fixed by S5). |
-| O6 | Schedule chats from availability, assign rooms, spot clashes | C | Done (existing) + Building | Board v8 built. Adding: partial sessions, 0-chat reps, plain status chips, changed-after-Send flag. |
-| O7 | Contacting reps: copy icon beside each phone | C | Building | Today: Contact / Text / Call. |
+| O5 | Which sponsors submitted / need scheduling | C | Done | Board shows it, but only seed data ever submits (fixed by S5). |
+| O6 | Schedule chats from availability, assign rooms, spot clashes | C | Done | Board v8 built. Adding: partial sessions, 0-chat reps, plain status chips, changed-after-Send flag. |
+| O7 | Contacting reps: copy icon beside each phone | C | Done | Today: Contact / Text / Call. |
 | O8 | Send confirmed schedules & invites (Noah only) | C + B | Building | `send` has a TODO; wired after B and C merge. |
 | O9 | Hacker invites: one per seat, round 1 Fri 10 PM, 30-min Saturday rounds, Slack + email, kill switch | B | Building | |
 | O10 | Judging tab: top 3, digital sponsors' top 3 by Devpost link | F | Building | |
