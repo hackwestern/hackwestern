@@ -8,16 +8,17 @@ import { createInnerTRPCContext } from "~/server/api/trpc";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
 import { db } from "~/server/db";
 import {
+  coffeeChatReps,
   sponsorJudgingSettings,
   sponsorJudgingSponsors,
   sponsorPresentations,
+  sponsorTeamReviews,
   teams,
   users,
 } from "~/server/db/schema";
 import {
   fetchSponsorTrack,
   fetchSponsorTracks,
-  writeChosenTeams,
 } from "~/server/api/utils/sponsor-judging-teams";
 import { setRound2Open } from "~/server/api/utils/sponsor-judging-settings";
 import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
@@ -40,22 +41,24 @@ vi.mock("~/env", async (importOriginal) => {
 // The Sponsor Judging tab mirror writes to Google Sheets; never here.
 vi.mock("~/server/api/utils/sponsor-judging-sheet-mirror", () => ({
   mirrorSponsorJudging: vi.fn(async () => ({ ok: true, rows: 0 })),
-  mirrorSponsorJudgingSoon: vi.fn(async () => undefined),
+  mirrorSponsorJudgingSoon: vi.fn(async () => ({ ok: true, rows: 0 })),
 }));
 
-// The sheet is the only outside call: the sponsor's track and Lucas's picks
-// column. Team eligibility itself runs against the test database.
+// The sheet is the only outside call: the sponsor's track. Team eligibility
+// itself runs against the test database. Picks are stored in the DB and
+// mirrored to the Sponsor Judging tab (mirrorSponsorJudgingSoon, mocked).
 vi.mock("~/server/api/utils/sponsor-judging-teams", async (importOriginal) => ({
   ...(await importOriginal<
     typeof import("~/server/api/utils/sponsor-judging-teams")
   >()),
   fetchSponsorTrack: vi.fn(),
   fetchSponsorTracks: vi.fn(),
-  writeChosenTeams: vi.fn(),
 }));
 const track = vi.mocked(fetchSponsorTrack);
 const allTracks = vi.mocked(fetchSponsorTracks);
-const writeSheet = vi.mocked(writeChosenTeams);
+const mirrorSoon = vi.mocked(mirrorSponsorJudgingSoon);
+const SYNCED = { ok: true as const, rows: 0 };
+const DOWN = { ok: false as const, error: "sheets down" };
 
 // Sponsors aren't logged in: their private UUID is the credential.
 const anon = createCaller(createInnerTRPCContext({ session: null }));
@@ -73,7 +76,7 @@ beforeEach(async () => {
     });
   track.mockReset().mockResolvedValue(null);
   allTracks.mockReset().mockResolvedValue(new Map());
-  writeSheet.mockReset().mockResolvedValue(undefined);
+  mirrorSoon.mockReset().mockResolvedValue(SYNCED);
 });
 
 const PAST = "2020-01-01T00:00:00Z";
@@ -116,7 +119,12 @@ async function shortlistFive(sponsorId: string, { present = true } = {}) {
       sponsor: sponsorId,
       teamId: id,
       shortlisted: true,
-      score: 10 - i,
+    });
+    await anon.sponsorScoring.score({
+      sponsor: sponsorId,
+      teamId: id,
+      judge: "Dana W.",
+      halves: (10 - i) * 2,
     });
     ids.push(id);
   }
@@ -155,82 +163,81 @@ describe("sponsorScoring.get", () => {
     expect(ids).toContain(inTrack);
     expect(ids).not.toContain(otherTrack);
     expect(ids).not.toContain(draft);
-    expect(res.finalTop).toBe(5);
+    expect(res.finalTop).toBe(3);
     expect(res.final).toBeNull();
   });
 
   test("retries a sheet write that failed after the submission saved", async () => {
     const s = await sponsor();
     const ids = await shortlistFive(s.id);
-    writeSheet.mockRejectedValue(new Error("sheets down"));
-    await anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids });
+    mirrorSoon.mockResolvedValue(DOWN);
+    await anon.sponsorScoring.submit({
+      sponsor: s.id,
+      teamIds: ids.slice(0, 3),
+    });
     // Still down: the query succeeds and says so.
     await expect(
       anon.sponsorScoring.get({ sponsor: s.id }),
     ).resolves.toMatchObject({ final: { sheetSynced: false } });
 
-    writeSheet.mockReset().mockResolvedValue(undefined);
+    mirrorSoon.mockReset().mockResolvedValue(SYNCED);
     const res = await anon.sponsorScoring.get({ sponsor: s.id });
-    expect(res.final).toMatchObject({ teamIds: ids, sheetSynced: true });
-    expect(writeSheet).toHaveBeenCalledWith(s.name, ids);
+    expect(res.final).toMatchObject({
+      teamIds: ids.slice(0, 3),
+      sheetSynced: true,
+    });
+    expect(mirrorSoon).toHaveBeenCalled();
 
     // Synced now: no more writes.
-    writeSheet.mockClear();
+    mirrorSoon.mockClear();
     await anon.sponsorScoring.get({ sponsor: s.id });
-    expect(writeSheet).not.toHaveBeenCalled();
+    expect(mirrorSoon).not.toHaveBeenCalled();
   });
 
   test("a submitted team that withdrew drops out of the ranking", async () => {
     const s = await sponsor();
     const ids = await shortlistFive(s.id);
-    await anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids });
+    await anon.sponsorScoring.submit({
+      sponsor: s.id,
+      teamIds: ids.slice(0, 3),
+    });
     await db
       .update(teams)
       .set({ submissionStatus: "draft" })
       .where(eq(teams.id, ids[2]!));
     const res = await anon.sponsorScoring.get({ sponsor: s.id });
-    expect(res.final?.teamIds).toEqual(ids.filter((id) => id !== ids[2]));
+    expect(res.final?.teamIds).toEqual(ids.slice(0, 2));
     expect(res.final?.ineligibleCount).toBe(1);
   });
 });
 
 describe("sponsorScoring.review", () => {
-  test("score must be a whole number 1-10", async () => {
+  test("shortlist toggles on and off without touching the scores", async () => {
     const s = await sponsor();
     const t = await team();
-    for (const score of [0, 11, 5.5, -3]) {
-      await expect(
-        anon.sponsorScoring.review({ sponsor: s.id, teamId: t, score }),
-      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    }
-    for (const score of [1, 10]) {
-      await expect(
-        anon.sponsorScoring.review({ sponsor: s.id, teamId: t, score }),
-      ).resolves.toMatchObject({ score });
-    }
-    await expect(
-      anon.sponsorScoring.review({ sponsor: s.id, teamId: t, score: null }),
-    ).resolves.toMatchObject({ score: null });
-  });
-
-  test("shortlist toggles on and off without touching the score", async () => {
-    const s = await sponsor();
-    const t = await team();
-    await anon.sponsorScoring.review({ sponsor: s.id, teamId: t, score: 7 });
+    await anon.sponsorScoring.score({
+      sponsor: s.id,
+      teamId: t,
+      judge: "Dana W.",
+      halves: 15,
+    });
     await expect(
       anon.sponsorScoring.review({
         sponsor: s.id,
         teamId: t,
         shortlisted: true,
       }),
-    ).resolves.toMatchObject({ score: 7, shortlisted: true });
-    await expect(
-      anon.sponsorScoring.review({
-        sponsor: s.id,
-        teamId: t,
-        shortlisted: false,
-      }),
-    ).resolves.toMatchObject({ score: 7, shortlisted: false });
+    ).resolves.toMatchObject({ shortlisted: true });
+    await anon.sponsorScoring.review({
+      sponsor: s.id,
+      teamId: t,
+      shortlisted: false,
+    });
+    const res = await anon.sponsorScoring.get({ sponsor: s.id });
+    expect(res.reviews.find((r) => r.teamId === t)).toMatchObject({
+      score: 7.5,
+      shortlisted: false,
+    });
   });
 
   test("notes are trimmed, blank clears, and capped", async () => {
@@ -255,12 +262,20 @@ describe("sponsorScoring.review", () => {
     const s = await sponsor();
     const draft = await team("draft");
     await expect(
-      anon.sponsorScoring.review({ sponsor: s.id, teamId: draft, score: 5 }),
+      anon.sponsorScoring.review({
+        sponsor: s.id,
+        teamId: draft,
+        shortlisted: true,
+      }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     const general = await team("submitted", ["General"]);
     track.mockResolvedValue("Best Domain");
     await expect(
-      anon.sponsorScoring.review({ sponsor: s.id, teamId: general, score: 5 }),
+      anon.sponsorScoring.review({
+        sponsor: s.id,
+        teamId: general,
+        shortlisted: true,
+      }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
@@ -269,7 +284,11 @@ describe("sponsorScoring.review", () => {
     const t = await team();
     closesAt = PAST;
     await expect(
-      anon.sponsorScoring.review({ sponsor: s.id, teamId: t, score: 5 }),
+      anon.sponsorScoring.review({
+        sponsor: s.id,
+        teamId: t,
+        shortlisted: true,
+      }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect((await anon.sponsorScoring.get({ sponsor: s.id })).open).toBe(false);
   });
@@ -281,7 +300,6 @@ describe("sponsorScoring.review", () => {
     await anon.sponsorScoring.review({
       sponsor: a.id,
       teamId: t,
-      score: 9,
       shortlisted: true,
       note: "secret",
     });
@@ -292,16 +310,16 @@ describe("sponsorScoring.review", () => {
 });
 
 describe("sponsorScoring.submit", () => {
-  test("saves exactly five shortlisted teams and writes the sheet", async () => {
+  test("saves exactly three ranked teams and mirrors the sheet", async () => {
     const s = await sponsor();
     const ids = await shortlistFive(s.id);
-    const ranked = [...ids].reverse();
+    const ranked = [...ids].reverse().slice(0, 3);
     const res = await anon.sponsorScoring.submit({
       sponsor: s.id,
       teamIds: ranked,
     });
     expect(res).toMatchObject({ teamIds: ranked, sheetSynced: true });
-    expect(writeSheet).toHaveBeenCalledWith(s.name, ranked);
+    expect(mirrorSoon).toHaveBeenCalled();
     const after = await anon.sponsorScoring.get({ sponsor: s.id });
     expect(after.final).toMatchObject({ teamIds: ranked, sheetSynced: true });
   });
@@ -311,17 +329,17 @@ describe("sponsorScoring.submit", () => {
     const ids = await shortlistFive(s.id);
     const extra = await team();
     const cases = [
-      ids.slice(0, 4),
-      [...ids, extra],
-      [ids[0]!, ids[0]!, ids[1]!, ids[2]!, ids[3]!],
-      [...ids.slice(0, 4), extra],
+      ids.slice(0, 2),
+      [...ids.slice(0, 3), extra],
+      [ids[0]!, ids[0]!, ids[1]!],
+      [...ids.slice(0, 2), extra],
     ];
     for (const teamIds of cases) {
       await expect(
         anon.sponsorScoring.submit({ sponsor: s.id, teamIds }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     }
-    expect(writeSheet).not.toHaveBeenCalled();
+    expect(mirrorSoon).not.toHaveBeenCalled();
   });
 
   test("another sponsor's shortlist doesn't count, and isn't touched", async () => {
@@ -330,7 +348,7 @@ describe("sponsorScoring.submit", () => {
     const aIds = await shortlistFive(a.id);
     // B has no slot of their own, so round 2 is locked for them.
     await expect(
-      anon.sponsorScoring.submit({ sponsor: b.id, teamIds: aIds }),
+      anon.sponsorScoring.submit({ sponsor: b.id, teamIds: aIds.slice(0, 3) }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect((await anon.sponsorScoring.get({ sponsor: a.id })).final).toBeNull();
   });
@@ -340,7 +358,7 @@ describe("sponsorScoring.submit", () => {
     const ids = await shortlistFive(s.id);
     track.mockResolvedValue("Best Domain");
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
@@ -349,26 +367,27 @@ describe("sponsorScoring.submit", () => {
     const ids = await shortlistFive(s.id);
     closesAt = PAST;
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect(writeSheet).not.toHaveBeenCalled();
+    expect(mirrorSoon).not.toHaveBeenCalled();
   });
 
   test("a slow sheet write never marks a newer submission synced", async () => {
     const s = await sponsor();
     const ids = await shortlistFive(s.id);
-    const reranked = [...ids].reverse();
+    const reranked = [...ids].reverse().slice(0, 3);
     // While the first ranking's sheet write is in flight, a second ranking
     // is submitted and its own sheet write fails.
-    writeSheet.mockImplementationOnce(async () => {
+    mirrorSoon.mockImplementationOnce(async () => {
       await new Promise((resolve) => setTimeout(resolve, 5));
-      writeSheet.mockRejectedValueOnce(new Error("sheets down"));
+      mirrorSoon.mockResolvedValueOnce(DOWN);
       await anon.sponsorScoring.submit({ sponsor: s.id, teamIds: reranked });
+      return SYNCED;
     });
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
     ).resolves.toMatchObject({ sheetSynced: false });
-    writeSheet.mockRejectedValue(new Error("sheets down"));
+    mirrorSoon.mockResolvedValue(DOWN);
     expect(
       (await anon.sponsorScoring.get({ sponsor: s.id })).final,
     ).toMatchObject({ teamIds: reranked, sheetSynced: false });
@@ -377,16 +396,16 @@ describe("sponsorScoring.submit", () => {
   test("still counts if the sheet write fails; resubmit replaces", async () => {
     const s = await sponsor();
     const ids = await shortlistFive(s.id);
-    writeSheet.mockRejectedValue(new Error("sheets down"));
+    mirrorSoon.mockResolvedValue(DOWN);
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
     ).resolves.toMatchObject({ sheetSynced: false });
     expect(
       (await anon.sponsorScoring.get({ sponsor: s.id })).final,
-    ).toMatchObject({ teamIds: ids, sheetSynced: false });
+    ).toMatchObject({ teamIds: ids.slice(0, 3), sheetSynced: false });
 
-    writeSheet.mockReset().mockResolvedValue(undefined);
-    const reranked = [ids[4]!, ...ids.slice(0, 4)];
+    mirrorSoon.mockReset().mockResolvedValue(SYNCED);
+    const reranked = [ids[2]!, ids[0]!, ids[1]!];
     await anon.sponsorScoring.submit({ sponsor: s.id, teamIds: reranked });
     expect(
       (await anon.sponsorScoring.get({ sponsor: s.id })).final,
@@ -412,11 +431,15 @@ describe("sponsorScoring.overview", () => {
     const a = await sponsor();
     const b = await sponsor();
     const ids = await shortlistFive(a.id);
-    await anon.sponsorScoring.submit({ sponsor: a.id, teamIds: ids });
-    await anon.sponsorScoring.review({
+    await anon.sponsorScoring.submit({
+      sponsor: a.id,
+      teamIds: ids.slice(0, 3),
+    });
+    await anon.sponsorScoring.score({
       sponsor: b.id,
       teamId: ids[0]!,
-      score: 4,
+      judge: "Marcus O.",
+      halves: 8,
     });
     const hacker = await mockSession(db);
     await db
@@ -427,7 +450,7 @@ describe("sponsorScoring.overview", () => {
     const res = await organizer.sponsorScoring.overview();
     const sa = res.sponsors.find((s) => s.sponsorId === a.id)!;
     expect(sa).toMatchObject({ scored: 5, shortlisted: 5 });
-    expect(sa.final?.teams.map((t) => t.teamId)).toEqual(ids);
+    expect(sa.final?.teams.map((t) => t.teamId)).toEqual(ids.slice(0, 3));
     expect(sa.final?.teams[0]).toMatchObject({ score: 10 });
     expect(sa.final?.teams[0]?.devpostUrl).toContain("devpost.com");
     // Final results list each team's hackers.
@@ -455,7 +478,10 @@ describe("sponsorScoring.overview", () => {
     );
     const a = await sponsor();
     const ids = await shortlistFive(a.id);
-    await anon.sponsorScoring.submit({ sponsor: a.id, teamIds: ids });
+    await anon.sponsorScoring.submit({
+      sponsor: a.id,
+      teamIds: ids.slice(0, 3),
+    });
     await db
       .update(teams)
       .set({ submissionStatus: "draft" })
@@ -482,8 +508,11 @@ describe("sponsorScoring.overview", () => {
     const before = (await organizer.sponsorScoring.overview()).unsyncedCount;
     const a = await sponsor();
     const ids = await shortlistFive(a.id);
-    writeSheet.mockRejectedValue(new Error("sheets down"));
-    await anon.sponsorScoring.submit({ sponsor: a.id, teamIds: ids });
+    mirrorSoon.mockResolvedValue(DOWN);
+    await anon.sponsorScoring.submit({
+      sponsor: a.id,
+      teamIds: ids.slice(0, 3),
+    });
     const res = await organizer.sponsorScoring.overview();
     expect(res.unsyncedCount).toBe(before + 1);
   });
@@ -548,7 +577,7 @@ describe("sponsorScoring round 2", () => {
       await expect(
         anon.sponsorScoring.submit({
           sponsor: s.id,
-          teamIds: [late, ...ids.slice(0, 4)],
+          teamIds: [late, ...ids.slice(0, 2)],
         }),
       ).rejects.toMatchObject({
         code: "BAD_REQUEST",
@@ -562,14 +591,14 @@ describe("sponsorScoring round 2", () => {
         shortlisted: false,
       });
       await expect(
-        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
-      ).resolves.toMatchObject({ teamIds: ids });
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
+      ).resolves.toMatchObject({ teamIds: ids.slice(0, 3) });
     } finally {
       await db.delete(sponsorPresentations);
     }
   });
 
-  test("before organizers open round 2, the top 5 can't be submitted", async () => {
+  test("before organizers open round 2, the top 3 can't be submitted", async () => {
     const s = await sponsor();
     const ids = await shortlistFive(s.id, { present: false });
     try {
@@ -585,7 +614,7 @@ describe("sponsorScoring round 2", () => {
       const res = await anon.sponsorScoring.get({ sponsor: s.id });
       expect(res.round.round2Open).toBe(false);
       await expect(
-        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
       ).rejects.toMatchObject({
         code: "FORBIDDEN",
         message: "Round 2 isn't open yet. It opens after presentations.",
@@ -596,8 +625,8 @@ describe("sponsorScoring round 2", () => {
         (await anon.sponsorScoring.get({ sponsor: s.id })).round.round2Open,
       ).toBe(true);
       await expect(
-        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
-      ).resolves.toMatchObject({ teamIds: ids });
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
+      ).resolves.toMatchObject({ teamIds: ids.slice(0, 3) });
     } finally {
       await db.delete(sponsorPresentations);
     }
@@ -616,7 +645,7 @@ describe("sponsorScoring round 2", () => {
   const noSlot = {
     code: "FORBIDDEN",
     message:
-      "Round 2 is locked: no teams presented to you, so you can't rank a top 5.",
+      "Round 2 is locked: no teams presented to you, so you can't rank a top 3.",
   };
 
   test("a sponsor who sent late (no rows) can't rank in round 2", async () => {
@@ -626,14 +655,15 @@ describe("sponsorScoring round 2", () => {
     try {
       await scheduleFor(other.id, await team());
       await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
+      mirrorSoon.mockClear();
       const res = await anon.sponsorScoring.get({ sponsor: s.id });
       expect(res.round.scheduledAt).not.toBeNull();
       expect(res.round.slots).toEqual([]);
       expect(res.round.round2Open).toBe(true);
       await expect(
-        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
       ).rejects.toMatchObject(noSlot);
-      expect(writeSheet).not.toHaveBeenCalled();
+      expect(mirrorSoon).not.toHaveBeenCalled();
       expect(
         (await anon.sponsorScoring.get({ sponsor: s.id })).final,
       ).toBeNull();
@@ -657,7 +687,7 @@ describe("sponsorScoring round 2", () => {
         })),
       );
       await expect(
-        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
       ).rejects.toMatchObject(noSlot);
     } finally {
       await db.delete(sponsorPresentations);
@@ -669,7 +699,7 @@ describe("sponsorScoring round 2", () => {
     const ids = await shortlistFive(s.id, { present: false });
     await setRound2Open(false);
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
       message: "Round 2 isn't open yet. It opens after presentations.",
@@ -699,12 +729,12 @@ describe("sponsorScoring round 2", () => {
       await expect(
         anon.sponsorScoring.submit({
           sponsor: s.id,
-          teamIds: [added, ...ids.slice(0, 4)],
+          teamIds: [added, ...ids.slice(0, 2)],
         }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
       await expect(
-        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
-      ).resolves.toMatchObject({ teamIds: ids });
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
+      ).resolves.toMatchObject({ teamIds: ids.slice(0, 3) });
     } finally {
       await db.delete(sponsorPresentations);
     }
@@ -734,7 +764,7 @@ describe("sponsorScoring prize track gate", () => {
       anon.sponsorScoring.sendShortlist({ sponsor: s.id }),
     ).rejects.toMatchObject(noTrack);
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: [t, t, t, t, t] }),
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: [t, t, t] }),
     ).rejects.toMatchObject(noTrack);
     await expect(
       anon.sponsorJudging.listAllTeams({ sponsor: s.id }),
@@ -770,19 +800,249 @@ describe("sponsorScoring prize track gate", () => {
 });
 
 describe("sponsorScoring sheet mirror hooks", () => {
-  test("sending a shortlist and submitting a top 5 rewrite the tab", async () => {
+  test("sending a shortlist and submitting a top 3 rewrite the tab", async () => {
     const soon = vi.mocked(mirrorSponsorJudgingSoon);
     const s = await sponsor();
     const ids = await shortlistFive(s.id);
     soon.mockClear();
     await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
     expect(soon).toHaveBeenCalledTimes(1);
-    await anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids });
+    await anon.sponsorScoring.submit({
+      sponsor: s.id,
+      teamIds: ids.slice(0, 3),
+    });
     expect(soon).toHaveBeenCalledTimes(2);
     // A refused submit changes nothing and doesn't write.
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 4) }),
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 2) }),
     ).rejects.toBeTruthy();
     expect(soon).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("sponsorScoring.score (several reps, half points)", () => {
+  test("takes halves 2-20 only (1-10 in half points); null clears", async () => {
+    const s = await sponsor();
+    const t = await team();
+    for (const halves of [1, 21, 0, 7.5]) {
+      await expect(
+        anon.sponsorScoring.score({
+          sponsor: s.id,
+          teamId: t,
+          judge: "Dana W.",
+          halves,
+        }),
+      ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    }
+    await expect(
+      anon.sponsorScoring.score({
+        sponsor: s.id,
+        teamId: t,
+        judge: "Dana W.",
+        halves: 17,
+      }),
+    ).resolves.toMatchObject({ score: 8.5, judge: "Dana W." });
+    await anon.sponsorScoring.score({
+      sponsor: s.id,
+      teamId: t,
+      judge: "Dana W.",
+      halves: null,
+    });
+    const res = await anon.sponsorScoring.get({ sponsor: s.id });
+    expect(res.scores.filter((x) => x.teamId === t)).toEqual([]);
+    expect(res.reviews.find((r) => r.teamId === t)?.score ?? null).toBeNull();
+  });
+
+  test("each rep's score is kept; the review score is the team average", async () => {
+    const s = await sponsor();
+    const t = await team();
+    const give = (judge: string, halves: number) =>
+      anon.sponsorScoring.score({ sponsor: s.id, teamId: t, judge, halves });
+    await give("Dana W.", 18); // 9
+    await give("Marcus O.", 10); // 5
+    // Same rep, different case and spacing: replaces, not a third score.
+    await give("  dana   w. ", 17); // 8.5
+    const res = await anon.sponsorScoring.get({ sponsor: s.id });
+    const mine = res.scores.filter((x) => x.teamId === t);
+    expect(mine).toHaveLength(2);
+    expect(mine).toContainEqual({ teamId: t, judge: "dana w.", score: 8.5 });
+    expect(mine).toContainEqual({ teamId: t, judge: "Marcus O.", score: 5 });
+    expect(res.reviews.find((r) => r.teamId === t)?.score).toBe(6.75);
+    // The older one-score column follows the rounded average (organizer
+    // day board counts).
+    const [row] = await db
+      .select()
+      .from(sponsorTeamReviews)
+      .where(eq(sponsorTeamReviews.teamId, t));
+    expect(row?.score).toBe(7);
+  });
+
+  test("lists the sponsor's reps for Who's judging?", async () => {
+    const s = await sponsor();
+    await db.insert(coffeeChatReps).values([
+      { sponsorId: s.id, name: "Priya S.", phone: "1", position: 1 },
+      { sponsorId: s.id, name: "Leo T.", phone: "2", position: 0 },
+    ]);
+    const res = await anon.sponsorScoring.get({ sponsor: s.id });
+    expect(res.reps).toEqual(["Leo T.", "Priya S."]);
+  });
+
+  test("can't score a team outside the track, or after judging closes", async () => {
+    const s = await sponsor();
+    const draft = await team("draft");
+    await expect(
+      anon.sponsorScoring.score({
+        sponsor: s.id,
+        teamId: draft,
+        judge: "Dana W.",
+        halves: 10,
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    const t = await team();
+    closesAt = PAST;
+    await expect(
+      anon.sponsorScoring.score({
+        sponsor: s.id,
+        teamId: t,
+        judge: "Dana W.",
+        halves: 10,
+      }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  test("organizer overview shows who gave each finalist's score", async () => {
+    const organizer = createCaller(
+      createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
+    );
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    await anon.sponsorScoring.score({
+      sponsor: s.id,
+      teamId: ids[0]!,
+      judge: "Marcus O.",
+      halves: 13,
+    });
+    await anon.sponsorScoring.submit({
+      sponsor: s.id,
+      teamIds: ids.slice(0, 3),
+    });
+    const res = await organizer.sponsorScoring.overview();
+    const row = res.sponsors.find((x) => x.sponsorId === s.id)!;
+    expect(row.judges).toBe(2);
+    expect(row.final?.teams[0]).toMatchObject({
+      score: 8.25,
+      byJudge: [
+        { judge: "Dana W.", score: 10 },
+        { judge: "Marcus O.", score: 6.5 },
+      ],
+    });
+  });
+});
+
+describe("sponsorScoring digital sponsors (top 3 by Devpost link)", () => {
+  async function organizer() {
+    return createCaller(
+      createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
+    );
+  }
+
+  test("organizers enter 1st-3rd by Devpost link or team ID", async () => {
+    const org = await organizer();
+    const [a, b, c] = [await team(), await team(), await team()];
+    const res = await org.sponsorScoring.submitDigital({
+      name: "PCBWay",
+      links: [
+        // Pasted without https, with www and a trailing slash.
+        `www.devpost.com/software/${a}/`,
+        `https://devpost.com/software/${b}?ref=x`,
+        c,
+      ],
+    });
+    expect(res.teamIds).toEqual([a, b, c]);
+    expect(mirrorSoon).toHaveBeenCalled();
+    const teamsRes = await org.sponsorScoring.digitalTeams({ name: "pcbway" });
+    expect(teamsRes.final?.teamIds).toEqual([a, b, c]);
+    const overview = await org.sponsorScoring.overview();
+    expect(overview.digital).toEqual(["PCBWay"]);
+    const pcb = overview.sponsors.find((x) => x.name === "PCBWay")!;
+    expect(pcb).toMatchObject({ digital: true });
+    expect(pcb.final?.teams.map((t) => t.teamId)).toEqual([a, b, c]);
+  });
+
+  test("refuses a link that matches no submitted team in the track", async () => {
+    const org = await organizer();
+    const [a, b] = [await team(), await team()];
+    const draft = await team("draft");
+    await expect(
+      org.sponsorScoring.submitDigital({
+        name: "PCBWay",
+        links: [a, b, `devpost.com/software/${draft}`],
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      org.sponsorScoring.submitDigital({
+        name: "PCBWay",
+        links: [a, b, "devpost.com/software/nobody-built-this"],
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    // Outside the sponsor's track.
+    track.mockResolvedValue("Best Domain");
+    const inTrack = await team("submitted", ["Best Domain"]);
+    await expect(
+      org.sponsorScoring.submitDigital({
+        name: "PCBWay",
+        links: [inTrack, a, b],
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  test("refuses the same team twice and a non-digital sponsor", async () => {
+    const org = await organizer();
+    const [a, b] = [await team(), await team()];
+    await expect(
+      org.sponsorScoring.submitDigital({
+        name: "PCBWay",
+        links: [a, `devpost.com/software/${a}`, b],
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      org.sponsorScoring.submitDigital({
+        name: "Scotiabank",
+        links: [a, b, a],
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  test("organizers only; a digital sponsor's link can't judge in the portal", async () => {
+    await expect(
+      anon.sponsorScoring.submitDigital({
+        name: "PCBWay",
+        links: ["a", "b", "c"],
+      }),
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    const [row] = await db
+      .insert(sponsorJudgingSponsors)
+      .values({ name: `PCBWay ${faker.string.alphanumeric(6)}` })
+      .returning();
+    await expect(
+      anon.sponsorScoring.get({ sponsor: row!.id }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+});
+
+describe("sponsorJudging.getChosenTeams (database, not the deleted Judging tab)", () => {
+  test("returns the submitted top 3 from the DB, even when the sheet mirror failed", async () => {
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    expect(
+      await anon.sponsorJudging.getChosenTeams({ sponsor: s.id }),
+    ).toMatchObject({ teamIds: [] });
+    mirrorSoon.mockResolvedValue(DOWN);
+    await expect(
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
+    ).resolves.toMatchObject({ sheetSynced: false });
+    expect(
+      await anon.sponsorJudging.getChosenTeams({ sponsor: s.id }),
+    ).toMatchObject({ sponsorName: s.name, teamIds: ids.slice(0, 3) });
   });
 });

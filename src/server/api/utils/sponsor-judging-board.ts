@@ -2,6 +2,7 @@ import {
   buildJudgingBoard,
   pickCountFromChosenTeams,
 } from "~/lib/sponsor-judging-rooms";
+import { remoteJudgingRoom } from "~/lib/sponsor-prize-tracks";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import {
   createCachedLoader,
@@ -59,7 +60,9 @@ export async function judgingSheet() {
 /**
  * Each registered sponsor's Sunday judging room, by sponsor id, from the
  * same sources as the organizer "Sponsor track judging" panel (sponsor
- * sheet first, then the run-of-show list). No room = absent from the map.
+ * sheet first, then the run-of-show list). A sponsor that judges remotely
+ * (TinyFish) always gets REMOTE_JUDGING_ROOM, whatever the sheets say
+ * (Jazz, 2026-11-19). No room = absent from the map.
  */
 export async function judgingRoomsById(
   sponsors: readonly { id: string; name: string }[],
@@ -77,6 +80,10 @@ export async function judgingRoomsById(
   const rooms = new Map<string, string>();
   for (const row of board.rows) {
     if (row.sponsorId && row.room) rooms.set(row.sponsorId, row.room);
+  }
+  for (const s of sponsors) {
+    const remote = remoteJudgingRoom(s.name);
+    if (remote) rooms.set(s.id, remote);
   }
   return rooms;
 }

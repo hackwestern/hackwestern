@@ -1,12 +1,16 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { type TeamReview } from "~/lib/sponsor-scoring";
+import {
+  aggregateScores,
+  judgeKey,
+  scoreToHalves,
+  type JudgeScore,
+  type TeamReview,
+} from "~/lib/sponsor-scoring";
 import { api, type RouterOutputs } from "~/utils/api";
 
 export type JudgingData = RouterOutputs["sponsorScoring"]["get"];
 export type JudgingTeam = JudgingData["teams"][number];
-export type ReviewPatch = Partial<
-  Pick<TeamReview, "score" | "shortlisted" | "note">
->;
+export type ReviewPatch = Partial<Pick<TeamReview, "shortlisted" | "note">>;
 export type SaveState = "saving" | "saved" | "error";
 
 const EMPTY: TeamReview = {
@@ -62,7 +66,6 @@ export function useSponsorJudging(sponsor: string, enabled: boolean) {
           .getData({ sponsor })
           ?.reviews.find((r) => r.teamId === vars.teamId) ?? EMPTY;
       const patch: ReviewPatch = {};
-      if (vars.score !== undefined) patch.score = vars.score;
       if (vars.shortlisted !== undefined) patch.shortlisted = vars.shortlisted;
       if (vars.note !== undefined) patch.note = vars.note;
       patchCache(vars.teamId, patch);
@@ -108,13 +111,79 @@ export function useSponsorJudging(sponsor: string, enabled: boolean) {
     [mutate, sponsor],
   );
 
-  const reviews = useMemo(
-    () =>
-      new Map<string, TeamReview>(
-        (query.data?.reviews ?? []).map((r) => [r.teamId, r]),
-      ),
+  // One rep's score: optimistic, then saved. On failure the cache is
+  // refetched once nothing else is saving, like review edits.
+  const scoreMutation = api.sponsorScoring.score.useMutation({
+    onMutate: async (vars) => {
+      await utils.sponsorScoring.get.cancel({ sponsor });
+      utils.sponsorScoring.get.setData({ sponsor }, (old) => {
+        if (!old) return old;
+        const key = judgeKey(vars.judge);
+        const scores: JudgeScore[] = old.scores.filter(
+          (s) => !(s.teamId === vars.teamId && judgeKey(s.judge) === key),
+        );
+        if (vars.halves !== null) {
+          scores.push({
+            teamId: vars.teamId,
+            judge: vars.judge,
+            score: vars.halves / 2,
+          });
+        }
+        return { ...old, scores };
+      });
+      inFlight.current += 1;
+      setSaveState((s) => ({ ...s, [vars.teamId]: "saving" }));
+    },
+    onError: (_err, vars) => {
+      setSaveState((s) => ({ ...s, [vars.teamId]: "error" }));
+      needsRefetch.current = true;
+    },
+    onSuccess: (_row, vars) => {
+      setSaveState((s) =>
+        s[vars.teamId] === "saving" ? { ...s, [vars.teamId]: "saved" } : s,
+      );
+    },
+    onSettled: () => {
+      inFlight.current = Math.max(0, inFlight.current - 1);
+      if (inFlight.current === 0 && needsRefetch.current) {
+        needsRefetch.current = false;
+        void utils.sponsorScoring.get.invalidate({ sponsor });
+      }
+    },
+  });
+  const { mutate: mutateScore } = scoreMutation;
+  const setScore = useCallback(
+    (teamId: string, judge: string, score: number | null) =>
+      mutateScore({
+        sponsor,
+        teamId,
+        judge,
+        halves: score === null ? null : scoreToHalves(score),
+      }),
+    [mutateScore, sponsor],
+  );
+
+  const scoresByTeam = useMemo(
+    () => aggregateScores(query.data?.scores ?? []),
     [query.data],
   );
 
-  return { query, reviews, save, saveState };
+  // Reviews carry the team average as `score`, recomputed from the live
+  // per-rep scores so an optimistic score shows in sort and shortlist.
+  const reviews = useMemo(() => {
+    const map = new Map<string, TeamReview>(
+      (query.data?.reviews ?? []).map((r) => [
+        r.teamId,
+        { ...r, score: scoresByTeam.get(r.teamId)?.average ?? null },
+      ]),
+    );
+    for (const [teamId, agg] of scoresByTeam) {
+      if (!map.has(teamId)) {
+        map.set(teamId, { ...EMPTY, teamId, score: agg.average });
+      }
+    }
+    return map;
+  }, [query.data, scoresByTeam]);
+
+  return { query, reviews, scoresByTeam, save, setScore, saveState };
 }

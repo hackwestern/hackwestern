@@ -1,24 +1,15 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { Search, X } from "lucide-react";
 
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
-import { ProjectCard } from "~/components/sponsors/judging/project-card";
+import { BrowseProjects } from "~/components/sponsors/judging/browse-projects";
 import { ShortlistRanking } from "~/components/sponsors/judging/shortlist-ranking";
 import { ShortlistSend } from "~/components/sponsors/judging/shortlist-send";
 import { useSponsorJudging } from "~/components/sponsors/judging/use-sponsor-judging";
 import { pressable, SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
-import {
-  BROWSE_FILTERS,
-  BROWSE_SORTS,
-  browseTeams,
-  type BrowseFilter,
-  type BrowseSort,
-} from "~/lib/sponsor-scoring";
 import {
   formatPresentationTime,
   judgingRound,
@@ -30,33 +21,22 @@ const copy = sponsorJudgingCopy;
 const STEPS = ["browse", "shortlist"] as const;
 type Step = (typeof STEPS)[number];
 
-// Sponsor judging (kept at Lucas's /sponsors/[uuid]/picks URL): browse the
-// submitted projects, score them 1-10 and save some to a shortlist, then
-// rank the shortlist and submit a top SPONSOR_FINAL_TOP. The submission is
-// also written to Lucas's judging sheet. See docs/decisions.md (2026-11-18).
+// Sponsor judging (kept at Lucas's /sponsors/[uuid]/picks URL): each rep
+// picks their name, goes through the submitted projects one at a time or as
+// a list and scores them 1-10 in half points; the sponsor saves some to a
+// shortlist and sends it, then ranks the teams that presented and submits
+// a top SPONSOR_FINAL_TOP (1st-3rd). See docs/decisions.md (2026-11-19).
 export default function SponsorJudgingPage() {
   const router = useRouter();
   const uuid = typeof router.query.uuid === "string" ? router.query.uuid : "";
   const validUuid = uuidRegex.test(uuid);
-  const { query, reviews, save, saveState } = useSponsorJudging(
-    uuid,
-    validUuid,
-  );
+  const { query, reviews, scoresByTeam, save, setScore, saveState } =
+    useSponsorJudging(uuid, validUuid);
   const data = query.data;
 
   const [step, setStep] = useState<Step>("browse");
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<BrowseFilter>("all");
-  const [sort, setSort] = useState<BrowseSort>("name");
   const stepRefs = useRef(new Map<Step, HTMLButtonElement>());
 
-  const visible = useMemo(
-    () =>
-      data
-        ? browseTeams(data.teams, reviews, { query: search, filter, sort })
-        : [],
-    [data, reviews, search, filter, sort],
-  );
   // Round 2 once organizers open it and this sponsor has presentation
   // slots: rank the teams that presented (team id -> "10:05 AM"). Before
   // that, round 1's sent shortlist with a note that round 2 opens later.
@@ -229,102 +209,15 @@ export default function SponsorJudgingPage() {
         className="flex flex-col gap-4"
       >
         {step === "browse" ? (
-          <>
-            <div className="flex flex-col gap-3">
-              <div className="relative w-full">
-                <label className="sr-only" htmlFor="team-search">
-                  {copy.browse.searchLabel}
-                </label>
-                <Search
-                  aria-hidden
-                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-dashboard-text-disabled"
-                />
-                <input
-                  id="team-search"
-                  type="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={copy.browse.searchPlaceholder}
-                  className="min-h-11 w-full rounded-dashboard-md border border-dashboard-border-default bg-dashboard-bg-surface pl-10 pr-11 text-base font-medium text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder focus:border-dashboard-action-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [&::-webkit-search-cancel-button]:hidden"
-                />
-                {search && (
-                  <button
-                    type="button"
-                    aria-label={copy.browse.clearSearch}
-                    onClick={() => setSearch("")}
-                    className="absolute right-0 top-0 inline-flex size-11 items-center justify-center rounded-dashboard-md text-dashboard-text-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:text-dashboard-text-heavy"
-                  >
-                    <X aria-hidden className="size-4" />
-                  </button>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div
-                  role="group"
-                  aria-label={copy.browse.filterLabel}
-                  className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1"
-                >
-                  {BROWSE_FILTERS.map((f) => (
-                    <DashboardChip
-                      key={f}
-                      selected={filter === f}
-                      onClick={() => setFilter(f)}
-                      className="min-h-11 shrink-0 md:min-h-9"
-                    >
-                      {copy.browse.filters[f]}
-                    </DashboardChip>
-                  ))}
-                </div>
-                <label className="inline-flex items-center gap-2 text-sm font-semibold text-dashboard-text-medium">
-                  {copy.browse.sortLabel}
-                  <select
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value as BrowseSort)}
-                    className="min-h-11 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-2 text-base font-semibold text-dashboard-text-heavy focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary md:min-h-9 md:text-sm"
-                  >
-                    {BROWSE_SORTS.map((s) => (
-                      <option key={s} value={s}>
-                        {copy.browse.sorts[s]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <p
-                className="m-0 text-sm font-medium text-dashboard-text-light"
-                aria-live="polite"
-              >
-                {copy.browse.count(visible.length, data.teams.length)}
-              </p>
-            </div>
-
-            {data.teams.length === 0 ? (
-              <Empty>{copy.browse.noTeams(data.sponsorTrack)}</Empty>
-            ) : visible.length === 0 ? (
-              <Empty>
-                {search.trim()
-                  ? copy.browse.noMatch(search.trim())
-                  : copy.browse.noFilterMatch}
-              </Empty>
-            ) : (
-              <ul className="m-0 flex list-none flex-col gap-3 p-0">
-                {visible.map((team, i) => (
-                  <li
-                    key={team.id}
-                    data-tour={i === 0 ? "judging-first-project" : undefined}
-                  >
-                    <ProjectCard
-                      team={team}
-                      review={reviews.get(team.id)}
-                      saveState={saveState[team.id]}
-                      onSave={(patch) => save(team.id, patch)}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
+          <BrowseProjects
+            sponsor={uuid}
+            data={data}
+            reviews={reviews}
+            scoresByTeam={scoresByTeam}
+            saveState={saveState}
+            onSave={save}
+            onScore={setScore}
+          />
         ) : presented ? (
           <ShortlistRanking
             sponsor={uuid}
@@ -356,13 +249,5 @@ export default function SponsorJudgingPage() {
         )}
       </div>
     </SponsorShell>
-  );
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="m-0 rounded-dashboard-lg bg-dashboard-bg-inset p-5 text-center text-sm font-medium text-dashboard-text-medium">
-      {children}
-    </p>
   );
 }

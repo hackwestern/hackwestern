@@ -4,7 +4,12 @@ import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
-import { formatSubmittedTime, type TeamReview } from "~/lib/sponsor-scoring";
+import {
+  formatAverage,
+  formatSubmittedTime,
+  teamIdAndLink,
+  type TeamReview,
+} from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { ProjectLinks } from "./project-card";
@@ -107,10 +112,13 @@ export function ShortlistSend({
               <span className="break-words text-base font-semibold text-dashboard-text-heavy">
                 {team.name}
               </span>
+              <span className="break-all text-xs font-medium tabular-nums text-dashboard-text-light">
+                {teamIdAndLink(team.id, team.devpostUrl)}
+              </span>
               <span className="text-sm font-medium tabular-nums text-dashboard-text-light">
                 {team.score === null
                   ? copy.shortlist.noScore
-                  : copy.shortlist.scoreOf(team.score)}
+                  : copy.shortlist.scoreOf(formatAverage(team.score)!)}
               </span>
               <ProjectLinks team={team} />
             </div>

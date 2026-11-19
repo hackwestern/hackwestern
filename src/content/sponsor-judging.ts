@@ -6,13 +6,20 @@
 const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
 
+/** "1st", "2nd", "3rd", "4th"... */
+const ordinal = (n: number) =>
+  `${n}${n % 10 === 1 && n % 100 !== 11 ? "st" : n % 10 === 2 && n % 100 !== 12 ? "nd" : n % 10 === 3 && n % 100 !== 13 ? "rd" : "th"}`;
+
+/** "Dana W." -> "Dana": first word of a rep's name, for short labels. */
+const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
+
 export const sponsorJudgingCopy = {
   seoTitle: "Judging",
   brand: "Hack Western 13",
   back: "Back to sponsor hub",
   title: "Judging",
   intro: (top: number) =>
-    `Look through the projects, score each one out of 10 and save the strongest to your shortlist. Then rank your shortlist and submit your top ${top}.`,
+    `Each of you scores projects out of 10, in half points. Save the strongest to your shortlist and send it. After presentations, rank your top ${top}: 1st, 2nd and 3rd place.`,
   trackTag: (track: string) => `Showing teams in ${track}`,
   invalid: {
     title: "Link not recognised",
@@ -62,11 +69,118 @@ export const sponsorJudgingCopy = {
   },
 
   score: {
-    label: (team: string) => `Score for ${team}, out of 10`,
-    heading: "Score",
+    label: (team: string) => `Your score for ${team}, out of 10`,
+    heading: "Your score",
     outOf: "/10",
+    unscored: "–",
+    notScored: "Not scored yet",
+    valueText: (score: string) => `${score} out of 10`,
+    lower: (team: string) => `Lower your score for ${team} by 0.5`,
+    raise: (team: string) => `Raise your score for ${team} by 0.5`,
+    low: "1 weak",
+    hint: "Scroll, tap or use ← →",
+    high: "10 best",
     clear: "Clear",
-    clearLabel: (team: string) => `Clear score for ${team}`,
+    clearLabel: (team: string) => `Clear your score for ${team}`,
+    rubric: "Rubric",
+    rubricLabel: (team: string) => `Open the rubric for ${team}`,
+  },
+
+  /** Holia's rubric (newest criteria, c7e6c2e1), shown in a modal. */
+  rubric: {
+    title: "Rubric",
+    intro:
+      "Optional. Use it to calibrate one overall score from 1 to 10. Hack Western's judges use the same four criteria.",
+    close: "Close rubric",
+    bands: { low: "1-3", mid: "4-7", high: "8-10" },
+    criteria: [
+      {
+        name: "Innovation + Impact",
+        description:
+          "How original is the idea, and how much would it matter to the people it's built for?",
+        low: "Seen it many times",
+        mid: "Fresh angle on a known problem",
+        high: "New and clearly useful",
+      },
+      {
+        name: "Creativity",
+        description:
+          "How inventive is the approach? Does it use technology or ideas in an unexpected way?",
+        low: "Standard approach, expected tools",
+        mid: "One clever twist",
+        high: "Surprising use of tech or ideas",
+      },
+      {
+        name: "Technical Complexity",
+        description:
+          "How technically challenging is the project? Did the team push the boundaries with complex algorithms, integrations, or hardware?",
+        low: "Mostly slides",
+        mid: "Core feature works live",
+        high: "Hard problem, works end to end",
+      },
+      {
+        name: "Design/Polish",
+        description:
+          "How user-friendly, visually appealing and finished does the project feel?",
+        low: "Hard to follow",
+        mid: "Clear enough to use",
+        high: "Polished and intuitive",
+      },
+    ],
+  },
+
+  /** Several reps share one sponsor login. */
+  judge: {
+    pickTitle: "Who's judging?",
+    pickBody:
+      "Pick your name so your scores are yours. Your team sees everyone's scores. This phone remembers your name.",
+    pickLabel: "Your name",
+    onTeam: "On your team",
+    someoneElse: "Someone else",
+    nameLabel: "Your name",
+    namePlaceholder: "First name and last initial",
+    start: "Start judging",
+    judgingAs: "Judging as",
+    with: (others: readonly string[]) =>
+      others.length > 0 ? `with ${others.map(firstName).join(", ")}` : "",
+    switch: "Switch",
+    switchLabel: "Switch who's judging on this phone",
+  },
+
+  /** One at a time or a list, like hacker judging (no other modes). */
+  view: {
+    label: "How to go through projects",
+    one: "One at a time",
+    list: "List",
+  },
+
+  scope: {
+    label: "Which projects",
+    mine: (n: number) => `Your ${n}`,
+    all: (n: number) => `Everyone's ${n}`,
+    owner: (name: string) => `${firstName(name)}'s list`,
+    split: (n: number) =>
+      `The projects are split evenly between ${plural(n, "rep", "reps")}. Anyone can still score any project.`,
+  },
+
+  one: {
+    position: (at: number, total: number) => `${at} of ${total}`,
+    progress: (scored: number, total: number) =>
+      `${scored} of ${total} scored by you`,
+    previous: "Previous",
+    next: "Next",
+    nextUnscored: "Next unscored",
+    done: (total: number) =>
+      `You've scored all ${plural(total, "project", "projects")} here.`,
+  },
+
+  team: {
+    none: "No scores from your team yet",
+    average: (avg: string) => `avg ${avg}`,
+    scoreOf: (name: string, score: string) => `${firstName(name)} ${score}`,
+    label: "Your team's scores",
+    disagree: (high: string, low: string) =>
+      `${high} · ${low}: talk it through`,
   },
 
   shortlistToggle: {
@@ -96,12 +210,14 @@ export const sponsorJudgingCopy = {
     needMore: (top: number, have: number) =>
       `Shortlist ${plural(top - have, "more team", "more teams")} to submit your top ${top}.`,
     cutLine: (top: number) => `Your top ${top}`,
+    place: (n: number) => `${ordinal(n)} place`,
+    placeShort: ordinal,
     belowLine: "Not submitted",
     moveUp: (team: string) => `Move ${team} up`,
     moveDown: (team: string) => `Move ${team} down`,
     rank: (n: number) => `#${n}`,
     noScore: "No score",
-    scoreOf: (n: number) => `${n}/10`,
+    scoreOf: (avg: string) => `avg ${avg}/10`,
     remove: (team: string) => `Remove ${team} from your shortlist`,
     keyboardHint: "Use the arrow buttons to reorder.",
     moved: (team: string, rank: number) => `${team} moved to number ${rank}.`,
@@ -164,7 +280,12 @@ export const sponsorJudgingCopy = {
     round2Closed: "Round 2 isn't open yet. It opens after presentations.",
     noPrizeTrack: "Judging is only for sponsors with a prize track.",
     noSlot:
-      "Round 2 is locked: no teams presented to you, so you can't rank a top 5.",
+      "Round 2 is locked: no teams presented to you, so you can't rank a top 3.",
+    digital:
+      "Digital sponsors don't judge in the portal. Send your top 3 to your Hack Western contact.",
+    notDigital: "That sponsor isn't a digital prize track sponsor.",
+    digitalNoMatch: (place: number, link: string) =>
+      `${ordinal(place)} place: "${link}" doesn't match a submitted team in this sponsor's track.`,
     ranking: {
       wrongCount: (top: number) => `Submit exactly ${top} teams.`,
       duplicate: () => "Each team can appear only once.",
@@ -182,34 +303,52 @@ export const sponsorJudgingCopy = {
     tab: "Sponsor Judging",
     note: "Written by the Hack Western app from its database. Edits here are overwritten on the next change.",
     updated: (time: string) => `Updated ${time}`,
-    tracks: {
-      title: "Tracks",
-      headers: [
+    sponsors: {
+      headers: (top: number) => [
         "Sponsor",
-        "Has track",
+        "In person / Digital",
         "Judging room",
-        "Round 1 shortlist sent",
-        "Round 2 top 5 sent",
+        "Round 1 status",
+        "Shortlist sent",
+        "Shortlist (team IDs)",
+        "Round 2 status",
+        `Top ${top} sent`,
+        ...Array.from({ length: top }, (_, i) => `${ordinal(i + 1)} place`),
+        "Notes",
       ],
-      yes: "Yes",
+      inPerson: "In person",
+      digital: "Digital",
+      status: {
+        notRegistered: "No portal link yet",
+        notStarted: "Not started",
+        scoring: "Scoring",
+        shortlistSent: "Shortlist sent",
+        digitalRound1: "No round 1 (digital)",
+        notOpen: "Not open",
+        ranking: "Ranking",
+        locked: "Locked: no presentations",
+        submitted: "Top 3 sent",
+        digitalWaiting: "Waiting for the spon team",
+        digitalEntered: "Entered by the spon team",
+      },
+      notes: {
+        remote: "Judges remotely; presentations are online.",
+        digital:
+          "Digital sponsor: top 3 entered by the spon team from Devpost links.",
+      },
     },
     schedule: {
-      title: "Chosen teams and presentation schedule",
+      title: "Presentations",
       headers: [
         "Sponsor",
-        "Round",
+        "Team ID",
         "Team",
         "Members",
         "Time",
         "Room",
         "Notified",
       ],
-      round1: "Round 1",
       notified: { slack: "Slack", email: "Email", failed: "failed" },
-    },
-    finals: {
-      title: "Final results",
-      headers: ["Sponsor", "Rank", "Team", "Members"],
     },
   },
 
@@ -218,11 +357,10 @@ export const sponsorJudgingCopy = {
     viewsLabel: "Sponsor judging view",
     views: { sponsors: "Final results", teams: "All teams" },
     /** Rank badge on a submitted top list: "1st", "2nd"... */
-    rankOf: (n: number) =>
-      `${n}${n % 10 === 1 && n % 100 !== 11 ? "st" : n % 10 === 2 && n % 100 !== 12 ? "nd" : n % 10 === 3 && n % 100 !== 13 ? "rd" : "th"}`,
+    rankOf: ordinal,
     noMembers: "No hackers listed",
     intro: (top: number) =>
-      `Each sponsor scores projects, shortlists some and submits a ranked top ${top}.`,
+      `Each sponsor's reps score projects, the sponsor shortlists some and submits a ranked top ${top}.`,
     submittedAt: (time: string) => `Submitted ${time}`,
     notYet: "Not submitted yet",
     sheetPending: "Sheet not updated",
@@ -234,7 +372,9 @@ export const sponsorJudgingCopy = {
     scored: (n: number) => plural(n, "scored", "scored"),
     shortlisted: (n: number) => plural(n, "shortlisted", "shortlisted"),
     noScore: "No score",
-    scoreOf: (n: number) => `${n}/10`,
+    scoreOf: (avg: string) => `avg ${avg}/10`,
+    byJudge: (name: string, score: string) => `${firstName(name)} ${score}`,
+    judges: (n: number) => plural(n, "rep scoring", "reps scoring"),
     devpost: "Devpost",
     openDevpost: (team: string) => `Open ${team} on Devpost`,
     noSponsors: "No sponsors have a private link yet.",
@@ -253,5 +393,22 @@ export const sponsorJudgingCopy = {
     averageOf: (avg: string, n: number) =>
       `${avg} from ${plural(n, "score", "scores")}`,
     noAverage: "—",
+    digital: {
+      heading: "Digital sponsors",
+      intro: (top: number) =>
+        `Digital sponsors don't use the portal. Paste the Devpost link (or team ID) for their ${ordinal(1)} to ${ordinal(top)} place. Each must be a submitted team in their track.`,
+      place: (n: number) => `${ordinal(n)} place`,
+      placeholder: "devpost.com/software/…",
+      match: (name: string) => `Matches ${name}`,
+      noMatch: "No submitted team in this track has that link.",
+      duplicate: "Already used for another place.",
+      save: (top: number) => `Save top ${top}`,
+      saving: "Saving…",
+      savedAt: (time: string) => `Saved ${time}`,
+      failed: "Couldn't save. Check the links and try again.",
+      loadFailed: "Couldn't load this sponsor's teams.",
+      noTeams: "No submitted teams in this track yet.",
+      track: (track: string) => `Track: ${track}`,
+    },
   },
 } as const;

@@ -703,3 +703,17 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Decision:** Before the track worktrees, one migration (0059) on coffee-prefs: rep chats wanted may be 0; `coffee_chat_pref.shortlist_submitted_at`; new `sponsor_scan` (sponsor, hacker, rep name, scanned at) for scanned-first invites; `coffee_chat` gains `placement_id`, `round`, `expires_at`, `source` so session invites reuse the existing Slack Accept/Decline flow; new `sponsor_team_score` (sponsor, team, judge name, score in halves 2–20) for several reps scoring in half points. Empty `coffeeChatSetup` (track A) and `coffeeChatInvites` (track B) routers are registered in root.ts. The Task pings tab is hidden by track D, the only track that edits `pages/internal/sponsors.tsx`.
 **Why:** schema and router registration conflict when several worktrees edit them; doing them once keeps merges clean.
 **Alternatives:** a new invite table (would need new Slack handlers); half-point scores as numeric (integers avoid float rounding).
+
+## 2026-11-19: Track F judging build: per-rep half-point scores, top 3, wide Sponsor Judging tab, digital entry
+
+**Decision:**
+- Each rep's score lives in `sponsor_team_score` (halves 2-20). The shortlist and ranking sort by the team average. `sponsor_team_review.score` is kept at the rounded average so the organizer day board's "scored" count stays right.
+- Who's judging lists the reps on Your team plus "Someone else". The name is remembered per phone. With 2+ reps the list is split evenly between them in team-name order (no table numbers in the app yet). Reps 3+ points apart get a "talk it through" flag.
+- Portal browsing is One at a time or List only.
+- `SPONSOR_FINAL_TOP = 3`. Picks are stored in `sponsor_final_pick` and mirrored to the wide Sponsor Judging tab (one row per prize track sponsor, 1st-3rd place as "team ID · devpost link", then a Presentations table). The writer for the deleted "Judging" tab is removed; `getChosenTeams` reads the database. A failed or disabled sheet write never blocks the save.
+- Digital sponsors (PCBWay) are refused in the portal. Organizers enter their 1st-3rd by Devpost link or team ID on the Sponsor judging tab; each must match a different submitted team in the track. A DB row is created for the sponsor on first entry.
+- TinyFish's judging room is always "Remote (judges online)".
+
+**Why:** Jazz's 2026-11-19 answers (top 3, one at a time or list, several reps), the sheet-cut decision (Judging tab deleted), and the coordinator's bug report that saving failed against the deleted tab.
+
+**Alternatives:** keep one score per sponsor (loses who gave what); split by table (no table data yet); write picks to a new sheet tab as the record (the DB is the record, the sheet is a view).

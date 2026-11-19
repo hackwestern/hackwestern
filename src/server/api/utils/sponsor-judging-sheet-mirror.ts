@@ -3,7 +3,12 @@ import { eq, inArray } from "drizzle-orm";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { SPONSOR_PRIZE_TRACKS } from "~/content/sponsor-prize-tracks";
 import { formatPresentationTime, slotsKey } from "~/lib/sponsor-presentations";
-import { prizeTrackOf } from "~/lib/sponsor-prize-tracks";
+import {
+  isDigitalJudging,
+  prizeTrackOf,
+  remoteJudgingRoom,
+} from "~/lib/sponsor-prize-tracks";
+import { SPONSOR_FINAL_TOP, teamIdAndLink } from "~/lib/sponsor-scoring";
 import {
   googleBookingsSheet,
   SHEET_WRITES_DISABLED,
@@ -11,6 +16,7 @@ import {
   type MirrorResult,
 } from "~/server/api/utils/coffee-chat-sheet-mirror";
 import { sheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
+import { round2OpenedAt } from "~/server/api/utils/sponsor-judging-settings";
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
 import { membersByTeam } from "~/server/api/utils/sponsor-judging-teams";
 import { db } from "~/server/db";
@@ -20,6 +26,7 @@ import {
   sponsorPresentationNotices,
   sponsorPresentations,
   sponsorShortlistSends,
+  sponsorTeamScores,
   teams,
   users,
 } from "~/server/db/schema";
@@ -29,24 +36,26 @@ import {
  * the run-of-show sheet (docs/flows/sponsor-judging.md). The app is the
  * source of truth: the tab is rewritten in full from the DB on every
  * judging change (shortlist sent, presentations scheduled, hackers
- * notified, top 5 submitted) and by the organizer "Sync to sheet" button.
- * Same pattern as the coffee chat mirror: its own tab (created if
- * missing), the spreadsheets write scope, writes one at a time, and a
- * failure is logged once and never blocks the action. Outside production
- * (unless SHEET_WRITES=1) and in tests nothing is written.
+ * notified, top 3 submitted or entered) and by the organizer "Sync to
+ * sheet" button. Same pattern as the coffee chat mirror: its own tab
+ * (created if missing), the spreadsheets write scope, writes one at a time,
+ * and a failure is logged once and never blocks the action. Outside
+ * production (unless SHEET_WRITES=1) and in tests nothing is written.
  *
- * Three tables, top to bottom, a blank row between them:
- *   1. Tracks: one row per prize track sponsor.
- *   2. Chosen teams and presentation schedule: one row per shortlisted or
- *      scheduled team per sponsor.
- *   3. Final results: one row per sponsor per rank.
+ * Layout (Jazz, 2026-11-19: "Sponsor Judging sheet tab is wide"):
+ *   1. Sponsors: one row per prize track sponsor. Sponsor, In person /
+ *      Digital, Judging room, Round 1 status, Shortlist sent, Shortlist
+ *      (team IDs), Round 2 status, Top 3 sent, 1st, 2nd, 3rd place, Notes.
+ *      Place cells read "<team ID> · <Devpost link>".
+ *   2. Presentations: one row per shortlisted or scheduled team per
+ *      sponsor (Sponsor, Team ID, Team, Members, Time, Room, Notified).
  * Only stored data; a missing value is a blank cell.
  */
 
 const sheetCopy = sponsorJudgingCopy.sheet;
 export const JUDGING_TAB = sheetCopy.tab;
-/** Widest table (the schedule): every row is padded to this. */
-const WIDTH = sheetCopy.schedule.headers.length;
+/** Widest table (the sponsor rows): every row is padded to this. */
+const WIDTH = sheetCopy.sponsors.headers(SPONSOR_FINAL_TOP).length;
 
 type TrackRow = { name: string; sponsorId: string | null };
 
@@ -69,10 +78,16 @@ export type JudgingSheetInput = {
     startMinute: number | null;
   }[];
   teamNames: ReadonlyMap<string, string>;
+  /** Devpost link by team id (absent or null = none). */
+  teamLinks: ReadonlyMap<string, string | null>;
   /** Member names by team id. */
   members: ReadonlyMap<string, readonly string[]>;
   /** How each scheduled team's members heard, by team id ("" = not yet). */
   notified: ReadonlyMap<string, string>;
+  /** Sponsors with at least one rep's score. */
+  scoring: ReadonlySet<string>;
+  /** Organizers have opened round 2. */
+  round2Open: boolean;
   writtenAt: Date;
 };
 
@@ -114,28 +129,73 @@ export function judgingSheetRows(input: JudgingSheetInput): string[][] {
   const sendOf = new Map(input.sends.map((s) => [s.sponsorId, s]));
   const finalOf = new Map(input.finals.map((f) => [f.sponsorId, f]));
   const teamName = (id: string) => input.teamNames.get(id) ?? id;
+  const teamCell = (id: string) =>
+    teamIdAndLink(id, input.teamLinks.get(id) ?? null);
   const membersOf = (id: string) => (input.members.get(id) ?? []).join(", ");
+  const placedFor = (sponsorId: string) =>
+    input.presentations.filter(
+      (p) => p.sponsorId === sponsorId && p.startMinute !== null,
+    ).length;
+  const status = sheetCopy.sponsors.status;
 
   const rows: string[][] = [
     [sheetCopy.note, sheetCopy.updated(timestamp(input.writtenAt))],
     [],
   ];
 
-  // 1. Tracks.
-  rows.push([sheetCopy.tracks.title], [...sheetCopy.tracks.headers]);
+  // 1. One row per prize track sponsor.
+  rows.push([...sheetCopy.sponsors.headers(SPONSOR_FINAL_TOP)]);
   for (const t of input.tracks) {
     const id = t.sponsorId;
+    const digital = isDigitalJudging(t.name);
+    const sent = id ? sendOf.get(id) : undefined;
+    const final = id ? finalOf.get(id) : undefined;
+    const remote = remoteJudgingRoom(t.name);
+    const room = remote ?? (id ? (input.rooms.get(id) ?? "") : "");
+    const round1 = digital
+      ? status.digitalRound1
+      : !id
+        ? status.notRegistered
+        : sent
+          ? status.shortlistSent
+          : input.scoring.has(id)
+            ? status.scoring
+            : status.notStarted;
+    const round2 = final
+      ? digital
+        ? status.digitalEntered
+        : status.submitted
+      : digital
+        ? status.digitalWaiting
+        : !input.round2Open
+          ? status.notOpen
+          : id && placedFor(id) > 0
+            ? status.ranking
+            : status.locked;
+    const places = Array.from({ length: SPONSOR_FINAL_TOP }, (_, i) => {
+      const teamId = final?.teamIds[i];
+      return teamId ? teamCell(teamId) : "";
+    });
     rows.push([
       t.name,
-      sheetCopy.tracks.yes,
-      id ? (input.rooms.get(id) ?? "") : "",
-      id ? timestamp(sendOf.get(id)?.sentAt) : "",
-      id ? timestamp(finalOf.get(id)?.submittedAt) : "",
+      digital ? sheetCopy.sponsors.digital : sheetCopy.sponsors.inPerson,
+      digital ? "" : room,
+      round1,
+      timestamp(sent?.sentAt),
+      sent ? [...sent.teamIds].join(", ") : "",
+      round2,
+      timestamp(final?.submittedAt),
+      ...places,
+      digital
+        ? sheetCopy.sponsors.notes.digital
+        : remote
+          ? sheetCopy.sponsors.notes.remote
+          : "",
     ]);
   }
   rows.push([]);
 
-  // 2. Chosen teams (the sent shortlist) and their presentation slots.
+  // 2. Presentations: the sent shortlist and each team's slot.
   rows.push([sheetCopy.schedule.title], [...sheetCopy.schedule.headers]);
   for (const t of input.tracks) {
     if (!t.sponsorId) continue;
@@ -164,7 +224,7 @@ export function judgingSheetRows(input: JudgingSheetInput): string[][] {
       const placed = slot?.startMinute != null;
       rows.push([
         t.name,
-        sheetCopy.schedule.round1,
+        teamCell(id),
         teamName(id),
         membersOf(id),
         placed ? formatPresentationTime(slot.startMinute!) : "",
@@ -172,16 +232,6 @@ export function judgingSheetRows(input: JudgingSheetInput): string[][] {
         placed ? (input.notified.get(id) ?? "") : "",
       ]);
     }
-  }
-  rows.push([]);
-
-  // 3. Final results: each submitted top 5 in rank order.
-  rows.push([sheetCopy.finals.title], [...sheetCopy.finals.headers]);
-  for (const t of input.tracks) {
-    const final = t.sponsorId ? finalOf.get(t.sponsorId) : undefined;
-    final?.teamIds.forEach((id, i) => {
-      rows.push([t.name, String(i + 1), teamName(id), membersOf(id)]);
-    });
   }
 
   return rows.map(pad);
@@ -217,40 +267,49 @@ export async function loadJudgingSheetInput(
       finals: [],
       presentations: [],
       teamNames: new Map(),
+      teamLinks: new Map(),
       members: new Map(),
       notified: new Map(),
+      scoring: new Set(),
+      round2Open: (await round2OpenedAt()) !== null,
       writtenAt,
     };
   }
 
-  const [rooms, sends, finals, presentations] = await Promise.all([
-    judgingRoomsById(trackSponsors),
-    db
-      .select({
-        sponsorId: sponsorShortlistSends.sponsorId,
-        teamIds: sponsorShortlistSends.teamIds,
-        sentAt: sponsorShortlistSends.sentAt,
-      })
-      .from(sponsorShortlistSends)
-      .where(inArray(sponsorShortlistSends.sponsorId, ids)),
-    db
-      .select({
-        sponsorId: sponsorFinalPicks.sponsorId,
-        teamIds: sponsorFinalPicks.teamIds,
-        submittedAt: sponsorFinalPicks.submittedAt,
-      })
-      .from(sponsorFinalPicks)
-      .where(inArray(sponsorFinalPicks.sponsorId, ids)),
-    // Every sponsor's slots: a team's notices cover all of its slots.
-    db
-      .select({
-        sponsorId: sponsorPresentations.sponsorId,
-        teamId: sponsorPresentations.teamId,
-        room: sponsorPresentations.room,
-        startMinute: sponsorPresentations.startMinute,
-      })
-      .from(sponsorPresentations),
-  ]);
+  const [rooms, sends, finals, presentations, scorers, openedAt] =
+    await Promise.all([
+      judgingRoomsById(trackSponsors),
+      db
+        .select({
+          sponsorId: sponsorShortlistSends.sponsorId,
+          teamIds: sponsorShortlistSends.teamIds,
+          sentAt: sponsorShortlistSends.sentAt,
+        })
+        .from(sponsorShortlistSends)
+        .where(inArray(sponsorShortlistSends.sponsorId, ids)),
+      db
+        .select({
+          sponsorId: sponsorFinalPicks.sponsorId,
+          teamIds: sponsorFinalPicks.teamIds,
+          submittedAt: sponsorFinalPicks.submittedAt,
+        })
+        .from(sponsorFinalPicks)
+        .where(inArray(sponsorFinalPicks.sponsorId, ids)),
+      // Every sponsor's slots: a team's notices cover all of its slots.
+      db
+        .select({
+          sponsorId: sponsorPresentations.sponsorId,
+          teamId: sponsorPresentations.teamId,
+          room: sponsorPresentations.room,
+          startMinute: sponsorPresentations.startMinute,
+        })
+        .from(sponsorPresentations),
+      db
+        .selectDistinct({ sponsorId: sponsorTeamScores.sponsorId })
+        .from(sponsorTeamScores)
+        .where(inArray(sponsorTeamScores.sponsorId, ids)),
+      round2OpenedAt(),
+    ]);
 
   const teamIds = [
     ...new Set([
@@ -264,7 +323,11 @@ export async function loadJudgingSheetInput(
   const [nameRows, members, notices] = await Promise.all([
     teamIds.length > 0
       ? db
-          .select({ id: teams.id, name: teams.name })
+          .select({
+            id: teams.id,
+            name: teams.name,
+            devpostUrl: teams.devpostUrl,
+          })
           .from(teams)
           .where(inArray(teams.id, teamIds))
       : [],
@@ -322,6 +385,12 @@ export async function loadJudgingSheetInput(
     finals,
     presentations,
     teamNames: new Map(nameRows.map((t) => [t.id, t.name])),
+    teamLinks: new Map(
+      nameRows.map((t) => [
+        t.id,
+        t.devpostUrl?.trim() ? t.devpostUrl.trim() : null,
+      ]),
+    ),
     members: new Map(
       [...members].map(([id, list]) => [
         id,
@@ -329,6 +398,8 @@ export async function loadJudgingSheetInput(
       ]),
     ),
     notified,
+    scoring: new Set(scorers.map((r) => r.sponsorId)),
+    round2Open: openedAt !== null,
     writtenAt,
   };
 }
@@ -437,15 +508,17 @@ export function mirrorSponsorJudging(
 /**
  * Mirror after a judging change: waits at most MIRROR_WAIT_MS (work after
  * the response can be frozen on Vercel, so callers await this), then lets
- * the write finish in the background. Never rejects.
+ * the write finish in the background. Returns the mirror's result, or null
+ * when it was still running at the wait. Never rejects.
  */
-export async function mirrorSponsorJudgingSoon(): Promise<void> {
+export async function mirrorSponsorJudgingSoon(): Promise<MirrorResult | null> {
   let timer: ReturnType<typeof setTimeout> | undefined;
-  await Promise.race([
+  const result = await Promise.race([
     mirrorSponsorJudging(),
-    new Promise<void>((resolve) => {
-      timer = setTimeout(resolve, MIRROR_WAIT_MS);
+    new Promise<null>((resolve) => {
+      timer = setTimeout(() => resolve(null), MIRROR_WAIT_MS);
     }),
   ]);
   clearTimeout(timer);
+  return result;
 }

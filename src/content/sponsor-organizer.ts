@@ -163,7 +163,7 @@ export const sponsorOrganizerCopy = {
       openHelp: "Open help requests",
       Sunday: {
         shortlists: "Shortlists sent",
-        topFive: "Top 5 sent",
+        topFive: "Top 3 sent",
         round2: "Round 2",
         missingRooms: "Missing judging rooms",
       },
@@ -175,7 +175,7 @@ export const sponsorOrganizerCopy = {
       link: "Portal link",
       slots: "Chat slots (booked/asked)",
       round1: "Round 1 shortlist",
-      round2: "Round 2 top 5",
+      round2: "Round 2 top 3",
       where: "Where now",
     },
     /** A sheet-only field when the sponsor sheet didn't load. */

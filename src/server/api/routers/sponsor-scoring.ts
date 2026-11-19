@@ -1,19 +1,31 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { env } from "~/env";
-import { hasPrizeTrack } from "~/lib/sponsor-prize-tracks";
+import { SPONSOR_PRIZE_TRACKS } from "~/content/sponsor-prize-tracks";
 import {
+  hasPrizeTrack,
+  isDigitalJudging,
+  prizeTrackOf,
+} from "~/lib/sponsor-prize-tracks";
+import {
+  HALVES_MAX,
+  HALVES_MIN,
+  JUDGE_NAME_MAX,
   NOTE_MAX,
-  SCORE_MAX,
-  SCORE_MIN,
   SPONSOR_FINAL_TOP,
+  aggregateScores,
+  cleanJudgeName,
+  halvesToScore,
+  judgeKey,
   judgingOpen,
+  matchTeamByLink,
   rankingError,
   sponsorProgress,
   tallyTeams,
+  type JudgeScore,
   type TeamReview,
 } from "~/lib/sponsor-scoring";
 import {
@@ -28,23 +40,25 @@ import {
   isEligibleTeam,
   listEligibleTeams,
   membersByTeam,
-  writeChosenTeams,
 } from "~/server/api/utils/sponsor-judging-teams";
 import { round2OpenedAt } from "~/server/api/utils/sponsor-judging-settings";
 import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
 import { db } from "~/server/db";
 import {
+  coffeeChatReps,
   sponsorFinalPicks,
   sponsorJudgingSponsors,
   sponsorPresentations,
   sponsorShortlistSends,
   sponsorTeamReviews,
+  sponsorTeamScores,
   teams,
 } from "~/server/db/schema";
 
 const errors = sponsorJudgingCopy.errors;
 const sponsorInput = z.string().uuid();
 const teamIdInput = z.string().trim().min(1).max(12);
+const judgeInput = z.string().trim().min(1).max(JUDGE_NAME_MAX);
 
 /** Whether judging is open now (SPONSOR_JUDGING_CLOSES_AT unset = always). */
 function isOpen() {
@@ -87,19 +101,86 @@ async function findTrackSponsor(id: string) {
   if (!hasPrizeTrack(sponsor.name)) {
     throw new TRPCError({ code: "FORBIDDEN", message: errors.noPrizeTrack });
   }
+  // Digital sponsors have no portal; the spon team enters their top 3
+  // (submitDigital). Jazz, 2026-11-19.
+  if (isDigitalJudging(sponsor.name)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: errors.digital });
+  }
   return sponsor;
 }
 
-async function reviewsFor(sponsorId: string): Promise<TeamReview[]> {
-  return db
+/** Every rep's score for this sponsor, as 1-10 numbers. */
+async function scoresFor(sponsorId: string): Promise<JudgeScore[]> {
+  const rows = await db
+    .select({
+      teamId: sponsorTeamScores.teamId,
+      judge: sponsorTeamScores.judgeName,
+      halves: sponsorTeamScores.scoreHalves,
+    })
+    .from(sponsorTeamScores)
+    .where(eq(sponsorTeamScores.sponsorId, sponsorId));
+  return rows.map((r) => ({
+    teamId: r.teamId,
+    judge: r.judge,
+    score: halvesToScore(r.halves),
+  }));
+}
+
+/**
+ * The sponsor's reviews (shortlist flag and note) with `score` set to the
+ * team average across reps (sponsor_team_score), or null with no score.
+ * A team scored but never shortlisted or noted gets a review too.
+ */
+function withAverages(
+  reviews: readonly Omit<TeamReview, "score">[],
+  scores: readonly JudgeScore[],
+): TeamReview[] {
+  const agg = aggregateScores(scores);
+  const out = new Map<string, TeamReview>();
+  for (const r of reviews) {
+    out.set(r.teamId, { ...r, score: agg.get(r.teamId)?.average ?? null });
+  }
+  for (const [teamId, a] of agg) {
+    if (!out.has(teamId)) {
+      out.set(teamId, {
+        teamId,
+        score: a.average,
+        shortlisted: false,
+        note: null,
+      });
+    }
+  }
+  return [...out.values()];
+}
+
+async function reviewsFor(sponsorId: string, scores: readonly JudgeScore[]) {
+  const rows = await db
     .select({
       teamId: sponsorTeamReviews.teamId,
-      score: sponsorTeamReviews.score,
       shortlisted: sponsorTeamReviews.shortlisted,
       note: sponsorTeamReviews.note,
     })
     .from(sponsorTeamReviews)
     .where(eq(sponsorTeamReviews.sponsorId, sponsorId));
+  return withAverages(rows, scores);
+}
+
+/** The sponsor's reps from Your team, in the order they were listed. */
+async function repNames(sponsorId: string): Promise<string[]> {
+  const rows = await db
+    .select({ name: coffeeChatReps.name })
+    .from(coffeeChatReps)
+    .where(eq(coffeeChatReps.sponsorId, sponsorId))
+    .orderBy(asc(coffeeChatReps.position), asc(coffeeChatReps.createdAt));
+  const seen = new Set<string>();
+  return rows
+    .map((r) => cleanJudgeName(r.name))
+    .filter((name) => {
+      const key = judgeKey(name);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
 
 /**
@@ -145,70 +226,157 @@ async function roundFor(sponsorId: string) {
 }
 
 /**
- * Write a saved submission to Lucas's judging sheet and mark it synced.
- * The mark only lands if `submittedAt` is still the sponsor's latest
- * submission, so a slow write for an older ranking never marks a newer one
- * as synced. Best effort: logs and returns false on failure, never throws.
+ * Mirror a saved submission to the Sponsor Judging sheet tab and mark it
+ * synced. (Lucas's old "Judging" tab was deleted on 2026-11-19; the
+ * database is the record and the tab is a one-way view.) The mark only
+ * lands if `submittedAt` is still the sponsor's latest submission, so a
+ * slow write for an older ranking never marks a newer one as synced. With
+ * sheet writes off (sheetWritesEnabled) nothing is written and it stays
+ * unsynced. Best effort: never throws.
  */
-async function syncFinalToSheet(
-  sponsor: { id: string; name: string },
-  teamIds: readonly string[],
-  submittedAt: Date,
-) {
+async function syncFinalToSheet(sponsorId: string, submittedAt: Date) {
   try {
-    await writeChosenTeams(sponsor.name, teamIds);
+    const result = await mirrorSponsorJudgingSoon();
+    if (!result?.ok) return false;
     const marked = await db
       .update(sponsorFinalPicks)
       .set({ sheetSyncedAt: new Date() })
       .where(
         and(
-          eq(sponsorFinalPicks.sponsorId, sponsor.id),
+          eq(sponsorFinalPicks.sponsorId, sponsorId),
           eq(sponsorFinalPicks.submittedAt, submittedAt),
         ),
       )
       .returning({ sponsorId: sponsorFinalPicks.sponsorId });
     return marked.length > 0;
   } catch (error) {
-    console.error("Sponsor final picks: sheet write failed", error);
+    console.error("Sponsor final picks: sheet mirror failed", error);
     return false;
   }
 }
 
+/** Save a sponsor's ranked top list (replacing any earlier one), then mirror it. */
+async function saveFinal(sponsorId: string, teamIds: string[]) {
+  const submittedAt = new Date();
+  await db
+    .insert(sponsorFinalPicks)
+    .values({ sponsorId, teamIds, submittedAt, sheetSyncedAt: null })
+    .onConflictDoUpdate({
+      target: sponsorFinalPicks.sponsorId,
+      set: { teamIds, submittedAt, sheetSyncedAt: null },
+    });
+  const sheetSynced = await syncFinalToSheet(sponsorId, submittedAt);
+  return { teamIds, ineligibleCount: 0, submittedAt, sheetSynced };
+}
+
 /**
- * Sponsor judging on /sponsors/[uuid]/picks: score submitted teams 1-10,
- * save some to a shortlist, then submit a ranked top SPONSOR_FINAL_TOP.
- * The sponsor's private UUID is the credential, as on their other portal
- * pages; every read and write is scoped to that sponsor, and only teams
- * they can see (submitted, in their track; same rule as Lucas's
- * listAllTeams) can be reviewed or submitted. Organizers read everything
- * through `overview`.
+ * Keep sponsor_team_review.score at the rounded team average, so readers
+ * of the older one-score column (the organizer day board's "scored"
+ * count) stay right. Null when no rep has scored the team.
+ */
+async function syncReviewScore(sponsorId: string, teamId: string) {
+  const rows = await db
+    .select({ halves: sponsorTeamScores.scoreHalves })
+    .from(sponsorTeamScores)
+    .where(
+      and(
+        eq(sponsorTeamScores.sponsorId, sponsorId),
+        eq(sponsorTeamScores.teamId, teamId),
+      ),
+    );
+  const average =
+    rows.reduce((sum, r) => sum + halvesToScore(r.halves), 0) /
+    Math.max(1, rows.length);
+  const score =
+    rows.length > 0 ? Math.min(10, Math.max(1, Math.round(average))) : null;
+  const updatedAt = new Date();
+  await db
+    .insert(sponsorTeamReviews)
+    .values({ sponsorId, teamId, score, updatedAt })
+    .onConflictDoUpdate({
+      target: [sponsorTeamReviews.sponsorId, sponsorTeamReviews.teamId],
+      set: { score, updatedAt },
+    });
+}
+
+/**
+ * The registered sponsor row for a digital prize track entry, created when
+ * it's missing: digital sponsors get no portal link, but their entered top
+ * 3 is stored like any other sponsor's.
+ */
+async function digitalSponsorRow(entry: string) {
+  const registered = await db
+    .select({
+      id: sponsorJudgingSponsors.id,
+      name: sponsorJudgingSponsors.name,
+    })
+    .from(sponsorJudgingSponsors);
+  const found = registered.find((s) => prizeTrackOf(s.name) === entry);
+  if (found) return found;
+  await db
+    .insert(sponsorJudgingSponsors)
+    .values({ name: entry })
+    .onConflictDoNothing({ target: sponsorJudgingSponsors.name });
+  const row = await db.query.sponsorJudgingSponsors.findFirst({
+    where: eq(sponsorJudgingSponsors.name, entry),
+    columns: { id: true, name: true },
+  });
+  return row!;
+}
+
+/** Digital prize track entries in list order (PCBWay today). */
+const digitalEntries = (): string[] =>
+  SPONSOR_PRIZE_TRACKS.filter((entry) => isDigitalJudging(entry));
+
+/** A digital entry by name (loose match), or NOT_FOUND. */
+function digitalEntry(name: string) {
+  const entry = digitalEntries().find((e) => prizeTrackOf(name, [e]) !== null);
+  if (!entry) {
+    throw new TRPCError({ code: "NOT_FOUND", message: errors.notDigital });
+  }
+  return entry;
+}
+
+/**
+ * Sponsor judging on /sponsors/[uuid]/picks: each rep scores submitted
+ * teams 1-10 in half points (several reps share one login: "Who's
+ * judging?"), the sponsor saves some to a shortlist, then submits a ranked
+ * top SPONSOR_FINAL_TOP (1st-3rd). The sponsor's private UUID is the
+ * credential, as on their other portal pages; every read and write is
+ * scoped to that sponsor, and only teams they can see (submitted, in their
+ * track; same rule as Lucas's listAllTeams) can be reviewed or submitted.
+ * Digital sponsors have no portal; organizers enter their top 3
+ * (submitDigital). Organizers read everything through `overview`.
  */
 export const sponsorScoringRouter = createTRPCRouter({
   /**
-   * Eligible teams, this sponsor's reviews, and their last submission. A
-   * submission the sheet never got (the write failed after it was saved)
-   * is retried here, best effort.
+   * Eligible teams, this sponsor's reviews (score = team average), every
+   * rep's scores, the sponsor's reps for "Who's judging?", and their last
+   * submission. A submission the sheet never got is retried here, best
+   * effort.
    */
   get: publicProcedure
     .input(z.object({ sponsor: sponsorInput }))
     .query(async ({ input }) => {
       const sponsor = await findTrackSponsor(input.sponsor);
       const track = await fetchSponsorTrack(sponsor.name);
-      const [eligible, reviews, final, round] = await Promise.all([
+      const [eligible, scores, final, round, reps] = await Promise.all([
         listEligibleTeams(track),
-        reviewsFor(sponsor.id),
+        scoresFor(sponsor.id),
         db.query.sponsorFinalPicks.findFirst({
           where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
         }),
         roundFor(sponsor.id),
+        repNames(sponsor.id),
       ]);
+      const reviews = await reviewsFor(sponsor.id, scores);
       // Reviews of teams that have since left the sponsor's list (track
       // changed, submission withdrawn) stay stored but aren't shown, and
       // drop out of the submitted ranking too.
       const visible = new Set(eligible.map((t) => t.id));
       const sheetSynced = final
         ? final.sheetSyncedAt !== null ||
-          (await syncFinalToSheet(sponsor, final.teamIds, final.submittedAt))
+          (await syncFinalToSheet(sponsor.id, final.submittedAt))
         : false;
       const finalIds = final?.teamIds.filter((id) => visible.has(id)) ?? [];
       return {
@@ -218,6 +386,10 @@ export const sponsorScoringRouter = createTRPCRouter({
         open: isOpen(),
         teams: eligible,
         reviews: reviews.filter((r) => visible.has(r.teamId)),
+        /** Every rep's score (1-10, half points), for "who gave what". */
+        scores: scores.filter((s) => visible.has(s.teamId)),
+        /** Reps listed on Your team, for "Who's judging?". */
+        reps,
         round: {
           ...round,
           slots: round.slots.filter((s) => visible.has(s.teamId)),
@@ -235,8 +407,75 @@ export const sponsorScoringRouter = createTRPCRouter({
     }),
 
   /**
-   * Autosave part of a review: a score (null clears it), the shortlist
-   * flag, or the note. Fields left out keep their value.
+   * One rep's score for one team, in half points (halves 2-20 = 1-10);
+   * null clears that rep's score. Each rep's score is kept separately
+   * (sponsor_team_score); the team average is what the shortlist and
+   * ranking sort by.
+   */
+  score: publicProcedure
+    .input(
+      z.object({
+        sponsor: sponsorInput,
+        teamId: teamIdInput,
+        judge: judgeInput,
+        halves: z.number().int().min(HALVES_MIN).max(HALVES_MAX).nullable(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      assertOpen();
+      const sponsor = await findTrackSponsor(input.sponsor);
+      const track = await fetchSponsorTrack(sponsor.name);
+      const ok = await eligibleTeamIds(track, [input.teamId]);
+      if (!ok.has(input.teamId)) {
+        throw new TRPCError({ code: "NOT_FOUND", message: errors.notEligible });
+      }
+      const judge = cleanJudgeName(input.judge);
+      // One score per rep per team, whatever the name's case or spacing.
+      const existing = await db
+        .select({ judge: sponsorTeamScores.judgeName })
+        .from(sponsorTeamScores)
+        .where(
+          and(
+            eq(sponsorTeamScores.sponsorId, sponsor.id),
+            eq(sponsorTeamScores.teamId, input.teamId),
+          ),
+        );
+      const same = existing
+        .map((r) => r.judge)
+        .filter((name) => judgeKey(name) === judgeKey(judge));
+      await db.transaction(async (tx) => {
+        if (same.length > 0) {
+          await tx
+            .delete(sponsorTeamScores)
+            .where(
+              and(
+                eq(sponsorTeamScores.sponsorId, sponsor.id),
+                eq(sponsorTeamScores.teamId, input.teamId),
+                inArray(sponsorTeamScores.judgeName, same),
+              ),
+            );
+        }
+        if (input.halves !== null) {
+          await tx.insert(sponsorTeamScores).values({
+            sponsorId: sponsor.id,
+            teamId: input.teamId,
+            judgeName: judge,
+            scoreHalves: input.halves,
+            updatedAt: new Date(),
+          });
+        }
+      });
+      await syncReviewScore(sponsor.id, input.teamId);
+      return {
+        teamId: input.teamId,
+        judge,
+        score: input.halves === null ? null : halvesToScore(input.halves),
+      };
+    }),
+
+  /**
+   * Autosave part of a review: the shortlist flag or the note. Fields left
+   * out keep their value. Scores go through `score` (one per rep).
    */
   review: publicProcedure
     .input(
@@ -244,11 +483,10 @@ export const sponsorScoringRouter = createTRPCRouter({
         .object({
           sponsor: sponsorInput,
           teamId: teamIdInput,
-          score: z.number().int().min(SCORE_MIN).max(SCORE_MAX).nullable(),
           shortlisted: z.boolean(),
           note: z.string().max(NOTE_MAX).nullable(),
         })
-        .partial({ score: true, shortlisted: true, note: true }),
+        .partial({ shortlisted: true, note: true }),
     )
     .mutation(async ({ input }) => {
       assertOpen();
@@ -261,7 +499,6 @@ export const sponsorScoringRouter = createTRPCRouter({
       const note =
         input.note === undefined ? undefined : blankToNull(input.note);
       const set = {
-        ...(input.score !== undefined && { score: input.score }),
         ...(input.shortlisted !== undefined && {
           shortlisted: input.shortlisted,
         }),
@@ -277,7 +514,6 @@ export const sponsorScoringRouter = createTRPCRouter({
         })
         .returning({
           teamId: sponsorTeamReviews.teamId,
-          score: sponsorTeamReviews.score,
           shortlisted: sponsorTeamReviews.shortlisted,
           note: sponsorTeamReviews.note,
         });
@@ -331,14 +567,14 @@ export const sponsorScoringRouter = createTRPCRouter({
     }),
 
   /**
-   * Submit the ranked top SPONSOR_FINAL_TOP: exactly that many, no repeats,
-   * all teams that presented to this sponsor and still eligible. Only once
-   * organizers have opened round 2, and only for a sponsor with a placed
-   * presentation slot (no slot: FORBIDDEN, Jazz 2026-11-18). Resubmitting
-   * replaces the last one while judging is open. Saved here first, then
-   * written to Lucas's judging sheet; if the sheet write fails the
-   * submission still counts and `sheetSynced` is false (the next `get`
-   * retries it, or the sponsor can submit again).
+   * Submit the ranked top SPONSOR_FINAL_TOP (1st, 2nd, 3rd): exactly that
+   * many, no repeats, all teams that presented to this sponsor and still
+   * eligible. Only once organizers have opened round 2, and only for a
+   * sponsor with a placed presentation slot (no slot: FORBIDDEN, Jazz
+   * 2026-11-18). Resubmitting replaces the last one while judging is open.
+   * Saved here first, then mirrored to the Sponsor Judging tab; if that
+   * fails (or sheet writes are off) the submission still counts and
+   * `sheetSynced` is false (the next `get` retries it).
    */
   submit: publicProcedure
     .input(
@@ -381,70 +617,128 @@ export const sponsorScoringRouter = createTRPCRouter({
               : errors.ranking[problem](SPONSOR_FINAL_TOP),
         });
       }
+      return saveFinal(sponsor.id, input.teamIds);
+    }),
 
-      const submittedAt = new Date();
-      await db
-        .insert(sponsorFinalPicks)
-        .values({
-          sponsorId: sponsor.id,
-          teamIds: input.teamIds,
-          submittedAt,
-          sheetSyncedAt: null,
-        })
-        .onConflictDoUpdate({
-          target: sponsorFinalPicks.sponsorId,
-          set: { teamIds: input.teamIds, submittedAt, sheetSyncedAt: null },
-        });
-
-      const sheetSynced = await syncFinalToSheet(
-        sponsor,
-        input.teamIds,
-        submittedAt,
-      );
-      await mirrorSponsorJudgingSoon();
+  /**
+   * Organizers: a digital sponsor's track teams (submitted, in its track)
+   * for matching pasted Devpost links on the organizer tab, with the top 3
+   * entered so far.
+   */
+  digitalTeams: protectedOrganizerProcedure
+    .input(z.object({ name: z.string().trim().min(1).max(255) }))
+    .query(async ({ input }) => {
+      const entry = digitalEntry(input.name);
+      const sponsor = await digitalSponsorRow(entry);
+      const track = await fetchSponsorTrack(sponsor.name);
+      const [eligible, final] = await Promise.all([
+        listEligibleTeams(track),
+        db.query.sponsorFinalPicks.findFirst({
+          where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
+        }),
+      ]);
       return {
-        teamIds: input.teamIds,
-        ineligibleCount: 0,
-        submittedAt,
-        sheetSynced,
+        name: sponsor.name,
+        track,
+        teams: eligible.map((t) => ({
+          id: t.id,
+          name: t.name,
+          devpostUrl: t.devpostUrl,
+        })),
+        final: final
+          ? { teamIds: final.teamIds, submittedAt: final.submittedAt }
+          : null,
       };
     }),
 
   /**
+   * Organizers enter a digital sponsor's 1st-3rd place by pasting Devpost
+   * links (a team ID works too). Each link must match a different
+   * submitted team in that sponsor's track, or nothing is saved. Stored
+   * like a portal submission and mirrored to the Sponsor Judging tab.
+   */
+  submitDigital: protectedOrganizerProcedure
+    .input(
+      z.object({
+        name: z.string().trim().min(1).max(255),
+        links: z
+          .array(z.string().trim().min(1).max(2048))
+          .length(SPONSOR_FINAL_TOP, {
+            message: errors.ranking.wrongCount(SPONSOR_FINAL_TOP),
+          }),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      assertOpen();
+      const entry = digitalEntry(input.name);
+      const sponsor = await digitalSponsorRow(entry);
+      const track = await fetchSponsorTrack(sponsor.name);
+      const eligible = await listEligibleTeams(track);
+      const teamIds = input.links.map((link, i) => {
+        const team = matchTeamByLink(link, eligible);
+        if (!team) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: errors.digitalNoMatch(i + 1, link),
+          });
+        }
+        return team.id;
+      });
+      if (new Set(teamIds).size !== teamIds.length) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: errors.ranking.duplicate(),
+        });
+      }
+      return saveFinal(sponsor.id, teamIds);
+    }),
+
+  /**
    * Organizers: every sponsor's progress and submitted ranking (final
-   * results: teams in rank order with their hackers), plus all
-   * teams ranked by how many sponsors put them in a top list and their
-   * average score. Only teams a sponsor can still judge (submitted, in
-   * their track) count toward progress and tallies; a withdrawn team stays
-   * in that sponsor's submitted list, flagged `eligible: false`.
+   * results: teams in rank order with their hackers, average score and
+   * each rep's score), plus all teams ranked by how many sponsors put
+   * them in a top list and their average score. Only teams a sponsor can
+   * still judge (submitted, in their track) count toward progress and
+   * tallies; a withdrawn team stays in that sponsor's submitted list,
+   * flagged `eligible: false`. Digital sponsors are listed with
+   * `digital: true` (their top 3 is entered on this tab).
    */
   overview: protectedOrganizerProcedure.query(async () => {
-    const [registered, reviews, finals, tracks] = await Promise.all([
-      db
-        .select({
-          id: sponsorJudgingSponsors.id,
-          name: sponsorJudgingSponsors.name,
-        })
-        .from(sponsorJudgingSponsors)
-        .orderBy(sponsorJudgingSponsors.name),
-      db
-        .select({
-          sponsorId: sponsorTeamReviews.sponsorId,
-          teamId: sponsorTeamReviews.teamId,
-          score: sponsorTeamReviews.score,
-          shortlisted: sponsorTeamReviews.shortlisted,
-          note: sponsorTeamReviews.note,
-        })
-        .from(sponsorTeamReviews),
-      db.select().from(sponsorFinalPicks),
-      fetchSponsorTracks(),
-    ]);
+    const [registered, reviewRows, scoreRows, finals, tracks] =
+      await Promise.all([
+        db
+          .select({
+            id: sponsorJudgingSponsors.id,
+            name: sponsorJudgingSponsors.name,
+          })
+          .from(sponsorJudgingSponsors)
+          .orderBy(sponsorJudgingSponsors.name),
+        db
+          .select({
+            sponsorId: sponsorTeamReviews.sponsorId,
+            teamId: sponsorTeamReviews.teamId,
+            shortlisted: sponsorTeamReviews.shortlisted,
+            note: sponsorTeamReviews.note,
+          })
+          .from(sponsorTeamReviews),
+        db
+          .select({
+            sponsorId: sponsorTeamScores.sponsorId,
+            teamId: sponsorTeamScores.teamId,
+            judge: sponsorTeamScores.judgeName,
+            halves: sponsorTeamScores.scoreHalves,
+          })
+          .from(sponsorTeamScores),
+        db.select().from(sponsorFinalPicks),
+        fetchSponsorTracks(),
+      ]);
     // Only prize track sponsors take part in judging.
     const sponsors = registered.filter((s) => hasPrizeTrack(s.name));
 
     const teamIds = [
       ...new Set([
-        ...reviews.map((r) => r.teamId),
+        ...reviewRows.map((r) => r.teamId),
+        ...scoreRows.map((r) => r.teamId),
         ...finals.flatMap((f) => f.teamIds),
       ]),
     ];
@@ -472,12 +766,17 @@ export const sponsorScoringRouter = createTRPCRouter({
       ]),
     );
 
-    const reviewsBySponsor = new Map<string, TeamReview[]>();
-    for (const { sponsorId, ...r } of reviews) {
-      const list = reviewsBySponsor.get(sponsorId) ?? [];
-      list.push(r);
-      reviewsBySponsor.set(sponsorId, list);
-    }
+    const groupBy = <T extends { sponsorId: string }>(rows: readonly T[]) => {
+      const map = new Map<string, T[]>();
+      for (const row of rows) {
+        const list = map.get(row.sponsorId) ?? [];
+        list.push(row);
+        map.set(row.sponsorId, list);
+      }
+      return map;
+    };
+    const reviewsBySponsor = groupBy(reviewRows);
+    const scoresBySponsor = groupBy(scoreRows);
     const finalBySponsor = new Map(finals.map((f) => [f.sponsorId, f]));
 
     const perSponsor = sponsors.map((s) => {
@@ -486,16 +785,26 @@ export const sponsorScoringRouter = createTRPCRouter({
         const t = teamById.get(teamId);
         return t !== undefined && isEligibleTeam(t, track);
       };
-      const all = reviewsBySponsor.get(s.id) ?? [];
+      const scores: JudgeScore[] = (scoresBySponsor.get(s.id) ?? []).map(
+        (r) => ({
+          teamId: r.teamId,
+          judge: r.judge,
+          score: halvesToScore(r.halves),
+        }),
+      );
+      const all = withAverages(reviewsBySponsor.get(s.id) ?? [], scores);
       const f = finalBySponsor.get(s.id) ?? null;
       return {
         sponsorId: s.id,
         name: s.name,
+        digital: isDigitalJudging(s.name),
         reviews: all.filter((r) => canJudge(r.teamId)),
         final: f
           ? { teamIds: f.teamIds.filter(canJudge), submittedAt: f.submittedAt }
           : null,
         scoreOf: new Map(all.map((r) => [r.teamId, r.score])),
+        agg: aggregateScores(scores),
+        judges: new Set(scores.map((x) => judgeKey(x.judge))).size,
         canJudge,
         stored: f,
       };
@@ -506,9 +815,14 @@ export const sponsorScoringRouter = createTRPCRouter({
       finalTop: SPONSOR_FINAL_TOP,
       /** Sponsors whose saved submission hasn't reached the sheet yet. */
       unsyncedCount: finals.filter((f) => f.sheetSyncedAt === null).length,
+      /** Digital prize track entries (top 3 entered here), in list order. */
+      digital: digitalEntries(),
       sponsors: perSponsor.map((s) => ({
         sponsorId: s.sponsorId,
         name: s.name,
+        digital: s.digital,
+        /** Reps who've scored at least one team. */
+        judges: s.judges,
         ...sponsorProgress(s.reviews),
         final: s.stored
           ? {
@@ -519,6 +833,7 @@ export const sponsorScoringRouter = createTRPCRouter({
                 name: teamById.get(teamId)?.name ?? teamId,
                 devpostUrl: teamById.get(teamId)?.devpostUrl ?? null,
                 score: s.scoreOf.get(teamId) ?? null,
+                byJudge: s.agg.get(teamId)?.byJudge ?? [],
                 eligible: s.canJudge(teamId),
                 members: members.get(teamId) ?? [],
               })),
