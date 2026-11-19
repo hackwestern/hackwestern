@@ -12,6 +12,7 @@ Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /li
 |---|---|---|
 | 1 | Copy of v4 with every v4 change | Building |
 | 8 | Two separate flows, each with its own Review & submit, made obviously different: (1) Chatting preferences (required): Your team → Preferences → Review & submit preferences; (2) Shortlist (optional): Shortlist → Review & submit shortlist. Two entry cards on Chats; separate step rails; shortlist locked until preferences are submitted (seat cap comes from them) | Building |
+| 9 | Remove "+ Add rep" from the chatting preferences step (reps only created in Your team; an "Edit your team" link instead). The block's "+ rep" chip stays, assigning existing reps only | Building |
 | 3 | Shortlist capped at the sponsor's number of hacker seats (from their preferences), not 40 | Building |
 | 4 | Explain the flow at the top: 1 Shortlist hackers here · 2 Scan hackers at your booth Friday night · 3 Submit your shortlist by 9:30 PM or earlier; otherwise at 9:30 PM we assign hackers who requested coffee chats with you | Building |
 | 5 | Views: Shortlisted / Not shortlisted (plus everyone) | Building |
