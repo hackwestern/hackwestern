@@ -795,3 +795,9 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Why:** organizers need their day and everything about their sponsors in one place, and coffee chats / judging each only matter on certain days.
 **Alternatives:** layouts 2 (side by side) and 3 (sponsor first) from v2; separate Sponsors and Run of show tabs (the current build).
 **Workflow (Jazz, same day):** every new screen is mocked in HTML first and approved before it's built.
+
+## 2026-11-19: Organizer judging board = mock organizer-judging-board-v2, approved for build with changes (Jazz)
+
+**Decision:** Build v2 with these changes. Team status is only Invite not sent / Waiting / Accepted, and one hacker replying on the Slack bot or the live-site notification accepts for the whole team. No presenting / presented tracking. Phone numbers get a copy icon instead of a Copy button, and each sponsor's head rep number shows with the same icon. Remote teams don't present, so the remote list is out of the presentation flow.
+**Why:** organizers only need to know if a team will show up; presenting/presented is noise, and remote teams never present in a room.
+**Alternatives:** v2 as mocked (told/not told, presenting now, presented, remote column); requiring every team member to confirm.
