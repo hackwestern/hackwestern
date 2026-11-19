@@ -536,3 +536,14 @@ Supersedes "lead's phone + Send to the sponsor team" as equal options (2026-11-1
 **Decision:** HW Contacts keeps only the spon team (Noah Medland, Caroline Ge, Daniel Wang, Alice Nguyen, Aniya Liu), the HW contacts still listed on Sponsor Status (Lucas Vanderwielen, Brittney Chong) and Jasmine Gu. The other 20 rows were deleted (recoverable from version history). The tab stays because Sponsor Day-Of's Lead phone, the sponsor portal's lead phone, "Text your lead" and the HW Contact dropdown read it; Aniya leads no sponsor but has an on-call shift, so her number only lives here.
 
 **Alternatives:** delete the tab (breaks every lead phone lookup); type phones into Sponsor Day-Of (duplicates each lead's number per sponsor and loses Aniya).
+
+## 2026-11-19: Sheet cut to 9 tabs; Coffee Chats merged into Coffee Chat Setup; Judging and Start here deleted; spon contacts on RUN OF SHOW (Jazz)
+
+**Decision:**
+- "Coffee Chats" was merged into "Coffee Chat Setup" (a copy with the same row-1 headers, plus Status, Main contact, Main phone, Reps (names + phones), Can we shift chats?, Last saved by sponsor, and a Commure row) and deleted. Every row starts as "Pre-confirmed (not confirmed)" and stays editable; a sponsor's portal submission will set "Confirmed by sponsor". The app reads `COFFEE_CHATS_TAB = "Coffee Chat Setup"` (commit on coffee-prefs). Checked through the real parser: 6 coffee chat rows, 35 events, 56 tasks.
+- "Judging" was deleted; "Sponsor Judging" replaces it. Its only data (Commure's 6-team shortlist; TinyFish room "Digital") is in a note on Sponsor Judging. **Until the judging build, saving a sponsor shortlist fails** (`sponsor-judging-teams.ts` and `routers/sponsor-judging.ts` write to the Judging tab). Build: store shortlists and top 5 in the database and mirror to Sponsor Judging.
+- "Start here" was deleted (Jazz). The colour rules (orange = app reads, grey = app writes, yellow = missing) stay on the tabs.
+- RUN OF SHOW rows 89–99 have "SPON CONTACTS": name, phone and sponsors they lead, all formulas from HW Contacts and Sponsor Day-Of (rows past the schedule; the parser ignores them).
+- Digital sponsors' 4th and 5th place are optional (some give a top 3).
+
+**Pre-existing, found while checking:** the coffee chat parser ignores the "Length" and "Hacker(s) per chat" columns (Sun Life reads as 15 min, 1 per chat instead of 30 min, 3). Fix in the build.
