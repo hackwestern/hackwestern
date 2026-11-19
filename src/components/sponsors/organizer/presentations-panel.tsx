@@ -87,7 +87,10 @@ export function PresentationsPanel({
   }
 
   const anySent = data.sponsors.some((s) => s.sentAt);
-  const scheduled = data.scheduledAt !== null;
+  // A run that placed nothing isn't a schedule: keep "Schedule presentations"
+  // and say why (B9).
+  const scheduled = data.scheduledAt !== null && data.slots.length > 0;
+  const placedNothing = data.scheduledAt !== null && data.slots.length === 0;
   const { notices } = data;
   const toNotify = notices.notReached.length;
   // Before anyone was tried every member is "not sent": no list yet.
@@ -303,7 +306,9 @@ export function PresentationsPanel({
                   formatSubmittedTime(data.scheduledAt!),
                   data.slots.length,
                 )
-              : copy.notScheduled}
+              : placedNothing && data.unplaced.length > 0
+                ? copy.nothingPlaced
+                : copy.notScheduled}
           {scheduled && data.slots.length > 0 && (
             <>
               {" · "}
@@ -392,7 +397,7 @@ export function PresentationsPanel({
           <ul className="m-0 list-none p-0 pl-6 font-medium">
             {data.unplaced.map((u) => (
               <li key={`${u.sponsorId}:${u.teamId}`}>
-                {u.teamName} · {u.sponsorName} · {copy.reasons[u.reason]}
+                {u.teamName} · {copy.reasons[u.reason](u.sponsorName)}
               </li>
             ))}
           </ul>

@@ -33,6 +33,8 @@ export const sponsorPresentationsCopy = {
     scheduledAt: (time: string, placed: number) =>
       `Scheduled ${time} · ${plural(placed, "slot", "slots")}`,
     notScheduled: "Not scheduled yet.",
+    /** Scheduling ran but placed no team: not a success. */
+    nothingPlaced: "Nothing scheduled yet. See why below.",
     notify: "Notify hackers",
     /** Only members who don't have their current times yet. */
     notifyRest: (n: number) => `Notify ${plural(n, "hacker", "hackers")}`,
@@ -123,9 +125,12 @@ export const sponsorPresentationsCopy = {
       n === 1
         ? "1 team couldn't be scheduled"
         : `${n} teams couldn't be scheduled`,
+    /** Why a team wasn't placed; says where to fix it. */
     reasons: {
-      full: "No slot left that keeps this team's gaps",
-      "no-room": "Sponsor has no room",
+      full: (sponsor: string) =>
+        `No slot left in ${sponsor}'s room that keeps this team's gaps`,
+      "no-room": (sponsor: string) =>
+        `${sponsor} has no judging room on Sponsor Day-Of`,
     },
     roomOf: (sponsor: string, room: string) => `${sponsor} · ${room}`,
     slotCount: (n: number, max: number) => `${n}/${max}`,
