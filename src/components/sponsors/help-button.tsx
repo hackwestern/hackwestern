@@ -171,7 +171,7 @@ function HelpContacts({
                 label={c.emergency}
                 name={emergency?.name ?? null}
                 phone={emergency?.phone ?? null}
-                missingName={c.noPhone}
+                missingName={c.noEmergency}
                 missingPhone={c.noPhone}
               />
             </div>

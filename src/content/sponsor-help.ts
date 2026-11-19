@@ -43,6 +43,8 @@ export const sponsorHelpCopy = {
     lead: "Your Hack Western contact",
     emergency: "Emergency contact",
     noLead: "Your contact hasn't been assigned yet.",
+    noEmergency:
+      "Couldn't load the emergency contact. Ask at the sponsor lounge (Rm 2110).",
     noPhone: "Number not available. Ask at the sponsor lounge (Rm 2110).",
     loading: "Loading…",
   },

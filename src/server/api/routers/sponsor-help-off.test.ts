@@ -102,7 +102,10 @@ describe("tracked help switched off", () => {
       })
       .returning();
     expect(
-      await publicCaller.sponsorHelp.cancel({ sponsor: sponsorId, id: row!.id }),
+      await publicCaller.sponsorHelp.cancel({
+        sponsor: sponsorId,
+        id: row!.id,
+      }),
     ).toEqual({ ok: true });
     const after = await db.query.sponsorHelpRequests.findFirst();
     expect(after?.status).toBe("open");
