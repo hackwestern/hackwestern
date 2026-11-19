@@ -5,6 +5,7 @@ import {
   SPONSOR_FINAL_TOP,
   aggregateScores,
   browseTeams,
+  cleanJudgeName,
   finalTopIsValid,
   formatAverage,
   formatScore,
@@ -14,6 +15,7 @@ import {
   isValidHalves,
   isValidScore,
   judgeKey,
+  linkIsAmbiguous,
   matchTeamByLink,
   scoreToHalves,
   splitJudges,
@@ -155,6 +157,15 @@ describe("splitJudges / splitTeams", () => {
   });
 });
 
+describe("cleanJudgeName / judgeKey", () => {
+  it("strips zero-width characters before keying", () => {
+    const hidden = "​Dana‌‍ W.﻿";
+    expect(cleanJudgeName(hidden)).toBe("Dana W.");
+    expect(judgeKey(hidden)).toBe(judgeKey("dana w."));
+    expect(cleanJudgeName(" ​ ")).toBe("");
+  });
+});
+
 describe("matchTeamByLink (digital top 3)", () => {
   const teams = [
     { id: "a1c3e5f70912", devpostUrl: "https://devpost.com/software/cool-app" },
@@ -179,6 +190,20 @@ describe("matchTeamByLink (digital top 3)", () => {
     expect(matchTeamByLink("devpost.com/software/nope", teams)).toBeNull();
     expect(matchTeamByLink("devpost.com", teams)).toBeNull();
     expect(matchTeamByLink("   ", teams)).toBeNull();
+  });
+
+  it("matches nothing when two teams share a link (ambiguous)", () => {
+    const shared = [
+      ...teams,
+      { id: "d4", devpostUrl: "devpost.com/software/cool-app/" },
+    ];
+    const link = "https://devpost.com/software/cool-app";
+    expect(matchTeamByLink(link, shared)).toBeNull();
+    expect(linkIsAmbiguous(link, shared)).toBe(true);
+    expect(linkIsAmbiguous(link, teams)).toBe(false);
+    // A team ID still picks one.
+    expect(matchTeamByLink("d4", shared)?.id).toBe("d4");
+    expect(linkIsAmbiguous("d4", shared)).toBe(false);
   });
 
   it("shows a team as ID + Devpost link", () => {

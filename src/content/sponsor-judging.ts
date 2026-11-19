@@ -286,6 +286,9 @@ export const sponsorJudgingCopy = {
     notDigital: "That sponsor isn't a digital prize track sponsor.",
     digitalNoMatch: (place: number, link: string) =>
       `${ordinal(place)} place: "${link}" doesn't match a submitted team in this sponsor's track.`,
+    digitalAmbiguous: (place: number, link: string) =>
+      `${ordinal(place)} place: "${link}" matches more than one team in this sponsor's track. Paste the team ID instead.`,
+    noJudge: "Enter the name of who's judging.",
     ranking: {
       wrongCount: (top: number) => `Submit exactly ${top} teams.`,
       duplicate: () => "Each team can appear only once.",
@@ -401,6 +404,8 @@ export const sponsorJudgingCopy = {
       placeholder: "devpost.com/software/…",
       match: (name: string) => `Matches ${name}`,
       noMatch: "No submitted team in this track has that link.",
+      ambiguous:
+        "More than one team in this track has that link. Paste the team ID instead.",
       duplicate: "Already used for another place.",
       save: (top: number) => `Save top ${top}`,
       saving: "Saving…",

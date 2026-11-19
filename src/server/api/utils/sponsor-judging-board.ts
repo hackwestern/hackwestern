@@ -1,3 +1,5 @@
+import { eq } from "drizzle-orm";
+
 import {
   buildJudgingBoard,
   pickCountFromChosenTeams,
@@ -9,11 +11,12 @@ import {
   getRunOfShow,
 } from "~/server/api/utils/run-of-show-sheet";
 import {
-  fetchAllChosenTeams,
   fetchAllSponsorInfo,
   getSheetsClient,
   getSpreadsheetId,
 } from "~/server/api/utils/sponsor-sheets";
+import { db } from "~/server/db";
+import { sponsorFinalPicks, sponsorJudgingSponsors } from "~/server/db/schema";
 
 /**
  * The run of show with registered sponsor names applied (coffee chat rooms
@@ -29,9 +32,29 @@ export async function runOfShowFor(sponsorNames: string[]) {
 }
 
 /**
- * Lucas's judging spreadsheet for the judging view: each sponsor's room
- * (Sponsor Info tab) and chosen teams, one read of each. Cached for 30 s,
- * since the summary polls every 15 s per organizer.
+ * Each registered sponsor's saved picks (their ranked top list in
+ * sponsor_final_pick), by sponsor name. A registered sponsor that hasn't
+ * submitted has none ([]), so the panel shows 0, not unknown. The old
+ * "Judging" tab was deleted on 2026-11-19 (Jazz: count the DB).
+ */
+export async function savedPicksByName(): Promise<Map<string, string[]>> {
+  const rows = await db
+    .select({
+      name: sponsorJudgingSponsors.name,
+      teamIds: sponsorFinalPicks.teamIds,
+    })
+    .from(sponsorJudgingSponsors)
+    .leftJoin(
+      sponsorFinalPicks,
+      eq(sponsorFinalPicks.sponsorId, sponsorJudgingSponsors.id),
+    );
+  return new Map(rows.map((r) => [r.name, r.teamIds ?? []]));
+}
+
+/**
+ * The judging view's rooms (Lucas's Sponsor Info tab) and pick counts
+ * (savedPicksByName, from the database). Cached for 30 s, since the
+ * summary polls every 15 s per organizer.
  */
 const judgingSheetCache = createCachedLoader(async () => {
   const sheets = await getSheetsClient();
@@ -39,13 +62,18 @@ const judgingSheetCache = createCachedLoader(async () => {
   const [info, chosen] = await Promise.all([
     // Strict: a failed read must show as "couldn't read", not as no rooms.
     fetchAllSponsorInfo(sheets, spreadsheetId, { strict: true }),
-    fetchAllChosenTeams(sheets, spreadsheetId),
+    savedPicksByName(),
   ]);
   return {
     rooms: new Map([...info].map(([name, r]) => [name, r.roomNumber])),
     pickCount: pickCountFromChosenTeams(chosen),
   };
 }, 30_000);
+
+/** Tests: drop the cached read. */
+export function clearJudgingSheetCache() {
+  judgingSheetCache.clear();
+}
 
 /** Null when the judging sheet can't be read (picks show as unknown). */
 export async function judgingSheet() {

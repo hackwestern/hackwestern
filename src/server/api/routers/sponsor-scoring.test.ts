@@ -22,6 +22,10 @@ import {
 } from "~/server/api/utils/sponsor-judging-teams";
 import { setRound2Open } from "~/server/api/utils/sponsor-judging-settings";
 import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
+import {
+  SHEET_RETRY_GAP_MS,
+  resetSheetRetries,
+} from "~/server/api/routers/sponsor-scoring";
 
 // SPONSOR_JUDGING_CLOSES_AT, per test (unset = judging never closes).
 let closesAt: string | undefined;
@@ -77,6 +81,7 @@ beforeEach(async () => {
   track.mockReset().mockResolvedValue(null);
   allTracks.mockReset().mockResolvedValue(new Map());
   mirrorSoon.mockReset().mockResolvedValue(SYNCED);
+  resetSheetRetries();
 });
 
 const PAST = "2020-01-01T00:00:00Z";
@@ -175,23 +180,54 @@ describe("sponsorScoring.get", () => {
       sponsor: s.id,
       teamIds: ids.slice(0, 3),
     });
-    // Still down: the query succeeds and says so.
+    // Still down: the query succeeds and says so; the retry runs in the
+    // background.
+    mirrorSoon.mockClear();
     await expect(
       anon.sponsorScoring.get({ sponsor: s.id }),
     ).resolves.toMatchObject({ final: { sheetSynced: false } });
+    await vi.waitFor(() => expect(mirrorSoon).toHaveBeenCalledTimes(1));
 
+    // Back up, but the last retry was under a minute ago: no new write.
     mirrorSoon.mockReset().mockResolvedValue(SYNCED);
-    const res = await anon.sponsorScoring.get({ sponsor: s.id });
-    expect(res.final).toMatchObject({
-      teamIds: ids.slice(0, 3),
-      sheetSynced: true,
-    });
-    expect(mirrorSoon).toHaveBeenCalled();
+    await anon.sponsorScoring.get({ sponsor: s.id });
+    expect(mirrorSoon).not.toHaveBeenCalled();
+
+    // A minute later the next get retries; the one after reads the mark.
+    const now = Date.now();
+    const clock = vi.spyOn(Date, "now").mockReturnValue(now + SHEET_RETRY_GAP_MS);
+    try {
+      await expect(
+        anon.sponsorScoring.get({ sponsor: s.id }),
+      ).resolves.toMatchObject({ final: { sheetSynced: false } });
+      await vi.waitFor(() => expect(mirrorSoon).toHaveBeenCalledTimes(1));
+      await vi.waitFor(async () =>
+        expect(
+          (await anon.sponsorScoring.get({ sponsor: s.id })).final,
+        ).toMatchObject({ teamIds: ids.slice(0, 3), sheetSynced: true }),
+      );
+    } finally {
+      clock.mockRestore();
+    }
 
     // Synced now: no more writes.
     mirrorSoon.mockClear();
+    resetSheetRetries();
     await anon.sponsorScoring.get({ sponsor: s.id });
     expect(mirrorSoon).not.toHaveBeenCalled();
+  });
+
+  test("get doesn't wait on a slow sheet retry", async () => {
+    const s = await sponsor();
+    const ids = await shortlistFive(s.id);
+    mirrorSoon.mockResolvedValue(DOWN);
+    await anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) });
+    // A mirror that never settles: get still answers.
+    mirrorSoon.mockReset().mockReturnValue(new Promise(() => undefined));
+    await expect(
+      anon.sponsorScoring.get({ sponsor: s.id }),
+    ).resolves.toMatchObject({ final: { sheetSynced: false } });
+    expect(mirrorSoon).toHaveBeenCalledTimes(1);
   });
 
   test("a submitted team that withdrew drops out of the ranking", async () => {
@@ -786,6 +822,35 @@ describe("sponsorScoring prize track gate", () => {
     }
   });
 
+  test("a digital sponsor's link can't read the roster or its top 3", async () => {
+    // A DB row exists (submitDigital makes one); digital still decides.
+    await db
+      .insert(sponsorJudgingSponsors)
+      .values({ name: "PCBWay" })
+      .onConflictDoNothing({ target: sponsorJudgingSponsors.name });
+    const row = await db.query.sponsorJudgingSponsors.findFirst({
+      where: eq(sponsorJudgingSponsors.name, "PCBWay"),
+    });
+    const digital = {
+      code: "FORBIDDEN",
+      message:
+        "Digital sponsors don't judge in the portal. Send your top 3 to your Hack Western contact.",
+    };
+    await expect(
+      anon.sponsorJudging.listAllTeams({ sponsor: row!.id }),
+    ).rejects.toMatchObject(digital);
+    await expect(
+      anon.sponsorJudging.getChosenTeams({ sponsor: row!.id }),
+    ).rejects.toMatchObject(digital);
+    await expect(
+      anon.sponsorScoring.get({ sponsor: row!.id }),
+    ).rejects.toMatchObject(digital);
+    await expect(
+      anon.sponsorScoring.sendShortlist({ sponsor: row!.id }),
+    ).rejects.toMatchObject(digital);
+    expect(track).not.toHaveBeenCalled();
+  });
+
   test("the organizer overview lists only track sponsors", async () => {
     const organizer = createCaller(
       createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
@@ -875,6 +940,46 @@ describe("sponsorScoring.score (several reps, half points)", () => {
       .from(sponsorTeamReviews)
       .where(eq(sponsorTeamReviews.teamId, t));
     expect(row?.score).toBe(7);
+  });
+
+  test("two quick saves from the same rep both succeed; the last one wins", async () => {
+    const s = await sponsor();
+    const t = await team();
+    const give = (judge: string, halves: number) =>
+      anon.sponsorScoring.score({ sponsor: s.id, teamId: t, judge, halves });
+    const results = await Promise.allSettled([
+      give("Dana W.", 14),
+      give("Dana W.", 16),
+      give("dana w.", 18),
+    ]);
+    expect(results.map((r) => r.status)).toEqual([
+      "fulfilled",
+      "fulfilled",
+      "fulfilled",
+    ]);
+    const res = await anon.sponsorScoring.get({ sponsor: s.id });
+    const mine = res.scores.filter((x) => x.teamId === t);
+    expect(mine).toEqual([{ teamId: t, judge: "dana w.", score: 9 }]);
+    expect(res.reviews.find((r) => r.teamId === t)?.score).toBe(9);
+  });
+
+  test("hidden zero-width characters don't make a second rep", async () => {
+    const s = await sponsor();
+    const t = await team();
+    const give = (judge: string, halves: number) =>
+      anon.sponsorScoring.score({ sponsor: s.id, teamId: t, judge, halves });
+    await give("Dana W.", 18);
+    await expect(give("​Dana‌ W.﻿", 12)).resolves.toMatchObject({
+      judge: "Dana W.",
+    });
+    const res = await anon.sponsorScoring.get({ sponsor: s.id });
+    expect(res.scores.filter((x) => x.teamId === t)).toEqual([
+      { teamId: t, judge: "Dana W.", score: 6 },
+    ]);
+    // A name that is only hidden characters isn't a name.
+    await expect(give("​‍", 12)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
   });
 
   test("lists the sponsor's reps for Who's judging?", async () => {
@@ -994,6 +1099,35 @@ describe("sponsorScoring digital sponsors (top 3 by Devpost link)", () => {
         links: [inTrack, a, b],
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  test("still works after judging closes (organizers enter it late)", async () => {
+    const org = await organizer();
+    const [a, b, c] = [await team(), await team(), await team()];
+    closesAt = PAST;
+    await expect(
+      org.sponsorScoring.submitDigital({ name: "PCBWay", links: [a, b, c] }),
+    ).resolves.toMatchObject({ teamIds: [a, b, c] });
+  });
+
+  test("a link two teams share is refused as ambiguous; the team ID works", async () => {
+    const org = await organizer();
+    const [a, b, c] = [await team(), await team(), await team()];
+    const shared = `https://devpost.com/software/shared-${a}`;
+    await db.update(teams).set({ devpostUrl: shared }).where(eq(teams.id, a));
+    await db.update(teams).set({ devpostUrl: shared }).where(eq(teams.id, b));
+    await expect(
+      org.sponsorScoring.submitDigital({
+        name: "PCBWay",
+        links: [shared, b, c],
+      }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: `1st place: "${shared}" matches more than one team in this sponsor's track. Paste the team ID instead.`,
+    });
+    await expect(
+      org.sponsorScoring.submitDigital({ name: "PCBWay", links: [a, b, c] }),
+    ).resolves.toMatchObject({ teamIds: [a, b, c] });
   });
 
   test("refuses the same team twice and a non-digital sponsor", async () => {

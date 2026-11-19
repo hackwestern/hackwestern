@@ -93,14 +93,20 @@ export function formatScore(score: number) {
   return Number.isInteger(score) ? String(score) : score.toFixed(1);
 }
 
-/** Judge names are compared trimmed with spaces collapsed, ignoring case. */
+/** Judge names are compared cleaned (cleanJudgeName), ignoring case. */
 export function judgeKey(name: string) {
-  return name.trim().replace(/\s+/g, " ").toLowerCase();
+  return cleanJudgeName(name).toLowerCase();
 }
 
-/** A judge name as stored: trimmed, spaces collapsed. */
+/**
+ * A judge name as stored: zero-width characters (pasted from chat apps)
+ * removed, trimmed, spaces collapsed. "" when nothing is left.
+ */
 export function cleanJudgeName(name: string) {
-  return name.trim().replace(/\s+/g, " ");
+  return name
+    .replace(/[​-‍﻿]/g, "")
+    .trim()
+    .replace(/\s+/g, " ");
 }
 
 export type TeamReview = {
@@ -457,22 +463,41 @@ export function devpostKey(link: string) {
   }
 }
 
+type LinkedTeam = { id: string; devpostUrl: string | null };
+
+/** Teams matching a pasted Devpost link or team ID (an ID wins outright). */
+function linkMatches<T extends LinkedTeam>(
+  input: string,
+  teams: readonly T[],
+): T[] {
+  const text = input.trim();
+  if (!text) return [];
+  const byId = teams.find((t) => t.id.toLowerCase() === text.toLowerCase());
+  if (byId) return [byId];
+  const key = devpostKey(text);
+  if (!key) return [];
+  return teams.filter((t) => t.devpostUrl && devpostKey(t.devpostUrl) === key);
+}
+
 /**
  * The team a pasted Devpost link (or team ID) points to, among `teams`
- * (the sponsor's track's submitted teams), or null when none matches.
+ * (the sponsor's track's submitted teams), or null when none matches, or
+ * when several teams share that link (linkIsAmbiguous; paste the ID).
  */
-export function matchTeamByLink<
-  T extends { id: string; devpostUrl: string | null },
->(input: string, teams: readonly T[]): T | null {
-  const text = input.trim();
-  if (!text) return null;
-  const byId = teams.find((t) => t.id.toLowerCase() === text.toLowerCase());
-  if (byId) return byId;
-  const key = devpostKey(text);
-  if (!key) return null;
-  return (
-    teams.find((t) => t.devpostUrl && devpostKey(t.devpostUrl) === key) ?? null
-  );
+export function matchTeamByLink<T extends LinkedTeam>(
+  input: string,
+  teams: readonly T[],
+): T | null {
+  const found = linkMatches(input, teams);
+  return found.length === 1 ? found[0]! : null;
+}
+
+/** Whether a pasted link matches more than one team (so it matches none). */
+export function linkIsAmbiguous(
+  input: string,
+  teams: readonly LinkedTeam[],
+): boolean {
+  return linkMatches(input, teams).length > 1;
 }
 
 /** "a1c3e5f70912 · devpost.com/software/x": how judging shows a team. */

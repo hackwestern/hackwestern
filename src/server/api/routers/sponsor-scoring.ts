@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
@@ -21,6 +21,7 @@ import {
   halvesToScore,
   judgeKey,
   judgingOpen,
+  linkIsAmbiguous,
   matchTeamByLink,
   rankingError,
   sponsorProgress,
@@ -41,9 +42,10 @@ import {
   listEligibleTeams,
   membersByTeam,
 } from "~/server/api/utils/sponsor-judging-teams";
+import { assertPortalJudge } from "~/server/api/utils/sponsor-judging-guard";
 import { round2OpenedAt } from "~/server/api/utils/sponsor-judging-settings";
 import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
-import { db } from "~/server/db";
+import { db, type Transaction } from "~/server/db";
 import {
   coffeeChatReps,
   sponsorFinalPicks,
@@ -92,20 +94,14 @@ async function findSponsor(id: string) {
 }
 
 /**
- * findSponsor for judging: a sponsor without a prize track
- * (src/content/sponsor-prize-tracks.ts) takes no part in judging, so every
- * sponsor judging call refuses them.
+ * findSponsor for judging: sponsors without a prize track
+ * (src/content/sponsor-prize-tracks.ts) and digital sponsors take no part
+ * in portal judging, so every sponsor judging call refuses them
+ * (assertPortalJudge, shared with the sponsorJudging router).
  */
 async function findTrackSponsor(id: string) {
   const sponsor = await findSponsor(id);
-  if (!hasPrizeTrack(sponsor.name)) {
-    throw new TRPCError({ code: "FORBIDDEN", message: errors.noPrizeTrack });
-  }
-  // Digital sponsors have no portal; the spon team enters their top 3
-  // (submitDigital). Jazz, 2026-11-19.
-  if (isDigitalJudging(sponsor.name)) {
-    throw new TRPCError({ code: "FORBIDDEN", message: errors.digital });
-  }
+  assertPortalJudge(sponsor.name);
   return sponsor;
 }
 
@@ -255,6 +251,30 @@ async function syncFinalToSheet(sponsorId: string, submittedAt: Date) {
   }
 }
 
+/** One background sheet retry per sponsor per this long (`get` polls). */
+export const SHEET_RETRY_GAP_MS = 60_000;
+/** When `get` last started a sheet retry, by sponsor id (this instance). */
+const lastSheetRetry = new Map<string, number>();
+
+/** Tests: forget the retry timestamps. */
+export function resetSheetRetries() {
+  lastSheetRetry.clear();
+}
+
+/**
+ * Retry an unsynced submission's sheet mirror in the background, at most
+ * once per SHEET_RETRY_GAP_MS per sponsor, so a polling `get` neither
+ * waits on Google Sheets nor hammers it while it's down. Not awaited: the
+ * mark lands in the DB and a later `get` reads it.
+ */
+function retrySheetSoon(sponsorId: string, submittedAt: Date) {
+  const now = Date.now();
+  const last = lastSheetRetry.get(sponsorId);
+  if (last !== undefined && now - last < SHEET_RETRY_GAP_MS) return;
+  lastSheetRetry.set(sponsorId, now);
+  void syncFinalToSheet(sponsorId, submittedAt);
+}
+
 /** Save a sponsor's ranked top list (replacing any earlier one), then mirror it. */
 async function saveFinal(sponsorId: string, teamIds: string[]) {
   const submittedAt = new Date();
@@ -274,8 +294,12 @@ async function saveFinal(sponsorId: string, teamIds: string[]) {
  * of the older one-score column (the organizer day board's "scored"
  * count) stay right. Null when no rep has scored the team.
  */
-async function syncReviewScore(sponsorId: string, teamId: string) {
-  const rows = await db
+async function syncReviewScore(
+  tx: Transaction,
+  sponsorId: string,
+  teamId: string,
+) {
+  const rows = await tx
     .select({ halves: sponsorTeamScores.scoreHalves })
     .from(sponsorTeamScores)
     .where(
@@ -290,7 +314,7 @@ async function syncReviewScore(sponsorId: string, teamId: string) {
   const score =
     rows.length > 0 ? Math.min(10, Math.max(1, Math.round(average))) : null;
   const updatedAt = new Date();
-  await db
+  await tx
     .insert(sponsorTeamReviews)
     .values({ sponsorId, teamId, score, updatedAt })
     .onConflictDoUpdate({
@@ -353,7 +377,8 @@ export const sponsorScoringRouter = createTRPCRouter({
    * Eligible teams, this sponsor's reviews (score = team average), every
    * rep's scores, the sponsor's reps for "Who's judging?", and their last
    * submission. A submission the sheet never got is retried here, best
-   * effort.
+   * effort, in the background (retrySheetSoon): this response says
+   * unsynced, and a later `get` sees the mark.
    */
   get: publicProcedure
     .input(z.object({ sponsor: sponsorInput }))
@@ -374,10 +399,10 @@ export const sponsorScoringRouter = createTRPCRouter({
       // changed, submission withdrawn) stay stored but aren't shown, and
       // drop out of the submitted ranking too.
       const visible = new Set(eligible.map((t) => t.id));
-      const sheetSynced = final
-        ? final.sheetSyncedAt !== null ||
-          (await syncFinalToSheet(sponsor.id, final.submittedAt))
-        : false;
+      const sheetSynced = final ? final.sheetSyncedAt !== null : false;
+      if (final && !sheetSynced) {
+        retrySheetSoon(sponsor.id, final.submittedAt);
+      }
       const finalIds = final?.teamIds.filter((id) => visible.has(id)) ?? [];
       return {
         sponsorName: sponsor.name,
@@ -430,20 +455,30 @@ export const sponsorScoringRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: errors.notEligible });
       }
       const judge = cleanJudgeName(input.judge);
+      if (!judge) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: errors.noJudge });
+      }
       // One score per rep per team, whatever the name's case or spacing.
-      const existing = await db
-        .select({ judge: sponsorTeamScores.judgeName })
-        .from(sponsorTeamScores)
-        .where(
-          and(
-            eq(sponsorTeamScores.sponsorId, sponsor.id),
-            eq(sponsorTeamScores.teamId, input.teamId),
-          ),
-        );
-      const same = existing
-        .map((r) => r.judge)
-        .filter((name) => judgeKey(name) === judgeKey(judge));
+      // The read, the replace and the review score sync run in one
+      // transaction, one save at a time per sponsor and team (advisory
+      // lock), so two quick saves can't both insert. The upsert also
+      // covers a save that reaches the same name some other way.
       await db.transaction(async (tx) => {
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtext(${`sponsor-score:${sponsor.id}:${input.teamId}`}))`,
+        );
+        const existing = await tx
+          .select({ judge: sponsorTeamScores.judgeName })
+          .from(sponsorTeamScores)
+          .where(
+            and(
+              eq(sponsorTeamScores.sponsorId, sponsor.id),
+              eq(sponsorTeamScores.teamId, input.teamId),
+            ),
+          );
+        const same = existing
+          .map((r) => r.judge)
+          .filter((name) => judgeKey(name) === judgeKey(judge));
         if (same.length > 0) {
           await tx
             .delete(sponsorTeamScores)
@@ -456,16 +491,27 @@ export const sponsorScoringRouter = createTRPCRouter({
             );
         }
         if (input.halves !== null) {
-          await tx.insert(sponsorTeamScores).values({
-            sponsorId: sponsor.id,
-            teamId: input.teamId,
-            judgeName: judge,
-            scoreHalves: input.halves,
-            updatedAt: new Date(),
-          });
+          const updatedAt = new Date();
+          await tx
+            .insert(sponsorTeamScores)
+            .values({
+              sponsorId: sponsor.id,
+              teamId: input.teamId,
+              judgeName: judge,
+              scoreHalves: input.halves,
+              updatedAt,
+            })
+            .onConflictDoUpdate({
+              target: [
+                sponsorTeamScores.sponsorId,
+                sponsorTeamScores.teamId,
+                sponsorTeamScores.judgeName,
+              ],
+              set: { scoreHalves: input.halves, updatedAt },
+            });
         }
+        await syncReviewScore(tx, sponsor.id, input.teamId);
       });
-      await syncReviewScore(sponsor.id, input.teamId);
       return {
         teamId: input.teamId,
         judge,
@@ -656,6 +702,8 @@ export const sponsorScoringRouter = createTRPCRouter({
    * links (a team ID works too). Each link must match a different
    * submitted team in that sponsor's track, or nothing is saved. Stored
    * like a portal submission and mirrored to the Sponsor Judging tab.
+   * Works after judging closes: it's organizer-only, and the spon team may
+   * get a digital sponsor's top 3 late.
    */
   submitDigital: protectedOrganizerProcedure
     .input(
@@ -669,7 +717,6 @@ export const sponsorScoringRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
-      assertOpen();
       const entry = digitalEntry(input.name);
       const sponsor = await digitalSponsorRow(entry);
       const track = await fetchSponsorTrack(sponsor.name);
@@ -679,7 +726,9 @@ export const sponsorScoringRouter = createTRPCRouter({
         if (!team) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: errors.digitalNoMatch(i + 1, link),
+            message: linkIsAmbiguous(link, eligible)
+              ? errors.digitalAmbiguous(i + 1, link)
+              : errors.digitalNoMatch(i + 1, link),
           });
         }
         return team.id;

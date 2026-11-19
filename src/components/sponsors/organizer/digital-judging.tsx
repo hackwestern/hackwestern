@@ -5,6 +5,7 @@ import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import {
   formatSubmittedTime,
+  linkIsAmbiguous,
   matchTeamByLink,
   teamIdAndLink,
 } from "~/lib/sponsor-scoring";
@@ -196,7 +197,11 @@ function DigitalSponsor({ name, top }: { name: string; top: number }) {
                       aria-hidden
                       className="mt-px size-3.5 shrink-0"
                     />
-                    {match ? copy.duplicate : copy.noMatch}
+                    {match
+                      ? copy.duplicate
+                      : linkIsAmbiguous(link, data.teams)
+                        ? copy.ambiguous
+                        : copy.noMatch}
                   </>
                 )}
               </p>

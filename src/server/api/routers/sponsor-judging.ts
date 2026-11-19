@@ -1,10 +1,8 @@
-import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { sponsorJudgingCopy } from "~/content/sponsor-judging";
-import { hasPrizeTrack } from "~/lib/sponsor-prize-tracks";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { assertPortalJudge } from "~/server/api/utils/sponsor-judging-guard";
 import { resolveSponsorName } from "~/server/api/utils/sponsor-sheets";
 import {
   fetchSponsorTrack,
@@ -28,13 +26,8 @@ export const sponsorJudgingRouter = createTRPCRouter({
     .input(z.object({ sponsor: z.string().uuid() }))
     .query(async ({ input }) => {
       const sponsorName = await resolveSponsorName(input.sponsor);
-      // Only prize track sponsors judge (same gate as listAllTeams).
-      if (!hasPrizeTrack(sponsorName)) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: sponsorJudgingCopy.errors.noPrizeTrack,
-        });
-      }
+      // Prize track, in-person sponsors only (same gate as sponsorScoring).
+      assertPortalJudge(sponsorName);
       const final = await db.query.sponsorFinalPicks.findFirst({
         where: eq(sponsorFinalPicks.sponsorId, input.sponsor.toLowerCase()),
         columns: { teamIds: true },
@@ -51,7 +44,8 @@ export const sponsorJudgingRouter = createTRPCRouter({
    * devpost/github and aren't judgeable). Each team carries its id, name,
    * submission links, tracks, and member names.
    *
-   * Sponsors without a prize track are refused (FORBIDDEN).
+   * Sponsors without a prize track, and digital sponsors, are refused
+   * (FORBIDDEN; assertPortalJudge).
    *
    * Track filtering: the sponsor's track comes from the "Sponsor Track"
    * column on the sponsor info tab. A sponsor with a track set only sees
@@ -64,13 +58,8 @@ export const sponsorJudgingRouter = createTRPCRouter({
     .input(z.object({ sponsor: z.string().uuid() }))
     .query(async ({ input }) => {
       const sponsorName = await resolveSponsorName(input.sponsor);
-      // Only prize track sponsors judge (src/content/sponsor-prize-tracks.ts).
-      if (!hasPrizeTrack(sponsorName)) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: sponsorJudgingCopy.errors.noPrizeTrack,
-        });
-      }
+      // Prize track, in-person sponsors only (same gate as sponsorScoring).
+      assertPortalJudge(sponsorName);
 
       // A sheet failure is an error, never "no filter" (see fetchSponsorTrack).
       const sponsorTrack = await fetchSponsorTrack(sponsorName);

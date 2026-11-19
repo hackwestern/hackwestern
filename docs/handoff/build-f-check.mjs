@@ -9,6 +9,12 @@ import { execSync } from "node:child_process";
 
 const [base = "http://localhost:3036", sponsor] = process.argv.slice(2);
 if (!sponsor) throw new Error("Pass the sponsor uuid");
+// It goes into a psql command below, so only a real UUID is accepted.
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+if (!UUID_RE.test(sponsor)) {
+  throw new Error(`Not a sponsor uuid: ${JSON.stringify(sponsor)}`);
+}
 const out = path.resolve("docs/handoff/build-f-screens");
 fs.mkdirSync(out, { recursive: true });
 const url = `${base}/sponsors/${sponsor}/picks`;
