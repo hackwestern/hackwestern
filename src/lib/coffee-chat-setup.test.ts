@@ -5,6 +5,7 @@ import {
   availChats,
   chatChanges,
   invitesAffected,
+  parseSeenChats,
   repChatCap,
   setupTotals,
   setupWindows,
@@ -126,5 +127,27 @@ describe("chatChanges: organizer moves for the sponsor's Last change", () => {
     const now = Object.entries(seen).map(([placementId, c]) => ({ placementId, ...c }));
     expect(chatChanges(seen, now)).toEqual([]);
     expect(chatChanges({}, now)).toEqual([]);
+  });
+});
+
+describe("parseSeenChats: stored sent chats, malformed or not", () => {
+  const chat = { repId: "dana", sessionId: "13", room: "2242", start: "13:00" };
+  test("reads back what was stored", () => {
+    const stored = { chats: { p1: chat }, notes: [{ text: "Moved", at: "2026-11-21T14:00:00.000Z" }] };
+    expect(parseSeenChats(JSON.stringify(stored))).toEqual(stored);
+  });
+  test.each([null, "", "not json", "null", "42", '"text"', "[]", "true"])("%j is empty", (raw) => {
+    expect(parseSeenChats(raw)).toEqual({ chats: {}, notes: [] });
+  });
+  test("drops bad chats and notes, keeps good ones", () => {
+    const raw = JSON.stringify({
+      chats: { p1: chat, p2: null, p3: { repId: "kevin" }, p4: "x", p5: { ...chat, room: 2241 } },
+      notes: [{ text: "Moved", at: "2026-11-21T14:00:00.000Z" }, null, { text: 1, at: "x" }, "x"],
+    });
+    expect(parseSeenChats(raw)).toEqual({
+      chats: { p1: chat },
+      notes: [{ text: "Moved", at: "2026-11-21T14:00:00.000Z" }],
+    });
+    expect(parseSeenChats(JSON.stringify({ chats: [chat], notes: { text: "x" } }))).toEqual({ chats: {}, notes: [] });
   });
 });

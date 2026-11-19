@@ -6,7 +6,13 @@ import { DashboardButton } from "~/components/internals/dashboard-button";
 import { pressable } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorSetupCopy as copy } from "~/content/sponsor-coffee-setup";
 import { roundClosesAt } from "~/lib/coffee-chat-invites";
-import { chatChanges, setupEvents, setupState, type SeenChat } from "~/lib/coffee-chat-setup";
+import {
+  chatChanges,
+  parseSeenChats,
+  setupEvents,
+  setupState,
+  type SeenChats,
+} from "~/lib/coffee-chat-setup";
 import { cn } from "~/lib/utils";
 import type { RouterOutputs } from "~/utils/api";
 
@@ -69,7 +75,29 @@ function useLastSeen(sponsor: string): { lastSeen: Date | null; visit: Date } | 
   return seen;
 }
 
-type MoveNote = { text: string; at: string };
+const seenKey = (sponsor: string) => `hw-coffee-chats-seen:${sponsor}`;
+
+function readSeen(sponsor: string): SeenChats {
+  try {
+    return parseSeenChats(window.localStorage.getItem(seenKey(sponsor)));
+  } catch {
+    // Blocked storage: nothing to compare against.
+    return { chats: {}, notes: [] };
+  }
+}
+
+function writeSeen(sponsor: string, seen: SeenChats): void {
+  try {
+    window.localStorage.setItem(seenKey(sponsor), JSON.stringify(seen));
+  } catch {
+    // Not remembered on this device.
+  }
+}
+
+const seenChatsOf = (data: SetupData): SeenChats["chats"] =>
+  Object.fromEntries(
+    data.chats.map((c) => [c.placementId, { repId: c.repId, sessionId: c.sessionId, room: c.room, start: c.start }]),
+  );
 
 /**
  * Organizer moves of sent chats, worked out on this device (chatChanges):
@@ -81,44 +109,29 @@ function useChatMoves(
   data: SetupData,
   visit: Date | undefined,
 ): { text: string; at: Date }[] {
-  const [notes, setNotes] = useState<MoveNote[]>([]);
-  const key = `hw-coffee-chats-seen:${sponsor}`;
+  const [notes, setNotes] = useState<SeenChats["notes"]>([]);
   const signature = data.chats.map((c) => `${c.placementId}:${c.sessionId}:${c.room}`).join(",");
   useEffect(() => {
     if (!data.confirmed || !visit) return;
-    let stored: { chats?: Record<string, SeenChat>; notes?: MoveNote[] } = {};
-    try {
-      const raw = window.localStorage.getItem(key);
-      if (raw) stored = JSON.parse(raw) as typeof stored;
-    } catch {
-      // Blocked or bad storage: nothing to compare against.
-    }
+    const stored = readSeen(sponsor);
     const repName = (id: string) => data.reps.find((r) => r.id === id)?.name ?? "";
     // Found on this visit: just before it, so it's "since you were last
     // here" now and "Last change" next time.
     const now = new Date(visit.getTime() - 1).toISOString();
-    const found = chatChanges(stored.chats ?? {}, data.chats).map((c) => ({
+    const found = chatChanges(stored.chats, data.chats).map((c) => ({
       text:
         c.kind === "removed"
           ? copy.status.removed(repName(c.repId), shortClock(c.from))
           : copy.status.moved(repName(c.repId), shortClock(c.from), c.to ? shortClock(c.to) : null, c.room),
       at: now,
     }));
-    const next = {
-      chats: Object.fromEntries(
-        data.chats.map((c) => [c.placementId, { repId: c.repId, sessionId: c.sessionId, room: c.room, start: c.start }]),
-      ),
-      notes: [...found, ...(stored.notes ?? [])].slice(0, 5),
-    };
-    try {
-      window.localStorage.setItem(key, JSON.stringify(next));
-    } catch {
-      // Not remembered on this device; still shown this time.
-    }
+    const next = { chats: seenChatsOf(data), notes: [...found, ...stored.notes].slice(0, 5) };
+    // Not remembered if storage is blocked; still shown this time.
+    writeSeen(sponsor, next);
     setNotes(next.notes);
     // `signature` stands for the chats' ids, sessions and rooms.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, data.confirmed, signature, visit]);
+  }, [sponsor, data.confirmed, signature, visit]);
   return notes.map((n) => ({ text: n.text, at: new Date(n.at) }));
 }
 

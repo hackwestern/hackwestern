@@ -253,3 +253,45 @@ export function chatChanges(
   }
   return out;
 }
+
+/** A "Last change" note this device remembers. */
+export type MoveNote = { text: string; at: string };
+
+/** What this device keeps about a sponsor's sent chats (localStorage). */
+export type SeenChats = { chats: Record<string, SeenChat>; notes: MoveNote[] };
+
+const isStr = (v: unknown): v is string => typeof v === "string";
+
+/**
+ * Reads the stored sent chats back, dropping anything malformed (old
+ * versions, hand edits, another app's key): bad JSON or a non-object is
+ * empty, and only well-formed chats and notes are kept.
+ */
+export function parseSeenChats(raw: string | null): SeenChats {
+  let parsed: unknown = null;
+  try {
+    parsed = raw ? JSON.parse(raw) : null;
+  } catch {
+    parsed = null;
+  }
+  const stored = (parsed && typeof parsed === "object" ? parsed : {}) as {
+    chats?: unknown;
+    notes?: unknown;
+  };
+  const chats: Record<string, SeenChat> = {};
+  if (stored.chats && typeof stored.chats === "object" && !Array.isArray(stored.chats)) {
+    for (const [id, c] of Object.entries(stored.chats as Record<string, unknown>)) {
+      const v = c as Partial<SeenChat> | null;
+      if (v && typeof v === "object" && isStr(v.repId) && isStr(v.sessionId) && isStr(v.room) && isStr(v.start)) {
+        chats[id] = { repId: v.repId, sessionId: v.sessionId, room: v.room, start: v.start };
+      }
+    }
+  }
+  const notes = Array.isArray(stored.notes)
+    ? (stored.notes as unknown[]).flatMap((n) => {
+        const v = n as Partial<MoveNote> | null;
+        return v && typeof v === "object" && isStr(v.text) && isStr(v.at) ? [{ text: v.text, at: v.at }] : [];
+      })
+    : [];
+  return { chats, notes };
+}
