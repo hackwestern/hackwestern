@@ -80,9 +80,9 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 ### Sponsor · Scan a hacker (needs A)
 - Goal: record a hacker met at the booth so they're invited first.
 - Starting point: "Add a hacker" opens `/sponsors/<uuid>/scan`. On a laptop, use "Type their hacker code". A user id like `demo-hacker-1` also works.
-- Steps: 1. Look up the hacker. 2. Pick a rep under "Which rep wants to talk to them?" (or Anyone). 3. Tap "Add to Met at Hacker Fair".
-- Expected result: "Alex is on your Met at Hacker Fair list. We'll invite them first." The Chats home then shows "1 person you scanned".
-- Edge cases: a second scan keeps the first time, and a rep picked later replaces the old one. A non-hacker code shows "That isn't a Hack Western hacker's badge."
+- Steps: 1. Look up the hacker. 2. Optionally pick a rep under "Who talked to them? (optional)" (or Anyone). 3. Tap "Add to my list", the only filled button. 4. Tap "Scan next".
+- Expected result: the card says "Met at your booth · You met Alex", with no times, rooms or chat length. After the add: "Alex is on your list. We'll invite them first." and a text "Scan next". The Chats home then shows "1 person met at your booth".
+- Edge cases: a repeat scan shows "Already on your list · added <time> · talked to <rep>" and the button reads "Save"; the first time is kept and a newly picked rep replaces the old one. "Not now" goes back to scanning without adding. A non-hacker code shows "That isn't a Hack Western hacker's badge." With no camera, "No camera found" shows once.
 
 ### Sponsor · Shortlist (needs A)
 - Goal: pick hackers to invite after the scanned ones.

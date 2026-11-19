@@ -11,10 +11,9 @@ import { badgeCodeOf } from "~/lib/use-qr-scanner";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
-// Sponsor badge scanner: scan a hacker's badge or /live QR, then offer them
-// a coffee chat at an open start time. The hacker accepts on /live.
-// ?hacker=<user id> (the candidates list's Offer coffee chat button) skips
-// the camera and opens the offer for that hacker.
+// Sponsor badge scanner: scan a hacker's badge or /live QR, then add them
+// to "Met at your booth" so they're invited to a coffee chat first.
+// ?hacker=<code or user id> skips the camera and opens that hacker's card.
 export default function SponsorScanPage() {
   const router = useRouter();
   const id = typeof router.query.uuid === "string" ? router.query.uuid : "";
@@ -24,16 +23,8 @@ export default function SponsorScanPage() {
       ? badgeCodeOf(router.query.hacker)
       : null;
 
-  // ?time=HH:MM (a room hold's "Scan a badge") preselects that start time
-  // when it's still open; otherwise the earliest open one is picked.
-  const time =
-    typeof router.query.time === "string" &&
-    /^\d{2}:\d{2}$/.test(router.query.time)
-      ? router.query.time
-      : null;
-
-  // Only to tell a wrong link apart early; per-hacker times load after a scan.
-  const sponsorQ = api.coffeeChatRequests.freeTimes.useQuery(
+  // Only to tell a wrong link apart early (and it warms the rep list).
+  const sponsorQ = api.coffeeChatSetup.get.useQuery(
     { sponsor: id },
     { enabled: validUuid, retry: false, refetchOnWindowFocus: false },
   );
@@ -58,7 +49,6 @@ export default function SponsorScanPage() {
         key={hacker ?? ""}
         sponsor={id}
         initialCode={hacker}
-        preferredTime={time}
       />
     </>,
   );

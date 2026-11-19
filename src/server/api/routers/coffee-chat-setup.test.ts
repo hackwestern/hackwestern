@@ -379,6 +379,19 @@ describe("coffeeChatSetup.recordScan", () => {
     // Scans never touch Your team.
     expect(await db.select().from(coffeeChatReps).where(eq(coffeeChatReps.sponsorId, id))).toHaveLength(1);
   });
+
+  test("scanOf says whether a hacker is already on this sponsor's list", async () => {
+    const id = await sponsor();
+    const other = await sponsor();
+    const hacker = await admittedHacker(false);
+    expect(await setup.scanOf({ sponsor: id, userId: hacker })).toBeNull();
+    const dana = await setup.addRep({ sponsor: id, name: "Dana W.", phone: "5195550001" });
+    await setup.recordScan({ sponsor: id, userId: hacker, repId: dana.id });
+    const row = await setup.scanOf({ sponsor: id, userId: hacker });
+    expect(row?.repName).toBe("Dana W.");
+    expect(row?.scannedAt).toBeInstanceOf(Date);
+    expect(await setup.scanOf({ sponsor: other, userId: hacker })).toBeNull();
+  });
 });
 
 describe("coffeeChatSetup: edits after Send update invites", () => {

@@ -66,7 +66,7 @@ export const sponsorSetupCopy = {
       continue: "Continue",
       view: "View shortlist",
     },
-    scanned: (n: number) => `${plural(n, "person", "people")} you scanned`,
+    scanned: (n: number) => `${plural(n, "person", "people")} met at your booth`,
   },
 
   /** The status card at the top of every coffee chat screen. */
@@ -343,13 +343,17 @@ export const sponsorSetupCopy = {
     emptyRep: "No chats for this rep.",
   },
 
+  /** The scan card: one job, add the hacker to "Met at your booth". */
   scan: {
     heading: (name: string) => `You met ${name}`,
-    metLegend: "Which rep wants to talk to them?",
+    already: (when: string, rep: string | null) =>
+      rep ? `Already on your list · added ${when} · talked to ${rep}` : `Already on your list · added ${when}`,
+    metLegend: "Who talked to them? (optional)",
     noRep: "Anyone",
-    add: "Add to Met at Hacker Fair",
+    add: "Add to my list",
+    save: "Save",
     adding: "Adding…",
-    added: (name: string) => `${name} is on your Met at Hacker Fair list. We'll invite them first.`,
+    added: (name: string) => `${name} is on your list. We'll invite them first.`,
     error: "Couldn't add them. Try again.",
   },
 

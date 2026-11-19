@@ -5,12 +5,11 @@ export const sponsorScanCopy = {
   seoTitle: "Scan a badge",
   eyebrow: "Coffee chats",
   title: "Scan a hacker's badge",
-  // When opened from a candidate's "Offer coffee chat" (?hacker=).
-  offerTitle: "Offer a coffee chat",
-  offerIntro:
-    "Pick an open time. They'll get your offer on their live site and accept or decline.",
+  // When opened with ?hacker= (a hacker code or user id).
+  offerTitle: "Add a hacker you met",
+  offerIntro: "Add them to your list and we'll invite them to a coffee chat first.",
   intro:
-    "Point your camera at the QR code on a hacker's badge or their live site. Add them to Met at Hacker Fair and we'll invite them first.",
+    "Point your camera at the QR code on a hacker's badge or their live site. Add them to your list and we'll invite them to a coffee chat first.",
 
   camera: {
     heading: "Hold the QR code inside the frame",
@@ -23,7 +22,7 @@ export const sponsorScanCopy = {
     },
     unavailable: {
       title: "No camera found",
-      body: "This device doesn't have a camera we can use. Type their hacker code below, or open this link on your phone.",
+      body: "Type their hacker code below, or open this page on your phone to scan.",
     },
     error: {
       title: "Camera didn't start",
@@ -46,40 +45,14 @@ export const sponsorScanCopy = {
     body: "That code isn't a Hack Western hacker's badge. Try scanning again.",
   },
 
+  /** The hacker card: one job, add them to "Met at your booth". */
   card: {
-    eyebrow: "Offer a coffee chat",
-    heading: (firstName: string) => `Chat with ${firstName}?`,
-    timesLegend: "Start time",
-    timesHint: (minutes: number) => `${minutes}-minute chat`,
-    seatsLeft: (n: number) => (n === 1 ? "1 seat left" : `${n} seats left`),
-    repLabel: "Your name (optional)",
-    repHint: "So the hacker knows who to look for.",
-    offer: "Offer chat",
-    offering: "Sending…",
-    room: (room: string) => room,
-    roomTbd: "Room to be assigned",
-    noTimes: {
-      title: "No open times",
-      body: (firstName: string) =>
-        `Every remaining start time is full, or ${firstName} is already booked then.`,
-    },
-    timesError: "Couldn't load your open times. Try again in a minute.",
-    offerError: "Couldn't send the offer. Try again.",
-    timesRefreshed: "Open times updated.",
-  },
-
-  sent: {
-    title: "Offer sent",
-    body: (firstName: string, time: string, room: string | null) =>
-      room
-        ? `Offer sent to ${firstName} for ${time}, ${room}.`
-        : `Offer sent to ${firstName} for ${time}.`,
-    next: "They'll accept or decline on their live site. You'll see it under Your coffee chats.",
-    viewChats: "Your coffee chats",
+    eyebrow: "Met at your booth",
+    lookupError: "Couldn't look them up. Try again.",
   },
 
   scanNext: "Scan next",
-  cancel: "Cancel",
+  cancel: "Not now",
 
   hubLink: "Scan a badge",
 } as const;

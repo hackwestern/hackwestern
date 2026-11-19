@@ -574,8 +574,20 @@ export const coffeeChatSetupRouter = createTRPCRouter({
       return { submittedAt: now };
     }),
 
+  /** Is this hacker already on the sponsor's "Met at your booth" list? */
+  scanOf: publicProcedure
+    .input(z.object({ sponsor: sponsorInput, userId: z.string().trim().min(1).max(255) }))
+    .query(async ({ input }) => {
+      const sponsor = await findSponsor(input.sponsor);
+      const [row] = await db
+        .select({ scannedAt: sponsorScans.scannedAt, repName: sponsorScans.repName })
+        .from(sponsorScans)
+        .where(and(eq(sponsorScans.sponsorId, sponsor.id), eq(sponsorScans.userId, input.userId)));
+      return row ?? null;
+    }),
+
   /**
-   * A sponsor scanned a hacker at their booth ("Met at Hacker Fair"):
+   * A sponsor scanned a hacker at their booth ("Met at your booth"):
    * record it so they're invited first. Scanning twice keeps the first
    * time; picking a rep later updates who wants to talk to them. The rep
  * is chosen by id from Your team; the name is looked up here.

@@ -140,6 +140,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - 5-year-old says: "I type the three words and press Look up."
 - Fix: show "No camera found" once.
 - Screens: `05-sponsor-scan-open.png`, `05-sponsor-scan-not-a-hacker.png`
+- **Fixed:** the heading says "No camera found" once; the box under it says only what to do, and the live region no longer repeats the title. (`after/portal-05-scan-open.png`)
 
 ### Sponsor · Scan a hacker · Step 2 · Hacker card and rep picker
 - Expected: "Which rep wants to talk to them?" plus "Add to Met at Hacker Fair". **Happened:** shown, **but the card also says "15-minute chat" and "No open times"**, from the old per-slot model. Test Sponsor runs 30-minute groups (bug B1).
@@ -153,6 +154,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   - "Add to Met at Hacker Fair" → "Add to my list"
   - "Met at Hacker Fair" (everywhere) → "Met at your booth"
 - Screens: `05-sponsor-scan-found.png`, `05-sponsor-scan-found-390.png`, `05-sponsor-scan-again.png`
+- **Fixed:** the card does one job ("Met at your booth" · "You met Alex"), with an optional "Who talked to them?" and "Add to my list" as the only filled button (a picked rep is tinted, not filled). The time offer, chat length, room and "No open times" are gone. "Not now" is a text button; "Scan next" appears only after the add. A repeat scan shows "Already on your list · added Thu 10:12 AM · talked to Walkthrough Kevin" and the button reads "Save". (`after/portal-05-scan-found*.png`, `after/portal-05-scan-again*.png`)
 
 ### Sponsor · Scan a hacker · Step 3 · Added
 - Expected: "Alex is on your Met at Hacker Fair list. We'll invite them first." and the Chats home count. **Happened:** as expected ("2 people you scanned" after two scans). A second scan kept the first time and cleared the rep (DB checked).
@@ -161,6 +163,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - 5-year-old says: "It says Alex is on my list."
 - Clear, no changes (apart from the wording above).
 - Screens: `05-sponsor-scan-added.png`, `05-sponsor-scan-chats-home-390.png`
+- **Fixed (wording):** "Alex is on your list. We'll invite them first." as the card's heading, with a text "Scan next" under it. (`after/portal-05-scan-added*.png`)
 
 ### Sponsor · Shortlist · Step 1 · Shortlist hackers
 - Expected: scanned hackers first and read-only; "N seats · M taken by people you scanned · shortlist up to N−M". **Happened:** "18 seats · 2 taken by people you scanned · shortlist up to 16". As expected.
@@ -445,6 +448,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Actual: also "15-minute chat" and the pill "No open times". Both come from the old per-slot `freeTimes` query and the Coffee Chat Setup sheet, not the session model.
 - Where: `src/components/sponsors/badge-scanner.tsx:402` (`freeTimes` query), `:437`, `:515` (`timesHint`); copy `src/content/sponsor-scan.ts:53`, `:61-62`.
 - Screen: `05-sponsor-scan-found.png`
+- **Fixed:** the card no longer reads `freeTimes` or offers a time; it records the scan only (`HackerStep` in `badge-scanner.tsx`, new read-only `coffeeChatSetup.scanOf` for the "Already on your list" line). The scan page checks the link with `coffeeChatSetup.get`.
 
 **B2 · Digital sponsors (PCBWay) show up in coffee-chat "Needs attention" and in Presentations.**
 - Steps: open the judging tab's Digital sponsors and type a link for PCBWay (this creates its DB row), then open Sponsors.
