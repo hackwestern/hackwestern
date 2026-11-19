@@ -121,6 +121,7 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 | 5 | Remove the sponsor expand/detail panel | Building |
 | 6 | Remove the "Organizers" checkbox on Run of show | Building |
 | 7 | Figtree only, no pixel font | Building |
+| 8 | Set up: "Coffee chat workshop" shows who attended (rep / primary); new "Their workshop" column (time · room · HW lead setup) | Building |
 
 ## Organizer dashboard restyle: `organizer-dashboard-restyle-v1` (replaces nav-a/b/c as the direction)
 | # | Change | Status |
