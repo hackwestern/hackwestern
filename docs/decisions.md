@@ -563,3 +563,11 @@ Supersedes "lead's phone + Send to the sponsor team" as equal options (2026-11-1
 **Alternatives:** invites 2–3 hours before each chat (rough notice; nobody's up at 7–8 AM for morning chats); three invite waves (Fri 11 PM shortlist, Sat 9 AM, Sat 12 PM: three schedules to explain); reserving seats when shortlisted (locks out people met at the booth).
 
 **Supersedes:** "Submit by Fri Nov 20, 11:59 PM" applied to the calendar only, the separate "Met at Hacker Fair" priority list timing, and the per-chat lock timing in "Coffee chat preferences, locking, and organizer bookings" (2026-11-18): each sponsor's chats lock when the Friday batch is sent.
+
+## 2026-11-19: Coffee chat deadline 9:30 PM Friday; invites out by 10 PM (Jazz)
+
+**Decision:** Sponsors submit by **Fri Nov 20, 9:30 PM** (auto-submit at 9:30 PM from their latest draft, or their Pre-confirmed row). Organizers run auto-fill, check it and send all Saturday invites **by 10:00 PM Friday**. Everything else in "One coffee chat deadline… one invite batch" stands (scanned hackers first, shortlist optional, Saturday refills automatic, Saturday scans only fill open seats). Friday scanning at the Sponsor Bay runs 5:30–9:30 PM so scans count as first choice.
+
+**Why:** Jazz wants hackers to get invites earlier in the evening, while they're awake and checking Slack, rather than around midnight. 30 minutes is enough for auto-fill plus a quick check.
+
+**Supersedes:** the 11:59 PM deadline and "invites ~midnight" (same day).

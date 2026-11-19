@@ -19,7 +19,7 @@ Review `mocks/sponsor-chat-calendar-v1` with Jazz (spec: `docs/specs/sponsor-cha
 6. Bug (live app): /internal/sponsors at 390px wide renders blank below the status filter pills (seen by the home-table mock agent, 2026-11-19). Organizers use phones, so fix before the event.
 
 ## Open questions
-- Setup deadline: Fri Nov 20, 11:59 PM; auto-submit at the deadline; one invite batch Fri ~midnight (decision 2026-11-19).
+- Setup deadline: Fri Nov 20, 9:30 PM; auto-submit at 9:30; invites out by 10 PM Fri (decision 2026-11-19).
 - Coffee chat planning: answer the 5 open questions in decisions 2026-11-19 "two pools" (rooms as columns, flexibility + busy strip, clash winner, Ivey default, Ivey reps and the booth), then mock sponsor-chat-calendar-v2.
 - Drive folders: Drive connector is on a view-only Google account; reconnect as jazz.gu2004 to move files.
 - Vercel env snapshot is from Nov 16; confirm production's RUN_OF_SHOW_SHEET before merging.
