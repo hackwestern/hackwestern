@@ -46,6 +46,7 @@ export const MentorsList: Mentor[] = [
     name: "Aiden (Arman) Alaei",
     skills: ["Python", "Machine learning", "C#", "REST APIs"],
     tags: ["Software Engineering", "Product Management", "AI"],
+    image: "/landing/mentors/aidena.webp",
   },
   {
     name: "Shivansh Kushwaha",
@@ -101,5 +102,40 @@ export const MentorsList: Mentor[] = [
     tags: ["Software Engineering", "Design", "Hardware", "AI"],
     image: "/landing/mentors/alim.webp",
     linkedin: "https://www.linkedin.com/in/am-uwo/",
+  },
+  {
+    name: "Ian Korovinsky",
+    skills: ["Backend", "ML infrastructure", "Product", "Hackathon strategy"],
+    tags: ["Software Engineering", "AI", "Product Management"],
+    image: "/landing/mentors/iank.webp",
+    linkedin: "https://www.linkedin.com/in/ian-korovinsky/",
+  },
+  {
+    name: "Luke Blommesteyn",
+    skills: ["Machine learning", "Computer vision", "LLMs", "Data"],
+    tags: ["Software Engineering", "AI"],
+    image: "/landing/mentors/lukeb.webp",
+    linkedin: "https://www.linkedin.com/in/lblommesteyn/",
+  },
+  {
+    name: "Lukas Bozinov",
+    skills: ["AI agents", "Python", "CI/CD", "Hardware testing"],
+    tags: ["Software Engineering", "AI", "Embedded & Systems"],
+    image: "/landing/mentors/lukasb.webp",
+    linkedin: "https://www.linkedin.com/in/lukasbozinov/",
+  },
+  {
+    name: "Shaun Ahuja",
+    skills: ["Backend", "Infrastructure", "Full-stack", "Startups"],
+    tags: ["Software Engineering"],
+    image: "/landing/mentors/shauna.webp",
+    linkedin: "https://www.linkedin.com/in/shaun-ahuja/",
+  },
+  {
+    name: "Viraj Patel",
+    skills: ["Product management", "AI products", "Startups", "Pitching"],
+    tags: ["Product Management", "AI"],
+    image: "/landing/mentors/virajp.webp",
+    linkedin: "https://www.linkedin.com/in/virajpatell/",
   },
 ];
