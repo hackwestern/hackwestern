@@ -35,17 +35,14 @@ export function NowAndNextPanel({
   tasks,
   now,
   attention,
-  attentionScope,
   scheduleFailed,
 }: {
   /** Run-of-show items and tasks; null while loading or when unread. */
   items: readonly RunOfShowItem[] | null;
   tasks: readonly RunOfShowTask[] | null;
   now: Date;
-  /** Null while it loads. */
+  /** Null while it loads. Own sponsors first (`mine`), then others. */
   attention: AttentionItem[] | null;
-  /** Whose sponsors the list covers. */
-  attentionScope: "yours" | "everyone";
   scheduleFailed: boolean;
 }) {
   const today = eventDayAt(now);
@@ -150,7 +147,7 @@ export function NowAndNextPanel({
           {copy.headingAt(formatClock(easternClock(now)))}
         </h2>
 
-        <AttentionList items={attention} scope={attentionScope} today={today} />
+        <AttentionList items={attention} today={today} />
 
         {scheduleFailed && !r ? (
           <p className="m-0 text-sm text-dashboard-text-medium">
@@ -182,13 +179,20 @@ export function NowAndNextPanel({
   );
 }
 
+/** The group label above an item: whose sponsors, or run-of-show tasks. */
+type AttentionGroup = "yours" | "others" | "everyone" | "tasks";
+
+function attentionGroup(item: AttentionItem, anyMine: boolean): AttentionGroup {
+  if (item.kind === "overdue-task") return "tasks";
+  if (item.mine) return "yours";
+  return anyMine ? "others" : "everyone";
+}
+
 function AttentionList({
   items,
-  scope,
   today,
 }: {
   items: AttentionItem[] | null;
-  scope: "yours" | "everyone";
   today: RunOfShowDay | null;
 }) {
   if (!items) {
@@ -215,6 +219,7 @@ function AttentionList({
       </p>
     );
   }
+  const anyMine = items.some((x) => x.kind !== "overdue-task" && x.mine);
   return (
     <section aria-labelledby="org-attention" className="flex flex-col gap-1">
       <h3
@@ -222,12 +227,11 @@ function AttentionList({
         className="m-0 flex flex-wrap items-baseline gap-x-2 text-base font-semibold text-dashboard-text-heavy"
       >
         {attnCopy.heading}
-        <span className="text-xs font-medium text-dashboard-text-light">
-          {scope === "yours" ? attnCopy.yours : attnCopy.everyone}
-        </span>
       </h3>
       <ul className="m-0 flex list-none flex-col p-0">
-        {items.map((item) => {
+        {items.map((item, i) => {
+          const group = attentionGroup(item, anyMine);
+          const prev = i > 0 ? attentionGroup(items[i - 1]!, anyMine) : null;
           const text =
             item.kind === "no-prefs"
               ? attnCopy.noPrefs(item.sponsor)
@@ -252,8 +256,14 @@ function AttentionList({
                   : `${item.kind}-${item.sponsorId}`
               }
               data-attention={item.kind}
+              data-mine={item.mine || undefined}
               className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 border-t border-dashboard-border-subtle py-1.5 first:border-t-0"
             >
+              {group !== prev && (
+                <span className="w-full pt-1 text-xs font-medium text-dashboard-text-light">
+                  {attnCopy.groups[group]}
+                </span>
+              )}
               <span className="flex min-w-0 flex-1 items-start gap-2 text-sm text-dashboard-text-heavy">
                 <TriangleAlert
                   aria-hidden

@@ -3,6 +3,7 @@ import { buildJudgingBoard } from "~/lib/sponsor-judging-rooms";
 import { coffeeChatExpiresAt } from "./coffee-chat-requests";
 import {
   buildSponsorSummaries,
+  contactRowsNamed,
   leadsSponsor,
   legacyScheduleDestination,
   mySponsorChats,
@@ -10,7 +11,7 @@ import {
   ORGANIZER_TABS,
   orderReps,
   organizerHomeHref,
-  organizerNameForEmail,
+  organizerForEmail,
   parseOrganizerLocation,
   pillDone,
   statusAfterPill,
@@ -138,25 +139,59 @@ describe("My sponsors matching", () => {
   const contacts = [
     { name: "Noah Medland", loginEmail: "Noah@Example.test " },
     { name: "Caroline Ge", loginEmail: "" },
+    { name: "Daniel Wang", loginEmail: "daniel@example.test" },
   ];
-  it("matches the login email case-insensitively", () => {
-    expect(organizerNameForEmail("noah@example.test", contacts)).toBe(
-      "Noah Medland",
-    );
-    expect(organizerNameForEmail("other@example.test", contacts)).toBeNull();
-    expect(organizerNameForEmail("", contacts)).toBeNull();
-    expect(organizerNameForEmail(null, contacts)).toBeNull();
+  const names = contacts.map((c) => c.name);
+  const noah = { row: 0, name: "Noah Medland" };
+  it("matches the login email case-insensitively, to a row", () => {
+    expect(organizerForEmail("noah@example.test", contacts)).toEqual(noah);
+    expect(organizerForEmail("other@example.test", contacts)).toBeNull();
+    expect(organizerForEmail("", contacts)).toBeNull();
+    expect(organizerForEmail(null, contacts)).toBeNull();
   });
   it("matches the HW lead cell by full name, first name or one of several", () => {
-    expect(leadsSponsor("Noah Medland", "Noah Medland")).toBe(true);
-    expect(leadsSponsor("noah  medland", "Noah Medland")).toBe(true);
-    expect(leadsSponsor("Noah", "Noah Medland")).toBe(true);
-    expect(leadsSponsor("Daniel Wang / Noah Medland", "Noah Medland")).toBe(
-      true,
-    );
-    expect(leadsSponsor("Noah Smith", "Noah Medland")).toBe(false);
-    expect(leadsSponsor("—", "Noah Medland")).toBe(false);
-    expect(leadsSponsor("Caroline Ge", "Noah Medland")).toBe(false);
+    expect(leadsSponsor("Noah Medland", noah, names)).toBe(true);
+    expect(leadsSponsor("noah  medland", noah, names)).toBe(true);
+    expect(leadsSponsor("Noah", noah, names)).toBe(true);
+    expect(leadsSponsor("Daniel Wang / Noah Medland", noah, names)).toBe(true);
+    expect(leadsSponsor("Noah Smith", noah, names)).toBe(false);
+    expect(leadsSponsor("—", noah, names)).toBe(false);
+    expect(leadsSponsor("Caroline Ge", noah, names)).toBe(false);
+  });
+  it("a first name alone matches only when one row has that first name", () => {
+    const two = [...names, "Noah Kim"];
+    const kim = { row: 3, name: "Noah Kim" };
+    expect(leadsSponsor("Noah", noah, two)).toBe(false);
+    expect(leadsSponsor("Noah", kim, two)).toBe(false);
+    // The full name still picks the right Noah.
+    expect(leadsSponsor("Noah Kim", kim, two)).toBe(true);
+    expect(leadsSponsor("Noah Kim", noah, two)).toBe(false);
+    // Several Noahs, but one row is just "Noah": that row is preferred.
+    const bare = [...two, "Noah"];
+    expect(leadsSponsor("Noah", { row: 4, name: "Noah" }, bare)).toBe(true);
+    expect(leadsSponsor("Noah", noah, bare)).toBe(false);
+  });
+  it("same full name twice: matches by row, never the wrong one", () => {
+    const dup = [
+      { name: "Jessica Wang", loginEmail: "jess.a@example.test" },
+      { name: "Jessica Wang", loginEmail: "jess.b@example.test" },
+    ];
+    const a = organizerForEmail("jess.a@example.test", dup)!;
+    const b = organizerForEmail("jess.b@example.test", dup)!;
+    expect(a.row).toBe(0);
+    expect(b.row).toBe(1);
+    const dupNames = dup.map((c) => c.name);
+    // The cell can't say which Jessica, so neither is claimed.
+    expect(contactRowsNamed("Jessica Wang", dupNames).size).toBe(0);
+    expect(leadsSponsor("Jessica Wang", a, dupNames)).toBe(false);
+    expect(leadsSponsor("Jessica Wang", b, dupNames)).toBe(false);
+  });
+  it("reads task Owner cells with team tags", () => {
+    expect([...contactRowsNamed("[SPON] Noah", names)]).toEqual([0]);
+    expect([...contactRowsNamed("Caroline & Daniel", names)].sort()).toEqual([
+      1, 2,
+    ]);
+    expect(contactRowsNamed(null, names).size).toBe(0);
   });
 });
 
@@ -282,6 +317,61 @@ describe("needsAttention", () => {
       "overdue-task",
     ]);
     expect(items[3]).toMatchObject({ task: "Sponsor Bay coverage" });
+  });
+  it("lists the organizer's own sponsors first, then everyone else's", () => {
+    const items = needsAttention({
+      sponsors: [
+        { sponsorId: "1", name: "Ace", chats: { ...base, repsPlaced: 1 } },
+        {
+          sponsorId: "2",
+          name: "Bee",
+          chats: { ...base, prefsSubmittedAt: null },
+        },
+        {
+          sponsorId: "3",
+          name: "Cat",
+          chats: { ...base, changedAfterSend: true },
+        },
+      ],
+      tasks: [],
+      now,
+      taskStart: start,
+      taskMinutes: 30,
+      isMine: (id) => id === "2",
+    });
+    expect(items.map((i) => [i.mine, i.kind])).toEqual([
+      [true, "no-prefs"],
+      [false, "changed"],
+      [false, "not-scheduled"],
+    ]);
+  });
+  it("lists the organizer's own overdue tasks first, still at most 3", () => {
+    const task = (s: string, owner: string) => ({
+      day: "Friday" as const,
+      start: s,
+      task: `Task ${s}`,
+      owner,
+    });
+    const items = needsAttention({
+      sponsors: [],
+      tasks: [
+        task("18:20", "Daniel"),
+        task("18:15", "Caroline"),
+        task("18:10", "Noah"),
+        task("18:05", "Daniel"),
+        task("18:00", "Noah"),
+      ],
+      now,
+      taskStart: start,
+      taskMinutes: 30,
+      isMyTask: (owner) => owner === "Noah",
+    });
+    expect(items.map((i) => i.kind === "overdue-task" && i.start)).toEqual([
+      "18:10",
+      "18:00",
+      "18:20",
+    ]);
+    expect(items.map((i) => i.mine)).toEqual([true, true, false]);
   });
   it("is empty when all is well", () => {
     expect(

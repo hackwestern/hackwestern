@@ -7,7 +7,7 @@ import {
   buildSponsorSummaries,
   mySponsorChats,
   orderReps,
-  organizerNameForEmail,
+  organizerForEmail,
   type MySponsorChats,
   type SponsorRep,
   type SponsorSummaries,
@@ -242,8 +242,11 @@ export const sponsorOrganizerRouter = createTRPCRouter({
    * match, so the page shows All sponsors only), and per registered sponsor
    * the coffee chat reps (People: name, phone, crown) and coffee chat
    * progress. Which sponsors are theirs is matched on the page against
-   * Sponsor Day-Of's HW lead (getSponsors). Organizers only; phones come
-   * from the database and emails never leave the server.
+   * Sponsor Day-Of's HW lead (getSponsors) via `contactNames`, the HW
+   * Contacts names in row order (`me.row` indexes it). HW Contacts is
+   * cached (HW_CONTACTS_CACHE_MS); a failed read keeps the last good rows,
+   * and `contactsError` is true only when it has never been read. Organizers
+   * only; phones come from the database and emails never leave the server.
    */
   mySponsors: protectedOrganizerProcedure.query(async ({ ctx }) => {
     const [user, contacts, sponsors, prefs, reps, placements, invites] =
@@ -316,8 +319,11 @@ export const sponsorOrganizerRouter = createTRPCRouter({
         }),
       };
     }
+    const rows = contacts?.value ?? [];
     return {
-      me: organizerNameForEmail(user?.email, contacts),
+      me: organizerForEmail(user?.email, rows),
+      contactNames: rows.map((c) => c.name),
+      contactsError: contacts === null,
       sponsors: out,
     };
   }),

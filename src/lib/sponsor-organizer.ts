@@ -538,37 +538,73 @@ function normalName(value: string): string {
 }
 
 /**
- * The HW Contacts name whose "Login email" is the signed-in organizer's
+ * The signed-in organizer as one HW Contacts row: `row` is the row's index
+ * in the HW Contacts list (its identity, so two people with the same name
+ * stay apart), `name` is what the page shows.
+ */
+export type OrganizerContact = { row: number; name: string };
+
+/**
+ * The HW Contacts row whose "Login email" is the signed-in organizer's
  * email (case-insensitive, spaces ignored). Null when nobody matches, so the
  * page shows All sponsors only (decisions 2026-11-19).
  */
-export function organizerNameForEmail(
+export function organizerForEmail(
   email: string | null | undefined,
   contacts: readonly { name: string; loginEmail: string }[],
-): string | null {
+): OrganizerContact | null {
   const want = (email ?? "").trim().toLowerCase();
   if (!want) return null;
-  const hit = contacts.find(
+  const row = contacts.findIndex(
     (c) => c.loginEmail.trim().toLowerCase() === want && c.name.trim(),
   );
-  return hit ? hit.name.trim() : null;
+  return row === -1 ? null : { row, name: contacts[row]!.name.trim() };
 }
 
 /**
- * Whether Sponsor Day-Of's "HW lead" cell names this organizer. The cell
- * can hold several people ("Noah / Daniel") and sometimes only a first
- * name ("Noah"), so each person in it matches the full name or, when it's
- * one word, the first name.
+ * The HW Contacts rows a person cell names (Sponsor Day-Of's "HW lead", or
+ * a run-of-show task's Owner). The cell can hold several people ("Noah /
+ * Daniel"), team tags ("[SPON] Noah") and sometimes only a first name.
+ * - A full name names the one row with that full name.
+ * - A single word names the one row with that first name. When several rows
+ *   share it, it falls back to a row whose whole name is that word.
+ * Anything that fits more than one row names nobody, so an organizer never
+ * sees a sponsor or task that may be someone else's.
  */
-export function leadsSponsor(hwLead: string, organizerName: string): boolean {
-  const me = normalName(organizerName);
-  if (!me) return false;
-  const myFirst = me.split(" ")[0];
-  return normalName(hwLead)
-    .split(/\s*(?:,|\/|&|\+|\band\b)\s*/)
+export function contactRowsNamed(
+  cell: string | null | undefined,
+  contactNames: readonly string[],
+): Set<number> {
+  const names = contactNames.map(normalName);
+  const rows = new Set<number>();
+  const only = (hits: number[]) => {
+    if (hits.length !== 1) return false;
+    rows.add(hits[0]!);
+    return true;
+  };
+  const people = normalName((cell ?? "").replace(/\[[^\]]*\]/g, " "))
+    .split(/\s*(?:,|\/|&|\+|;|and)\s*/)
     .map((p) => p.trim())
-    .filter((p) => p && p !== "—" && p !== "-")
-    .some((p) => p === me || (!p.includes(" ") && p === myFirst));
+    .filter((p) => p && p !== "—" && p !== "-");
+  for (const p of people) {
+    const full = names.flatMap((n, i) => (n === p ? [i] : []));
+    if (p.includes(" ")) {
+      only(full);
+      continue;
+    }
+    const byFirst = names.flatMap((n, i) => (n.split(" ")[0] === p ? [i] : []));
+    if (!only(byFirst)) only(full);
+  }
+  return rows;
+}
+
+/** Whether Sponsor Day-Of's "HW lead" cell names this organizer's row. */
+export function leadsSponsor(
+  hwLead: string,
+  me: OrganizerContact,
+  contactNames: readonly string[],
+): boolean {
+  return contactRowsNamed(hwLead, contactNames).has(me.row);
 }
 
 /**
@@ -661,6 +697,10 @@ export function mySponsorChats({
     return t === null ? m : Math.max(m ?? t, t);
   }, null);
   const updated = pref?.updatedAt?.getTime() ?? null;
+  // "Changed after Send" relies on coffee_chat_pref.updated_at being bumped
+  // explicitly by the sponsor-side writers on preference and rep edits.
+  // There's deliberately no $onUpdate on the column: a shortlist submit
+  // writes the row too and must NOT count as a change after Send.
   return {
     prefsSubmittedAt: pref?.submittedAt?.toISOString() ?? null,
     shortlistSubmittedAt: pref?.shortlistSubmittedAt?.toISOString() ?? null,
@@ -679,7 +719,8 @@ export function mySponsorChats({
 // Needs attention now: what an organizer arriving cold should act on first
 // ---------------------------------------------------------------------------
 
-export type AttentionItem =
+/** `mine`: the signed-in organizer's own sponsor or task. */
+export type AttentionItem = { mine: boolean } & (
   | { kind: "no-prefs"; sponsorId: string; sponsor: string }
   | {
       kind: "not-scheduled";
@@ -696,7 +737,8 @@ export type AttentionItem =
       start: string;
       task: string;
       owner: string | null;
-    };
+    }
+);
 
 type RunOfShowTaskLike = {
   day: "Friday" | "Saturday" | "Sunday";
@@ -707,7 +749,7 @@ type RunOfShowTaskLike = {
 
 /** How long after its window a task still shows as overdue. */
 export const OVERDUE_TASK_WINDOW_MINUTES = 60;
-/** At most this many overdue tasks in the list (newest first). */
+/** At most this many overdue tasks in the list (own first, newest first). */
 export const OVERDUE_TASK_CAP = 3;
 
 /**
@@ -715,9 +757,13 @@ export const OVERDUE_TASK_CAP = 3;
  * haven't submitted coffee chat preferences, who submitted but aren't fully
  * scheduled, who changed preferences after Send, and run-of-show tasks whose
  * time just passed (shown only: nothing pings and nothing is marked done, so
- * a task counts as overdue for an hour after its 30-minute window). Sponsors
- * changed after Send come first, then not scheduled, then no preferences,
- * then tasks. Empty = "All clear".
+ * a task counts as overdue for an hour after its 30-minute window).
+ *
+ * Every sponsor's items show, the organizer's own sponsors first (decisions
+ * 2026-11-19, "Needs attention scope"). Within each group: changed after
+ * Send, then not scheduled, then no preferences. Then tasks: the organizer's
+ * own first, then others, newest first, at most OVERDUE_TASK_CAP in all.
+ * Empty = "All clear".
  */
 export function needsAttention({
   sponsors,
@@ -725,6 +771,8 @@ export function needsAttention({
   now,
   taskStart,
   taskMinutes,
+  isMine = () => false,
+  isMyTask = () => false,
 }: {
   sponsors: readonly {
     sponsorId: string;
@@ -740,39 +788,57 @@ export function needsAttention({
   taskStart: (t: RunOfShowTaskLike) => Date;
   /** How long a task counts as "on" (TASK_MINUTES). */
   taskMinutes: number;
+  /** Whether the signed-in organizer leads this sponsor. */
+  isMine?: (sponsorId: string) => boolean;
+  /** Whether a task's Owner cell names the signed-in organizer. */
+  isMyTask?: (owner: string | null) => boolean;
 }): AttentionItem[] {
   const byName = [...sponsors].sort((a, b) => a.name.localeCompare(b.name));
-  const changed: AttentionItem[] = [];
-  const unscheduled: AttentionItem[] = [];
-  const noPrefs: AttentionItem[] = [];
-  for (const s of byName) {
-    const c = s.chats;
-    const base = { sponsorId: s.sponsorId, sponsor: s.name };
-    if (!c.prefsSubmittedAt) {
-      noPrefs.push({ kind: "no-prefs", ...base });
-      continue;
+  const sponsorItems = (mine: boolean): AttentionItem[] => {
+    const changed: AttentionItem[] = [];
+    const unscheduled: AttentionItem[] = [];
+    const noPrefs: AttentionItem[] = [];
+    for (const s of byName) {
+      if (isMine(s.sponsorId) !== mine) continue;
+      const c = s.chats;
+      const base = { mine, sponsorId: s.sponsorId, sponsor: s.name };
+      if (!c.prefsSubmittedAt) {
+        noPrefs.push({ kind: "no-prefs", ...base });
+        continue;
+      }
+      if (c.changedAfterSend) changed.push({ kind: "changed", ...base });
+      else if (c.repsChatting > 0 && c.repsPlaced < c.repsChatting) {
+        unscheduled.push({
+          kind: "not-scheduled",
+          ...base,
+          placed: c.repsPlaced,
+          reps: c.repsChatting,
+        });
+      }
     }
-    if (c.changedAfterSend) changed.push({ kind: "changed", ...base });
-    else if (c.repsChatting > 0 && c.repsPlaced < c.repsChatting) {
-      unscheduled.push({
-        kind: "not-scheduled",
-        ...base,
-        placed: c.repsPlaced,
-        reps: c.repsChatting,
-      });
-    }
-  }
+    return [...changed, ...unscheduled, ...noPrefs];
+  };
   const t = now.getTime();
   const overdue = tasks
-    .map((k) => ({ k, end: taskStart(k).getTime() + taskMinutes * 60_000 }))
+    .map((k) => ({
+      k,
+      mine: isMyTask(k.owner),
+      end: taskStart(k).getTime() + taskMinutes * 60_000,
+    }))
     .filter(
       ({ end }) => end <= t && t - end < OVERDUE_TASK_WINDOW_MINUTES * 60_000,
     )
-    .sort((a, b) => b.end - a.end || a.k.task.localeCompare(b.k.task))
+    .sort(
+      (a, b) =>
+        Number(b.mine) - Number(a.mine) ||
+        b.end - a.end ||
+        a.k.task.localeCompare(b.k.task),
+    )
     .slice(0, OVERDUE_TASK_CAP)
     .map(
-      ({ k }): AttentionItem => ({
+      ({ k, mine }): AttentionItem => ({
         kind: "overdue-task",
+        mine,
         key: `${k.day}-${k.start}-${k.task}`,
         day: k.day,
         start: k.start,
@@ -780,5 +846,5 @@ export function needsAttention({
         owner: k.owner,
       }),
     );
-  return [...changed, ...unscheduled, ...noPrefs, ...overdue];
+  return [...sponsorItems(true), ...sponsorItems(false), ...overdue];
 }

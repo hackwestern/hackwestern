@@ -65,6 +65,7 @@ import {
 import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
 import {
   leadsSponsor,
+  type OrganizerContact,
   organizerHomeHref,
   sponsorRowId,
   statusAfterPill,
@@ -369,6 +370,8 @@ export function SponsorsTab({
   workshops,
   now,
   me,
+  contactNames,
+  contactsError,
   mine,
   view,
   onView,
@@ -383,8 +386,12 @@ export function SponsorsTab({
   /** Run-of-show workshops for My sponsors; null if not loaded. */
   workshops: readonly WorkshopInfo[] | null;
   now: Date;
-  /** The signed-in organizer's HW Contacts name; null = no match. */
-  me: string | null;
+  /** The signed-in organizer's HW Contacts row; null = no match. */
+  me: OrganizerContact | null;
+  /** HW Contacts names in row order (`me.row` indexes it). */
+  contactNames: readonly string[];
+  /** HW Contacts has never been read, so `me` is unknown (not "no match"). */
+  contactsError: boolean;
   /** My sponsors' reps and chat progress by sponsor id. */
   mine: Record<string, MySponsorData> | undefined;
   /** My sponsors or All sponsors (only "all" without a match). */
@@ -1243,7 +1250,7 @@ export function SponsorsTab({
   // My sponsors: the sheet's sponsors whose HW lead is the signed-in
   // organizer. Without a match only All sponsors shows.
   const mySponsors: MySponsor[] = me
-    ? sponsors.filter((s) => leadsSponsor(s.hwContact, me))
+    ? sponsors.filter((s) => leadsSponsor(s.hwContact, me, contactNames))
     : [];
   const showMine = !!me && view === "mine";
   const mineView = (
@@ -1271,7 +1278,7 @@ export function SponsorsTab({
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <p className="m-0 text-sm text-dashboard-text-medium">
             <span className="font-semibold text-dashboard-text-heavy">
-              {mineCopy.signedIn(me)}
+              {mineCopy.signedIn(me.name)}
             </span>
             {" · "}
             {mineCopy.leads(mySponsors.length)}
@@ -1302,6 +1309,16 @@ export function SponsorsTab({
             ))}
           </div>
         </div>
+      )}
+      {!me && contactsError && (
+        <p
+          role="status"
+          data-hw-contacts="error"
+          className="m-0 flex items-center gap-2 text-sm font-semibold text-dashboard-text-warning"
+        >
+          <TriangleAlert aria-hidden className="size-4 shrink-0" />
+          {mineCopy.contactsError}
+        </p>
       )}
       {note && showMine && (
         <p

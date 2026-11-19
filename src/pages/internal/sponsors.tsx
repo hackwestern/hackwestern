@@ -26,6 +26,7 @@ import { TASK_MINUTES } from "~/lib/happening-now";
 import { organizerTourIdFor } from "~/lib/organizer-tours";
 import { runOfShowInstant } from "~/lib/run-of-show-time";
 import {
+  contactRowsNamed,
   leadsSponsor,
   needsAttention,
   type SponsorSummary,
@@ -67,11 +68,33 @@ export default function SponsorOrganizerHome() {
     refetchInterval: 30000,
   });
   const me = mine.data?.me ?? null;
+  const contactNames = useMemo(
+    () => mine.data?.contactNames ?? [],
+    [mine.data?.contactNames],
+  );
+  // The sponsor ids this organizer leads (Sponsor Day-Of's HW lead names
+  // their HW Contacts row); null until both reads are in.
+  const myIds = useMemo(
+    () =>
+      me && sheetSponsors.data
+        ? new Set(
+            sheetSponsors.data
+              .filter(
+                (s) =>
+                  s.sponsorId && leadsSponsor(s.hwContact, me, contactNames),
+              )
+              .map((s) => s.sponsorId!),
+          )
+        : null,
+    [me, sheetSponsors.data, contactNames],
+  );
   // My sponsors unless ?list=all, or no HW Contacts match, or they lead no
   // sponsor (then All sponsors, with My sponsors one tap away).
   const leadsAny =
     !!me &&
-    (sheetSponsors.data ?? []).some((s) => leadsSponsor(s.hwContact, me));
+    (sheetSponsors.data ?? []).some((s) =>
+      leadsSponsor(s.hwContact, me, contactNames),
+    );
   const view: "mine" | "all" =
     me &&
     router.query.list !== "all" &&
@@ -88,21 +111,14 @@ export default function SponsorOrganizerHome() {
       scroll: false,
     });
   };
+  // Every sponsor's items, the organizer's own first (decisions 2026-11-19,
+  // "Needs attention scope"). With a match, wait for Sponsor Day-Of so the
+  // list doesn't flash in the wrong order while it loads.
   const attention = useMemo(() => {
     if (!mine.data || !summary.data) return null;
-    const myIds = me
-      ? new Set(
-          (sheetSponsors.data ?? [])
-            .filter((s) => s.sponsorId && leadsSponsor(s.hwContact, me))
-            .map((s) => s.sponsorId!),
-        )
-      : null;
-    const scoped =
-      myIds && myIds.size > 0
-        ? summary.data.sponsors.filter((s) => myIds.has(s.sponsorId))
-        : summary.data.sponsors;
+    if (me && !myIds) return null;
     return needsAttention({
-      sponsors: scoped.flatMap((s) => {
+      sponsors: summary.data.sponsors.flatMap((s) => {
         const d = mine.data.sponsors[s.sponsorId];
         return d
           ? [{ sponsorId: s.sponsorId, name: s.name, chats: d.chats }]
@@ -112,9 +128,11 @@ export default function SponsorOrganizerHome() {
       now,
       taskStart: (t) => runOfShowInstant(t.day, t.start),
       taskMinutes: TASK_MINUTES,
+      isMine: (id) => !!myIds?.has(id),
+      isMyTask: (owner) =>
+        !!me && contactRowsNamed(owner, contactNames).has(me.row),
     });
-  }, [mine.data, summary.data, sheetSponsors.data, me, schedule.data, now]);
-  const attentionScope: "yours" | "everyone" = leadsAny ? "yours" : "everyone";
+  }, [mine.data, summary.data, myIds, me, contactNames, schedule.data, now]);
   const summaries = useMemo(
     () =>
       new Map<string, SponsorSummary>(
@@ -169,7 +187,6 @@ export default function SponsorOrganizerHome() {
             tasks={schedule.data?.tasks ?? null}
             now={now}
             attention={attention}
-            attentionScope={attentionScope}
             scheduleFailed={!schedule.data && schedule.isError}
           />
           <OrganizerTabList tab={tab} onSelect={loc.selectTab} />
@@ -192,6 +209,8 @@ export default function SponsorOrganizerHome() {
                 workshops={schedule.data?.workshops ?? null}
                 now={now}
                 me={me}
+                contactNames={contactNames}
+                contactsError={mine.data?.contactsError ?? false}
                 mine={mine.data?.sponsors}
                 view={view}
                 onView={setView}

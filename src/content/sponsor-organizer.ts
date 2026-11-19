@@ -49,8 +49,13 @@ export const sponsorOrganizerCopy = {
    */
   attention: {
     heading: "Needs attention now",
-    yours: "Your sponsors",
-    everyone: "All sponsors",
+    /** Group labels: your own sponsors come first (decisions 2026-11-19). */
+    groups: {
+      yours: "Your sponsors",
+      others: "Other sponsors",
+      everyone: "All sponsors",
+      tasks: "Run of show tasks",
+    },
     allClear: "All clear",
     allClearBody: "Nothing needs you right now.",
     noPrefs: (sponsor: string) =>
@@ -82,6 +87,8 @@ export const sponsorOrganizerCopy = {
         : n === 1
           ? "You lead 1 sponsor"
           : `You lead ${n} sponsors`,
+    contactsError:
+      "Can't read HW Contacts, so My sponsors can't tell who you are. Showing All sponsors; it retries on its own.",
     noneLed:
       "Sponsor Day-Of doesn't list you as an HW lead yet, so there's nothing here. All sponsors shows everyone.",
     sponsorTabsLabel: "Your sponsors",
