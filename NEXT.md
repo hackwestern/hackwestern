@@ -1,40 +1,33 @@
 # NEXT: sponsor dashboard (worktree `hackwestern-coffee-prefs`, branch `coffee-prefs`)
 
 ## Now
-1. DONE 2026-11-19: review fixes landed (953f5d08…fd5df066; tsc clean, vitest 1507 pass + known Apple Wallet failure) and coffee-prefs is merged into sponsor-dashboard locally (6c77a109). Not pushed. Open nit: the coffee board Help sheet's Send paragraph still mentions hacker invites (fix with track C).
-2. Start the 8-hour parallel build below.
+Build the approved organizer Home from mock `hackwestern-sponsor-dash/mocks/organizer-sponsors-home-v3` into /internal/sponsors (see docs/decisions.md, last entry). Jazz's notes: (1) after going into Coffee chats the page drops back to the old view — undo that, Home stays the new view; (2) contacts sit under Up next and Key rooms. Mock first was the rule; this one is approved. Then push and re-check PR #1165's preview.
 
-## 8-hour build plan (code freeze ~2 PM Fri; sponsors use setup at the Fri 5 PM workshop)
-Read first: docs/decisions.md (all 2026-11-19 entries, esp. "Jazz's answers to the full plan", "Turn off task pings", "Tracked sponsor help removed"), docs/specs/coffee-chat-sessions.md, ../hackwestern-sponsor-dash/mocks/CHANGES.md.
-Make shared changes once on the main branch first (schema, router registration, sponsors.tsx tabs), then one worktree + port + code review per track:
-A. Sponsor coffee chat setup (portal), mock sponsor-portal-flow-hacker-v6: Your team (name + phone required, crown primary, no email), preferences (hackers per chat 1–5; 1-on-1 = 15 min, groups = 30; availability grid of 1-h sessions, no "hackers free" counts; chats per rep incl. 0 with time shown), Review & submit; separate Shortlist flow (one shared list, cap = seats, scanned first, due 9:30 PM); "Your chats" calendar after Send.
-B. Hacker invites from the schedule: exactly one invite per seat; round 1 Fri 10 PM (accept by Sat 10 AM); round 2 Sat 10:30 AM + automatic 30-min rounds; order scanned → shortlist → interested; reuse Slack Accept/Decline + email fallback.
-C. Organizer coffee board tweaks (built in app already): copy icon beside phones (no Contact/Text/Call), chats asked per rep, Noah-only Send (login email), partial session for buffer-cut sessions (Sun Life 1:00–1:30), Room Grid sheet mirror, then wire Send → invites (B) and sponsor schedule.
-D. My sponsors (mock organizer-my-sponsors-v3, tables): login-email matching, People = reps only, Arrival/Booth/CC workshop pills; NO help-request UI. Portal Help = lead's number (copy) + Noah emergency. "Now and next" under Happening now (event now/next + current task + next task with owner); hide Task pings tab (pings OFF).
-E. Sheet: merge Sponsor Status into Sponsor Day-Of; Coffee Chat Setup columns for sessions; Sponsor Judging writes (top 3, team ID + Devpost link); prize tracks from the Sponsor Day-Of checkbox.
-F. Saturday: Judging (mock sponsor-judging-redesign-d-v1 minus modes): one at a time or list like hacker judging, Holia 1–10 half-point score + rubric modal, several reps ("Who's judging?"), ranked top 3; digital (PCBWay) entered by Devpost links; TinyFish remote.
-Later: task pings, tracked help (parked: docs/specs/parked-sponsor-help-requests.md), portal restyle (Today/Map/Schedule).
+## Where things stand (2026-11-19, end of day)
+- Built, reviewed, merged and pushed (PR #1165, sponsor-dashboard ← coffee-prefs): sponsor setup, invites (instant re-send on decline, round 1 expires Sat 10 AM, no open seats), organizer coffee board, My sponsors + Needs attention, sheet merge, judging (6-min slots, up to 15 teams, ranked top 5, Judging Scores tab), portal v6 restyle, Jazz has Noah's view, Agentation (dev only), phone dev login.
+- Local only, NOT pushed: bb218af5 locked "Coffee Chat Invites" sheet tab (push with the next work).
+- Tests 1784 pass (only the known Apple Wallet failure), tsc clean, lint 0 errors at last full run.
+- Ship-run docs: docs/ship/ (start at SHIPPED.md). Mock review queue: hackwestern-sponsor-dash/mocks/CHANGES.md "New mocks for review".
 
-## Where things stand (2026-11-19)
-- Organizer Coffee chats tab = v8 board in the app (algorithm + 23 tests, migration 0058 applied locally, router + 9 tests, review fixes landing). Send confirms the schedule only; hacker invites not wired yet.
-- Earlier on this branch (merged into sponsor-dashboard locally, not pushed): Sponsor Status tab name, sponsor list from Sponsor Day-Of, organizer tours, Coffee Chat Setup tab read, missing-Judging-tab fix.
-- Sheet reorganized to 10 tabs incl. "Rationale + Decisions" (first tab, keep in sync with docs/decisions.md). HW Contacts has Login email + Slack name ([ORGANIZER] Name).
-- Mocks: gallery http://127.0.0.1:3040/mocks/ ; status in mocks/CHANGES.md.
+## Mocks waiting for Jazz's review (don't build until approved)
+- sponsor-chats-v3 (sponsor Chats one stage at a time, Send availability, 40 hackers, icons, dynamic key rooms, contacts, welcome card)
+- sponsor-today-v4 (sponsor Home: chevron Up next, Help bottom left) — likely superseded by sponsor-chats-v3's Home
+- organizer-coffee-v12 (drag, fixed cells, red warnings, modal, per-chat counts, contact-the-rep step, edit hackers, first in line; 6 real sponsors)
+- organizer-invite-preview-v2 (preview + edit invites before Send; only "invited by 2 sponsors" list)
+- organizer-judging-board-v2 (3 rooms, room select, only "Text lead" warning, team modal with members/attendance/links) — agent was still building at wrap; check it finished
 
 ## Open questions for Jazz
-- Which on-call hours are wrong? Sheet (= app) says Noah Sat 1–4 AM, Alice Sat 4–8:30 AM, Aniya Sun 1–4 AM, Caroline Sun 4–7:30 AM, Daniel none; gaps Fri 11 PM–1 AM and Sat 11 PM–Sun 1 AM.
-- Who merges PR #1165 and runs production migrations (0058+), and when on Friday?
-- Sponsor Bay: SM Atrium or Rm 1235? Sun Life booth spot (layout file says right wall)?
-- Commure / Manulife prize tracks (sheet lists tracks, prize list doesn't).
-- Lucas's and Brittney's login emails (if they'll use the dashboard). Owner for the Sun 9 AM digital top-3 task.
-- Tell the team: leads' numbers are shown to their sponsors; Judging tab was deleted (check with Lucas).
+- Who merges PR #1165 to main (runs prod migrations 0059/0060) before Fri 5 PM; add Production secrets (Slack token, run-of-show sheet creds) and arm `COFFEE_ROUNDS_LIVE` Sat morning.
+- Sheet data: CSE coffee-chat box unticked; Manulife/Commure judging rooms "RM 555"/"RM 44" test values?; Sun Life has no judging room (4 in-person sponsors, 3 rooms).
+- Caroline owns the sheet, so she can't be removed from the locked tabs (only by transferring ownership).
+- Old task pings already scheduled in Slack (if any) need cancelling by hand.
+- When the real app gets "put someone first in line" / invite preview, it needs an "organizer pick" invite source (small migration).
 
 ## Local setup
-- App: `DATABASE_URL="postgresql://postgres:postgres@localhost:5432/hackwestern_spon" SKIP_ENV_VALIDATION=1 npx next dev -p 3014` (organizer login: dev server signs sessions with `local-dev-only-secret`; see mocks/organizer-sponsors-home-v1/README.md).
-- Tests: `SKIP_ENV_VALIDATION=1 npx vitest run`. Real-sheet read checks: `npx tsx --env-file=.env --tsconfig tsconfig.json _local/cc-check.ts` (read-only).
-- Keep SHEET_WRITES off locally. Commit specific files only (never `git commit -a`): subagents may be working in the same worktree.
+- App: `DATABASE_URL="postgresql://postgres:postgres@localhost:5432/hackwestern_spon" SKIP_ENV_VALIDATION=1 NEXTAUTH_SECRET=local-dev-only-secret COFFEE_INVITES_ENABLED=dry npx next dev -H 0.0.0.0 -p 3014` (add DEV_LOGIN_KEY=<key> for the phone sign-in link /api/dev/login?key=…; Tailscale IP 100.84.66.106). Jazz's own server: hackwestern-sponsor-dash on :3013 (turbopack).
+- Tests: `SKIP_ENV_VALIDATION=1 npx vitest run`. Mock gallery: http://127.0.0.1:3040/mocks/ (rebuild list with `node mocks/build-index.mjs` in hackwestern-sponsor-dash).
+- Google Sheets read quota is tight: keep few dev servers running.
+- Commit specific files only; no Co-Authored-By lines.
 
 ## Files touched this session (2026-11-19)
-- App (coffee-prefs): src/server/api/utils/sponsor-sheets.ts, sponsor-info-tab.ts, run-of-show-sheet.ts, routers/sponsor-dashboard.ts, sponsor-portal.ts, schema.ts, content/sponsor-organizer.ts, organizer tours (src/lib/organizer-tours.ts, src/components/sponsors/tour/*, content/organizer-tour.ts), coffee chat board (src/lib/coffee-chat-schedule.ts, coffee-chat-sessions.ts, routers + utils + UI + content, drizzle/0058), docs/decisions.md, docs/specs/*.
-- Mocks (sponsor-dash): ~30 new mock folders, mocks/index.html + screenshots.html (build-index.mjs), CHANGES.md, AUDIT-*.md, _data/*.
-- Google Sheet "Spon Team RUN OF SHOW": reorganized (see Rationale + Decisions tab).
+Shared base (schema 0059/0060, root routers); tracks A–F and integration (coffee-chat-setup/invites/sessions/requests/respond routers + utils, sponsor portal pages + components, organizer components, sheet utils + mirrors, judging lib/routers/components, content files); portal shell restyle; dev login route, next.config, _app (Agentation); docs/ship/*, docs/handoff/*, docs/specs/judging-room-board.md, docs/decisions.md, context/refs.md. Live sheet: Sponsor Day-Of columns, Coffee Chat Setup rebuild, At CC workshop, Judging Scores, Coffee Chat Invites (locked), HW Contacts "Same view as".
