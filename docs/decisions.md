@@ -691,3 +691,15 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 ## 2026-11-19: Tracked sponsor help removed everywhere; design parked (Jazz)
 
 **Decision:** No "Sponsor requested help" anywhere in the build: no help rows in Now, no help request in Needs attention, no Slack DM / I'm on it / Resolved, no escalation. The sponsor portal's Help shows their HW lead's name + number (copy) and Noah as emergency contact. The full design is kept in docs/specs/parked-sponsor-help-requests.md for a later rebuild.
+
+## 2026-11-19: One person shortlists; no "Who's shortlisting?" picker (Jazz)
+
+**Decision:** The sponsor's shortlist is one list made by one person on the sponsor login. No rep picker, and picks aren't labelled by who made them (no `picked_by` column). The seat cap and 9:30 PM submit are unchanged.
+**Why:** simpler for sponsors; several reps shortlisting at once wasn't needed.
+**Alternatives:** shared list labelled by rep, updating live (the 2026-11-19 "Chats per rep… shared shortlist" design, now superseded on this point).
+
+## 2026-11-19: Shared base for the 8-hour build (migration 0059, stub routers)
+
+**Decision:** Before the track worktrees, one migration (0059) on coffee-prefs: rep chats wanted may be 0; `coffee_chat_pref.shortlist_submitted_at`; new `sponsor_scan` (sponsor, hacker, rep name, scanned at) for scanned-first invites; `coffee_chat` gains `placement_id`, `round`, `expires_at`, `source` so session invites reuse the existing Slack Accept/Decline flow; new `sponsor_team_score` (sponsor, team, judge name, score in halves 2–20) for several reps scoring in half points. Empty `coffeeChatSetup` (track A) and `coffeeChatInvites` (track B) routers are registered in root.ts. The Task pings tab is hidden by track D, the only track that edits `pages/internal/sponsors.tsx`.
+**Why:** schema and router registration conflict when several worktrees edit them; doing them once keeps merges clean.
+**Alternatives:** a new invite table (would need new Slack handlers); half-point scores as numeric (integers avoid float rounding).
