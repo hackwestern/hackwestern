@@ -15,7 +15,7 @@ Calls made during the unattended build, and anything blocked or left for Jazz. P
   2. *Delivery record:* add `coffee_chat.notified_at` (migration 0060, in track B's branch only). Rounds retry invites that were never notified and never DM twice. Considered: no record (a failed DM is never retried; a resend double-DMs).
   3. *Timed rounds:* keep the page-traffic trigger and "Run now", and add a GitHub Actions workflow every 10 minutes on Saturday that runs a round. Like `incomplete-reminder.yml`, it's a dry run unless the repo variable `COFFEE_ROUNDS_LIVE` is `true`. Considered: page traffic only (stalls if nobody has the page open).
   4. *Partial sessions:* the rule stays: a session cut by the workshop buffer keeps only whole chats that end by the buffer. For Sun Life (setup 2:00, buffer from 1:45), 30-minute chats give 1:00–1:30, which matches Jazz's note.
-  5. *Friday declines:* seats freed overnight wait for round 2 at 10:30 AM. Jazz already accepted that 10–11 AM chats are filled only in round 1.
+  5. ~~*Friday declines:* seats freed overnight wait for round 2 at 10:30 AM.~~ Replaced by "Declines re-send at once" below (Jazz, 2026-11-19).
 
 - **Live sheet restructured (track E):**
   - A backup copy was made first. Its link is kept out of the repo because the repo is public.
@@ -86,9 +86,10 @@ Calls made during the unattended build, and anything blocked or left for Jazz. P
   - F2: moving a chat now confirms. For a sent chat it says the invited hackers were asked to confirm.
   - F4: rep names wrap at spaces on phones.
   - *F3, simplified:* the board's flag reads "1 rep short of chats" (fewer sessions than their chats need). Needs attention only lists sponsors with a rep who has no chat at all. Considered: making Needs attention recompute the board's per-rep session math (a second copy of the scheduler rules).
-  - The Send confirm says "fill up to N open seats", not "invite up to N hackers". N is seats, and fewer hackers may be available.
+  - The Send confirm says "fill up to N open seats", not "invite up to N hackers". N is seats, and fewer hackers may be available. (Now "invite hackers to N seats": no "open seats" wording, see below.)
 - **Judging round 1 = 6-minute presentations, ranked top 5, live Judging Scores tab (Jazz, 2026-11-19):** slots are 6 minutes (3 min pitch, 2 min Q&A, 1 min switch), so 15 per room in 10:00–11:30, and the round 1 shortlist cap is the slot count (15). Sponsors submit a ranked top 5 everywhere (portal, organizer tab, PCBWay entry, Sponsor Judging sheet). A new "Judging Scores" tab gets one block per in-person sponsor, filled by the app as reps score (production only); it only writes cells it has a score for and never blanks one, so reps can type scores there if the app is down. Considered: 5-min slots for 18, 7-min for 12, keeping top 3, a blank backup sheet. Full entry in `docs/decisions.md`.
 - **Jazz sees Noah's view (HW Contacts "Same view as", Jazz):** a new HW Contacts column. A row that names another person gets that person's My sponsors and permissions, including Noah's Send, checked on the server with the same fail-closed rules. One level only; blank or unknown means no change. Considered: hardcoding an email (the repo is public), an admin role (more than one person needs).
+- **Declines re-send at once; round 2 at 10 AM; no open seats shown (Jazz, 2026-11-19):** a decline (Slack, /live or the email's /live link) offers the seat to the next eligible hacker in the same transaction, under the board lock, with the current round's answer-by (Sat 10 AM on Friday night, else 30 minutes, capped at last call). Expired seats refill at the next round tick, and sponsor changes refill what they free. Round 1 expires Sat 10:00 AM and round 2 opens then (not 10:30). Screens show "N accepted · N waiting" only; a seat no one could take is a board flag, "1 seat couldn't be filled (no one free)". The hacker's own /live keeps their own answers. Replaces invites D5. Full entry in `docs/decisions.md`.
 
 ## Blocked / for Jazz
 

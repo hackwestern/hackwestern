@@ -44,7 +44,8 @@ The whole build is done, tested and pushed. It's on PR #1165 with a Vercel previ
   - Undo after Remove.
 - **Send (Noah only):**
   - Asks first, then confirms the schedules and invites hackers: one per seat, people met at the booth first, then the shortlist, then interested hackers.
-  - Hackers answer by Sat 10 AM. Open seats are offered again every 30 minutes from 10:30.
+  - Hackers answer by Sat 10 AM. When one declines, their seat goes to the next hacker right away. From 10 AM, new invites go out every 30 minutes.
+  - Screens show only accepted and waiting. A seat nobody eligible can take shows on the board as "1 seat couldn't be filled (no one free)".
 - **Judging tab:** top 5, and PCBWay's top 5 entered by Devpost link.
 
 **Safety:**
