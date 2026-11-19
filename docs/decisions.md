@@ -606,3 +606,7 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Production flow:** Auto-schedule writes a draft (invisible to sponsors and hackers) → organizers apply fixes or drag → Send confirms: confirmed sessions saved, Room Grid tab mirrored, each sponsor's primary contact gets the confirmed schedule, hackers invited (scanned, shortlist, interested), by 10 PM Friday.
 **Why:** the problem is tiny (~20 reps × 6 sessions × 8 rooms), so a greedy pass with fallbacks is instant and easy to test; organizers keep control through pinning and fixes.
 **Mock:** `mocks/organizer-coffee-v8` (algorithm in its JS, described in its README).
+
+## 2026-11-19: HW Contacts has a "Login email" column to match organizers to the sponsors they lead (Jazz)
+
+**Decision:** HW Contacts column C "Login email" holds each spon team member's sign-in email (filled for the spon team and Jasmine; blank and yellow for Lucas and Brittney). The "My sponsors" view matches the signed-in user's email (case-insensitive) to this column, then to Sponsor Day-Of's HW lead name. No match = the All sponsors view only. The emails live only in the private sheet, never in the repo.
