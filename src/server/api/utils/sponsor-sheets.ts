@@ -421,6 +421,15 @@ export interface SponsorInfoRecord {
   hasPrizeTrack: boolean | null;
 }
 
+const warned = new Set<string>();
+
+/** console.warn a message the first time it comes up in this process. */
+function warnOnce(message: string): void {
+  if (warned.has(message)) return;
+  warned.add(message);
+  console.warn(message);
+}
+
 /**
  * Every sponsor's info from a Sponsor Day-Of read, keyed by lowercased name.
  * Null when the tab has no "Status" column yet (the sheet before the
@@ -430,7 +439,22 @@ export function sponsorInfoFromDayOf(
   dayOf: SponsorDayOfTab,
 ): Map<string, SponsorInfoRecord> | null {
   const c = dayOf.cols;
-  if (c.status === -1) return null;
+  if (c.status === -1) {
+    warnOnce(
+      `sponsor info: "${dayOf.tab}" has no "Status" column; reading the old Sponsor Status tab instead`,
+    );
+    return null;
+  }
+  if (c.booth === -1) {
+    warnOnce(
+      `sponsor info: "${dayOf.tab}" has no "Booth location" column; every booth reads as blank`,
+    );
+  }
+  if (c.judgingRoom === -1) {
+    warnOnce(
+      `sponsor info: "${dayOf.tab}" has no "Judging room" column; every judging room reads as blank`,
+    );
+  }
   const at = (row: string[], col: number) => (col === -1 ? "" : cell(row, col));
   const map = new Map<string, SponsorInfoRecord>();
   for (const { name, row } of sponsorDayOfRows(dayOf)) {
@@ -572,7 +596,12 @@ export async function fetchAllSponsorInfo(
     if (fromDayOf) return fromDayOf;
 
     const tabName = await findSponsorInfoTabTitle(sheets, spreadsheetId);
-    if (!tabName) return map;
+    if (!tabName) {
+      warnOnce(
+        `sponsor info: no Sponsor Day-Of "Status" column and no old tab (${SPONSOR_INFO_TAB_NAMES.join(", ")}); every sponsor reads with no status, booth or judging room`,
+      );
+      return map;
+    }
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId,

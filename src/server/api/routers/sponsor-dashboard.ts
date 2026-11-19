@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
+import { sponsorStatusSheetCopy as statusCopy } from "~/content/sponsor-status-sheet";
 import { db } from "~/server/db";
 import { sponsorJudgingSponsors } from "~/server/db/schema";
 import {
@@ -158,12 +159,22 @@ export const sponsorDashboardRouter = createTRPCRouter({
                 : "INTERNAL_SERVER_ERROR",
             message:
               result.reason === "not-found"
-                ? `Sponsor not found on the Sponsor Day-Of tab: ${input.sponsorName}`
-                : 'The Sponsor Day-Of tab has no "Status" column',
+                ? statusCopy.errors.notFound(input.sponsorName)
+                : result.reason === "no-tab"
+                  ? statusCopy.errors.noTab
+                  : statusCopy.errors.noColumn,
           });
         }
 
-        return { sponsorName: input.sponsorName, status: input.status };
+        // Sheet writes off (dev, tests): nothing reached the sheet, which
+        // the caller sees as success with sheetWritten false.
+        const sheetWritten = !("written" in result);
+        return {
+          sponsorName: input.sponsorName,
+          status: input.status,
+          sheetWritten,
+          ...(sheetWritten ? {} : { note: statusCopy.notWritten }),
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
@@ -171,7 +182,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
           message:
             error instanceof Error
               ? error.message
-              : "Failed to update sponsor status in spreadsheet",
+              : statusCopy.errors.writeFailed,
         });
       }
     }),

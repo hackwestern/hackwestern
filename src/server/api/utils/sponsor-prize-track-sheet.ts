@@ -23,23 +23,20 @@ export function prizeTrackNamesFromSheet(
 
 let lastLogged: string | null = null;
 
-async function loadPrizeTracks(): Promise<readonly string[]> {
-  const names = prizeTrackNamesFromSheet(await fetchSheetSponsors());
-  if (names === null) {
-    throw new Error('Sponsor Day-Of has no "Custom API / Prize Track" column');
-  }
-  return names;
-}
-
-const cache = createCachedLoader(loadPrizeTracks, 60_000);
-
 /**
- * The prize track sponsor names, re-read at most once a minute. Never
- * rejects: on a failed read it logs once and returns the content list.
+ * Never rejects: a failed read logs once and resolves to the content list,
+ * so the cache keeps the fallback for the same 60 s as a good read. A broken
+ * sheet then costs one JWT authorize and two Sheets reads a minute, not one
+ * per judging or portal request.
  */
-export async function prizeTrackSponsors(): Promise<readonly string[]> {
+async function loadPrizeTracks(): Promise<readonly string[]> {
   try {
-    const names = await cache.get();
+    const names = prizeTrackNamesFromSheet(await fetchSheetSponsors());
+    if (names === null) {
+      throw new Error(
+        'Sponsor Day-Of has no "Custom API / Prize Track" column',
+      );
+    }
     lastLogged = null;
     return names;
   } catch (error) {
@@ -52,6 +49,18 @@ export async function prizeTrackSponsors(): Promise<readonly string[]> {
     }
     return SPONSOR_PRIZE_TRACKS;
   }
+}
+
+// `() => Date.now()` rather than `Date.now`, so fake timers in tests apply.
+const cache = createCachedLoader(loadPrizeTracks, 60_000, () => Date.now());
+
+/**
+ * The prize track sponsor names, re-read at most once a minute (a failed
+ * read included). Never rejects: on a failed read it logs once and returns
+ * the content list.
+ */
+export async function prizeTrackSponsors(): Promise<readonly string[]> {
+  return cache.get();
 }
 
 /** Test hook: forget the cached list. */

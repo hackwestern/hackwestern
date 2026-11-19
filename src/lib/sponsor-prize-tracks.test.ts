@@ -37,4 +37,16 @@ describe("prize tracks", () => {
     expect(hasPrizeTrack("Acme Corp", ["Acme"])).toBe(true);
     expect(hasPrizeTrack("Scotiabank", ["Acme"])).toBe(false);
   });
+
+  test("a sheet entry with a bracketed aside matches the registered name", () => {
+    const sheet = ["QNX (BlackBerry)", "Sun Life", "Canada Life"];
+    expect(prizeTrackOf("QNX", sheet)).toBe("QNX (BlackBerry)");
+    expect(prizeTrackOf("  qnx ", sheet)).toBe("QNX (BlackBerry)");
+    expect(prizeTrackOf("QNX (BlackBerry)", sheet)).toBe("QNX (BlackBerry)");
+    expect(prizeTrackOf("Sunlife", sheet)).toBe("Sun Life");
+    // Still no match on part of a name.
+    expect(hasPrizeTrack("BlackBerry", sheet)).toBe(false);
+    expect(hasPrizeTrack("Canada", sheet)).toBe(false);
+    expect(hasPrizeTrack("Life", sheet)).toBe(false);
+  });
 });

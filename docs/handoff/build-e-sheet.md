@@ -54,3 +54,25 @@ Backup first: "Spon Team RUN OF SHOW backup 2026-11-19 pre-build". It's a full c
 - **Manulife and Commure judging rooms** ("RM 555", "RM 44") and their tracks were moved as they were. Neither has a prize track. Are they test values? Clear them if so.
 - **Old coffee chat UI** (chat-setup-card, room blocks, coffee chat summary, the sponsor map) read the old window and hours columns, so they now show nothing for those fields. The sponsor portal's old "max minutes" booking is 0 for everyone. This is expected with the session model, but tracks A and C should remove or replace those pieces.
 - **Production timing:** a server still on the old code reads "Sponsor Status", and that tab no longer exists under that name. Ship this branch before anyone relies on the Status, booth or judging room reads in production.
+
+## Review fixes (2026-11-19)
+
+1. **Renamed headers no longer fail silently.** `sponsorInfoFromDayOf` warns once (per process) when Sponsor Day-Of has no "Status", "Booth location" or "Judging room" column, naming the header. A missing Status column still falls back to the old tab names, and `fetchAllSponsorInfo` now warns when that fallback finds no tab either (it never will on the merged sheet, since the old tab is "(old) Sponsor Status").
+2. **Failed prize-track reads are cached.** The loader itself catches, logs once and returns the built-in list, so the 60 s cache keeps the fallback too. A broken sheet costs one JWT authorize and two reads a minute instead of on every judging and portal request. Tests: `sponsor-prize-track-sheet.test.ts`.
+3. **Coffee Chat Setup is updated in place.** The writer reads A2:Z, then makes one write to B1:K{n}: each listed sponsor's own row gets B to K, matched by the name in that row; other rows get null cells, which the Sheets API leaves alone. Column A of existing rows is never written. Sponsors not listed are appended under the last row that has anything in it, so they can't land beside an organizer note. Nothing is cleared, except that a row whose name an organizer deleted, and whose column B still holds the app's own Preferences text, gets B to K blanked. Duplicate names and "Total" are left alone. `SetupSheet.write` now accepts null cells. New pure planner: `setupSheetWrites`. Tests in `coffee-chat-setup-sheet-mirror.test.ts`.
+4. **Prize-track matching takes the sheet's spelling.** A registered name also matches when it contains the entry's name outside brackets, so "QNX" matches "QNX (BlackBerry)". I didn't use a plain "entry contains the name" rule, because "Canada" would then match "Canada Life" (the existing test guards against that). Test in `src/lib/sponsor-prize-tracks.test.ts`.
+5. **Status written to the wrong row if the sheet changes between read and write:** accepted risk, noted in a comment in `writeSponsorStatus`.
+- `setSponsorStatus` gives the no-tab case its own message. Its error strings moved to `src/content/sponsor-status-sheet.ts`.
+- The unused `SPONSOR_INFO_TAB_NAMES` re-export from `sponsor-info-tab.ts` is gone (the constant itself is still in `sponsor-sheets.ts`).
+
+### Every sheet write is gated (found by track D)
+
+Before this, `writeSponsorStatus`, the coffee chat booking grid and the judging picks write relied only on `getSheetsClient` using a read-only scope when writes are off. That's not a gate. Each Sheets write call in `src/server/api/utils/` now sits behind `sheetWritesEnabled()`. There are none outside utils/.
+
+- `sponsor-info-tab.ts` `writeSponsorStatus` (values.update): with writes off it makes no Sheets call and returns `{ ok: true, written: false, reason: "sheet-writes-off" }`. `setSponsorStatus` treats that as success and returns `sheetWritten: false` plus a note ("Not written (sheet writes off)"). Test: `sponsor-day-of.test.ts` checks that no client method is called.
+- `sponsor-coffee-chats.ts` `writeCoffeeChatGridFull`, `writeCoffeeChatGridDiff`, and both `batchUpdate` calls in `ensureCoffeeChatTab` (batchUpdate): `assertSheetWritesEnabled()` throws first. So the old portal booking save errors in dev with "not written (sheet writes off)", as it already did through the read-only scope.
+- `sponsor-judging-teams.ts` `writeChosenTeams` (values.update ×2, values.append, batchUpdate): `assertSheetWritesEnabled()` throws at the top. `syncFinalToSheet` then logs and leaves the picks unsynced, which is correct.
+- `coffee-chat-sheet-mirror.ts` `googleBookingsSheet` (batchUpdate, values.update, values.clear): already throws when writes are off. Its callers `mirrorCoffeeChats`, `mirrorSponsorJudging` (`sponsor-judging-sheet-mirror.ts`, sheet.clear) and `mirrorRoomGrid` (`coffee-chat-room-grid-mirror.ts`) check `sheetWritesEnabled()` first as well.
+- `coffee-chat-setup-sheet-mirror.ts` `googleSetupSheet` (values.update, values.clear): already throws when writes are off, and `mirrorCoffeeChatSetup` checks first.
+
+New helper: `assertSheetWritesEnabled(what)` in `run-of-show-sheet.ts`.

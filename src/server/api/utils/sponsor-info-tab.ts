@@ -1,6 +1,6 @@
 import { type SponsorStatus } from "~/lib/sponsor-status";
+import { sheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
 import {
-  SPONSOR_INFO_TAB_NAMES,
   fetchSponsorDayOfTab,
   sponsorDayOfRows,
   type SheetsClient,
@@ -11,7 +11,6 @@ import {
 // booth, workshop room and time, judging room and track filter are Sponsor
 // Day-Of columns now, found by header name. The old tab is no longer
 // written (or created).
-export { SPONSOR_INFO_TAB_NAMES };
 
 /** 1-based column number -> A1-notation letters (1 -> "A", 27 -> "AA"). */
 export function columnLetter(columnNumber: number): string {
@@ -48,23 +47,32 @@ export type SponsorStatusWrite =
   | { ok: true; range: string }
   | { ok: false; reason: "no-tab" | "no-column" | "not-found" };
 
+/** writeSponsorStatus's result: also "not written" when sheet writes are off. */
+export type SponsorStatusWriteResult =
+  | SponsorStatusWrite
+  | { ok: true; written: false; reason: "sheet-writes-off" };
+
 /**
  * Write a sponsor's Status into its Sponsor Day-Of row. Never adds a row:
  * Sponsor Day-Of is the sponsor list, so a sponsor missing from it is
- * "not-found". The client decides whether the write can land
- * (getSheetsClient is read-only unless sheetWritesEnabled()).
+ * "not-found". With sheetWritesEnabled() false it makes no Sheets call at
+ * all and returns `{ ok: true, written: false }`.
  */
 export async function writeSponsorStatus(
   sheets: SheetsClient,
   spreadsheetId: string,
   sponsorName: string,
   status: SponsorStatus,
-): Promise<SponsorStatusWrite> {
+): Promise<SponsorStatusWriteResult> {
+  if (!sheetWritesEnabled()) {
+    return { ok: true, written: false, reason: "sheet-writes-off" };
+  }
   const dayOf = await fetchSponsorDayOfTab(sheets, spreadsheetId);
   if (!dayOf) return { ok: false, reason: "no-tab" };
   const target = sponsorStatusCell(dayOf, sponsorName);
   if (!target.ok) return target;
   const { range } = target;
+  // Accepted risk: if someone inserts or sorts rows between the read above and this write, the status lands in the wrong row.
   await sheets.spreadsheets.values.update({
     spreadsheetId,
     range,

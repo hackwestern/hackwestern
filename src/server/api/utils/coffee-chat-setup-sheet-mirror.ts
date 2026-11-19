@@ -28,9 +28,10 @@ import {
  * what sponsors enter during the Friday workshop. The DB is the source of
  * truth. Column A "Sponsor" is the one column organizers edit (it is also
  * what the run-of-show parser reads to list sponsors doing coffee chats):
- * each run keeps the sponsors listed there, in order, appends any sponsor
- * with saved preferences or reps who isn't listed, and rewrites every other
- * column. Same rules as the other mirrors: one run at a time, a newer run
+ * the app never changes a name there. Each run fills columns B to K of each
+ * listed sponsor's own row, appends rows for sponsors with saved preferences
+ * or reps who aren't listed, and leaves every other cell alone (organizer
+ * notes in column L and later, and anything below the data). Same rules as the other mirrors: one run at a time, a newer run
  * stops an older one, 5 s timeout, a failure is logged once and never
  * reaches the sponsor, and nothing is written unless sheetWritesEnabled().
  */
@@ -223,7 +224,8 @@ export async function loadSetupSponsors(): Promise<SetupSponsor[]> {
 /** The few Sheets calls the writer makes; tests pass a fake. */
 export type SetupSheet = {
   read(range: string): Promise<string[][]>;
-  write(range: string, values: string[][]): Promise<void>;
+  /** A null cell is left as it is (the Sheets API skips nulls). */
+  write(range: string, values: (string | null)[][]): Promise<void>;
   clear(range: string): Promise<void>;
 };
 
@@ -263,10 +265,97 @@ async function googleSetupSheet(): Promise<SetupSheet> {
   };
 }
 
+/** Columns B to K: the ones the app owns. */
+const APP_COLUMNS = SETUP_HEADERS.length - 1;
+const LAST_APP_COLUMN = String.fromCharCode(64 + SETUP_HEADERS.length); // "K"
+
+/** Whether a column B value is one the app writes (Preferences). */
+function isAppPreferences(value: string): boolean {
+  const v = value.trim();
+  if (!v) return false;
+  return (
+    v === copy.preferences.draft ||
+    v === copy.preferences.notStarted ||
+    v.startsWith(copy.preferences.submitted(""))
+  );
+}
+
+export type SetupSheetWrites = {
+  /**
+   * Columns B to K from row 1 (the header) down: a listed sponsor's row is
+   * filled, a row the app wrote whose name was deleted from column A is
+   * blanked, and every other row is null (left as it is).
+   */
+  block: (string | null)[][];
+  /** 1-based sheet row of the first appended row. */
+  appendAt: number;
+  /** Full A to K rows for sponsors not listed yet. */
+  appends: string[][];
+  /** Sponsor rows written (filled plus appended). */
+  sponsorRows: number;
+};
+
 /**
- * Rewrite the tab: read column A, write header + rows from A1, clear the
- * rows below. Throws on any Sheets error; stops between steps once a newer
- * run has started. Returns the number of sponsor rows.
+ * What one run writes, from a read of A2:Z (`grid[i]` is sheet row i + 2).
+ * Column A is never written for an existing row. A name listed twice, a
+ * "Total" row and blank rows are left alone, except that a row with a blank
+ * name whose column B holds the app's own Preferences text is blanked: the
+ * app wrote it and an organizer has since deleted the sponsor's name.
+ * New sponsors go under the last row that has anything in it, so they never
+ * land next to a note typed beside or below the list.
+ */
+export function setupSheetWrites(
+  grid: readonly (readonly string[])[],
+  sponsors: readonly SetupSponsor[],
+): SetupSheetWrites {
+  const byKey = new Map(sponsors.map((s) => [key(s.name), s]));
+  const seen = new Set<string>();
+  const leave = (): null[] => Array<null>(APP_COLUMNS).fill(null);
+  const body: (string | null)[][] = [];
+  let lastTouched = -1;
+  let sponsorRows = 0;
+  grid.forEach((row, i) => {
+    const name = (row[0] ?? "").trim();
+    const k = key(name);
+    if (!k) {
+      if (isAppPreferences(row[1] ?? "")) {
+        body.push(Array<string>(APP_COLUMNS).fill(""));
+        lastTouched = i;
+      } else {
+        body.push(leave());
+      }
+      return;
+    }
+    if (k === "total" || seen.has(k)) {
+      body.push(leave());
+      return;
+    }
+    seen.add(k);
+    body.push(setupRow(name, byKey.get(k)).slice(1));
+    lastTouched = i;
+    sponsorRows++;
+  });
+  const appends = sponsors
+    .filter(
+      (s) => !seen.has(key(s.name)) && (s.pref !== null || s.reps.length > 0),
+    )
+    .map((s) => s.name)
+    .sort((a, b) => a.localeCompare(b))
+    .map((name) => setupRow(name, byKey.get(key(name))));
+  return {
+    block: [SETUP_HEADERS.slice(1), ...body.slice(0, lastTouched + 1)],
+    appendAt: grid.length + 2,
+    appends,
+    sponsorRows: sponsorRows + appends.length,
+  };
+}
+
+/**
+ * Update the tab in place: read A2:Z, write columns B to K of the listed
+ * sponsors' rows (and the header) in one call, then append unlisted
+ * sponsors under the data. Never clears a range and never rewrites column A
+ * of an existing row. Throws on any Sheets error; stops between steps once
+ * a newer run has started. Returns the number of sponsor rows.
  */
 export async function writeCoffeeChatSetup(
   sheet: SetupSheet,
@@ -274,19 +363,19 @@ export async function writeCoffeeChatSetup(
   isCurrent: () => boolean = () => true,
 ): Promise<number> {
   const tab = `'${SETUP_TAB}'`;
-  const [listedRows, sponsors] = await Promise.all([
-    sheet.read(`${tab}!A2:A`),
+  const [grid, sponsors] = await Promise.all([
+    sheet.read(`${tab}!A2:Z`),
     load(),
   ]);
-  const rows = setupSheetRows(
-    listedRows.map((r) => r[0] ?? ""),
-    sponsors,
+  const plan = setupSheetWrites(grid, sponsors);
+  if (!isCurrent()) return plan.sponsorRows;
+  await sheet.write(
+    `${tab}!B1:${LAST_APP_COLUMN}${plan.block.length}`,
+    plan.block,
   );
-  if (!isCurrent()) return rows.length - 1;
-  await sheet.write(`${tab}!A1`, rows);
-  if (!isCurrent()) return rows.length - 1;
-  await sheet.clear(`${tab}!A${rows.length + 1}:Z`);
-  return rows.length - 1;
+  if (plan.appends.length === 0 || !isCurrent()) return plan.sponsorRows;
+  await sheet.write(`${tab}!A${plan.appendAt}`, plan.appends);
+  return plan.sponsorRows;
 }
 
 export const SETUP_MIRROR_TIMEOUT_MS = 5000;

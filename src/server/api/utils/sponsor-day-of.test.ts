@@ -1,4 +1,12 @@
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+
+// Sheet writes are off under Vitest; the write tests below turn the flag on
+// against a fake client (never the network).
+const writes = vi.hoisted(() => ({ on: false }));
+vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  sheetWritesEnabled: () => writes.on,
+}));
 
 import {
   fetchAllSponsorInfo,
@@ -252,6 +260,32 @@ describe("fetchAllSponsorInfo", () => {
 
 describe("sponsor status writes", () => {
   const dayOf = parseSponsorDayOfRows("Sponsor Day-Of", ROWS)!;
+  beforeEach(() => {
+    writes.on = true;
+  });
+  afterEach(() => {
+    writes.on = false;
+  });
+
+  test("with sheet writes off: no Sheets call at all, not written", async () => {
+    writes.on = false;
+    const { sheets, updates } = fakeSheets({ "Sponsor Day-Of": ROWS });
+    await expect(
+      writeSponsorStatus(sheets, "id", "Initech", "Left"),
+    ).resolves.toEqual({
+      ok: true,
+      written: false,
+      reason: "sheet-writes-off",
+    });
+    expect(updates).toHaveLength(0);
+    const api = sheets.spreadsheets as unknown as {
+      get: ReturnType<typeof vi.fn>;
+      values: Record<string, ReturnType<typeof vi.fn>>;
+    };
+    expect(api.get).not.toHaveBeenCalled();
+    expect(api.values.get).not.toHaveBeenCalled();
+    expect(api.values.update).not.toHaveBeenCalled();
+  });
 
   test("target the Status column of the sponsor's own row", () => {
     expect(sponsorStatusCell(dayOf, " globex ")).toEqual({

@@ -37,6 +37,20 @@ export function sheetWritesEnabled(): boolean {
   return env.NODE_ENV === "production" || env.SHEET_WRITES === "1";
 }
 
+/**
+ * Throw before any Sheets write call when sheetWritesEnabled() is false.
+ * The read-only scope on getSheetsClient is a second line of defence, not
+ * the gate: every util that calls values.update / values.append /
+ * values.clear / batchUpdate checks this (or sheetWritesEnabled) first.
+ */
+export function assertSheetWritesEnabled(what: string): void {
+  if (!sheetWritesEnabled()) {
+    throw new Error(
+      `${what}: not written (sheet writes off; set SHEET_WRITES=1 to write)`,
+    );
+  }
+}
+
 /** Undo .env escaping: surrounding quotes and literal "\n" line breaks. */
 function normalizePrivateKey(raw: string | undefined): string | undefined {
   return raw

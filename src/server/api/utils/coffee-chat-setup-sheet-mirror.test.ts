@@ -3,7 +3,9 @@ import { describe, expect, test, vi } from "vitest";
 import {
   SETUP_HEADERS,
   mirrorCoffeeChatSetup,
+  setupRow,
   setupSheetRows,
+  setupSheetWrites,
   setupTimestamp,
   writeCoffeeChatSetup,
   type SetupSheet,
@@ -137,15 +139,15 @@ describe("setupSheetRows", () => {
   });
 });
 
-function fakeSheet(listed: string[]) {
+function fakeSheet(grid: string[][]) {
   const calls: string[] = [];
-  const writes: { range: string; values: string[][] }[] = [];
+  const writes: { range: string; values: (string | null)[][] }[] = [];
   const sheet: SetupSheet = {
     read: vi.fn(async (range: string) => {
       calls.push(`read ${range}`);
-      return listed.map((name) => [name]);
+      return grid;
     }),
-    write: vi.fn(async (range: string, values: string[][]) => {
+    write: vi.fn(async (range: string, values: (string | null)[][]) => {
       calls.push(`write ${range}`);
       writes.push({ range, values });
     }),
@@ -156,9 +158,54 @@ function fakeSheet(listed: string[]) {
   return { sheet, calls, writes };
 }
 
+const LEAVE = Array<null>(10).fill(null);
+
+describe("setupSheetWrites", () => {
+  test("fills B:K by row name, keeps column A, appends under the last used row", () => {
+    // Sheet rows 2 to 8. Organizer notes in column L sit beside their own
+    // sponsors, and a note sits below the list.
+    const grid = [
+      ["Acme", "Not started", "", "", "", "", "", "", "", "", "", "Acme note"],
+      ["", "Draft", "x", "", "", "", "", "", "", "", "", "removed note"],
+      ["quiet co ", "", "", "", "", "", "", "", "", "", "", "Quiet note"],
+      ["Acme", "old"],
+      [],
+      ["Total"],
+      ["", "", "", "", "", "", "", "", "", "", "", "Footer note"],
+    ];
+    const plan = setupSheetWrites(grid, [ACME, GLOBEX, QUIET]);
+    expect(plan.block[0]).toEqual(SETUP_HEADERS.slice(1));
+    // Row 2: Acme, by its own name, column A not included.
+    expect(plan.block[1]).toEqual(setupRow("Acme", ACME).slice(1));
+    // Row 3: the app's row whose name an organizer deleted: blanked.
+    expect(plan.block[2]).toEqual(Array<string>(10).fill(""));
+    // Row 4: matched case-insensitively.
+    expect(plan.block[3]?.[0]).toBe("Not started");
+    // Rows 5 on (a duplicate, a blank row, Total, the footer) are past the
+    // last touched row, so the block stops at row 4.
+    expect(plan.block).toHaveLength(4);
+    expect(plan.appendAt).toBe(9);
+    expect(plan.appends).toEqual([setupRow("Globex", GLOBEX)]);
+    expect(plan.sponsorRows).toBe(3);
+  });
+
+  test("rows in between that the app didn't write are left as they are", () => {
+    const plan = setupSheetWrites(
+      [["Acme"], ["Acme"], [], ["", "organizer text"], ["Quiet Co"]],
+      [ACME, QUIET],
+    );
+    expect(plan.block.slice(2, 5)).toEqual([LEAVE, LEAVE, LEAVE]);
+    expect(plan.block[5]?.[0]).toBe("Not started");
+    expect(plan.appends).toEqual([]);
+  });
+});
+
 describe("writeCoffeeChatSetup", () => {
-  test("reads column A, writes from A1, clears the rows below", async () => {
-    const { sheet, calls, writes } = fakeSheet(["Acme", "Quiet Co"]);
+  test("one write for B:K, one append, no clears", async () => {
+    const { sheet, calls, writes } = fakeSheet([
+      ["Acme", "", "", "", "", "", "", "", "", "", "", "note"],
+      ["Quiet Co"],
+    ]);
     const n = await writeCoffeeChatSetup(sheet, async () => [
       ACME,
       GLOBEX,
@@ -166,26 +213,31 @@ describe("writeCoffeeChatSetup", () => {
     ]);
     expect(n).toBe(3);
     expect(calls).toEqual([
-      "read 'Coffee Chat Setup'!A2:A",
-      "write 'Coffee Chat Setup'!A1",
-      "clear 'Coffee Chat Setup'!A5:Z",
+      "read 'Coffee Chat Setup'!A2:Z",
+      "write 'Coffee Chat Setup'!B1:K3",
+      "write 'Coffee Chat Setup'!A4",
     ]);
-    expect(writes[0]?.values.map((r) => r[0])).toEqual([
-      "Sponsor",
-      "Acme",
-      "Quiet Co",
-      "Globex",
+    expect(writes[0]?.values.every((r) => r.length === 10)).toBe(true);
+    expect(writes[1]?.values.map((r) => r[0])).toEqual(["Globex"]);
+  });
+
+  test("nothing to append: a single write", async () => {
+    const { sheet, calls } = fakeSheet([["Acme"]]);
+    await writeCoffeeChatSetup(sheet, async () => [ACME, QUIET]);
+    expect(calls).toEqual([
+      "read 'Coffee Chat Setup'!A2:Z",
+      "write 'Coffee Chat Setup'!B1:K2",
     ]);
   });
 
   test("a run that a newer one replaced stops before writing", async () => {
-    const { sheet, calls } = fakeSheet(["Acme"]);
+    const { sheet, calls } = fakeSheet([["Acme"]]);
     await writeCoffeeChatSetup(
       sheet,
       async () => [ACME],
       () => false,
     );
-    expect(calls).toEqual(["read 'Coffee Chat Setup'!A2:A"]);
+    expect(calls).toEqual(["read 'Coffee Chat Setup'!A2:Z"]);
   });
 });
 
