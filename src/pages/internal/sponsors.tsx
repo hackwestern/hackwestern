@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useRouter } from "next/router";
 import SEO from "~/components/seo";
 import { InternalNavbar } from "~/components/internals/navbar";
 import { CoffeeSessionsTab } from "~/components/sponsors/organizer/coffee-sessions/coffee-sessions-tab";
@@ -12,9 +13,8 @@ import {
 } from "~/components/sponsors/organizer/organizer-tabs";
 import { RunOfShowTab } from "~/components/sponsors/organizer/run-of-show-tab";
 import { SponsorsTab } from "~/components/sponsors/organizer/sponsors-tab";
-import { TaskPingsTab } from "~/components/sponsors/organizer/task-pings-tab";
+import { NowAndNextPanel } from "~/components/sponsors/organizer/now-and-next";
 import { OrganizerTour } from "~/components/sponsors/tour/organizer-tour";
-import { HappeningNowBanner } from "~/components/sponsors/happening-now";
 import {
   LoadError,
   PageIntro,
@@ -22,8 +22,12 @@ import {
 } from "~/components/sponsors/schedule-states";
 import { useNow } from "~/components/sponsors/use-now";
 import { sponsorOrganizerCopy } from "~/content/sponsor-organizer";
+import { TASK_MINUTES } from "~/lib/happening-now";
+import { organizerTourIdFor } from "~/lib/organizer-tours";
+import { runOfShowInstant } from "~/lib/run-of-show-time";
 import {
-  organizerHomeHref,
+  leadsSponsor,
+  needsAttention,
   type SponsorSummary,
 } from "~/lib/sponsor-organizer";
 import { cn } from "~/lib/utils";
@@ -31,15 +35,18 @@ import { api } from "~/utils/api";
 import { authRedirectOrganizer } from "~/utils/redirect";
 
 const copy = sponsorOrganizerCopy;
-/** Chats and help on the sponsor rows: as fresh as the help queue. */
+/** Chats on the sponsor rows. */
 const SUMMARY_REFRESH_MS = 15_000;
 
-// The organizer sponsor home: Lucas's sponsor board plus the run of show,
-// coffee chats, sponsor judging and task pings (with the help queue), as tabs in the URL (?tab=, ?sponsor=). Each
-// sponsor row links into the other tabs focused on that sponsor, and they
-// link back to the row (docs/flows/sponsor-organizer.md).
+// The organizer sponsor home: "Needs attention now" and "Now and next" on
+// top, then the tabs in the URL (?tab=, ?sponsor=): Sponsors (My sponsors,
+// or Lucas's All sponsors board with ?list=all), the run of show, coffee
+// chats and sponsor judging. Task pings is switched off (decisions
+// 2026-11-19); its tab code stays in the repo. Each sponsor row links into
+// the other tabs focused on that sponsor (docs/flows/sponsor-organizer.md).
 export default function SponsorOrganizerHome() {
   const now = useNow();
+  const router = useRouter();
   const loc = useOrganizerLocation();
   const schedule = api.sponsorSchedule.organizer.useQuery(undefined, {
     refetchInterval: 60_000,
@@ -50,6 +57,61 @@ export default function SponsorOrganizerHome() {
     refetchOnWindowFocus: true,
     retry: 1,
   });
+  const mine = api.sponsorOrganizer.mySponsors.useQuery(undefined, {
+    refetchInterval: SUMMARY_REFRESH_MS,
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+  // Same query (and cache) as the Sponsors tab's board, for the HW leads.
+  const sheetSponsors = api.sponsorDashboard.getSponsors.useQuery(undefined, {
+    refetchInterval: 30000,
+  });
+  const me = mine.data?.me ?? null;
+  // My sponsors unless ?list=all (or no HW Contacts match).
+  const view: "mine" | "all" =
+    me && router.query.list !== "all" ? "mine" : "all";
+  const setView = (v: "mine" | "all") => {
+    const query = { ...router.query };
+    if (v === "all") query.list = "all";
+    else delete query.list;
+    void router.replace({ pathname: router.pathname, query }, undefined, {
+      shallow: true,
+      scroll: false,
+    });
+  };
+  const attention = useMemo(() => {
+    if (!mine.data || !summary.data) return null;
+    const myIds = me
+      ? new Set(
+          (sheetSponsors.data ?? [])
+            .filter((s) => s.sponsorId && leadsSponsor(s.hwContact, me))
+            .map((s) => s.sponsorId!),
+        )
+      : null;
+    const scoped =
+      myIds && myIds.size > 0
+        ? summary.data.sponsors.filter((s) => myIds.has(s.sponsorId))
+        : summary.data.sponsors;
+    return needsAttention({
+      sponsors: scoped.flatMap((s) => {
+        const d = mine.data.sponsors[s.sponsorId];
+        return d
+          ? [{ sponsorId: s.sponsorId, name: s.name, chats: d.chats }]
+          : [];
+      }),
+      tasks: schedule.data?.tasks ?? [],
+      now,
+      taskStart: (t) => runOfShowInstant(t.day, t.start),
+      taskMinutes: TASK_MINUTES,
+    });
+  }, [mine.data, summary.data, sheetSponsors.data, me, schedule.data, now]);
+  const attentionScope: "yours" | "everyone" =
+    me &&
+    (sheetSponsors.data ?? []).some(
+      (s) => s.sponsorId && leadsSponsor(s.hwContact, me),
+    )
+      ? "yours"
+      : "everyone";
   const summaries = useMemo(
     () =>
       new Map<string, SponsorSummary>(
@@ -81,8 +143,10 @@ export default function SponsorOrganizerHome() {
           className={cn(
             "mx-auto flex w-full flex-col gap-5",
             // The day grid and the coffee chat tables get room for their
-            // columns; the help list and ping log stay readable.
-            tab === "pings" ? "max-w-[880px]" : "max-w-[1440px]",
+            // columns; My sponsors' two-column tables stay readable.
+            tab === "sponsors" && view === "mine"
+              ? "max-w-[960px]"
+              : "max-w-[1440px]",
           )}
         >
           <div className="flex items-start justify-between gap-3">
@@ -94,22 +158,18 @@ export default function SponsorOrganizerHome() {
               />
             </div>
             {/* Tours the open tab; offers it once per tab. */}
-            <OrganizerTour tab={tab} />
+            <OrganizerTour tab={organizerTourIdFor(tab, view === "mine")} />
           </div>
-          {/* On every tab. If the sheet is down the banner just isn't there;
-              the Run of show tab says why. */}
-          {schedule.data && (
-            <HappeningNowBanner
-              items={schedule.data.items}
-              tasks={schedule.data.tasks}
-              now={now}
-            />
-          )}
-          <OrganizerTabList
-            tab={tab}
-            onSelect={loc.selectTab}
-            openHelp={summary.data?.openHelp ?? 0}
+          {/* On every tab: Needs attention now, then Now and next. */}
+          <NowAndNextPanel
+            items={schedule.data?.items ?? null}
+            tasks={schedule.data?.tasks ?? null}
+            now={now}
+            attention={attention}
+            attentionScope={attentionScope}
+            scheduleFailed={!schedule.data && schedule.isError}
           />
+          <OrganizerTabList tab={tab} onSelect={loc.selectTab} />
           <div
             role="tabpanel"
             id={panelId(tab)}
@@ -126,16 +186,12 @@ export default function SponsorOrganizerHome() {
                 summaryFailed={!summary.data && summary.isError}
                 round2Open={summary.data?.round2Open ?? false}
                 items={schedule.data?.items ?? null}
+                workshops={schedule.data?.workshops ?? null}
                 now={now}
-              />
-            ) : tab === "pings" ? (
-              <TaskPingsTab
-                focusSponsorId={focusId}
-                focusName={focusName}
-                sponsorHref={(id) =>
-                  organizerHomeHref({ tab: "sponsors", sponsor: id })
-                }
-                jumpToHelp={loc.jumpToHelp}
+                me={me}
+                mine={mine.data?.sponsors}
+                view={view}
+                onView={setView}
               />
             ) : tab === "coffee" ? (
               <CoffeeSessionsTab sponsor={loc.sponsor} />

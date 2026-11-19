@@ -32,12 +32,16 @@ import { seatsLeft } from "~/server/api/utils/coffee-chat-capacity";
 
 export const ORGANIZER_HOME_PATH = "/internal/sponsors";
 
+/**
+ * The dashboard's visible tabs. Task pings is switched off for the event
+ * (decisions 2026-11-19, "Turn off task pings for now"): its code stays in
+ * the repo (task-pings-tab.tsx, task-reminders.ts) but no tab opens it.
+ */
 export const ORGANIZER_TABS = [
   "sponsors",
   "schedule",
   "coffee",
   "judging",
-  "pings",
 ] as const;
 export type OrganizerTab = (typeof ORGANIZER_TABS)[number];
 
@@ -56,8 +60,6 @@ export type OrganizerLocation = {
   tab: OrganizerTab;
   /** Scroll the Run of show tab to the coffee chat rooms table. */
   jumpToRooms: boolean;
-  /** Scroll the Task pings tab to the help requests (old ?tab=help). */
-  jumpToHelp: boolean;
   /** Sponsor id (or name) to focus the filters on, from ?sponsor=. */
   sponsor: string | null;
 };
@@ -65,8 +67,8 @@ export type OrganizerLocation = {
 /**
  * Read the tab from ?tab= (or the old ?view=). "where" and #rooms were the
  * old "Where is everyone" tab: the Run of show tab, scrolled to the rooms.
- * "help" and #help were the old Help tab, now part of Task pings: that tab,
- * scrolled to the help requests. Anything unknown opens Sponsors.
+ * The old Task pings and Help tabs (?tab=pings, ?tab=help, #help) open
+ * Sponsors, where Now and next sits. Anything unknown opens Sponsors.
  */
 export function parseOrganizerLocation(
   query: OrganizerQuery,
@@ -74,19 +76,15 @@ export function parseOrganizerLocation(
 ): OrganizerLocation {
   const asked = first(query.tab) ?? first(query.view);
   const rooms = asked === "where" || hash === "#rooms";
-  const help = asked === "help" || hash === "#help";
   const tab: OrganizerTab = rooms
     ? "schedule"
-    : help
-      ? "pings"
-      : ORGANIZER_TABS.includes(asked as OrganizerTab)
-        ? (asked as OrganizerTab)
-        : "sponsors";
+    : ORGANIZER_TABS.includes(asked as OrganizerTab)
+      ? (asked as OrganizerTab)
+      : "sponsors";
   const sponsor = first(query.sponsor)?.trim();
   return {
     tab,
     jumpToRooms: rooms,
-    jumpToHelp: help && tab === "pings",
     sponsor: sponsor ? sponsor : null,
   };
 }
@@ -101,13 +99,10 @@ export function organizerHomeHref({
   tab,
   sponsor,
   rooms,
-  help,
 }: {
   tab: OrganizerTab;
   sponsor?: string | null;
   rooms?: boolean;
-  /** Task pings, scrolled to the help requests. */
-  help?: boolean;
 }): string {
   const params = new URLSearchParams();
   if (tab !== "sponsors") params.set("tab", tab);
@@ -118,16 +113,15 @@ export function organizerHomeHref({
       ? `#${sponsorRowId(sponsor)}`
       : rooms && tab === "schedule"
         ? "#rooms"
-        : help && tab === "pings"
-          ? "#help"
-          : "";
+        : "";
   return `${ORGANIZER_HOME_PATH}${search ? `?${search}` : ""}${hash}`;
 }
 
 /**
  * Where an old /internal/sponsor-schedule link goes. Its default tab was the
  * schedule, so no ?tab= means Run of show. The browser keeps a #rooms hash
- * across the redirect, and ?tab=where becomes #rooms explicitly.
+ * across the redirect, and ?tab=where becomes #rooms explicitly. The old
+ * help and pings tabs go to Sponsors (Task pings is switched off).
  */
 export function legacyScheduleDestination(query: OrganizerQuery): string {
   const asked = first(query.tab) ?? first(query.view);
@@ -135,13 +129,12 @@ export function legacyScheduleDestination(query: OrganizerQuery): string {
     asked === "coffee"
       ? "coffee"
       : asked === "help" || asked === "pings"
-        ? "pings"
+        ? "sponsors"
         : "schedule";
   return organizerHomeHref({
     tab,
     sponsor: first(query.sponsor) ?? null,
     rooms: asked === "where",
-    help: asked === "help",
   });
 }
 
@@ -529,4 +522,263 @@ export function buildSponsorSummaries({
     judging,
     round2Open,
   };
+}
+
+// ---------------------------------------------------------------------------
+// My sponsors: the sponsors the signed-in organizer leads
+// ---------------------------------------------------------------------------
+
+/** Lowercased, invisible characters and extra spaces removed. */
+function normalName(value: string): string {
+  return value
+    .replace(/\p{Cf}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * The HW Contacts name whose "Login email" is the signed-in organizer's
+ * email (case-insensitive, spaces ignored). Null when nobody matches, so the
+ * page shows All sponsors only (decisions 2026-11-19).
+ */
+export function organizerNameForEmail(
+  email: string | null | undefined,
+  contacts: readonly { name: string; loginEmail: string }[],
+): string | null {
+  const want = (email ?? "").trim().toLowerCase();
+  if (!want) return null;
+  const hit = contacts.find(
+    (c) => c.loginEmail.trim().toLowerCase() === want && c.name.trim(),
+  );
+  return hit ? hit.name.trim() : null;
+}
+
+/**
+ * Whether Sponsor Day-Of's "HW lead" cell names this organizer. The cell
+ * can hold several people ("Noah / Daniel") and sometimes only a first
+ * name ("Noah"), so each person in it matches the full name or, when it's
+ * one word, the first name.
+ */
+export function leadsSponsor(hwLead: string, organizerName: string): boolean {
+  const me = normalName(organizerName);
+  if (!me) return false;
+  const myFirst = me.split(" ")[0];
+  return normalName(hwLead)
+    .split(/\s*(?:,|\/|&|\+|\band\b)\s*/)
+    .map((p) => p.trim())
+    .filter((p) => p && p !== "—" && p !== "-")
+    .some((p) => p === me || (!p.includes(" ") && p === myFirst));
+}
+
+/**
+ * The two statuses an organizer sets by hand on My sponsors, as tap-to-
+ * advance pills. Both are read from and written to the one sheet status
+ * (SPONSOR_STATUS_VALUES): Arrival is anything past "Not arrived"; Booth is
+ * "Booth set up" or later. Setting the booth up also marks them arrived;
+ * undoing arrival also undoes the booth.
+ */
+export type StatusPill = "arrival" | "booth";
+
+const BOOTH_DONE = new Set(["Booth set up", "Workshop live", "Left"]);
+
+export function pillDone(pill: StatusPill, status: string): boolean {
+  return pill === "arrival" ? status !== "Not arrived" : BOOTH_DONE.has(status);
+}
+
+/** The sheet status a tap (advance) or undo on a pill writes. */
+export function statusAfterPill(
+  pill: StatusPill,
+  action: "advance" | "undo",
+): "Not arrived" | "Checked in" | "Booth set up" {
+  if (pill === "arrival") {
+    return action === "advance" ? "Checked in" : "Not arrived";
+  }
+  return action === "advance" ? "Booth set up" : "Checked in";
+}
+
+/** A coffee chat rep, as My sponsors' People table needs it. */
+export type SponsorRep = {
+  id: string;
+  name: string;
+  phone: string;
+  isPrimary: boolean;
+  position: number;
+};
+
+/** Primary contact first (the crown), then the order the sponsor gave. */
+export function orderReps<T extends SponsorRep>(reps: readonly T[]): T[] {
+  return [...reps].sort(
+    (a, b) =>
+      Number(b.isPrimary) - Number(a.isPrimary) ||
+      a.position - b.position ||
+      a.name.localeCompare(b.name),
+  );
+}
+
+/** One sponsor's coffee chat progress on My sponsors. */
+export type MySponsorChats = {
+  /** When the sponsor submitted chatting preferences; null = not yet. */
+  prefsSubmittedAt: string | null;
+  shortlistSubmittedAt: string | null;
+  /** Reps who want at least one chat. */
+  repsChatting: number;
+  /** Of those, reps with at least one session on the board. */
+  repsPlaced: number;
+  /** Some placement was sent (Save & confirm schedule). */
+  scheduleSent: boolean;
+  /** Preferences saved again after the last Send. */
+  changedAfterSend: boolean;
+  /** Session invites out (placement-linked coffee chats), and accepted. */
+  invites: number;
+  accepted: number;
+};
+
+/** Counts for the Coffee chats block, from the session tables. */
+export function mySponsorChats({
+  pref,
+  reps,
+  placements,
+  invites,
+}: {
+  pref: {
+    submittedAt: Date | null;
+    shortlistSubmittedAt: Date | null;
+    updatedAt?: Date | null;
+  } | null;
+  reps: readonly { id: string; chatsWanted: number }[];
+  placements: readonly {
+    repId: string;
+    status: "draft" | "sent";
+    sentAt?: Date | null;
+  }[];
+  invites: readonly { status: string }[];
+}): MySponsorChats {
+  const chatting = reps.filter((r) => r.chatsWanted > 0);
+  const placed = new Set(placements.map((p) => p.repId));
+  const lastSent = placements.reduce<number | null>((m, p) => {
+    const t = p.status === "sent" ? (p.sentAt?.getTime() ?? null) : null;
+    return t === null ? m : Math.max(m ?? t, t);
+  }, null);
+  const updated = pref?.updatedAt?.getTime() ?? null;
+  return {
+    prefsSubmittedAt: pref?.submittedAt?.toISOString() ?? null,
+    shortlistSubmittedAt: pref?.shortlistSubmittedAt?.toISOString() ?? null,
+    repsChatting: chatting.length,
+    repsPlaced: chatting.filter((r) => placed.has(r.id)).length,
+    scheduleSent: placements.some((p) => p.status === "sent"),
+    changedAfterSend:
+      lastSent !== null && updated !== null && updated > lastSent,
+    invites: invites.filter((i) => ["pending", "accepted"].includes(i.status))
+      .length,
+    accepted: invites.filter((i) => i.status === "accepted").length,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Needs attention now: what an organizer arriving cold should act on first
+// ---------------------------------------------------------------------------
+
+export type AttentionItem =
+  | { kind: "no-prefs"; sponsorId: string; sponsor: string }
+  | {
+      kind: "not-scheduled";
+      sponsorId: string;
+      sponsor: string;
+      placed: number;
+      reps: number;
+    }
+  | { kind: "changed"; sponsorId: string; sponsor: string }
+  | {
+      kind: "overdue-task";
+      key: string;
+      day: RunOfShowTaskLike["day"];
+      start: string;
+      task: string;
+      owner: string | null;
+    };
+
+type RunOfShowTaskLike = {
+  day: "Friday" | "Saturday" | "Sunday";
+  start: string;
+  task: string;
+  owner: string | null;
+};
+
+/** How long after its window a task still shows as overdue. */
+export const OVERDUE_TASK_WINDOW_MINUTES = 60;
+/** At most this many overdue tasks in the list (newest first). */
+export const OVERDUE_TASK_CAP = 3;
+
+/**
+ * "Needs attention now", from data the dashboard already has: sponsors who
+ * haven't submitted coffee chat preferences, who submitted but aren't fully
+ * scheduled, who changed preferences after Send, and run-of-show tasks whose
+ * time just passed (shown only: nothing pings and nothing is marked done, so
+ * a task counts as overdue for an hour after its 30-minute window). Sponsors
+ * changed after Send come first, then not scheduled, then no preferences,
+ * then tasks. Empty = "All clear".
+ */
+export function needsAttention({
+  sponsors,
+  tasks,
+  now,
+  taskStart,
+  taskMinutes,
+}: {
+  sponsors: readonly {
+    sponsorId: string;
+    name: string;
+    chats: Pick<
+      MySponsorChats,
+      "prefsSubmittedAt" | "repsChatting" | "repsPlaced" | "changedAfterSend"
+    >;
+  }[];
+  tasks: readonly RunOfShowTaskLike[];
+  now: Date;
+  /** The task's start as an instant (runOfShowInstant). */
+  taskStart: (t: RunOfShowTaskLike) => Date;
+  /** How long a task counts as "on" (TASK_MINUTES). */
+  taskMinutes: number;
+}): AttentionItem[] {
+  const byName = [...sponsors].sort((a, b) => a.name.localeCompare(b.name));
+  const changed: AttentionItem[] = [];
+  const unscheduled: AttentionItem[] = [];
+  const noPrefs: AttentionItem[] = [];
+  for (const s of byName) {
+    const c = s.chats;
+    const base = { sponsorId: s.sponsorId, sponsor: s.name };
+    if (!c.prefsSubmittedAt) {
+      noPrefs.push({ kind: "no-prefs", ...base });
+      continue;
+    }
+    if (c.changedAfterSend) changed.push({ kind: "changed", ...base });
+    else if (c.repsChatting > 0 && c.repsPlaced < c.repsChatting) {
+      unscheduled.push({
+        kind: "not-scheduled",
+        ...base,
+        placed: c.repsPlaced,
+        reps: c.repsChatting,
+      });
+    }
+  }
+  const t = now.getTime();
+  const overdue = tasks
+    .map((k) => ({ k, end: taskStart(k).getTime() + taskMinutes * 60_000 }))
+    .filter(
+      ({ end }) => end <= t && t - end < OVERDUE_TASK_WINDOW_MINUTES * 60_000,
+    )
+    .sort((a, b) => b.end - a.end || a.k.task.localeCompare(b.k.task))
+    .slice(0, OVERDUE_TASK_CAP)
+    .map(
+      ({ k }): AttentionItem => ({
+        kind: "overdue-task",
+        key: `${k.day}-${k.start}-${k.task}`,
+        day: k.day,
+        start: k.start,
+        task: k.task,
+        owner: k.owner,
+      }),
+    );
+  return [...changed, ...unscheduled, ...noPrefs, ...overdue];
 }

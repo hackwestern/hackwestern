@@ -173,3 +173,74 @@ export async function fetchHwContactNames(
     return [];
   }
 }
+
+/** One HW Contacts row: name, phone and the person's sign-in email. */
+export type HwContact = { name: string; phone: string; loginEmail: string };
+
+/**
+ * Pick the Name, Phone and "Login email" columns from HW Contacts' header
+ * row (any order). Null when the row isn't a header.
+ */
+export function hwContactColumns(
+  header: readonly unknown[],
+): { name: number; phone: number; loginEmail: number } | null {
+  const cells = header.map((c) =>
+    String(c ?? "")
+      .trim()
+      .toLowerCase(),
+  );
+  const name = cells.indexOf("name");
+  if (name === -1) return null;
+  return {
+    name,
+    phone: cells.findIndex((c) => c.includes("phone")),
+    loginEmail: cells.findIndex(
+      (c) => c.includes("login") && c.includes("email"),
+    ),
+  };
+}
+
+/** HW Contacts rows from sheet values (header within the first 3 rows). */
+export function parseHwContacts(
+  rows: readonly (readonly unknown[])[],
+): HwContact[] {
+  for (let i = 0; i < Math.min(rows.length, 3); i++) {
+    const cols = hwContactColumns(rows[i] ?? []);
+    if (!cols) continue;
+    const at = (row: readonly unknown[], idx: number) =>
+      idx === -1
+        ? ""
+        : String(row[idx] ?? "")
+            .replace(/\p{Cf}/gu, "")
+            .trim();
+    return rows
+      .slice(i + 1)
+      .map((row) => ({
+        name: at(row, cols.name).replace(/\s+/g, " "),
+        phone: normalizePhoneNumber(at(row, cols.phone)),
+        loginEmail: at(row, cols.loginEmail),
+      }))
+      .filter((c) => c.name && c.name.toLowerCase() !== "name");
+  }
+  return [];
+}
+
+/**
+ * Every HW Contacts row with its "Login email" (the sign-in email that
+ * matches an organizer to the sponsors they lead, decisions 2026-11-19).
+ * The emails and phones live only in the private sheet. Empty when the tab
+ * can't be read, so callers fall back to All sponsors.
+ */
+export async function fetchHwContacts(): Promise<HwContact[]> {
+  try {
+    const sheets = await getSheetsClient();
+    const res = await sheets.spreadsheets.values.get({
+      spreadsheetId: getSpreadsheetId(),
+      range: `${HW_CONTACTS_TAB}!A:F`,
+    });
+    return parseHwContacts(res.data.values ?? []);
+  } catch (error) {
+    console.warn("Could not read HW contacts tab:", error);
+    return [];
+  }
+}

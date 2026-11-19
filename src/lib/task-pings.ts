@@ -11,6 +11,14 @@
 
 import { parseTaskOwner } from "~/lib/task-owner";
 
+/**
+ * Task pings are switched off for the event (decisions 2026-11-19, "Turn off
+ * task pings for now"): no automatic Slack sync after a sheet read and no
+ * Task pings tab. The code stays so it can come back; flip this to turn the
+ * automatic sync on again (and re-add "pings" to ORGANIZER_TABS for the tab).
+ */
+export const TASK_PINGS_ENABLED = false;
+
 export const UP_NEXT_COUNT = 3;
 export const PING_LOG_PAGE = 20;
 export const PING_LOG_MAX = 200;
@@ -145,7 +153,9 @@ export function buildPingLog(
  * "<!subteam^S1|@spon-team>" -> "@spon-team". Null when there's none or it
  * can't be shown (a user group with no handle).
  */
-export function mentionLabel(mention: string | null | undefined): string | null {
+export function mentionLabel(
+  mention: string | null | undefined,
+): string | null {
   const m = mention?.trim();
   if (!m) return null;
   const special = /^<!(here|channel|everyone)(?:\|[^>]*)?>$/.exec(m);
