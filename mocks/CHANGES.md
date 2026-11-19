@@ -105,11 +105,11 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 ## Organizer coffee board v7: `organizer-coffee-v7` (from the audit + fixed sessions)
 | # | Change | Status |
 |---|---|---|
-| 1 | One screen, three bands: Sponsors (status + Contact), Needs a fix (one sentence + one action), Rooms (8 rooms × 6 sessions grid) | Building |
-| 2 | "Auto-schedule" from availability (hours per rep, near rooms first, then Ivey) → one "Send confirmed schedules & invites" | Building |
-| 3 | Sponsor tap shows only their availability grid, hackers per chat, hours per rep, phones (inline, no drawer) | Building |
-| 4 | Removed: legends, instructions, seat counts, hours, shortlist/hacker ID tables, per-sponsor sends | Building |
-| 5 | Hacker-v1 look, Figtree only | Building |
+| 1 | One screen, three bands: Sponsors (status + Contact), Needs a fix (one sentence + one action), Rooms (8 rooms × 6 sessions grid) | Done |
+| 2 | "Auto-schedule" from availability (hours per rep, near rooms first, then Ivey) → one "Send confirmed schedules & invites" | Done |
+| 3 | Sponsor tap shows only their availability grid, hackers per chat, hours per rep, phones (inline, no drawer) | Done |
+| 4 | Removed: legends, instructions, seat counts, hours, shortlist/hacker ID tables, per-sponsor sends | Done |
+| 5 | Hacker-v1 look, Figtree only | Done |
 
 ## Organizer dashboard restyle: `organizer-dashboard-restyle-v1` (replaces nav-a/b/c as the direction)
 | # | Change | Status |
