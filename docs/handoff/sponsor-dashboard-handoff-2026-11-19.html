@@ -76,7 +76,9 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
   <h2>Where the code is</h2>
   <p>Repo: <code>hackwestern</code>. The sponsor work happens in git worktrees next to it (separate checkouts, one branch each). The main one is <code>hackwestern-sponsor-dash</code> on branch <code>sponsor-dashboard</code>.</p>
   <ul>
-    <li><b>PR #1165</b> (draft, work in progress, base <code>spon-judging</code>): app code only. Docs, mocks, <code>_to_delete</code>, NEXT.md and <code>context/</code> are kept out of git with <code>.git/info/exclude</code>, and <code>docs/decisions.md</code> is marked skip-worktree.</li>
+    <li><b><a href="https://github.com/hackwestern/hackwestern/pull/1165">PR #1165</a></b> (draft, base <code>spon-judging</code>): the app code plus, since Nov 19, all the docs, mocks, <code>NEXT.md</code>, <code>context/</code> and the full <code>docs/decisions.md</code>. Pull <code>sponsor-dashboard</code> and you have everything. Only <code>_local/</code> (env, test logins, phone numbers) and <code>_to_delete/</code> stay off GitHub.</li>
+    <li><b>The repo is public,</b> so keep secrets, phone numbers and the sheet link out of commits.</li>
+    <li><b>Backup branches:</b> every <code>sd-*</code> worktree branch and <code>ops-pings</code> is pushed as-is (no PRs). Some of their work may already be in #1165 and some may not. Check before merging any of them.</li>
     <li><b>PR #1164</b> (live site maps): ready for review.</li>
     <li><code>NEXT.md</code> in the worktree has the running to-do list and open questions. <code>docs/decisions.md</code> has every decision with the reason.</li>
     <li>Checks last run: <code>tsc</code> clean, vitest 116 of 117 (the one failure is a known Apple Wallet test).</li>
