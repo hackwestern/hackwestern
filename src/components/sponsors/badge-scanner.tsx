@@ -524,8 +524,6 @@ function OfferStep({
         sponsor={sponsor}
         userId={hacker.userId}
         firstName={hacker.firstName}
-        repName={repName}
-        onRepName={onRepName}
         announce={announce}
       />
 
@@ -684,18 +682,16 @@ function MetAtFair({
   sponsor,
   userId,
   firstName,
-  repName,
-  onRepName,
   announce,
 }: {
   sponsor: string;
   userId: string;
   firstName: string;
-  repName: string;
-  onRepName: (name: string) => void;
   announce: (message: string) => void;
 }) {
   const metCopy = sponsorSetupCopy.scan;
+  // A rep from Your team, by id (the server looks up the name); null = Anyone.
+  const [repId, setRepId] = useState<string | null>(null);
   const setupQ = api.coffeeChatSetup.get.useQuery(
     { sponsor },
     { retry: false, refetchOnWindowFocus: false },
@@ -729,16 +725,16 @@ function MetAtFair({
             {metCopy.metLegend}
           </legend>
           <div className="flex flex-wrap gap-2">
-            <button type="button" aria-pressed={repName === ""} className={chip(repName === "")} onClick={() => onRepName("")}>
+            <button type="button" aria-pressed={repId === null} className={chip(repId === null)} onClick={() => setRepId(null)}>
               {metCopy.noRep}
             </button>
             {reps.map((r) => (
               <button
                 key={r.id}
                 type="button"
-                aria-pressed={repName === r.name}
-                className={chip(repName === r.name)}
-                onClick={() => onRepName(r.name)}
+                aria-pressed={repId === r.id}
+                className={chip(repId === r.id)}
+                onClick={() => setRepId(r.id)}
               >
                 {r.name}
               </button>
@@ -751,7 +747,7 @@ function MetAtFair({
         aria-disabled={record.isPending || undefined}
         onClick={() => {
           if (record.isPending) return;
-          record.mutate({ sponsor, userId, repName: repName.trim() || undefined });
+          record.mutate({ sponsor, userId, repId });
         }}
       >
         {record.isPending ? metCopy.adding : metCopy.add}

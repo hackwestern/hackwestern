@@ -30,7 +30,8 @@ export function ChatsHome({
     { sponsor },
     { enabled: !!data.submittedAt, retry: 1, refetchOnWindowFocus: false },
   );
-  const picked = shortlistQ.data?.hackers.filter((h) => h.shortlisted).length ?? 0;
+  const picked = shortlistQ.data?.picked ?? 0;
+  const cap = shortlistQ.data?.maxShortlist ?? data.totals.hackers;
   const prefsStatus = data.confirmed
     ? copy.prefs.confirmed
     : data.submittedAt
@@ -88,8 +89,8 @@ export function ChatsHome({
             !data.submittedAt
               ? copy.shortlist.locked
               : data.shortlistSubmittedAt
-                ? copy.shortlist.submitted(picked, data.totals.hackers)
-                : copy.shortlist.seats(picked, data.totals.hackers)
+                ? copy.shortlist.submitted(picked, cap)
+                : copy.shortlist.seats(picked, cap)
           }
           good={!!data.shortlistSubmittedAt}
           action={

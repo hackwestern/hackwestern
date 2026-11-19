@@ -61,15 +61,18 @@ export function PrefsStep({
   latest.current = draft;
 
   const save = api.coffeeChatSetup.savePrefs.useMutation();
+  const [retrying, setRetrying] = useState(false);
+  // One save at a time: each flush waits for the one in flight, so saves
+  // land in order and the last one always carries the latest draft.
+  const inflight = useRef<Promise<boolean> | null>(null);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const flush = useCallback(async () => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = null;
+  const saveNow = useCallback(async (): Promise<boolean> => {
     if (!dirty.current) return true;
     dirty.current = false;
     const d = latest.current;
     try {
-      await save.mutateAsync({
+      const res = await save.mutateAsync({
         sponsor,
         hackersPerChat: d.hackersPerChat,
         reps: Object.entries(d.reps).map(([id, r]) => ({
@@ -80,21 +83,51 @@ export function PrefsStep({
         confirmAfterInvites: confirmed.current || undefined,
       });
       setError(null);
+      setRetrying(false);
+      // A rep removed elsewhere was skipped: drop it from the draft.
+      if (res.skipped > 0) {
+        const fresh = await utils.coffeeChatSetup.get.fetch({ sponsor });
+        const ids = new Set(fresh.reps.map((r) => r.id));
+        setDraft((x) => ({
+          ...x,
+          reps: Object.fromEntries(Object.entries(x.reps).filter(([id]) => ids.has(id))),
+        }));
+      }
       await utils.coffeeChatSetup.get.invalidate({ sponsor });
       return true;
     } catch (e) {
       dirty.current = true;
       const msg = e instanceof Error ? e.message : sponsorSetupCopy.errors.saveError;
       setError(msg);
-      announce(msg);
+      setRetrying(true);
+      announce(copy.retrying);
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+      retryTimer.current = setTimeout(() => void flushRef.current(), 3000);
       return false;
     }
-    // save is stable enough; avoid re-creating on every render
+    // save and utils are stable; avoid re-creating on every render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sponsor]);
 
+  const flush = useCallback((): Promise<boolean> => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    const run = () => saveNow();
+    const next = (inflight.current ?? Promise.resolve(true)).then(run, run);
+    inflight.current = next;
+    return next;
+  }, [saveNow]);
+  const flushRef = useRef(flush);
+  flushRef.current = flush;
+
   // Save on leaving the page too.
-  useEffect(() => () => void flush(), [flush]);
+  useEffect(
+    () => () => {
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+      void flushRef.current();
+    },
+    [],
+  );
 
   const edit = (fn: (d: Draft) => Draft) =>
     guard((confirm) => {
@@ -104,6 +137,12 @@ export function PrefsStep({
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => void flush(), 800);
     });
+
+  /** A rep's draft row, or their saved values (a rep added since the draft). */
+  const repDraft = (d: Draft, repId: string) => {
+    const saved = data.reps.find((r) => r.id === repId);
+    return d.reps[repId] ?? { chatsWanted: saved?.chatsWanted ?? 0, free: saved?.free ?? [] };
+  };
 
   const go = async (href: string) => {
     if (await flush()) void router.push(href);
@@ -195,7 +234,7 @@ export function PrefsStep({
           free={Object.fromEntries(repState.map((r) => [r.rep.id, r.free]))}
           onToggle={(repId, sessionId) =>
             edit((d) => {
-              const r = d.reps[repId]!;
+              const r = repDraft(d, repId);
               const free = r.free.includes(sessionId)
                 ? r.free.filter((s) => s !== sessionId)
                 : [...r.free, sessionId];
@@ -219,7 +258,7 @@ export function PrefsStep({
             const setChats = (n: number) =>
               edit((d) => ({
                 ...d,
-                reps: { ...d.reps, [rep.id]: { ...d.reps[rep.id]!, chatsWanted: n } },
+                reps: { ...d.reps, [rep.id]: { ...repDraft(d, rep.id), chatsWanted: n } },
               }));
             const note =
               chatsWanted > 0 && avail === 0
@@ -262,13 +301,22 @@ export function PrefsStep({
         <p role="alert" className="m-0 text-sm font-semibold text-dashboard-text-warning">{error}</p>
       )}
 
+      {/* TODO(merge with track D): "Need something different? Message
+          organizers" (sponsorSetupCopy.help.message) opens track D's Help. */}
+
       <StepFooter
         back={
           <DashboardButton variant="outline" className={cn("h-11 text-base", pressable)} onClick={() => void go(teamHref)}>
             {sponsorSetupCopy.backStep}
           </DashboardButton>
         }
-        note={save.isPending ? copy.saving : undefined}
+        note={
+          retrying ? (
+            <span className="font-semibold text-dashboard-text-warning">{copy.retrying}</span>
+          ) : save.isPending ? (
+            copy.saving
+          ) : undefined
+        }
         primary={
           <DashboardButton className={cn("min-h-11 md:h-11", pressable)} onClick={() => void go(nextHref)}>
             {copy.next}

@@ -81,7 +81,8 @@ export function ShortlistFlow({
 
   const picked = data.hackers.filter((h) => h.shortlisted);
   const max = data.maxShortlist;
-  const full = picked.length >= max;
+  const full = data.picked >= max;
+  const over = data.picked > max;
   const submitted = !!data.submittedAt;
   const busy = add.isPending || remove.isPending;
 
@@ -101,10 +102,21 @@ export function ShortlistFlow({
   };
 
   const seats = (
-    <p className="m-0 text-base text-dashboard-text-medium">
-      <span className="text-xl font-bold text-dashboard-text-heavy">{copy.seats(picked.length, max)}</span>{" "}
-      {copy.seatsSuffix}
-    </p>
+    <div className="flex flex-col gap-1">
+      <p className="m-0 text-base text-dashboard-text-medium">
+        <span className="text-xl font-bold text-dashboard-text-heavy">{copy.seats(data.picked, max)}</span>{" "}
+        {copy.seatsSuffix}
+      </p>
+      <p className="m-0 text-sm text-dashboard-text-light">
+        {copy.capLine(data.seats, data.scanned.length, max)}
+      </p>
+      {over && (
+        <p role="alert" className="m-0 text-base font-semibold text-dashboard-text-warning">
+          {sponsorSetupCopy.errors.overCap(data.picked, max)}
+        </p>
+      )}
+      {data.sent && <p className="m-0 text-sm text-dashboard-text-medium">{copy.sentNote}</p>}
+    </div>
   );
 
   const scannedSection = data.scanned.length > 0 && (
@@ -164,9 +176,9 @@ export function ShortlistFlow({
               <LinkButton href={homeHref}>{sponsorSetupCopy.back}</LinkButton>
             ) : (
               <DashboardButton
-                className={cn("min-h-11 md:h-11", pressable)}
-                aria-disabled={submit.isPending || undefined}
-                onClick={() => !submit.isPending && submit.mutate({ sponsor })}
+                className={cn("min-h-11 md:h-11", pressable, over && "opacity-dashboard-disabled")}
+                aria-disabled={submit.isPending || over || undefined}
+                onClick={() => !submit.isPending && !over && submit.mutate({ sponsor })}
               >
                 {submit.isPending ? copy.submitting : copy.submit}
               </DashboardButton>
@@ -298,6 +310,11 @@ export function ShortlistFlow({
   );
 }
 
+/** "Western University · Computer Science · 3rd year", when shared. */
+function studyLine(h: { school?: string | null; program?: string | null; year?: string | null }) {
+  return [h.school, h.program, h.year ? copy.year(h.year) : null].filter(Boolean).join(" · ");
+}
+
 function HackerCard({ hacker }: { hacker: InterestedHacker }) {
   return (
     <article className="flex flex-col gap-3 rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface p-4">
@@ -310,6 +327,7 @@ function HackerCard({ hacker }: { hacker: InterestedHacker }) {
           </span>
         </div>
       </div>
+      {studyLine(hacker) && <p className="m-0 text-base text-dashboard-text-medium">{studyLine(hacker)}</p>}
       <HackerLinks name={hacker.name} links={hacker} />
     </article>
   );
@@ -336,6 +354,7 @@ function HackerRow({
           <span className="text-sm text-dashboard-text-light">
             {hacker.shared ? (hacker.team ?? copy.noTeam) : copy.notShared}
           </span>
+          {studyLine(hacker) && <span className="text-sm text-dashboard-text-medium">{studyLine(hacker)}</span>}
         </span>
         <DashboardButton
           variant={hacker.shortlisted ? "outline" : "small"}
@@ -359,7 +378,9 @@ function ScannedRow({ hacker }: { hacker: ScannedHacker }) {
       <span className="flex min-w-0 flex-col">
         <span className="break-words text-base font-semibold text-dashboard-text-heavy">{hacker.name}</span>
         <span className="text-xs text-dashboard-text-light">
-          {[copy.scannedTag, hacker.repName ? copy.scannedBy(hacker.repName) : null].filter(Boolean).join(" · ")}
+          {[copy.scannedTag, hacker.repName ? copy.scannedBy(hacker.repName) : null, studyLine(hacker) || null]
+            .filter(Boolean)
+            .join(" · ")}
         </span>
       </span>
     </li>
