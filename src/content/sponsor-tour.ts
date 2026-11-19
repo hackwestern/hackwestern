@@ -39,7 +39,7 @@ export const sponsorTourCopy = {
         },
         help: {
           title: "Need help?",
-          body: "Tap this any time and we ping the Hack Western sponsor team. You'll see who's on the way.",
+          body: "Tap this any time for your Hack Western contact's name and number, and our emergency contact.",
         },
         scan: {
           title: "Scan a badge",
@@ -107,11 +107,11 @@ export const sponsorTourCopy = {
       steps: {
         button: {
           title: "Need help?",
-          body: "Tap here, pick what you need and add your name and phone number.",
+          body: "Tap here to see your Hack Western contact. Text or call them, or tap the copy icon to copy their number.",
         },
         next: {
-          title: "What happens next",
-          body: "We ping the sponsor team on Slack. This card shows when someone's on the way, then they come to your booth.",
+          title: "Can't reach them?",
+          body: "Call our emergency contact. Their number is right under your contact's.",
         },
       },
     },

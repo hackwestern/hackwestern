@@ -92,18 +92,22 @@ export const organizerTourCopy = {
         body: "See each sponsor's picks, or every team in one list.",
       },
     },
-    pings: {
-      help: {
-        title: "Sponsor help requests",
-        body: "When a sponsor taps Need help, it lands here and in Slack. Resolve it once it's handled.",
+    mine: {
+      now: {
+        title: "Now and next",
+        body: "What's on now and what's next on the run of show, with the team task now and the next one and who owns it.",
       },
-      next: {
-        title: "Up next",
-        body: "The task pings Slack sends next. Owners get a DM; tasks with no clear owner go to the team channel.",
+      view: {
+        title: "Your sponsors or everyone",
+        body: "My sponsors shows the sponsors you lead, one tab each. All sponsors shows every sponsor, day by day.",
       },
-      log: {
-        title: "Ping log",
-        body: "Every ping that went out, so you can check who was told and when.",
+      people: {
+        title: "Who to call",
+        body: "Each rep the sponsor gave us, with their phone. The crown is their main contact. Tap the copy icon to copy a number.",
+      },
+      pills: {
+        title: "Tap to update",
+        body: "Arrival and Booth move on with one tap. Tap one that's done to undo it.",
       },
     },
   },

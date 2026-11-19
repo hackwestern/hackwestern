@@ -15,11 +15,14 @@ import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { sponsorVenueCopy as venue } from "~/content/sponsor-venue";
 import { VenueMapDialog } from "~/components/sponsors/venue-map";
 import { sponsorPortalCopy as copy } from "~/content/sponsor-portal";
-import { SponsorHelp } from "~/components/sponsors/help-button";
-import { pressable, SponsorShell } from "~/components/sponsors/sponsor-shell";
+import {
+  SponsorHelp,
+  useHelpContacts,
+} from "~/components/sponsors/help-button";
+import { PhoneCopy } from "~/components/sponsors/phone-copy";
+import { SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { sponsorLogo } from "~/lib/sponsor-logos";
 import { BoothLayout } from "~/components/sponsors/booth-layout";
-import { cn } from "~/lib/utils";
 
 export default function SponsorHubPage() {
   const router = useRouter();
@@ -36,6 +39,8 @@ export default function SponsorHubPage() {
   );
 
   const data = sponsorQ.data;
+  // Noah's name and number from HW Contacts at runtime (never in the repo).
+  const { emergency } = useHelpContacts(validUuid ? id : "");
 
   if (!router.isReady) {
     return (
@@ -118,8 +123,8 @@ export default function SponsorHubPage() {
           </p>
         )}
 
-        {/* Need help: pings the sponsor team in Slack. In the side nav
-            from tablets up. */}
+        {/* Need help: your HW lead and the emergency contact. In the side
+            nav from tablets up. */}
         <div className="md:hidden">
           <SponsorHelp />
         </div>
@@ -171,23 +176,15 @@ export default function SponsorHubPage() {
                     {venue.important.emergency.label}
                   </dt>
                   <dd className="m-0 break-words text-base font-semibold text-dashboard-text-heavy">
-                    {venue.important.emergency.name}
+                    {emergency?.name ?? copy.details.contact.fallback}
                   </dd>
                 </div>
-                {venue.important.emergency.phone ? (
-                  <a
-                    href={`tel:${venue.important.emergency.phone.replace(/[^\d+]/g, "")}`}
-                    aria-label={venue.important.emergency.call(
-                      venue.important.emergency.phone,
-                    )}
-                    className={cn(
-                      "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm font-semibold text-dashboard-text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
-                      pressable,
-                    )}
-                  >
-                    <Phone aria-hidden className="size-4" />
-                    {venue.important.emergency.phone}
-                  </a>
+                {emergency?.phone ? (
+                  <PhoneCopy
+                    name={emergency.name}
+                    phone={emergency.phone}
+                    className="shrink-0"
+                  />
                 ) : (
                   <span className="shrink-0 rounded-dashboard-sm bg-dashboard-bg-nav px-2 py-1 text-xs font-medium text-dashboard-text-light">
                     {venue.important.emergency.phonePlaceholder}
@@ -263,17 +260,11 @@ export default function SponsorHubPage() {
                 </dd>
               </div>
               {hwContact && hwContactPhone ? (
-                <a
-                  href={`tel:${hwContactPhone.replace(/[^\d+]/g, "")}`}
-                  aria-label={copy.details.contact.call(hwContactPhone)}
-                  className={cn(
-                    "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm font-semibold text-dashboard-text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
-                    pressable,
-                  )}
-                >
-                  <Phone aria-hidden className="size-4" />
-                  {hwContactPhone}
-                </a>
+                <PhoneCopy
+                  name={hwContact}
+                  phone={hwContactPhone}
+                  className="shrink-0"
+                />
               ) : (
                 <span className="shrink-0 rounded-dashboard-sm bg-dashboard-bg-nav px-2 py-1 text-xs font-medium text-dashboard-text-light">
                   {copy.details.contact.tag}

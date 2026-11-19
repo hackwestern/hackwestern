@@ -1,6 +1,9 @@
-// User-facing copy for sponsor help requests: the sponsor's "Need help"
-// button and status card, the help queue on the organizer Task pings tab, and
-// the Slack messages the bot posts. Keep wording here, not in components.
+// User-facing copy for sponsor help. The portal's "Need help?" now shows the
+// sponsor's HW lead and the emergency contact with their numbers (`button`,
+// `buttonHint`, `contacts`; decisions 2026-11-19). The rest (the request
+// sheet, status card, organizer queue and Slack messages) belongs to the
+// tracked help flow, switched off and kept for a later rebuild
+// (docs/specs/parked-sponsor-help-requests.md). Keep wording here.
 
 import type { SponsorHelpReason } from "~/lib/sponsor-help";
 
@@ -29,7 +32,26 @@ export const sponsorHelpCopy = {
   } satisfies Record<SponsorHelpReason, string>,
 
   button: "Need help?",
-  buttonHint: "Ping the sponsor team. Someone will come to you.",
+  buttonHint: "Text or call your Hack Western contact.",
+
+  /** The portal Help: your HW lead, then the emergency contact. */
+  contacts: {
+    title: "Need help?",
+    description:
+      "Text or call your Hack Western contact. If you can't reach them, call our emergency contact.",
+    close: "Close",
+    lead: "Your Hack Western contact",
+    emergency: "Emergency contact",
+    noLead: "Your contact hasn't been assigned yet.",
+    noEmergency:
+      "Couldn't load the emergency contact. Ask at the sponsor lounge (Rm 2110).",
+    noPhone: "Number not available. Ask at the sponsor lounge (Rm 2110).",
+    loading: "Loading…",
+  },
+
+  /** Server error when the switched-off tracked help is called. */
+  trackedOff:
+    "Help requests are switched off. Text or call your Hack Western contact, or the emergency contact (Noah) under Need help.",
 
   sheet: {
     title: "What do you need?",
@@ -66,7 +88,8 @@ export const sponsorHelpCopy = {
   status: {
     label: "Help request",
     openTitle: "Someone from the sponsor team will come to you",
-    openBody: "We've pinged them with your message and location. This page updates when someone's on the way.",
+    openBody:
+      "We've pinged them with your message and location. This page updates when someone's on the way.",
     claimedTitle: (name: string) => `${name} is on the way`,
     claimedSomeone: "Someone from the sponsor team",
     claimedBody: "Hang tight, they're coming to you.",

@@ -7,19 +7,157 @@ export const sponsorOrganizerCopy = {
   eyebrow: "Hack Western 13 · Organizers",
   title: "Sponsor dashboard",
   intro:
-    "Sponsors, the run of show, coffee chats, help requests and task pings in one place. Times are Eastern.",
+    "Sponsors, the run of show, coffee chats and judging in one place. Times are Eastern.",
   tabsLabel: "Sponsor dashboard sections",
   tabs: {
     sponsors: "Sponsors",
     schedule: "Run of show",
     coffee: "Coffee chats",
     judging: "Sponsor judging",
-    pings: "Task pings",
   },
-  /** Screen reader text after the Task pings tab's count badge. */
-  openHelpCount: (n: number) =>
-    n === 1 ? "1 open help request" : `${n} open help requests`,
   jumpToRooms: "Where is everyone",
+
+  /**
+   * "Now and next" under the page header: the run-of-show event on now and
+   * the next one, and the team task on now and the next one with its owner.
+   */
+  nowNext: {
+    heading: "Happening now",
+    headingAt: (time: string) => `Happening now · ${time}`,
+    tableLabel: "Now and next on the run of show",
+    eventNow: "Event now",
+    eventNext: "Next event",
+    taskNow: "Task now",
+    taskNext: "Next task",
+    nothing: "Nothing on right now",
+    none: "Nothing after this",
+    noTask: "No team task right now",
+    noNextTask: "No more team tasks",
+    notStarted: (when: string) => `Hack Western starts ${when}`,
+    over: "Event over",
+    at: (when: string) => when,
+    room: (room: string) => room,
+    owner: (owner: string | null) => (owner ? owner : "No owner"),
+    ownerLabel: "Owner",
+    loadError: "Couldn't read the run of show. It retries on its own.",
+  },
+
+  /**
+   * "Needs attention now" at the top of the dashboard, for an organizer
+   * arriving hours after sponsors acted. Built from data the app already
+   * has; tasks are shown only (no pings, no marking done).
+   */
+  attention: {
+    heading: "Needs attention now",
+    /** Group labels: your own sponsors come first (decisions 2026-11-19). */
+    groups: {
+      yours: "Your sponsors",
+      others: "Other sponsors",
+      everyone: "All sponsors",
+      tasks: "Run of show tasks",
+    },
+    allClear: "All clear",
+    allClearBody: "Nothing needs you right now.",
+    noPrefs: (sponsor: string) =>
+      `${sponsor} hasn't sent coffee chat preferences`,
+    notScheduled: (sponsor: string, placed: number, reps: number) =>
+      `${sponsor} sent preferences but only ${placed} of ${reps} ${reps === 1 ? "rep is" : "reps are"} scheduled`,
+    changed: (sponsor: string) =>
+      `${sponsor} changed their coffee chat preferences after the schedule was sent`,
+    overdueTask: (task: string, when: string, owner: string | null) =>
+      owner ? `${task} (${owner}) was due ${when}` : `${task} was due ${when}`,
+    toCoffee: "Open coffee chats",
+    toSchedule: "Open run of show",
+    loading: "Checking what needs attention…",
+  },
+
+  /**
+   * My sponsors: the sponsors the signed-in organizer leads (HW Contacts
+   * "Login email" -> Sponsor Day-Of "HW lead"), one tab per sponsor with
+   * stacked attribute tables.
+   */
+  mine: {
+    title: "My sponsors",
+    all: "All sponsors",
+    viewLabel: "Which sponsors to show",
+    signedIn: (name: string) => `Signed in as ${name}`,
+    leads: (n: number) =>
+      n === 0
+        ? "You don't lead a sponsor"
+        : n === 1
+          ? "You lead 1 sponsor"
+          : `You lead ${n} sponsors`,
+    contactsError:
+      "Can't read HW Contacts, so My sponsors can't tell who you are. Showing All sponsors; it retries on its own.",
+    noneLed:
+      "Sponsor Day-Of doesn't list you as an HW lead yet, so there's nothing here. All sponsors shows everyone.",
+    sponsorTabsLabel: "Your sponsors",
+    loading: "Loading your sponsors…",
+    loadError: "Couldn't load your sponsors. It retries on its own.",
+    sections: {
+      people: "People",
+      logistics: "Logistics",
+      chats: "Coffee chats",
+      judging: "Judging",
+    },
+    people: {
+      name: "Name",
+      phone: "Phone",
+      primary: "Main contact",
+      none: "No reps yet. They show here once the sponsor adds their team in the portal.",
+    },
+    attrs: {
+      arrival: "Arrival",
+      booth: "Booth",
+      portalLink: "Portal link",
+      ccWorkshop: "Coffee chat workshop",
+      theirWorkshop: "Their workshop",
+      preferences: "Preferences",
+      shortlist: "Shortlist",
+      schedule: "Schedule",
+      invites: "Invites",
+      judgingShortlist: "Shortlist",
+      presentations: "Presentations",
+      topThree: "Top 3",
+    },
+    pill: {
+      arrival: ["Not arrived", "Arrived"] as const,
+      booth: ["Not set up", "Set up"] as const,
+      ccWorkshop: ["Not attended", "Attended"] as const,
+      advance: (label: string, sponsor: string, to: string) =>
+        `${label} for ${sponsor}: ${to}. Press to undo.`,
+      next: (label: string, sponsor: string, now: string, to: string) =>
+        `${label} for ${sponsor}: ${now}. Press to mark ${to}.`,
+      saving: "Saving…",
+      failed: (message: string) => `Couldn't save: ${message}`,
+      ccNotTracked: "Not tracked in the app yet",
+    },
+    value: {
+      none: "—",
+      boothTbd: "Booth TBD",
+      linkGiven: (time: string) => `Given ${time}`,
+      linkNotGiven: "Not given yet",
+      notRegistered: "No private link yet. Sync from the sponsor sheet.",
+      workshop: (when: string, room: string | null) =>
+        room ? `${when} · ${room}` : when,
+      noWorkshop: "No workshop",
+      submitted: (time: string) => `Submitted ${time}`,
+      notSubmitted: "Not submitted",
+      shortlistOptional: "Optional · not submitted",
+      placed: (placed: number, reps: number) =>
+        `${placed} of ${reps} ${reps === 1 ? "rep" : "reps"} placed`,
+      confirmed: "confirmed",
+      noReps: "No reps chatting",
+      invites: (accepted: number, sent: number) =>
+        `${accepted} of ${sent} accepted`,
+      invitesNotSent: "Not sent",
+      presentations: (n: number, next: string | null) =>
+        next ? `${n} scheduled · next ${next}` : `${n} scheduled`,
+      noPresentations: "Not scheduled",
+      topThreeSent: (time: string) => `Sent ${time}`,
+      topThreeNot: "Not sent",
+    },
+  },
 
   focus: {
     showing: (name: string) => `Showing ${name}`,
@@ -102,7 +240,6 @@ export const sponsorOrganizerCopy = {
       chatRoom: "Chat room",
       chats: "Chats",
       needsHacker: "Needs a hacker",
-      help: "Help",
     },
     chatType: (request: string, minutes: number) =>
       `${request} · ${minutes} min`,
@@ -110,9 +247,6 @@ export const sponsorOrganizerCopy = {
     chatsCell: (accepted: number, waiting: number) =>
       `${accepted} accepted · ${waiting} waiting`,
     needsHackerCell: (n: number) => (n === 0 ? "None" : String(n)),
-    helpOpen: "Open",
-    helpClaimed: "On it",
-    noHelp: "None",
     notRegistered: "Not registered",
     expand: (name: string) => `Show ${name}'s chats and details`,
     collapse: (name: string) => `Hide ${name}'s chats and details`,
@@ -122,7 +256,6 @@ export const sponsorOrganizerCopy = {
     seatsLeft: (n: number) =>
       n === 1 ? "1 seat left today" : `${n} seats left today`,
     seatsLabel: "Seats left today",
-    openHelp: (n: number) => (n === 1 ? "1 open" : `${n} open`),
     details: {
       chatsHeading: "Coffee chats",
       detailsHeading: "Details",
@@ -136,7 +269,7 @@ export const sponsorOrganizerCopy = {
       status: { accepted: "Accepted", pending: "Waiting" },
       roomLabel: "Sponsor room",
       notRegistered:
-        "This sponsor has no private link yet, so no chats or help. Sync from the sponsor sheet.",
+        "This sponsor has no private link yet, so no chats. Sync from the sponsor sheet.",
     },
   },
 
@@ -160,7 +293,6 @@ export const sponsorOrganizerCopy = {
         openSlots: "Slots still open",
         waiting: "Waiting on a hacker",
       },
-      openHelp: "Open help requests",
       Sunday: {
         shortlists: "Shortlists sent",
         topFive: "Top 5 sent",
@@ -236,24 +368,17 @@ export const sponsorOrganizerCopy = {
   },
 
   strip: {
-    label: (name: string) => `${name}: coffee chats and help`,
+    label: (name: string) => `${name}: coffee chats`,
     room: (room: string) => `Chat room ${room}`,
     noRoom: "No chat room",
     chats: (accepted: number, pending: number) =>
       `${accepted} accepted · ${pending} pending`,
     needsHacker: (n: number) =>
       n === 1 ? "1 hold needs a hacker" : `${n} holds need a hacker`,
-    helpOpen: (minutes: number) =>
-      minutes < 1 ? "Help: waiting, just now" : `Help: waiting ${minutes} min`,
-    helpClaimed: (name: string | null) =>
-      name ? `Help: ${name} is on it` : "Help: claimed",
-    noHelp: "No help request",
     viewSchedule: "View on schedule",
     coffeeChats: "Coffee chats",
-    help: "Help",
-    loading: "Loading chats and help…",
-    loadError:
-      "Couldn't load coffee chats and help requests. They'll retry on their own.",
+    loading: "Loading chats…",
+    loadError: "Couldn't load coffee chats. They'll retry on their own.",
   },
 
   /**

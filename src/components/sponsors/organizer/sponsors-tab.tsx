@@ -9,7 +9,6 @@ import {
   Coffee,
   Copy,
   ExternalLink,
-  LifeBuoy,
   RefreshCw,
   Search,
   TriangleAlert,
@@ -33,6 +32,11 @@ import {
 } from "~/components/sponsors/organizer/day-cells";
 import { JudgingStatusPill } from "~/components/sponsors/organizer/judging-panel";
 import {
+  MySponsors,
+  type MySponsor,
+  type MySponsorData,
+} from "~/components/sponsors/organizer/my-sponsors";
+import {
   addInFlight,
   removeInFlight,
   sponsorKey,
@@ -45,6 +49,7 @@ import {
   formatClock,
   type RunOfShowDay,
   type RunOfShowItem,
+  type WorkshopInfo,
 } from "~/lib/run-of-show";
 import {
   hasArrived,
@@ -59,8 +64,11 @@ import {
 } from "~/lib/sponsor-judging-rooms";
 import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
 import {
+  leadsSponsor,
+  type OrganizerContact,
   organizerHomeHref,
   sponsorRowId,
+  statusAfterPill,
   type SponsorSummary,
 } from "~/lib/sponsor-organizer";
 import { cn } from "~/lib/utils";
@@ -68,15 +76,18 @@ import { api, type RouterOutputs } from "~/utils/api";
 
 // Lucas's sponsor board (status, rooms, judging picks, private links), now
 // the Sponsors tab of /internal/sponsors, merged with each sponsor's coffee
-// chats, room holds and help (sponsorOrganizer.summary) into one table. A
+// chats and room holds (sponsorOrganizer.summary) into one table. A
 // row opens to its chats, holds, chat room and watcher (editable) and the
 // rest of Lucas's details; a totals row sums what the filter shows. Each
 // row has an anchor (#sponsor-<id>) the other tabs link back to. One
-// compact card per sponsor under 640px.
+// compact card per sponsor under 640px. Above it, for an organizer who
+// leads sponsors, My sponsors (my-sponsors.tsx) with a switch to this
+// board ("All sponsors"). No help requests (decisions 2026-11-19).
 
 const copy = sponsorOrganizerCopy.board;
 const judgingCopy = sponsorOrganizerCopy.judging;
 const dayCopy = sponsorOrganizerCopy.day;
+const mineCopy = sponsorOrganizerCopy.mine;
 
 type SponsorStatus = (typeof SPONSOR_STATUS_VALUES)[number];
 type Sponsor = RouterOutputs["sponsorDashboard"]["getSponsors"][number];
@@ -356,7 +367,14 @@ export function SponsorsTab({
   summaryFailed,
   round2Open,
   items,
+  workshops,
   now,
+  me,
+  contactNames,
+  contactsError,
+  mine,
+  view,
+  onView,
 }: {
   summaries: ReadonlyMap<string, SponsorSummary>;
   summaryLoading: boolean;
@@ -365,7 +383,20 @@ export function SponsorsTab({
   round2Open: boolean;
   /** Run-of-show blocks for Sunday's "Where now"; null if not loaded. */
   items: readonly RunOfShowItem[] | null;
+  /** Run-of-show workshops for My sponsors; null if not loaded. */
+  workshops: readonly WorkshopInfo[] | null;
   now: Date;
+  /** The signed-in organizer's HW Contacts row; null = no match. */
+  me: OrganizerContact | null;
+  /** HW Contacts names in row order (`me.row` indexes it). */
+  contactNames: readonly string[];
+  /** HW Contacts has never been read, so `me` is unknown (not "no match"). */
+  contactsError: boolean;
+  /** My sponsors' reps and chat progress by sponsor id. */
+  mine: Record<string, MySponsorData> | undefined;
+  /** My sponsors or All sponsors (only "all" without a match). */
+  view: "mine" | "all";
+  onView: (view: "mine" | "all") => void;
 }) {
   const router = useRouter();
   // The day the board shows: picked, else ?day=, else today (Friday
@@ -583,12 +614,6 @@ export function SponsorsTab({
                 value: registered.reduce((n, s) => n + s.pending, 0),
                 warn: false,
               },
-              {
-                label: dayCopy.stats.openHelp,
-                value: registered.filter((s) => s.help?.status === "open")
-                  .length,
-                warn: true,
-              },
             ];
           })()
         : [
@@ -699,11 +724,6 @@ export function SponsorsTab({
       );
     return cell;
   };
-  const helpColumn: DayColumn = {
-    key: "help",
-    header: copy.chatColumns.help,
-    cell: (_sponsor, summary) => <HelpCell summary={summary} />,
-  };
   const columns: DayColumn[] =
     day === "Friday"
       ? [
@@ -755,7 +775,6 @@ export function SponsorsTab({
             className: "text-dashboard-text-medium",
             cell: (sponsor) => sponsor.hwContact || copy.none,
           },
-          helpColumn,
         ]
       : day === "Saturday"
         ? [
@@ -787,7 +806,6 @@ export function SponsorsTab({
                 copy.chatsCell(summary.accepted, summary.pending),
               ),
             },
-            helpColumn,
           ]
         : [
             {
@@ -816,10 +834,9 @@ export function SponsorsTab({
                 <WhereCell summary={summary} items={items} now={now} />
               )),
             },
-            helpColumn,
           ];
 
-  return (
+  const board = (
     <div className="flex flex-col gap-4 font-figtree text-dashboard-text-heavy">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
@@ -1229,6 +1246,91 @@ export function SponsorsTab({
       )}
     </div>
   );
+
+  // My sponsors: the sheet's sponsors whose HW lead is the signed-in
+  // organizer. Without a match only All sponsors shows.
+  const mySponsors: MySponsor[] = me
+    ? sponsors.filter((s) => leadsSponsor(s.hwContact, me, contactNames))
+    : [];
+  const showMine = !!me && view === "mine";
+  const mineView = (
+    <MySponsors
+      sponsors={mySponsors}
+      data={mine}
+      summaries={summaries}
+      workshops={workshops}
+      pending={(name) => inFlight.has(sponsorKey(name))}
+      onPill={(sponsor, pill, done) =>
+        changeStatus(
+          sponsor.name,
+          statusAfterPill(pill, done ? "undo" : "advance"),
+        )
+      }
+      copyLink={(sponsor) => (
+        <CopyLinkButton sponsorId={sponsor.sponsorId} name={sponsor.name} />
+      )}
+    />
+  );
+
+  return (
+    <div className="flex flex-col gap-4 font-figtree text-dashboard-text-heavy">
+      {me && (
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <p className="m-0 text-sm text-dashboard-text-medium">
+            <span className="font-semibold text-dashboard-text-heavy">
+              {mineCopy.signedIn(me.name)}
+            </span>
+            {" · "}
+            {mineCopy.leads(mySponsors.length)}
+          </p>
+          <div
+            role="group"
+            aria-label={mineCopy.viewLabel}
+            data-tour="org-view"
+            className="inline-flex rounded-full border border-dashboard-border-default bg-dashboard-bg-surface p-0.5"
+          >
+            {(["mine", "all"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={view === v}
+                onClick={() => onView(v)}
+                className={cn(
+                  "inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold md:min-h-9",
+                  press,
+                  focusRing,
+                  view === v
+                    ? "bg-dashboard-action-primary text-dashboard-text-inverse"
+                    : cn("text-dashboard-text-medium", hover.highlight),
+                )}
+              >
+                {v === "mine" ? mineCopy.title : mineCopy.all}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {!me && contactsError && (
+        <p
+          role="status"
+          data-hw-contacts="error"
+          className="m-0 flex items-center gap-2 text-sm font-semibold text-dashboard-text-warning"
+        >
+          <TriangleAlert aria-hidden className="size-4 shrink-0" />
+          {mineCopy.contactsError}
+        </p>
+      )}
+      {note && showMine && (
+        <p
+          role="alert"
+          className="m-0 text-sm font-semibold text-dashboard-text-warning"
+        >
+          {note.text}
+        </p>
+      )}
+      {showMine ? mineView : board}
+    </div>
+  );
 }
 
 function Detail({
@@ -1296,29 +1398,6 @@ function NeedsHackerPill({ n }: { n: number }) {
     <span className="inline-flex w-fit items-center gap-1 whitespace-nowrap rounded-dashboard-sm bg-dashboard-status-iconBadge px-2 py-0.5 text-xs font-semibold leading-5 text-dashboard-text-warning">
       <TriangleAlert aria-hidden className="size-3.5" />
       {sponsorOrganizerCopy.strip.needsHacker(n)}
-    </span>
-  );
-}
-
-function HelpCell({ summary }: { summary: SponsorSummary | undefined }) {
-  const help = summary?.help;
-  if (!summary) return <span>{copy.none}</span>;
-  if (!help) {
-    return <span className="text-dashboard-text-light">{copy.noHelp}</span>;
-  }
-  return (
-    <span
-      className={cn(
-        "inline-flex w-fit items-center gap-1 whitespace-nowrap rounded-dashboard-sm px-2 py-0.5 text-xs font-semibold leading-5",
-        help.status === "open"
-          ? "bg-dashboard-status-iconBadge text-dashboard-text-warning"
-          : "bg-dashboard-bg-highlight text-dashboard-text-active",
-      )}
-    >
-      <LifeBuoy aria-hidden className="size-3.5" />
-      {help.status === "open"
-        ? copy.helpOpen
-        : (help.claimedByName ?? copy.helpClaimed)}
     </span>
   );
 }
@@ -1407,15 +1486,8 @@ function SponsorDetails({
   summary: SponsorSummary | undefined;
   idPrefix: string;
 }) {
-  // Help requests live on the Task pings tab (scrolled to help).
-  const link = (tab: "schedule" | "coffee" | "help") =>
-    tab === "help"
-      ? organizerHomeHref({
-          tab: "pings",
-          sponsor: sponsor.sponsorId,
-          help: true,
-        })
-      : organizerHomeHref({ tab, sponsor: sponsor.sponsorId });
+  const link = (tab: "schedule" | "coffee") =>
+    organizerHomeHref({ tab, sponsor: sponsor.sponsorId });
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <section className="flex min-w-0 flex-col gap-3">
@@ -1540,7 +1612,6 @@ function SponsorDetails({
                   sponsorOrganizerCopy.strip.viewSchedule,
                 ],
                 ["coffee", Coffee, sponsorOrganizerCopy.strip.coffeeChats],
-                ["help", LifeBuoy, sponsorOrganizerCopy.strip.help],
               ] as const
             ).map(([tab, Icon, label]) => (
               <DashboardButton

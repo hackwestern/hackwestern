@@ -11,6 +11,13 @@ const slack = vi.hoisted(() => ({
 
 vi.mock("~/server/slack/sponsor-help", () => slack);
 
+// Tracked help is off for the event (TRACKED_HELP_ENABLED); these tests cover
+// the kept flow, so force it on. sponsor-help-off.test.ts covers it off.
+vi.mock("~/lib/sponsor-help", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("~/lib/sponsor-help")>()),
+  TRACKED_HELP_ENABLED: true,
+}));
+
 // Never hit the real sponsor sheet for the booth location.
 vi.mock("~/server/api/utils/sponsor-sheets", async (importOriginal) => {
   const original = await importOriginal<typeof SponsorSheets>();

@@ -5,6 +5,22 @@
 
 import { z } from "zod";
 
+/**
+ * The sponsor portal Help's emergency contact when a sponsor can't reach
+ * their HW lead (decisions 2026-11-19, Q1–Q11). The phone is looked up by
+ * this name in HW Contacts at runtime.
+ */
+export const EMERGENCY_CONTACT_NAME = "Noah Medland";
+
+/**
+ * Tracked help (the request form, status polling, Slack posts and re-pings)
+ * is switched off for the event (decisions 2026-11-19): sponsors text or call
+ * their HW lead or the emergency contact instead. The code stays so it can
+ * come back; flip this to turn the public request/status/cancel routes and
+ * their Slack calls on again.
+ */
+export const TRACKED_HELP_ENABLED = false;
+
 export const SPONSOR_HELP_REASONS = [
   "swag",
   "tech",
