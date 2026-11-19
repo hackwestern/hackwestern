@@ -386,6 +386,13 @@
       "when": 1795029927287,
       "tag": "0057_sponsor_portal_link_given",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1795091056205,
+      "tag": "0058_coffee_chat_sessions",
+      "breakpoints": true
     }
   ]
 }

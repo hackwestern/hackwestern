@@ -547,3 +547,147 @@ Supersedes "lead's phone + Send to the sponsor team" as equal options (2026-11-1
 - Digital sponsors' 4th and 5th place are optional (some give a top 3).
 
 **Pre-existing, found while checking:** the coffee chat parser ignores the "Length" and "Hacker(s) per chat" columns (Sun Life reads as 15 min, 1 per chat instead of 30 min, 3). Fix in the build.
+
+## 2026-11-19: One coffee chat deadline Friday 11:59 PM, auto-submit, scanned hackers first, one invite batch (Jazz)
+
+**Decision:**
+- Sponsors submit their coffee chat setup (Your team + chatting preferences + optional shortlist) by **Fri Nov 20, 11:59 PM**. One deadline, one Submit.
+- **Auto-submit:** a sponsor who hasn't submitted by the deadline is submitted automatically from their latest saved draft; with no draft, from their "Pre-confirmed" row in the Coffee Chat Setup tab. Their status shows "Submitted automatically".
+- **Scanned hackers are first choice:** anyone a sponsor scanned (at the Sponsor Bay on Friday) is offered a seat before their shortlist, then hackers interested in that sponsor. No separate timing rules.
+- **One invite batch:** organizers run auto-fill right after the deadline (Fri ~midnight), check it, and send all Saturday invites at once, so hackers get overnight notice.
+- **Saturday:** declines and unanswered invites (20 min before the chat; 35 for Ivey) pass to the next person on the waiting list automatically. Scanning on Saturday is optional and only offers open seats.
+- The shortlist stays optional; without one, seats fill from scanned and interested hackers.
+
+**Why:** sponsors doing coffee chats on Saturday are in the chat rooms, not at the Sponsor Bay, so the booth conversations that matter happen Friday evening (Sponsor Bay Fri 5:30–11 PM). One deadline and one sending moment is simpler for sponsors and organizers than rolling or wave-based invites.
+
+**Alternatives:** invites 2–3 hours before each chat (rough notice; nobody's up at 7–8 AM for morning chats); three invite waves (Fri 11 PM shortlist, Sat 9 AM, Sat 12 PM: three schedules to explain); reserving seats when shortlisted (locks out people met at the booth).
+
+**Supersedes:** "Submit by Fri Nov 20, 11:59 PM" applied to the calendar only, the separate "Met at Hacker Fair" priority list timing, and the per-chat lock timing in "Coffee chat preferences, locking, and organizer bookings" (2026-11-18): each sponsor's chats lock when the Friday batch is sent.
+
+## 2026-11-19: Coffee chat deadline 9:30 PM Friday; invites out by 10 PM (Jazz)
+
+**Decision:** Sponsors submit by **Fri Nov 20, 9:30 PM** (auto-submit at 9:30 PM from their latest draft, or their Pre-confirmed row). Organizers run auto-fill, check it and send all Saturday invites **by 10:00 PM Friday**. Everything else in "One coffee chat deadline… one invite batch" stands (scanned hackers first, shortlist optional, Saturday refills automatic, Saturday scans only fill open seats). Friday scanning at the Sponsor Bay runs 5:30–9:30 PM so scans count as first choice.
+
+**Why:** Jazz wants hackers to get invites earlier in the evening, while they're awake and checking Slack, rather than around midnight. 30 minutes is enough for auto-fill plus a quick check.
+
+**Supersedes:** the 11:59 PM deadline and "invites ~midnight" (same day).
+
+## 2026-11-19: Sponsors give chatting preferences at the Friday workshop; no deadline messaging; keep preferences (Jazz)
+
+**Decision:** Sponsors fill in their coffee chat preferences live at the Friday 5 PM sponsor dashboard and coffee chat workshop (Rm 2110), with organizers there. The sponsor UI shows no deadline or auto-submit messaging. Keep the preferences model (reps' chat blocks), not availability: conflicts get sorted in the room at the workshop. Organizers still send all invites Friday evening (by 10 PM); the 9:30 PM cutoff and auto-submit remain an internal fallback for anyone who didn't finish at the workshop, not shown to sponsors.
+
+**Why:** with organizers in the room, preferences can be adjusted on the spot, so the extra complexity of availability isn't needed and a deadline banner just adds noise.
+
+**Alternatives:** collect availability and let auto-fill place chats (rejected for now); show the deadline and auto-submit note (removed as noise).
+
+## 2026-11-19: Coffee chats switch to fixed 1-hour sessions (Daniel's spec), reconciled with Jazz's choices
+
+**Decision:** Adopt `docs/specs/coffee-chat-sessions.md` (Daniel Wang): sponsors answer three questions (hackers per chat 1–5 with a "longer chats" option for 1-on-1s; which fixed 1-hour sessions each rep is free: 10–11, 11–12, 1–2, 2–3, 3–4, 4–5; about how many hours per rep 1/2/3/4+). Organizers pick final sessions (one rep-session = one room for one hour) and send a confirmed schedule; hackers are invited after. Unusual requests go through "Message organizers" and are handled by hand.
+
+Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
+- Primary contact = a crowned rep, not separate main-contact fields; rep phone required.
+- Reps are only created in "Your team" (no "+ Add rep" in the availability grid).
+- "Your day" row shows only their own workshop (and its 15-min travel buffers), no lunch, dinner or snack wagon.
+- Two separate flows, each with its own Review & submit: Chatting preferences (required) and Shortlist (optional, capped at their hacker seats; scanned hackers first; auto-assign at 9:30 PM if not submitted).
+- No hours totals or package-hours meter; the "hours per rep" question stays (it caps scheduling).
+- Figtree only (no pixel font).
+
+**Supersedes:** reps-as-rows chat blocks with inline editing (`docs/specs/inline-chat-block-editing.md`), per-block chat length/size, the flexibility question, shared multi-rep blocks.
+
+**Why:** the simplest model for sponsors to understand and for organizers to schedule; rooms map one-to-one to rep-sessions.
+
+## 2026-11-19: TinyFish judges remotely (Jazz)
+
+**Decision:** TinyFish has a prize track (Sponsor Day-Of "Custom API / Prize Track" ticked) and judges remotely. It stays an in-person sponsor (booth, Saturday workshop, portal link) and submits its own shortlist and top 5 through the portal; its judging room is "Remote (judges online)" and its presentations are online. Unlike PCBWay (digital-only, no portal), whose top 5 the spon team enters.
+
+## 2026-11-19: Coffee chat auto-schedule is a real algorithm with suggested fixes (Jazz asked; design)
+
+**Decision (build):** `src/lib/coffee-chat-schedule.ts`, a pure, tested function: each rep gets min(hours per rep, free sessions) sessions (4+ = no cap), only in sessions they ticked free and not blocked by their own events; most-constrained sponsors placed first; near rooms (2241–2243) before Ivey (1348–1358); a sponsor's reps in the same session stay in one building; organizer edits are pinned and kept on re-run; never double-book a room or a rep; never place a rep in a session overlapping their own sponsor's workshop or its 15-min travel buffers (also enforced on manual moves and applied fixes). Anything unplaced becomes a "Suggested fix" (problem → why → suggested fix → Apply / Contact), computed by trying alternatives (another free session, move the sponsor's reps to Ivey together, fewer hours).
+**Production flow:** Auto-schedule writes a draft (invisible to sponsors and hackers) → organizers apply fixes or drag → Send confirms: confirmed sessions saved, Room Grid tab mirrored, each sponsor's primary contact gets the confirmed schedule, hackers invited (scanned, shortlist, interested), by 10 PM Friday.
+**Why:** the problem is tiny (~20 reps × 6 sessions × 8 rooms), so a greedy pass with fallbacks is instant and easy to test; organizers keep control through pinning and fixes.
+**Mock:** `mocks/organizer-coffee-v8` (algorithm in its JS, described in its README).
+
+## 2026-11-19: HW Contacts has a "Login email" column to match organizers to the sponsors they lead (Jazz)
+
+**Decision:** HW Contacts column C "Login email" holds each spon team member's sign-in email (filled for the spon team and Jasmine; blank and yellow for Lucas and Brittney). The "My sponsors" view matches the signed-in user's email (case-insensitive) to this column, then to Sponsor Day-Of's HW lead name. No match = the All sponsors view only. The emails live only in the private sheet, never in the repo.
+
+## 2026-11-19: HW Contacts shows each organizer's Slack name as "[ORGANIZER] Name" (Jazz)
+
+**Decision:** HW Contacts column D "Slack name" is a formula, `"[ORGANIZER] " & Name`, matching the Slack display-name convention, so it can't drift from column A. It's for people reading the sheet. For @mentions (help "Leave a message", task pings), the app finds the Slack user by email (`users.lookupByEmail`, as the hacker DMs already do) using the "Login email" column, because Slack mentions need a user ID, not a display name. If someone's Slack account uses a different email, add a "Slack email" column then.
+
+## 2026-11-19: "Rationale + Decisions" tab in the sheet (Jazz)
+
+**Decision:** The sheet's first tab, "Rationale + Decisions", is a skimmable table (Area · What we decided · Why · Status) of every sponsor-side decision, grouped by The sheet, Coffee chats, Judging, Comms, Organizer dashboard, and Still to do. Open items are yellow. It's the short version of this log; update both when a decision changes.
+
+## 2026-11-19: "Sponsor requested help" is tracked: Slack DM to the lead with I'm on it, dashboard section, 5-min escalation (Jazz)
+
+**Decision:** Sponsor taps "Get help" (message + required name and call-back phone) → the app DMs their HW lead on Slack (or whoever is on call if the lead is off shift) with [I'm on it] [Text them] buttons → it shows on the dashboard under "Sponsor requested help" with a timer → the lead taps I'm on it (Slack or dashboard): dashboard shows "Noah is on it", the sponsor's portal shows "Noah is on the way" → Resolved moves it to Done today. No response in 5 minutes → re-post to the spon team channel. Use Slack buttons, not emoji reactions (reliable who/when). Visibility: your own sponsors' requests at the top of My sponsors; all open requests visible to everyone in All sponsors so anyone can take one. "Sponsor requested help" is a separate section from "Overdue tasks"; both hide when empty ("All clear"). The portal's quick "Text your lead" stays as an extra. **Supersedes** "Help = text your lead; off shift = leave a message" and "the dashboard doesn't track help requests".
+
+## 2026-11-19: Merge Sponsor Status into Sponsor Day-Of in the build; Coffee Chat Setup loses Status and Other Notes (Jazz)
+
+**Decision:** In the build, Sponsor Status's columns (Status, Booth, Workshop location/time, Track) move into Sponsor Day-Of, the app reads/writes there, and Sponsor Status is deleted (judging room lives in Sponsor Judging; coffee chat minutes are replaced by the session model). Ends the HW-lead conflict. Coffee Chat Setup's "Status" and "Other Notes" columns were deleted (the dashboard shows status; the notes described the old window/hours model). The app still reads the tab (6 rows checked). The rest of Coffee Chat Setup is still the old model (windows, chatting hours, "Main contact", "Can we shift chats?"); rebuild it for sessions (hackers per chat, hours per rep, reps with free sessions, primary rep) in the build.
+
+## 2026-11-19: Chats per rep instead of hours; no rep emails; help popup; shared shortlist (Jazz)
+
+**Decision:** Each rep picks how many chats they want (stepper, time shown, e.g. "6 chats · 1 h 30 min"); this replaces the sponsor-level "hours per rep". Scheduling: a rep needs ceil(chats × chat length / 60) sessions, capped by their free sessions. Rep emails aren't collected (name + phone required). Sponsor help is a modal; the confirmation says "Sent. We'll contact you at <their phone>." with no internal routing text. Shortlisting stays one hacker at a time, with a "Who's shortlisting?" picker; picks go into one shared team shortlist labelled by who picked, updating live; the seat cap is for the team. "Your chats" gets a calendar view (reps × sessions with room and building), filterable by rep.
+**Why:** sponsors think in chats, not hours; several reps share one login.
+
+## 2026-11-19: Organizer coffee chat board v8 built in the app
+
+**Decision:** The Coffee chats tab of /internal/sponsors is now the organizer board from `mocks/organizer-coffee-v8`, built on the session model. Built:
+- `src/lib/coffee-chat-schedule.ts`: the pure auto-schedule (pins kept, workshop windows ±15 min blocked, most constrained first, near before Ivey, one building per sponsor per session, no double-booking) with suggested fixes (another session, Ivey together, fewer chats). Tested with the mock's demo data and 200 random boards.
+- Migration 0058: `coffee_chat_pref` (hackers per chat, longer 1-on-1s, submittedAt), `coffee_chat_rep` (name, phone, primary crown, chats wanted, organizer session cap), `coffee_chat_rep_session`, `coffee_chat_placement` (draft/sent, pinned, sentAt) and `coffee_chat_room_booking` (ad hoc bookings). Sessions and rooms are constants in `src/lib/coffee-chat-sessions.ts`. Dev seed: `src/server/db/seed/coffee-chat-sessions.ts` (fake 555 phones, localhost only).
+- `coffeeChatSessions` router (organizers only): getBoard, autoSchedule, applyFix, move/remove a chat, book/move/remove a room, send. Moves refuse a taken room, a rep in two places, a session the rep isn't free and the sponsor's workshop window. Workshop windows come from the run of show's Saturday "Sponsor Workshop" blocks.
+- Send marks every draft chat sent and writes the "Coffee Chat Room Grid" tab only when `sheetWritesEnabled()` is true (production or SHEET_WRITES=1), so dev writes nothing. Moving a sent chat puts it back to draft.
+- UI: Sponsors band (logos, status chips with counts, crown, Contact with Copy / Text with a drafted sms: / Call), Suggested fixes, Rooms grid (Near / Ivey, Workshops row), inline detail, ad hoc booking on empty cells, Help sheet, sticky Auto-schedule → Re-run → Send bar. Copy is in `src/content/coffee-chat-sessions.ts`. Works at 390 px (grid scrolls in its card, 44 px targets).
+
+**Model change (Jazz, same day):** sponsors no longer give "hours per rep". Each rep has their own number of chats wanted (at least 1). Sessions a rep needs = ceil(chats × chat length / 60), with 15-minute 1-on-1s (30 with the longer option) and 30-minute groups. A rep gets min(that, free unblocked sessions). The board shows each rep as "6 chats · 1.5 h", the "fewer hours" fix is "fewer chats", and rep email isn't collected. The Help text was changed to match ("No more sessions than the rep's chats need").
+
+**Why:** Organizers need to place every rep in a room by 10 PM Friday. The scheduler does the placing and organizers check its work.
+
+**Follow-ups:**
+- Sponsor-side preferences flow (Your team with chats per rep, availability grid, Review & submit) writing these tables. Today only the dev seed fills them.
+- Hacker invites and each primary contact's confirmed schedule from Send (a TODO in the router's `send`).
+- Coffee Chat Setup tab columns for the session model (hackers per chat, reps with chats wanted and free sessions, primary rep).
+- Room Grid tab: merged 4-row blocks and grey organizer bookings (needs batchUpdate). Desktop drag to move isn't built yet (tap Move works everywhere). The organizer tour's coffee steps still describe the old board.
+
+**Code-review fixes (same day):**
+- If the run of show can't be read, every write (auto-schedule, apply fix, move, book, move booking, send) fails with PRECONDITION_FAILED and the UI turns those buttons off with "Can't read the run of show…". Removing a chat or booking still works.
+- All board writes take one Postgres advisory lock (`BOARD_LOCK_KEY`), then re-read and re-check the board in the same transaction, because chats and bookings are separate tables with no shared constraint. Unique violations become CONFLICT ("Someone else just changed the board…"), foreign key violations BAD_REQUEST. bookRoom checks its sponsor exists.
+- Every chat on the board (pinned and sent included) is re-checked on each load: sponsor unsubmitted, now in their workshop window, or rep no longer free. Each becomes a "move to … / remove" suggested fix and doesn't count in "Scheduled N of M".
+- Every list the scheduler reads is ordered down to id, so the same rows give the same board.
+- A submitted sponsor whose reps have no usable session shows "No availability", not "0 of 0".
+- Send is labelled "Save & confirm schedule" and its toast says hacker invites aren't sent yet. Removing a sent chat, or moving/removing a booking after Send, re-mirrors the Room Grid tab (only when `sheetWritesEnabled()`).
+- Deferred: manual moves can split a sponsor across buildings in one session (when built, a warning only, never a block). A `maxSessions` cap from a "fewer chats" fix stays until someone changes it, by design. The Help sheet's Send paragraph still describes the invite step that isn't built.
+## 2026-11-19: Jazz's answers to the full plan (Q1–Q11): simplifications locked in
+
+**Coffee chats, sponsor side:**
+- Keep the shortlist. Sponsors submit ONE shortlist by 9:30 PM Fri; hackers they talked to that evening (scanned) are first choice. ALL hacker invites go out at 10 PM Fri.
+- Each rep picks a number of chats (0 allowed = that rep doesn't chat); the time breakdown is shown ("6 chats · 1 h 30 min"). No hours anywhere.
+- No 30-minute 1-on-1 option: 1-on-1 = 15 min, groups = 30 min.
+- Drop the live "hackers free" column counts from the availability grid.
+- Sun Life's 1–2 session overlaps its workshop buffer (setup 2:00): the algorithm may use it only until 1:30 (partial session, 1:00–1:30). Note for the algorithm; applies to any session cut by a buffer.
+- After Send, the sponsor's portal shows their confirmed schedule ("Your chats" calendar).
+
+**Organizer coffee board:** no Contact button, no Text/Call: each phone number has a copy icon beside it. Show how many chats each rep asked for. Only Noah Medland can press "Send confirmed schedules & invites" on Friday night (matched by his login email; others see it disabled with "Only Noah sends").
+
+**Invites:** invite exactly the number of seats. Round 1 Fri 10 PM, accept by Sat 10:00 AM. Round 2 Sat 10:30 AM for seats still open, 30 minutes to accept; further automatic rounds the same way (30 minutes each) until the chat. (Accepted: 10–11 AM chats are only filled by round 1; most hackers accept the night before, Jazz 2026-11-19.)
+
+**Sponsor help:** scrapped as a tracked feature. Sponsors message their point of contact (their HW lead) directly; if the lead isn't available, Noah Medland is the emergency contact. The portal Help shows the lead's name + number (copy) and Noah as the fallback. No Slack DM, no I'm-on-it, no dashboard section. Supersedes the tracked-help decision (same day).
+
+**My sponsors:** People lists reps only (crown on primary); speakers' and presenters' phones aren't needed. Login matching by login email stays.
+
+**Run of show and task pings:** low priority, future to-do.
+
+**Judging:** no modes. Same experience as judging hackers' projects: one at a time or a list. Sponsors send a ranked top 3 (1st, 2nd, 3rd), not a top 5. The Sponsor Judging tab now has 1st–3rd place only.
+
+**Leads:** Caroline Ge (Manulife) and Alice Nguyen (Commure) are right; Sponsor Status updated.
+
+## 2026-11-19: Turn off task pings for now; show tasks as "Now and next" with the run of show (Jazz)
+
+**Decision:** The task pinging system (automatic Slack DMs to task owners, the Task pings tab, ping log, overdue Text buttons) is turned off and hidden for the event: too confusing. Instead, the organizer dashboard shows "Now and next" under Happening now: the event happening now and the next one, plus the current task and the NEXT task from RUN OF SHOW (with its owner). No pings, no marking done. The pinging code stays in the repo, switched off, for later.
+**Why:** organizers only need to glance at what's on and what's next; pings and logs added noise.
+
+## 2026-11-19: Tracked sponsor help removed everywhere; design parked (Jazz)
+
+**Decision:** No "Sponsor requested help" anywhere in the build: no help rows in Now, no help request in Needs attention, no Slack DM / I'm on it / Resolved, no escalation. The sponsor portal's Help shows their HW lead's name + number (copy) and Noah as emergency contact. The full design is kept in docs/specs/parked-sponsor-help-requests.md for a later rebuild.
