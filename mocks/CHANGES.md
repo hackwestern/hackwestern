@@ -7,6 +7,19 @@ Status: **Done** = in the mock and checked. **Building** = a subagent is adding 
 ## Default style for every mock (Jazz, 2026-11-19)
 Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /live site style; its README lists every source file:line) for ALL mocks, unless Jazz explicitly names another look for that mock. Current exception: `organizer-coffee-autofill-v6a/b/c` build on autofill-v5's look because Jazz asked for that explicitly.
 
+## Sponsor portal v4: `sponsor-portal-flow-hacker-v4` (latest final)
+| # | Change | Status |
+|---|---|---|
+| 1 | Remove "Main contact" fields; one rep is marked Primary contact (crown) | Building |
+| 2 | Rep phone required | Building |
+| 3 | Shortlist cards show steps-v1 step-6 info (school, program, year, role, skills, résumé) + interests + avatar (pixel avatar / team-finder photo) + LinkedIn link; no LinkedIn scraping | Building |
+| 4 | Scan → "Add a hacker" (scan QR or enter hacker ID), disabled until Sat 10:00 AM | Building |
+| 5 | Remove lunch and dinner from the calendar (keep own-workshop zone) | Building |
+| 6 | Remove "Copy to another rep" | Building |
+| 7 | Rep timeline: reps as rows, time across; rows above for workshop, hacker demand/room availability, "Counts as hours"; group block spans its reps' rows; no rooms, no date | Building |
+| 8 | Edit on the block: expand in place for reps, 15/30 toggle, − / + hackers per chat, live chats line; drag edges for start/end | Building |
+| 9 | Step label "Give us your chatting preferences" | Building |
+
 ## Final mocks
 - **Sponsor portal (final):** `sponsor-portal-flow-hacker-v3` (hacker-v2's look + everything below)
 - **Organizer coffee chats (final candidates):** `organizer-coffee-autofill-v6a`, `-v6b`, `-v6c` (autofill-v5's look; three ways to show sponsor info on the same page)
