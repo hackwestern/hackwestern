@@ -27,15 +27,22 @@
 - **Track E (sponsor-sheets.ts):** nothing changed there. The HW Contacts "Login email" read lives in my own util (`coffee-chat-sender.ts`) and only uses the exported `getSheetsClient`, `getSpreadsheetId`, `HW_CONTACTS_TAB` and `cell`. If "My sponsors" adds its own login-email reader, the two could share it later.
 - **Shared button:** `DashboardButton` variant "primary" has no disabled style. The Send button adds `disabled:opacity-dashboard-disabled` locally. Adding it to the shared component would fix every primary button (Auto-schedule, Apply fix); left alone because it's outside this track.
 
-## Open questions for Jazz
+## Review fixes and answers (2026-11-19)
 
-1. Partial sessions: is "trimmed to whole chats" right (1:00–1:45 for 15-min chats), or should a cut session always end on the half hour?
-2. Should a sponsor whose reps all asked for 0 chats still count as "submitted" in "N of M submitted", or drop off the board?
-3. Do you want organizer names on board changes ("Daniel moved Priya's chat")? That needs a created-by/updated-by column on placements (a migration).
-4. The help's "What sponsors give us" still says 1-on-1s can be 30 min; Q1–Q11 removed that option. Change it once track A drops the "longer chats" option.
+- **Answered:** partial sessions end at the last whole chat (15-min chats get 1:00–1:45); all-0 sponsors count as submitted; no organizer names on changes.
+- **1-on-1s are always 15 min:** `chatMinutes()` ignores `longer_one_on_one`; Help and the format labels no longer mention 30-min 1-on-1s.
+- **Partial shortfall (R1):** when a partial session leaves a rep with fewer chats than asked, the rep row shows "3 of 4 chats" and a suggested fix appears: "add a session" (places them in a free session and raises their `maxSessions` to fit) or, with none free, "fewer chats" (sets `maxSessions` to what they have). Once `maxSessions` is set the organizer has decided, so it isn't flagged again.
+- **addTab (R2):** throws when the addSheet reply has no sheetId instead of falling back to tab 0.
+- **Wording (R3):** "Last new chat" instead of "Last scheduled": the time comes from the newest placement, and a re-run that places nothing doesn't move it.
+- **Shared button:** primary `DashboardButton` now has its own disabled look (faded, not-allowed cursor, no hover). The Send-only style was dropped.
+- **Tour:** the organizer tour's coffee steps now walk the v8 board: Sponsors (`coffee-strip`), Suggested fixes (`coffee-fixes`), Rooms (`coffee-table`), Send bar (`coffee-send`, Noah only). All four targets are always on the page. The old `coffee-block` / `coffee-free` targets were removed from the grid. Only the coffee steps in `organizer-tours.ts` changed.
+
+## Still open
+
+- The Send button label and Help paragraph wait for track B's invites (see decision 5).
 
 ## How it was checked
 
 - `SKIP_ENV_VALIDATION=1 npx tsc --noEmit -p .`: clean.
-- `SKIP_ENV_VALIDATION=1 npx vitest run`: 1536 passed, 1 failed (the known Apple Wallet test), 4 skipped. Baseline was 1507 passing. New: `src/lib/coffee-chat-partial.test.ts`, `src/server/api/utils/coffee-chat-sender.test.ts`, `src/server/api/utils/coffee-chat-room-grid-mirror.test.ts`, router tests for Noah-only Send, 0 chats and changes after Send; the 200 random boards now use 15/30-min chats so partial sessions are covered.
+- `SKIP_ENV_VALIDATION=1 npx vitest run`: 1542 passed, 1 failed (the known Apple Wallet test), 4 skipped (after the review fixes). Baseline was 1507 passing. New: `src/lib/coffee-chat-partial.test.ts`, `src/server/api/utils/coffee-chat-sender.test.ts`, `src/server/api/utils/coffee-chat-room-grid-mirror.test.ts`, router tests for Noah-only Send, 0 chats and changes after Send; the 200 random boards now use 15/30-min chats so partial sessions are covered.
 - Running app on :3033 (3023 was taken by another worktree's server), screenshots at 1440 and 390 in this folder, from `capture.mjs`. The shared dev DB was only read: the "open" and "send" shots patch the board response in the browser (Priya ticks 2–3, 3 drafts) to show a partial session and the disabled Send. The login is the local test organizer, who isn't Noah, so Send shows "Only Noah sends" (HW Contacts was readable).

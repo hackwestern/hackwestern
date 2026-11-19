@@ -155,7 +155,11 @@ export type SessionBoard = {
   draftCount: number;
   /** Latest Send, or null. */
   sentAt: Date | null;
-  /** When the newest chat on the board was placed (Auto-schedule, a fix), or null. */
+  /**
+   * When the newest chat on the board was placed (Auto-schedule, a fix, a
+   * move keeps its time), or null. A re-run that places nothing new doesn't
+   * change it, so the page says "last new chat", not "last scheduled".
+   */
   lastScheduledAt: Date | null;
 };
 
@@ -330,6 +334,7 @@ export async function loadBoardState(
         free: r.free,
         sessionsWanted: r.sessionsWanted,
         maxSessions: r.maxSessions,
+        chatsWanted: r.chatsWanted,
       })),
     };
     sched.push(sp);

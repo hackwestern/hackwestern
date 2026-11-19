@@ -1,6 +1,6 @@
 import { Check, ChevronRight } from "lucide-react";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
-import { COFFEE_SESSIONS } from "~/lib/coffee-chat-sessions";
+import { COFFEE_SESSIONS, chatsInWindow } from "~/lib/coffee-chat-sessions";
 import { cn } from "~/lib/utils";
 import {
   Card,
@@ -147,9 +147,20 @@ function SponsorDetail({ sponsor: sp, board }: { sponsor: BoardSponsor; board: S
                 className="text-left align-middle text-[13px] font-semibold leading-tight text-dashboard-text-heavy [overflow-wrap:anywhere]"
               >
                 {r.name}
-                <span className="block text-[11px] font-medium text-dashboard-text-light">
-                  {sc.repWants(r.chatsWanted, sp.chatMinutes)}
-                </span>
+                {(() => {
+                  // Placed chats short of what they asked (a partial session): say so.
+                  const mine = board.placements.filter((p) => p.repId === r.id);
+                  const got = mine.reduce((n, p) => n + chatsInWindow(p.window, sp.chatMinutes), 0);
+                  return mine.length > 0 && got < r.chatsWanted ? (
+                    <span className="block text-[11px] font-semibold text-dashboard-text-warning">
+                      {sc.chatsOf(got, r.chatsWanted)}
+                    </span>
+                  ) : (
+                    <span className="block text-[11px] font-medium text-dashboard-text-light">
+                      {sc.repWants(r.chatsWanted, sp.chatMinutes)}
+                    </span>
+                  );
+                })()}
               </th>
               {COFFEE_SESSIONS.map((s) => {
                 const label = sessionLabel(s.id);

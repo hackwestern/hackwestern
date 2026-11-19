@@ -119,6 +119,20 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
           }
           return { kind: sug.kind };
         }
+        if (sug.kind === "extra") {
+          // A partial session left the rep short: one more session, and a cap that fits it.
+          await tx.insert(coffeeChatPlacements).values({
+            repId: sug.place.rep,
+            room: sug.place.room,
+            sessionId: sug.place.session,
+            pinned: true,
+          });
+          await tx
+            .update(coffeeChatReps)
+            .set({ maxSessions: sug.cap.sessions })
+            .where(eq(coffeeChatReps.id, sug.cap.rep));
+          return { kind: sug.kind };
+        }
         if (sug.kind === "move") {
           // A chat that breaks a rule now: move it (pinned, back to draft) or remove it.
           const from = parseKey(sug.from);

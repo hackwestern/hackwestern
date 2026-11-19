@@ -285,7 +285,7 @@ function ActionBar({
       ? b.onlyNoah
       : copy.errors.sender[sender.reason];
   return (
-    <div className="fixed inset-x-0 bottom-0 z-20 border-t border-dashboard-border-default bg-dashboard-bg-surface px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 shadow-dashboard-card lg:px-12">
+    <div data-tour="coffee-send" className="fixed inset-x-0 bottom-0 z-20 border-t border-dashboard-border-default bg-dashboard-bg-surface px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 shadow-dashboard-card lg:px-12">
       <div className="mx-auto flex max-w-[1440px] flex-col items-stretch gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
         {allSent ? (
           <span className="inline-flex items-center justify-center gap-1.5 text-[17px] font-bold text-dashboard-status-live">
@@ -316,8 +316,7 @@ function ActionBar({
                 disabled={busy || locked || !sender.canSend}
                 aria-describedby={whyNot ? "coffee-send-why" : undefined}
                 onClick={onSend}
-                // The shared primary button has no disabled look of its own.
-                className="disabled:opacity-dashboard-disabled sm:w-auto"
+                className="sm:w-auto"
               >
                 {busy ? b.working : b.send}
               </DashboardButton>

@@ -65,19 +65,17 @@ export function buildingOf(room: string): Building | null {
   return COFFEE_ROOMS.find((r) => r.id === room)?.building ?? null;
 }
 
-/** Chat length in minutes: 15 for a plain 1-on-1, else 30. */
-export function chatMinutes(prefs: {
-  hackersPerChat: number;
-  longerOneOnOne: boolean;
-}): 15 | 30 {
-  return prefs.hackersPerChat === 1 && !prefs.longerOneOnOne ? 15 : 30;
+/**
+ * Chat length in minutes: 15 for a 1-on-1, 30 for a group. The old
+ * longer_one_on_one column is ignored: 1-on-1s are always 15 minutes
+ * (docs/decisions.md 2026-11-19, Q1-Q11).
+ */
+export function chatMinutes(prefs: { hackersPerChat: number; longerOneOnOne?: boolean }): 15 | 30 {
+  return prefs.hackersPerChat === 1 ? 15 : 30;
 }
 
 /** Chats one rep runs in one 1-hour session (4 at 15 min, 2 at 30). */
-export function chatsPerSession(prefs: {
-  hackersPerChat: number;
-  longerOneOnOne: boolean;
-}): number {
+export function chatsPerSession(prefs: { hackersPerChat: number; longerOneOnOne?: boolean }): number {
   return 60 / chatMinutes(prefs);
 }
 
@@ -87,10 +85,7 @@ export function sessionsForChats(chatsWanted: number, minutes: 15 | 30): number 
 }
 
 /** Hackers one rep sees in one session. */
-export function hackersPerSession(prefs: {
-  hackersPerChat: number;
-  longerOneOnOne: boolean;
-}): number {
+export function hackersPerSession(prefs: { hackersPerChat: number; longerOneOnOne?: boolean }): number {
   return (60 / chatMinutes(prefs)) * prefs.hackersPerChat;
 }
 

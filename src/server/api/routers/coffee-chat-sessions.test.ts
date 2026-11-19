@@ -370,17 +370,53 @@ describe("0 chats and what changed", () => {
     expect((await organizer.coffeeChatSessions.getBoard()).fixes.filter((f) => f.sponsor === ids[zero] || f.sponsor === ids[mixed])).toEqual([]);
   });
 
-  test("a sponsor that edits after Send is flagged, with when", async () => {
+  test("after Send with no sponsor edit, nothing is flagged as changed", async () => {
     await organizer.coffeeChatSessions.send();
+    const board = await organizer.coffeeChatSessions.getBoard();
+    const sent = board.sponsors.filter((s) => s.status.kind === "sent");
+    expect(sent.length).toBeGreaterThan(0);
+    for (const sp of sent) {
+      expect(sp.changedAfterSend, sp.name).toBe(false);
+      expect(sp.change, sp.name).toBeNull();
+    }
+  });
+
+  test("a sponsor that edits after Send is flagged, with when", async () => {
     let board = await organizer.coffeeChatSessions.getBoard();
     const team = () => board.sponsors.find((s) => s.name === names.team)!;
-    expect(team().changedAfterSend).toBe(false);
-    expect(team().change).toBeNull();
     const later = new Date(Date.now() + 60_000);
     await db.update(coffeeChatPrefs).set({ updatedAt: later }).where(eq(coffeeChatPrefs.sponsorId, ids[names.team]!));
     board = await organizer.coffeeChatSessions.getBoard();
     expect(team().changedAfterSend).toBe(true);
     expect(team().change).toEqual({ kind: "editedAfterSend", at: later });
     expect(board.lastScheduledAt).not.toBeNull();
+  });
+});
+
+describe("partial session shortfall", () => {
+  test("a rep in a cut session gets an add-a-session fix; applying it places them and sets the cap", async () => {
+    // WorkCo's 2-3 is usable 2:15-3:00: 3 one-on-ones. Wren wants 4.
+    const [rep] = await db
+      .insert(coffeeChatReps)
+      .values({ sponsorId: ids[names.work]!, name: "Wren", phone: "5195550198", chatsWanted: 4, position: 5 })
+      .returning();
+    await db.insert(coffeeChatRepSessions).values(["14", "16"].map((sessionId) => ({ repId: rep!.id, sessionId })));
+    await organizer.coffeeChatSessions.autoSchedule();
+    const mine = () => db.select().from(coffeeChatPlacements).where(eq(coffeeChatPlacements.repId, rep!.id));
+    const [placed] = await mine();
+    expect(placed!.sessionId).toBe("16"); // the full session first
+    const used = (await db.select().from(coffeeChatPlacements)).filter((p) => p.sessionId === "14").map((p) => p.room);
+    const free14 = (["2241", "2242", "2243", "1348", "1352", "1354", "1356", "1358"] as const).find((r) => !used.includes(r))!;
+    await organizer.coffeeChatSessions.movePlacement({ placementId: placed!.id, room: free14, sessionId: "14" });
+    const board = await organizer.coffeeChatSessions.getBoard();
+    expect(board.placements.find((p) => p.repId === rep!.id)!.window).toEqual({ start: 855, end: 900 });
+    const fix = board.fixes.find((f) => f.reason === "partial" && f.items[0]!.rep === rep!.id)!;
+    expect(fix).toMatchObject({ items: [{ chats: { got: 3, want: 4 } }], suggestion: { kind: "extra", place: { session: "16" } } });
+    await organizer.coffeeChatSessions.applyFix({ fixId: fix.id });
+    expect((await mine()).map((p) => p.sessionId).sort()).toEqual(["14", "16"]);
+    const [row] = await db.select().from(coffeeChatReps).where(eq(coffeeChatReps.id, rep!.id));
+    expect(row!.maxSessions).toBe(2);
+    const after = await organizer.coffeeChatSessions.getBoard();
+    expect(after.fixes.filter((f) => f.items.some((i) => i.rep === rep!.id))).toEqual([]);
   });
 });

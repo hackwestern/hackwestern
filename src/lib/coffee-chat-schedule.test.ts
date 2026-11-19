@@ -293,7 +293,8 @@ describe("sessionsForChats", () => {
     const oneOnOne = chatMinutes({ hackersPerChat: 1, longerOneOnOne: false });
     const longer = chatMinutes({ hackersPerChat: 1, longerOneOnOne: true });
     const group = chatMinutes({ hackersPerChat: 3, longerOneOnOne: false });
-    expect([oneOnOne, longer, group]).toEqual([15, 30, 30]);
+    // longer_one_on_one is ignored: a 1-on-1 is always 15 minutes.
+    expect([oneOnOne, longer, group]).toEqual([15, 15, 30]);
     expect(sessionsForChats(4, oneOnOne)).toBe(1);
     expect(sessionsForChats(6, oneOnOne)).toBe(2);
     expect(sessionsForChats(3, group)).toBe(2);

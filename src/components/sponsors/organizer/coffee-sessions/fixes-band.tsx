@@ -32,7 +32,9 @@ export function fixView(fix: BoardFix, sp: BoardSponsor, board: Pick<SessionBoar
   const g = fix.suggestion;
   const r = fix.reason;
   const problem =
-    g.kind === "move" && (r === "workshop" || r === "notFree" || r === "notSubmitted" || r === "overCap")
+    r === "partial" && first.chats
+      ? fc.partialShort(name(first.rep), first.chats.got, first.chats.want)
+      : g.kind === "move" && (r === "workshop" || r === "notFree" || r === "notSubmitted" || r === "overCap")
       ? fc.invalid[r](name(first.rep), sessionLabel(fix.session), pinnedAt(g.from), sp.name)
       : fix.problem === "short"
         ? fc.short(name(first.rep), chats(first.rep, first.got), chats(first.rep, first.want))
@@ -40,7 +42,11 @@ export function fixView(fix: BoardFix, sp: BoardSponsor, board: Pick<SessionBoar
   const k = (b: "near" | "ivey") => COFFEE_ROOMS.filter((x) => x.building === b).length;
   const why = r === "near" || r === "ivey" ? fc.why[r](k(r)) : fc.why[r];
   let suggestion: string;
-  if (g.kind === "move") {
+  if (g.kind === "extra") {
+    suggestion = fc.extra(name(g.place.rep), copy.rooms.rm(g.place.room), sessionLabel(g.place.session));
+  } else if (g.kind === "fewer" && r === "partial" && first.chats) {
+    suggestion = fc.fewer([{ rep: name(first.rep), got: first.chats.got, want: first.chats.want }]);
+  } else if (g.kind === "move") {
     const to = g.to;
     suggestion = to ? fc.move(copy.rooms.rm(to.room), sessionLabel(to.session)) : fc.removeIt;
   } else if (g.kind === "session") {
@@ -67,7 +73,7 @@ export function FixesBand({
   locked?: boolean;
 }) {
   return (
-    <Card labelledBy="coffee-fixes">
+    <Card labelledBy="coffee-fixes" tour="coffee-fixes">
       <CardHead id="coffee-fixes" title={fc.heading} />
       {board.fixes.length === 0 ? (
         <p className="m-0 text-[15px] text-dashboard-text-light">

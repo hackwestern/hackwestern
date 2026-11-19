@@ -211,7 +211,11 @@ export async function googleRoomGridSheet(): Promise<RoomGridSheet> {
         spreadsheetId,
         requestBody: { requests: [{ addSheet: { properties: { title } } }] },
       });
-      return res.data.replies?.[0]?.addSheet?.properties?.sheetId ?? 0;
+      // Never fall back to 0: that's the first tab, and the formatting
+      // would land on the live RUN OF SHOW.
+      const id = res.data.replies?.[0]?.addSheet?.properties?.sheetId;
+      if (typeof id !== "number") throw new Error(`addSheet returned no sheetId for "${title}"`);
+      return id;
     },
     async write(range, values) {
       await sheets.spreadsheets.values.update({

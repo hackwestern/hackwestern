@@ -50,9 +50,9 @@ export const coffeeSessionsCopy = {
     changedAfterSend: "Changed after invites",
     openLabel: (name: string, status: string) => `${name}, ${status}`,
     notSubmittedYet: "Nothing submitted yet.",
-    facts: (p: { hackersPerChat: number; longerOneOnOne: boolean }) =>
+    facts: (p: { hackersPerChat: number }) =>
       p.hackersPerChat === 1
-        ? `1 hacker per chat · ${p.longerOneOnOne ? 30 : 15}-min chats`
+        ? "1 hacker per chat · 15-min chats"
         : `${p.hackersPerChat} hackers per chat · 30-min chats`,
     /** A rep's wanted chats and the time they take, e.g. "6 chats · 1.5 h". */
     repWants: (chats: number, minutes: number) => {
@@ -75,6 +75,8 @@ export const coffeeSessionsCopy = {
     /** A session a workshop's travel buffer cuts: only part of it is usable. */
     repPartial: (rep: string, s: string, time: string) => `${rep} free ${s}, usable ${time}`,
     people: "People",
+    /** A rep placed for fewer chats than asked (a partial session), e.g. "3 of 4 chats". */
+    chatsOf: (got: number, want: number) => `${got} of ${plural(want, "chat")}`,
     /** Next to each rep in People, e.g. "Asked for 6 chats · 1.5 h". */
     asked: (wants: string) => `Asked for ${wants}`,
   },
@@ -107,7 +109,11 @@ export const coffeeSessionsCopy = {
       notFree: "Their free sessions changed after this chat was placed.",
       notSubmitted: "Only sponsors who submitted get chats.",
       overCap: "The rep now asks for fewer chats than they have.",
+      partial: "A workshop cuts one of their sessions short, so it fits fewer chats.",
     },
+    /** Partial sessions left a rep short of the chats they asked for. */
+    partialShort: (rep: string, got: number, want: number) => `${rep} gets ${got} of ${plural(want, "chat")}.`,
+    extra: (rep: string, room: string, s: string) => `add a session: put ${rep} in ${room} at ${s}.`,
     /** A chat already on the board that breaks a rule now. */
     invalid: {
       workshop: (rep: string, s: string, pinned: boolean, sponsor: string) =>
@@ -165,9 +171,9 @@ export const coffeeSessionsCopy = {
     remove: "Remove",
     cancel: "Cancel",
     movePick: (who: string) => `Tap an empty cell when ${who} is free.`,
-    format: (p: { hackersPerChat: number; longerOneOnOne: boolean }) =>
+    format: (p: { hackersPerChat: number }) =>
       p.hackersPerChat === 1
-        ? `1-on-1 · ${p.longerOneOnOne ? 30 : 15} min`
+        ? "1-on-1 · 15 min"
         : `Group of ${p.hackersPerChat}`,
     toInvite: (n: number) => `${n} hackers to invite`,
     // Until hacker invites are built, Send only saves and confirms.
@@ -211,13 +217,14 @@ export const coffeeSessionsCopy = {
    */
   changes: {
     heading: "Since last time",
-    none: "No sponsor changes since the board was last scheduled.",
+    none: "No sponsor changes since the last new chat.",
     submitted: (sponsor: string, time: string) => `${sponsor} submitted · ${time}`,
     editedAfterSend: (sponsor: string, time: string) =>
       `${sponsor} edited reps or times after Send · ${time}`,
     editedAfterSchedule: (sponsor: string, time: string) =>
-      `${sponsor} edited reps or times after Auto-schedule · ${time}`,
-    lastScheduled: (time: string) => `Last scheduled ${time}`,
+      `${sponsor} edited reps or times since the last new chat · ${time}`,
+    /** Time of the newest chat placed (Auto-schedule, a fix or a move adds one). */
+    lastScheduled: (time: string) => `Last new chat ${time}`,
     lastSent: (time: string) => `Last sent ${time}`,
   },
 
@@ -281,7 +288,7 @@ export const coffeeSessionsCopy = {
     close: "Close",
     give: {
       lead: "What sponsors give us",
-      rest: " (at the Friday 5 PM workshop): their team (one primary contact, every rep has a phone), hackers per chat (1–5; 1-on-1s can be 30 min), which 1-hour sessions each rep is free (10–11, 11–12, 1–2, 2–3, 3–4, 4–5), and how many chats each rep wants. The shortlist is optional, up to their number of hacker seats.",
+      rest: " (at the Friday 5 PM workshop): their team (one primary contact, every rep has a phone), hackers per chat (1–5; a 1-on-1 is 15 min, a group 30), which 1-hour sessions each rep is free (10–11, 11–12, 1–2, 2–3, 3–4, 4–5), and how many chats each rep wants. The shortlist is optional, up to their number of hacker seats.",
     },
     checksTitle: "Auto-schedule checks, for every placement:",
     checks: [

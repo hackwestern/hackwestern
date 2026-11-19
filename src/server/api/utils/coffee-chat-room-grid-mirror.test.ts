@@ -5,10 +5,30 @@ const writes = vi.hoisted(() => ({ on: false }));
 vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
   ...(await importOriginal<typeof import("~/server/api/utils/run-of-show-sheet")>()),
   sheetWritesEnabled: () => writes.on,
+  runOfShowCredentials: () => ({ email: "test@example.test", key: "k" }),
+  runOfShowSpreadsheetId: () => "sheet-id",
+}));
+// No network: a fake Sheets client whose addSheet reply has no sheetId.
+vi.mock("googleapis", () => ({
+  google: {
+    auth: {
+      JWT: class {
+        authorize() {
+          return Promise.resolve();
+        }
+      },
+    },
+    sheets: () => ({
+      spreadsheets: {
+        batchUpdate: () => Promise.resolve({ data: { replies: [{ addSheet: { properties: { title: "x" } } }] } }),
+      },
+    }),
+  },
 }));
 
 const {
   BOOKING_GREY,
+  googleRoomGridSheet,
   mirrorRoomGrid,
   roomGridBlocks,
   roomGridRequests,
@@ -136,6 +156,18 @@ describe("mirrorRoomGrid", () => {
       const f = fake();
       expect(await mirrorRoomGrid(state, { sheet: f.sheet })).toMatchObject({ ok: true });
       expect(f.calls).toEqual(["sheetId", "addTab", "write", `batchUpdate:${roomGridRequests(state, 7).length}`]);
+    } finally {
+      writes.on = false;
+    }
+  });
+});
+
+describe("googleRoomGridSheet.addTab", () => {
+  test("throws when addSheet returns no sheetId, never falls back to tab 0", async () => {
+    writes.on = true;
+    try {
+      const sheet = await googleRoomGridSheet();
+      await expect(sheet.addTab("Coffee Chat Room Grid")).rejects.toThrow(/no sheetId/);
     } finally {
       writes.on = false;
     }

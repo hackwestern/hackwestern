@@ -42,8 +42,17 @@ export type SchedRep = {
   free: readonly string[];
   /** Sessions the rep's wanted chats need (sessionsForChats). */
   sessionsWanted: number;
-  /** Organizer override from a "fewer chats" fix, in sessions. */
+  /**
+   * Organizer override in sessions, from a "fewer chats" or "add a session"
+   * fix. Set = the organizer decided, so a partial-session shortfall is no
+   * longer flagged.
+   */
   maxSessions?: number | null;
+  /**
+   * Chats the rep asked for. With it, a rep whose partial sessions hold
+   * fewer chats than this gets a "partial" suggested fix.
+   */
+  chatsWanted?: number;
 };
 export type SchedSponsor = {
   id: string;
@@ -80,17 +89,29 @@ export type ChatProblem = "notSubmitted" | "workshop" | "notFree" | "overCap";
  * Why a fix's reps couldn't be placed (text key for the "why" line), or,
  * for an "invalid" fix, what's wrong with the chat that's there.
  */
-export type FixReason = "full" | "near" | "ivey" | "open" | ChatProblem;
+export type FixReason = "full" | "near" | "ivey" | "open" | "partial" | ChatProblem;
 /**
  * "short": one rep short with a room free elsewhere; "group": several, or
  * no room; "invalid": a chat already on the board breaks a rule now.
  */
 export type FixProblem = "short" | "group" | "invalid";
-export type FixItem = { rep: string; got: number; want: number };
+export type FixItem = {
+  rep: string;
+  /** Sessions placed and wanted. */
+  got: number;
+  want: number;
+  /** For a "partial" fix: chats the placed sessions hold, and chats asked. */
+  chats?: { got: number; want: number };
+};
 export type Suggestion =
   | { kind: "session"; places: Place[] }
   | { kind: "ivey"; session: string; remove: string[]; places: Place[] }
   | { kind: "fewer"; caps: { rep: string; sessions: number; want: number }[] }
+  /**
+   * One more session for a rep short of chats because of a partial session:
+   * place them, and raise their session cap to fit it.
+   */
+  | { kind: "extra"; place: Place; cap: { rep: string; sessions: number } }
   /** Move the chat at cell `from` to `to`, or remove it when `to` is null. */
   | { kind: "move"; from: string; to: Place | null };
 export type Fix = {
@@ -197,6 +218,24 @@ export function repKeyAt(board: Board, rep: string, s: string): string | null {
 /** How many sessions this rep has on the board. */
 export function repCount(board: Board, rep: string): number {
   return chatsOf(board).filter(([, v]) => v.rep === rep).length;
+}
+
+/** Whole chats this rep's placed sessions hold (a partial session holds fewer). */
+export function placedChats(
+  sponsor: Timed,
+  rep: Pick<SchedRep, "id">,
+  sessions: readonly SchedSession[],
+  board: Board,
+): { chats: number; partial: string[] } {
+  const partial = partialSessions(sponsor, sessions);
+  let chats = 0;
+  const cut: string[] = [];
+  for (const s of sessions) {
+    if (!repKeyAt(board, rep.id, s.id)) continue;
+    chats += chatsAt(sponsor, s);
+    if (partial.has(s.id)) cut.push(s.id);
+  }
+  return { chats, partial: cut };
 }
 
 /** rep id -> sponsor id. */
@@ -443,7 +482,11 @@ export function findFixes(
     for (const rep of sp.reps) {
       const want = sessionsNeeded(sp, rep, sessions);
       const got = repCount(board, rep.id);
-      if (got >= want) continue;
+      if (got >= want) {
+        const short = partialShortfall(ctx, sp, rep, sessions, board, got);
+        if (short) fixes.push(short);
+        continue;
+      }
       const tries = availSessions(sp, rep, sessions).filter(
         (s) => !repKeyAt(board, rep.id, s),
       );
@@ -474,6 +517,53 @@ export function findFixes(
     }
   }
   return fixes;
+}
+
+/**
+ * A rep with all their sessions placed, but a partial session leaves them
+ * short of the chats they asked for: "add a session" when a free session
+ * with a room is left, else "fewer chats" (keeps what they have). Skipped
+ * once an organizer set the rep's cap (maxSessions), or with no chatsWanted.
+ */
+function partialShortfall(
+  ctx: Ctx,
+  sp: SchedSponsor,
+  rep: SchedRep,
+  sessions: readonly SchedSession[],
+  board: Board,
+  got: number,
+): Fix | null {
+  if (rep.chatsWanted === undefined || rep.maxSessions != null) return null;
+  const placed = placedChats(sp, rep, sessions, board);
+  if (placed.partial.length === 0 || placed.chats >= rep.chatsWanted) return null;
+  const session = placed.partial[0]!;
+  const item: FixItem = {
+    rep: rep.id,
+    got,
+    want: got,
+    chats: { got: placed.chats, want: rep.chatsWanted },
+  };
+  let suggestion: Suggestion = { kind: "fewer", caps: [{ rep: rep.id, sessions: got, want: got }] };
+  for (const s of availSessions(sp, rep, sessions)) {
+    if (repKeyAt(board, rep.id, s)) continue;
+    const pick = pickRoom(ctx, board, sp.id, rep.id, s);
+    if (!pick.room) continue;
+    suggestion = {
+      kind: "extra",
+      place: { rep: rep.id, room: pick.room, session: s },
+      cap: { rep: rep.id, sessions: got + 1 },
+    };
+    break;
+  }
+  return {
+    id: `${sp.id}|${rep.id}|partial`,
+    sponsor: sp.id,
+    session,
+    reason: "partial",
+    problem: "short",
+    items: [item],
+    suggestion,
+  };
 }
 
 /**
@@ -566,6 +656,10 @@ export function applySuggestion(
   if (sug.kind === "fewer") {
     for (const c of sug.caps) caps[c.rep] = c.sessions;
     return { board: out, maxSessions: caps };
+  }
+  if (sug.kind === "extra") {
+    caps[sug.cap.rep] = sug.cap.sessions;
+    sug = { kind: "session", places: [sug.place] };
   }
   if (sug.kind === "move") {
     const from = out[sug.from];

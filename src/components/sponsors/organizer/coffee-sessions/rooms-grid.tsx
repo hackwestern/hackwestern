@@ -177,7 +177,6 @@ function Cell({
   const { room, session } = splitKey(k);
   const where = rc.where(room, sessionLabel(session));
   const sel = selected === k && "outline outline-2 outline-offset-1 outline-dashboard-action-primary";
-  const isFirstFree = !c && k === firstFreeKey(board);
   if (!c) {
     if (moving && moveCheck(board, moving, k) === "ok") {
       return (
@@ -188,7 +187,7 @@ function Cell({
       );
     }
     return (
-      <button type="button" onClick={() => onCell(k)} aria-label={rc.cellBook(where)} data-tour={isFirstFree ? "coffee-free" : undefined}
+      <button type="button" onClick={() => onCell(k)} aria-label={rc.cellBook(where)}
         className={cn(cellBase, sel, "cursor-pixel-hover border border-dashed border-dashboard-border-default text-dashboard-border-control [@media(hover:hover)]:hover:bg-dashboard-bg-highlight")}>
         <Plus aria-hidden className="size-4" />
       </button>
@@ -206,7 +205,6 @@ function Cell({
   const part = partialTimeOf(c);
   return (
     <button type="button" onClick={() => onCell(k)} aria-label={rc.chatLabel(c.sponsor.name, c.repName, part ? rc.where(room, part) : where)}
-      data-tour={k === firstChatKey(board) ? "coffee-block" : undefined}
       className={cn(cellBase, sel, drag,
         "cursor-pixel-hover border border-dashboard-border-outline bg-dashboard-bg-surface text-dashboard-text-active shadow-[inset_3px_0_0_theme(colors.dashboard.action.primary)] [@media(hover:hover)]:hover:bg-dashboard-bg-highlight")}>
       <Logo name={c.sponsor.name} size="sm" />
@@ -214,15 +212,6 @@ function Cell({
       {part && <span className="text-xs font-semibold tabular-nums text-dashboard-text-warning">{part}</span>}
     </button>
   );
-}
-
-function firstFreeKey(board: SessionBoardData): string | null {
-  for (const r of COFFEE_ROOMS) for (const s of COFFEE_SESSIONS) if (!cellAt(board, keyOf(r.id, s.id))) return keyOf(r.id, s.id);
-  return null;
-}
-function firstChatKey(board: SessionBoardData): string | null {
-  const p = board.placements[0];
-  return p ? keyOf(p.room, p.sessionId) : null;
 }
 
 /** Bottom row: each sponsor's own workshop in that session (hatched). */

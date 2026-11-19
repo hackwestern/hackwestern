@@ -58,20 +58,20 @@ export const organizerTourCopy = {
     },
     coffee: {
       strip: {
-        title: "What each sponsor asked for",
-        body: "One card per sponsor. Tap a card to light up their blocks below.",
+        title: "Sponsors",
+        body: "Each sponsor's status in plain words. Open one to see when each rep is free, how many chats they asked for, and their phone numbers to copy.",
+      },
+      fixes: {
+        title: "Suggested fixes",
+        body: "Anything Auto-schedule couldn't place, with why and a fix you can apply. If a fix needs the sponsor's OK, call their primary contact.",
       },
       table: {
-        title: "Rooms by time",
-        body: "Rooms run across, times run down. Each coloured block is a room a sponsor holds.",
+        title: "Rooms",
+        body: "Rooms down the side, 1-hour sessions across. Tap a chat to move or remove it, or tap an empty cell to book the room.",
       },
-      block: {
-        title: "Open a block",
-        body: "See the hackers in each slot, invite or cancel a chat, change the length, or release the room.",
-      },
-      free: {
-        title: "Give a room",
-        body: "Tap a free cell to give a sponsor that room, for example a last-minute booking.",
+      send: {
+        title: "Auto-schedule, then send",
+        body: "Auto-schedule places everyone. Only Noah can press Send, by 10 PM Friday.",
       },
     },
     judging: {
