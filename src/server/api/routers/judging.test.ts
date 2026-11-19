@@ -238,6 +238,70 @@ describe("getCurrentAssignment / getQueue", () => {
     expect(mark?.team).not.toHaveProperty("joinCode");
   });
 
+  test("the rubric lands in its own columns and comes back as ratings", async () => {
+    const org = await makeOrganizer();
+    await makeTeam();
+    await org.caller.judging.admin.loadQueue({ roundsPerTeam: 3 });
+
+    const j = await makeJudge();
+    const { team } = await j.caller.judging.me.getNextTeam();
+    await j.caller.judging.me.submitTeamMark({
+      teamId: team.id,
+      score: 7.5,
+      breakdown: {
+        ratings: { impact: 8, creativity: 7.5, design: 6, adventurous: 8.5 },
+        notes: "Solid demo",
+        superLike: true,
+      },
+    });
+
+    const row = await db.query.teamMarks.findFirst({
+      where: eq(teamMarks.teamId, team.id),
+    });
+    expect(row).toMatchObject({
+      impactRating: 8,
+      creativityRating: 7.5,
+      designRating: 6,
+      adventurousRating: 8.5,
+      notes: "Solid demo",
+      superLike: true,
+    });
+
+    const [mark] = await j.caller.judging.me.getSubmittedTeamMarks();
+    expect(mark?.ratings).toEqual({
+      impact: 8,
+      creativity: 7.5,
+      design: 6,
+      adventurous: 8.5,
+    });
+
+    // An edit with a breakdown rewrites every rubric column.
+    await j.caller.judging.me.editTeamMark({
+      teamMarkId: mark!.id,
+      score: 5,
+      breakdown: { ratings: { impact: 5 } },
+    });
+    const edited = await db.query.teamMarks.findFirst({
+      where: eq(teamMarks.id, mark!.id),
+    });
+    expect(edited).toMatchObject({
+      score: 5,
+      impactRating: 5,
+      creativityRating: null,
+      notes: null,
+      superLike: false,
+    });
+
+    // A criterion with no column is rejected rather than silently dropped.
+    await expect(
+      j.caller.judging.me.editTeamMark({
+        teamMarkId: mark!.id,
+        score: 5,
+        breakdown: { ratings: { technical: 5 } as never },
+      }),
+    ).rejects.toThrow();
+  });
+
   test("getQueue is organizer-only", async () => {
     const j = await makeJudge();
     await expect(j.caller.judging.admin.getQueue()).rejects.toThrow();

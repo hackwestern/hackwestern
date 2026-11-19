@@ -5,6 +5,7 @@ import {
   type TeamResult,
   buildTeamResults,
 } from "~/server/api/utils/team-results";
+import { ratingsFromColumns } from "~/lib/judging-criteria";
 import { db } from "~/server/db";
 import { judges, teamMarks, teams, users } from "~/server/db/schema";
 
@@ -23,7 +24,11 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
       judgeType: judges.type,
       roundType: teamMarks.roundType,
       score: teamMarks.score,
-      breakdown: teamMarks.scoreBreakdown,
+      impactRating: teamMarks.impactRating,
+      creativityRating: teamMarks.creativityRating,
+      designRating: teamMarks.designRating,
+      adventurousRating: teamMarks.adventurousRating,
+      notes: teamMarks.notes,
     })
     .from(teamMarks)
     .innerJoin(judges, eq(judges.id, teamMarks.judgeId))
@@ -55,8 +60,8 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
       judgeType: m.judgeType,
       roundType: m.roundType,
       score: m.score,
-      breakdown: m.breakdown,
-      notes: m.breakdown?.notes ?? "",
+      ratings: ratingsFromColumns(m),
+      notes: m.notes ?? "",
     })),
   );
 }

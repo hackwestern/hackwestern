@@ -47,10 +47,10 @@ import { api } from "~/utils/api";
 // The rubric every judge scores with, until rubrics come from the backend.
 const RUBRIC = DEFAULT_RUBRIC;
 
-// Each rubric category is stored on the mark as the same 0-10 slider value
-// the judge set (team_mark.score_breakdown), next to the overall 0-10 score.
-// Ratings are stored by criterion id:
-// { ratings: { technical: 7.5, ... }, notes, superLike }.
+// Each rubric category is sent with the mark as the same 0-10 slider value
+// the judge set, keyed by criterion id; the server stores each one in its own
+// team_mark column (impact_rating, ...), next to the overall 0-10 score:
+// { ratings: { impact: 7.5, ... }, notes, superLike }.
 const toBreakdown = (ratings: Ratings, notes: string, superLike: boolean) => ({
   ratings: Object.fromEntries(
     RUBRIC.criteria.map((c) => [c.id, ratings[c.id] ?? RUBRIC_MIN]),
@@ -58,14 +58,6 @@ const toBreakdown = (ratings: Ratings, notes: string, superLike: boolean) => ({
   ...(notes ? { notes } : {}),
   superLike,
 });
-
-function fromBreakdown(
-  b: { ratings?: Record<string, number> } | null,
-): Ratings {
-  // Marks saved before ratings were keyed by criterion have no `ratings`; the
-  // sliders start empty for those.
-  return b?.ratings ? { ...b.ratings } : {};
-}
 
 // Where the judge is in the flow. It is remembered on this device, per judge.
 // The server doesn't know about it yet, so it guides this app, not the judging
@@ -229,10 +221,11 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       teamId: m.teamId,
       table: initial.tableByTeam[m.teamId] ?? null,
       teamName: m.team.name,
-      ratings: fromBreakdown(m.scoreBreakdown),
+      // Empty for a slider-only mark, so its sliders start empty.
+      ratings: { ...m.ratings },
       score: m.score,
-      notes: m.scoreBreakdown?.notes ?? "",
-      superLike: m.scoreBreakdown?.superLike === true,
+      notes: m.notes ?? "",
+      superLike: m.superLike,
     }))
     // Oldest first: marks are numbered in the order they were saved.
     .sort((a, b) => a.markId - b.markId);

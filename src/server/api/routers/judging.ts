@@ -27,15 +27,25 @@ import {
   deleteTeamMarkSchema,
   editTeamMarkSchema,
   loadQueueSchema,
+  type ScoreBreakdown,
   submitTeamMarkSchema,
 } from "~/schemas/judging";
+import { columnsFromRatings, ratingsFromColumns } from "~/lib/judging-criteria";
 
 const STALE_ASSIGNMENT_MINUTES = 15;
 
 type QueueRow = typeof judgingQueue.$inferSelect;
-type ScoreBreakdown = NonNullable<
-  (typeof teamMarks.$inferInsert)["scoreBreakdown"]
->;
+/**
+ * The team_mark columns a judge's rubric fills: one rating per criterion,
+ * notes and the super like.
+ */
+function breakdownColumns(b: ScoreBreakdown) {
+  return {
+    ...columnsFromRatings(b.ratings),
+    notes: b.notes ? b.notes : null,
+    superLike: b.superLike === true,
+  };
+}
 
 /**
  * Wrap a procedure body so any unexpected error becomes a clean
@@ -313,7 +323,13 @@ async function submitMark(
     }
     await tx
       .insert(teamMarks)
-      .values({ teamId, judgeId, score, roundType, scoreBreakdown });
+      .values({
+        teamId,
+        judgeId,
+        score,
+        roundType,
+        ...(scoreBreakdown ? breakdownColumns(scoreBreakdown) : {}),
+      });
 
     // The stop is done. The autoqueue trigger has already run, so the table
     // sees the team's queue row as it is now.
@@ -374,7 +390,7 @@ async function startTeam(judgeId: string): Promise<void> {
  * Edits UPDATE the existing row, never insert a second one: the stats trigger
  * swaps old score for new on UPDATE, whereas a second INSERT would burn a
  * queue round (`trg_team_mark_autoqueue`) and double-count the judge.
- * `scoreBreakdown` is only overwritten when the caller sends one.
+ * The rubric columns are only overwritten when the caller sends a breakdown.
  */
 async function editMark(
   judgeId: string,
@@ -384,7 +400,11 @@ async function editMark(
 ): Promise<void> {
   const updated = await db
     .update(teamMarks)
-    .set(scoreBreakdown ? { score, scoreBreakdown } : { score })
+    .set(
+      scoreBreakdown
+        ? { score, ...breakdownColumns(scoreBreakdown) }
+        : { score },
+    )
     .where(and(eq(teamMarks.id, teamMarkId), eq(teamMarks.judgeId, judgeId)))
     .returning({ id: teamMarks.id });
   if (updated.length === 0) {
@@ -773,13 +793,34 @@ const toJudgeTeam = (t: typeof teams.$inferSelect) => ({
   githubUrl: t.githubUrl,
 });
 
-/** A judge's own submitted marks, most recent first. Read-only. */
+/**
+ * A judge's own submitted marks, most recent first. Read-only. The rating
+ * columns come back folded into `ratings` ({ [criterionId]: 0-10 }), empty
+ * for a slider-only mark.
+ */
 async function getSubmittedMarks(judgeId: string) {
-  return db.query.teamMarks.findMany({
+  const marks = await db.query.teamMarks.findMany({
     where: eq(teamMarks.judgeId, judgeId),
     with: { team: { columns: JUDGE_TEAM_COLUMNS } },
     orderBy: [desc(teamMarks.createdAt)],
   });
+  return marks.map(
+    ({
+      impactRating,
+      creativityRating,
+      designRating,
+      adventurousRating,
+      ...mark
+    }) => ({
+      ...mark,
+      ratings: ratingsFromColumns({
+        impactRating,
+        creativityRating,
+        designRating,
+        adventurousRating,
+      }),
+    }),
+  );
 }
 
 export const judgingRouter = createTRPCRouter({

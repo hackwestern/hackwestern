@@ -882,18 +882,6 @@ export const judgingQueue = pgTable(
   ],
 );
 
-/**
- * The rubric behind a mark: each category rated 0-10 in half steps (matching
- * the judge screen's rubric), free-text notes and the judge's super like.
- */
-export type ScoreBreakdown = {
-  /** 0–10 slider value per rubric criterion id, e.g. { technical: 7.5 }. */
-  ratings: Record<string, number>;
-  notes?: string | null;
-  /** The judge's "super like" for this team. */
-  superLike?: boolean;
-};
-
 export const teamMarks = pgTable(
   "team_mark",
   {
@@ -905,9 +893,16 @@ export const teamMarks = pgTable(
       .notNull()
       .references(() => judges.id),
     score: real("score").notNull(),
-    // Per-category rubric ratings behind `score`, plus the judge's notes.
-    // Null when the judge used the single slider instead of the rubric.
-    scoreBreakdown: jsonb("score_breakdown").$type<ScoreBreakdown>(),
+    // The rubric behind `score`: each criterion rated 0-10 in half steps,
+    // one column per criterion in src/lib/judging-criteria.ts. Null when the
+    // judge used the single slider instead of the rubric.
+    impactRating: real("impact_rating"),
+    creativityRating: real("creativity_rating"),
+    designRating: real("design_rating"),
+    adventurousRating: real("adventurous_rating"),
+    notes: text("notes"),
+    // The judge's "super like" for this team.
+    superLike: boolean("super_like").default(false).notNull(),
     roundType: roundTypeEnum("round_type").default("regular").notNull(),
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()

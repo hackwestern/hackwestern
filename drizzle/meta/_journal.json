@@ -267,6 +267,20 @@
       "when": 1794696076855,
       "tag": "0037_sponsor_judging_sponsor",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1795132195413,
+      "tag": "0038_team_mark_rating_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1795132215739,
+      "tag": "0039_drop_team_mark_score_breakdown",
+      "breakpoints": true
     }
   ]
 }
