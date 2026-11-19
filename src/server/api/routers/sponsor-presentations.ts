@@ -45,6 +45,11 @@ import {
   users,
 } from "~/server/db/schema";
 import { sendPresentationDm } from "~/server/slack/presentation-dm";
+import {
+  hasCurrentTimes,
+  keysByTeam,
+  rebuildPresentationSchedule,
+} from "~/server/api/utils/presentation-schedule";
 
 const errors = sponsorPresentationsCopy.errors;
 
@@ -96,43 +101,6 @@ async function topTeamIds() {
     .from(sponsorFinalPicks);
   return [...new Set(finals.flatMap((f) => f.teamIds))].sort();
 }
-
-/** Each team's slotsKey, for teams with at least one placed slot. */
-function keysByTeam(
-  rows: readonly {
-    sponsorId: string;
-    teamId: string;
-    room: string | null;
-    startMinute: number | null;
-  }[],
-) {
-  const slots = new Map<
-    string,
-    { sponsorId: string; room: string; start: number }[]
-  >();
-  for (const r of rows) {
-    if (r.startMinute === null) continue;
-    const list = slots.get(r.teamId) ?? [];
-    list.push({
-      sponsorId: r.sponsorId,
-      room: r.room ?? "",
-      start: r.startMinute,
-    });
-    slots.set(r.teamId, list);
-  }
-  return new Map(
-    [...slots].map(([teamId, list]) => [teamId, slotsKey(list)] as const),
-  );
-}
-
-/**
- * The member was sent their team's current times. sentAt is cleared when
- * a claim changes the stored key, so a set sentAt always belongs to it.
- */
-const hasCurrentTimes = (
-  notice: { teamId: string; slotsKey: string; sentAt: Date | null },
-  keys: ReadonlyMap<string, string>,
-) => notice.sentAt !== null && keys.get(notice.teamId) === notice.slotsKey;
 
 /** How a member heard about their times: Slack DM or email. */
 export type PresentationChannel = "slack" | "email";
@@ -228,40 +196,6 @@ export async function teamPresentationsFor(userId: string): Promise<{
 /** A blank name falls back to the email. */
 const displayName = (m: { name: string | null; email: string | null }) =>
   m.name?.trim() ? m.name : (m.email ?? "");
-
-/**
- * Members who have their current times but whose times `next` (the new
- * slotsKey per team) would change, including teams it no longer places.
- */
-async function countChangedTimes(tx: Tx, next: ReadonlyMap<string, string>) {
-  const [current, notices] = await Promise.all([
-    tx
-      .select({
-        sponsorId: sponsorPresentations.sponsorId,
-        teamId: sponsorPresentations.teamId,
-        room: sponsorPresentations.room,
-        startMinute: sponsorPresentations.startMinute,
-      })
-      .from(sponsorPresentations),
-    tx
-      .select({
-        teamId: sponsorPresentationNotices.teamId,
-        slotsKey: sponsorPresentationNotices.slotsKey,
-        sentAt: sponsorPresentationNotices.sentAt,
-        memberTeam: users.teamId,
-      })
-      .from(sponsorPresentationNotices)
-      .innerJoin(users, eq(users.id, sponsorPresentationNotices.userId))
-      .where(isNotNull(sponsorPresentationNotices.sentAt)),
-  ]);
-  const keys = keysByTeam(current);
-  return notices.filter(
-    (n) =>
-      n.memberTeam === n.teamId &&
-      hasCurrentTimes(n, keys) &&
-      next.get(n.teamId) !== n.slotsKey,
-  ).length;
-}
 
 /**
  * Sunday sponsor presentations (docs/flows/sponsor-judging.md): organizers
@@ -475,125 +409,9 @@ export const sponsorPresentationsRouter = createTRPCRouter({
    */
   schedule: protectedOrganizerProcedure
     .input(z.object({ dryRun: z.boolean().default(false) }).optional())
-    .mutation(async ({ input }) => {
-      const dryRun = input?.dryRun ?? false;
-      // The sheets are slow, so every sponsor's room is read before the
-      // transaction; the sends are read inside it, so the stored schedule
-      // always matches one consistent set of shortlists.
-      // Only in-person prize track sponsors present
-      // (src/content/sponsor-prize-tracks.ts); digital ones never send.
-      const prizeTracks = await prizeTrackSponsors();
-      const trackSponsors = (
-        await db
-          .select({
-            id: sponsorJudgingSponsors.id,
-            name: sponsorJudgingSponsors.name,
-          })
-          .from(sponsorJudgingSponsors)
-      ).filter((s) => hasPrizeTrack(s.name, prizeTracks) && !isDigitalJudging(s.name));
-      const trackIds = new Set(trackSponsors.map((s) => s.id));
-      const rooms = await judgingRoomsById(trackSponsors);
-
-      const result = await db.transaction(async (tx) => {
-        const scheduledAt = new Date();
-        const sends = (
-          await tx
-            .select({
-              sponsorId: sponsorShortlistSends.sponsorId,
-              teamIds: sponsorShortlistSends.teamIds,
-            })
-            .from(sponsorShortlistSends)
-        ).filter((s) => trackIds.has(s.sponsorId));
-        if (sends.length === 0) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: sponsorPresentationsCopy.organizer.nothingSent,
-          });
-        }
-        // A team deleted since the send can't be scheduled (or stored).
-        const sentIds = [...new Set(sends.flatMap((s) => s.teamIds))];
-        const existing = new Set(
-          sentIds.length > 0
-            ? (
-                await tx
-                  .select({ id: teams.id })
-                  .from(teams)
-                  .where(inArray(teams.id, sentIds))
-              ).map((t) => t.id)
-            : [],
-        );
-        const requests = sends.map((s) => ({
-          sponsorId: s.sponsorId,
-          // Clamped to the column, so a long sheet value can't abort this.
-          room: normalizeRoom(rooms.get(s.sponsorId)),
-          teamIds: s.teamIds.filter((id) => existing.has(id)),
-        }));
-        const result = schedulePresentations(requests);
-        if (gapViolations(result.slots).length > 0) {
-          // The scheduler guarantees this; refuse rather than store a clash.
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        }
-
-        const roomOf = new Map(requests.map((r) => [r.sponsorId, r.room]));
-        const values = [
-          ...result.slots.map((s) => ({
-            sponsorId: s.sponsorId,
-            teamId: s.teamId,
-            room: s.room,
-            startMinute: s.start,
-            scheduledAt,
-          })),
-          ...result.unplaced.map((u) => ({
-            sponsorId: u.sponsorId,
-            teamId: u.teamId,
-            room: roomOf.get(u.sponsorId) ?? null,
-            startMinute: null,
-            scheduledAt,
-          })),
-          ...result.noRoom.flatMap((n) =>
-            n.teamIds.map((teamId) => ({
-              sponsorId: n.sponsorId,
-              teamId,
-              room: null,
-              startMinute: null,
-              scheduledAt,
-            })),
-          ),
-          // Past SHORTLIST_MAX on an old send: kept, flagged, never placed.
-          ...result.overCap.flatMap((o) =>
-            o.teamIds.map((teamId) => ({
-              sponsorId: o.sponsorId,
-              teamId,
-              room: roomOf.get(o.sponsorId) ?? null,
-              startMinute: null,
-              scheduledAt,
-            })),
-          ),
-        ];
-
-        const changedTimes = await countChangedTimes(tx, keysByTeam(values));
-        if (!dryRun) {
-          await tx.delete(sponsorPresentations);
-          if (values.length > 0)
-            await tx.insert(sponsorPresentations).values(values);
-        }
-        return {
-          scheduledAt,
-          placed: result.slots.length,
-          unplaced:
-            result.unplaced.length +
-            result.noRoom.reduce((n, r) => n + r.teamIds.length, 0) +
-            result.overCap.reduce((n, r) => n + r.teamIds.length, 0),
-          changedTimes,
-        };
-      });
-      // Both tabs; the Judging Scores tab gets each sponsor's new team rows.
-      if (!dryRun) {
-        mirrorJudgingScoresLater();
-        await mirrorSponsorJudgingSoon();
-      }
-      return result;
-    }),
+    .mutation(async ({ input }) =>
+      rebuildPresentationSchedule({ dryRun: input?.dryRun ?? false }),
+    ),
 
   /**
    * Slack DM each member of every scheduled team their rooms and times; a

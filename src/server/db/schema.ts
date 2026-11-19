@@ -858,6 +858,46 @@ export const sponsorPresentationNotices = pgTable(
   (t) => [index("sponsor_presentation_notice_team_idx").on(t.teamId)],
 );
 
+// A sponsor's Sunday judging room as set by an organizer on the Judging
+// board (room select or "Move to"). Wins over the sheets' room
+// (judgingRoomsById). A room holds one sponsor, so `room` is unique; a swap
+// rewrites both rows in one transaction. Remote sponsors never get a row.
+export const sponsorJudgingRooms = pgTable(
+  "sponsor_judging_room",
+  {
+    sponsorId: uuid("sponsor_id")
+      .primaryKey()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    room: varchar("room", { length: 64 }).notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [uniqueIndex("sponsor_judging_room_room_idx").on(t.room)],
+);
+
+// A team accepted its presentation times (Jazz, 2026-11-19): one member
+// tapped Confirm on the Slack DM or on /live, which covers the whole team.
+// slotsKey is the team's times when they confirmed; new times (a room
+// change) need a new confirm, so the board shows Waiting again.
+export const sponsorPresentationConfirms = pgTable(
+  "sponsor_presentation_confirm",
+  {
+    teamId: varchar("team_id", { length: 12 })
+      .primaryKey()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 255 }).references(() => users.id, {
+      onDelete: "set null",
+    }),
+    // "slack" | "live"
+    via: varchar("via", { length: 8 }).notNull(),
+    slotsKey: text("slots_key").notNull(),
+    confirmedAt: timestamp("confirmed_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+);
+
 // Sunday judging switches organizers flip (docs/flows/sponsor-judging.md).
 // One row (id 1). round2OpenedAt set = round 2 is open: sponsors with a
 // presentation slot rank the teams that presented and submit a top 5.

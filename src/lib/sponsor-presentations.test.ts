@@ -187,6 +187,72 @@ describe("schedulePresentations", () => {
     expectValid(requests, first);
   });
 
+  it("keeps times already given when a late shortlist arrives", () => {
+    const early = [
+      { sponsorId: "qnx", room: "Rm 2235", teamIds: ["t17", "t30", "t42"] },
+      { sponsorId: "scotia", room: "Rm 2110", teamIds: ["t30", "t42", "t9"] },
+    ];
+    const first = schedulePresentations(early);
+    // Sun Life sends late, sharing t17 with QNX.
+    const late = [
+      ...early,
+      { sponsorId: "sun", room: "Rm 2230", teamIds: ["t17", "t47"] },
+    ];
+    const second = schedulePresentations(late, undefined, {
+      keep: first.slots,
+    });
+    for (const s of first.slots) {
+      expect(second.slots).toContainEqual(s);
+    }
+    expect(second.unplaced).toEqual([]);
+    expectValid(late, second);
+  });
+
+  it("keeps a sponsor's times when its room changes", () => {
+    const before = [
+      { sponsorId: "qnx", room: "Rm 2235", teamIds: ["a", "b", "c"] },
+    ];
+    const first = schedulePresentations(before);
+    const after = [{ ...before[0]!, room: "Rm 3100" }];
+    const second = schedulePresentations(after, undefined, {
+      keep: first.slots,
+    });
+    expect(second.slots.map((s) => [s.teamId, s.start, s.room])).toEqual(
+      first.slots.map((s) => [s.teamId, s.start, "Rm 3100"]),
+    );
+  });
+
+  it("never moves a kept time to fit a new team", () => {
+    // Two 6-minute slots: x has 600 in room A. A new team y on both A and
+    // B can only fit by taking x's slot, which it may not.
+    const window = { start: 600, end: 612, slotMinutes: 6, minGapMinutes: 10 };
+    const requests = [
+      { sponsorId: "A", room: "A", teamIds: ["x", "y"] },
+      { sponsorId: "B", room: "B", teamIds: ["y"] },
+    ];
+    const keep = [{ sponsorId: "A", teamId: "x", start: 600 }];
+    const result = schedulePresentations(requests, window, { keep });
+    expect(result.slots).toContainEqual({
+      sponsorId: "A",
+      teamId: "x",
+      room: "A",
+      start: 600,
+    });
+    expect(gapViolations(result.slots)).toEqual([]);
+  });
+
+  it("drops kept slots for teams no longer on the shortlist", () => {
+    const requests = [{ sponsorId: "qnx", room: "R", teamIds: ["b"] }];
+    const keep = [
+      { sponsorId: "qnx", teamId: "a", start: 600 },
+      { sponsorId: "qnx", teamId: "b", start: 612 },
+    ];
+    const result = schedulePresentations(requests, undefined, { keep });
+    expect(result.slots.map((s) => [s.teamId, s.start])).toEqual([
+      ["b", 612],
+    ]);
+  });
+
   it("follows changed constants", () => {
     const result = schedulePresentations(
       [

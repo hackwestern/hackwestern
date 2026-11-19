@@ -10,6 +10,7 @@ import {
   hasPrizeTrack,
   isDigitalJudging,
   prizeTrackOf,
+  remoteJudgingRoom,
 } from "~/lib/sponsor-prize-tracks";
 import { SHORTLIST_MAX } from "~/lib/sponsor-presentations";
 import {
@@ -187,9 +188,11 @@ async function repNames(sponsorId: string): Promise<string[]> {
  * exists, their presentation slots (placed only), and whether organizers
  * have opened round 2. Once round 2 is open, a sponsor ranks only the
  * teams that presented to them; a sponsor with no placed slot can't rank
- * at all (Jazz, 2026-11-18; judgingRound "locked").
+ * at all (Jazz, 2026-11-18; judgingRound "locked"). A remote sponsor's
+ * teams don't present (Jazz, 2026-11-19), so they rank their sent
+ * shortlist instead (`remote`).
  */
-async function roundFor(sponsorId: string) {
+async function roundFor(sponsorId: string, sponsorName: string) {
   const [sent, anySlot, slots, openedAt] = await Promise.all([
     db.query.sponsorShortlistSends.findFirst({
       where: eq(sponsorShortlistSends.sponsorId, sponsorId),
@@ -221,6 +224,8 @@ async function roundFor(sponsorId: string) {
       .sort((a, b) => a.start - b.start),
     /** Organizers opened round 2 (after presentations). */
     round2Open: openedAt !== null,
+    /** Judges online: ranks the sent shortlist, no presentations. */
+    remote: remoteJudgingRoom(sponsorName) !== null,
   };
 }
 
@@ -394,7 +399,7 @@ export const sponsorScoringRouter = createTRPCRouter({
         db.query.sponsorFinalPicks.findFirst({
           where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
         }),
-        roundFor(sponsor.id),
+        roundFor(sponsor.id, sponsor.name),
         repNames(sponsor.id),
       ]);
       const reviews = await reviewsFor(sponsor.id, scores);
@@ -650,7 +655,7 @@ export const sponsorScoringRouter = createTRPCRouter({
       const track = await fetchSponsorTrack(sponsor.name);
       const [eligible, round] = await Promise.all([
         eligibleTeamIds(track, input.teamIds),
-        roundFor(sponsor.id),
+        roundFor(sponsor.id, sponsor.name),
       ]);
       if (!round.round2Open) {
         throw new TRPCError({
@@ -659,13 +664,15 @@ export const sponsorScoringRouter = createTRPCRouter({
         });
       }
       // Round 2 ranks only teams that presented to this sponsor. No placed
-      // slot (sent late, no room, none fit) means no round 2 for them.
-      if (round.slots.length === 0) {
+      // slot (sent late, no room, none fit) means no round 2 for them. A
+      // remote sponsor ranks its sent shortlist instead.
+      const ranked = round.remote
+        ? (round.shortlistSent?.teamIds ?? [])
+        : round.slots.map((s) => s.teamId);
+      if (ranked.length === 0) {
         throw new TRPCError({ code: "FORBIDDEN", message: errors.noSlot(SPONSOR_FINAL_TOP) });
       }
-      const allowed = new Set(
-        round.slots.map((s) => s.teamId).filter((id) => eligible.has(id)),
-      );
+      const allowed = new Set(ranked.filter((id) => eligible.has(id)));
       const problem = rankingError(input.teamIds, allowed);
       if (problem) {
         throw new TRPCError({

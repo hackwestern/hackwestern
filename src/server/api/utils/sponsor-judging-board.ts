@@ -16,7 +16,11 @@ import {
   getSpreadsheetId,
 } from "~/server/api/utils/sponsor-sheets";
 import { db } from "~/server/db";
-import { sponsorFinalPicks, sponsorJudgingSponsors } from "~/server/db/schema";
+import {
+  sponsorFinalPicks,
+  sponsorJudgingRooms,
+  sponsorJudgingSponsors,
+} from "~/server/db/schema";
 
 /**
  * The run of show with registered sponsor names applied (coffee chat rooms
@@ -85,19 +89,24 @@ export async function judgingSheet() {
   }
 }
 
+/** Where a sponsor's judging room came from. */
+export type JudgingRoomSource = "board" | "sheet" | "remote";
+
 /**
- * Each registered sponsor's Sunday judging room, by sponsor id, from the
- * same sources as the organizer "Sponsor track judging" panel (sponsor
- * sheet first, then the run-of-show list). A sponsor that judges remotely
- * (TinyFish) always gets REMOTE_JUDGING_ROOM, whatever the sheets say
- * (Jazz, 2026-11-19). No room = absent from the map.
+ * Each registered sponsor's Sunday judging room and where it came from, by
+ * sponsor id. An organizer's pick on the Judging board (sponsor_judging_room)
+ * wins; otherwise the same sources as the organizer "Sponsor track
+ * judging" panel (sponsor sheet first, then the run-of-show list). A
+ * sponsor that judges remotely (TinyFish) always gets REMOTE_JUDGING_ROOM,
+ * whatever the sheets say (Jazz, 2026-11-19). No room = absent.
  */
-export async function judgingRoomsById(
+export async function judgingRoomsWithSource(
   sponsors: readonly { id: string; name: string }[],
-): Promise<Map<string, string>> {
-  const [runOfShow, sheet] = await Promise.all([
+): Promise<Map<string, { room: string; source: JudgingRoomSource }>> {
+  const [runOfShow, sheet, picked] = await Promise.all([
     runOfShowFor(sponsors.map((s) => s.name)),
     judgingSheet(),
+    db.select().from(sponsorJudgingRooms),
   ]);
   const board = buildJudgingBoard({
     sponsors,
@@ -105,13 +114,24 @@ export async function judgingRoomsById(
     runOfShowRead: runOfShow !== null,
     sheet,
   });
-  const rooms = new Map<string, string>();
+  const rooms = new Map<string, { room: string; source: JudgingRoomSource }>();
   for (const row of board.rows) {
-    if (row.sponsorId && row.room) rooms.set(row.sponsorId, row.room);
+    if (row.sponsorId && row.room) {
+      rooms.set(row.sponsorId, { room: row.room, source: "sheet" });
+    }
   }
+  for (const p of picked) rooms.set(p.sponsorId, { room: p.room, source: "board" });
   for (const s of sponsors) {
     const remote = remoteJudgingRoom(s.name);
-    if (remote) rooms.set(s.id, remote);
+    if (remote) rooms.set(s.id, { room: remote, source: "remote" });
   }
   return rooms;
+}
+
+/** judgingRoomsWithSource without the source. */
+export async function judgingRoomsById(
+  sponsors: readonly { id: string; name: string }[],
+): Promise<Map<string, string>> {
+  const rooms = await judgingRoomsWithSource(sponsors);
+  return new Map([...rooms].map(([id, r]) => [id, r.room]));
 }
