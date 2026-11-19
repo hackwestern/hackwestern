@@ -703,3 +703,15 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Decision:** Before the track worktrees, one migration (0059) on coffee-prefs: rep chats wanted may be 0; `coffee_chat_pref.shortlist_submitted_at`; new `sponsor_scan` (sponsor, hacker, rep name, scanned at) for scanned-first invites; `coffee_chat` gains `placement_id`, `round`, `expires_at`, `source` so session invites reuse the existing Slack Accept/Decline flow; new `sponsor_team_score` (sponsor, team, judge name, score in halves 2–20) for several reps scoring in half points. Empty `coffeeChatSetup` (track A) and `coffeeChatInvites` (track B) routers are registered in root.ts. The Task pings tab is hidden by track D, the only track that edits `pages/internal/sponsors.tsx`.
 **Why:** schema and router registration conflict when several worktrees edit them; doing them once keeps merges clean.
 **Alternatives:** a new invite table (would need new Slack handlers); half-point scores as numeric (integers avoid float rounding).
+
+## 2026-11-19: Needs attention shows every sponsor, your own first (track D review)
+
+**Decision:** "Needs attention now" lists every sponsor's items, with the signed-in organizer's own sponsors first under "Your sponsors", then "Other sponsors" (or "All sponsors" when they lead none). Overdue run-of-show tasks follow: their own (Owner cell names their HW Contacts row) first, then others, still at most 3 and still only for an hour after the window. With an HW Contacts match, the list waits for Sponsor Day-Of so it never flashes in the wrong order.
+**Why:** an organizer covering for someone else still needs to see what's urgent; scoping to "yours only" hid it, and "everyone" while loading flashed the wrong list.
+**Alternatives:** only your sponsors when you lead some (the first build); a Mine/All switch on the panel (more UI for a glanceable list).
+
+## 2026-11-19: HW lead matching by contact row; HW Contacts cached 90 s (track D review)
+
+**Decision:** My sponsors identifies the organizer as one HW Contacts row (by Login email), and a Day-Of HW lead or task Owner cell matches that row: a full name must fit exactly one row; a first name alone matches only if exactly one row has that first name (else a row whose whole name is that word). A name that fits several rows matches nobody. HW Contacts reads (organizer list and portal phones) are cached 90 s; a failed read keeps the last good value, and if there's none the Sponsors tab says "Can't read HW Contacts" instead of quietly showing All sponsors.
+**Why:** the first-name rule could show a sponsor to the wrong Noah; two people with one name were indistinguishable; mySponsors polled the sheet every 15 s per organizer.
+**Alternatives:** match every same-named organizer (wrong person sees it); read the sheet on every poll.

@@ -34,3 +34,12 @@ Branch `build-d-my-sponsors`. Commits: f2ca47e9, d0446f83, 4b030d71.
 - All sponsors is still Lucas's day board without help. It hasn't been rebuilt as v3's three attribute tables (Set up / Coffee chatting / Judging). Do you want that before the freeze?
 - The organizer coffee tour's steps still describe the old board, and its targets belong to track C.
 - Needs attention covers your own sponsors when you lead some, and everyone's otherwise. Is that the right scope?
+
+## Review fixes
+1. **Tracked help off on the server:** `TRACKED_HELP_ENABLED = false` in `src/lib/sponsor-help.ts`. `sponsorHelp.request` throws FORBIDDEN with `sponsorHelpCopy.trackedOff`; `status` returns null without reading or re-pinging; `cancel` is a no-op; `resolve` no longer edits Slack. Existing router tests mock the flag on; `sponsor-help-off.test.ts` covers it off with no Slack call.
+2. **Changed after Send:** no `$onUpdate` on `coffee_chat_pref.updated_at`. A comment in `mySponsorChats` says the comparison relies on explicit `updatedAt` bumps on preference and rep edits (a shortlist submit must not count).
+3. **Name matching:** `organizerForEmail` returns `{ row, name }`; `mySponsors` also returns `contactNames` (names only, row order). `contactRowsNamed` / `leadsSponsor(cell, me, contactNames)` match by row: one-word cells only when one row has that first name; same full name twice matches nobody (fix the sheet: make names distinct).
+4. **Sheet reads:** `fetchHwContacts` and `fetchHwContactPhones` use `createLastGoodLoader` (createCachedLoader, 90 s). A failed read keeps the last good value and waits a TTL before retrying. `mySponsors.contactsError` is true only when HW Contacts has never been read; the Sponsors tab then shows `mine.contactsError`.
+5. **Needs attention:** null until Sponsor Day-Of loads when `me` is set. Shows every sponsor, own first, grouped "Your sponsors" / "Other sponsors" (or "All sponsors") / "Run of show tasks" (decisions.md).
+6. **Portal Help:** the emergency row's missing-name text is `contacts.noEmergency`.
+7. **Overdue tasks:** own tasks (Owner cell names your row) first, then others; one-hour rule and cap of 3 kept.
