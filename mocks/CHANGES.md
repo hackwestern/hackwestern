@@ -7,6 +7,12 @@ Status: **Done** = in the mock and checked. **Building** = a subagent is adding 
 ## Default style for every mock (Jazz, 2026-11-19)
 Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /live site style; its README lists every source file:line) for ALL mocks, unless Jazz explicitly names another look for that mock. Current exception: `organizer-coffee-autofill-v6a/b/c` build on autofill-v5's look because Jazz asked for that explicitly.
 
+## Sponsor portal v5: `sponsor-portal-flow-hacker-v5` (queued: starts when v4 finishes)
+| # | Change | Status |
+|---|---|---|
+| 1 | Copy of v4 with every v4 change | Queued |
+| 2 | Chat blocks edited inline per `hackwestern-coffee-prefs/docs/specs/inline-chat-block-editing.md`: drag edges/move for time (times shown above edges), reps as avatar circles + "+ rep", "15 min \| 30 min" pill, −/+ stepper labelled "1-on-1" / "group of N" (max 5 hackers, 6 people), live "N chats · N hackers", trash; dashed lines per chat; resting one-line summary vs selected two-line controls (row grows); narrow blocks get an attached strip under the block; keyboard support. No popup or modal | Queued |
+
 ## Sponsor portal v4: `sponsor-portal-flow-hacker-v4` (latest final)
 | # | Change | Status |
 |---|---|---|
