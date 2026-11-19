@@ -103,18 +103,20 @@ export function ShortlistFlow({
 
   const seats = (
     <div className="flex flex-col gap-1">
-      <p className="m-0 text-base text-dashboard-text-medium">
-        <span className="text-xl font-bold text-dashboard-text-heavy">{copy.seats(data.picked, max)}</span>{" "}
-        {copy.seatsSuffix}
-      </p>
+      {/* Over the cap: only the over-cap line, never "3 of 1" (B5). */}
+      {over ? (
+        <p role="alert" className="m-0 text-xl font-bold text-dashboard-text-warning">
+          {sponsorSetupCopy.errors.overCap(data.picked, max)}
+        </p>
+      ) : (
+        <p className="m-0 text-base text-dashboard-text-medium">
+          <span className="text-xl font-bold text-dashboard-text-heavy">{copy.seats(data.picked, max)}</span>{" "}
+          {copy.seatsSuffix}
+        </p>
+      )}
       <p className="m-0 text-sm text-dashboard-text-light">
         {copy.capLine(data.seats, data.scanned.length, max)}
       </p>
-      {over && (
-        <p role="alert" className="m-0 text-base font-semibold text-dashboard-text-warning">
-          {sponsorSetupCopy.errors.overCap(data.picked, max)}
-        </p>
-      )}
       {data.sent && <p className="m-0 text-sm text-dashboard-text-medium">{copy.sentNote}</p>}
     </div>
   );
@@ -232,7 +234,7 @@ export function ShortlistFlow({
         </div>
       </div>
       {max === 0 && <p className="m-0 text-base text-dashboard-text-warning">{copy.noSeats}</p>}
-      {full && max > 0 && <p className="m-0 text-sm text-dashboard-text-medium">{copy.full(max)}</p>}
+      {full && !over && max > 0 && <p className="m-0 text-sm text-dashboard-text-medium">{copy.full}</p>}
 
       {scannedSection}
 

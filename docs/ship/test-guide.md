@@ -89,7 +89,7 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 - Starting point: preferences submitted. Open "Shortlist".
 - Steps: 1. Use "One at a time" (Skip / Shortlist) or List. 2. Shortlist a few. 3. Submit. 4. Tap "Edit shortlist".
 - Expected result: scanned hackers come first in a read-only block. The cap line reads "14 seats · 3 taken by people you scanned · shortlist up to 11". Submitting shows "Shortlist submitted", and Edit reopens the list.
-- Edge cases: locked before preferences are submitted. At the cap: "All N seats are shortlisted…". Lowering chats after shortlisting: "Your shortlist has 5 people but you now have 3 seats. Remove 2." An empty submit is allowed. With no candidates you see "No hackers to show yet. Check back soon." The handoff says scans don't count against the cap. The code subtracts them, which matches the decisions log.
+- Edge cases: locked before preferences are submitted. At the cap: "Your shortlist is full. Remove someone to add another." Lowering chats after shortlisting: only "You now have room for 3 on your shortlist. Remove 2." (no "5 of 3"), and the home card reads "5 shortlisted, room for 3. Remove 2.". An empty submit is allowed. With no candidates you see "No hackers to show yet. Check back soon." The handoff says scans don't count against the cap. The code subtracts them, which matches the decisions log.
 
 ### Sponsor · Your chats (needs A)
 - Goal: see the confirmed schedule.

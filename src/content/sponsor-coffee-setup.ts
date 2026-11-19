@@ -70,8 +70,10 @@ export const sponsorSetupCopy = {
       title: "Shortlist",
       body: "Hackers you'd like to meet. We invite people you scan first.",
       locked: "Opens once your chatting preferences are submitted.",
-      seats: (n: number, max: number) => `${n} of ${max} seats`,
-      submitted: (n: number, max: number) => `Submitted · ${n} of ${max} seats`,
+      /** Shortlist places (seats minus people met at the booth), not seats. */
+      seats: (n: number, max: number) =>
+        n > max ? `${n} shortlisted, room for ${max}. Remove ${n - max}.` : `${n} of ${max} shortlisted`,
+      submitted: (n: number, max: number) => `Submitted · ${n} of ${max} shortlisted`,
       start: "Start",
       continue: "Continue",
       view: "View shortlist",
@@ -294,7 +296,7 @@ export const sponsorSetupCopy = {
     remove: "Remove",
     addLabel: (name: string) => `Shortlist ${name}`,
     removeLabel: (name: string) => `Remove ${name} from your shortlist`,
-    full: (max: number) => `All ${max} seats are shortlisted. Remove someone to add another.`,
+    full: "Your shortlist is full. Remove someone to add another.",
     added: (name: string) => `${name} shortlisted.`,
     removed: (name: string) => `${name} removed.`,
     toggleError: "Couldn't update your shortlist. Try again.",
@@ -377,11 +379,13 @@ export const sponsorSetupCopy = {
     notAHacker: "That isn't a Hack Western hacker's badge.",
     prefsFirst: "Submit your chatting preferences first.",
     shortlistSubmitted: "Your shortlist is submitted. Tap Edit shortlist to change it.",
-    shortlistFull: (max: number) =>
-      `All ${max} seats are shortlisted. Remove someone to add another.`,
+    shortlistFull: "Your shortlist is full. Remove someone to add another.",
     notCandidate: "This hacker isn't on your list.",
+    /** Fewer chats after shortlisting: shortlist places, not seats (B5). */
     overCap: (picked: number, cap: number) =>
-      `Your shortlist has ${plural(picked, "person", "people")} but you now have ${plural(cap, "seat")}. Remove ${picked - cap}.`,
+      cap === 0
+        ? `You now have no room on your shortlist. Remove ${picked}.`
+        : `You now have room for ${cap} on your shortlist. Remove ${picked - cap}.`,
     loadError: "Couldn't load your coffee chat setup.",
     saveError: "Couldn't save. Try again.",
     scheduleUnknown:

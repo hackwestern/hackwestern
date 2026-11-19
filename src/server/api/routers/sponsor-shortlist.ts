@@ -335,7 +335,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
         if (picked >= cap) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: setupErrors.shortlistFull(cap),
+            message: setupErrors.shortlistFull,
           });
         }
         await tx

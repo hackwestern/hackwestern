@@ -88,7 +88,7 @@ export function ChatsHome({
           status={
             !data.submittedAt
               ? copy.shortlist.locked
-              : data.shortlistSubmittedAt
+              : data.shortlistSubmittedAt && picked <= cap
                 ? copy.shortlist.submitted(picked, cap)
                 : copy.shortlist.seats(picked, cap)
           }

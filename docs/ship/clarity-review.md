@@ -195,6 +195,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   - "Your shortlist has 3 people but you now have 1 seat." → "You now have room for 1 on your shortlist. Remove 2."
   - "All 1 seats are shortlisted." → "Your shortlist is full."
 - Screens: `06-sponsor-shortlist-over-cap.png`, `06-sponsor-shortlist-over-cap-home.png`
+- **Fixed:** over the cap, the big line is only "You now have room for 1 on your shortlist. Remove 2." ("…no room… Remove 3." at 0); "3 of 1" and "Your shortlist is full" no longer show with it. The home card reads "3 shortlisted, room for 1. Remove 2." even after a submit. At the cap: "Your shortlist is full. Remove someone to add another." (`after/portal-06-shortlist-over-cap*.png`, with the shortlist answer patched in the browser, so the shared DB wasn't changed)
 
 ### Sponsor · Your chats · Step 1 · Chats home after Send
 - Expected: preferences card "Confirmed"; status "Scheduled, invites going out", then "Scheduled, 1 of N seats accepted"; calendar with rooms, format, count and first names marked Invited or Confirmed. **Happened:** as expected ("Scheduled, 1 of 18 seats accepted", "Alex · Confirmed").
@@ -480,6 +481,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Actual: "3 of 1 shortlisted", "Your shortlist has 3 people but you now have 1 seat. Remove 2.", and "All 1 seats are shortlisted…" both show. Home: "3 of 1 seats".
 - Where: `src/content/sponsor-coffee-setup.ts:290`, `:373`, `:376`.
 - Screens: `06-sponsor-shortlist-over-cap.png`, `06-sponsor-shortlist-over-cap-home.png`
+- **Fixed:** `overCap`, `full`, `shortlistFull` and the home card's line say "shortlist", not "seats"; the shortlist step shows the over-cap line in place of the count.
 
 **B6 · Preferences autosave never shows "Saved."**
 - Steps: step 2 → change anything → wait.
