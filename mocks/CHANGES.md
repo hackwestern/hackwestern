@@ -111,6 +111,17 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 | 4 | Removed: legends, instructions, seat counts, hours, shortlist/hacker ID tables, per-sponsor sends | Done |
 | 5 | Hacker-v1 look, Figtree only | Done |
 
+## Organizer dashboard restyle v2: `organizer-dashboard-restyle-v2` (Jazz loves v1's look)
+| # | Change | Status |
+|---|---|---|
+| 1 | Fri/Sat/Sun → three tables: Set up, Coffee chatting, Judging (columns as proposed 2026-11-19) | Building |
+| 2 | Remove "Workshop live" status; add "Attended coffee chat workshop" (Set up) | Building |
+| 3 | Coffee chatting columns: Submitted preferences, Submitted shortlist, Assigned coffee chats, Invites | Building |
+| 4 | Digital-only sponsors at the bottom of each table, collapsible | Building |
+| 5 | Remove the sponsor expand/detail panel | Building |
+| 6 | Remove the "Organizers" checkbox on Run of show | Building |
+| 7 | Figtree only, no pixel font | Building |
+
 ## Organizer dashboard restyle: `organizer-dashboard-restyle-v1` (replaces nav-a/b/c as the direction)
 | # | Change | Status |
 |---|---|---|
