@@ -662,7 +662,7 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 
 **Organizer coffee board:** no Contact button, no Text/Call: each phone number has a copy icon beside it. Show how many chats each rep asked for. Only Noah Medland can press "Send confirmed schedules & invites" on Friday night (matched by his login email; others see it disabled with "Only Noah sends").
 
-**Invites:** invite exactly the number of seats. Round 1 Fri 10 PM, accept by Sat 10:00 AM. Round 2 Sat 10:30 AM for seats still open, 30 minutes to accept; further automatic rounds the same way (30 minutes each) until the chat. (Open: 10–11 AM chats can only be filled by round 1.)
+**Invites:** invite exactly the number of seats. Round 1 Fri 10 PM, accept by Sat 10:00 AM. Round 2 Sat 10:30 AM for seats still open, 30 minutes to accept; further automatic rounds the same way (30 minutes each) until the chat. (Accepted: 10–11 AM chats are only filled by round 1; most hackers accept the night before, Jazz 2026-11-19.)
 
 **Sponsor help:** scrapped as a tracked feature. Sponsors message their point of contact (their HW lead) directly; if the lead isn't available, Noah Medland is the emergency contact. The portal Help shows the lead's name + number (copy) and Noah as the fallback. No Slack DM, no I'm-on-it, no dashboard section. Supersedes the tracked-help decision (same day).
 
