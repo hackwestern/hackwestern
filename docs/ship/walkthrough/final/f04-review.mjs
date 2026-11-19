@@ -1,0 +1,42 @@
+// Sponsor · Review & submit (Test Sponsor), then edit-after-submit and resubmit.
+import { open, snap, read, say, wait, close, BASE, SPONSORS, sql } from "./lib-final.mjs";
+
+const W = Number(process.argv[2] || 1280);
+const tag = W === 1280 ? "" : "-390";
+const { page } = await open(W);
+const main = page.locator("#sponsor-main");
+const T = SPONSORS.test;
+await page.goto(`${BASE}/sponsors/${T}/coffee-chats?flow=prefs&step=3`, { waitUntil: "networkidle", timeout: 120000 });
+await wait(page, 1500);
+say("Step 3. EXPECT: 'Everything checks out.', 'Groups of 3 · 30 min · up to 6 chats · up to 18 hackers', bold 'Organizers call Walkthrough Dana at …'");
+await read(main, 2500);
+console.log("checkbox cells in review grid:", await main.locator("table [role=checkbox]").count());
+await snap(page, `f04-review${tag}`, { full: true });
+say("SUBMIT. EXPECT: 'Preferences submitted'; status 'Submitted, waiting for organizers to schedule'; Shortlist unlocks");
+await main.getByRole("button", { name: /^Submit/ }).click();
+await wait(page, 2500);
+console.log("submitted msg:", /Preferences submitted/.test(await main.innerText()), "| url:", page.url());
+console.log("DB submitted_at:", sql(`select submitted_at from coffee_chat_pref where sponsor_id='${T}'`).trim());
+await page.goto(`${BASE}/sponsors/${T}/coffee-chats`, { waitUntil: "networkidle" });
+await wait(page, 1500);
+say("Chats home after submit");
+await read(main, 1500);
+await snap(page, `f04-home-submitted${tag}`, { full: true });
+
+say("Edit after submit (Kevin 2 -> 3 chats). EXPECT: button 'Submit changes'; prefs stay submitted; resubmit moves submit time forward");
+const t0 = sql(`select submitted_at from coffee_chat_pref where sponsor_id='${T}'`).trim();
+await page.goto(`${BASE}/sponsors/${T}/coffee-chats?flow=prefs&step=2`, { waitUntil: "networkidle" });
+await wait(page, 1500);
+await main.getByRole("button", { name: "More chats for Walkthrough Kevin" }).click();
+await wait(page, 2500);
+console.log("still submitted (DB):", sql(`select submitted_at is not null from coffee_chat_pref where sponsor_id='${T}'`).trim());
+await page.goto(`${BASE}/sponsors/${T}/coffee-chats?flow=prefs&step=3`, { waitUntil: "networkidle" });
+await wait(page, 1500);
+const btn = main.getByRole("button", { name: /^Submit/ });
+console.log("button:", await btn.innerText());
+await btn.click();
+await wait(page, 2500);
+const t1 = sql(`select submitted_at from coffee_chat_pref where sponsor_id='${T}'`).trim();
+console.log("submit time moved forward:", t0, "->", t1, t1 > t0);
+console.log("errors:", page.errors.slice(0, 5));
+await close();

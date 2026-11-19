@@ -643,3 +643,79 @@ Keep "Confirmed" (sponsor) and "Sent" (organizer) as they are, but say once in o
   - DB-down autosave retry.
   - Unreadable run of show or HW Contacts.
   - A Noah login email that's blank on the sheet.
+
+---
+
+## Final walkthrough (Step 6)
+
+Run on 2026-11-19 on `coffee-prefs` at `20d93053`, from a clean start, at 1280 and 390 px. The dev server ran on :3070 with `COFFEE_INVITES_ENABLED=dry` and sheet writes off. Scripts and screenshots are in `walkthrough/final/` and use fake data only. Real phones and organizer names are masked.
+
+**Clean start.** I removed the earlier walkthrough data from the local DB: `walkthrough-%` users, the "Walkthrough booking", the "Walkthrough …" reps, and Test Sponsor's scans, shortlist, placements, invites and preferences. Then I re-ran `coffee-chat-sessions.ts` and `sponsor-picks.ts --teams 15 --yes`. I recreated only fake data: 8 hackers (`walkthrough-hacker-1..8`, "Walkthrough Ada…Hana", example.test emails, 519-555 phones, interested in Test Sponsor and 2 in Sun Life), and the organizer `walkthrough-noah`. Its email was read from HW Contacts at runtime and never printed or written to a file. The walk itself created the reps Walkthrough Dana and Kevin (519-555-0142/3/4) and the "Walkthrough booking" (Rm 1358, 10–11).
+
+### Flows
+
+| Flow | Result |
+|---|---|
+| Sponsor · First visit and Help | Pass. The tour's Coffee chats step says "(required)". With no lead assigned, Help says "Your contact hasn't been assigned yet." |
+| Sponsor · Your team | Pass. Next with no reps is disabled and shows "Add at least one rep to continue." A blank save shows both errors. Remove / Undo brings the rep back with the crown. (13th rep not tried.) |
+| Sponsor · Chatting preferences | Pass. Groups of 3, 0 chats, "isn't free any time Saturday", "free for 1 hour, so up to 2 chats", reload and Ask an organizer all work as described. Sun Life's workshop cells read "Your workshop 2:30–3:30". The guide's "1:00–1:30 only" example doesn't come up with today's run of show. |
+| Sponsor · Review & submit | Pass. Edit after submit gives "Submit changes", and the submit time moves forward. |
+| Sponsor · Scan a hacker | Pass, with one bug (F1). |
+| Sponsor · Shortlist | Pass. "21 seats · 3 taken by people you met · shortlist up to 18". Over the cap it shows only "You now have room for 3 on your shortlist. Remove 2." On the home card: "5 shortlisted, room for 3. Remove 2." |
+| Sponsor · Your chats | Pass. Order, rooms, real partial times ("1:00–1:30"), List and rep filter all work. At 390 all 6 sessions show. |
+| Sponsor · Change after invites | Pass. The counts are right: 6 for Kevin's sent 10–11, and "doesn't affect any invited hackers" for an empty session. Keep changes nothing. Change saves and isn't asked again. |
+| Sponsor · Judging | Pass for steps 1–5: locked text, Who's judging, half-point strip, Rubric, "Dana 9.5 · Kevin 6 · avg 7.8 · talk it through", and shortlist sent. Step 6 (round 2 top 3) **not run**: Sun Life still has no judging room on the live sheet. |
+| Organizer · Happening now | Pass, with one inconsistency (F3). |
+| Organizer · My sponsors | Pass. "You lead 3 sponsors", groups, copy, and both pills show "Canada Life: Not written (sheet writes off)". |
+| Organizer · Read the coffee board | Pass. |
+| Organizer · Schedule and fix | Pass, with two small bugs (F2, F4). Placed 23. The Scotiabank Ivey fix, move, remove + Undo, booking and re-run all work, and pins are kept. |
+| Organizer · Send (Noah only) | Pass. Others see "Only Noah sends". Confirm: "Send 6 sponsors' schedules and invite up to 162 hackers? Hackers get a Slack message now." Toast: "Sent 24 chats. Invited 12 hackers; 145 seats still open, offered again Saturday 10:30 AM. (dry run: nothing was messaged)". The re-send toast reads "Re-confirmed 1 sponsor who changed after invites." and the flag clears. |
+| Organizer · Invite status and rounds | Pass. The status endpoint shows seats, filled, accepted, open, and each invite's round and source. runRoundNow gives `created: 0` twice (every eligible fake hacker already holds invites), and nobody holds more than 2 live invites. |
+| Organizer · Judging tab | Pass. "Nothing scheduled yet. See why below." plus "<team> · Sun Life has no judging room on Sponsor Day-Of". Open round 2 is disabled. PCBWay no-match shows "No submitted team in this track has that link." and Save is off. The guide quotes the server's wording ("…doesn't match a submitted team…"). |
+
+### Hand-offs (answered from the receiving side, fresh context)
+
+**1. Sponsor submits → organizer** (`h1-*.png`)
+1. State: Test Sponsor is "Needs scheduling", and Needs attention says "Test Sponsor: 0 of 2 reps scheduled".
+2. What changed: "Test Sponsor submitted · 11:51 AM" (the sponsor).
+3. Act: yes, the summary says "Run Auto-schedule".
+4. Next: "Then Noah sends schedules and invites by 10 PM." "Open coffee chats" lands on the open row with focus on it. Clear.
+
+**2. Organizer schedules → sponsor** (`h2-*.png`, same sponsor device throughout)
+- After Auto-schedule the sponsor still sees "Submitted, waiting for organizers to schedule", so drafts are hidden.
+1. State: "Scheduled, invites going out · Invites: 0 accepted · 9 waiting · 12 open", with the calendar.
+2. What changed: "Organizers confirmed your chats · Thu 12:03 PM". After the fix and re-send: "Organizers moved Walkthrough Kevin's 10:00 chat to 11:00, Rm 1352" under "Since you were last here".
+3. Act: "Nothing to do. Your chats are below."
+4. Next: "hackers answer their invites by Sat 10 AM. If someone can't make it, we invite the next person on your list." Clear. The main contact gets no message (not built, as the guide says).
+
+**3. Sponsor changes after invites → organizer** (`h3-*.png`)
+1. State: Test Sponsor "Sent" with the flags "Changed after invites" and "1 chat needs a fix". Needs attention: "Test Sponsor changed their coffee chat preferences after the schedule was sent".
+2. What changed: "Test Sponsor edited reps or times after Send · 12:05 PM" (the sponsor).
+3. Act: yes. The fix reads "Walkthrough Kevin's sent chat at 10–11 is at a time Walkthrough Kevin isn't free anymore… Suggested: move to 11–12 (Rm 1352) / remove." The summary says "Check their chats, then Noah sends again."
+4. Next: Noah's Send re-confirms. Applying the fix kept the chat "Sent" and moved its 6 invites to 11:00 / 11:30 in Rm 1352. Clear.
+
+**4. Sponsor asks for help → organizer** (`h4-sponsor-help-lead-390.png`, masked)
+1. State (sponsor): Help lists the lead's name and number, then the emergency contact, each with a phone link and a copy icon. "Ask an organizer" on the preferences step opens the same dialog.
+2. What changed: nothing is sent or tracked. The organizer dashboard shows nothing new, as designed.
+3. Act: the sponsor calls or texts. The organizer answers the phone and can call back using the rep phones on the board row or in My sponsors.
+4. Next: a normal phone conversation. Clear.
+
+**5. Hacker answers → both sides** (`h5-*.png`)
+1. State: Alex's `/live` shows the toast "Test Sponsor wants to chat with you · Sat 11:00 AM, 30 min" (already the moved time) with "Reply by 10:00 AM". After Accept: "Accepted. You're chatting with Test Sponsor at 11:00 AM." Sam's decline uses an inline "Yes, decline", then shows "Declined Sun Life's chat."
+2. What changed: the sponsor (fresh device) sees "Scheduled, 1 of 21 seats accepted · Invites: 1 accepted · 8 waiting · 12 open" and "Alex · Confirmed". Sun Life's seat counts in the status endpoint go to 2 pending · 28 open.
+3. Act: nobody.
+4. Next: Sam's seat is offered again in the next round. Clear. Data note: Alex also has an old pre-session Sun Life chat "With Priya" (Canada Life's rep) left from earlier demo data. It isn't from this flow.
+
+### Bugs found
+
+- **F1 · A repeat scan shows "Anyone" selected, not the rep already credited.** Steps: scan `demo-otter-kite`, pick Walkthrough Kevin, Add. Scan it again. Expected: Kevin is pre-selected, as the line "…talked to Walkthrough Kevin" suggests. Actual: "Anyone" is selected, and Save keeps Kevin (in the DB, the rep name stays Kevin). A sponsor who picks "Anyone" to clear the rep sees no effect. Where: `src/components/sponsors/badge-scanner.tsx:382` (`repId` starts as `null` and ignores `scanOf`'s rep); the server keeps the old rep on null (`src/server/api/routers/coffee-chat-setup.ts:621-626`).
+- **F2 · Moving a chat on the board gives no confirmation.** Steps: select any chat, Move, then "Move here". Expected: "Moved." (the copy exists). Actual: no toast or status text; only the chip moves. For a sent chat this also re-asks invited hackers, with no word to the organizer. Where: `src/components/sponsors/organizer/coffee-sessions/coffee-sessions-tab.tsx:91-92` (`movePlacement` / `moveBooking` have no `onSuccess`); `copy.toast.moved` (`src/content/coffee-chat-sessions.ts:294`) is never used.
+- **F3 · "1 rep not placed" on the board, but Happening now leaves the sponsor out.** Steps: seed, Auto-schedule, Send. Sun Life's Kevin T. has 1 of the 2 sessions he needs. Expected: both views agree. Actual: Sun Life's row and fix say "1 rep not placed (at 11–12)", but Needs attention doesn't list Sun Life, because it counts reps with any chat. Where: `src/lib/sponsor-organizer.ts:813` (`repsPlaced < repsChatting`) vs the board's per-session count. Fix one of them: count reps who are short a session, or word the flag "1 rep short a chat".
+- **F4 · Rep names break mid-word on the board at 390 px.** Steps: open the board at 390 and open Test Sponsor. Actual: "Walkthroug / h Dana". Where: `src/components/sponsors/organizer/coffee-sessions/sponsors-band.tsx:162` (`[overflow-wrap:anywhere]`; `break-words` keeps whole words).
+- Wording notes (not bugs): after Send, the summary still says "1 sponsor needs scheduling. Then Noah sends schedules and invites by 10 PM." even though Noah has sent and only Sun Life's gap is left. The Send confirm says "invite up to 162 hackers" when 12 were invited (pool-limited), and in dry mode it still says "Hackers get a Slack message now." The PCBWay no-match line differs from the guide's quote.
+
+### Not run
+Round 2 top 3 (no judging room on the live sheet), a valid PCBWay save, two organizers editing at once, the 13th rep, DB-down retry, and an unreadable run of show or HW Contacts.
+
+### Fake data left in the local DB
+`walkthrough-hacker-1..8` and `walkthrough-noah` (users); Test Sponsor's reps Walkthrough Dana and Kevin, its submitted preferences, 3 scans, 5 shortlisted (submitted); "Walkthrough booking" (Rm 1358, 10–11); 24 sent placements across the 6 seeded sponsors and 12 dry-run invites (Alex accepted Test Sponsor, Sam declined Sun Life); Canada Life's Priya S. moved to Rm 2243 10–11; Sun Life judging: 2 scores and 1 sent shortlist on seeded `sp…` teams. Re-running the coffee seed resets placements and invites.
