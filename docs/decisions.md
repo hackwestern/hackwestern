@@ -428,3 +428,11 @@
 **Why:** Organizers pick up the dashboard mid-event and need to learn each view in a minute, the same way sponsors learn the portal.
 
 **Alternatives:** one long dashboard tour that switches tabs (longer, and most organizers only use one or two tabs); a How to menu like the sponsor portal's (more to build for five tabs that each need one tour); a tour library (same reasons as the portal tour, 2026-11-18).
+
+## 2026-11-19: Coffee chat rooms are two pools: 3 near rooms and 5 in Ivey (Jazz)
+
+**Fact:** 8 breakout rooms at most at once. Rooms 2241, 2242 and 2243 are next to each other in the main building, near the Sponsor Bay. Rooms 1348, 1352, 1354, 1356 and 1358 are in the Ivey building, a 10-minute walk from the Sponsor Bay. Wording for sponsors and hackers: "Rooms 1348–1358 are in the Ivey building, a 10-minute walk from the Sponsor Bay." On an assigned chat: "Ivey, Rm 1352 · 10 min walk · leave the Sponsor Bay by 9:50". This settles the open question about whether 1348–1358 are in Ivey.
+
+**Planning direction (proposed, pending Jazz's answers):** near rooms for short chats, 1-on-1s, "Met at booth" picks and ad hoc bookings; Ivey for planned blocks of at least 1 hour, 30-minute and group chats. One sponsor stays in one building at a time; a rep needs at least 20 minutes between a near room and Ivey. Offers for Ivey chats expire about 30 minutes before the chat (20 + 10 walking) instead of 20. Calendar columns become rooms ("Room 1, Room 2"), with reps listed on each block. A "Your team" step comes before the calendar. Setup asks how flexible they are and whether Ivey is OK. A busy-times strip shows the near rooms separately.
+
+**Open:** Ivey only when near rooms are full, or the default for long planned blocks? Do Ivey reps still cover the booth? Who wins a clash (package, first to submit, or Jazz decides)?
