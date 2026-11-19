@@ -530,3 +530,9 @@ Supersedes "lead's phone + Send to the sponsor team" as equal options (2026-11-1
 **Decision:** Everywhere a team appears in judging (sheet and app), show both its team ID and its Devpost link ("a1c3e5f70912 · devpost.com/software/…"). The spon team enters a digital sponsor's 1st–5th place by pasting Devpost links (a team ID also works); the app matches each link to the team via `teams.devpostUrl`, shows the match (name, ID, link) for confirmation, and refuses a link that matches no submitted team in that sponsor's track. The "Sponsor Judging" tab lists only sponsors with a prize track (Canada Life, QNX, Scotiabank, Sun Life, TinyFish, PCBWay); the Prize track column and the no-track rows were removed.
 
 **Why:** the spon team gets Devpost links from digital sponsors, not internal team IDs; organizers need both to award prizes and cross-check.
+
+## 2026-11-19: HW Contacts trimmed to the people the app uses (Jazz)
+
+**Decision:** HW Contacts keeps only the spon team (Noah Medland, Caroline Ge, Daniel Wang, Alice Nguyen, Aniya Liu), the HW contacts still listed on Sponsor Status (Lucas Vanderwielen, Brittney Chong) and Jasmine Gu. The other 20 rows were deleted (recoverable from version history). The tab stays because Sponsor Day-Of's Lead phone, the sponsor portal's lead phone, "Text your lead" and the HW Contact dropdown read it; Aniya leads no sponsor but has an on-call shift, so her number only lives here.
+
+**Alternatives:** delete the tab (breaks every lead phone lookup); type phones into Sponsor Day-Of (duplicates each lead's number per sponsor and loses Aniya).
