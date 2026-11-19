@@ -208,6 +208,21 @@ describe("send", () => {
   });
 });
 
+describe("determinism", () => {
+  test("reps with the same position and created time are ordered by id", async () => {
+    const [sp] = await db.insert(sponsorJudgingSponsors).values({ name: `TieCo${Date.now()}` }).returning();
+    const at = new Date("2026-11-01T00:00:00Z");
+    const [hi, lo] = ["ffffffff-0000-4000-8000-000000000000", "00000000-0000-4000-8000-000000000001"];
+    await db.insert(coffeeChatReps).values([
+      { id: hi, sponsorId: sp!.id, name: "Hi", phone: "5195550199", position: 0, createdAt: at },
+      { id: lo, sponsorId: sp!.id, name: "Lo", phone: "5195550199", position: 0, createdAt: at },
+    ]);
+    const state = await loadBoardState();
+    expect(state.sponsors.find((s) => s.id === sp!.id)!.reps.map((r) => r.id)).toEqual([lo, hi]);
+    await db.delete(sponsorJudgingSponsors).where(eq(sponsorJudgingSponsors.id, sp!.id));
+  });
+});
+
 describe("pins are re-checked", () => {
   test("a sent chat the rep is no longer free for becomes a fix and stops counting", async () => {
     const tia = await placementOf("Tia");

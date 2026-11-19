@@ -185,20 +185,28 @@ export function pinsOf(state: BoardState): Pin[] {
 export async function loadBoardState(
   database: Pick<typeof db, "select"> = db,
 ): Promise<BoardState> {
+  // Every list the scheduler walks is fully ordered (id last), so the same
+  // rows always give the same board.
   const [registered, prefs, reps, repSessions, placementRows, bookings] =
     await Promise.all([
       database
         .select({ id: sponsorJudgingSponsors.id, name: sponsorJudgingSponsors.name })
         .from(sponsorJudgingSponsors)
-        .orderBy(asc(sponsorJudgingSponsors.name)),
+        .orderBy(asc(sponsorJudgingSponsors.name), asc(sponsorJudgingSponsors.id)),
       database.select().from(coffeeChatPrefs),
       database
         .select()
         .from(coffeeChatReps)
-        .orderBy(asc(coffeeChatReps.position), asc(coffeeChatReps.createdAt)),
+        .orderBy(asc(coffeeChatReps.position), asc(coffeeChatReps.createdAt), asc(coffeeChatReps.id)),
       database.select().from(coffeeChatRepSessions),
-      database.select().from(coffeeChatPlacements),
-      database.select().from(coffeeChatRoomBookings),
+      database
+        .select()
+        .from(coffeeChatPlacements)
+        .orderBy(asc(coffeeChatPlacements.createdAt), asc(coffeeChatPlacements.id)),
+      database
+        .select()
+        .from(coffeeChatRoomBookings)
+        .orderBy(asc(coffeeChatRoomBookings.createdAt), asc(coffeeChatRoomBookings.id)),
     ]);
   const ros = await readRunOfShow(registered.map((s) => s.name));
   const sheetNames = new Set((ros?.sheetSponsors ?? []).map((n) => n.toLowerCase()));
