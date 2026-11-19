@@ -15,32 +15,45 @@
  *   sponsors in turn (every sponsor's scanned hackers before anyone's
  *   shortlist), one hacker per sponsor at a time, so no sponsor takes the
  *   whole pool first.
- * - A hacker never holds two live invites at overlapping times, never two
+ * - A hacker never holds more than 2 live chats (either flow), two at
+ *   overlapping times, or two
  *   seats with the same sponsor, and isn't asked again by a sponsor they
  *   declined or let expire.
  * - Round 1 (the Friday ~10 PM Send): answer by Sat 10:00 AM. Round 2 opens
- *   Sat 10:30 AM, then a round every 30 minutes; each gives 30 minutes to
- *   answer and only offers chats that start after that, with the old flow's
- *   last-call lead (20 min; 35 for Ivey, a 15-min walk). So 10-11 AM chats
- *   are only filled by round 1 (accepted by Jazz, 2026-11-19).
+ *   Sat 10:30 AM, then a round every 30 minutes. A round's invite is
+ *   answered by the round's close or 30 minutes from when it actually ran,
+ *   whichever is later, capped at the chat's last call (the old flow's lead:
+ *   20 min; 35 for Ivey, a 15-min walk). Under 10 minutes to answer: that
+ *   seat waits. Rounds run when triggered, so a late or missed round just
+ *   catches up as the current one.
  * - A seat answered "no" (declined, expired) in a round waits for the next
  *   round; it is never re-offered inside the same round.
  */
 import {
   COFFEE_CHAT_DATE,
   COFFEE_CHAT_EXPIRY_MINUTES_BEFORE,
+  COFFEE_CHAT_UTC_OFFSET,
 } from "~/lib/coffee-chat-requests";
-import { WORKSHOP_BUFFER_MIN, type Building } from "~/lib/coffee-chat-sessions";
-
-/** Eastern time in November (daylight saving ended Nov 1). */
-const UTC_OFFSET = "-05:00";
+import {
+  COFFEE_SESSIONS,
+  WORKSHOP_BUFFER_MIN,
+  type Building,
+} from "~/lib/coffee-chat-sessions";
 
 /** Saturday "HH:MM" -> absolute time. */
 export function saturdayAt(minutes: number): Date {
   const h = String(Math.floor(minutes / 60)).padStart(2, "0");
   const m = String(minutes % 60).padStart(2, "0");
-  return new Date(`${COFFEE_CHAT_DATE}T${h}:${m}:00${UTC_OFFSET}`);
+  return new Date(`${COFFEE_CHAT_DATE}T${h}:${m}:00${COFFEE_CHAT_UTC_OFFSET}`);
 }
+
+/**
+ * When the day's last possible chat (15 minutes, ending with the last
+ * session) starts: past its last call, so no round can offer anything.
+ */
+export const LAST_CHAT_STARTS_AT = saturdayAt(
+  Math.max(...COFFEE_SESSIONS.map((s) => s.end)) - 15,
+);
 
 /** Round 1 must be answered by Sat 10:00 AM. */
 export const ROUND_ONE_CLOSES_MIN = 10 * 60;
@@ -50,6 +63,10 @@ export const ROUND_TWO_OPENS_MIN = 10 * 60 + 30;
 export const ROUND_MINUTES = 30;
 /** Walking time to Ivey, added to the last-call lead there. */
 export const IVEY_WALK_MIN = WORKSHOP_BUFFER_MIN;
+/** An invite leaving less than this to answer isn't sent; the seat waits. */
+export const MIN_ANSWER_MINUTES = 10;
+/** Live (pending or accepted) chats one hacker may hold at a time. */
+export const MAX_LIVE_CHATS_PER_HACKER = 2;
 
 /** Minutes before a chat an invite must be answered by (20; 35 for Ivey). */
 export function answerLeadMinutes(building: Building): number {
@@ -93,12 +110,39 @@ export function nextRoundAt(
   return at < saturdayAt(lastChatStartMin) ? at : null;
 }
 
+/** A chat's last call: the latest an invite to it can be answered. */
+export function lastCallAt(startMin: number, building: Building): Date {
+  return new Date(
+    saturdayAt(startMin).getTime() - answerLeadMinutes(building) * 60_000,
+  );
+}
+
+/**
+ * `close` capped at the chat's last call, or null when that leaves under
+ * MIN_ANSWER_MINUTES from `now`.
+ */
+function answerBy(now: Date, close: Date, lastCall: Date): Date | null {
+  const at = lastCall < close ? lastCall : close;
+  return at.getTime() - now.getTime() >= MIN_ANSWER_MINUTES * 60_000
+    ? at
+    : null;
+}
+
+/** Rounds 2+: the round's close, or 30 minutes from now if that's later. */
+function laterRoundClose(round: number, now: Date): Date {
+  const close = roundClosesAt(round);
+  const full = new Date(now.getTime() + ROUND_MINUTES * 60_000);
+  return full > close ? full : close;
+}
+
 /**
  * The time an invite in `round` for a chat starting at `startMin` must be
  * answered by, or null when this round can't offer that chat at `now`.
  * Round 1: Sat 10:00 AM or the chat's last call, whichever is first.
- * Later rounds: the round's close, and only for chats whose last call is
- * at or after it (a full 30 minutes to answer).
+ * Later rounds: the round's close or 30 minutes from `now`, whichever is
+ * later (a round triggered late still gives 30 minutes), capped at the
+ * chat's last call. Null before the round opens, or when that leaves under
+ * MIN_ANSWER_MINUTES to answer.
  */
 export function inviteExpiresAt(
   round: number,
@@ -106,37 +150,27 @@ export function inviteExpiresAt(
   building: Building,
   now: Date,
 ): Date | null {
-  const lastCall = new Date(
-    saturdayAt(startMin).getTime() - answerLeadMinutes(building) * 60_000,
-  );
-  const closes = roundClosesAt(round);
-  if (round <= 1) {
-    const at = lastCall < closes ? lastCall : closes;
-    return now < at ? at : null;
-  }
-  const opens = roundOpensAt(round)!;
-  if (now < opens || now >= closes) return null;
-  return lastCall >= closes ? closes : null;
+  const lastCall = lastCallAt(startMin, building);
+  if (round <= 1) return answerBy(now, roundClosesAt(1), lastCall);
+  if (now < roundOpensAt(round)!) return null;
+  return answerBy(now, laterRoundClose(round, now), lastCall);
 }
 
 /**
- * A changed invite's new answer-by time (the hacker must accept again): the
- * current round's close (Sat 10 AM on Friday night) or the chat's last
- * call, whichever is first. Null when that's already past: too late to ask
- * again.
+ * A changed invite's new answer-by time (the hacker must accept again): Sat
+ * 10 AM on Friday night, later the current round's close (at least 30
+ * minutes from now), capped at the chat's last call. Null when that leaves
+ * under MIN_ANSWER_MINUTES: too late to ask again, so their answer stands.
  */
 export function reconfirmExpiresAt(
   now: Date,
   startMin: number,
   building: Building,
 ): Date | null {
-  const lastCall = new Date(
-    saturdayAt(startMin).getTime() - answerLeadMinutes(building) * 60_000,
-  );
   const r1 = roundClosesAt(1);
-  const close = now < r1 ? r1 : roundClosesAt(Math.max(2, currentRound(now)));
-  const at = lastCall < close ? lastCall : close;
-  return at > now ? at : null;
+  const close =
+    now < r1 ? r1 : laterRoundClose(Math.max(2, currentRound(now)), now);
+  return answerBy(now, close, lastCallAt(startMin, building));
 }
 
 // ---------------------------------------------------------------------------
@@ -260,6 +294,8 @@ export type PlanInput = {
   blocked: ReadonlySet<string>;
   /** Sponsor order for the turn-taking (stable, e.g. by name). */
   sponsorOrder?: readonly string[];
+  /** Live chats a hacker may hold (default MAX_LIVE_CHATS_PER_HACKER). */
+  maxLivePerHacker?: number;
 };
 
 export type PlannedInvite = {
@@ -316,6 +352,7 @@ export function planInviteRound(input: PlanInput): PlanResult {
     busy.set(b.userId, [...(busy.get(b.userId) ?? []), b]);
   const blocked = new Set(input.blocked);
   const pair = (sponsorId: string, userId: string) => `${sponsorId}|${userId}`;
+  const cap = input.maxLivePerHacker ?? MAX_LIVE_CHATS_PER_HACKER;
 
   const order = [
     ...(input.sponsorOrder ?? []).filter((id) => bySponsor.has(id)),
@@ -330,6 +367,7 @@ export function planInviteRound(input: PlanInput): PlanResult {
   const seatFor = (sponsorId: string, userId: string): Open | null => {
     if (blocked.has(pair(sponsorId, userId))) return null;
     const mine = busy.get(userId) ?? [];
+    if (mine.length >= cap) return null;
     if (mine.some((b) => b.sponsorId === sponsorId)) return null;
     return (
       (bySponsor.get(sponsorId) ?? []).find(

@@ -152,20 +152,80 @@ describe("round timing", () => {
     expect(inviteExpiresAt(1, min("10:00"), "near", at("09:45"))).toBeNull();
   });
 
-  test("later rounds give 30 minutes and only offer chats after their last call", () => {
-    // Round 2 (10:30-11:00): near chats from 11:20, Ivey from 11:35.
-    expect(inviteExpiresAt(2, min("10:45"), "near", at("10:30"))).toBeNull();
-    expect(inviteExpiresAt(2, min("11:15"), "near", at("10:30"))).toBeNull();
+  test("later rounds: the round's close, capped at the chat's last call, at least 10 minutes", () => {
+    // Round 2 (10:30-11:00).
+    expect(inviteExpiresAt(2, min("14:00"), "near", at("10:30"))).toEqual(
+      at("11:00"),
+    );
     expect(inviteExpiresAt(2, min("11:30"), "near", at("10:30"))).toEqual(
       at("11:00"),
     );
-    expect(inviteExpiresAt(2, min("11:30"), "ivey", at("10:30"))).toBeNull();
-    expect(inviteExpiresAt(2, min("11:45"), "ivey", at("10:30"))).toEqual(
-      at("11:00"),
+    // Last call before the close: answer by the last call.
+    expect(inviteExpiresAt(2, min("11:15"), "near", at("10:30"))).toEqual(
+      at("10:55"),
     );
-    // Not inside round 2's window.
+    expect(inviteExpiresAt(2, min("11:30"), "ivey", at("10:30"))).toEqual(
+      at("10:55"),
+    );
+    // Exactly 10 minutes is enough; under that the seat waits.
+    expect(inviteExpiresAt(2, min("11:00"), "near", at("10:30"))).toEqual(
+      at("10:40"),
+    );
+    expect(inviteExpiresAt(2, min("11:00"), "near", at("10:31"))).toBeNull();
+    expect(inviteExpiresAt(2, min("10:45"), "near", at("10:30"))).toBeNull();
+    // Before round 2 opens.
     expect(inviteExpiresAt(2, min("14:00"), "near", at("10:20"))).toBeNull();
-    expect(inviteExpiresAt(2, min("14:00"), "near", at("11:00"))).toBeNull();
+  });
+
+  test("a round triggered late still gives 30 minutes, capped at the last call", () => {
+    // Round 3 is 11:00-11:30, but only ran at 11:25.
+    expect(currentRound(at("11:25"))).toBe(3);
+    expect(inviteExpiresAt(3, min("14:00"), "near", at("11:25"))).toEqual(
+      at("11:55"),
+    );
+    expect(inviteExpiresAt(3, min("12:00"), "near", at("11:25"))).toEqual(
+      at("11:40"),
+    );
+    expect(inviteExpiresAt(3, min("12:15"), "ivey", at("11:25"))).toEqual(
+      at("11:40"),
+    );
+    // 5 minutes or less to answer: skipped this round.
+    expect(inviteExpiresAt(3, min("11:45"), "near", at("11:25"))).toBeNull();
+    expect(inviteExpiresAt(3, min("12:00"), "ivey", at("11:25"))).toBeNull();
+    // Run on time it's the round's close.
+    expect(inviteExpiresAt(3, min("14:00"), "near", at("11:00"))).toEqual(
+      at("11:30"),
+    );
+  });
+
+  test("a missed round doesn't skip seats: the next one catches up", () => {
+    // Round 2 never ran. 11:45's last call (11:25) is before round 3's
+    // close, but round 3 at 11:05 still offers it with 20 minutes.
+    expect(inviteExpiresAt(3, min("11:45"), "near", at("11:05"))).toEqual(
+      at("11:25"),
+    );
+    const { invites, unfilled } = plan({
+      round: 3,
+      now: at("11:05"),
+      chats: [
+        chat({ placementId: "p", start: min("11:15") }),
+        chat({ placementId: "p", start: min("11:45") }),
+        chat({ placementId: "q", start: min("14:00") }),
+      ],
+      candidates: cands({
+        A: [
+          ["u1", "interested"],
+          ["u2", "interested"],
+          ["u3", "interested"],
+        ],
+      }),
+    });
+    expect(invites.map((i) => [i.start, i.expiresAt])).toEqual([
+      [min("11:45"), at("11:25")],
+      [min("14:00"), at("11:35")],
+    ]);
+    // 11:15's last call (10:55) is gone.
+    expect(unfilled).toEqual([{ placementId: "p", start: min("11:15"), open: 1 }]);
   });
 
   test("10-11 AM chats are only ever filled by round 1", () => {
@@ -190,6 +250,12 @@ describe("round timing", () => {
       at("11:25"),
     );
     expect(reconfirmExpiresAt(at("11:30"), min("11:45"), "near")).toBeNull();
+    // Changed late in a round: 30 minutes, not what's left of the round.
+    expect(reconfirmExpiresAt(at("11:25"), min("14:00"), "near")).toEqual(
+      at("11:55"),
+    );
+    // Under 10 minutes before the last call: too late to ask again.
+    expect(reconfirmExpiresAt(at("11:20"), min("11:45"), "near")).toBeNull();
   });
 
   test("saturdayAt is Eastern time", () => {
@@ -426,9 +492,9 @@ describe("planner", () => {
     ]);
   });
 
-  test("round 2 leaves 10-11 AM seats unfilled", () => {
+  test("round 2 leaves 10-11 AM seats unfilled; 11:00 gets its last 10 minutes", () => {
     const chats = [600, 615, 630, 645, 660].map((start) =>
-      chat({ placementId: "p", start }),
+      chat({ placementId: `p${start}`, start }),
     );
     const users = ["a", "b", "c", "d", "e"].map(
       (u) => [u, "interested"] as [string, InviteSource],
@@ -439,8 +505,42 @@ describe("planner", () => {
       chats,
       candidates: cands({ A: users }),
     });
-    expect(invites).toEqual([]);
-    expect(unfilled).toHaveLength(5);
+    expect(invites.map((i) => [i.start, i.expiresAt])).toEqual([
+      [660, at("10:40")],
+    ]);
+    expect(unfilled).toHaveLength(4);
+  });
+
+  test("a hacker holds at most 2 live chats", () => {
+    const chats = ["A", "B", "C"].map((sponsorId, i) =>
+      chat({ placementId: sponsorId, sponsorId, start: 780 + i * 60 }),
+    );
+    const both = (u: string): [string, InviteSource][] => [[u, "interested"]];
+    // u1 is everyone's first pick: gets A and B, then C goes to u2.
+    const r = plan({
+      chats,
+      candidates: cands({
+        A: both("u1"),
+        B: both("u1"),
+        C: [...both("u1"), ...both("u2")],
+      }),
+      sponsorOrder: ["A", "B", "C"],
+    });
+    expect(r.invites.map((i) => [i.sponsorId, i.userId])).toEqual([
+      ["A", "u1"],
+      ["B", "u1"],
+      ["C", "u2"],
+    ]);
+    // Live chats from before (either flow) count toward the 2.
+    const busy = plan({
+      chats,
+      candidates: cands({ A: both("u1") }),
+      busy: [
+        { userId: "u1", sponsorId: "X", start: 600, minutes: 15 },
+        { userId: "u1", sponsorId: "Y", start: 660, minutes: 15 },
+      ],
+    });
+    expect(busy.invites).toEqual([]);
   });
 
   test("round 1 expiry per seat", () => {
@@ -511,6 +611,7 @@ describe("planner", () => {
       }
       for (const u of users) {
         const mine = invites.filter((i) => i.userId === u);
+        expect(mine.length).toBeLessThanOrEqual(2);
         expect(new Set(mine.map((i) => i.sponsorId)).size).toBe(mine.length);
         for (const a of mine) {
           for (const b of mine) {

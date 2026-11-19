@@ -10,16 +10,21 @@ import {
   vi,
 } from "vitest";
 
+import { planInviteRound } from "~/lib/coffee-chat-invites";
 import { respondToCoffeeChat } from "~/server/api/utils/coffee-chat-respond";
 import {
+  countUnnotifiedInvites,
   deliverInviteNotices,
+  deliverUnnotifiedInvites,
   invitesEnabled,
+  previewDueInviteRound,
   reconcileInvitesAfterChange,
   resetInviteRoundThrottle,
   runDueInviteRounds,
   runInviteRound,
   sendRoundOneInvites,
 } from "~/server/api/utils/coffee-chat-invites";
+import { loadCoffeeChatNotices } from "~/server/api/utils/coffee-chat-notify";
 import { db } from "~/server/db";
 import {
   applications,
@@ -47,6 +52,13 @@ const { names, dm, offerEmail, changeEmail, mirror } = vi.hoisted(() => {
     changeEmail: vi.fn(async () => true),
     mirror: vi.fn(async () => ({ ok: false as const, error: "disabled" })),
   };
+});
+
+// The real planner; one test hides a booking from it to fake a race.
+vi.mock("~/lib/coffee-chat-invites", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("~/lib/coffee-chat-invites")>();
+  return { ...actual, planInviteRound: vi.fn(actual.planInviteRound) };
 });
 
 // Never reach Slack, Mailjet or the sheet from a test.
@@ -354,9 +366,11 @@ describe("round 1 (Send, Fri 10 PM)", () => {
     process.env.COFFEE_INVITES_ENABLED = "1";
     dm.mockResolvedValueOnce("not-found" as never);
     const [row] = await chatsOf(alpha.id);
-    const { loadCoffeeChatNotices } = await import(
-      "~/server/api/utils/coffee-chat-notify"
-    );
+    // Sent already: unsend it so it can go out again.
+    await db
+      .update(coffeeChats)
+      .set({ notifiedAt: null })
+      .where(eq(coffeeChats.id, row!.id));
     const [notice] = await loadCoffeeChatNotices([row!.id]);
     const d = await deliverInviteNotices([
       { event: "offered", notice: notice! },
@@ -502,15 +516,19 @@ describe("Saturday rounds", () => {
     expect(out.status).toBe("ran");
     const rows = await chatsOf(alpha.id);
     const round2 = rows.filter((c) => c.round === 2);
-    // 11:30 (declined by h1) goes to h9 for 30 minutes. 11:45 (h2 let it
-    // expire) has no one left; 11:15 / 13:xx expired too.
+    // h9 takes the earliest open seat: 11:15 (h6 let it expire), answer by
+    // its last call 10:55. 11:30 (declined by h1) and 11:45 (h2 let it
+    // expire) have no one left; 13:xx expired too.
     expect(
       round2.map((c) => [
         c.slotTime,
         keyOf(c.userId),
         c.expiresAt?.toISOString(),
       ]),
-    ).toEqual([["11:30", "h9", at("11:00").toISOString()]]);
+    ).toEqual([["11:15", "h9", at("10:55").toISOString()]]);
+    // Delivered by the round's sweep.
+    expect(dm).toHaveBeenCalledTimes(1);
+    expect(round2[0]!.notifiedAt).not.toBeNull();
     expect(
       rows
         .filter((c) => c.status === "expired")
@@ -607,11 +625,14 @@ describe("coffeeChatInvites router", () => {
       open: 0,
       room: "Rm 2241",
     });
-    expect(a.chats[2]!.invites.map((i) => [i.name, i.status, i.round])).toEqual(
+    expect(a.chats[1]!.invites.map((i) => [i.name, i.status, i.round])).toEqual(
       [
-        ["h1 Person", "declined", 1],
+        ["h6 Person", "expired", 1],
         ["h9 Person", "declined", 2],
       ],
+    );
+    expect(a.chats[2]!.invites.map((i) => [i.name, i.status, i.round])).toEqual(
+      [["h1 Person", "declined", 1]],
     );
     expect(a.totals).toMatchObject({ seats: 6, accepted: 1 });
     // The kill switch is off here: Run now writes nothing.
@@ -619,5 +640,198 @@ describe("coffeeChatInvites router", () => {
       status: "disabled",
       created: 0,
     });
+    // Importing the whole app router is slow on a busy machine.
+  }, 30_000);
+});
+
+describe("delivery: each invite once, retried until it goes out", () => {
+  let delta: Awaited<ReturnType<typeof sponsor>>;
+  beforeAll(async () => {
+    vi.setSystemTime(FRI_10PM);
+    delta = await sponsor(
+      `Delta${Date.now()}`,
+      { hackersPerChat: 1 },
+      { chats: 3 },
+      [{ sessionId: "16", room: "2243", status: "sent" }],
+    );
+    for (const k of ["d1", "d2", "d3"]) await hacker(k);
+    await interested(delta.id, ["d1", "d2", "d3"]);
+  });
+
+  test("the caller and a sweep at once, then again: each hacker hears once", async () => {
+    process.env.COFFEE_INVITES_ENABLED = "1";
+    const r = await db.transaction((tx) =>
+      sendRoundOneInvites(tx, { sponsorIds: [delta.id], now: FRI_10PM }),
+    );
+    expect(r.status === "ok" && r.created).toHaveLength(3);
+    expect(await countUnnotifiedInvites(FRI_10PM)).toBe(3);
+    const [a, b] = await Promise.all([
+      deliverInviteNotices(r.jobs),
+      deliverUnnotifiedInvites(FRI_10PM),
+    ]);
+    expect(a.slack + b.slack).toBe(3);
+    expect(dm).toHaveBeenCalledTimes(3);
+    expect(await deliverInviteNotices(r.jobs)).toMatchObject({
+      slack: 0,
+      skipped: 3,
+    });
+    expect(await deliverUnnotifiedInvites(FRI_10PM)).toMatchObject({
+      slack: 0,
+    });
+    expect(dm).toHaveBeenCalledTimes(3);
+    expect(await countUnnotifiedInvites(FRI_10PM)).toBe(0);
+    for (const c of await chatsOf(delta.id)) {
+      expect(c.notifiedAt).not.toBeNull();
+    }
+  });
+
+  test("a failed DM gets no email and is released; the next sweep retries it", async () => {
+    process.env.COFFEE_INVITES_ENABLED = "1";
+    const [row] = await chatsOf(delta.id);
+    const notifiedAt = async () =>
+      (await chatsOf(delta.id)).find((c) => c.id === row!.id)!.notifiedAt;
+    await db
+      .update(coffeeChats)
+      .set({ notifiedAt: null })
+      .where(eq(coffeeChats.id, row!.id));
+    const [notice] = await loadCoffeeChatNotices([row!.id]);
+
+    dm.mockResolvedValueOnce("failed" as never);
+    expect(
+      await deliverInviteNotices([{ event: "offered", notice: notice! }]),
+    ).toMatchObject({ slack: 0, email: 0, failed: 1 });
+    expect(offerEmail).not.toHaveBeenCalled();
+    expect(await notifiedAt()).toBeNull();
+
+    // Slack throws: released too.
+    dm.mockRejectedValueOnce(new Error("slack down"));
+    expect(await deliverUnnotifiedInvites(FRI_10PM)).toMatchObject({
+      failed: 1,
+    });
+    expect(await notifiedAt()).toBeNull();
+
+    // No Slack token and the email isn't sent: nothing went out, released.
+    dm.mockResolvedValueOnce("skipped-no-token" as never);
+    offerEmail.mockResolvedValueOnce(false);
+    expect(await deliverUnnotifiedInvites(FRI_10PM)).toMatchObject({
+      skipped: 1,
+    });
+    expect(offerEmail).toHaveBeenCalledTimes(1);
+    expect(await notifiedAt()).toBeNull();
+
+    expect(await deliverUnnotifiedInvites(FRI_10PM)).toMatchObject({
+      slack: 1,
+    });
+    expect(await notifiedAt()).not.toBeNull();
+  });
+
+  test("an old-flow booking racing the round skips that seat, not the round", async () => {
+    process.env.COFFEE_INVITES_ENABLED = "1";
+    const zeta = await sponsor(
+      `Zeta${Date.now()}`,
+      { hackersPerChat: 1 },
+      { chats: 1 },
+      [{ sessionId: "13", room: "1354", status: "sent" }],
+    );
+    for (const k of ["z1", "z2"]) await hacker(k);
+    await interested(zeta.id, ["z1", "z2"]);
+    // z1 books an old-flow chat at 1:00 with Delta…
+    await db.insert(coffeeChats).values({
+      sponsorId: delta.id,
+      userId: ids.z1!,
+      slotTime: "13:00",
+      room: "Rm 2243",
+    });
+    // …committed after the round read the rows: the planner doesn't see it.
+    const actual = await vi.importActual<
+      typeof import("~/lib/coffee-chat-invites")
+    >("~/lib/coffee-chat-invites");
+    const plans = vi.mocked(planInviteRound);
+    const callsBefore = plans.mock.calls.length;
+    plans.mockImplementationOnce((input) =>
+      actual.planInviteRound({
+        ...input,
+        busy: input.busy.filter((b) => b.userId !== ids.z1),
+      }),
+    );
+    const r = await db.transaction((tx) =>
+      runInviteRound(tx, { sponsorIds: [zeta.id], now: FRI_10PM }),
+    );
+    expect(r.status).toBe("ok");
+    expect(plans.mock.calls.length - callsBefore).toBe(2);
+    const rows = await chatsOf(zeta.id);
+    expect(rows.map((c) => [c.slotTime, keyOf(c.userId), c.status])).toEqual([
+      ["13:00", "z2", "pending"],
+    ]);
+    expect(r.status === "ok" && r.created).toEqual([rows[0]!.id]);
+    // z1's own booking is untouched.
+    expect(
+      (await chatsOf(delta.id)).filter((c) => c.userId === ids.z1),
+    ).toMatchObject([{ slotTime: "13:00", status: "pending" }]);
+  });
+
+  test("a round triggered late gives 30 minutes; the dry run writes nothing; nothing runs after the last chat", async () => {
+    const eps = await sponsor(
+      `Eps${Date.now()}`,
+      { hackersPerChat: 1 },
+      { chats: 1 },
+      [{ sessionId: "15", room: "1352", status: "sent" }],
+    );
+    await hacker("e1");
+    await interested(eps.id, ["e1"]);
+    vi.setSystemTime(at("11:25"));
+
+    // Dry run, kill switch off: counts only.
+    const before = await db.select().from(coffeeChats);
+    const preview = await previewDueInviteRound(at("11:25"));
+    expect(preview).toMatchObject({ status: "ok", round: 3, invites: 1 });
+    expect(await db.select().from(coffeeChats)).toEqual(before);
+    expect(dm).not.toHaveBeenCalled();
+
+    // Round 3 (11:00-11:30) only ran at 11:25.
+    process.env.COFFEE_INVITES_ENABLED = "1";
+    const out = await runDueInviteRounds(at("11:25"));
+    expect(out.status).toBe("ran");
+    const rows = await chatsOf(eps.id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      round: 3,
+      slotTime: "15:00",
+      expiresAt: at("11:55"),
+    });
+    expect(rows[0]!.notifiedAt).not.toBeNull();
+    expect(dm).toHaveBeenCalledTimes(1);
+
+    // Past the day's last chat: no lock, no board read.
+    resetInviteRoundThrottle();
+    expect(await runDueInviteRounds(at("16:50"))).toEqual({ status: "over" });
+    expect(await previewDueInviteRound(at("16:50"))).toMatchObject({
+      status: "over",
+    });
+    vi.setSystemTime(FRI_10PM);
+  });
+});
+
+describe("kill switch default", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  test("on by default only on the Vercel production deploy", () => {
+    vi.stubEnv("VITEST", "");
+    vi.stubEnv("VERCEL_ENV", "production");
+    expect(invitesEnabled()).toBe(true);
+    vi.stubEnv("VERCEL_ENV", "preview");
+    expect(invitesEnabled()).toBe(false);
+    // A local `next start`: NODE_ENV production, not on Vercel.
+    vi.stubEnv("VERCEL_ENV", "");
+    vi.stubEnv("NODE_ENV", "production");
+    expect(invitesEnabled()).toBe(false);
+    // "1" forces on, "0" forces off.
+    vi.stubEnv("COFFEE_INVITES_ENABLED", "1");
+    expect(invitesEnabled()).toBe(true);
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("COFFEE_INVITES_ENABLED", "0");
+    expect(invitesEnabled()).toBe(false);
   });
 });

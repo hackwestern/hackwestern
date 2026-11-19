@@ -102,9 +102,12 @@ export const env = createEnv({
     // tests (sheetWritesEnabled in run-of-show-sheet.ts).
     SHEET_WRITES: z.string().optional(),
     // Coffee chat session invites kill switch: "1" on, "0" off. Unset = on
-    // only in production; off in tests unless set (invitesEnabled in
+    // only on the Vercel production deploy (VERCEL_ENV), never previews or a
+    // local `next start`; off in tests unless set (invitesEnabled in
     // src/server/api/utils/coffee-chat-invites.ts).
     COFFEE_INVITES_ENABLED: z.string().optional(),
+    // Set by Vercel: "production", "preview" or "development".
+    VERCEL_ENV: z.string().optional(),
     GITHUB_TOKEN: z.string().optional(),
     // ISO 8601 datetime strings for the hacking window used in commit-timing cheat checks
     HACK_START: z.string().datetime().optional(),
@@ -220,6 +223,7 @@ export const env = createEnv({
     RUN_OF_SHOW_SHEETS_PRIVATE_KEY: process.env.RUN_OF_SHOW_SHEETS_PRIVATE_KEY,
     SHEET_WRITES: process.env.SHEET_WRITES,
     COFFEE_INVITES_ENABLED: process.env.COFFEE_INVITES_ENABLED,
+    VERCEL_ENV: process.env.VERCEL_ENV,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     HACK_START: process.env.HACK_START,
     HACK_END: process.env.HACK_END,

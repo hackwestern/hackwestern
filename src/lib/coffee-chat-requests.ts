@@ -42,7 +42,8 @@ export const COFFEE_CHAT_EXPIRY_MINUTES_BEFORE = 20;
  * Eastern time is UTC-5 in November (daylight saving ended Nov 1).
  */
 export const COFFEE_CHAT_DATE = "2026-11-21";
-const COFFEE_CHAT_UTC_OFFSET = "-05:00";
+/** Eastern time on chat day (daylight saving ended Nov 1): the one offset. */
+export const COFFEE_CHAT_UTC_OFFSET = "-05:00";
 
 /** People a coffee chat room fits at once. */
 export const COFFEE_CHAT_ROOM_PEOPLE = 6;

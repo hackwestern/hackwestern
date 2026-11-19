@@ -18,7 +18,7 @@
  */
 import {
   COFFEE_CHAT_GRID_MINUTES,
-  coffeeChatExpiresAt,
+  chatExpiresAt,
   coffeeChatMinutesOf,
   coffeeChatRoomOf,
   coffeeChatsOverlap,
@@ -306,7 +306,7 @@ export function blockFill(
       slots.find(
         (s) =>
           s.booked < s.needed &&
-          (!now || now < coffeeChatExpiresAt(s.slotTime)),
+          (!now || now < chatExpiresAt(s)),
       )?.slotTime ?? null,
   };
 }

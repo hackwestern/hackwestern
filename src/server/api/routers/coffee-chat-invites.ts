@@ -79,13 +79,14 @@ export type InviteStatus = {
 // docs/handoff/build-b-cc-invites.md.
 export const coffeeChatInvitesRouter = createTRPCRouter({
   /**
-   * Invite status per sponsor and chat (sent placements only). Also runs a
-   * due Saturday round first (throttled; no-op when nothing is due).
+   * Invite status per sponsor and chat (sent placements only). Also starts
+   * a due Saturday round and the delivery sweep, without waiting for them
+   * (throttled; no-op when nothing is due).
    */
   status: protectedOrganizerProcedure
     .input(z.object({ sponsorId: z.string().uuid().optional() }).optional())
     .query(async ({ input }): Promise<InviteStatus> => {
-      await kickDueInviteRounds();
+      kickDueInviteRounds();
       const now = new Date();
       const [state, rows] = await Promise.all([
         loadBoardState(),

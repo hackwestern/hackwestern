@@ -10,19 +10,35 @@
  * "sent"), and never while the COFFEE_INVITES_ENABLED kill switch is off
  * (off by default outside production, and in tests unless a test sets it).
  *
- * Timed rounds: there is no cron in this app (Vercel Hobby crons are daily).
- * Like the old flow's expiry (computed on read) and the task reminders'
- * auto-sync (run after a sheet read, throttled), rounds 2+ run lazily:
- * runDueInviteRounds() is called by traffic (the organizer invite status
- * query, the hacker's /live chats query) and by an organizer "run now"
- * button. A round is idempotent: re-running it only fills seats that
- * haven't been offered this round yet.
+ * Timed rounds: rounds 2+ run when triggered: every 10 minutes on Saturday
+ * by .github/workflows/coffee-invite-rounds.yml (scripts/
+ * run-coffee-invite-round.ts), by traffic (the organizer invite status
+ * query, the hacker's /live chats query, without waiting for it), and by an
+ * organizer "run now" button. A round is idempotent: re-running it only
+ * fills seats that haven't been offered this round yet.
+ *
+ * Delivery: a session invite's DM or email is sent once. Each row is
+ * claimed (notified_at set) before its send and released (back to null) if
+ * nothing went out, so the next sweep (deliverUnnotifiedInvites, run after
+ * every timed round and by the workflow) retries it.
  */
-import { and, asc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { waitUntil } from "@vercel/functions";
+import {
+  and,
+  asc,
+  eq,
+  gt,
+  inArray,
+  isNotNull,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
 
 import { env } from "~/env";
 import { admittedStatuses } from "~/lib/admission";
 import {
+  LAST_CHAT_STARTS_AT,
   chatKey,
   currentRound,
   planInviteRound,
@@ -31,6 +47,8 @@ import {
   type BusyChat,
   type InviteSource,
   type PlanChat,
+  type PlanInput,
+  type PlannedInvite,
 } from "~/lib/coffee-chat-invites";
 import {
   coffeeChatTimeOf,
@@ -75,15 +93,17 @@ export type InviteTx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 type Conn = Db | InviteTx;
 
 /**
- * The kill switch: "1" on, "0" off; unset = on only in production. Tests
- * are off unless they set COFFEE_INVITES_ENABLED=1 themselves.
+ * The kill switch: COFFEE_INVITES_ENABLED "1" forces on, "0" forces off.
+ * Unset = on only on the Vercel production deploy (VERCEL_ENV), so never
+ * on preview deploys, a local `next start` or a script. Tests are off
+ * unless they set COFFEE_INVITES_ENABLED=1 themselves.
  */
 export function invitesEnabled(): boolean {
   const flag = process.env.COFFEE_INVITES_ENABLED ?? env.COFFEE_INVITES_ENABLED;
   if (flag === "1") return true;
   if (flag === "0") return false;
   if (process.env.VITEST) return false;
-  return env.NODE_ENV === "production";
+  return (process.env.VERCEL_ENV ?? env.VERCEL_ENV) === "production";
 }
 
 /** What a hacker hears about: a new invite, a changed one, or a cancel. */
@@ -377,6 +397,15 @@ export async function runInviteRound(
   const now = opts.now ?? new Date();
   const round = opts.round ?? currentRound(now);
   if (!invitesEnabled()) return { status: "disabled", round, jobs: [] };
+  return writeInviteRound(tx, { ...opts, round, now });
+}
+
+/** The round itself, past the kill switch (also run by the dry run). */
+async function writeInviteRound(
+  tx: InviteTx,
+  opts: { round: number; now: Date; sponsorIds?: readonly string[] },
+): Promise<RoundResult> {
+  const { round, now } = opts;
   await lockBoard(tx);
   const state = await loadBoardState(tx);
   if (!state.workshopsAvailable)
@@ -410,7 +439,7 @@ export async function runInviteRound(
   const order = state.sponsors
     .map((s) => s.id)
     .filter((id) => sponsorIds.includes(id));
-  const plan = planInviteRound({
+  let input: PlanInput = {
     round,
     now,
     chats: layout,
@@ -418,33 +447,72 @@ export async function runInviteRound(
     busy: live.map(busyOf),
     blocked,
     sponsorOrder: order,
-  });
+  };
 
   const meta = new Map(layout.map((c) => [chatKey(c), c]));
-  const values = plan.invites.map((inv) => {
+  const insertOne = async (inv: PlannedInvite) => {
     const c = meta.get(chatKey(inv))!;
-    return {
-      sponsorId: inv.sponsorId,
-      userId: inv.userId,
-      room: c.room,
-      slotTime: coffeeChatTimeOf(inv.start),
-      durationMinutes: inv.minutes,
-      status: "pending" as const,
-      repName: c.repName,
-      placementId: inv.placementId,
-      round: inv.round,
-      expiresAt: inv.expiresAt,
-      source: inv.source,
+    const [row] = await tx
+      .insert(coffeeChats)
+      .values({
+        sponsorId: inv.sponsorId,
+        userId: inv.userId,
+        room: c.room,
+        slotTime: coffeeChatTimeOf(inv.start),
+        durationMinutes: inv.minutes,
+        status: "pending",
+        repName: c.repName,
+        placementId: inv.placementId,
+        round: inv.round,
+        expiresAt: inv.expiresAt,
+        source: inv.source,
+      })
+      // An old-flow booking for this hacker at this time, committed after
+      // the rows were read (coffee_chat_user_slot_active_idx): skip it
+      // instead of rolling back the whole round.
+      .onConflictDoNothing()
+      .returning({ id: coffeeChats.id });
+    return row?.id ?? null;
+  };
+
+  // Insert seat by seat. A clash marks that hacker busy then and plans
+  // again, so the seat goes to the next candidate. Each pass adds a busy
+  // time the planner then avoids, so this ends.
+  const created: string[] = [];
+  let plan = planInviteRound(input);
+  for (;;) {
+    const placed: PlannedInvite[] = [];
+    const clashed: PlannedInvite[] = [];
+    for (const inv of plan.invites) {
+      const id = await insertOne(inv);
+      if (id) {
+        created.push(id);
+        placed.push(inv);
+      } else {
+        clashed.push(inv);
+      }
+    }
+    if (clashed.length === 0) break;
+    input = {
+      ...input,
+      chats: input.chats.map((c) => ({
+        ...c,
+        live:
+          c.live + placed.filter((i) => chatKey(i) === chatKey(c)).length,
+      })),
+      busy: [
+        ...input.busy,
+        ...placed.map((i) => ({ ...i })),
+        // The clashing chat's sponsor isn't known: "" blocks the time only.
+        ...clashed.map((i) => ({ ...i, sponsorId: "" })),
+      ],
+      blocked: new Set([
+        ...input.blocked,
+        ...placed.map((i) => `${i.sponsorId}|${i.userId}`),
+      ]),
     };
-  });
-  const created = values.length
-    ? (
-        await tx
-          .insert(coffeeChats)
-          .values(values)
-          .returning({ id: coffeeChats.id })
-      ).map((r) => r.id)
-    : [];
+    plan = planInviteRound(input);
+  }
   const notices = await loadCoffeeChatNotices(created, tx);
   return {
     status: "ok",
@@ -588,8 +656,15 @@ export async function reconcileInvitesAfterChange(
         room: chat.room,
         repName: chat.repName,
         // Too close to the chat to ask again: keep their answer, tell them.
+        // Asked again: unsent, so delivery (or the sweep) sends it.
         ...(expiresAt
-          ? { status: "pending" as const, expiresAt, round, respondedAt: null }
+          ? {
+              status: "pending" as const,
+              expiresAt,
+              round,
+              respondedAt: null,
+              notifiedAt: null,
+            }
           : {}),
       })
       .where(eq(coffeeChats.id, row.id));
@@ -637,10 +712,65 @@ export type DeliveryResult = {
 };
 
 /**
+ * Claim an invite's notice: set notified_at if it's still unsent, pending
+ * and answerable. Returns the claim time, or null when someone else sent
+ * (or is sending) it, or it no longer needs one.
+ */
+async function claimNotice(chatId: string): Promise<Date | null> {
+  const at = new Date();
+  const [row] = await db
+    .update(coffeeChats)
+    .set({ notifiedAt: at })
+    .where(
+      and(
+        eq(coffeeChats.id, chatId),
+        isNull(coffeeChats.notifiedAt),
+        eq(coffeeChats.status, "pending"),
+        or(isNull(coffeeChats.expiresAt), gt(coffeeChats.expiresAt, at)),
+      ),
+    )
+    .returning({ id: coffeeChats.id });
+  return row ? at : null;
+}
+
+/** Nothing went out: unclaim, so the next sweep retries. */
+async function releaseNotice(chatId: string, at: Date): Promise<void> {
+  await db
+    .update(coffeeChats)
+    .set({ notifiedAt: null })
+    .where(and(eq(coffeeChats.id, chatId), eq(coffeeChats.notifiedAt, at)));
+}
+
+/**
+ * One notice: Slack DM first, the email only when there's no DM to send
+ * (no Slack token, hacker not on Slack). A failed DM isn't doubled by an
+ * email; for invites the next sweep retries it.
+ */
+async function sendNotice(
+  job: InviteJob,
+): Promise<"slack" | "email" | "failed" | "skipped"> {
+  const n = job.notice;
+  if (job.event === "offered" || job.event === "reconfirm") {
+    const chat = { ...n, reconfirm: job.event === "reconfirm" };
+    const dm = await sendCoffeeChatDm(chat, {}, "offered");
+    if (dm === "sent") return "slack";
+    if (dm === "failed") return "failed";
+    return (await sendCoffeeChatOfferEmail(chat)) ? "email" : "skipped";
+  }
+  const dm = await sendCoffeeChatDm(n, {}, job.event);
+  if (dm === "sent") return "slack";
+  if (dm === "failed") return "failed";
+  return (await sendCoffeeChatChangeEmail(job.event, n)) ? "email" : "skipped";
+}
+
+/**
  * Tell each hacker: Slack DM first (Accept / Decline buttons for invites),
- * the email only when the DM wasn't sent. Never throws. Nothing is sent
- * while the kill switch is off. The sheet mirror is rewritten once at the
- * end (only when sheet writes are on).
+ * the email only when there's no DM to send. Invites ("offered",
+ * "reconfirm") are claimed first, so each is sent once even if a round's
+ * caller and a sweep deliver it at the same time; one already claimed
+ * counts as skipped. Never throws. Nothing is sent while the kill switch
+ * is off. The sheet mirror is rewritten once at the end (only when sheet
+ * writes are on).
  */
 export async function deliverInviteNotices(
   jobs: readonly InviteJob[],
@@ -654,26 +784,35 @@ export async function deliverInviteNotices(
   }
   let cursor = 0;
   const one = async (job: InviteJob) => {
-    const n = job.notice;
+    const invite = job.event === "offered" || job.event === "reconfirm";
+    let claimed: Date | null = null;
+    let outcome: Awaited<ReturnType<typeof sendNotice>> = "failed";
     try {
-      if (job.event === "offered" || job.event === "reconfirm") {
-        const chat = { ...n, reconfirm: job.event === "reconfirm" };
-        if ((await sendCoffeeChatDm(chat, {}, "offered")) === "sent")
-          result.slack++;
-        else if (await sendCoffeeChatOfferEmail(chat)) result.email++;
-        else result.skipped++;
-      } else {
-        if ((await sendCoffeeChatDm(n, {}, job.event)) === "sent")
-          result.slack++;
-        else if (await sendCoffeeChatChangeEmail(job.event, n)) result.email++;
-        else result.skipped++;
+      if (invite) {
+        claimed = await claimNotice(job.notice.chatId);
+        if (!claimed) {
+          result.skipped++;
+          return;
+        }
       }
+      outcome = await sendNotice(job);
     } catch (error) {
-      result.failed++;
+      outcome = "failed";
       console.error(
         `coffee chat invite notice failed (${job.event}):`,
         errorMessage(error),
       );
+    }
+    result[outcome]++;
+    if (claimed && outcome !== "slack" && outcome !== "email") {
+      try {
+        await releaseNotice(job.notice.chatId, claimed);
+      } catch (error) {
+        console.error(
+          "coffee chat invites: couldn't unclaim a notice",
+          errorMessage(error),
+        );
+      }
     }
   };
   const workers = Array.from(
@@ -692,6 +831,58 @@ export async function deliverInviteNotices(
     );
   }
   return result;
+}
+
+/** Pending session invites whose notice hasn't gone out, still answerable. */
+function unnotifiedInvites(now: Date) {
+  return and(
+    isNotNull(coffeeChats.placementId),
+    eq(coffeeChats.status, "pending"),
+    isNull(coffeeChats.notifiedAt),
+    or(isNull(coffeeChats.expiresAt), gt(coffeeChats.expiresAt, now)),
+  );
+}
+
+/** How many invites the sweep would send now (the dry run's count). */
+export async function countUnnotifiedInvites(
+  now: Date = new Date(),
+): Promise<number> {
+  const rows = await db
+    .select({ id: coffeeChats.id })
+    .from(coffeeChats)
+    .where(unnotifiedInvites(now));
+  return rows.length;
+}
+
+/**
+ * The delivery sweep: send every pending, unnotified, unexpired session
+ * invite (new ones whose caller didn't deliver, failed sends, deliveries
+ * cut off mid-request). Claims each row first, so nothing goes out twice.
+ * A re-asked invite comes out as a plain invite here (same details and
+ * answer-by). Never throws; nothing while the kill switch is off.
+ */
+export async function deliverUnnotifiedInvites(
+  now: Date = new Date(),
+): Promise<DeliveryResult> {
+  const none: DeliveryResult = { slack: 0, email: 0, failed: 0, skipped: 0 };
+  if (!invitesEnabled()) return none;
+  try {
+    const rows = await db
+      .select({ id: coffeeChats.id })
+      .from(coffeeChats)
+      .where(unnotifiedInvites(now))
+      .orderBy(asc(coffeeChats.createdAt), asc(coffeeChats.id));
+    const notices = await loadCoffeeChatNotices(rows.map((r) => r.id));
+    return deliverInviteNotices(
+      notices.map((notice) => ({ event: "offered" as const, notice })),
+    );
+  } catch (error) {
+    console.error(
+      "coffee chat invites: delivery sweep failed",
+      errorMessage(error),
+    );
+    return none;
+  }
 }
 
 /**
@@ -713,21 +904,25 @@ export async function runAndDeliver<T extends { jobs: InviteJob[] }>(
 /** The lazy round runs at most this often per server instance. */
 export const ROUND_THROTTLE_MS = 60_000;
 let lastRun = 0;
+let lastKick = 0;
 
 /** Tests only. */
 export function resetInviteRoundThrottle(): void {
   lastRun = 0;
+  lastKick = 0;
 }
 
 export type DueRoundOutcome =
-  | { status: "disabled" | "notYet" | "throttled" | "busy" }
+  | { status: "disabled" | "notYet" | "over" | "throttled" | "busy" }
   | { status: "ran"; result: RoundResult; delivery: DeliveryResult };
 
 /**
  * The timed rounds (2+, Saturday from 10:30 AM, every 30 minutes). Safe to
  * call from any request: a no-op when the kill switch is off, before round
- * 2, within a minute of the last run, while another run holds the board,
- * and for sponsors with no sent placements. Never throws.
+ * 2, after the last chat of the day starts ("over": no lock, no board
+ * read), within a minute of the last run, while another run holds the
+ * board, and for sponsors with no sent placements. A round run late or
+ * after a missed one is just the current round. Never throws.
  */
 export async function runDueInviteRounds(
   now: Date = new Date(),
@@ -735,6 +930,7 @@ export async function runDueInviteRounds(
   if (!invitesEnabled()) return { status: "disabled" };
   const round = currentRound(now);
   if (round < 2) return { status: "notYet" };
+  if (now >= LAST_CHAT_STARTS_AT) return { status: "over" };
   if (Date.now() - lastRun < ROUND_THROTTLE_MS) return { status: "throttled" };
   lastRun = Date.now();
   try {
@@ -743,7 +939,8 @@ export async function runDueInviteRounds(
       return runInviteRound(tx, { round, now });
     });
     if (!result) return { status: "busy" };
-    const delivery = await deliverInviteNotices(result.jobs);
+    // The sweep sends this round's invites and retries any earlier ones.
+    const delivery = await deliverUnnotifiedInvites(now);
     return { status: "ran", result, delivery };
   } catch (error) {
     console.error(
@@ -779,20 +976,71 @@ export async function sessionInviteRows(conn: Conn = db) {
     .orderBy(asc(coffeeChats.slotTime), asc(coffeeChats.createdAt));
 }
 
-/** Longest a request waits for a due round it triggered. */
-export const KICK_TIMEOUT_MS = 2500;
+export type RoundPreview = {
+  status: DueRoundOutcome["status"] | RoundResult["status"];
+  round: number;
+  /** Invites the round would create now. */
+  invites: number;
+  /** Seats it would leave open. */
+  unfilled: number;
+};
+
+/** Thrown to roll back the dry run's transaction. */
+class PreviewRollback extends Error {}
 
 /**
- * Start a due round from a request and wait at most `timeoutMs` for it
- * (the rest keeps running where the server allows). Never throws.
+ * The dry run of runDueInviteRounds: plans the current round inside a
+ * transaction that is always rolled back, ignoring the kill switch and the
+ * throttle. Writes nothing (the rollback undoes the expired write-back
+ * too) and sends nothing.
  */
-export async function kickDueInviteRounds(
-  timeoutMs = KICK_TIMEOUT_MS,
-): Promise<void> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const cap = new Promise<void>((resolve) => {
-    timer = setTimeout(resolve, timeoutMs);
-  });
-  await Promise.race([runDueInviteRounds().then(() => undefined), cap]);
-  clearTimeout(timer);
+export async function previewDueInviteRound(
+  now: Date = new Date(),
+): Promise<RoundPreview> {
+  const round = currentRound(now);
+  const empty = { round, invites: 0, unfilled: 0 };
+  if (round < 2) return { status: "notYet", ...empty };
+  if (now >= LAST_CHAT_STARTS_AT) return { status: "over", ...empty };
+  let preview: RoundPreview = { status: "busy", ...empty };
+  try {
+    await db.transaction(async (tx) => {
+      if (await tryLockBoard(tx)) {
+        const r = await writeInviteRound(tx, { round, now });
+        preview = {
+          status: r.status,
+          round,
+          invites: r.status === "ok" ? r.created.length : 0,
+          unfilled:
+            r.status === "ok" ? r.unfilled.reduce((n, u) => n + u.open, 0) : 0,
+        };
+      }
+      throw new PreviewRollback();
+    });
+  } catch (error) {
+    if (!(error instanceof PreviewRollback)) throw error;
+  }
+  return preview;
+}
+
+/**
+ * Start a due round and the delivery sweep from a request, without waiting
+ * for them (waitUntil keeps a Vercel function alive until they finish).
+ * At most once a minute per server. Never throws.
+ */
+export function kickDueInviteRounds(): void {
+  if (!invitesEnabled()) return;
+  if (Date.now() - lastKick < ROUND_THROTTLE_MS) return;
+  lastKick = Date.now();
+  const work = runDueInviteRounds()
+    // A round that ran has already swept.
+    .then(async (out) => {
+      if (out.status !== "ran") await deliverUnnotifiedInvites();
+    })
+    .catch((error: unknown) => {
+      console.error(
+        "coffee chat invites: kicked round failed",
+        errorMessage(error),
+      );
+    });
+  waitUntil(work);
 }

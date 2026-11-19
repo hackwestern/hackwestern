@@ -31,7 +31,7 @@ import {
 import {
   ACTIVE_COFFEE_CHAT_STATUSES,
   COFFEE_CHAT_ROOMS,
-  coffeeChatExpiresAt,
+  chatExpiresAt,
   coffeeChatRoomOf,
   coffeeChatMinutesOf,
   coffeeChatsOverlap,
@@ -691,7 +691,7 @@ export async function createCoffeeChatOffer(input: {
       durationMinutes: chat.durationMinutes,
       room: chat.room,
       status: chat.status,
-      expiresAt: coffeeChatExpiresAt(chat.slotTime).toISOString(),
+      expiresAt: chatExpiresAt(chat).toISOString(),
     };
   } catch (error) {
     // The partial unique index: the hacker already has a live chat
@@ -1077,9 +1077,9 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
    * computed now (no background job).
    */
   mine: protectedProcedure.query(async ({ ctx }): Promise<MyCoffeeChat[]> => {
-    // Hackers' /live traffic drives the Saturday invite rounds (throttled,
-    // no-op unless a round is due and sponsors were sent).
-    await kickDueInviteRounds();
+    // Hackers' /live traffic also drives the Saturday invite rounds and the
+    // delivery sweep (throttled, not awaited, no-op unless something's due).
+    kickDueInviteRounds();
     const now = new Date();
     const rows = await db
       .select({

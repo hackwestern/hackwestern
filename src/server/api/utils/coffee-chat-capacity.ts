@@ -1,5 +1,5 @@
 import {
-  coffeeChatExpiresAt,
+  chatExpiresAt,
   coffeeChatsOverlap,
 } from "~/lib/coffee-chat-requests";
 import {
@@ -151,7 +151,7 @@ export function offerProblem(
   if (!offerStartTimes(durationMinutes, input.holds).includes(input.slotTime)) {
     return "notInWindow";
   }
-  if (input.now >= coffeeChatExpiresAt(input.slotTime)) return "tooLate";
+  if (input.now >= chatExpiresAt({ slotTime: input.slotTime })) return "tooLate";
   const slot = { slotTime: input.slotTime, durationMinutes };
   if (
     seatsLeft(input.sponsorChats, slot, askedFor(input, input.slotTime)) < 1
@@ -195,7 +195,7 @@ export function freeStartTimes(
     const open =
       room !== null &&
       left > 0 &&
-      input.now < coffeeChatExpiresAt(slotTime) &&
+      input.now < chatExpiresAt({ slotTime }) &&
       !hackerBusy(input.hackerChats ?? [], slot) &&
       !roomTakenByOtherSponsor(input.roomChats, input.sponsorId, room, slot);
     return open ? [{ slotTime, seatsLeft: left, room }] : [];
