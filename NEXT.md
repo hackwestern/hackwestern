@@ -39,3 +39,4 @@ Review `mocks/sponsor-chat-calendar-v1` with Jazz (spec: `docs/specs/sponsor-cha
 3. Spon team task pings on Slack: owner DM / team channel (exists) + "Text" on overdue tasks + failure-only delivery status.
 4. Sponsor help comms: "Text your lead" from the portal; lead off shift → "Leave a message" posts to Slack tagging whoever's on call (on-call from RUN OF SHOW, Slack user found by login email).
 5. Done 2026-11-19: "Rationale + Decisions" tab in the sheet (first tab) summarizing every decision; keep it in sync with docs/decisions.md.
+- Build: merge Sponsor Status into Sponsor Day-Of; rebuild Coffee Chat Setup columns for the session model; Sponsor requested help flow (Slack DM + I'm on it + 5-min escalation).
