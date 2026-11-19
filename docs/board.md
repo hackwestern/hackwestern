@@ -1,3 +1,5 @@
+> Superseded (2026-11-19): see docs/specs/coffee-chat-sessions.md
+
 # Sponsor dashboard board
 
 Branch `sponsor-dashboard` (based on `spon-judging`, PR #1112). Vision: docs/vision.md.

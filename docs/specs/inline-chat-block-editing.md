@@ -1,3 +1,5 @@
+> Superseded (2026-11-19): see docs/specs/coffee-chat-sessions.md
+
 # Inline chat block editing (Jazz, 2026-11-19)
 
 Pattern: inline editing / direct manipulation. Chat blocks are edited inline, directly in the calendar. No popup or modal.
