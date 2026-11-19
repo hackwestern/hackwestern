@@ -11,6 +11,7 @@ import {
   desc,
   ilike,
   count,
+  inArray,
 } from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { z } from "zod";
@@ -29,10 +30,12 @@ import {
   scavengerHuntRewards,
   scavengerHuntRedemptions,
   scavengerHuntActivityType,
+  applications,
 } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { isUserApprovedForEvent } from "~/server/api/utils/approval";
 import { resolveScannedUserId } from "~/server/api/utils/hacker-id";
+import { admittedStatuses } from "~/lib/admission";
 
 // Helper function to handle TRPC errors consistently
 const withErrorHandling = async <T>(
@@ -453,17 +456,26 @@ export const scavengerHuntRouter = createTRPCRouter({
     }),
 
   // All hackers in descending order of EARNED points
-  getLeaderboard: protectedOrganizerProcedure.query(async () => {
-    return await db
-      .select({
-        id: users.id,
-        name: users.name,
-        earned: users.scavengerHuntEarned,
-      })
-      .from(users)
-      .where(and(eq(users.type, "hacker"), gt(users.scavengerHuntEarned, 0)))
-      .orderBy(desc(users.scavengerHuntEarned));
-  }),
+  getLeaderboard: protectedOrganizerProcedure
+    .input(z.object({ limit: z.number().int().min(1) }))
+    .query(async ({ input }) => {
+      return await db
+        .select({
+          id: users.id,
+          name: users.name,
+          earned: users.scavengerHuntEarned,
+        })
+        .from(users)
+        .innerJoin(applications, eq(applications.userId, users.id))
+        .where(
+          and(
+            eq(users.type, "hacker"),
+            inArray(applications.status, [...admittedStatuses()]),
+          ),
+        )
+        .orderBy(sql`${users.scavengerHuntEarned} desc nulls last`, users.id)
+        .limit(input.limit);
+    }),
 
   // Redeem a Reward (only accessible to users)
   redeem: protectedProcedure

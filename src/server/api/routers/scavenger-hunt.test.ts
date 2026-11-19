@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { db } from "~/server/db";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -467,31 +467,68 @@ describe("scavengerHuntRouter basic endpoints", () => {
   });
 
   describe("getLeaderboard", () => {
+    const insertUser = async (
+      earned: number,
+      status: (typeof applications.$inferInsert)["status"],
+      type: "hacker" | "organizer" = "hacker",
+    ) => {
+      const id = faker.string.uuid();
+      await db.insert(users).values({
+        id,
+        email: faker.internet.email(),
+        type,
+        scavengerHuntEarned: earned,
+      });
+      await db.insert(applications).values({
+        ...ApplicationSeeder.createRandomWithoutUser(),
+        userId: id,
+        status,
+      });
+      return id;
+    };
+
+    let fixtureIds: string[] = [];
+    let top: string, tieA: string, tieB: string, zero: string;
+    let unapproved: string, organizer: string;
+
     beforeEach(async () => {
-      await db
-        .update(users)
-        .set({ scavengerHuntEarned: 120 })
-        .where(eq(users.id, session.user.id));
-      await db
-        .update(users)
-        .set({ scavengerHuntEarned: 999 })
-        .where(eq(users.id, organizerSession.user.id));
+      top = await insertUser(1_000_001, "CONFIRMED");
+      tieA = await insertUser(1_000_000, "CONFIRMED");
+      tieB = await insertUser(1_000_000, "CONFIRMED");
+      zero = await insertUser(0, "CONFIRMED");
+      unapproved = await insertUser(2_000_000, "REJECTED");
+      organizer = await insertUser(3_000_000, "CONFIRMED", "organizer");
+      fixtureIds = [top, tieA, tieB, zero, unapproved, organizer];
     });
 
-    test("returns only hackers, sorted by earned points descending", async () => {
-      const leaderboard = await organizerCaller.scavengerHunt.getLeaderboard();
+    afterEach(async () => {
+      await db.delete(users).where(inArray(users.id, fixtureIds));
+    });
+
+    test("returns the top N hackers by earned points, ties sorted by id", async () => {
+      const leaderboard = await organizerCaller.scavengerHunt.getLeaderboard({
+        limit: 3,
+      });
+      expect(leaderboard.map((u) => u.id)).toEqual([
+        top,
+        ...[tieA, tieB].sort(),
+      ]);
+    });
+
+    test("includes 0-point hackers and excludes non-approved hackers and non-hackers", async () => {
+      const leaderboard = await organizerCaller.scavengerHunt.getLeaderboard({
+        limit: 100_000,
+      });
       const ids = leaderboard.map((u) => u.id);
-      expect(ids).toContain(session.user.id);
-      expect(ids).not.toContain(organizerSession.user.id);
-      const earned = leaderboard.map((u) => u.earned ?? 0);
-      expect(earned).toEqual([...earned].sort((a, b) => b - a));
-      expect(earned.every((e) => e > 0)).toBe(true);
+      expect(ids).toContain(zero);
+      expect(ids).not.toContain(unapproved);
+      expect(ids).not.toContain(organizer);
     });
 
     test("throws error if user is not an organizer", async () => {
-      await expect(caller.scavengerHunt.getLeaderboard()).rejects.toThrow(
-        "User is not an organizer",
-      );
+      await expect(
+        caller.scavengerHunt.getLeaderboard({ limit: 10 }),
+      ).rejects.toThrow("User is not an organizer");
     });
   });
 });
