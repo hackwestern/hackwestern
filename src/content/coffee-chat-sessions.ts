@@ -40,15 +40,22 @@ export const coffeeSessionsCopy = {
       none: "Submitted, no chats asked",
       /** Submitted, but no rep who wants chats has a session they can do. */
       unavailable: "Submitted, no availability",
-      need: "Submitted, needs scheduling",
-      scheduled: "Scheduled (draft)",
+      need: "Needs scheduling",
+      scheduled: "Scheduled, not sent",
       sent: "Sent",
     },
-    /** Under the chip: how many reps who want chats are placed. */
-    placed: (done: number, total: number) => `${done} of ${plural(total, "rep")} placed`,
+    /**
+     * The problem flag beside the stage chip, e.g. "Sent" + "1 rep not
+     * placed". One stage per sponsor; problems listed separately.
+     */
+    flags: {
+      notPlaced: (n: number) => `${plural(n, "rep")} not placed`,
+      broken: (n: number) => `${plural(n, "chat")} ${n === 1 ? "needs" : "need"} a fix`,
+    },
     /** Flag on a sponsor that edited after the schedule was sent. */
     changedAfterSend: "Changed after invites",
-    openLabel: (name: string, status: string) => `${name}, ${status}`,
+    openLabel: (name: string, status: string, flags: string[] = []) =>
+      [name, status, ...flags].join(", "),
     notSubmittedYet: "Nothing submitted yet.",
     /** Once a sponsor is sent: their hackers' invites, all chats together. */
     invites: (accepted: number, waiting: number, open: number) =>

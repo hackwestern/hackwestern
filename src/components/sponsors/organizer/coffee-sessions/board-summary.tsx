@@ -18,7 +18,10 @@ export function summaryLine(board: SessionBoardData): string {
   if (submitted === 0) return s.nothingYet;
   const tail = notSubmitted > 0 ? s.notSubmittedTail(notSubmitted) : "";
   const changed = board.sponsors.filter((x) => x.changedAfterSend).length;
-  const need = board.sponsors.filter((x) => x.status.kind === "need").length;
+  // Needs scheduling, or placed with a rep still missing.
+  const need = board.sponsors.filter(
+    (x) => "done" in x.status && (x.status.kind === "need" || x.status.done < x.status.total),
+  ).length;
   let head: string;
   if (changed > 0) head = s.changedAfterSend(changed);
   else if (!board.scheduled) head = s.notScheduled(submitted);

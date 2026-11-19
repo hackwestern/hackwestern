@@ -13,6 +13,7 @@ import {
   PeopleList,
   sessionLabel,
   StatusChip,
+  statusFlags,
   statusText,
   type BoardSponsor,
   type SessionBoardData,
@@ -53,13 +54,16 @@ export function SponsorsBand({
           {list.map((sp) => {
             const isOpen = open === sp.id;
             const status = statusText(sp.status);
-            const tally = "done" in sp.status ? sp.status : null;
+            const flags = [
+              ...(sp.changedAfterSend ? [sc.changedAfterSend] : []),
+              ...statusFlags(sp.status),
+            ];
             return (
               <li key={sp.id} className="border-t border-dashboard-border-subtle first:border-t-0">
                 <button
                   type="button"
                   aria-expanded={isOpen}
-                  aria-label={sc.openLabel(sp.name, status)}
+                  aria-label={sc.openLabel(sp.name, status, flags)}
                   onClick={() => onOpen(sp.id)}
                   className={cn(
                     "flex min-h-16 w-full min-w-0 cursor-pixel-hover items-center gap-2 rounded-dashboard-md py-1.5 text-left",
@@ -77,16 +81,14 @@ export function SponsorsBand({
                     <Logo name={sp.name} />
                     <span className="flex flex-wrap items-center gap-1.5">
                       <StatusChip status={sp.status} />
-                      {sp.changedAfterSend && (
-                        <span className="inline-flex min-h-6 items-center rounded-dashboard-md bg-dashboard-bg-task px-2 py-0.5 text-[13px] font-semibold leading-tight text-dashboard-text-warning">
-                          {sc.changedAfterSend}
+                      {flags.map((f) => (
+                        <span
+                          key={f}
+                          className="inline-flex min-h-6 items-center rounded-dashboard-md bg-dashboard-bg-task px-2 py-0.5 text-[13px] font-semibold leading-tight text-dashboard-text-warning"
+                        >
+                          {f}
                         </span>
-                      )}
-                      {tally && tally.total > 0 && sp.status.kind !== "sent" && (
-                        <span className="text-[13px] text-dashboard-text-light">
-                          {sc.placed(tally.done, tally.total)}
-                        </span>
-                      )}
+                      ))}
                     </span>
                   </span>
                 </button>

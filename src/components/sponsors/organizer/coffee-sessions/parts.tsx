@@ -103,6 +103,18 @@ export function statusText(status: BoardSponsor["status"]): string {
   return copy.sponsors.status[status.kind];
 }
 
+/**
+ * Problems shown beside the stage chip: chats that break a rule now, else
+ * reps who want chats and have none ("1 rep not placed"). A sponsor with
+ * nothing placed yet shows only its stage, "Needs scheduling".
+ */
+export function statusFlags(status: BoardSponsor["status"]): string[] {
+  if (!("done" in status) || status.kind === "need") return [];
+  const f = copy.sponsors.flags;
+  if (status.broken > 0) return [f.broken(status.broken)];
+  return status.done < status.total ? [f.notPlaced(status.total - status.done)] : [];
+}
+
 export function StatusChip({ status }: { status: BoardSponsor["status"] }) {
   return (
     <span

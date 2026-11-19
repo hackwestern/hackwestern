@@ -81,8 +81,14 @@ export type BoardSponsorStatus =
    * their workshops (reps at 0 chats don't count).
    */
   | { kind: "unavailable" }
-  | { kind: "need" | "scheduled"; done: number; total: number }
-  | { kind: "sent"; done: number; total: number };
+  /**
+   * The stage once they submitted with reps who want chats: nothing placed
+   * ("need"), placed with drafts not sent yet ("scheduled"), or every chat
+   * placed is sent ("sent"). Problems ride along as separate counts: reps who
+   * want chats but have none that count (`total - done`), and chats on the
+   * board that break a rule now (`broken`).
+   */
+  | { kind: "need" | "scheduled" | "sent"; done: number; total: number; broken: number };
 
 /**
  * The sponsor's latest change the board hasn't caught up with: their
@@ -352,13 +358,15 @@ export async function loadBoardState(
         ? { kind: "none" }
         : free === 0
         ? { kind: "unavailable" }
-        : mine.length > 0 &&
-          mine.every((p) => p.status === "sent") &&
-          tally.done === tally.total
-        ? { kind: "sent", ...tally }
         : {
-            kind: tally.done === tally.total && tally.total > 0 ? "scheduled" : "need",
+            kind:
+              mine.length === 0
+                ? "need"
+                : mine.every((p) => p.status === "sent")
+                  ? "sent"
+                  : "scheduled",
             ...tally,
+            broken: mine.filter((p) => bad.includes(cellKey(p.room, p.sessionId))).length,
           };
     // Sponsors are the only ones who write their preferences, so an update
     // after the board was scheduled or sent is the sponsor's change.
