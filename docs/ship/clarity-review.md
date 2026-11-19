@@ -436,6 +436,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 ### Both · Sponsor asks for help → organizer contact
 - The sponsor sees the lead (or "not assigned yet") and Noah. Nothing reaches the dashboard. As expected. The organizer calls back from My sponsors or the board row (phones with copy icons work).
 - Gap: the Home page's "Event details" names a different contact than Help (see First visit, Step 1).
+- **Fixed (B11):** Home, Help and the tour now name the same lead (or the same "hasn't been assigned yet"), with Noah as the emergency contact on Home and in Help.
 
 ### Both · Invites: hacker invited → answers → both sides see it
 - Hacker side (`/live`): toast "Test Sponsor wants to chat with you · Sat 10:00 AM, 30 min · View". The Coffee chats tab shows "Needs your answer · Reply by 9:25 AM · 46 h 55 min left" with Accept and Decline. Accepting gives "Accepted. You're chatting with Test Sponsor at 10:00 AM." Declining asks inline ("Decline Sun Life's chat? The time goes to another hacker. Yes, decline / Keep"). Clear on both counts. (`19-hacker-*.png`)
@@ -522,6 +523,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Expected: one answer.
 - Actual: Event details says "Hack Western Organizer Team · On-site support". Help says "Your contact hasn't been assigned yet."
 - Screens: `01-sponsor-firstvisit-home.png`, `01-sponsor-firstvisit-help.png`
+- **Fixed:** Event details reads the same `useHelpContacts` as Help (the HW lead from Sponsor Day-Of; Noah from HW Contacts), so both say "Your contact hasn't been assigned yet." for Test Sponsor, and the lead's name and phone when there is one. The "Hack Western Organizer Team · On-site support" fallback is gone. (`after/portal-01-home*.png`, `after/portal-01-help*.png`)
 
 ---
 

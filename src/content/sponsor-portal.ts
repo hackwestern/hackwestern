@@ -45,11 +45,9 @@ export const sponsorPortalCopy = {
       hint: "Head here when judging deliberations start",
     },
     workshop: { label: "Workshop", location: "Location", time: "Time" },
+    /** Name and phone come from the Help contacts (sponsor-help.ts). */
     contact: {
       label: "Your Hack Western contact",
-      fallback: "Hack Western Organizer Team",
-      tag: "On-site support",
-      call: (phone: string) => `Call ${phone}`,
     },
   },
   footer:

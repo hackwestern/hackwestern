@@ -15,6 +15,7 @@ import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { sponsorVenueCopy as venue } from "~/content/sponsor-venue";
 import { VenueMapDialog } from "~/components/sponsors/venue-map";
 import { sponsorPortalCopy as copy } from "~/content/sponsor-portal";
+import { sponsorHelpCopy as helpCopy } from "~/content/sponsor-help";
 import {
   SponsorHelp,
   useHelpContacts,
@@ -39,8 +40,10 @@ export default function SponsorHubPage() {
   );
 
   const data = sponsorQ.data;
-  // Noah's name and number from HW Contacts at runtime (never in the repo).
-  const { emergency } = useHelpContacts(validUuid ? id : "");
+  // One answer to "who do I contact?" (B11): the same HW lead (Sponsor
+  // Day-Of) and emergency contact (Noah, HW Contacts) as the Help dialog,
+  // read at runtime (never in the repo).
+  const { lead, emergency } = useHelpContacts(validUuid ? id : "");
 
   if (!router.isReady) {
     return (
@@ -74,9 +77,6 @@ export default function SponsorHubPage() {
   const logo = data?.sponsorName ? sponsorLogo(data.sponsorName) : null;
   const roomNumber = data?.roomNumber ?? "TBD";
   const boothLocation = data?.boothLocation ?? "TBD";
-  const hwContact =
-    data?.hwContact && data.hwContact !== "—" ? data.hwContact : null;
-  const hwContactPhone = data?.hwContactPhone ?? null;
   const workshopLocation = data?.workshopLocation ?? null;
   const workshopTime = data?.workshopTime ?? null;
   // Not every sponsor runs a workshop — omit the row entirely when blank.
@@ -176,7 +176,7 @@ export default function SponsorHubPage() {
                     {venue.important.emergency.label}
                   </dt>
                   <dd className="m-0 break-words text-base font-semibold text-dashboard-text-heavy">
-                    {emergency?.name ?? copy.details.contact.fallback}
+                    {emergency?.name ?? helpCopy.contacts.noEmergency}
                   </dd>
                 </div>
                 {emergency?.phone ? (
@@ -256,19 +256,20 @@ export default function SponsorHubPage() {
                   {copy.details.contact.label}
                 </dt>
                 <dd className="m-0 break-words text-base font-semibold text-dashboard-text-heavy">
-                  {hwContact ?? copy.details.contact.fallback}
+                  {lead?.name ?? helpCopy.contacts.noLead}
                 </dd>
+                {lead && !lead.phone && (
+                  <dd className="m-0 text-sm font-medium text-dashboard-text-light">
+                    {helpCopy.contacts.noPhone}
+                  </dd>
+                )}
               </div>
-              {hwContact && hwContactPhone ? (
+              {lead?.phone && (
                 <PhoneCopy
-                  name={hwContact}
-                  phone={hwContactPhone}
+                  name={lead.name}
+                  phone={lead.phone}
                   className="shrink-0"
                 />
-              ) : (
-                <span className="shrink-0 rounded-dashboard-sm bg-dashboard-bg-nav px-2 py-1 text-xs font-medium text-dashboard-text-light">
-                  {copy.details.contact.tag}
-                </span>
               )}
             </div>
           </dl>
