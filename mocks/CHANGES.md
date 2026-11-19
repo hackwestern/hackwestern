@@ -21,6 +21,11 @@ Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /li
 | 9 | Step label "Give us your chatting preferences" | Building |
 | 10 | No deadline or auto-submit text shown to sponsors (they fill preferences at the Fri 5 PM workshop); invites still go out Fri evening; for team + preferences + optional shortlist; auto-submit at the deadline; scanned hackers are first choice; all invites sent Friday night; Saturday scans only fill open seats | Building |
 | 12 | Remove all chatting-hours displays (hours meter, "Counts as hours" row, hours in Confirm/Today) | Building |
+| 13 | Labels "Number of chats" and "Number of hackers" | Building |
+| 14 | Remove the "Hacker demand" row | Building |
+| 15 | Workshop row labelled "Your workshop"; 15-min zones before/after as a wavy pattern "Buffer · travel time" (still no chats there) | Building |
+| 16 | Remove Review & submit. Flow: Your team → Chatting preferences ("Submit preferences") → Shortlist (optional, "Submit shortlist") | Building |
+| 17 | Shortlist cards show each hacker's website link | Building |
 | 11 | Map works exactly like the hacker live site map (pinch / ⌘-Ctrl + scroll zoom, drag to move, same buttons and text) | Building |
 
 ## Final mocks
