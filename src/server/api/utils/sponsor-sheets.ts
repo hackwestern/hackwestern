@@ -15,6 +15,7 @@ import {
 } from "~/lib/sponsor-status";
 import { normalizeSponsorTrack, type TrackValue } from "~/lib/sponsor-track";
 import { db } from "~/server/db";
+import { isMissingRangeError } from "~/server/api/utils/run-of-show-sheet";
 import { sponsorJudgingSponsors } from "~/server/db/schema";
 
 // Sponsor judging Google Sheet. Layout: tab "Judging", header in row 2
@@ -226,10 +227,19 @@ export async function fetchAllChosenTeams(
   sheets: SheetsClient,
   spreadsheetId: string,
 ): Promise<Map<string, string[]>> {
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${SHEET_TAB}!A${HEADER_ROW + 1}:B`,
-  });
+  // The "Judging" tab was deleted on 2026-11-19 (picks move to the database
+  // and the Sponsor Judging tab). Without it there are simply no picks yet;
+  // don't fail the whole sponsor list, portal or judging board over it.
+  const res = await sheets.spreadsheets.values
+    .get({
+      spreadsheetId,
+      range: `${SHEET_TAB}!A${HEADER_ROW + 1}:B`,
+    })
+    .catch((error: unknown) => {
+      if (isMissingRangeError(error)) return null;
+      throw error;
+    });
+  if (!res) return new Map();
 
   const picks = new Map<string, string[]>();
   for (const row of res.data.values ?? []) {
