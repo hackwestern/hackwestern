@@ -510,3 +510,11 @@ Supersedes "lead's phone + Send to the sponsor team" as equal options (2026-11-1
 **Why:** organizers read one row per sponsor to see each sponsor's ranked picks and team IDs at a glance.
 
 **Alternatives:** add 1st–5th columns to the "Judging" tab (rejected: fixed layout read by the app and the judging rotation); keep the long Rank table (harder to scan).
+
+## 2026-11-19: Digital sponsors: grouped on Sponsor Day-Of, no portal link, top 5 entered by the spon team (Jazz)
+
+**Decision:**
+- Sponsor Day-Of has an "In person / Digital" column (column B, dropdown), set from the old "Sponsor Booth" checkbox: Autodesk, Celsius, PCBWay, Shopify and uBit are digital. In-person sponsors sort first; digital rows are a greyed, collapsible group at the bottom. The day-of copy columns (stage, workshop, coffee chats, judging, To do / mismatches) were removed (Jazz); their contents are in version history and the 2026-11-19 xlsx backup.
+- Digital sponsors aren't on site and don't get a sponsor portal link. Build: `getSponsors`/`syncSponsors` skip rows marked Digital for private links and the on-site lists.
+- Digital sponsors with a prize track (today: PCBWay) give their top 5 to the spon team, who enter it on the organizer dashboard's Sponsor judging page ("Digital sponsors" section: pick 1st–5th from the track's teams). That fills the same 1st–5th place cells on the "Sponsor Judging" tab. RUN OF SHOW has the task at Sun 9:00 AM (owner blank: no digital sponsor has a lead).
+- The "Sponsor Judging" tab now lists all 15 sponsors with In person / Digital, Prize track (Yes/No) and judging room (blank + yellow where unknown).
