@@ -37,22 +37,29 @@ export const sponsorSetupCopy = {
 
   /** Session labels by id (src/lib/coffee-chat-sessions.ts). */
   sessions: {
-    "10": "10–11",
-    "11": "11–12",
-    "13": "1–2",
-    "14": "2–3",
-    "15": "3–4",
-    "16": "4–5",
+    "10": "10–11 AM",
+    "11": "11 AM–12 PM",
+    "13": "1–2 PM",
+    "14": "2–3 PM",
+    "15": "3–4 PM",
+    "16": "4–5 PM",
   } as Record<string, string>,
   day: "Saturday",
   daySubtitle: "Sat",
+  /** Above a table wider than the screen (ScrollHint). */
+  scrollHint: "Scroll for later times",
 
   home: {
     title: "Coffee chats",
-    intro:
-      "Two separate jobs: tell us when your reps can chat (required), then shortlist hackers you'd like to meet (optional).",
+    intro: "First, tell us when your reps can chat. Then, if you like, pick hackers to meet.",
     scan: "Add a hacker",
-    scanHint: "Scan a hacker you met at your booth. We invite people you scan first.",
+    scanHint: "Met someone at your booth? Add them and we'll invite them first.",
+    /** After Send: the setup cards collapse into links under Your chats. */
+    afterSend: {
+      heading: "Your setup",
+      change: "Change your team or times",
+      shortlist: "Shortlist",
+    },
     prefs: {
       tag: "Required",
       title: "Chatting preferences",
@@ -68,7 +75,7 @@ export const sponsorSetupCopy = {
     shortlist: {
       tag: "Optional",
       title: "Shortlist",
-      body: "Hackers you'd like to meet. We invite people you scan first.",
+      body: "Hackers you'd like to meet. People you met at your booth are invited first.",
       locked: "Opens once your chatting preferences are submitted.",
       /** Shortlist places (seats minus people met at the booth), not seats. */
       seats: (n: number, max: number) =>

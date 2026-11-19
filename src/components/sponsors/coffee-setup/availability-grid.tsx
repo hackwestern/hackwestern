@@ -3,7 +3,7 @@ import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
 import type { SetupWindows } from "~/lib/coffee-chat-setup";
 import { COFFEE_SESSIONS } from "~/lib/coffee-chat-sessions";
 import { cn } from "~/lib/utils";
-import { clockOf, sessionLabel, shortClock, type SetupData } from "./shared";
+import { clockOf, ScrollHint, sessionLabel, shortClock, type SetupData } from "./shared";
 
 const copy = sponsorSetupCopy.prefs;
 
@@ -47,8 +47,8 @@ export function AvailabilityGrid({
   const when = workshopWhen(data);
   return (
     <div className="flex flex-col gap-2">
-      <div className="relative overflow-x-auto rounded-dashboard-md border border-dashboard-border-default">
-        <table className="w-full min-w-[560px] border-collapse text-sm">
+      <ScrollHint label={copy.q2}>
+        <table className="w-full min-w-[600px] border-collapse text-sm">
           <thead>
             <tr className="bg-dashboard-bg-inset">
               <th scope="col" className="sticky left-0 z-10 w-28 bg-dashboard-bg-inset p-2 text-left font-medium text-dashboard-text-light">
@@ -131,7 +131,7 @@ export function AvailabilityGrid({
             })}
           </tbody>
         </table>
-      </div>
+      </ScrollHint>
       {when && (
         <p className="m-0 flex items-center gap-2 self-end text-xs text-dashboard-text-medium">
           <span aria-hidden className={cn("inline-block size-3 rounded-sm border border-dashboard-border-control", hatch)} />

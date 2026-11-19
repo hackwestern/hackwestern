@@ -59,7 +59,7 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 
 ### Sponsor · Your team (needs A)
 - Goal: add the reps and pick a primary contact.
-- Starting point: Test Sponsor's `/sponsors/<uuid>/coffee-chats`. The status card says "Not started".
+- Starting point: Test Sponsor's `/sponsors/<uuid>/coffee-chats`. The status card says "Not started". The preferences card's "Start" is the only filled button; the shortlist card is locked and "Add a hacker" is an outline button below.
 - Steps: 1. Start "Chatting preferences". 2. Add two reps with names and phones. 3. Tap the second rep's crown. 4. Edit, then remove a rep.
 - Expected result: "<name> added." The first rep gets the crown, and a tap moves it ("<name> is now the primary contact."). If you remove the primary, the crown goes to the next rep. The status card changes to "Draft saved, not submitted".
 - Edge cases: a blank name or phone, a phone under 7 digits ("That phone number looks too short."), a 13th rep (max 12), and Next with no reps ("Add at least one rep to continue."). There's no email field.
@@ -95,7 +95,7 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 - Goal: see the confirmed schedule.
 - Starting point: organizers sent this sponsor (see the hand-off flows).
 - Steps: 1. Open the Chats home. 2. Switch between Calendar and List. 3. Filter by rep.
-- Expected result: the preferences card says "Confirmed". The status card says "Scheduled, invites going out", or "Scheduled, X of Y seats accepted" once a hacker accepts. "Since you were last here" shows "Organizers scheduled your chats · <time>", tracked per device. The calendar shows each rep's room ("Rm 2241", "Main building" or "Ivey, 15 min walk"), the format, the chat count and invited first names marked Invited or Confirmed.
+- Expected result: the status card comes first, then "Your chats", then "Your setup" (links: "Change your team or times", "Shortlist" with its count, "Add a hacker" with the booth count). The status card says "Scheduled, invites going out", or "Scheduled, X of Y seats accepted" once a hacker accepts. The calendar has the six sessions down the side ("10–11 AM" … "4–5 PM") and one column per rep, each chat with its room ("Rm 2241", "Main building" or "Ivey, 15 min walk"), the format, the chat count and invited first names marked Invited or Confirmed. At 390 px all six sessions show; with more reps than fit, "Scroll for later times →" shows above the table with a fade on its right edge.
 - Edge cases: a sent chat that organizers move stays here with its new room or time. A session cut by the workshop shows its real times (e.g. "2:30–3:00"), the same times hackers are invited to.
 
 ### Sponsor · Change after invites (needs A)

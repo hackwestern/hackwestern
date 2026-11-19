@@ -54,6 +54,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Plain wording:
   - "Two separate jobs: tell us when your reps can chat (required), then shortlist hackers you'd like to meet (optional)." → "First, tell us when your reps can chat. Then, if you like, pick hackers to meet."
 - Screens: `02-sponsor-team-chats-home.png`
+- **Fixed:** before submit, the preferences card comes first and its "Start"/"Continue" is the only filled button; the shortlist card follows (locked), and "Add a hacker" is an outline button under the cards. After submit the status card leads, then the shortlist, then preferences. The intro reads "First, tell us when your reps can chat. Then, if you like, pick hackers to meet." (`after/portal-02-chats-home-not-submitted*.png`, `after/portal-02-chats-home-submitted*.png`)
 
 ### Sponsor · Your team · Step 2 · Add reps (step 1 of 3)
 - Expected: blank Save gives an error, a short phone gives "That phone number looks too short.", "<name> added.", the first rep gets the crown. **Happened:** all as expected.
@@ -206,6 +207,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: "Your chats", the thing they came for, is the last section, under two setup cards and "Add a hacker". At 1280 the calendar shows only 10–11 to 2–3. The 3–4 and 4–5 columns sit behind a sideways scroll with no cue. With several hackers per hour, the names stack into a tall narrow cell.
 - Fix: once Sent, put "Your chats" first and shrink the setup cards into one line of links. Default to List at phone width. Fade the calendar's right edge.
 - Screens: `14-sponsor-yourchats-after-send.png`, `14-sponsor-yourchats-list.png`, `14-sponsor-yourchats-filter-kevin.png`, `20-sponsor-yourchats-after-answers.png`
+- **Fixed (order and columns):** after Send, "Your chats" comes right after the status card, and the setup cards fold into one "Your setup" list: "Change your team or times", "Shortlist" and "Add a hacker". The calendar now has sessions down the side and reps across, so all six sessions show at 1280 and at 390 with two reps (no sideways scroll); a wider team scrolls with a "Scroll for later times →" line and a fade on the right edge. Session labels have AM/PM. The selected rep filter is tinted, not filled. "Last change" is covered in the status-card fix below. (`after/portal-02-chats-home-sent*.png`)
 
 ### Sponsor · Your chats · Step 2 · List and rep filter
 - Expected: List and Calendar switch, and filtering by rep works. **Happened:** as expected.

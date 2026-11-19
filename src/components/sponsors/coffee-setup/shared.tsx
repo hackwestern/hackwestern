@@ -349,6 +349,62 @@ export function useAfterInvites(data: SetupData | undefined) {
   return { guard, dialog };
 }
 
+/**
+ * A table that may be wider than the screen: scrolls inside its box, and
+ * while there's more to the right it says so ("Scroll for later times")
+ * with a fade on the right edge, so no column hides without a cue.
+ */
+export function ScrollHint({ label, children }: { label: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const check = () => setMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 4);
+    check();
+    el.addEventListener("scroll", check, { passive: true });
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(check);
+    observer?.observe(el);
+    if (el.firstElementChild) observer?.observe(el.firstElementChild);
+    return () => {
+      el.removeEventListener("scroll", check);
+      observer?.disconnect();
+    };
+  }, []);
+  return (
+    <div className="flex flex-col gap-1">
+      <p
+        aria-hidden
+        className={cn(
+          "m-0 flex items-center justify-end gap-1 text-sm font-semibold text-dashboard-text-link",
+          !more && "invisible",
+        )}
+      >
+        {copy.scrollHint}
+        <ArrowRight className="size-4" />
+      </p>
+      <div className="relative">
+        {/* Focusable so keyboard users can scroll it too. */}
+        <div
+          ref={ref}
+          role="region"
+          aria-label={label}
+          tabIndex={0}
+          className="overflow-x-auto rounded-dashboard-md border border-dashboard-border-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+        >
+          {children}
+        </div>
+        {more && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-px right-px w-12 rounded-r-dashboard-md bg-gradient-to-l from-dashboard-bg-surface to-transparent"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** Screen reader announcements (a polite live region). */
 export function useAnnounce() {
   const [message, setMessage] = useState("");
