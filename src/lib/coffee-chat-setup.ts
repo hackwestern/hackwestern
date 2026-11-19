@@ -7,6 +7,8 @@
  */
 import {
   COFFEE_SESSIONS,
+  chatMinutes,
+  chatsBySession,
   chatsInWindow,
   minutesOfClock,
   usableWindow,
@@ -162,4 +164,54 @@ export function setupEvents(s: {
     events.push({ kind: "saved", at: s.updatedAt });
   }
   return events.sort((a, b) => b.at.getTime() - a.at.getTime());
+}
+
+/** What a sponsor's setup says about each rep, before or after an edit. */
+export type SetupSnapshot = {
+  hackersPerChat: number;
+  reps: readonly { id: string; chatsWanted: number; free: readonly string[] }[];
+};
+
+/**
+ * Invited hackers (pending or accepted) in the sent chats an edit changes:
+ * a removed rep's chats, chats in a session the rep is no longer free for,
+ * chats that now hold a different number of chats (fewer chats wanted, or
+ * a new chat length), or every chat when hackers per chat changes. Used by
+ * the "Invites are already out" dialog, so its count covers only the chats
+ * being changed (bug B4). Other edits (a phone, the crown) change no chat.
+ */
+export function invitesAffected(
+  chats: readonly {
+    repId: string;
+    sessionId: string;
+    hackers: readonly unknown[];
+  }[],
+  workshops: readonly { start: string; end: string }[],
+  before: SetupSnapshot,
+  after: SetupSnapshot,
+): number {
+  const perSession = (s: SetupSnapshot) => {
+    const w = setupWindows(workshops, chatMinutes(s));
+    return (id: string) => w.chats[id] ?? 0;
+  };
+  const fitsBefore = perSession(before);
+  const fitsAfter = perSession(after);
+  let n = 0;
+  for (const rep of new Set(chats.map((c) => c.repId))) {
+    const mine = chats.filter((c) => c.repId === rep);
+    const was = before.reps.find((r) => r.id === rep);
+    const now = after.reps.find((r) => r.id === rep);
+    const placed = mine.map((c) => c.sessionId);
+    const countsBefore = chatsBySession(placed, was?.chatsWanted ?? 0, fitsBefore);
+    const countsAfter = chatsBySession(placed, now?.chatsWanted ?? 0, fitsAfter);
+    for (const c of mine) {
+      const changed =
+        !now ||
+        after.hackersPerChat !== before.hackersPerChat ||
+        !now.free.includes(c.sessionId) ||
+        countsBefore.get(c.sessionId) !== countsAfter.get(c.sessionId);
+      if (changed) n += c.hackers.length;
+    }
+  }
+  return n;
 }

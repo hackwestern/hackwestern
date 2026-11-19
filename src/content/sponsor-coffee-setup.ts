@@ -22,6 +22,16 @@ const chatsAndTime = (chats: number, minutes: number) =>
 
 const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
 
+/**
+ * The one sentence for a change after invites (simplify-decisions, "Changes
+ * after invites"), used by the warning dialog and the status card. N counts
+ * only invites in the chats being changed.
+ */
+const afterInvitesEffect = (n: number) =>
+  n === 0
+    ? "This doesn't affect any invited hackers."
+    : `This affects ${plural(n, "invited hacker")}. They'll be told and asked to confirm again.`;
+
 export const sponsorSetupCopy = {
   seoTitle: "Coffee chats",
 
@@ -102,18 +112,15 @@ export const sponsorSetupCopy = {
       submittedShortlist: "You submitted your shortlist",
       saved: "You saved changes",
     } as Record<string, string>,
-    editedAfterSend:
-      "You changed your setup after invites went out. Organizers will check it and ask affected hackers to confirm again.",
+    editedAfterSend: (n: number) =>
+      `You changed your setup after invites went out. ${afterInvitesEffect(n)}`,
     at: (what: string, when: string) => `${what} · ${when}`,
   },
 
   /** Before any change once invites are out (spec: "Changes after invites"). */
   afterInvites: {
     title: "Invites are already out",
-    body: (n: number) =>
-      n === 0
-        ? "Changing this may ask hackers to confirm again, and some may drop off."
-        : `Changing this will ask ${plural(n, "hacker")} to confirm again, and some may drop off.`,
+    body: afterInvitesEffect,
     confirm: "Change anyway",
     cancel: "Keep it as is",
   },
@@ -360,10 +367,7 @@ export const sponsorSetupCopy = {
   errors: {
     unknownSponsor: "This private link isn't valid.",
     unknownRep: "That rep isn't on your team anymore. Refresh and try again.",
-    afterInvites: (n: number) =>
-      n === 0
-        ? "Invites are already out. Changing this may ask hackers to confirm again, and some may drop off."
-        : `Invites are already out. Changing this will ask ${plural(n, "hacker")} to confirm again, and some may drop off.`,
+    afterInvites: "Invites are already out. Confirm the change to save it.",
     tooManyReps: (max: number) => `You can add up to ${max} reps.`,
     shortPhone: "That phone number looks too short.",
     badSession: "That isn't one of the chat sessions.",

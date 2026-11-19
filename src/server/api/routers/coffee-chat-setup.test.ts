@@ -336,7 +336,7 @@ describe("coffeeChatSetup: after organizers send", () => {
       ["11", "1352", "ivey", 1, "11:30"],
     ]);
     expect(res.chats[0]!.hackers).toEqual([{ firstName: "Ada", status: "accepted" }]);
-    expect(res.seats).toEqual({ total: 6, accepted: 1, invited: 1 });
+    expect(res.seats).toEqual({ total: 6, accepted: 1, invited: 1, changed: 0 });
     expect(res.editedAfterSend).toBe(false);
 
     // A change now needs the warning confirmed, and is then flagged.
@@ -347,13 +347,24 @@ describe("coffeeChatSetup: after organizers send", () => {
         (e: { code?: string; message: string }) => e,
       );
     expect(refused?.code).toBe("PRECONDITION_FAILED");
-    expect(refused?.message).toContain("1 hacker");
+    expect(refused?.message).toContain("Invites are already out");
     await db.update(coffeeChatPlacements).set({ sentAt: new Date(Date.now() - 1000) }).where(eq(coffeeChatPlacements.repId, a.id));
     await setup.updateRep({ sponsor: id, repId: a.id, name: "Dana W.", phone: "5195550001", confirmAfterInvites: true });
     const after = await setup.get({ sponsor: id });
     expect(after.editedAfterSend).toBe(true);
     const [pref] = await db.select().from(coffeeChatPrefs).where(eq(coffeeChatPrefs.sponsorId, id));
     expect(pref!.updatedAt.getTime()).toBeGreaterThan(after.sentAt!.getTime());
+    expect(after.seats.changed).toBe(0);
+
+    // Unticking 10-11 leaves its sent chat (1 invited hacker) until
+    // organizers move it: the status card counts just that one.
+    await setup.savePrefs({
+      sponsor: id,
+      hackersPerChat: 2,
+      reps: [{ id: a.id, chatsWanted: 3, free: ["11"] }],
+      confirmAfterInvites: true,
+    });
+    expect((await setup.get({ sponsor: id })).seats.changed).toBe(1);
   });
 });
 

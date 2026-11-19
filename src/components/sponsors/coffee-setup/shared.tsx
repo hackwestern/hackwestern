@@ -138,7 +138,7 @@ export function SetupStatus({ sponsor, data }: { sponsor: string; data: SetupDat
       )}
       {data.editedAfterSend && (
         <p className="m-0 rounded-dashboard-md bg-dashboard-bg-task p-3 text-base text-dashboard-text-task">
-          {s.editedAfterSend}
+          {s.editedAfterSend(data.seats.changed)}
         </p>
       )}
       <p className={cn("m-0 text-base font-semibold", needsAction ? "text-dashboard-text-warning" : "text-dashboard-text-heavy")}>
@@ -293,18 +293,19 @@ export function LinkButton({
 
 /**
  * Once invites are out, every change asks first ("Invites are already
- * out…"). `guard(run)` calls run(false) before Send, or opens the warning
- * and calls run(true) when they choose Change anyway.
+ * out…"). `guard(run, affected)` calls run(false) before Send, or opens the
+ * warning and calls run(true) when they choose Change anyway. `affected` is
+ * the invited hackers in the chats this change touches (invitesAffected).
  */
 export function useAfterInvites(data: SetupData | undefined) {
-  const [pending, setPending] = useState<((confirm: boolean) => void) | null>(null);
+  const [pending, setPending] = useState<{ run: (confirm: boolean) => void; affected: number } | null>(null);
   // Agreed once on this screen: don't ask again for every tick.
   const agreed = useRef(false);
   const guard = useCallback(
-    (run: (confirm: boolean) => void) => {
+    (run: (confirm: boolean) => void, affected = 0) => {
       if (!data?.confirmed) return run(false);
       if (agreed.current) return run(true);
-      setPending(() => run);
+      setPending({ run, affected });
     },
     [data?.confirmed],
   );
@@ -317,7 +318,7 @@ export function useAfterInvites(data: SetupData | undefined) {
             {copy.afterInvites.title}
           </AlertDialog.Title>
           <AlertDialog.Description className="m-0 text-base text-dashboard-text-medium">
-            {copy.afterInvites.body(data?.seats.invited ?? 0)}
+            {copy.afterInvites.body(pending?.affected ?? 0)}
           </AlertDialog.Description>
           <div className="flex flex-col gap-2 sm:flex-row-reverse">
             <AlertDialog.Action asChild>
@@ -325,7 +326,7 @@ export function useAfterInvites(data: SetupData | undefined) {
                 className={cn("min-h-11", pressable)}
                 onClick={() => {
                   agreed.current = true;
-                  pending?.(true);
+                  pending?.run(true);
                   setPending(null);
                 }}
               >

@@ -9,6 +9,7 @@ import {
   MAX_SETUP_CHATS,
   availChats,
   availableFree,
+  invitesAffected,
   repChatCap,
   setupTotals,
   setupWindows,
@@ -31,6 +32,12 @@ const draftOf = (data: SetupData): Draft => ({
   reps: Object.fromEntries(
     data.reps.map((r) => [r.id, { chatsWanted: r.chatsWanted, free: r.free }]),
   ),
+});
+
+/** A draft in the shape invitesAffected compares. */
+const snapshotOf = (d: Draft) => ({
+  hackersPerChat: d.hackersPerChat,
+  reps: Object.entries(d.reps).map(([id, r]) => ({ id, ...r })),
 });
 
 /** 1-on-1s are always 15 minutes now (no "longer chats", Q1–Q11). */
@@ -134,13 +141,19 @@ export function PrefsStep({
   );
 
   const edit = (fn: (d: Draft) => Draft) =>
-    guard((confirm) => {
-      if (confirm) confirmed.current = true;
-      dirty.current = true;
-      setDraft((d) => fn(d));
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => void flush(), 800);
-    });
+    guard(
+      (confirm) => {
+        if (confirm) confirmed.current = true;
+        dirty.current = true;
+        setDraft((d) => fn(d));
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(() => void flush(), 800);
+      },
+      // Hackers in the sent chats this edit changes, against what's saved.
+      data.confirmed
+        ? invitesAffected(data.chats, data.workshops, snapshotOf(draftOf(data)), snapshotOf(fn(latest.current)))
+        : 0,
+    );
 
   /** A rep's draft row, or their saved values (a rep added since the draft). */
   const repDraft = (d: Draft, repId: string) => {

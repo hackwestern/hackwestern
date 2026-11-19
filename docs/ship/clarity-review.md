@@ -216,12 +216,14 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - 5-year-old says: "Uh oh, 9 people. I press Keep it as is."
 - Fix: count only the hackers in chats this edit touches, and say who acts next. If the edit only makes a chat invalid (the chat stays until organizers move it): "Dana's 1–2 chat has 3 invited hackers. Organizers will move it and tell them."
 - Screens: `15-sponsor-change-dialog.png`
+- **Fixed:** the dialog counts only invites in the chats this edit changes (an unticked session, chats that shrink, a new group size, or a removed rep's chats) and uses the one shared sentence: "This affects 3 invited hackers. They'll be told and asked to confirm again." An edit that touches no sent chat says "This doesn't affect any invited hackers." (`after/portal-15-change-dialog*.png`)
 
 ### Sponsor · Change after invites · Step 2 · Keep / Change anyway
 - Expected: Keep changes nothing. Change saves and doesn't ask again on that screen. The status card adds "You changed your setup after invites went out…". **Happened:** as expected.
 - What's happening: clear.
 - Clear, no changes (beyond B4).
 - Screens: `15-sponsor-change-saved.png`
+- **Fixed (B4):** the status card now uses the dialog's sentence: "You changed your setup after invites went out. This affects N invited hackers. They'll be told and asked to confirm again.", where N is the invites in sent chats the new setup no longer fits.
 
 ### Sponsor · Judging · Step 1 · Who's judging?
 - Expected: pick a name or "Someone else". **Happened:** as expected. Picking a name goes straight in. "Start judging" is only for "Someone else".
@@ -470,6 +472,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Actual: "Changing this will ask 9 hackers to confirm again". All 9 stay pending with unchanged answer-by times. The status card then says "Organizers will check it and ask affected hackers to confirm again."
 - Where: copy `src/content/sponsor-coffee-setup.ts:112-116`, `:361-362`, `:106`; the count is passed in by the preferences step.
 - Screens: `15-sponsor-change-dialog.png`, `15-sponsor-change-saved.png`
+- **Fixed:** the dialog's N comes from `invitesAffected` (`src/lib/coffee-chat-setup.ts`), comparing the saved setup with the edit, per chat. The status card's N comes from `coffeeChatSetup.get` (`seats.changed`). Both use `afterInvitesEffect` in `sponsor-coffee-setup.ts`. The server's refusal without the confirm flag now says "Invites are already out. Confirm the change to save it." with no count.
 
 **B5 · Shortlist over-cap text: "3 of 1 shortlisted", "All 1 seats", "1 seat".**
 - Steps: shortlist 3 (with 2 scanned), then lower chats to 3 seats.

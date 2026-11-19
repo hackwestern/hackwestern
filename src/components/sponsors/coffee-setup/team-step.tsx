@@ -155,11 +155,14 @@ export function TeamStep({
                   disabled={remove.isPending}
                   onClick={() => {
                     setError(null);
-                    guard((confirmAfterInvites) =>
-                      remove.mutate(
-                        { sponsor, repId: rep.id, confirmAfterInvites },
-                        { onSuccess: () => void refresh().then(() => announce(copy.removed(rep.name))) },
-                      ),
+                    guard(
+                      (confirmAfterInvites) =>
+                        remove.mutate(
+                          { sponsor, repId: rep.id, confirmAfterInvites },
+                          { onSuccess: () => void refresh().then(() => announce(copy.removed(rep.name))) },
+                        ),
+                      // Their chats go, so all their invited hackers are affected.
+                      data.chats.filter((c) => c.repId === rep.id).reduce((n, c) => n + c.hackers.length, 0),
                     );
                   }}
                 >
