@@ -511,8 +511,6 @@ export const coffeeChatPrefs = pgTable(
     hackersPerChat: smallint("hackers_per_chat").default(1).notNull(),
     // 1-on-1s only: 30 minutes instead of 15.
     longerOneOnOne: boolean("longer_one_on_one").default(false).notNull(),
-    // 1, 2, 3 or 4 (4 = "4+", no cap).
-    hoursPerRep: smallint("hours_per_rep").notNull(),
     submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 }),
     updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
       .defaultNow()
@@ -520,12 +518,13 @@ export const coffeeChatPrefs = pgTable(
   },
   (t) => [
     check("coffee_chat_pref_hackers_check", sql`${t.hackersPerChat} between 1 and 5`),
-    check("coffee_chat_pref_hours_check", sql`${t.hoursPerRep} between 1 and 4`),
   ],
 );
 
 // A sponsor's named rep for coffee chats. Exactly one primary contact (the
-// crown) per sponsor; every rep has a phone.
+// crown) per sponsor; every rep has a phone (no email is collected). Each
+// rep says how many chats they want; the sessions that needs follow from
+// the sponsor's chat length (src/lib/coffee-chat-sessions.ts).
 export const coffeeChatReps = pgTable(
   "coffee_chat_rep",
   {
@@ -535,11 +534,11 @@ export const coffeeChatReps = pgTable(
       .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 255 }).notNull(),
     phone: varchar("phone", { length: 32 }).notNull(),
-    email: varchar("email", { length: 255 }),
     isPrimary: boolean("is_primary").default(false).notNull(),
-    // Organizer cap from a "fewer hours" suggested fix; null = the sponsor's
-    // hours per rep.
-    maxHours: smallint("max_hours"),
+    chatsWanted: smallint("chats_wanted").default(1).notNull(),
+    // Organizer cap in sessions from a "fewer chats" suggested fix; null =
+    // what their chats need.
+    maxSessions: smallint("max_sessions"),
     // Order the sponsor listed them in.
     position: smallint("position").default(0).notNull(),
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
@@ -548,6 +547,7 @@ export const coffeeChatReps = pgTable(
   },
   (t) => [
     index("coffee_chat_rep_sponsor_idx").on(t.sponsorId),
+    check("coffee_chat_rep_chats_check", sql`${t.chatsWanted} >= 1`),
     uniqueIndex("coffee_chat_rep_primary_idx")
       .on(t.sponsorId)
       .where(sql`${t.isPrimary}`),

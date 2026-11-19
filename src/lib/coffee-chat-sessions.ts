@@ -49,9 +49,9 @@ export const WORKSHOP_BUFFER_MIN = 15;
 /** Hackers per chat, 1-5 (the room holds 6 with the rep). */
 export const MIN_HACKERS_PER_CHAT = 1;
 export const MAX_HACKERS_PER_CHAT = 5;
-/** Hours per rep 1, 2, 3 or 4 (4 = "4+", no cap). */
-export const MIN_HOURS_PER_REP = 1;
-export const MAX_HOURS_PER_REP = 4;
+/** Each rep says how many chats they want (at least 1). */
+export const MIN_CHATS_WANTED = 1;
+export const MAX_CHATS_WANTED = 40;
 
 export function isSessionId(id: string): id is CoffeeSessionId {
   return COFFEE_SESSIONS.some((s) => s.id === id);
@@ -71,6 +71,19 @@ export function chatMinutes(prefs: {
   longerOneOnOne: boolean;
 }): 15 | 30 {
   return prefs.hackersPerChat === 1 && !prefs.longerOneOnOne ? 15 : 30;
+}
+
+/** Chats one rep runs in one 1-hour session (4 at 15 min, 2 at 30). */
+export function chatsPerSession(prefs: {
+  hackersPerChat: number;
+  longerOneOnOne: boolean;
+}): number {
+  return 60 / chatMinutes(prefs);
+}
+
+/** Sessions a rep's wanted chats need: ceil(chats x chat length / 60). */
+export function sessionsForChats(chatsWanted: number, minutes: 15 | 30): number {
+  return Math.ceil((Math.max(0, chatsWanted) * minutes) / 60);
 }
 
 /** Hackers one rep sees in one session. */

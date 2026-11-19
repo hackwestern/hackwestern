@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { COFFEE_ROOMS, COFFEE_SESSIONS } from "~/lib/coffee-chat-sessions";
+import {
+  COFFEE_ROOMS,
+  COFFEE_SESSIONS,
+  chatMinutes,
+  sessionsForChats,
+} from "~/lib/coffee-chat-sessions";
 import {
   applySuggestion,
   blockedSessions,
@@ -21,18 +26,18 @@ const SESS = COFFEE_SESSIONS;
 const ROOMS = COFFEE_ROOMS;
 
 // The v8 mock's demo data (mocks/organizer-coffee-v8/index.html).
+// sessions = sessions each rep's wanted chats need (sessionsForChats).
 const sp = (
   id: string,
-  hoursPerRep: number,
+  sessions: number,
   frees: string[][],
   workshops: SchedSponsor["workshops"] = [],
   submitted = true,
 ): SchedSponsor => ({
   id,
   submitted,
-  hoursPerRep,
   workshops,
-  reps: frees.map((free, i) => ({ id: `${id}:${i}`, free })),
+  reps: frees.map((free, i) => ({ id: `${id}:${i}`, free, sessionsWanted: sessions })),
 });
 const DEMO: SchedSponsor[] = [
   sp("sunlife", 2, [["10", "11", "14", "16"], ["11", "16"], ["11", "16"]], [
@@ -76,7 +81,7 @@ describe("schedule on the demo data", () => {
     expect(checkBoard(DEMO, ROOMS, SESS, r.board)).toEqual([]);
   });
 
-  test("hours per rep: Sun Life 2, CSE 3, QNX 4+ = all available", () => {
+  test("sessions per rep: Sun Life 2, CSE 3, QNX wants 4 but has 3 available", () => {
     expect(repCount(r.board, "sunlife:0")).toBe(2);
     expect(repCount(r.board, "cse:0")).toBe(3);
     expect(repCount(r.board, "qnx:0")).toBe(3);
@@ -172,15 +177,15 @@ describe("ordering and rooms", () => {
     expect(at10 && at11 && parseKey(at10).room).toBe(at11 && parseKey(at11).room);
   });
 
-  test("no room anywhere -> fewer hours", () => {
+  test("no room anywhere -> fewer chats", () => {
     const r = schedule([mini("a", [["10"]]), mini("b", [["10"]])], oneRoom, two.slice(0, 1), []);
     expect(r.fixes).toHaveLength(1);
     expect(r.fixes[0]).toMatchObject({ reason: "full", suggestion: { kind: "fewer" } });
     const s = r.fixes[0]!.suggestion;
     if (s.kind !== "fewer") return;
-    expect(s.hours[0]).toMatchObject({ hours: 0, want: 1 });
+    expect(s.caps[0]).toMatchObject({ sessions: 0, want: 1 });
     const ap = applySuggestion([mini("a", [["10"]]), mini("b", [["10"]])], two, r.board, {}, s);
-    expect(Object.values(ap.maxHours)).toEqual([0]);
+    expect(Object.values(ap.maxSessions)).toEqual([0]);
   });
 
   test("a removed chat with a room free elsewhere -> another-session fix", () => {
@@ -274,5 +279,27 @@ describe("workshopWindows", () => {
     const w = workshopWindows(items, "Sun Life");
     expect(w).toEqual([{ start: 840, end: 870 }, { start: 870, end: 930 }]);
     expect([...blockedSessions({ workshops: w }, SESS)]).toEqual(["13", "14", "15"]);
+  });
+});
+
+describe("sessionsForChats", () => {
+  test("ceil(chats x chat length / 60)", () => {
+    const oneOnOne = chatMinutes({ hackersPerChat: 1, longerOneOnOne: false });
+    const longer = chatMinutes({ hackersPerChat: 1, longerOneOnOne: true });
+    const group = chatMinutes({ hackersPerChat: 3, longerOneOnOne: false });
+    expect([oneOnOne, longer, group]).toEqual([15, 30, 30]);
+    expect(sessionsForChats(4, oneOnOne)).toBe(1);
+    expect(sessionsForChats(6, oneOnOne)).toBe(2);
+    expect(sessionsForChats(3, group)).toBe(2);
+    expect(sessionsForChats(1, longer)).toBe(1);
+  });
+
+  test("a rep wanting 6 one-on-ones gets 2 sessions, capped by availability", () => {
+    const want = sessionsForChats(6, 15);
+    const one = { id: "a", submitted: true, workshops: [], reps: [{ id: "a:0", free: ["10", "11", "13"], sessionsWanted: want }] };
+    const r = schedule([one], ROOMS, SESS, []);
+    expect(repCount(r.board, "a:0")).toBe(2);
+    const few = { ...one, reps: [{ ...one.reps[0]!, free: ["10"] }] };
+    expect(repCount(schedule([few], ROOMS, SESS, []).board, "a:0")).toBe(1);
   });
 });

@@ -8,12 +8,14 @@
  * never hold two things at once.
  *
  * Rules (docs/decisions.md 2026-11-19, "auto-schedule is a real algorithm"):
- * - a rep gets min(hours per rep, sessions they can do); 4 = 4+ = no cap;
+ * - a rep gets min(sessions their wanted chats need, sessions they can do);
+ *   sessions needed = ceil(chats wanted x chat length / 60), worked out by
+ *   sessionsForChats() in coffee-chat-sessions.ts;
  * - only sessions the rep ticked free and that don't overlap their own
  *   sponsor's workshop, counted from 15 min before setup (or start) to 15 min
  *   after the end;
  * - pinned cells (organizer bookings, manual moves, applied fixes, sent
- *   chats) stay exactly where they are and count toward a rep's hours;
+ *   chats) stay exactly where they are and count toward a rep's sessions;
  * - most-constrained sponsors first, then the most-constrained rep;
  * - near rooms (2241-2243) before Ivey, and a sponsor's reps in the same
  *   session stay in one building;
@@ -34,14 +36,14 @@ export type SchedRep = {
   id: string;
   /** Session ids the rep ticked free. */
   free: readonly string[];
-  /** Organizer override from a "fewer hours" fix. */
-  maxHours?: number | null;
+  /** Sessions the rep's wanted chats need (sessionsForChats). */
+  sessionsWanted: number;
+  /** Organizer override from a "fewer chats" fix, in sessions. */
+  maxSessions?: number | null;
 };
 export type SchedSponsor = {
   id: string;
   submitted: boolean;
-  /** 1-4; 4 means 4+ (no cap). */
-  hoursPerRep: number;
   workshops: readonly SchedWorkshop[];
   reps: readonly SchedRep[];
 };
@@ -67,7 +69,7 @@ export type FixItem = { rep: string; got: number; want: number };
 export type Suggestion =
   | { kind: "session"; places: Place[] }
   | { kind: "ivey"; session: string; remove: string[]; places: Place[] }
-  | { kind: "fewer"; hours: { rep: string; hours: number; want: number }[] };
+  | { kind: "fewer"; caps: { rep: string; sessions: number; want: number }[] };
 export type Fix = {
   /** Stable for one board: sponsor|session|reason. */
   id: string;
@@ -85,7 +87,6 @@ export function parseKey(key: string): { room: string; session: string } {
   return { room, session };
 }
 
-const NO_CAP = Number.POSITIVE_INFINITY;
 
 /**
  * Sessions a sponsor can never use: any that overlap one of their workshop
@@ -117,19 +118,18 @@ export function availSessions(
 }
 
 /** The most sessions this rep may have (the cap, before availability). */
-export function hourCap(sponsor: SchedSponsor, rep: SchedRep): number {
-  if (rep.maxHours != null) return rep.maxHours;
-  return sponsor.hoursPerRep >= 4 ? NO_CAP : sponsor.hoursPerRep;
+export function sessionCap(rep: SchedRep): number {
+  return rep.maxSessions ?? rep.sessionsWanted;
 }
 
 /** How many sessions this rep should get: min(cap, sessions they can do). */
-export function hoursNeeded(
+export function sessionsNeeded(
   sponsor: SchedSponsor,
   rep: SchedRep,
   sessions: readonly SchedSession[],
 ): number {
   return Math.min(
-    hourCap(sponsor, rep),
+    sessionCap(rep),
     availSessions(sponsor, rep, sessions).length,
   );
 }
@@ -257,8 +257,8 @@ export function schedule(
       .sort((a, b) => a.n - b.n || a.i - b.i)
       .map((x) => x.r);
     for (const rep of reps) {
-      // 4. min(hours per rep, available sessions), minus what's pinned.
-      let left = hoursNeeded(sp, rep, sessions) - repCount(board, rep.id);
+      // 4. min(sessions wanted, available sessions), minus what's pinned.
+      let left = sessionsNeeded(sp, rep, sessions) - repCount(board, rep.id);
       for (const s of availSessions(sp, rep, sessions)) {
         if (left <= 0) break;
         if (repKeyAt(board, rep.id, s)) continue;
@@ -301,7 +301,7 @@ export function findFixes(
       { s: string; reason: FixReason; items: FixItem[] }
     >();
     for (const rep of sp.reps) {
-      const want = hoursNeeded(sp, rep, sessions);
+      const want = sessionsNeeded(sp, rep, sessions);
       const got = repCount(board, rep.id);
       if (got >= want) continue;
       const tries = availSessions(sp, rep, sessions).filter(
@@ -340,7 +340,7 @@ export function findFixes(
  * The first alternative that works: (a) another available session for each
  * short rep; (b) all of the sponsor's reps in that session (and the short
  * ones) to Ivey together, unless any is pinned or they're already in Ivey;
- * (c) fewer hours. Never suggests a blocked session.
+ * (c) fewer chats. Never suggests a blocked session.
  */
 function suggest(
   ctx: Ctx,
@@ -401,15 +401,15 @@ function suggest(
       }
     }
   }
-  // (c) fewer hours: cap each short rep at what they have now
+  // (c) fewer chats: cap each short rep at the sessions they have now
   return {
     kind: "fewer",
-    hours: items.map((i) => ({ rep: i.rep, hours: i.got, want: i.want })),
+    caps: items.map((i) => ({ rep: i.rep, sessions: i.got, want: i.want })),
   };
 }
 
 /**
- * Apply a suggestion to a board. Returns the new board and rep hour caps.
+ * Apply a suggestion to a board. Returns the new board and rep session caps.
  * Throws if a placement is in a blocked session or would double-book a
  * room or a rep.
  */
@@ -417,15 +417,15 @@ export function applySuggestion(
   sponsors: readonly SchedSponsor[],
   sessions: readonly SchedSession[],
   board: Board,
-  maxHours: Readonly<Record<string, number>>,
+  maxSessions: Readonly<Record<string, number>>,
   sug: Suggestion,
-): { board: Board; maxHours: Record<string, number> } {
+): { board: Board; maxSessions: Record<string, number> } {
   const out: Board = { ...board };
-  const caps = { ...maxHours };
+  const caps = { ...maxSessions };
   const sponsorOf = sponsorIndex(sponsors);
   if (sug.kind === "fewer") {
-    for (const h of sug.hours) caps[h.rep] = h.hours;
-    return { board: out, maxHours: caps };
+    for (const c of sug.caps) caps[c.rep] = c.sessions;
+    return { board: out, maxSessions: caps };
   }
   for (const p of sug.places) {
     const sp = sponsors.find((x) => x.id === sponsorOf.get(p.rep));
@@ -442,7 +442,7 @@ export function applySuggestion(
     }
     out[k] = { type: "chat", rep: p.rep, pinned: true };
   }
-  return { board: out, maxHours: caps };
+  return { board: out, maxSessions: caps };
 }
 
 /**
@@ -484,8 +484,8 @@ export function checkBoard(
   for (const sp of sponsors) {
     for (const rep of sp.reps) {
       const n = repCount(board, rep.id);
-      const cap = hourCap(sp, rep);
-      if (n > cap) bad.push(`${rep.id} has ${n} > ${cap} hours`);
+      const cap = sessionCap(rep);
+      if (n > cap) bad.push(`${rep.id} has ${n} > ${cap} sessions`);
     }
     for (const s of sessions) {
       const buildings = new Set(
@@ -513,9 +513,9 @@ export function repTally(
   sessions: readonly SchedSession[],
   board: Board,
 ): { done: number; total: number } {
-  const need = sponsor.reps.filter((r) => hoursNeeded(sponsor, r, sessions) > 0);
+  const need = sponsor.reps.filter((r) => sessionsNeeded(sponsor, r, sessions) > 0);
   const done = need.filter(
-    (r) => repCount(board, r.id) >= hoursNeeded(sponsor, r, sessions),
+    (r) => repCount(board, r.id) >= sessionsNeeded(sponsor, r, sessions),
   );
   return { done: done.length, total: need.length };
 }

@@ -1,5 +1,5 @@
 {
-  "id": "881c5c58-1bcd-4556-8dd1-eacab44ba7a1",
+  "id": "cefcee11-0d24-45f7-9448-472e20cc7bbc",
   "prevId": "5268fe55-d34e-42ba-a038-0b62b7d12892",
   "version": "7",
   "dialect": "postgresql",
@@ -1095,12 +1095,6 @@
           "notNull": true,
           "default": false
         },
-        "hours_per_rep": {
-          "name": "hours_per_rep",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
         "submitted_at": {
           "name": "submitted_at",
           "type": "timestamp (3)",
@@ -1138,10 +1132,6 @@
         "coffee_chat_pref_hackers_check": {
           "name": "coffee_chat_pref_hackers_check",
           "value": "\"coffee_chat_pref\".\"hackers_per_chat\" between 1 and 5"
-        },
-        "coffee_chat_pref_hours_check": {
-          "name": "coffee_chat_pref_hours_check",
-          "value": "\"coffee_chat_pref\".\"hours_per_rep\" between 1 and 4"
         }
       },
       "isRLSEnabled": false
@@ -1222,12 +1212,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "email": {
-          "name": "email",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "is_primary": {
           "name": "is_primary",
           "type": "boolean",
@@ -1235,8 +1219,15 @@
           "notNull": true,
           "default": false
         },
-        "max_hours": {
-          "name": "max_hours",
+        "chats_wanted": {
+          "name": "chats_wanted",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "max_sessions": {
+          "name": "max_sessions",
           "type": "smallint",
           "primaryKey": false,
           "notNull": false
@@ -1307,7 +1298,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "coffee_chat_rep_chats_check": {
+          "name": "coffee_chat_rep_chats_check",
+          "value": "\"coffee_chat_rep\".\"chats_wanted\" >= 1"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.coffee_chat_room_booking": {

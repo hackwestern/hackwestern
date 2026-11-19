@@ -14,11 +14,9 @@ CREATE TABLE "coffee_chat_pref" (
 	"sponsor_id" uuid PRIMARY KEY NOT NULL,
 	"hackers_per_chat" smallint DEFAULT 1 NOT NULL,
 	"longer_one_on_one" boolean DEFAULT false NOT NULL,
-	"hours_per_rep" smallint NOT NULL,
 	"submitted_at" timestamp (3),
 	"updated_at" timestamp (3) DEFAULT now() NOT NULL,
-	CONSTRAINT "coffee_chat_pref_hackers_check" CHECK ("coffee_chat_pref"."hackers_per_chat" between 1 and 5),
-	CONSTRAINT "coffee_chat_pref_hours_check" CHECK ("coffee_chat_pref"."hours_per_rep" between 1 and 4)
+	CONSTRAINT "coffee_chat_pref_hackers_check" CHECK ("coffee_chat_pref"."hackers_per_chat" between 1 and 5)
 );
 --> statement-breakpoint
 CREATE TABLE "coffee_chat_rep_session" (
@@ -32,11 +30,12 @@ CREATE TABLE "coffee_chat_rep" (
 	"sponsor_id" uuid NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"phone" varchar(32) NOT NULL,
-	"email" varchar(255),
 	"is_primary" boolean DEFAULT false NOT NULL,
-	"max_hours" smallint,
+	"chats_wanted" smallint DEFAULT 1 NOT NULL,
+	"max_sessions" smallint,
 	"position" smallint DEFAULT 0 NOT NULL,
-	"created_at" timestamp (3) DEFAULT now() NOT NULL
+	"created_at" timestamp (3) DEFAULT now() NOT NULL,
+	CONSTRAINT "coffee_chat_rep_chats_check" CHECK ("coffee_chat_rep"."chats_wanted" >= 1)
 );
 --> statement-breakpoint
 CREATE TABLE "coffee_chat_room_booking" (
