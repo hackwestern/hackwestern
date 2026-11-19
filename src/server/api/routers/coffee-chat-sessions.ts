@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { sessionCap } from "~/lib/coffee-chat-schedule";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
@@ -270,9 +271,19 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
   placeChat: protectedOrganizerProcedure
     .input(z.object({ repId: z.string().uuid(), room, sessionId }))
     .mutation(async ({ input }) => {
+      // Undo after Remove. It always places a NEW draft chat: invites of a
+      // removed sent chat were cancelled by reconcile and aren't restored
+      // (the board only offers Undo for draft chats). A draft needs no
+      // reconcile; it reaches hackers on the next Send.
       return boardWrite(async (tx, state) => {
         assertRepCanChat(state, input.repId, input.sessionId);
         assertCellFree(state, input.room, input.sessionId);
+        // Adding a chat, unlike a move, can push a rep past their cap.
+        const rep = state.sched.flatMap((sp) => sp.reps).find((r) => r.id === input.repId);
+        const has = state.placements.filter((p) => p.repId === input.repId).length;
+        if (rep && has >= sessionCap(rep)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: errors.repAtCap(has) });
+        }
         const [row] = await tx
           .insert(coffeeChatPlacements)
           .values({ repId: input.repId, room: input.room, sessionId: input.sessionId, pinned: true })

@@ -315,6 +315,8 @@ export const coffeeSessionsCopy = {
   errors: {
     roomTaken: (room: string, s: string) => `${room} is taken at ${s}.`,
     repBusy: (rep: string, s: string) => `${rep} already has a chat at ${s}.`,
+    repAtCap: (n: number) =>
+      `This rep already has ${n === 1 ? "1 session" : `${n} sessions`}, all their chats need. Remove one first.`,
     duringWorkshop: (sponsor: string) => `That's during ${sponsor}'s workshop.`,
     notFree: (rep: string, s: string) => `${rep} isn't free at ${s}.`,
     notSubmitted: (sponsor: string) => `${sponsor} hasn't submitted yet.`,
