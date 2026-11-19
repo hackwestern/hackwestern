@@ -51,15 +51,29 @@ export default function SponsorCoffeeChatsPage() {
     { enabled: validUuid, retry: 1, refetchInterval: 60_000, refetchOnWindowFocus: false },
   );
 
-  const shell = (children: React.ReactNode) => (
-    <SponsorShell title={copy.seoTitle}>{children}</SponsorShell>
-  );
+  // Chats home: "Coffee chats" is the page heading. The flows have their
+  // own h1 (FlowHeader), so the header shows "Back to Chats" instead.
+  const base = `/sponsors/${id}/coffee-chats`;
+  const inFlow = router.query.flow === "prefs" || router.query.flow === "shortlist";
+  const shell = (children: React.ReactNode) =>
+    inFlow ? (
+      <SponsorShell
+        title={copy.seoTitle}
+        barTitle={copy.home.title}
+        headerStart={<BackToChats href={base} />}
+      >
+        {children}
+      </SponsorShell>
+    ) : (
+      <SponsorShell title={copy.seoTitle} heading={copy.home.title}>
+        {children}
+      </SponsorShell>
+    );
   if (!router.isReady || (validUuid && q.isLoading)) return shell(<ScheduleSkeleton />);
   if (!validUuid || q.error?.data?.code === "NOT_FOUND") return shell(<InvalidLink />);
   if (!q.data) return shell(<LoadError onRetry={() => void q.refetch()} />);
 
   const data = q.data;
-  const base = `/sponsors/${id}/coffee-chats`;
   const prefsHref = (step: number) => `${base}?flow=prefs&step=${step}`;
   const shortlistHref = (step: number) => `${base}?flow=shortlist&step=${step}`;
   const screen = screenOf(router.query);
@@ -69,7 +83,9 @@ export default function SponsorCoffeeChatsPage() {
     const f = copy.prefsFlow;
     return shell(
       <>
-        <BackToChats href={base} />
+        <div className="md:hidden">
+          <BackToChats href={base} />
+        </div>
         <SetupStatus sponsor={id} data={data} flowStep={screen.step} />
         <FlowHeader
           tag={f.tag}
@@ -103,7 +119,9 @@ export default function SponsorCoffeeChatsPage() {
     const f = copy.shortlist;
     return shell(
       <>
-        <BackToChats href={base} />
+        <div className="md:hidden">
+          <BackToChats href={base} />
+        </div>
         {status}
         <FlowHeader
           tag={f.tag}

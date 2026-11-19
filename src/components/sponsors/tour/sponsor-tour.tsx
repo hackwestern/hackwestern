@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import * as Popover from "@radix-ui/react-popover";
-import { CircleHelp, Compass } from "lucide-react";
+import { Compass } from "lucide-react";
 import {
   hoverTint,
   pressable,
@@ -227,12 +227,15 @@ export function SponsorTour({
             type="button"
             aria-label={copy.menu.label}
             className={cn(
-              "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm font-semibold text-dashboard-text-medium shadow-dashboard-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
+              "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface px-3 text-sm font-semibold text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
               hoverTint,
               pressable,
             )}
           >
-            <CircleHelp aria-hidden className="size-4 shrink-0" />
+            <Compass
+              aria-hidden
+              className="size-[18px] shrink-0 text-dashboard-text-active"
+            />
             <span className="hidden sm:inline">{copy.menu.button}</span>
           </button>
         </Popover.Trigger>

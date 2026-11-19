@@ -3,6 +3,15 @@
 // portal home. Keep wording here, not in components.
 
 export const sponsorVenueCopy = {
+  /** The Map tab (/sponsors/[uuid]/map). */
+  page: {
+    seoTitle: "Map",
+    heading: "Map",
+    lead: "Your booth in the Sponsor Bay, then the venue floor plans.",
+    booth: "Your booth",
+    boothAt: (where: string) => `Your booth · ${where}`,
+    floorsHeading: "Floor plans",
+  },
   mapButton: "Map",
   mapButtonLabel: "Open the venue map",
   map: {

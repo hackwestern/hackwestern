@@ -15,24 +15,27 @@ export const sponsorPortalCopy = {
     fallbackName: "Sponsor",
     logoAlt: (sponsor: string) => `${sponsor} logo`,
   },
-  // The portal's one nav: a side nav on tablets and up, a bottom tab bar on
-  // phones (Venue is side nav only; phones have the Map button).
+  // The portal's one nav (design: mocks/sponsor-portal-flow-hacker-v6): a
+  // side nav on tablets and up, a bottom tab bar on phones. Help is a
+  // button in the page header that opens a dialog over the current page.
   nav: {
     label: "Sponsor portal",
-    home: "Home",
+    home: "Today",
     scan: "Scan",
     chats: "Chats",
     schedule: "Schedule",
     judging: "Judging",
-    venue: "Venue",
-    howItWorks: "How this works",
+    map: "Map",
+    /** Beside the sponsor's logo at the top of the side nav. */
+    portal: "Sponsor portal",
+    homeLink: "Hack Western 13 sponsor portal home",
+    /** Bottom of the side nav. */
+    footer: "Times are Eastern · Nov 20 to 22, 2026",
     judgingLocked: (opens: string) => `Judging, locked. ${opens}`,
     judgingLockedTitle: "When judging opens",
     /** Beside Judging once it's open: has the team sent its top picks? */
     judgingSent: "Sent",
     judgingNotSent: "Not sent",
-    /** Slim top bar: "Hack Western 13 · Sat 2:14 PM". */
-    now: (when: string) => `Hack Western 13 · ${when}`,
   },
   /** Home, for sponsors without a prize track (no Judging in the nav). */
   noPrizeTrack: "No prize track: you're not judging this weekend.",

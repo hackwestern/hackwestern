@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ScanLine } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DayPicker } from "~/components/sponsors/day-picker";
-import { SponsorHelp } from "~/components/sponsors/help-button";
 import { HappeningNowBanner } from "~/components/sponsors/happening-now";
 import { NextEventCard } from "~/components/sponsors/next-event-card";
 import {
@@ -16,7 +15,6 @@ import {
 import {
   InvalidLink,
   LoadError,
-  PageIntro,
   ReadAt,
   ScheduleSkeleton,
 } from "~/components/sponsors/schedule-states";
@@ -73,7 +71,7 @@ export default function SponsorSchedulePage() {
   );
 
   const shell = (children: React.ReactNode) => (
-    <SponsorShell wide title={copy.seoTitle}>
+    <SponsorShell title={copy.seoTitle} heading={copy.seoTitle} lead={copy.intro}>
       {children}
     </SponsorShell>
   );
@@ -123,11 +121,6 @@ export default function SponsorSchedulePage() {
 
   return shell(
     <>
-      <PageIntro
-        eyebrow={copy.eyebrow}
-        title={copy.title(data.sponsorName)}
-        intro={copy.intro}
-      />
       <HappeningNowBanner
         items={data.items}
         now={now}
@@ -180,10 +173,6 @@ export default function SponsorSchedulePage() {
         sponsorName={data.sponsorName}
         workshops={data.workshops}
       />
-      {/* In the side nav from tablets up. */}
-      <div className="md:hidden">
-        <SponsorHelp />
-      </div>
       <ReadAt iso={data.readAt} />
     </>,
   );
