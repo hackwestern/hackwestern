@@ -567,6 +567,17 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Screens: `01-sponsor-firstvisit-home.png`, `01-sponsor-firstvisit-help.png`
 - **Fixed:** Event details reads the same `useHelpContacts` as Help (the HW lead from Sponsor Day-Of; Noah from HW Contacts), so both say "Your contact hasn't been assigned yet." for Test Sponsor, and the lead's name and phone when there is one. The "Hack Western Organizer Team · On-site support" fallback is gone. (`after/portal-01-home*.png`, `after/portal-01-help*.png`)
 
+
+### Review fixes after the fix loop
+
+- **Fixed · Own rep removal read as an organizer change.** After the sponsor's own Remove, Edit or preferences save, the page refetches and stores the new chats as seen before showing them (`useRefreshOwn` in `coffee-setup/shared.tsx`), so no "Organizers removed …" note is recorded. `chatChanges` also skips a missing chat whose rep is gone from the team, since only the sponsor removes reps.
+- **Fixed · Two definitions of "affected invites".** `coffeeChatSetup.get` counts `seats.changed` with `invitesAffected` (through `invitesOutOfLine`, from what the sent chats imply to the setup now), so the dialog and the status card agree. The shared sentence now reads "This affects N invited hackers. Organizers will update their chats, and the hackers will be told." Known limit: hackers per chat isn't kept from Send, so the card can't count a group-size change after Send; the dialog does.
+- **Fixed · A rep rename didn't reach invites.** `updateRep` reconciles invites in the same transaction when the name changes after Send, and delivers the notices after commit. The dialog counts that rep's invited hackers for a rename.
+- **Fixed · Judging nav disagreed with the page.** The nav shows Judging locked while the page is locked. A comment on the page says the Sunday 9 AM lock is UI-only by design (the server enforces only the close time).
+- **Fixed · Judging lock computed once.** The page reads the lock from `useNow()`, so it unlocks at 9:00 without a reload.
+- **Fixed · Malformed stored chats.** `parseSeenChats` (`src/lib/coffee-chat-setup.ts`) drops bad JSON, non-objects and malformed chats or notes.
+- **Fixed · Undo after a Send in between.** Undo refetches first and goes through the "Invites are already out" warning when the setup is now sent. The removed rep stays offered until every step succeeds, and a retry doesn't add them twice.
+
 ---
 
 ## Wording changes (every replacement, one place)
