@@ -27,7 +27,7 @@ export const sponsorVenueCopy = {
     {
       room: "2242",
       name: "Coffee chats",
-      where: "Rm 2241 to 2243 · Floor 2",
+      where: "Rm 2241 to 2243 (Floor 2) and Rm 1348 to 1358 (Floor 1)",
     },
   ],
   important: {

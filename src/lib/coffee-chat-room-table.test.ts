@@ -1,3 +1,4 @@
+import { COFFEE_CHAT_ROOMS } from "~/lib/coffee-chat-requests";
 import { describe, expect, it } from "vitest";
 import {
   buildRoomTable,
@@ -78,7 +79,7 @@ describe("buildRoomTable", () => {
   const table = buildRoomTable(board());
 
   it("has one column per coffee chat room and a row per grid slot", () => {
-    expect(table.rooms).toEqual(["Rm 2241", "Rm 2242", "Rm 2243"]);
+    expect(table.rooms).toEqual([...COFFEE_CHAT_ROOMS]);
     expect(table.slots).toHaveLength(4);
   });
 

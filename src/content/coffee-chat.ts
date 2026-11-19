@@ -332,7 +332,7 @@ export const coffeeChatCopy = {
       cellLabel: (room: string, time: string, who: string | null) =>
         who ? `${room}, ${time}, ${who}` : `${room}, ${time}, free: give room`,
       floorPlanAlt:
-        "Floor 2 plan showing the coffee chat rooms, Rm 2241, Rm 2242 and Rm 2243.",
+        "Floor 2 plan showing coffee chat rooms Rm 2241, Rm 2242 and Rm 2243. More chat rooms are on Floor 1: Rm 1348, 1352, 1354, 1356 and 1358.",
       empty: "No coffee chat times in the sheet yet.",
       // Block lengths, exactly as organizers pick them.
       length: (minutes: number) =>

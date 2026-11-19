@@ -1,3 +1,4 @@
+import { COFFEE_CHAT_ROOMS } from "~/lib/coffee-chat-requests";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
@@ -733,7 +734,7 @@ describe("coffeeChatRequests organizer actions (T26)", () => {
     const { chats, rooms } =
       await organizer.coffeeChatRequests.organizerChats();
     expect(rooms).toEqual(
-      expect.arrayContaining(["Rm 2241", "Rm 2242", "Rm 2243"]),
+      expect.arrayContaining([...COFFEE_CHAT_ROOMS]),
     );
     const moved = chats.find((c) => c.chatId === chatId);
     const board = await organizer.coffeeChatRequests.organizerChatBoard();
@@ -1503,7 +1504,7 @@ describe("coffeeChatRequests.organizerChatBoard (T48)", () => {
       status: "pending",
     });
     expect(board.slots).toContain("13:45");
-    expect(board.assignableRooms).toEqual(["Rm 2241", "Rm 2242", "Rm 2243"]);
+    expect(board.assignableRooms).toEqual([...COFFEE_CHAT_ROOMS]);
   });
 });
 

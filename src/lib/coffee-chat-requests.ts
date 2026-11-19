@@ -44,14 +44,24 @@ export const COFFEE_CHAT_EXPIRY_MINUTES_BEFORE = 20;
 export const COFFEE_CHAT_DATE = "2026-11-21";
 const COFFEE_CHAT_UTC_OFFSET = "-05:00";
 
-/** People a coffee chat room fits at once (rooms 2241-2243). */
+/** People a coffee chat room fits at once. */
 export const COFFEE_CHAT_ROOM_PEOPLE = 6;
 
 /**
  * Saturday coffee chat rooms organizers give sponsors blocks in (same
  * labels as migration 0040). Docs/decisions.md 2026-11-15.
  */
-export const COFFEE_CHAT_ROOMS = ["Rm 2241", "Rm 2242", "Rm 2243"] as const;
+// Rm 1348-1358 added (Jazz, 2026-11-18): also Sat 10 AM-5 PM.
+export const COFFEE_CHAT_ROOMS = [
+  "Rm 2241",
+  "Rm 2242",
+  "Rm 2243",
+  "Rm 1348",
+  "Rm 1352",
+  "Rm 1354",
+  "Rm 1356",
+  "Rm 1358",
+] as const;
 export type CoffeeChatRoom = (typeof COFFEE_CHAT_ROOMS)[number];
 
 /** "rm 2241", " Rm  2241 " -> "Rm 2241"; null when not a coffee chat room. */
