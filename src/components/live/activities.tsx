@@ -529,7 +529,19 @@ const ActivityDialog = ({
     endsAt !== "" &&
     endsAt !== toInputValue(activity?.endsAt) &&
     endsAt <= toInputValue(new Date());
+  // An empty or non-whole-number points box would otherwise save as 0
+  const isPoints = (v: string) => /^\d+$/.test(v.trim()) && Number(v) <= 32767;
+  const pointsInvalid =
+    !isPoints(points) || (isWinnable && !isPoints(winPoints));
+  // Editing points also changes the balances of hackers who already scanned
+  const newWinPoints = isWinnable ? Number(winPoints) : null;
+  const attendanceChanged =
+    !isNew && Number(points) !== activity.points && activity.scans > 0;
+  const winChanged =
+    !isNew && newWinPoints !== activity.winPoints && activity.winScans > 0;
+  const affectsBalances = !pointsInvalid && (attendanceChanged || winChanged);
   const canSave =
+    !pointsInvalid &&
     !endInPast &&
     name.trim() !== "" &&
     startsAt !== "" &&
@@ -545,8 +557,8 @@ const ActivityDialog = ({
       startsAt: new Date(startsAt),
       endsAt: new Date(endsAt),
       room,
-      points: Number(points) || 0,
-      winPoints: isWinnable ? Number(winPoints) || 0 : null,
+      points: Number(points),
+      winPoints: newWinPoints,
       status,
     });
 
@@ -677,6 +689,17 @@ const ActivityDialog = ({
           {endInPast && (
             <p className="text-sm text-dashboard-text-warning">
               End time must be in the future.
+            </p>
+          )}
+          {pointsInvalid && (
+            <p className="text-sm text-dashboard-text-warning">
+              Points must be a whole number from 0 to 32767.
+            </p>
+          )}
+          {affectsBalances && (
+            <p className="text-sm text-dashboard-text-warning">
+              Hackers who already scanned this get the difference. Anyone who
+              already spent their points can go below 0.
             </p>
           )}
           {endBeforeStart && (
