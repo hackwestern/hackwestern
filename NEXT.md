@@ -20,6 +20,7 @@ Review `mocks/sponsor-chat-calendar-v1` with Jazz (spec: `docs/specs/sponsor-cha
 
 ## Open questions
 - Setup deadline: Fri Nov 20 "Friday night" (using 11:59 PM; confirm exact time).
+- Coffee chat planning: answer the 5 open questions in decisions 2026-11-19 "two pools" (rooms as columns, flexibility + busy strip, clash winner, Ivey default, Ivey reps and the booth), then mock sponsor-chat-calendar-v2.
 - Drive folders: Drive connector is on a view-only Google account; reconnect as jazz.gu2004 to move files.
 - Vercel env snapshot is from Nov 16; confirm production's RUN_OF_SHOW_SHEET before merging.
 - HW contact conflicts: Sponsor Status says Lucas (Manulife) and Brittney (Commure); Sponsor Day-Of says Caroline and Alice.

@@ -428,3 +428,111 @@
 **Why:** Organizers pick up the dashboard mid-event and need to learn each view in a minute, the same way sponsors learn the portal.
 
 **Alternatives:** one long dashboard tour that switches tabs (longer, and most organizers only use one or two tabs); a How to menu like the sponsor portal's (more to build for five tabs that each need one tour); a tour library (same reasons as the portal tour, 2026-11-18).
+
+## 2026-11-19: Coffee chat rooms are two pools: 3 near rooms and 5 in Ivey (Jazz)
+
+**Fact:** 8 breakout rooms at most at once. Rooms 2241, 2242 and 2243 are next to each other in the main building, near the Sponsor Bay. Rooms 1348, 1352, 1354, 1356 and 1358 are in the Ivey building, a 15-minute walk from the Sponsor Bay. Wording for sponsors and hackers: "Rooms 1348–1358 are in the Ivey building, a 15-minute walk from the Sponsor Bay." On an assigned chat: "Ivey, Rm 1352 · 15 min walk · leave the Sponsor Bay by 9:45". This settles the open question about whether 1348–1358 are in Ivey.
+
+**Planning direction (proposed, pending Jazz's answers):** near rooms for short chats, 1-on-1s, "Met at booth" picks and ad hoc bookings; Ivey for planned blocks of at least 1 hour, 30-minute and group chats. One sponsor stays in one building at a time; a rep needs at least 30 minutes between a near room and Ivey. Offers for Ivey chats expire about 35 minutes before the chat (20 + 15 walking) instead of 20. Calendar columns become rooms ("Room 1, Room 2"), with reps listed on each block. A "Your team" step comes before the calendar. Setup asks how flexible they are and whether Ivey is OK. A busy-times strip shows the near rooms separately.
+
+**Open:** Ivey only when near rooms are full, or the default for long planned blocks? Do Ivey reps still cover the booth? Who wins a clash (package, first to submit, or Jazz decides)?
+
+## 2026-11-19: Coffee chat rooms: organizers decide; live busy strip; availability shown (Jazz)
+
+**Decision:**
+- Sponsors never choose or request rooms; organizers decide placement and settle clashes by hand (no automatic tie-break). Planning columns are "Room 1, Room 2" only.
+- All 8 rooms (2241-2243 and Ivey 1348-1358) are open Sat 10 AM-5 PM; no special Ivey rules and no Ivey question for sponsors. Sponsors see the building and walk time once assigned.
+- Setup asks "If rooms are tight, can we shift your chats?" (Not flexible / Within 1 hour / Anytime 10 AM–5 PM).
+- A busy-times strip shows event-wide room use per 30 min, drafts included, updated live (target: within ~5 s) so sponsors planning together in the Friday workshop see each other's plans. Information only, never blocking.
+- The planning calendar shows the sponsor's own schedule for the day (their workshop and setup, meals, stage time, from the run of show) as read-only events behind the room columns, so they plan chats around what they're supposed to be doing. Chats may overlap them; an overlap with their own workshop gets an amber note, nothing is blocked.
+- Reps chatting in Ivey are not restricted from the booth; nothing enforced.
+- New step 1 "Your team" (reps with optional phone/email, sponsor's main phone required) before the calendar. Calendar columns are rooms; a block lists its reps, so a shared room shows once.
+
+**How (build):** autosave every block edit as a draft on the server; a small room-load query polled every ~5 s (react-query refetchInterval). Websockets rejected for now: more to build and run the day before the event for no visible gain at ~10 sponsors.
+
+**Supersedes:** the proposed clash rule, the Ivey-default question and the Ivey question in "two pools" (2026-11-19).
+
+## 2026-11-19: Help requests require a name and call-back phone (Jazz)
+
+**Decision:** "Send to the sponsor team" has two required fields, "Your name" and "Phone we can call back", prefilled from the sponsor's main contact (from setup) and editable. The Slack post carries the sponsor, name, phone, message and location, and @mentions their HW lead.
+
+**Why:** whoever is at the booth may not be the main contact; the team needs to know who to call and on which number.
+
+**Alternatives:** use only the main contact's number (wrong person when someone else is at the booth); optional fields (posts arrive with no way to call back).
+
+## 2026-11-19: Your team starts empty; coffee chat setup is mirrored to a "Coffee Chat Setup" sheet tab (Jazz)
+
+**Decision (Your team):** The "Your team" step starts empty with one blank rep row. No rep is prefilled and there's no "we filled this in" banner on that step: no source has rep names (the sheet's Coffee Chats tab only has rep counts). The calendar mocks' named reps are example data.
+
+**Decision (sheet):** Every save of a sponsor's coffee chat setup (draft or submit) rewrites the app-owned "Coffee Chat Setup" tab of the Spon Team sheet from the database, same pattern as the Sponsor Judging mirror (one writer, generation number, 5 s timeout, logs a failure once, never blocks the save, production or SHEET_WRITES=1 only). The tab was created 2026-11-19 with a note row and four stacked tables:
+- Sponsors: Sponsor, Status, Last saved, Main contact, Main phone, Can we shift chats?, Chatting hours (used / package), Chats, Hacker seats, Rooms at busiest time, Overlaps with their schedule, Notes
+- Team: Sponsor, Rep, Phone, Email
+- Chat blocks: Sponsor, Planning room, Reps, Start, End, Chat length, Hackers per chat, Chats, Hacker seats, Assigned room, Overlaps
+- Shortlist: Sponsor, Hacker, Hacker ID, Source (Shortlist / Met at booth)
+It's a grey tab (app writes; don't type in it), listed on "Start here". "Start here" rule updated: our team's phones live only in HW Contacts; sponsor phones come from their setup.
+
+**Why:** organizers live in the sheet and want to see what sponsors entered, live during the Friday workshop. The app stays the source of truth, so the sheet can't drift.
+
+**Alternatives:** sponsors fill a sheet directly (no validation, no calendar); two-way sync (rejected before for the same reasons as coffee chat bookings); one tab per table (four tabs to keep in order).
+
+## 2026-11-19: "Met at Hacker Fair" list and picking a rep on scan; hacker-v3 is the final sponsor flow (Jazz)
+
+**Decision:** Chats has two lists: "Shortlist" (picked before the event) and "Met at Hacker Fair" (hackers a sponsor met at their booth and wants to chat with). Met at Hacker Fair picks are offered seats first (same as the earlier "manual (booth) picks first" auto-fill rule). Scanning a hacker asks "Which rep wants to talk to them?" (from Your team), then shows the next open seat with that rep (time, rep, building) with "Offer this seat" or "Add as Met at Hacker Fair". Offers expire 20 minutes before the chat, 35 for Ivey rooms. The final sponsor portal prototype is `mocks/sponsor-portal-flow-hacker-v3` (hacker-v2's look plus every decision from 2026-11-19).
+
+**Why:** sponsors meet people at the booth who weren't on their shortlist; choosing the rep at scan time sends the hacker to the person who actually wants to talk to them.
+
+**Alternatives:** the names "Met at booth", "Walk-ins" ("walk-in" sounds uninvited), "Leads" (sales talk); offering the next seat with any rep (the wrong person may get the chat).
+
+## 2026-11-19: No sponsor chats within 15 minutes of their own workshop; organizer board v6 in v5's look (Jazz)
+
+**Decision:** Sponsors can't plan chats from 15 minutes before their own workshop setup starts to 15 minutes after their workshop ends (Sun Life: 1:45–3:45 PM). The calendar shows it as a blocked band and refuses blocks there. Lunch and dinner stay allowed, shown as dotted outlines. Replaces "chats may overlap their own workshop with an amber note". Coffee chats start at 10:00 AM (nothing before). Organizer board: autofill-v5's look, rooms first, sponsor info on the same page (no side drawer), Contact instead of Slack nudges; three layout versions v6a/b/c. Every mock change and its status is tracked in `hackwestern-sponsor-dash/mocks/CHANGES.md`.
+
+**Why:** reps need time to set up and get to their workshop; meals are flexible. Jazz kept losing track of which mock had which change.
+
+## 2026-11-19: Help = text your lead; off shift = leave a message on Slack for whoever's on call. Task pings stay on Slack (Jazz)
+
+**Decision (help):** The sponsor Help page checks their HW lead against the Spon Team schedule (availability and on-call shifts).
+- Lead on shift: main action "Text <lead> (your contact)" opens Messages on the sponsor's phone with a drafted text ("Hi Noah, it's Sun Life at booth 5. …"), plus Call. A small "Send to the whole sponsor team" link posts to Slack if the lead doesn't reply.
+- Lead off shift: the main action becomes "Leave a message": "<Lead> is off until <time>. Leave a message and whoever's on call will call you back." The required name + call-back phone + message post to the sponsor Slack channel, @mentioning the person on call at that time (from the on-call shifts).
+- One line for urgent in-person help: "Help desk: by the stairs outside the Grand Hall".
+Supersedes "lead's phone + Send to the sponsor team" as equal options (2026-11-19).
+
+**Decision (task pings):** automatic task reminders stay Slack DMs to owners (team channel when no clear owner). Overdue tasks on the Pings screen get a "Text" button that opens Messages on the organizer's own phone with a drafted reminder.
+
+**Why:** texting the lead is faster and doesn't depend on anyone watching Slack; off-shift leads shouldn't be woken, and sponsors only ever get their own lead's number. Apps can't send iMessages, and automatic SMS (e.g. Twilio) needs a paid number and business sender registration that can take days, so automatic pings stay on Slack.
+
+**Needs:** leads agree to their number being shown to their sponsors; the team turns on Slack notifications for DMs and the sponsor channel for the weekend.
+
+## 2026-11-19: Sponsor Judging sheet tab is wide, with 1st–5th place columns (Jazz)
+
+**Decision:** The app-owned "Sponsor Judging" tab (created in the sheet 2026-11-19, grey) has one row per sponsor: Sponsor, Prize track, Judging room, Round 1 status, Shortlist sent, Shortlist (team IDs), Round 2 status, Top 5 sent, 1st place, 2nd place, 3rd place, 4th place, 5th place, Notes. Place cells read "<team ID> · <team name>". A Presentations table sits below (Sponsor, Team ID, Team, Members, Time, Room, Notified). `sponsor-judging-sheet-mirror.ts` must be changed to write this layout (it currently writes three stacked tables with a long-format Final results). The existing "Judging" tab is unchanged (fixed layout; Luka's rotation reads it).
+
+**Why:** organizers read one row per sponsor to see each sponsor's ranked picks and team IDs at a glance.
+
+**Alternatives:** add 1st–5th columns to the "Judging" tab (rejected: fixed layout read by the app and the judging rotation); keep the long Rank table (harder to scan).
+
+## 2026-11-19: Digital sponsors: grouped on Sponsor Day-Of, no portal link, top 5 entered by the spon team (Jazz)
+
+**Decision:**
+- Sponsor Day-Of has an "In person / Digital" column (column B, dropdown), set from the old "Sponsor Booth" checkbox: Autodesk, Celsius, PCBWay, Shopify and uBit are digital. In-person sponsors sort first; digital rows are a greyed, collapsible group at the bottom. The day-of copy columns (stage, workshop, coffee chats, judging, To do / mismatches) were removed (Jazz); their contents are in version history and the 2026-11-19 xlsx backup.
+- Digital sponsors aren't on site and don't get a sponsor portal link. Build: `getSponsors`/`syncSponsors` skip rows marked Digital for private links and the on-site lists.
+- Digital sponsors with a prize track (today: PCBWay) give their top 5 to the spon team, who enter it on the organizer dashboard's Sponsor judging page ("Digital sponsors" section: pick 1st–5th from the track's teams). That fills the same 1st–5th place cells on the "Sponsor Judging" tab. RUN OF SHOW has the task at Sun 9:00 AM (owner blank: no digital sponsor has a lead).
+- The "Sponsor Judging" tab now lists all 15 sponsors with In person / Digital, Prize track (Yes/No) and judging room (blank + yellow where unknown).
+
+## 2026-11-19: Coffee Chat Room Grid is an app-written, locked view of all 8 rooms; Spon Team tab deleted (Jazz)
+
+**Decision (room grid):** "Coffee Chat Room Grid" was rebuilt: note rows, "Near the Sponsor Bay" (Rm 2241–2243, columns B–D, unchanged positions) and "Ivey building · 15-minute walk" (Rm 1348, 1352, 1354, 1356, 1358, columns E–I), header row 4, 15-minute rows 10:00 AM–4:45 PM in column A. The app writes it from the coffee chat board: one merged block per booking, "sponsor · reps · format · chats", no hacker names; organizer bookings grey. The tab is protected: only the app's service account and jazz.gu2004 can edit (the owner always can). Build: replace the old code that writes sponsor names into cells (`sponsor-coffee-chats.ts`) with this one-way view. The old Manulife placeholders (2241–2242, 10:00–12:30) were removed; Manulife has no coffee chats in its contract.
+
+**Decision (Spon Team):** deleted. Everything on it was copied from other tabs (phones from HW Contacts, sponsors led from Sponsor Day-Of, availability and on-call from RUN OF SHOW). The two "Saturday breaks" notes moved to RUN OF SHOW N6:N7. Recoverable from version history.
+
+## 2026-11-19: Teams show as team ID + Devpost link; digital top 5 entered by Devpost link; judging sheet lists prize-track sponsors only (Jazz)
+
+**Decision:** Everywhere a team appears in judging (sheet and app), show both its team ID and its Devpost link ("a1c3e5f70912 · devpost.com/software/…"). The spon team enters a digital sponsor's 1st–5th place by pasting Devpost links (a team ID also works); the app matches each link to the team via `teams.devpostUrl`, shows the match (name, ID, link) for confirmation, and refuses a link that matches no submitted team in that sponsor's track. The "Sponsor Judging" tab lists only sponsors with a prize track (Canada Life, QNX, Scotiabank, Sun Life, TinyFish, PCBWay); the Prize track column and the no-track rows were removed.
+
+**Why:** the spon team gets Devpost links from digital sponsors, not internal team IDs; organizers need both to award prizes and cross-check.
+
+## 2026-11-19: HW Contacts trimmed to the people the app uses (Jazz)
+
+**Decision:** HW Contacts keeps only the spon team (Noah Medland, Caroline Ge, Daniel Wang, Alice Nguyen, Aniya Liu), the HW contacts still listed on Sponsor Status (Lucas Vanderwielen, Brittney Chong) and Jasmine Gu. The other 20 rows were deleted (recoverable from version history). The tab stays because Sponsor Day-Of's Lead phone, the sponsor portal's lead phone, "Text your lead" and the HW Contact dropdown read it; Aniya leads no sponsor but has an on-call shift, so her number only lives here.
+
+**Alternatives:** delete the tab (breaks every lead phone lookup); type phones into Sponsor Day-Of (duplicates each lead's number per sponsor and loses Aniya).

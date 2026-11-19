@@ -56,7 +56,7 @@ Everything a sponsor can do by dragging, they can also do from the block panel (
 
 **Block panel:** reps (one or more named reps; several = they sit together and run the same chats), chat length 15/30 toggle, hackers per chat (1 = 1-on-1, or a group size up to the room limit), start and end dropdowns in 15-minute steps, a live line "4 chats · 4 hackers", Delete.
 
-**Adding a rep:** "+ Add rep" asks for a name (required), phone (optional, organizers use it to text or call the rep on the day) and email (optional). The new column appears at the end, empty.
+**Your team (step 1) starts empty** with one blank rep row; nothing is prefilled. **Adding a rep:** "+ Add rep" asks for a name (required), phone (optional, organizers use it to text or call the rep on the day) and email (optional). The new column appears at the end, empty.
 
 ## Rules
 Time

@@ -79,7 +79,9 @@ export async function getRunOfShowSheetsClient() {
 }
 
 export const RUN_OF_SHOW_TAB = "RUN OF SHOW";
-export const COFFEE_CHATS_TAB = "Coffee Chats";
+// "Coffee Chats" was merged into "Coffee Chat Setup" on 2026-11-19 (same
+// header names in row 1, plus Status and sponsor contact columns).
+export const COFFEE_CHATS_TAB = "Coffee Chat Setup";
 export const CEREMONIES_TAB = "Opening + Closing Ceremonies";
 export const WORKSHOPS_TAB = "Workshops";
 
@@ -120,7 +122,7 @@ function mergesOf(sheet: SheetData | undefined): SheetMerge[] {
 
 /**
  * Read every tab (cells + merges) in one request and parse them. Uncached.
- * RUN OF SHOW and Coffee Chats are required; the ceremonies and workshops
+ * RUN OF SHOW and Coffee Chat Setup are required; the ceremonies and workshops
  * tabs are optional (missing or unreadable -> empty lists).
  */
 const REQUIRED_RANGES = [
