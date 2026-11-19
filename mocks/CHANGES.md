@@ -102,6 +102,15 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 | 9 | 8 rooms: 2241–2243 near, Ivey 1348–1358 (15 min walk); organizers decide rooms and clashes | Done |
 | 10 | "Couldn't be placed" as a clickable warning | Done |
 
+## Organizer "My sponsors": `organizer-my-sponsors-v1`
+| # | Change | Status |
+|---|---|---|
+| 1 | Each HW lead logs in and lands on "My sponsors" (their sponsors only); "All sponsors" = restyle-v2 tables as a second tab | Building |
+| 2 | One card per sponsor: logo, booth, crowned primary contact with Text/Call (fixed position), "Right now" checklist with one-tap actions, "Your jobs for them" from the run of show, coffee chat and judging status lines, needs attention | Building |
+| 3 | "Your next tasks" at the top (overdue first) | Building |
+| 4 | On call = covering all sponsors (banner); lead with no sponsors = empty state | Building |
+| 5 | Build need: HW Contacts gets an email column to match logins to leads | Not yet |
+
 ## Organizer coffee board v8: `organizer-coffee-v8` (Jazz likes v7)
 | # | Change | Status |
 |---|---|---|
@@ -187,6 +196,7 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 - `organizer-coffee-autofill-v4`, `-v5`, `organizer-coffee-cards-grid-v1`, `-v2`: organizer board experiments; v5's look won; cards-grid-v2 has the Contact panel to reuse
 
 ## Not in any mock yet
+- Sponsor v5: block Sun Life's 1–2 session (overlaps the 1:45 travel buffer before workshop setup) so the sponsor page matches the organizer rule (pending Jazz's OK)
 - Judging (sponsor + organizer): show every team as team ID + Devpost link; digital top 5 entered by pasting Devpost links (app matches to team, shows name + ID to confirm) (decision 2026-11-19). Sponsor judging redesigns A/B/C show IDs only.
 - Organizer Sponsor judging: a "Digital sponsors" section where the spon team enters a digital sponsor's 1st–5th place (PCBWay today), filling the Sponsor Judging tab (decision 2026-11-19). Organizer redesigns A/B/C show judging as WIP, so this goes into the judging build.
 - Organizer Sponsors: digital sponsors grouped and greyed, no portal link (sheet already done)
