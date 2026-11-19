@@ -208,6 +208,9 @@ export const coffeeSessionsCopy = {
     unknownPlacement: "That chat is gone. The board changed.",
     unknownBooking: "That booking is gone. The board changed.",
     badCell: "Unknown room or session.",
+    boardChanged: "Someone else just changed the board. Refresh and try again.",
+    badReference: "That sponsor or rep is gone. Refresh and try again.",
+    unknownSponsor: "That sponsor isn't registered. Refresh and try again.",
     workshopsUnknown,
   },
 

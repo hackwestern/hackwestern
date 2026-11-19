@@ -5,7 +5,7 @@
  * the guards every write shares (room free, rep free, workshop window).
  */
 import { TRPCError } from "@trpc/server";
-import { asc } from "drizzle-orm";
+import { asc, sql } from "drizzle-orm";
 
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import {
@@ -330,6 +330,61 @@ export function sessionBoardOf(state: BoardState): SessionBoard {
     draftCount: state.placements.filter((p) => p.status === "draft").length,
     sentAt: sent.length ? new Date(Math.max(...sent.map((d) => d.getTime()))) : null,
   };
+}
+
+/**
+ * One Postgres advisory lock for the whole coffee chat board. Chats and room
+ * bookings live in two tables with no shared constraint, so under READ
+ * COMMITTED two writes could fill one cell. Every board write takes this
+ * lock first, then reads and checks the board inside the same transaction.
+ */
+export const BOARD_LOCK_KEY = "4812026112"; // any constant bigint, unique in this app
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Run one board write: transaction, board lock, fresh board state, then
+ * `fn`. Database constraint errors come back as clear TRPCErrors.
+ */
+export async function boardWrite<T>(
+  fn: (tx: Tx, state: BoardState) => Promise<T>,
+): Promise<T> {
+  try {
+    return await db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(${sql.raw(BOARD_LOCK_KEY)})`);
+      return fn(tx, await loadBoardState(tx));
+    });
+  } catch (error) {
+    throw boardDbError(error);
+  }
+}
+
+/** The Postgres error code on an error or anywhere down its cause chain. */
+function pgCode(error: unknown): string | undefined {
+  let e: unknown = error;
+  for (let depth = 0; e && typeof e === "object" && depth < 5; depth++) {
+    const code = (e as { code?: unknown }).code;
+    if (code === "23505" || code === "23503") return code;
+    e = (e as { cause?: unknown }).cause;
+  }
+  return undefined;
+}
+
+/**
+ * Unique violation (23505: a cell or rep-session taken meanwhile) ->
+ * CONFLICT; foreign key violation (23503: a rep or sponsor gone) ->
+ * BAD_REQUEST. Anything else is returned as is.
+ */
+export function boardDbError(error: unknown): unknown {
+  if (error instanceof TRPCError) return error;
+  const code = pgCode(error);
+  if (code === "23505") {
+    return new TRPCError({ code: "CONFLICT", message: errors.boardChanged, cause: error });
+  }
+  if (code === "23503") {
+    return new TRPCError({ code: "BAD_REQUEST", message: errors.badReference, cause: error });
+  }
+  return error;
 }
 
 /**

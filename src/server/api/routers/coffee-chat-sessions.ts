@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
@@ -21,16 +21,17 @@ import {
   assertCellFree,
   assertRepCanChat,
   assertWorkshopsKnown,
+  boardWrite,
   loadBoardState,
   pinsOf,
   sessionBoardOf,
   type SessionBoard,
 } from "~/server/api/utils/coffee-chat-sessions-board";
-import { db } from "~/server/db";
 import {
   coffeeChatPlacements,
   coffeeChatReps,
   coffeeChatRoomBookings,
+  sponsorJudgingSponsors,
 } from "~/server/db/schema";
 
 const errors = coffeeSessionsCopy.errors;
@@ -42,7 +43,8 @@ const sessionId = z.enum(COFFEE_SESSION_IDS);
  * The organizer coffee chat board, session model (docs/specs/coffee-chat-
  * sessions.md; UI: Coffee chats tab of /internal/sponsors). Organizers only.
  * Auto-schedule writes drafts nobody else sees; Send marks them sent and
- * mirrors the Room Grid tab (when sheet writes are on).
+ * mirrors the Room Grid tab (when sheet writes are on). Every write goes
+ * through boardWrite(): one board lock, then checks on a fresh read.
  */
 export const coffeeChatSessionsRouter = createTRPCRouter({
   getBoard: protectedOrganizerProcedure.query(
@@ -51,8 +53,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
 
   /** Run the scheduler: keeps pinned, sent and booked cells; replaces drafts. */
   autoSchedule: protectedOrganizerProcedure.mutation(async () => {
-    return db.transaction(async (tx) => {
-      const state = await loadBoardState(tx);
+    return boardWrite(async (tx, state) => {
       assertWorkshopsKnown(state);
       const result = schedule(state.sched, COFFEE_ROOMS, COFFEE_SESSIONS, pinsOf(state));
       const kept = new Set(
@@ -76,8 +77,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
   applyFix: protectedOrganizerProcedure
     .input(z.object({ fixId: z.string().min(1).max(200) }))
     .mutation(async ({ input }) => {
-      return db.transaction(async (tx) => {
-        const state = await loadBoardState(tx);
+      return boardWrite(async (tx, state) => {
         assertWorkshopsKnown(state);
         const fix = findFixes(state.sched, COFFEE_ROOMS, COFFEE_SESSIONS, state.board).find(
           (f) => f.id === input.fixId,
@@ -120,8 +120,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
   movePlacement: protectedOrganizerProcedure
     .input(z.object({ placementId: z.string().uuid(), room, sessionId }))
     .mutation(async ({ input }) => {
-      return db.transaction(async (tx) => {
-        const state = await loadBoardState(tx);
+      return boardWrite(async (tx, state) => {
         const p = state.placements.find((x) => x.id === input.placementId);
         if (!p) throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownPlacement });
         assertRepCanChat(state, p.repId, input.sessionId, p.id);
@@ -138,12 +137,14 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
   removePlacement: protectedOrganizerProcedure
     .input(z.object({ placementId: z.string().uuid() }))
     .mutation(async ({ input }) => {
-      const gone = await db
-        .delete(coffeeChatPlacements)
-        .where(eq(coffeeChatPlacements.id, input.placementId))
-        .returning({ id: coffeeChatPlacements.id });
-      if (!gone.length) throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownPlacement });
-      return { ok: true };
+      return boardWrite(async (tx) => {
+        const gone = await tx
+          .delete(coffeeChatPlacements)
+          .where(eq(coffeeChatPlacements.id, input.placementId))
+          .returning({ id: coffeeChatPlacements.id });
+        if (!gone.length) throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownPlacement });
+        return { ok: true };
+      });
     }),
 
   /** Ad hoc room booking on an empty cell (a sponsor, mentors, organizers). */
@@ -158,10 +159,16 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      return db.transaction(async (tx) => {
-        const state = await loadBoardState(tx);
+      return boardWrite(async (tx, state) => {
         assertWorkshopsKnown(state);
         assertCellFree(state, input.room, input.sessionId);
+        if (input.forSponsorId) {
+          const [sponsor] = await tx
+            .select({ id: sponsorJudgingSponsors.id })
+            .from(sponsorJudgingSponsors)
+            .where(eq(sponsorJudgingSponsors.id, input.forSponsorId));
+          if (!sponsor) throw new TRPCError({ code: "BAD_REQUEST", message: errors.unknownSponsor });
+        }
         const [row] = await tx
           .insert(coffeeChatRoomBookings)
           .values({
@@ -180,8 +187,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
   moveBooking: protectedOrganizerProcedure
     .input(z.object({ bookingId: z.string().uuid(), room, sessionId }))
     .mutation(async ({ input }) => {
-      return db.transaction(async (tx) => {
-        const state = await loadBoardState(tx);
+      return boardWrite(async (tx, state) => {
         assertWorkshopsKnown(state);
         if (!state.bookings.some((b) => b.id === input.bookingId)) {
           throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownBooking });
@@ -198,12 +204,14 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
   removeBooking: protectedOrganizerProcedure
     .input(z.object({ bookingId: z.string().uuid() }))
     .mutation(async ({ input }) => {
-      const gone = await db
-        .delete(coffeeChatRoomBookings)
-        .where(eq(coffeeChatRoomBookings.id, input.bookingId))
-        .returning({ id: coffeeChatRoomBookings.id });
-      if (!gone.length) throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownBooking });
-      return { ok: true };
+      return boardWrite(async (tx) => {
+        const gone = await tx
+          .delete(coffeeChatRoomBookings)
+          .where(eq(coffeeChatRoomBookings.id, input.bookingId))
+          .returning({ id: coffeeChatRoomBookings.id });
+        if (!gone.length) throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownBooking });
+        return { ok: true };
+      });
     }),
 
   /**
@@ -211,13 +219,15 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
    * is mirrored (only when sheetWritesEnabled(); locally nothing is written).
    */
   send: protectedOrganizerProcedure.mutation(async () => {
-    assertWorkshopsKnown(await loadBoardState());
     const now = new Date();
-    const sent = await db
-      .update(coffeeChatPlacements)
-      .set({ status: "sent", sentAt: now })
-      .where(and(eq(coffeeChatPlacements.status, "draft")))
-      .returning({ id: coffeeChatPlacements.id });
+    const sent = await boardWrite(async (tx, state) => {
+      assertWorkshopsKnown(state);
+      return tx
+        .update(coffeeChatPlacements)
+        .set({ status: "sent", sentAt: now })
+        .where(eq(coffeeChatPlacements.status, "draft"))
+        .returning({ id: coffeeChatPlacements.id });
+    });
     // TODO(coffee chat invites): send each sponsor's primary contact their
     // confirmed schedule and invite hackers for each sent chat (scanned →
     // shortlist → interested; 20-min expiry, 35 for Ivey). Not built yet:

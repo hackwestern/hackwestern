@@ -154,6 +154,16 @@ describe("guards", () => {
     expect(await code(organizer.coffeeChatSessions.bookRoom({ room: "1358", sessionId: "10", label: "Mentors" }))).toBe("CONFLICT");
     const { id } = await organizer.coffeeChatSessions.bookRoom({ room: "2241", sessionId: "16", label: "Mentors", note: "Resumes" });
     expect(await code(organizer.coffeeChatSessions.bookRoom({ room: "2241", sessionId: "16", label: "Again" }))).toBe("CONFLICT");
+    // Chat into a booked cell, booking onto a chat: both refused.
+    const [wes] = await placementOf("Wes");
+    const used = (await db.select().from(coffeeChatPlacements)).filter((p) => p.sessionId === "10").map((p) => p.room);
+    const emptyAt10 = (["2241", "2242", "2243", "1348", "1352", "1354", "1356"] as const).find((r) => !used.includes(r))!;
+    const at10 = await organizer.coffeeChatSessions.bookRoom({ room: emptyAt10, sessionId: "10", label: "Organizers" });
+    expect(await code(organizer.coffeeChatSessions.movePlacement({ placementId: wes!.id, room: emptyAt10, sessionId: "10" }))).toBe("CONFLICT");
+    await organizer.coffeeChatSessions.removeBooking({ bookingId: at10.id });
+    expect(await code(organizer.coffeeChatSessions.moveBooking({ bookingId: id, room: wes!.room as "2241", sessionId: wes!.sessionId as "10" }))).toBe("CONFLICT");
+    // forSponsorId must be a registered sponsor.
+    expect(await code(organizer.coffeeChatSessions.bookRoom({ room: "2242", sessionId: "16", label: "Ghost", forSponsorId: "00000000-0000-4000-8000-000000000000" }))).toBe("BAD_REQUEST");
     await organizer.coffeeChatSessions.removeBooking({ bookingId: id });
     expect(await db.select().from(coffeeChatRoomBookings)).toHaveLength(0);
 
