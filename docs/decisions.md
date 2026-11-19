@@ -488,3 +488,17 @@ It's a grey tab (app writes; don't type in it), listed on "Start here". "Start h
 **Decision:** Sponsors can't plan chats from 15 minutes before their own workshop setup starts to 15 minutes after their workshop ends (Sun Life: 1:45–3:45 PM). The calendar shows it as a blocked band and refuses blocks there. Lunch and dinner stay allowed, shown as dotted outlines. Replaces "chats may overlap their own workshop with an amber note". Coffee chats start at 10:00 AM (nothing before). Organizer board: autofill-v5's look, rooms first, sponsor info on the same page (no side drawer), Contact instead of Slack nudges; three layout versions v6a/b/c. Every mock change and its status is tracked in `hackwestern-sponsor-dash/mocks/CHANGES.md`.
 
 **Why:** reps need time to set up and get to their workshop; meals are flexible. Jazz kept losing track of which mock had which change.
+
+## 2026-11-19: Help = text your lead; off shift = leave a message on Slack for whoever's on call. Task pings stay on Slack (Jazz)
+
+**Decision (help):** The sponsor Help page checks their HW lead against the Spon Team schedule (availability and on-call shifts).
+- Lead on shift: main action "Text <lead> (your contact)" opens Messages on the sponsor's phone with a drafted text ("Hi Noah, it's Sun Life at booth 5. …"), plus Call. A small "Send to the whole sponsor team" link posts to Slack if the lead doesn't reply.
+- Lead off shift: the main action becomes "Leave a message": "<Lead> is off until <time>. Leave a message and whoever's on call will call you back." The required name + call-back phone + message post to the sponsor Slack channel, @mentioning the person on call at that time (from the on-call shifts).
+- One line for urgent in-person help: "Help desk: by the stairs outside the Grand Hall".
+Supersedes "lead's phone + Send to the sponsor team" as equal options (2026-11-19).
+
+**Decision (task pings):** automatic task reminders stay Slack DMs to owners (team channel when no clear owner). Overdue tasks on the Pings screen get a "Text" button that opens Messages on the organizer's own phone with a drafted reminder.
+
+**Why:** texting the lead is faster and doesn't depend on anyone watching Slack; off-shift leads shouldn't be woken, and sponsors only ever get their own lead's number. Apps can't send iMessages, and automatic SMS (e.g. Twilio) needs a paid number and business sender registration that can take days, so automatic pings stay on Slack.
+
+**Needs:** leads agree to their number being shown to their sponsors; the team turns on Slack notifications for DMs and the sponsor channel for the weekend.
