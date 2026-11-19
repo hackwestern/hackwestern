@@ -20,6 +20,14 @@
       ]
     },
     {
+      "auth": "none-detected",
+      "dynamic": false,
+      "file": "src/pages/clock.tsx",
+      "hasGetServerSideProps": false,
+      "route": "/clock",
+      "serverGuards": []
+    },
+    {
       "auth": "session",
       "dynamic": false,
       "file": "src/pages/dashboard-design-system.tsx",
@@ -99,6 +107,16 @@
     {
       "auth": "organizer",
       "dynamic": false,
+      "file": "src/pages/internal/clock.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/internal/clock",
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
+    },
+    {
+      "auth": "organizer",
+      "dynamic": false,
       "file": "src/pages/internal/dashboard.tsx",
       "hasGetServerSideProps": true,
       "route": "/internal/dashboard",
@@ -107,12 +125,14 @@
       ]
     },
     {
-      "auth": "none-detected",
+      "auth": "organizer",
       "dynamic": false,
       "file": "src/pages/internal/index.tsx",
       "hasGetServerSideProps": true,
       "route": "/internal",
-      "serverGuards": []
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
     },
     {
       "auth": "organizer",
@@ -145,6 +165,26 @@
     {
       "auth": "organizer",
       "dynamic": false,
+      "file": "src/pages/internal/roster.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/internal/roster",
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
+    },
+    {
+      "auth": "organizer",
+      "dynamic": false,
+      "file": "src/pages/internal/rubric.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/internal/rubric",
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
+    },
+    {
+      "auth": "organizer",
+      "dynamic": false,
       "file": "src/pages/internal/sponsors.tsx",
       "hasGetServerSideProps": true,
       "route": "/internal/sponsors",
@@ -153,14 +193,22 @@
       ]
     },
     {
-      "auth": "session",
+      "auth": "organizer",
+      "dynamic": false,
+      "file": "src/pages/internal/team-results.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/internal/team-results",
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
+    },
+    {
+      "auth": "none-detected",
       "dynamic": false,
       "file": "src/pages/judge.tsx",
       "hasGetServerSideProps": true,
       "route": "/judge",
-      "serverGuards": [
-        "authRedirectHacker"
-      ]
+      "serverGuards": []
     },
     {
       "auth": "session",
@@ -189,6 +237,16 @@
       "hasGetServerSideProps": false,
       "route": "/logout",
       "serverGuards": []
+    },
+    {
+      "auth": "organizer",
+      "dynamic": false,
+      "file": "src/pages/map.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/map",
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
     },
     {
       "auth": "session",
@@ -245,54 +303,12 @@
       "serverGuards": []
     },
     {
-      "auth": "session",
-      "dynamic": false,
-      "file": "src/pages/scan/already-scanned.tsx",
-      "hasGetServerSideProps": true,
-      "route": "/scan/already-scanned",
-      "serverGuards": [
-        "disabledRedirect"
-      ]
-    },
-    {
-      "auth": "session",
-      "dynamic": false,
-      "file": "src/pages/scan/scan.tsx",
-      "hasGetServerSideProps": true,
-      "route": "/scan/scan",
-      "serverGuards": [
-        "disabledRedirect"
-      ]
-    },
-    {
-      "auth": "session",
-      "dynamic": false,
-      "file": "src/pages/scan/scavenger.tsx",
-      "hasGetServerSideProps": true,
-      "route": "/scan/scavenger",
-      "serverGuards": [
-        "disabledRedirect"
-      ]
-    },
-    {
-      "auth": "session",
-      "dynamic": false,
-      "file": "src/pages/scan/success.tsx",
-      "hasGetServerSideProps": true,
-      "route": "/scan/success",
-      "serverGuards": [
-        "disabledRedirect"
-      ]
-    },
-    {
-      "auth": "session",
+      "auth": "none-detected",
       "dynamic": false,
       "file": "src/pages/scavenger.tsx",
       "hasGetServerSideProps": true,
       "route": "/scavenger",
-      "serverGuards": [
-        "disabledRedirect"
-      ]
+      "serverGuards": []
     },
     {
       "auth": "none-detected",
@@ -5103,7 +5119,7 @@
                   },
                   "triggeredBy": {
                     "enum": [
-                      "queue_drain",
+                      "judging_complete",
                       "manual"
                     ]
                   }
@@ -6199,7 +6215,7 @@
           },
           "triggeredBy": {
             "enum": [
-              "queue_drain",
+              "judging_complete",
               "manual"
             ]
           }
@@ -6536,6 +6552,350 @@
       "type": "mutation"
     },
     {
+      "auth": "public",
+      "errors": [
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/clock.get?input=<superjson>",
+      "input": null,
+      "output": {
+        "properties": {
+          "durationMs": {
+            "type": "number"
+          },
+          "endsAtMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "pausedRemainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "serverNowMs": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "endsAtMs",
+          "pausedRemainingMs",
+          "durationMs",
+          "serverNowMs"
+        ],
+        "type": "object"
+      },
+      "path": "clock.get",
+      "source": "src/server/api/routers/clock.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/clock.pause",
+      "input": null,
+      "output": {
+        "properties": {
+          "durationMs": {
+            "type": "number"
+          },
+          "endsAtMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "pausedRemainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "serverNowMs": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "endsAtMs",
+          "pausedRemainingMs",
+          "durationMs",
+          "serverNowMs"
+        ],
+        "type": "object"
+      },
+      "path": "clock.pause",
+      "source": "src/server/api/routers/clock.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/clock.reset",
+      "input": null,
+      "output": {
+        "properties": {
+          "durationMs": {
+            "type": "number"
+          },
+          "endsAtMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "pausedRemainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "serverNowMs": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "endsAtMs",
+          "pausedRemainingMs",
+          "durationMs",
+          "serverNowMs"
+        ],
+        "type": "object"
+      },
+      "path": "clock.reset",
+      "source": "src/server/api/routers/clock.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/clock.resume",
+      "input": null,
+      "output": {
+        "properties": {
+          "durationMs": {
+            "type": "number"
+          },
+          "endsAtMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "pausedRemainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "serverNowMs": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "endsAtMs",
+          "pausedRemainingMs",
+          "durationMs",
+          "serverNowMs"
+        ],
+        "type": "object"
+      },
+      "path": "clock.resume",
+      "source": "src/server/api/routers/clock.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/clock.start",
+      "input": null,
+      "output": {
+        "properties": {
+          "durationMs": {
+            "type": "number"
+          },
+          "endsAtMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "pausedRemainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "serverNowMs": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused"
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "endsAtMs",
+          "pausedRemainingMs",
+          "durationMs",
+          "serverNowMs"
+        ],
+        "type": "object"
+      },
+      "path": "clock.start",
+      "source": "src/server/api/routers/clock.ts",
+      "type": "mutation"
+    },
+    {
       "auth": "organizer",
       "errors": [
         {
@@ -6602,6 +6962,11 @@
       },
       "output": {
         "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
           "harshness": {
             "anyOf": [
               {
@@ -6662,6 +7027,7 @@
         "required": [
           "name",
           "type",
+          "createdAt",
           "id",
           "track",
           "marksCount",
@@ -6672,6 +7038,134 @@
         "type": "object"
       },
       "path": "judging.admin.addJudgeByEmail",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.addJudgeToTable",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "judgeId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "tableId": {
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "judgeId",
+          "tableId"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "assignedAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "assignedBy": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "id": {
+            "type": "number"
+          },
+          "judgeId": {
+            "type": "string"
+          },
+          "judgingTableId": {
+            "type": "number"
+          },
+          "position": {
+            "type": "number"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "assigned",
+              "in_progress",
+              "done",
+              "team_absent",
+              "cancelled"
+            ]
+          },
+          "tableNumber": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "tableNumber",
+          "status",
+          "id",
+          "judgingTableId",
+          "judgeId",
+          "position",
+          "assignedBy",
+          "assignedAt",
+          "startedAt",
+          "completedAt"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.addJudgeToTable",
       "source": "src/server/api/routers/judging.ts",
       "type": "mutation"
     },
@@ -6761,6 +7255,11 @@
       "output": {
         "items": {
           "properties": {
+            "createdAt": {
+              "format": "date-time",
+              "type": "string",
+              "x-superjson": "Date"
+            },
             "harshness": {
               "anyOf": [
                 {
@@ -6810,6 +7309,7 @@
           },
           "required": [
             "type",
+            "createdAt",
             "id",
             "track",
             "marksCount",
@@ -6840,6 +7340,75 @@
           "source": "auth middleware"
         },
         {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.autoAssign",
+      "input": null,
+      "output": {
+        "properties": {
+          "floaters": {
+            "type": "number"
+          },
+          "judges": {
+            "type": "number"
+          },
+          "judgesPerTable": {
+            "type": "number"
+          },
+          "stops": {
+            "type": "number"
+          },
+          "tables": {
+            "type": "number"
+          },
+          "tablesPerJudge": {
+            "properties": {
+              "max": {
+                "type": "number"
+              },
+              "min": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "tables",
+          "judges",
+          "judgesPerTable",
+          "stops",
+          "tablesPerJudge",
+          "floaters"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.autoAssign",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
           "code": "BAD_REQUEST",
           "httpStatus": 400,
           "source": "input validation (data.zodError populated)"
@@ -6850,29 +7419,97 @@
           "source": "unhandled"
         }
       ],
-      "http": "POST /api/trpc/judging.admin.assignJudgeForTeam",
+      "http": "POST /api/trpc/judging.admin.cancelStop",
       "input": {
         "additionalProperties": false,
         "properties": {
-          "judgeId": {
-            "minLength": 1,
-            "type": "string"
-          },
-          "teamId": {
-            "minLength": 1,
-            "type": "string"
+          "assignmentId": {
+            "exclusiveMinimum": 0,
+            "type": "integer"
           }
         },
         "required": [
-          "judgeId",
-          "teamId"
+          "assignmentId"
         ],
         "type": "object"
       },
       "output": {
-        "type": "undefined"
+        "properties": {
+          "assignedAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "assignedBy": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "id": {
+            "type": "number"
+          },
+          "judgeId": {
+            "type": "string"
+          },
+          "judgingTableId": {
+            "type": "number"
+          },
+          "position": {
+            "type": "number"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "assigned",
+              "in_progress",
+              "done",
+              "team_absent",
+              "cancelled"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "judgeId",
+          "judgingTableId",
+          "position",
+          "status",
+          "assignedBy",
+          "assignedAt",
+          "startedAt",
+          "completedAt"
+        ],
+        "type": "object"
       },
-      "path": "judging.admin.assignJudgeForTeam",
+      "path": "judging.admin.cancelStop",
       "source": "src/server/api/routers/judging.ts",
       "type": "mutation"
     },
@@ -6916,7 +7553,15 @@
         "type": "object"
       },
       "output": {
-        "type": "undefined"
+        "properties": {
+          "reopened": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "reopened"
+        ],
+        "type": "object"
       },
       "path": "judging.admin.deleteTeamMark",
       "source": "src/server/api/routers/judging.ts",
@@ -6947,6 +7592,21 @@
       "output": {
         "items": {
           "properties": {
+            "createdAt": {
+              "format": "date-time",
+              "type": "string",
+              "x-superjson": "Date"
+            },
+            "currentTableNumber": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
             "currentTeamId": {
               "anyOf": [
                 {
@@ -7006,11 +7666,13 @@
           },
           "required": [
             "currentTeamId",
+            "currentTableNumber",
             "id",
             "type",
             "track",
             "marksCount",
             "marksSum",
+            "createdAt",
             "name",
             "email"
           ],
@@ -7094,112 +7756,319 @@
           "source": "unhandled"
         }
       ],
-      "http": "GET /api/trpc/judging.admin.getQueue?input=<superjson>",
+      "http": "GET /api/trpc/judging.admin.getProgress?input=<superjson>",
       "input": null,
       "output": {
         "properties": {
-          "regularMarks": {
-            "type": "number"
-          },
-          "submittedTeams": {
-            "type": "number"
-          },
-          "teams": {
+          "judges": {
             "items": {
               "properties": {
-                "assignedAt": {
+                "current": {
                   "anyOf": [
                     {
                       "type": "null"
                     },
                     {
-                      "format": "date-time",
-                      "type": "string",
-                      "x-superjson": "Date"
+                      "properties": {
+                        "assignmentId": {
+                          "type": "number"
+                        },
+                        "startedAt": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "format": "date-time",
+                              "type": "string",
+                              "x-superjson": "Date"
+                            }
+                          ]
+                        },
+                        "tableNumber": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "assignmentId",
+                        "tableNumber",
+                        "startedAt"
+                      ],
+                      "type": "object"
                     }
                   ]
                 },
-                "currentJudgeId": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "currentJudgeName": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
-                "roundsRemaining": {
-                  "type": "number"
-                },
-                "seenJudges": {
-                  "type": "number"
-                },
-                "status": {
-                  "enum": [
-                    "waiting",
-                    "assigned"
-                  ]
-                },
-                "teamId": {
+                "email": {
                   "type": "string"
                 },
-                "teamName": {
+                "id": {
                   "type": "string"
                 },
-                "tracks": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "items": {
+                "isFloater": {
+                  "type": "boolean"
+                },
+                "marksCount": {
+                  "type": "number"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "stops": {
+                  "items": {
+                    "properties": {
+                      "assignmentId": {
+                        "type": "number"
+                      },
+                      "position": {
+                        "type": "number"
+                      },
+                      "status": {
                         "enum": [
-                          "Best Use of Cohere",
-                          "Best Use of AntiGravity",
-                          "Best Domain",
-                          "General"
+                          "assigned",
+                          "in_progress",
+                          "done",
+                          "team_absent",
+                          "cancelled"
                         ]
                       },
-                      "type": "array"
-                    }
+                      "tableNumber": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "assignmentId",
+                      "tableNumber",
+                      "position",
+                      "status"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "type": {
+                  "enum": [
+                    "organizer",
+                    "sponsored"
                   ]
                 }
               },
               "required": [
-                "teamId",
-                "teamName",
-                "tracks",
-                "seenJudges",
-                "roundsRemaining",
-                "status",
-                "currentJudgeId",
-                "currentJudgeName",
-                "assignedAt"
+                "id",
+                "name",
+                "email",
+                "type",
+                "marksCount",
+                "isFloater",
+                "current",
+                "stops"
               ],
               "type": "object"
             },
             "type": "array"
+          },
+          "settings": {
+            "allOf": [
+              {
+                "properties": {
+                  "judgesPerTable": {
+                    "type": "number"
+                  },
+                  "rows": {
+                    "type": "number"
+                  },
+                  "tableCount": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "tableCount",
+                  "rows",
+                  "judgesPerTable"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "perRow": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "perRow"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "started": {
+            "type": "boolean"
+          },
+          "tables": {
+            "items": {
+              "properties": {
+                "col": {
+                  "type": "number"
+                },
+                "id": {
+                  "type": "number"
+                },
+                "isActive": {
+                  "type": "boolean"
+                },
+                "judges": {
+                  "items": {
+                    "properties": {
+                      "assignmentId": {
+                        "type": "number"
+                      },
+                      "judgeId": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "startedAt": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "format": "date-time",
+                            "type": "string",
+                            "x-superjson": "Date"
+                          }
+                        ]
+                      },
+                      "status": {
+                        "enum": [
+                          "assigned",
+                          "in_progress",
+                          "done",
+                          "team_absent",
+                          "cancelled"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "assignmentId",
+                      "judgeId",
+                      "name",
+                      "status",
+                      "startedAt"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "judgesDone": {
+                  "type": "number"
+                },
+                "number": {
+                  "type": "number"
+                },
+                "row": {
+                  "type": "number"
+                },
+                "status": {
+                  "enum": [
+                    "empty",
+                    "waiting",
+                    "being_judged",
+                    "finished"
+                  ]
+                },
+                "team": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                },
+                "zone": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "team",
+                "judgesDone",
+                "judges",
+                "row",
+                "col",
+                "id",
+                "number",
+                "zone",
+                "isActive",
+                "status"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "teams": {
+            "properties": {
+              "seated": {
+                "type": "number"
+              },
+              "submitted": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "submitted",
+              "seated"
+            ],
+            "type": "object"
+          },
+          "totals": {
+            "properties": {
+              "assigned": {
+                "type": "number"
+              },
+              "done": {
+                "type": "number"
+              },
+              "in_progress": {
+                "type": "number"
+              },
+              "team_absent": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "assigned",
+              "in_progress",
+              "done",
+              "team_absent"
+            ],
+            "type": "object"
           }
         },
         "required": [
+          "settings",
+          "started",
           "teams",
-          "submittedTeams",
-          "regularMarks"
+          "totals",
+          "tables",
+          "judges"
         ],
         "type": "object"
       },
-      "path": "judging.admin.getQueue",
+      "path": "judging.admin.getProgress",
       "source": "src/server/api/routers/judging.ts",
       "type": "query"
     },
@@ -7228,34 +8097,44 @@
           "source": "unhandled"
         }
       ],
-      "http": "POST /api/trpc/judging.admin.loadQueue",
+      "http": "POST /api/trpc/judging.admin.handOffJudge",
       "input": {
         "additionalProperties": false,
-        "default": {
-          "roundsPerTeam": 3
-        },
         "properties": {
-          "roundsPerTeam": {
-            "default": 3,
-            "maximum": 20,
-            "minimum": 1,
-            "type": "integer"
+          "fromJudgeId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "toJudgeId": {
+            "minLength": 1,
+            "type": "string"
           }
         },
+        "required": [
+          "fromJudgeId",
+          "toJudgeId"
+        ],
         "type": "object"
       },
       "output": {
         "properties": {
-          "added": {
+          "moved": {
             "type": "number"
+          },
+          "tables": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array"
           }
         },
         "required": [
-          "added"
+          "moved",
+          "tables"
         ],
         "type": "object"
       },
-      "path": "judging.admin.loadQueue",
+      "path": "judging.admin.handOffJudge",
       "source": "src/server/api/routers/judging.ts",
       "type": "mutation"
     },
@@ -7274,17 +8153,534 @@
           "source": "auth middleware"
         },
         {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
           "code": "INTERNAL_SERVER_ERROR",
           "httpStatus": 500,
           "source": "unhandled"
         }
       ],
-      "http": "POST /api/trpc/judging.admin.purgeQueue",
-      "input": null,
-      "output": {
-        "type": "undefined"
+      "http": "POST /api/trpc/judging.admin.markAbsent",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "assignmentId": {
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assignmentId"
+        ],
+        "type": "object"
       },
-      "path": "judging.admin.purgeQueue",
+      "output": {
+        "properties": {
+          "assignedAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "assignedBy": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "id": {
+            "type": "number"
+          },
+          "judgeId": {
+            "type": "string"
+          },
+          "judgingTableId": {
+            "type": "number"
+          },
+          "position": {
+            "type": "number"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "assigned",
+              "in_progress",
+              "done",
+              "team_absent",
+              "cancelled"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "judgeId",
+          "judgingTableId",
+          "position",
+          "status",
+          "assignedBy",
+          "assignedAt",
+          "startedAt",
+          "completedAt"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.markAbsent",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.moveTeam",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "tableId": {
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "teamId": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "teamId",
+          "tableId"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "tableNumber": {
+            "type": "number"
+          },
+          "teamId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "teamId",
+          "tableNumber"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.moveTeam",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.seatTeams",
+      "input": {
+        "additionalProperties": false,
+        "default": {
+          "random": true
+        },
+        "properties": {
+          "random": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "emptyTables": {
+            "type": "number"
+          },
+          "random": {
+            "type": "boolean"
+          },
+          "seated": {
+            "type": "number"
+          },
+          "seating": {
+            "items": {
+              "properties": {
+                "tableNumber": {
+                  "type": "number"
+                },
+                "teamId": {
+                  "type": "string"
+                },
+                "teamName": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "teamId",
+                "teamName",
+                "tableNumber"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "random",
+          "seated",
+          "emptyTables",
+          "seating"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.seatTeams",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.setTableActive",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "isActive": {
+            "type": "boolean"
+          },
+          "tableId": {
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tableId",
+          "isActive"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "number": {
+            "type": "number"
+          },
+          "planCleared": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "empty",
+              "waiting",
+              "being_judged",
+              "finished"
+            ]
+          },
+          "statusUpdatedAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "zone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "planCleared",
+          "number",
+          "status",
+          "id",
+          "zone",
+          "isActive",
+          "statusUpdatedAt"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.setTableActive",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.setupTables",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "judgesPerTable": {
+            "maximum": 10,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "rows": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "tableCount": {
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "zone": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "tableCount",
+          "rows"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "judgesPerTable": {
+            "type": "number"
+          },
+          "perRow": {
+            "type": "number"
+          },
+          "planCleared": {
+            "type": "number"
+          },
+          "rows": {
+            "type": "number"
+          },
+          "tableCount": {
+            "type": "number"
+          },
+          "tablesCreated": {
+            "type": "number"
+          },
+          "tablesRemoved": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "tableCount",
+          "rows",
+          "perRow",
+          "judgesPerTable",
+          "tablesCreated",
+          "tablesRemoved",
+          "planCleared"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.setupTables",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.swapTeams",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "teamAId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "teamBId": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "teamAId",
+          "teamBId"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "teamA": {
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "tableNumber": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "tableNumber"
+            ],
+            "type": "object"
+          },
+          "teamB": {
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "tableNumber": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "tableNumber"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "teamA",
+          "teamB"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.swapTeams",
       "source": "src/server/api/routers/judging.ts",
       "type": "mutation"
     },
@@ -7317,8 +8713,43 @@
       "input": {
         "additionalProperties": false,
         "properties": {
+          "breakdown": {
+            "additionalProperties": false,
+            "properties": {
+              "notes": {
+                "anyOf": [
+                  {
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "ratings": {
+                "additionalProperties": {
+                  "maximum": 10,
+                  "minimum": 0,
+                  "multipleOf": 0.5,
+                  "type": "number"
+                },
+                "propertyNames": {
+                  "maxLength": 64
+                },
+                "type": "object"
+              },
+              "superLike": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "ratings"
+            ],
+            "type": "object"
+          },
           "score": {
-            "maximum": 100,
+            "maximum": 10,
             "minimum": 0,
             "type": "number"
           },
@@ -7360,34 +8791,15 @@
           "source": "unhandled"
         }
       ],
-      "http": "GET /api/trpc/judging.me.getCurrentAssignment?input=<superjson>",
+      "http": "GET /api/trpc/judging.me.getMyStops?input=<superjson>",
       "input": null,
       "output": {
         "properties": {
-          "assignedAt": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "format": "date-time",
-                "type": "string",
-                "x-superjson": "Date"
-              }
-            ]
-          },
           "canManage": {
             "type": "boolean"
           },
-          "currentTeamId": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
+          "finished": {
+            "type": "number"
           },
           "judge": {
             "properties": {
@@ -7422,178 +8834,256 @@
             ],
             "type": "object"
           },
-          "team": {
+          "layout": {
+            "properties": {
+              "perRow": {
+                "type": "number"
+              },
+              "rows": {
+                "type": "number"
+              },
+              "tableCount": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "tableCount",
+              "rows",
+              "perRow"
+            ],
+            "type": "object"
+          },
+          "nextStopId": {
             "anyOf": [
               {
                 "type": "null"
               },
               {
-                "properties": {
-                  "devpostUrl": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "githubUrl": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "id": {
-                    "type": "string"
-                  },
-                  "name": {
-                    "type": "string"
-                  },
-                  "tracks": {
-                    "anyOf": [
-                      {
-                        "type": "null"
-                      },
-                      {
-                        "items": {
-                          "enum": [
-                            "Best Use of Cohere",
-                            "Best Use of AntiGravity",
-                            "Best Domain",
-                            "General"
-                          ]
-                        },
-                        "type": "array"
-                      }
-                    ]
-                  }
-                },
-                "required": [
-                  "id",
-                  "name",
-                  "devpostUrl",
-                  "githubUrl",
-                  "tracks"
-                ],
-                "type": "object"
+                "type": "number"
               }
             ]
+          },
+          "stops": {
+            "items": {
+              "properties": {
+                "assignedAt": {
+                  "format": "date-time",
+                  "type": "string",
+                  "x-superjson": "Date"
+                },
+                "completedAt": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "format": "date-time",
+                      "type": "string",
+                      "x-superjson": "Date"
+                    }
+                  ]
+                },
+                "id": {
+                  "type": "number"
+                },
+                "mark": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "score": {
+                          "type": "number"
+                        },
+                        "scoreBreakdown": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "properties": {
+                                "notes": {
+                                  "description": "max depth reached"
+                                },
+                                "ratings": {
+                                  "additionalProperties": {
+                                    "description": "max depth reached"
+                                  },
+                                  "properties": {},
+                                  "type": "object"
+                                },
+                                "superLike": {
+                                  "description": "max depth reached"
+                                }
+                              },
+                              "required": [
+                                "ratings"
+                              ],
+                              "type": "object"
+                            }
+                          ]
+                        },
+                        "teamId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "teamId",
+                        "score",
+                        "scoreBreakdown"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                },
+                "position": {
+                  "type": "number"
+                },
+                "startedAt": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "format": "date-time",
+                      "type": "string",
+                      "x-superjson": "Date"
+                    }
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "assigned",
+                    "in_progress",
+                    "done",
+                    "team_absent",
+                    "cancelled"
+                  ]
+                },
+                "table": {
+                  "properties": {
+                    "col": {
+                      "type": "number"
+                    },
+                    "id": {
+                      "type": "number"
+                    },
+                    "number": {
+                      "type": "number"
+                    },
+                    "row": {
+                      "type": "number"
+                    },
+                    "zone": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "row",
+                    "col",
+                    "number",
+                    "id",
+                    "zone"
+                  ],
+                  "type": "object"
+                },
+                "team": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "properties": {
+                        "devpostUrl": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "githubUrl": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "tracks": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "items": {
+                                "description": "max depth reached"
+                              },
+                              "type": "array"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "devpostUrl",
+                        "githubUrl",
+                        "tracks"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "table",
+                "team",
+                "mark",
+                "status",
+                "id",
+                "position",
+                "assignedAt",
+                "startedAt",
+                "completedAt"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "total": {
+            "type": "number"
           }
         },
         "required": [
-          "currentTeamId",
-          "team",
-          "assignedAt",
           "judge",
-          "canManage"
+          "canManage",
+          "layout",
+          "stops",
+          "nextStopId",
+          "finished",
+          "total"
         ],
         "type": "object"
       },
-      "path": "judging.me.getCurrentAssignment",
+      "path": "judging.me.getMyStops",
       "source": "src/server/api/routers/judging.ts",
       "type": "query"
-    },
-    {
-      "auth": "judge",
-      "errors": [
-        {
-          "code": "UNAUTHORIZED",
-          "httpStatus": 401,
-          "source": "auth middleware"
-        },
-        {
-          "code": "FORBIDDEN",
-          "httpStatus": 403,
-          "message": "User is not registered as a judge",
-          "source": "auth middleware"
-        },
-        {
-          "code": "CONFLICT",
-          "httpStatus": 409,
-          "message": "No teams are currently available to judge.",
-          "source": "handler"
-        },
-        {
-          "code": "INTERNAL_SERVER_ERROR",
-          "httpStatus": 500,
-          "source": "unhandled"
-        }
-      ],
-      "http": "POST /api/trpc/judging.me.getNextTeam",
-      "input": null,
-      "output": {
-        "properties": {
-          "team": {
-            "properties": {
-              "devpostUrl": {
-                "anyOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "type": "string"
-                  }
-                ]
-              },
-              "githubUrl": {
-                "anyOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "type": "string"
-                  }
-                ]
-              },
-              "id": {
-                "type": "string"
-              },
-              "name": {
-                "type": "string"
-              },
-              "tracks": {
-                "anyOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "items": {
-                      "enum": [
-                        "Best Use of Cohere",
-                        "Best Use of AntiGravity",
-                        "Best Domain",
-                        "General"
-                      ]
-                    },
-                    "type": "array"
-                  }
-                ]
-              }
-            },
-            "required": [
-              "id",
-              "name",
-              "tracks",
-              "devpostUrl",
-              "githubUrl"
-            ],
-            "type": "object"
-          }
-        },
-        "required": [
-          "team"
-        ],
-        "type": "object"
-      },
-      "path": "judging.me.getNextTeam",
-      "source": "src/server/api/routers/judging.ts",
-      "type": "mutation"
     },
     {
       "auth": "judge",
@@ -7647,12 +9137,6 @@
                 },
                 {
                   "properties": {
-                    "design": {
-                      "type": "number"
-                    },
-                    "idea": {
-                      "type": "number"
-                    },
                     "notes": {
                       "anyOf": [
                         {
@@ -7666,18 +9150,29 @@
                         }
                       ]
                     },
-                    "pitch": {
-                      "type": "number"
+                    "ratings": {
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "properties": {},
+                      "type": "object"
                     },
-                    "technical": {
-                      "type": "number"
+                    "superLike": {
+                      "anyOf": [
+                        {
+                          "type": "undefined"
+                        },
+                        {
+                          "const": false
+                        },
+                        {
+                          "const": true
+                        }
+                      ]
                     }
                   },
                   "required": [
-                    "idea",
-                    "technical",
-                    "design",
-                    "pitch"
+                    "ratings"
                   ],
                   "type": "object"
                 }
@@ -7776,17 +9271,118 @@
           "source": "auth middleware"
         },
         {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
           "code": "INTERNAL_SERVER_ERROR",
           "httpStatus": 500,
           "source": "unhandled"
         }
       ],
-      "http": "POST /api/trpc/judging.me.skipAssignment",
-      "input": null,
-      "output": {
-        "type": "undefined"
+      "http": "POST /api/trpc/judging.me.reportAbsent",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "assignmentId": {
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "teamId": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "assignmentId"
+        ],
+        "type": "object"
       },
-      "path": "judging.me.skipAssignment",
+      "output": {
+        "properties": {
+          "assignedAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "assignedBy": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "id": {
+            "type": "number"
+          },
+          "judgeId": {
+            "type": "string"
+          },
+          "judgingTableId": {
+            "type": "number"
+          },
+          "position": {
+            "type": "number"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "assigned",
+              "in_progress",
+              "done",
+              "team_absent",
+              "cancelled"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "judgeId",
+          "judgingTableId",
+          "position",
+          "status",
+          "assignedBy",
+          "assignedAt",
+          "startedAt",
+          "completedAt"
+        ],
+        "type": "object"
+      },
+      "path": "judging.me.reportAbsent",
       "source": "src/server/api/routers/judging.ts",
       "type": "mutation"
     },
@@ -7815,12 +9411,175 @@
           "source": "unhandled"
         }
       ],
-      "http": "POST /api/trpc/judging.me.submitTeamMark",
+      "http": "POST /api/trpc/judging.me.startStop",
       "input": {
         "additionalProperties": false,
         "properties": {
+          "assignmentId": {
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "teamId": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "assignmentId",
+          "teamId"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "assignedAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "assignedBy": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "id": {
+            "type": "number"
+          },
+          "judgeId": {
+            "type": "string"
+          },
+          "judgingTableId": {
+            "type": "number"
+          },
+          "position": {
+            "type": "number"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "assigned",
+              "in_progress",
+              "done",
+              "team_absent",
+              "cancelled"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "judgeId",
+          "judgingTableId",
+          "position",
+          "status",
+          "assignedBy",
+          "assignedAt",
+          "startedAt",
+          "completedAt"
+        ],
+        "type": "object"
+      },
+      "path": "judging.me.startStop",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "judge",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not registered as a judge",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.me.submitStop",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "assignmentId": {
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          "breakdown": {
+            "additionalProperties": false,
+            "properties": {
+              "notes": {
+                "anyOf": [
+                  {
+                    "maxLength": 2000,
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "ratings": {
+                "additionalProperties": {
+                  "maximum": 10,
+                  "minimum": 0,
+                  "multipleOf": 0.5,
+                  "type": "number"
+                },
+                "propertyNames": {
+                  "maxLength": 64
+                },
+                "type": "object"
+              },
+              "superLike": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "ratings"
+            ],
+            "type": "object"
+          },
           "score": {
-            "maximum": 100,
+            "maximum": 10,
             "minimum": 0,
             "type": "number"
           },
@@ -7830,17 +9589,132 @@
           }
         },
         "required": [
+          "assignmentId",
           "teamId",
           "score"
         ],
         "type": "object"
       },
       "output": {
-        "type": "undefined"
+        "properties": {
+          "assignmentId": {
+            "type": "number"
+          },
+          "teamId": {
+            "type": "string"
+          },
+          "teamMarkId": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "assignmentId",
+          "teamId",
+          "teamMarkId"
+        ],
+        "type": "object"
       },
-      "path": "judging.me.submitTeamMark",
+      "path": "judging.me.submitStop",
       "source": "src/server/api/routers/judging.ts",
       "type": "mutation"
+    },
+    {
+      "auth": "protected",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/judging.team.getMyJudging?input=<superjson>",
+      "input": null,
+      "output": {
+        "anyOf": [
+          {
+            "properties": {
+              "judges": {
+                "properties": {
+                  "done": {
+                    "type": "number"
+                  },
+                  "total": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "done",
+                  "total"
+                ],
+                "type": "object"
+              },
+              "table": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "table",
+              "judges"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "judges": {
+                "properties": {
+                  "done": {
+                    "type": "number"
+                  },
+                  "total": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "done",
+                  "total"
+                ],
+                "type": "object"
+              },
+              "table": {
+                "properties": {
+                  "col": {
+                    "type": "number"
+                  },
+                  "number": {
+                    "type": "number"
+                  },
+                  "row": {
+                    "type": "number"
+                  },
+                  "zone": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "row",
+                  "col",
+                  "number",
+                  "zone"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "table",
+              "judges"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "path": "judging.team.getMyJudging",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "query"
     },
     {
       "auth": "protected",
@@ -9039,49 +10913,106 @@
               "bonus"
             ],
             "type": "string"
+          },
+          "page": {
+            "default": 1,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "pageSize": {
+            "default": 25,
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "search": {
+            "default": "",
+            "maxLength": 100,
+            "type": "string"
           }
         },
         "type": "object"
       },
       "output": {
-        "items": {
-          "properties": {
-            "createdAt": {
-              "format": "date-time",
-              "type": "string",
-              "x-superjson": "Date"
-            },
-            "day": {
-              "type": "string"
-            },
-            "event": {
-              "type": "string"
-            },
-            "hackerName": {
-              "type": "string"
-            },
-            "id": {
-              "type": "string"
-            },
-            "scanner": {
-              "type": "string"
-            },
-            "time": {
-              "type": "string"
-            }
+        "properties": {
+          "page": {
+            "type": "number"
           },
-          "required": [
-            "id",
-            "hackerName",
-            "event",
-            "scanner",
-            "day",
-            "time",
-            "createdAt"
-          ],
-          "type": "object"
+          "pageCount": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          },
+          "scans": {
+            "items": {
+              "properties": {
+                "activityType": {
+                  "enum": [
+                    "attendance",
+                    "win"
+                  ]
+                },
+                "createdAt": {
+                  "format": "date-time",
+                  "type": "string",
+                  "x-superjson": "Date"
+                },
+                "day": {
+                  "type": "string"
+                },
+                "event": {
+                  "type": "string"
+                },
+                "hackerName": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "scanner": {
+                  "type": "string"
+                },
+                "time": {
+                  "type": "string"
+                },
+                "type": {
+                  "enum": [
+                    "meal",
+                    "workshop",
+                    "sponsor_workshop",
+                    "activity",
+                    "bonus"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "hackerName",
+                "event",
+                "type",
+                "activityType",
+                "scanner",
+                "day",
+                "time",
+                "createdAt"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "total": {
+            "type": "number"
+          }
         },
-        "type": "array"
+        "required": [
+          "scans",
+          "total",
+          "page",
+          "pageSize",
+          "pageCount"
+        ],
+        "type": "object"
       },
       "path": "scavengerHunt.getAllScans",
       "source": "src/server/api/routers/scavenger-hunt.ts",
@@ -9106,9 +11037,6 @@
       "output": {
         "items": {
           "properties": {
-            "code": {
-              "type": "string"
-            },
             "deletedAt": {
               "anyOf": [
                 {
@@ -9121,7 +11049,21 @@
                 }
               ]
             },
-            "description": {
+            "endsAt": {
+              "format": "date-time",
+              "type": "string",
+              "x-superjson": "Date"
+            },
+            "id": {
+              "type": "number"
+            },
+            "name": {
+              "type": "string"
+            },
+            "points": {
+              "type": "number"
+            },
+            "room": {
               "anyOf": [
                 {
                   "type": "null"
@@ -9131,18 +11073,48 @@
                 }
               ]
             },
-            "id": {
-              "type": "number"
+            "startsAt": {
+              "format": "date-time",
+              "type": "string",
+              "x-superjson": "Date"
             },
-            "points": {
-              "type": "number"
+            "status": {
+              "enum": [
+                "draft",
+                "active",
+                "disabled"
+              ]
+            },
+            "type": {
+              "enum": [
+                "meal",
+                "workshop",
+                "sponsor_workshop",
+                "activity",
+                "bonus"
+              ]
+            },
+            "winPoints": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "number"
+                }
+              ]
             }
           },
           "required": [
-            "description",
-            "code",
+            "type",
+            "status",
             "id",
+            "name",
+            "endsAt",
             "points",
+            "winPoints",
+            "startsAt",
+            "room",
             "deletedAt"
           ],
           "type": "object"
@@ -9520,21 +11492,20 @@
                 "id": {
                   "type": "string"
                 },
-                "itemCode": {
-                  "type": "string"
-                },
-                "itemDescription": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
                 "itemId": {
                   "type": "number"
+                },
+                "itemName": {
+                  "type": "string"
+                },
+                "itemType": {
+                  "enum": [
+                    "meal",
+                    "workshop",
+                    "sponsor_workshop",
+                    "activity",
+                    "bonus"
+                  ]
                 },
                 "points": {
                   "type": "number"
@@ -9547,8 +11518,8 @@
                 "id",
                 "type",
                 "itemId",
-                "itemCode",
-                "itemDescription",
+                "itemType",
+                "itemName",
                 "points",
                 "createdAt"
               ],
@@ -9564,11 +11535,11 @@
                 "id": {
                   "type": "string"
                 },
-                "itemCode": {
-                  "type": "null"
-                },
-                "itemDescription": {
+                "itemName": {
                   "type": "string"
+                },
+                "itemType": {
+                  "type": "null"
                 },
                 "points": {
                   "type": "number"
@@ -9584,8 +11555,8 @@
                 "id",
                 "type",
                 "rewardId",
-                "itemCode",
-                "itemDescription",
+                "itemType",
+                "itemName",
                 "points",
                 "createdAt"
               ],
@@ -9600,82 +11571,19 @@
       "type": "query"
     },
     {
-      "auth": "public",
+      "auth": "organizer",
       "errors": [
         {
-          "code": "BAD_REQUEST",
-          "httpStatus": 400,
-          "source": "input validation (data.zodError populated)"
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
         },
         {
-          "code": "INTERNAL_SERVER_ERROR",
-          "httpStatus": 500,
-          "source": "unhandled"
-        }
-      ],
-      "http": "GET /api/trpc/scavengerHunt.getScavengerHuntItem?input=<superjson>",
-      "input": {
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "type": "string"
-          }
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
         },
-        "required": [
-          "code"
-        ],
-        "type": "object"
-      },
-      "output": {
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "deletedAt": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "format": "date-time",
-                "type": "string",
-                "x-superjson": "Date"
-              }
-            ]
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "id": {
-            "type": "number"
-          },
-          "points": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "description",
-          "code",
-          "id",
-          "points",
-          "deletedAt"
-        ],
-        "type": "object"
-      },
-      "path": "scavengerHunt.getScavengerHuntItem",
-      "source": "src/server/api/routers/scavenger-hunt.ts",
-      "type": "query"
-    },
-    {
-      "auth": "public",
-      "errors": [
         {
           "code": "BAD_REQUEST",
           "httpStatus": 400,
@@ -9713,9 +11621,6 @@
       },
       "output": {
         "properties": {
-          "code": {
-            "type": "string"
-          },
           "deletedAt": {
             "anyOf": [
               {
@@ -9728,7 +11633,21 @@
               }
             ]
           },
-          "description": {
+          "endsAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "points": {
+            "type": "number"
+          },
+          "room": {
             "anyOf": [
               {
                 "type": "null"
@@ -9738,18 +11657,48 @@
               }
             ]
           },
-          "id": {
-            "type": "number"
+          "startsAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
           },
-          "points": {
-            "type": "number"
+          "status": {
+            "enum": [
+              "draft",
+              "active",
+              "disabled"
+            ]
+          },
+          "type": {
+            "enum": [
+              "meal",
+              "workshop",
+              "sponsor_workshop",
+              "activity",
+              "bonus"
+            ]
+          },
+          "winPoints": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
           }
         },
         "required": [
-          "description",
-          "code",
+          "type",
+          "status",
           "id",
+          "name",
+          "endsAt",
           "points",
+          "winPoints",
+          "startsAt",
+          "room",
           "deletedAt"
         ],
         "type": "object"
@@ -10054,7 +12003,12 @@
         {
           "code": "BAD_REQUEST",
           "httpStatus": 400,
-          "message": "Either itemId or itemCode must be provided",
+          "source": "handler"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "message": "This activity can't be won",
           "source": "handler"
         },
         {
@@ -10090,7 +12044,11 @@
       "input": {
         "additionalProperties": false,
         "properties": {
-          "itemCode": {
+          "activityType": {
+            "enum": [
+              "attendance",
+              "win"
+            ],
             "type": "string"
           },
           "itemId": {
@@ -10101,7 +12059,8 @@
           }
         },
         "required": [
-          "userId"
+          "userId",
+          "itemId"
         ],
         "type": "object"
       },

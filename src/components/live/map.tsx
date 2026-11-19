@@ -1,13 +1,12 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { useIsMobile } from "~/hooks/use-mobile";
 
-const MIN_ZOOM = 0.2;
-const MAX_ZOOM = 10;
+const MIN_ZOOM = 1; // the whole map, fitted to the card
+const MAX_ZOOM = 4;
 
 // Images live in public/live/map/
 const FLOORS = [
@@ -15,72 +14,150 @@ const FLOORS = [
   { id: "floor-2", label: "Level 2", src: "/live/map/floor2.webp" },
 ] as const;
 
-// One floor plan: drag and scroll-to-zoom on desktop, plain image on mobile
-const FloorMap = ({ src, alt }: { src: string; alt: string }) => {
-  const [scale, setScale] = useState(1);
-  const isMobile = useIsMobile();
-  const cardRef = useRef<HTMLDivElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
+type View = { zoom: number; x: number; y: number };
+const FITTED: View = { zoom: 1, x: 0, y: 0 };
 
-  // Start fitted to the card's width, then shrink just enough that the whole
-  // map is visible without scrolling. Scaling doesn't change the layout box,
-  // so this measures the image at full width.
-  const fitToCard = (img: HTMLImageElement) => {
-    const card = cardRef.current;
-    if (!card || img.offsetHeight === 0) return;
-    const style = getComputedStyle(card);
-    const available =
-      card.clientHeight -
-      parseFloat(style.paddingTop) -
-      parseFloat(style.paddingBottom);
-    setScale(Math.min(1, available / img.offsetHeight));
+// One floor plan. Desktop: pinch or Cmd/Ctrl + scroll zooms toward the
+// cursor, drag pans, buttons zoom and reset; plain scrolling still scrolls
+// the page. Phones: tap to open the image full size and pinch-zoom there.
+const FloorMap = ({ src, alt }: { src: string; alt: string }) => {
+  const isMobile = useIsMobile();
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState<View>(FITTED);
+  const drag = useRef<{ px: number; py: number; x: number; y: number } | null>(
+    null,
+  );
+
+  // Keep the map covering the frame: no dragging it out of sight
+  const clamp = (v: View): View => {
+    const frame = frameRef.current;
+    if (!frame) return v;
+    const w = frame.clientWidth;
+    const h = frame.clientHeight;
+    return {
+      zoom: v.zoom,
+      x: Math.min(0, Math.max(w - w * v.zoom, v.x)),
+      y: Math.min(0, Math.max(h - h * v.zoom, v.y)),
+    };
   };
 
-  // On a reload the image can finish loading before React attaches onLoad
-  // (server-rendered, cached), so the event never fires. Fit it here too.
-  useEffect(() => {
-    const img = imgRef.current;
-    if (img?.complete) fitToCard(img);
-  }, [src, isMobile]);
+  // Zoom by `factor`, keeping the point (px, py) of the frame in place
+  const zoomAt = (factor: number, px: number, py: number) =>
+    setView((v) => {
+      const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, v.zoom * factor));
+      const ratio = zoom / v.zoom;
+      return clamp({
+        zoom,
+        x: px - (px - v.x) * ratio,
+        y: py - (py - v.y) * ratio,
+      });
+    });
 
-  // Scroll over the map zooms it instead of scrolling the page. React's
-  // onWheel is passive, so preventDefault there does nothing; this has to be
-  // a native, non-passive listener.
+  const zoomFromCenter = (factor: number) => {
+    const frame = frameRef.current;
+    if (frame) zoomAt(factor, frame.clientWidth / 2, frame.clientHeight / 2);
+  };
+
+  // Trackpad pinch arrives as ctrl + wheel. React's onWheel is passive, so
+  // this needs a native listener to stop the page from zooming too.
   useEffect(() => {
-    const img = imgRef.current;
-    if (!img) return;
+    const frame = frameRef.current;
+    if (!frame) return;
     const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
-      setScale((prev) =>
-        Math.min(Math.max(prev + e.deltaY * -0.001, MIN_ZOOM), MAX_ZOOM),
+      const rect = frame.getBoundingClientRect();
+      zoomAt(
+        Math.exp(-e.deltaY * 0.003),
+        e.clientX - rect.left,
+        e.clientY - rect.top,
       );
     };
-    img.addEventListener("wheel", onWheel, { passive: false });
-    return () => img.removeEventListener("wheel", onWheel);
-  }, [src, isMobile]);
+    frame.addEventListener("wheel", onWheel, { passive: false });
+    return () => frame.removeEventListener("wheel", onWheel);
+  });
+
+  if (isMobile) {
+    return (
+      <a
+        href={src}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block rounded-dashboard-lg bg-dashboard-bg-surface p-3 shadow-dashboard-card"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt={alt} className="h-auto w-full" />
+      </a>
+    );
+  }
+
+  const zoomed = view.zoom > 1;
 
   return (
-    <div
-      ref={cardRef}
-      className={`flex max-h-[calc(100vh-280px)] w-full flex-col gap-3 rounded-dashboard-lg bg-dashboard-bg-surface p-5 shadow-dashboard-card sm:p-10 ${
-        isMobile ? "overflow-auto" : "overflow-hidden"
-      }`}
-    >
-      {isMobile ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt={alt} className="h-auto w-full object-contain" />
-      ) : (
-        <motion.img
-          ref={imgRef}
+    <div className="rounded-dashboard-lg bg-dashboard-bg-surface p-5 shadow-dashboard-card sm:p-10">
+      <div
+        ref={frameRef}
+        className={`relative touch-none select-none overflow-hidden ${zoomed ? "cursor-grab active:cursor-grabbing" : ""}`}
+        onPointerDown={(e) => {
+          if (!zoomed) return;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          drag.current = { px: e.clientX, py: e.clientY, x: view.x, y: view.y };
+        }}
+        onPointerMove={(e) => {
+          const start = drag.current;
+          if (!start) return;
+          setView((v) =>
+            clamp({
+              zoom: v.zoom,
+              x: start.x + e.clientX - start.px,
+              y: start.y + e.clientY - start.py,
+            }),
+          );
+        }}
+        onPointerUp={() => (drag.current = null)}
+        onPointerCancel={() => (drag.current = null)}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src={src}
           alt={alt}
-          drag
-          dragMomentum={false}
-          onLoad={(e) => fitToCard(e.currentTarget)}
-          style={{ scale, originX: 0.5, originY: 0 }}
-          className="h-auto w-full cursor-grab object-contain active:cursor-grabbing"
+          draggable={false}
+          className="block h-auto w-full origin-top-left"
+          style={{
+            transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`,
+          }}
         />
-      )}
+        <div className="absolute right-2 top-2 flex gap-1">
+          {[
+            {
+              label: "+",
+              title: "Zoom in",
+              onClick: () => zoomFromCenter(1.5),
+            },
+            {
+              label: "−",
+              title: "Zoom out",
+              onClick: () => zoomFromCenter(1 / 1.5),
+            },
+            {
+              label: "Reset",
+              title: "Show the whole map",
+              onClick: () => setView(FITTED),
+            },
+          ].map((b) => (
+            <button
+              key={b.label}
+              type="button"
+              title={b.title}
+              onClick={b.onClick}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="min-w-[2rem] rounded-md border border-dashboard-border-card bg-dashboard-bg-surface px-2 py-1 text-sm font-semibold text-dashboard-text-heavy shadow-sm hover:bg-dashboard-bg-page"
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
@@ -94,12 +171,12 @@ const Map = () => {
     <div className="flex flex-col gap-6 pb-16 font-figtree">
       <DashboardPanel title="Venue">
         <p className="text-base font-medium text-dashboard-text-medium">
-          This year&apos;s event will be at the Morrissette Institute for
-          Entrepreneurship!
+          This year&apos;s event will be at the Ronald D. Schmeichel Building
+          for Entrepreneurship and Innovation!
         </p>
         <p className="text-base font-medium text-dashboard-text-medium">
           <b className="font-semibold text-dashboard-text-heavy">Address:</b>{" "}
-          1400 Western Rd, London, ON N6A 0C2
+          1151 Richmond St, London, ON N6A 3K7
         </p>
       </DashboardPanel>
 
@@ -118,8 +195,8 @@ const Map = () => {
           </div>
           <p className="text-sm font-medium text-dashboard-text-light">
             {isMobile
-              ? "* View the map below"
-              : "* Zoom in and out of the map by scrolling!"}
+              ? "* Tap the map to open it full size"
+              : "* Pinch or ⌘/Ctrl + scroll to zoom, drag to move"}
           </p>
         </div>
         {/* key resets the zoom when switching floors */}

@@ -254,8 +254,8 @@ function DashboardDesignSystem() {
             One row per event or scan: scan history, Upcoming, and the
             organizer&apos;s activity picker. Use variant=&quot;featured&quot;
             with an action as children for the activity happening now. Pass href
-            or onClick to make a row clickable. Set kind with
-            activityKindFromCode(item.code).
+            or onClick to make a row clickable. Set kind to &quot;meal&quot; for
+            meals, otherwise &quot;activity&quot;.
           </>
         }
       >

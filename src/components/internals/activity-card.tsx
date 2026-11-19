@@ -5,10 +5,6 @@ import { cn } from "~/lib/utils";
 
 export type ActivityKind = "meal" | "activity";
 
-// Extract activity kind from scavenger hunt item code (meals end with "_meal")
-export const activityKindFromCode = (code: string | null | undefined) =>
-  code?.endsWith("_meal") ? "meal" : "activity";
-
 export function ActivityIcon({
   kind,
   className,

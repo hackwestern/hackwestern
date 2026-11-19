@@ -1,5 +1,5 @@
-To reach an organizer, send a message in **#questions** on Slack and tag **@organizers**. All organizers will also have their Slack name set to “[Organizer] Name” for reference. Or, come to the help desk!
+To reach an organizer, message **K.A.T.R.I.N.A** or post in **#0-ask-organizers** on Slack. If the bot can't help, an organizer will follow up. Or, come to the help desk by the stairs outside the Grand Hall!
 
-In the event no organizer is reachable and there is an emergency, contact campus police at **519-661-3300**.  
+In an emergency, call **911**. For campus safety help that isn't an emergency, call Western Special Constable Service at **519-661-3300**.  
 
-Venue Address: **Morrissette Institute for Entrepreneurship, 1400 Western Rd, London, ON N6A 0C2**
+Venue Address: **Ronald D. Schmeichel Building for Entrepreneurship and Innovation, Western University, 1151 Richmond St, London, ON N6A 3K7**

@@ -1,22 +1,22 @@
-# 🤙 Help Desk - Room **1225**
-*Available 24/7 for all general inquiries & misc. supplies. Look for the small room with "Info Desk" above the door.*
+# 🤙 Help Desk - By the stairs outside the Grand Hall
+*Look for the help desk by the stairs outside the Grand Hall (Rm 1110).*
 - Any questions you have about the weekend!
-- Toiletries: Toothbrushes & toothpaste, menstrual products, deodorant
-- Medical: Band-aids, Tylenol
+- Late check-in and lost Hacker badge cards
+- Hardware checkout and scavenger hunt prizes
 - Lost and Found
 
 # 🪪 Identification & Security  
-Please present a valid form of photo ID for check-in. All hackers will receive an enamel pin and name tag—you must have these items on you at all times. If you leave the building without them, you will not be permitted re-entry for security purposes! If you lose your pin at any time, please go to the help desk.
+Bring a photo ID and your check-in QR code to registration outside the Grand Hall (Rm **1110**). You will receive a Hacker badge card—keep it on you all weekend. The venue is open 24/7, so you can come and go, but security will ask to see your Hacker badge card **and** a photo ID when you come back in. If you lose your badge, please go to the help desk.
 
 # 🛏️ Sleeping  
-We will have dedicated sleeping rooms offering a limited amount of air mattresses on a first-come first-serve basis. Toiletries will be available at the help desk. We will also have a limited amount of small pillows available.
+We will have dedicated sleeping rooms with a limited number of air mattresses on a first-come first-serve basis, so bring your own bedding. Please keep sleeping rooms quiet, keep doorways clear, and keep track of your belongings. There are no showers at the venue.
 
 Sleeping Rooms (open from 10pm):
-- Men’s and all genders - Alumni Commons **2110**
+- Men’s and gender-neutral - Alumni Commons **2110**
 - Women’s - Room **2235**
 
 # 🚗 Parking  
-Parking will be available for free after 4pm on Friday and all weekend in the **Social Science**, **Springett**, and **Alumni/Thomson** parking lots on a first-come first-serve basis. We recommend **Springett**. Parking during other hours incurs a $1.50/30 min fee. Additional free weekend parking is available around campus during the weekend, visit <https://uwo.ca/parking/find/map.html> for more information.
+Free weekend parking runs from **5pm on Friday** until **4am on Monday** in all lots except **Lot Q**. We recommend **Springett**, across Western Road from the venue. Check the signs at your lot for any event restrictions, and visit <https://www.uwo.ca/parking/find-parking/parking-map.html> for the parking map.
 
 # 🙌 Mentorship  
-To ask for help from mentors, reach out in the **#ask-mentors** channel on Slack with your request and location in the building!
+To ask for help from mentors, reach out in the **#0-ask-mentors** channel on Slack with your request and location in the building!

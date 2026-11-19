@@ -1,15 +1,21 @@
 import Link from "next/link";
+import { useMemo } from "react";
 import { useSession } from "next-auth/react";
 import SEO from "~/components/seo";
 import { InternalNavbar } from "~/components/internals/navbar";
-import { ControlAddJudge } from "~/components/judging/control-add-judge";
-import { ControlJudges } from "~/components/judging/control-judges";
-import { ControlProgress } from "~/components/judging/control-progress";
-import { ControlQueue } from "~/components/judging/control-queue";
-import { ControlQueueTable } from "~/components/judging/control-queue-table";
-import { ControlRanking } from "~/components/judging/control-ranking";
-import { MUTED, errorText, useNow } from "~/components/judging/control-shared";
-import { ControlSponsorTracks } from "~/components/judging/control-sponsor-tracks";
+import { ControlAddJudge } from "~/components/judging/control/control-add-judge";
+import { ControlJudges } from "~/components/judging/control/control-judges";
+import { ControlProgress } from "~/components/judging/control/control-progress";
+import { ControlQueue } from "~/components/judging/control/control-queue";
+import { ControlQueueTable } from "~/components/judging/control/control-queue-table";
+import { ControlRanking } from "~/components/judging/control/control-ranking";
+import {
+  MUTED,
+  errorText,
+  queueFromProgress,
+  useNow,
+} from "~/components/judging/control/control-shared";
+import { ControlSponsorTracks } from "~/components/judging/control/control-sponsor-tracks";
 import { api } from "~/utils/api";
 import { authRedirectOrganizer } from "~/utils/redirect";
 
@@ -24,11 +30,15 @@ export default function JudgingControlRoom() {
   const now = useNow();
   const { data: session } = useSession();
   const poll = { refetchInterval: POLL_MS };
-  const queueQ = api.judging.admin.getQueue.useQuery(undefined, poll);
+  const progressQ = api.judging.admin.getProgress.useQuery(undefined, poll);
+  const queue = useMemo(
+    () => (progressQ.data ? queueFromProgress(progressQ.data) : undefined),
+    [progressQ.data],
+  );
   const judgesQ = api.judging.admin.getAllJudges.useQuery(undefined, poll);
   const rankingQ = api.judging.admin.getLatestRanking.useQuery(undefined, poll);
 
-  const queries = [queueQ, judgesQ, rankingQ];
+  const queries = [progressQ, judgesQ, rankingQ];
   // The oldest of the three, so the label never claims fresher data than shown.
   const updatedAt = queries.every((q) => q.dataUpdatedAt > 0)
     ? Math.min(...queries.map((q) => q.dataUpdatedAt))
@@ -71,25 +81,21 @@ export default function JudgingControlRoom() {
             </p>
           )}
 
-          <ControlQueue queue={queueQ.data} />
-          <ControlProgress
-            queue={queueQ.data}
-            judges={judgesQ.data}
-            now={now}
-          />
+          <ControlQueue queue={queue} />
+          <ControlProgress queue={queue} judges={judgesQ.data} now={now} />
 
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:items-start">
             <ControlJudges
               judges={judgesQ.data}
-              queue={queueQ.data}
+              queue={queue}
               now={now}
               myId={session?.user.id}
             />
-            <ControlRanking ranking={rankingQ.data} queue={queueQ.data} />
+            <ControlRanking ranking={rankingQ.data} queue={queue} />
           </div>
 
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:items-start">
-            <ControlQueueTable queue={queueQ.data} now={now} />
+            <ControlQueueTable queue={queue} now={now} />
             <div className="flex min-w-0 flex-col gap-5">
               <ControlSponsorTracks />
               <ControlAddJudge />
