@@ -55,13 +55,13 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 ## Organizer dashboard redesign (all sections, phone first): `organizer-dashboard-nav-a/b/c-v1`
 | # | Change | Status |
 |---|---|---|
-| 1 | Redesign the whole organizer dashboard end to end, keeping the real data: Sponsors, Run of show, Coffee chats, Sponsor judging, Task pings | Building |
-| 2 | Coffee chats and Sponsor judging are "WIP" placeholders for now | Building |
-| 3 | Mainly viewed on phones: find the best way to switch sections; 3 versions: A bottom tab bar, B swipeable top tabs, C home hub + header switcher | Building |
-| 4 | Hacker-v1 look (default style) | Building |
-| 5 | Sponsors uses the approved organizer-sponsors-home-v1 content (cards on phones, detail on its own screen, no drawer, "Left" removed) | Building |
-| 6 | Run of show uses the real sheet (35 events, 55 tasks, team availability) from `_data/run-of-show-snapshot.json` | Building |
-| 7 | Task pings: Up next + Ping log; no sponsor help queue (help goes to Slack) | Building |
+| 1 | Redesign the whole organizer dashboard end to end, keeping the real data: Sponsors, Run of show, Coffee chats, Sponsor judging, Task pings | Done |
+| 2 | Coffee chats and Sponsor judging are "WIP" placeholders for now | Done |
+| 3 | Mainly viewed on phones: find the best way to switch sections; 3 versions: A bottom tab bar, B swipeable top tabs, C home hub + header switcher | Done |
+| 4 | Hacker-v1 look (default style) | Done |
+| 5 | Sponsors uses the approved organizer-sponsors-home-v1 content (cards on phones, detail on its own screen, no drawer, "Left" removed) | Done |
+| 6 | Run of show uses the real sheet (35 events, 55 tasks, team availability) from `_data/run-of-show-snapshot.json` | Done |
+| 7 | Task pings: Up next + Ping log; no sponsor help queue (help goes to Slack) | Done |
 
 ## Sponsor judging redesign: `sponsor-judging-redesign-a/b/c-v1`
 | # | Change | Status |
