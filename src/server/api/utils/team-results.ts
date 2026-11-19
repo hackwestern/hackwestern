@@ -48,8 +48,9 @@ export interface RoundSummary {
   criteria: Record<string, number>;
   /**
    * Average Adventurous track score (35% overall + 65% Adventurous), over the
-   * marks with an Adventurous rating. Null when none have one. Raw, not
-   * normalized; the organizer ranking normalizes it per judge.
+   * marks with an Adventurous rating. Null when none have one, and always null
+   * for the sponsor round. Raw, not normalized; the organizer ranking
+   * normalizes it per judge.
    */
   adventurous: number | null;
   /** How many judges super liked the team. */
@@ -68,7 +69,8 @@ export interface TeamResult {
 const mean = (values: number[]) =>
   values.reduce((sum, v) => sum + v, 0) / values.length;
 
-function summarize(marks: ResultMark[]): RoundSummary {
+/** `track` is false for the sponsor round: the Adventurous track is general judging only. */
+function summarize(marks: ResultMark[], track: boolean): RoundSummary {
   const perCriterion = new Map<string, number[]>();
   for (const m of marks) {
     for (const [id, value] of Object.entries(m.ratings)) {
@@ -80,15 +82,17 @@ function summarize(marks: ResultMark[]): RoundSummary {
   const criteria: Record<string, number> = {};
   for (const [id, values] of perCriterion) criteria[id] = mean(values);
 
-  const track = marks
-    .map((m) => adventurousTrackScore(m.score, m.ratings))
-    .filter((v): v is number => v !== null);
+  const trackScores = track
+    ? marks
+        .map((m) => adventurousTrackScore(m.score, m.ratings))
+        .filter((v): v is number => v !== null)
+    : [];
 
   return {
     count: marks.length,
     average: marks.length > 0 ? mean(marks.map((m) => m.score)) : null,
     criteria,
-    adventurous: track.length > 0 ? mean(track) : null,
+    adventurous: trackScores.length > 0 ? mean(trackScores) : null,
     superLikes: marks.filter((m) => m.superLike).length,
     marks,
   };
@@ -134,9 +138,11 @@ export function buildTeamResults(
         team,
         regular: summarize(
           marks.filter((m) => m.roundType === "regular").map(toMark),
+          true,
         ),
         sponsored: summarize(
           marks.filter((m) => m.roundType === "sponsored").map(toMark),
+          false,
         ),
       };
     });

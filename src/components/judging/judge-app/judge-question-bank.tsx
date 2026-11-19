@@ -19,10 +19,17 @@ const QUESTION_BANK: QuestionGroup[] = [
     ],
   },
   {
-    title: "Innovation & Creativity",
+    title: "Innovation + Impact",
     questions: [
       "Placeholder: What makes this different from what already exists?",
+      "Placeholder: Who would use this, and what changes for them?",
+    ],
+  },
+  {
+    title: "Creativity",
+    questions: [
       "Placeholder: Where did the idea come from?",
+      "Placeholder: What's the most unexpected choice you made?",
     ],
   },
   {
@@ -33,17 +40,17 @@ const QUESTION_BANK: QuestionGroup[] = [
     ],
   },
   {
-    title: "Completeness",
-    questions: [
-      "Placeholder: What works end to end right now?",
-      "Placeholder: What would you finish with one more day?",
-    ],
-  },
-  {
-    title: "Design",
+    title: "Design/Polish",
     questions: [
       "Placeholder: Who did you design this for?",
       "Placeholder: What would you change after watching someone use it?",
+    ],
+  },
+  {
+    title: "Adventurous",
+    questions: [
+      "Placeholder: What did you try here that you'd never done before?",
+      "Placeholder: What was the biggest risk you took?",
     ],
   },
 ];

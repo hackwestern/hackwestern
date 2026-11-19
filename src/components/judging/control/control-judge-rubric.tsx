@@ -42,8 +42,10 @@ export function RubricBuilder({ rubric = DEFAULT_RUBRIC }: Props) {
         >
           <h2 className="m-0 text-[17px] font-bold">{rubric.title}</h2>
           <p className={`m-0 text-sm ${MUTED}`}>
-            Every criterion counts equally. {count}{" "}
-            {count === 1 ? "criterion" : "criteria"}.
+            {rubric.criteria.some((c) => c.track)
+              ? "The general criteria count equally; track criteria are scored separately."
+              : "Every criterion counts equally."}{" "}
+            {count} {count === 1 ? "criterion" : "criteria"}.
           </p>
           <ol className="m-0 flex list-none flex-col gap-2 p-0">
             {rubric.criteria.map((c) => (

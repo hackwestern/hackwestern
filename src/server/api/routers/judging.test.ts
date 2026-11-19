@@ -1388,12 +1388,13 @@ describe("getAdventurousRanking", () => {
       teamIds,
     } = await setupRoom({ tableCount: 2, judgeCount: 3 });
     const [t1, t2] = teamIds as [string, string];
-    // t1: overall 6, Adventurous 10 -> track 8.6
-    // t2: overall 8, Adventurous 2  -> track 4.1
-    // So t2 leads the general ranking and t1 leads the track.
+    // t1: overall 4, Adventurous 8 -> track 0.35*4 + 0.65*8 = 6.6
+    // t2: overall 8, Adventurous 5 -> track 0.35*8 + 0.65*5 = 6.05
+    // t2 leads the general ranking and t1 leads the track. With the weights
+    // swapped (65/35), t2 would lead the track too (5.4 vs 6.95).
     const marks = {
-      [t1]: { score: 6, adventurous: 10 },
-      [t2]: { score: 8, adventurous: 2 },
+      [t1]: { score: 4, adventurous: 8 },
+      [t2]: { score: 8, adventurous: 5 },
     };
     for (const judge of js) {
       for (const stop of await stopsOf(judge.caller)) {
@@ -1408,10 +1409,11 @@ describe("getAdventurousRanking", () => {
         });
       }
     }
-    // Ignored by the track: a sponsored mark, and a mark with no Adventurous
-    // rating (an organizer judge who isn't in the room).
+    // Ignored by the track: a sponsored mark, a mark with no Adventurous
+    // rating, and one whose Adventurous rating isn't a number.
     const sponsor = await makeJudge({ type: "sponsored", tracks: ["General"] });
     const stray = await makeJudge();
+    const garbled = await makeJudge();
     await db.insert(teamMarks).values([
       {
         teamId: t2,
@@ -1425,6 +1427,12 @@ describe("getAdventurousRanking", () => {
         judgeId: stray.session.user.id,
         score: 10,
         scoreBreakdown: { ratings: { innovation: 10 } },
+      },
+      {
+        teamId: t2,
+        judgeId: garbled.session.user.id,
+        score: 10,
+        scoreBreakdown: { ratings: { adventurous: "10" } } as never,
       },
     ]);
 
