@@ -631,3 +631,22 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 
 **Decision:** Each rep picks how many chats they want (stepper, time shown, e.g. "6 chats · 1 h 30 min"); this replaces the sponsor-level "hours per rep". Scheduling: a rep needs ceil(chats × chat length / 60) sessions, capped by their free sessions. Rep emails aren't collected (name + phone required). Sponsor help is a modal; the confirmation says "Sent. We'll contact you at <their phone>." with no internal routing text. Shortlisting stays one hacker at a time, with a "Who's shortlisting?" picker; picks go into one shared team shortlist labelled by who picked, updating live; the seat cap is for the team. "Your chats" gets a calendar view (reps × sessions with room and building), filterable by rep.
 **Why:** sponsors think in chats, not hours; several reps share one login.
+
+## 2026-11-19: Organizer coffee chat board v8 built in the app
+
+**Decision:** The Coffee chats tab of /internal/sponsors is now the organizer board from `mocks/organizer-coffee-v8`, built on the session model. Built:
+- `src/lib/coffee-chat-schedule.ts`: the pure auto-schedule (pins kept, workshop windows ±15 min blocked, most constrained first, near before Ivey, one building per sponsor per session, no double-booking) with suggested fixes (another session, Ivey together, fewer chats). Tested with the mock's demo data and 200 random boards.
+- Migration 0058: `coffee_chat_pref` (hackers per chat, longer 1-on-1s, submittedAt), `coffee_chat_rep` (name, phone, primary crown, chats wanted, organizer session cap), `coffee_chat_rep_session`, `coffee_chat_placement` (draft/sent, pinned, sentAt) and `coffee_chat_room_booking` (ad hoc bookings). Sessions and rooms are constants in `src/lib/coffee-chat-sessions.ts`. Dev seed: `src/server/db/seed/coffee-chat-sessions.ts` (fake 555 phones, localhost only).
+- `coffeeChatSessions` router (organizers only): getBoard, autoSchedule, applyFix, move/remove a chat, book/move/remove a room, send. Moves refuse a taken room, a rep in two places, a session the rep isn't free and the sponsor's workshop window. Workshop windows come from the run of show's Saturday "Sponsor Workshop" blocks.
+- Send marks every draft chat sent and writes the "Coffee Chat Room Grid" tab only when `sheetWritesEnabled()` is true (production or SHEET_WRITES=1), so dev writes nothing. Moving a sent chat puts it back to draft.
+- UI: Sponsors band (logos, status chips with counts, crown, Contact with Copy / Text with a drafted sms: / Call), Suggested fixes, Rooms grid (Near / Ivey, Workshops row), inline detail, ad hoc booking on empty cells, Help sheet, sticky Auto-schedule → Re-run → Send bar. Copy is in `src/content/coffee-chat-sessions.ts`. Works at 390 px (grid scrolls in its card, 44 px targets).
+
+**Model change (Jazz, same day):** sponsors no longer give "hours per rep". Each rep has their own number of chats wanted (at least 1). Sessions a rep needs = ceil(chats × chat length / 60), with 15-minute 1-on-1s (30 with the longer option) and 30-minute groups. A rep gets min(that, free unblocked sessions). The board shows each rep as "6 chats · 1.5 h", the "fewer hours" fix is "fewer chats", and rep email isn't collected. The Help text was changed to match ("No more sessions than the rep's chats need").
+
+**Why:** Organizers need to place every rep in a room by 10 PM Friday. The scheduler does the placing and organizers check its work.
+
+**Follow-ups:**
+- Sponsor-side preferences flow (Your team with chats per rep, availability grid, Review & submit) writing these tables. Today only the dev seed fills them.
+- Hacker invites and each primary contact's confirmed schedule from Send (a TODO in the router's `send`).
+- Coffee Chat Setup tab columns for the session model (hackers per chat, reps with chats wanted and free sessions, primary rep).
+- Room Grid tab: merged 4-row blocks and grey organizer bookings (needs batchUpdate). Desktop drag to move isn't built yet (tap Move works everywhere). The organizer tour's coffee steps still describe the old board.
