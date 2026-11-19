@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { waitUntil } from "@vercel/functions";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { coffeeChatCopy } from "~/content/coffee-chat";
 import {
@@ -38,9 +38,13 @@ export async function respondToCoffeeChat(
   input: { chatId: string; answer: CoffeeChatAnswer },
   now: Date = new Date(),
   notifyTimeoutMs: number = NOTIFY_TIMEOUT_MS,
+  options: RespondOptions = {},
 ) {
-  const { answer, jobs } = await onceMoreOnDeadlock(() =>
-    answerInTransaction(userId, input, now),
+  const { answer, jobs } = await recordAnswer(
+    userId,
+    input,
+    now,
+    options.boardLockTimeoutMs,
   );
   // After the commit; capped in time, never throws. The next hacker's
   // invite keeps going after the cap (waitUntil); the sweep retries it.
@@ -54,11 +58,57 @@ export async function respondToCoffeeChat(
   return answer;
 }
 
+export type RespondOptions = {
+  /**
+   * Slack only (its 3 s budget): wait at most this long for the board lock.
+   * When it runs out, a decline is saved without its refill and the next
+   * round (every 10 minutes, plus traffic) offers the seat.
+   */
+  boardLockTimeoutMs?: number;
+};
+
+/** Postgres SQLSTATE for a lock wait past lock_timeout (or NOWAIT). */
+const LOCK_NOT_AVAILABLE = "55P03";
+
+/**
+ * Save the answer. A board lock wait past `boardLockTimeoutMs` saves a
+ * decline again in a second, short transaction without the board lock and
+ * without the refill: the chat row alone (NOWAIT, so it never waits twice).
+ * A round that held the board lock meanwhile still counts the seat as taken,
+ * so at worst the seat waits for the next round. An accept that times out
+ * fails (the hacker can click again).
+ */
+async function recordAnswer(
+  userId: string,
+  input: { chatId: string; answer: CoffeeChatAnswer },
+  now: Date,
+  boardLockTimeoutMs: number | undefined,
+) {
+  try {
+    return await onceMoreOnDeadlock(() =>
+      answerInTransaction(userId, input, now, { boardLockTimeoutMs }),
+    );
+  } catch (error) {
+    if (
+      boardLockTimeoutMs === undefined ||
+      input.answer !== "decline" ||
+      !hasPgCode(error, LOCK_NOT_AVAILABLE)
+    ) {
+      throw error;
+    }
+    console.warn(
+      "coffee chat decline: board busy past the Slack budget; saved without the refill",
+    );
+    return answerInTransaction(userId, input, now, { withoutBoard: true });
+  }
+}
+
 /** Record the answer (and a decline's refill) in one transaction. */
 async function answerInTransaction(
   userId: string,
   input: { chatId: string; answer: CoffeeChatAnswer },
   now: Date,
+  mode: { boardLockTimeoutMs?: number; withoutBoard?: boolean },
 ) {
   return db.transaction(async (tx) => {
     const mine = and(
@@ -71,8 +121,15 @@ async function answerInTransaction(
       .select({ placementId: coffeeChats.placementId })
       .from(coffeeChats)
       .where(mine);
-    if (peek?.placementId) await lockBoard(tx);
-    const [chat] = await tx
+    if (peek?.placementId && !mode.withoutBoard) {
+      if (mode.boardLockTimeoutMs !== undefined) {
+        // Every lock wait from here on, the board lock first (55P03 after).
+        const ms = Math.max(1, Math.round(mode.boardLockTimeoutMs));
+        await tx.execute(sql.raw(`set local lock_timeout = '${ms}ms'`));
+      }
+      await lockBoard(tx);
+    }
+    const row = tx
       .select({
         id: coffeeChats.id,
         sponsorId: coffeeChats.sponsorId,
@@ -82,8 +139,10 @@ async function answerInTransaction(
         expiresAt: coffeeChats.expiresAt,
       })
       .from(coffeeChats)
-      .where(mine)
-      .for("update");
+      .where(mine);
+    const [chat] = mode.withoutBoard
+      ? await row.for("update", { noWait: true })
+      : await row.for("update");
     if (!chat) {
       throw new TRPCError({
         code: "NOT_FOUND",
@@ -103,7 +162,7 @@ async function answerInTransaction(
       .where(eq(coffeeChats.id, chat.id));
     // The seat goes to the next hacker now, not in a later round.
     const jobs: InviteJob[] =
-      next === "declined" && chat.placementId
+      next === "declined" && chat.placementId && !mode.withoutBoard
         ? await refillSeatsAfterNo(tx, chat.sponsorId, { now })
         : [];
     return {

@@ -1165,4 +1165,78 @@ describe("lock order: board, sponsor, chat", () => {
       .set({ status: "draft" })
       .where(eq(coffeeChatPlacements.repId, lambda.repId));
   });
+
+  test("Slack's budget: a board lock held past 1.5 s saves the decline without the refill; the next round fills the seat", async () => {
+    process.env.COFFEE_INVITES_ENABLED = "1";
+    vi.setSystemTime(FRI_10PM);
+    const mu = await sponsor(
+      `Mu${Date.now()}`,
+      { hackersPerChat: 1 },
+      { chats: 1 },
+      [{ sessionId: "15", room: "2247", status: "sent" }],
+    );
+    for (const k of ["m1", "m2"]) await hacker(k);
+    await db.insert(sponsorScans).values({ sponsorId: mu.id, userId: ids.m1! });
+    await interested(mu.id, ["m2"]);
+    await db.transaction((tx) =>
+      sendRoundOneInvites(tx, { sponsorIds: [mu.id], now: FRI_10PM }),
+    );
+    const [m1] = await chatsOf(mu.id);
+    const statuses = async () =>
+      (await chatsOf(mu.id)).map((c) => [keyOf(c.userId), c.status]);
+
+    // Another writer holds the board lock: with lock_timeout set, Postgres
+    // gives up on it with 55P03. PGlite runs one transaction at a time, so
+    // the held lock is simulated at the board lock statement.
+    const log = await queriesDuring(
+      () =>
+        respondToCoffeeChat(
+          ids.m1!,
+          { chatId: m1!.id, answer: "decline" },
+          FRI_10PM,
+          0,
+          { boardLockTimeoutMs: 1500 },
+        ),
+      (query) => {
+        if (BOARD_LOCK.test(query)) throw pgError("55P03");
+      },
+    );
+    const timeout = log.findIndex((q) =>
+      /set local lock_timeout = '1500ms'/.test(q),
+    );
+    expect(timeout).toBeGreaterThanOrEqual(0);
+    expect(timeout).toBeLessThan(firstOf(log, BOARD_LOCK));
+    // The second transaction takes the chat row only, without waiting.
+    expect(log.some((q) => /for update nowait/.test(q))).toBe(true);
+    expect(await statuses()).toEqual([["m1", "declined"]]);
+    expect(dm).not.toHaveBeenCalled();
+
+    // The next round offers the seat to m2.
+    await db.transaction((tx) =>
+      runInviteRound(tx, { sponsorIds: [mu.id], now: at("11:05") }),
+    );
+    expect(await statuses()).toEqual([
+      ["m1", "declined"],
+      ["m2", "pending"],
+    ]);
+
+    // Without the Slack budget (/live) there's no lock_timeout.
+    const m2 = (await chatsOf(mu.id)).find((c) => c.userId === ids.m2)!;
+    const live = await queriesDuring(() =>
+      respondToCoffeeChat(
+        ids.m2!,
+        { chatId: m2.id, answer: "accept" },
+        at("11:05"),
+        0,
+      ),
+    );
+    expect(live.some((q) => /lock_timeout/.test(q))).toBe(false);
+
+    await db.delete(coffeeChats).where(eq(coffeeChats.sponsorId, mu.id));
+    await db
+      .update(coffeeChatPlacements)
+      .set({ status: "draft" })
+      .where(eq(coffeeChatPlacements.repId, mu.repId));
+    vi.setSystemTime(FRI_10PM);
+  });
 });
