@@ -262,6 +262,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   - "Canada Life sent preferences but only 0 of 2 reps are scheduled" → "Canada Life: 0 of 2 reps scheduled"
   - "Event now" (when nothing is on) → "Up next"
 - Screens: `07-organizer-happening-now.png`, `22-organizer-judging-no-room.png` (PCBWay row)
+- **Fixed** (Step 5): PCBWay is gone from Needs attention (B2). The row reads "Canada Life: 0 of 2 reps scheduled". Before the event the first row is "Up next". The table is no longer a live region. After: `after/o5-happening-now.png`.
 
 ### Organizer · Happening now · Step 2 · Follow a link
 - Expected: the board opens on that sponsor. **Happened:** the URL changed to `?tab=coffee&sponsor=…`, but the view stayed at the top of the page with focus still on the link. The board is off-screen.
@@ -269,6 +270,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - 5-year-old says: "I pressed it and nothing happened."
 - Fix: scroll to the sponsor's row, open it, and move focus there.
 - Screens: `07-organizer-happening-now-link.png`
+- **Fixed** (Step 5): the link opens the board scrolled to that sponsor's row, opened, with focus on it. It happens once per link, so the 15 s refresh doesn't jump. After: `after/o7-open-coffee-chats.png`, `-390`.
 
 ### Organizer · My sponsors · Step 1 · Lead view
 - Expected: "You lead N sponsors", People with the crown, logistics pills, Coffee chats rows. **Happened:** as expected for a local user with Noah's login email ("You lead 3 sponsors"). The test organizer sees All sponsors only.
@@ -280,6 +282,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Plain wording:
   - "Coffee chat workshop" → "Came to the Friday coffee chat briefing"
 - Screens: `08-organizer-mysponsors-lead.png`
+- **Fixed** (Step 5): the crown always has "Main contact" beside it (My sponsors and the board). The row reads "Came to the Friday coffee chat briefing". "2230 (50)" reads "2230 · 50 seats". Re-walked as Noah; screenshots kept private (real organizer names).
 
 ### Organizer · My sponsors · Step 2 · Copy a phone
 - Expected: "Copied". **Happened:** the label flips to "Copied (519) 555-0104", and the clipboard holds the number. As expected.
@@ -291,6 +294,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - 5-year-old says: "I pressed it and it didn't change."
 - Fix: show the server's `note` in the tab's note area after a status or CC-workshop save.
 - Screens: `08-organizer-mysponsors-arrival.png`, `08-organizer-mysponsors-cc-workshop.png`
+- **Fixed** (Step 5, B7): after the save, the note area says "Canada Life: Not written (sheet writes off)", from the router's `sheetWritten: false`. Same for the briefing pill. Re-walked as Noah; screenshot private.
 
 ### Organizer · My sponsors · Step 4 · All sponsors
 - Expected: `?list=all`. **Happened:** as expected. Clear, no changes.
@@ -303,6 +307,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: "Auto-schedule" is in the sticky bar at the bottom, not near the sentence that tells you to press it.
 - Fix: put an "Auto-schedule" button inside the summary card while nothing is scheduled.
 - Screens: `09-organizer-board.png`, `09-organizer-board-390*.png`
+- **Fixed** (Step 5): the summary card has its own "Auto-schedule" button while sponsors have submitted and nothing is placed. Not re-walked in the browser: the shared DB is already scheduled and sent, and clearing it would break the sponsor-side walk.
 
 ### Organizer · Read the coffee board · Step 2 · Sponsor rows
 - Expected: "Not submitted" / "Submitted, needs scheduling" chips, "0 of 3 reps placed", "Asked for 4 chats · 2 h" plus a phone. **Happened:** as expected.
@@ -311,6 +316,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - 5-year-old says: "Which one is Canada Life?"
 - Fix: always show the sponsor name in text next to the logo.
 - Screens: `09-organizer-board-row-open.png`
+- **Fixed** (Step 5): every row shows the name beside the logo. The chip is the stage ("Not submitted", "Needs scheduling", "Scheduled, not sent", "Sent"), with problems as a separate flag ("1 rep not placed", "1 chat needs a fix", "Changed after invites"). After: `after/o8-board-rows.png`, `-390`, `after/o1-board-chips.png`.
 
 ### Organizer · Read the coffee board · Step 3 · Copy a phone
 - Expected: the copy icon flips to "Copied". **Happened:** as expected. Clear, no changes.
@@ -321,6 +327,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: Help says "Sun Life sets up at 2:00, so its 1–2 runs 1:00–1:30". Today's run of show has Sun Life at 2:30, so the example is out of date (bug B10).
 - Fix: drop the fixed example, or describe the rule without a sponsor's name.
 - Screens: `09-organizer-board-help.png`
+- **Fixed** (Step 5, B10): the rule reads "a workshop with setup at 2:00 leaves 1:00–1:30 of its 1–2 for 30-minute chats", with no sponsor named. Help also says a sponsor's "Confirmed" means the organizer's "Sent", and lists the back-to-back building rule. After: `after/o5-board-help.png`.
 
 ### Organizer · Schedule and fix · Step 1 · Auto-schedule
 - Expected: "Placed N chats.", chips "Scheduled (draft)", Scotiabank's Ivey fix. **Happened:** "Placed 22 chats." (a toast at the bottom). The Scotiabank fix reads "put all 3 reps in Ivey (1352, 1354, 1356) at 1–2 so they stay together." As expected.
@@ -341,11 +348,13 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - 5-year-old says: "I press a chat, then Move, then a blue Move here box."
 - Fix: open the chat panel next to the clicked cell, or scroll it into view.
 - Screens: `09-organizer-board-chat-open.png`, `10-organizer-schedule-move-mode.png`, `10-organizer-schedule-moved.png`
+- **Fixed** (Step 5): the panel scrolls into view above the sticky Send bar when a cell is picked. After: `after/o8-chat-panel.png`, `-390`.
 
 ### Organizer · Schedule and fix · Step 4 · Remove a chat
 - Expected: the chat is removed. **Happened:** removed at once, with no confirm and no toast. The CSE chip went back to "Submitted, needs scheduling".
 - What's happening: clear on the grid.
 - Fix: add an "Undo" toast. It's cheap insurance before Send.
+- **Fixed** (Step 5): "Removed." has an Undo for a draft chat (put back pinned, through a new `placeChat`) and for a booking. A sent chat has no Undo, because its hackers were already told. Re-walked with a booking.
 
 ### Organizer · Schedule and fix · Step 5 · Book a room
 - Expected: the room is held. **Happened:** a form (Room, Session, "Who it's for", Note, Book). The cell shows "Walkthrough booking" and holds after a re-run.
@@ -355,6 +364,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 ### Organizer · Schedule and fix · Step 6 · Re-run Auto-schedule
 - Expected: moves and fixes stay pinned. **Happened:** they stay. **But** the re-run moved Test Sponsor's Dana from Ivey to Rm 2242 for 1–2 and left her 2–3 chat in Ivey 1348. She's booked back to back in buildings a 15-minute walk apart (bug B8).
 - Screens: `10-organizer-schedule-rerun.png`, `14-sponsor-yourchats-after-send.png` (the sponsor's view of it)
+- **Fixed** (Step 5, B8): the scheduler keeps a rep's back-to-back chats in one building when a room is free there. When it can't, the rep row and the chat panel say "Walk to Ivey between chats (2–3)" (or "Walk back from Ivey…"). Never blocked. After: `after/o2-walk-note.png`.
 
 ### Organizer · Send · Step 1 · Not Noah
 - Expected: disabled, "Only Noah sends". **Happened:** as expected. Clear, no changes.
@@ -370,6 +380,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: Sun Life's chats were sent and its hackers invited, but its chip still says "Submitted, needs scheduling" (one rep unplaced) (bug B3).
 - Fix: add a confirm: "Send 23 chats to 6 sponsors and invite their hackers now?" In dry mode, add "(dry run: nothing was messaged)".
 - Screens: `13-organizer-send-noah-before.png`, `13-organizer-send-after.png`, `13-organizer-send-board-after.png`
+- **Fixed** (Step 5): Send asks once, e.g. "Send 1 sponsor's schedules and invite up to 6 hackers? Hackers get a Slack message now." (Send now / Cancel). Send's result carries `invites.dryRun`, read from `COFFEE_INVITES_ENABLED=dry` on the server, and the toast adds "(dry run: nothing was messaged)". Sun Life's chip reads "Sent" + "1 rep not placed" (B3). Re-walked to the dialog and Cancel; Send wasn't pressed again on the shared DB. After: `after/o6-send-confirm.png`, `-390`.
 
 ### Organizer · Send · Step 3 · Re-confirm after a change
 - Expected: "Re-confirmed 1 sponsor who changed after invites." and the flag clears. **Happened:** as expected.
@@ -389,6 +400,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - 5-year-old says: "It says scheduled, so it worked?"
 - Fix: on 0 placed, keep the button "Schedule presentations" and show "Nothing scheduled: Sun Life has no judging room on Sponsor Day-Of."
 - Screens: `22-organizer-judging-no-room.png`
+- **Fixed** (Step 5, B9): with 0 slots the button stays "Schedule presentations", the status reads "Nothing scheduled yet. See why below.", and each team line says "Sun Life has no judging room on Sponsor Day-Of". PCBWay is no longer listed (B2). **Still unclear:** scores are counts only, with no per-rep breakdown; not changed in this run. After: `after/o4-judging-presentations.png`.
 
 ### Organizer · Judging tab · Step 2 · PCBWay digital top 3
 - Expected: a no-match link shows "…doesn't match a submitted team…" and Save stays off. **Happened:** "No submitted team in this track has that link." and Save stays disabled. As expected.
@@ -424,6 +436,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Unclear: the chip also says "Submitted, needs scheduling · 1 of 2 reps placed", although both reps still have chats on the grid.
 - Fix: for a sent sponsor with a broken chat, show "Sent · 1 chat needs a fix".
 - Plain wording: "pinned chat" → "chat you placed by hand"
+- **Fixed** (Step 5): a sent sponsor with a broken chat shows "Sent" + "1 chat needs a fix". The fix text reads "Dana's sent chat at 1–2…" for a sent chat and "…chat you placed by hand at 1–2…" for one an organizer moved or fixed.
 - Screens: `16-handoff-organizer-sees-change.png`, `16-handoff-organizer-test-sponsor-row.png`, `17-organizer-fix-applied-sent-chat.png`
 
 ### Both · Sponsor asks for help → organizer contact
@@ -452,6 +465,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Actual: "PCBWay hasn't sent coffee chat preferences", and "PCBWay · Not sent" under Presentations.
 - Where: `src/lib/sponsor-organizer.ts:768-806` (`needsAttention` flags every sponsor without preferences); the presentations list has the same gap.
 - Screen: `22-organizer-judging-no-room.png`
+- **Fixed** (Step 5): digital sponsors (`isDigitalJudging`) are left out of Needs attention, the coffee board, Presentations (overview and scheduling), and My sponsors' coffee chat and presentation rows. Judging (top 3 entry) is unchanged. Test in `sponsor-organizer.test.ts`.
 
 **B3 · The board chip says "Submitted, needs scheduling" for a sponsor whose chats are sent and hackers invited.**
 - Steps: Auto-schedule with one Sun Life rep unplaced → Noah sends.
@@ -459,6 +473,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Actual: "Submitted, needs scheduling · 2 of 3 reps placed". Sun Life's 3 invites already went out.
 - Where: `src/server/api/utils/coffee-chat-sessions-board.ts:349-361` (`sent` only when every rep is placed).
 - Screen: `13-organizer-send-board-after.png`
+- **Fixed** (Step 5): the status is the stage (nothing placed / drafts not sent / all sent), with `broken` and `total - done` shown as a separate flag. Sun Life reads "Sent · 1 rep not placed". After: `after/o1-board-chips.png`.
 
 **B4 · The change-after-invites dialog counts every invite and promises a re-ask that doesn't happen.**
 - Steps: sent Test Sponsor → Preferences → untick Dana 1–2 (3 invited) → dialog → Change anyway.
@@ -486,12 +501,14 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Actual: the pill flicks, then reverts on refetch. The server's `note` is dropped.
 - Where: `src/components/sponsors/organizer/sponsors-tab.tsx:427` (`setSponsorStatus` has no `onSuccess` reading `note`) and `:472` (CC workshop); server `src/server/api/routers/sponsor-dashboard.ts:189`, `:230`.
 - Screen: `08-organizer-mysponsors-arrival.png`
+- **Fixed** (Step 5): both mutations show the server's note ("<Sponsor>: Not written (sheet writes off)") in the note area.
 
 **B8 · Auto-schedule can book one rep back to back in two buildings.**
 - Steps: Test Sponsor's Dana free 1–4, 4 chats. Run Auto-schedule, move another chat, re-run.
 - Expected: no back-to-back chats a 15-minute walk apart.
 - Actual: Dana in Rm 2242 (main building) at 1–2, then Ivey 1348 at 2–3. The sponsor sees both on Your chats.
 - Where: the scheduler's building rule covers reps in the same session only (Help: "A sponsor's reps in the same session stay in one building"). This needs a decision: add a same-rep, next-session rule, or accept it.
+- **Fixed** (Step 5, per the simplify decision): `pickRoom` prefers the building of the rep's chat right before or after, and never blocks. `buildingSwitches` lists the rest, and the board shows "Walk to Ivey between chats". Tests in `coffee-chat-schedule.test.ts`.
 - Screens: `10-organizer-schedule-rerun.png`, `14-sponsor-yourchats-after-send.png`
 
 **B9 · Schedule presentations reports success when it placed nothing.**
@@ -500,11 +517,13 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Actual: "3 teams couldn't be scheduled… Sponsor has no room", then the button reads "Schedule again" and the status "Scheduled 10:33 AM · 0 slots".
 - Where: `src/content/sponsor-presentations.ts:22`, `:34`, `:128`.
 - Screen: `22-organizer-judging-no-room.png`
+- **Fixed** (Step 5): "scheduled" now means at least one slot. With none, it says "Nothing scheduled yet. See why below." and names where to fix it.
 
 **B10 · The organizer Help sheet's partial-session example is out of date.**
 - Help: "Sun Life sets up at 2:00, so its 1–2 runs 1:00–1:30". The live run of show has Sun Life's workshop at 2:30, and the grid doesn't cut 1–2.
 - Where: the coffee board help sheet copy (`src/components/sponsors/organizer/coffee-sessions/help-sheet.tsx` and its content).
 - Screen: `09-organizer-board-help.png`
+- **Fixed** (Step 5): the example names no sponsor.
 
 **B11 · The portal gives two different "Your Hack Western contact" answers.**
 - Steps: Test Sponsor (no lead) → Home.
