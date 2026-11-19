@@ -61,15 +61,25 @@ export type Pin = { room: string; session: string } & (
 
 export type Place = { rep: string; room: string; session: string };
 
-/** Why a fix's reps couldn't be placed (text key for the "why" line). */
-export type FixReason = "full" | "near" | "ivey" | "open";
-/** "short": one rep short with a room free elsewhere; else "group". */
-export type FixProblem = "short" | "group";
+/** Why a chat on the board now breaks a rule (pins are never re-run). */
+export type ChatProblem = "notSubmitted" | "workshop" | "notFree";
+/**
+ * Why a fix's reps couldn't be placed (text key for the "why" line), or,
+ * for an "invalid" fix, what's wrong with the chat that's there.
+ */
+export type FixReason = "full" | "near" | "ivey" | "open" | ChatProblem;
+/**
+ * "short": one rep short with a room free elsewhere; "group": several, or
+ * no room; "invalid": a chat already on the board breaks a rule now.
+ */
+export type FixProblem = "short" | "group" | "invalid";
 export type FixItem = { rep: string; got: number; want: number };
 export type Suggestion =
   | { kind: "session"; places: Place[] }
   | { kind: "ivey"; session: string; remove: string[]; places: Place[] }
-  | { kind: "fewer"; caps: { rep: string; sessions: number; want: number }[] };
+  | { kind: "fewer"; caps: { rep: string; sessions: number; want: number }[] }
+  /** Move the chat at cell `from` to `to`, or remove it when `to` is null. */
+  | { kind: "move"; from: string; to: Place | null };
 export type Fix = {
   /** Stable for one board: sponsor|session|reason. */
   id: string;
@@ -284,6 +294,88 @@ export function schedule(
 }
 
 /**
+ * Chats on the board that break a rule now: the sponsor unsubmitted, the
+ * session is in their workshop window (the run of show changed), or the rep
+ * unticked it. Pinned, sent and moved chats are never re-run by the
+ * scheduler, so these have to be checked. Only reps of `sponsors` count.
+ */
+export function invalidChats(
+  sponsors: readonly SchedSponsor[],
+  sessions: readonly SchedSession[],
+  board: Board,
+): { key: string; rep: string; sponsor: string; session: string; pinned: boolean; problem: ChatProblem }[] {
+  const out: ReturnType<typeof invalidChats> = [];
+  for (const [key, v] of chatsOf(board)) {
+    const sp = sponsors.find((x) => x.reps.some((r) => r.id === v.rep));
+    const rep = sp?.reps.find((r) => r.id === v.rep);
+    if (!sp || !rep) continue;
+    const { session } = parseKey(key);
+    const problem: ChatProblem | null = !sp.submitted
+      ? "notSubmitted"
+      : blockedSessions(sp, sessions).has(session)
+        ? "workshop"
+        : !rep.free.includes(session)
+          ? "notFree"
+          : null;
+    if (problem) {
+      out.push({ key, rep: rep.id, sponsor: sp.id, session, pinned: !!v.pinned, problem });
+    }
+  }
+  return out;
+}
+
+/** The board without the given cells. */
+export function withoutCells(board: Board, keys: Iterable<string>): Board {
+  const out: Board = { ...board };
+  for (const k of keys) delete out[k];
+  return out;
+}
+
+/**
+ * Every suggested fix for a board: first a "move or remove" fix for each
+ * chat that breaks a rule now (invalidChats), then findFixes for reps that
+ * are short.
+ */
+export function boardFixes(
+  sponsors: readonly SchedSponsor[],
+  rooms: readonly SchedRoom[],
+  sessions: readonly SchedSession[],
+  board: Board,
+): Fix[] {
+  const ctx: Ctx = { rooms, sponsorOf: sponsorIndex(sponsors) };
+  const invalid = invalidChats(sponsors, sessions, board);
+  // Cells already suggested to an earlier fix count as taken.
+  const taken: Board = { ...board };
+  const fixes: Fix[] = [];
+  for (const bad of invalid) {
+    const clean = withoutCells(taken, [bad.key]);
+    const sp = sponsors.find((x) => x.id === bad.sponsor)!;
+    const rep = sp.reps.find((r) => r.id === bad.rep)!;
+    let to: Place | null = null;
+    if (bad.problem !== "notSubmitted") {
+      for (const s of availSessions(sp, rep, sessions)) {
+        if (repKeyAt(clean, rep.id, s)) continue;
+        const pick = pickRoom(ctx, clean, sp.id, rep.id, s);
+        if (!pick.room) continue;
+        to = { rep: rep.id, room: pick.room, session: s };
+        taken[cellKey(pick.room, s)] = { type: "chat", rep: rep.id, pinned: true };
+        break;
+      }
+    }
+    fixes.push({
+      id: `${sp.id}|${bad.key}|${bad.problem}`,
+      sponsor: sp.id,
+      session: bad.session,
+      reason: bad.problem,
+      problem: "invalid",
+      items: [{ rep: rep.id, got: repCount(board, rep.id), want: sessionsNeeded(sp, rep, sessions) }],
+      suggestion: { kind: "move", from: bad.key, to },
+    });
+  }
+  return [...fixes, ...findFixes(sponsors, rooms, sessions, board)];
+}
+
+/**
  * Suggested fixes for any board (after auto-schedule or after hand edits):
  * one per sponsor + first session that failed + reason.
  */
@@ -426,6 +518,13 @@ export function applySuggestion(
   if (sug.kind === "fewer") {
     for (const c of sug.caps) caps[c.rep] = c.sessions;
     return { board: out, maxSessions: caps };
+  }
+  if (sug.kind === "move") {
+    const from = out[sug.from];
+    if (from?.type !== "chat") throw new Error(`fix moves an empty cell ${sug.from}`);
+    delete out[sug.from];
+    if (!sug.to) return { board: out, maxSessions: caps };
+    sug = { kind: "session", places: [sug.to] };
   }
   for (const p of sug.places) {
     const sp = sponsors.find((x) => x.id === sponsorOf.get(p.rep));

@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, test, vi } from "vitest";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "~/server/db";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -205,6 +205,30 @@ describe("send", () => {
     expect(rows.at(-1)![0]).toBe("4:45 PM");
     expect(rows[4]![7]).toBe(`${names.work} · Wes · 1-on-1 · 15 min · 4 chats`);
     expect(rows[5]![7]).toBe("");
+  });
+});
+
+describe("pins are re-checked", () => {
+  test("a sent chat the rep is no longer free for becomes a fix and stops counting", async () => {
+    const tia = await placementOf("Tia");
+    expect(tia.map((p) => p.sessionId).sort()).toEqual(["10", "11"]);
+    await db
+      .delete(coffeeChatRepSessions)
+      .where(and(eq(coffeeChatRepSessions.repId, ids.Tia!), eq(coffeeChatRepSessions.sessionId, "11")));
+    let board = await organizer.coffeeChatSessions.getBoard();
+    const team = () => board.sponsors.find((s) => s.name === names.team)!;
+    expect(team().status).toEqual({ kind: "need", done: 1, total: 2 });
+    const fix = board.fixes.find((f) => f.sponsor === ids[names.team]);
+    expect(fix).toMatchObject({ problem: "invalid", reason: "notFree", session: "11" });
+    expect(fix!.suggestion).toMatchObject({ kind: "move", to: { rep: ids.Tia, session: "15" } });
+    // Re-running keeps the pin (and the fix); applying the fix moves it.
+    await organizer.coffeeChatSessions.autoSchedule();
+    expect((await organizer.coffeeChatSessions.getBoard()).fixes.map((f) => f.id)).toContain(fix!.id);
+    await organizer.coffeeChatSessions.applyFix({ fixId: fix!.id });
+    expect((await placementOf("Tia")).map((p) => p.sessionId).sort()).toEqual(["10", "15"]);
+    board = await organizer.coffeeChatSessions.getBoard();
+    expect(board.fixes.filter((f) => f.sponsor === ids[names.team])).toEqual([]);
+    expect(team().status).toEqual({ kind: "scheduled", done: 2, total: 2 });
   });
 });
 

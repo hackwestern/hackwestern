@@ -107,7 +107,21 @@ export const coffeeSessionsCopy = {
       near: (k: number) => `All ${k} near rooms are taken then.`,
       ivey: (k: number) => `All ${k} Ivey rooms are taken then.`,
       open: "A room is free in another session they ticked.",
+      workshop: "Workshop times come from the run of show, plus 15 minutes of travel time.",
+      notFree: "Their free sessions changed after this chat was placed.",
+      notSubmitted: "Only sponsors who submitted get chats.",
     },
+    /** A chat already on the board that breaks a rule now. */
+    invalid: {
+      workshop: (rep: string, s: string, pinned: boolean, sponsor: string) =>
+        `${rep}'s ${pinned ? "pinned " : ""}chat at ${s} is now during ${sponsor}'s workshop.`,
+      notFree: (rep: string, s: string, pinned: boolean) =>
+        `${rep}'s ${pinned ? "pinned " : ""}chat at ${s} is at a time ${rep} isn't free anymore.`,
+      notSubmitted: (rep: string, s: string, pinned: boolean, sponsor: string) =>
+        `${rep}'s ${pinned ? "pinned " : ""}chat at ${s} is placed, but ${sponsor} hasn't submitted.`,
+    },
+    move: (room: string, s: string) => `move to ${s} (${room}) / remove.`,
+    removeIt: "remove it.",
     session: (places: { rep: string; room: string; s: string }[]) =>
       places.map((p) => `put ${p.rep} in ${p.room} at ${p.s}`).join("; ") + ".",
     ivey: (n: number, rooms: string[], s: string) =>

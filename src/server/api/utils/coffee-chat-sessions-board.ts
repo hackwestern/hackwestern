@@ -10,9 +10,11 @@ import { asc, sql } from "drizzle-orm";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import {
   blockedSessions,
+  boardFixes,
   cellKey,
-  findFixes,
+  invalidChats,
   repTally,
+  withoutCells,
   workshopWindows,
   type Board,
   type Fix,
@@ -277,7 +279,9 @@ export async function loadBoardState(
     };
     sched.push(sp);
     const mine = placements.filter((p) => p.sponsorId === s.id);
-    const tally = repTally(sp, COFFEE_SESSIONS, board);
+    // Chats that break a rule now don't count as scheduled.
+    const bad = invalidChats([sp], COFFEE_SESSIONS, board).map((x) => x.key);
+    const tally = repTally(sp, COFFEE_SESSIONS, withoutCells(board, bad));
     const status: BoardSponsorStatus = !submitted
       ? { kind: "not" }
       : mine.length > 0 &&
@@ -325,7 +329,7 @@ export function sessionBoardOf(state: BoardState): SessionBoard {
     bookings: state.bookings,
     scheduled,
     fixes: scheduled
-      ? findFixes(state.sched, COFFEE_ROOMS, COFFEE_SESSIONS, state.board)
+      ? boardFixes(state.sched, COFFEE_ROOMS, COFFEE_SESSIONS, state.board)
       : [],
     draftCount: state.placements.filter((p) => p.status === "draft").length,
     sentAt: sent.length ? new Date(Math.max(...sent.map((d) => d.getTime()))) : null,

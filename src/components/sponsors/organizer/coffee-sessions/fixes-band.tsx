@@ -16,29 +16,36 @@ const copy = coffeeSessionsCopy;
 const fc = copy.fixes;
 
 /** Problem → why → Suggested → [Apply fix] [Contact], as text. */
-export function fixView(fix: BoardFix, sp: BoardSponsor) {
+export function fixView(fix: BoardFix, sp: BoardSponsor, board: Pick<SessionBoardData, "placements">) {
+  const pinnedAt = (key: string) => {
+    const [room, session] = key.split("|");
+    const p = board.placements.find((x) => x.room === room && x.sessionId === session);
+    return !!p && (p.pinned || p.status === "sent");
+  };
   const rep = (id: string) => sp.reps.find((r) => r.id === id);
   const name = (id: string) => rep(id)?.name ?? "";
   // Sessions to chats: full sessions, capped at what the rep wants.
   const chats = (id: string, sessions: number) =>
     Math.min(sessions * sp.chatsPerSession, rep(id)?.chatsWanted ?? 0);
   const first = fix.items[0]!;
-  const problem =
-    fix.problem === "short"
-      ? fc.short(name(first.rep), chats(first.rep, first.got), chats(first.rep, first.want))
-      : fc.group(fix.items.length, sessionLabel(fix.session));
-  const k = (b: "near" | "ivey") => COFFEE_ROOMS.filter((r) => r.building === b).length;
-  const why =
-    fix.reason === "full"
-      ? fc.why.full
-      : fix.reason === "open"
-        ? fc.why.open
-        : fc.why[fix.reason](k(fix.reason));
   const g = fix.suggestion;
+  const r = fix.reason;
+  const problem =
+    g.kind === "move" && (r === "workshop" || r === "notFree" || r === "notSubmitted")
+      ? fc.invalid[r](name(first.rep), sessionLabel(fix.session), pinnedAt(g.from), sp.name)
+      : fix.problem === "short"
+        ? fc.short(name(first.rep), chats(first.rep, first.got), chats(first.rep, first.want))
+        : fc.group(fix.items.length, sessionLabel(fix.session));
+  const k = (b: "near" | "ivey") => COFFEE_ROOMS.filter((x) => x.building === b).length;
+  const why = r === "near" || r === "ivey" ? fc.why[r](k(r)) : fc.why[r];
   const d = copy.contact.draft;
   let suggestion: string;
   let draft: (firstName: string) => string;
-  if (g.kind === "session") {
+  if (g.kind === "move") {
+    const to = g.to;
+    suggestion = to ? fc.move(copy.rooms.rm(to.room), sessionLabel(to.session)) : fc.removeIt;
+    draft = to ? (f) => d.session(f, name(first.rep), sessionLabel(to.session)) : (f) => d.any(f, sp.name);
+  } else if (g.kind === "session") {
     suggestion = fc.session(g.places.map((p) => ({ rep: name(p.rep), room: p.room, s: sessionLabel(p.session) })));
     draft = (f) => d.session(f, name(g.places[0]!.rep), sessionLabel(g.places[0]!.session));
   } else if (g.kind === "ivey") {
@@ -80,7 +87,7 @@ export function FixesBand({
           {board.fixes.map((fix) => {
             const sp = board.sponsors.find((s) => s.id === fix.sponsor);
             if (!sp) return null;
-            const v = fixView(fix, sp);
+            const v = fixView(fix, sp, board);
             const key = `fix:${fix.id}`;
             return (
               <li

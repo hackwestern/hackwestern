@@ -5,7 +5,7 @@ import { z } from "zod";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import {
   applySuggestion,
-  findFixes,
+  boardFixes,
   parseKey,
   schedule,
 } from "~/lib/coffee-chat-schedule";
@@ -79,7 +79,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       return boardWrite(async (tx, state) => {
         assertWorkshopsKnown(state);
-        const fix = findFixes(state.sched, COFFEE_ROOMS, COFFEE_SESSIONS, state.board).find(
+        const fix = boardFixes(state.sched, COFFEE_ROOMS, COFFEE_SESSIONS, state.board).find(
           (f) => f.id === input.fixId,
         );
         if (!fix) throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownFix });
@@ -95,6 +95,21 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
               .update(coffeeChatReps)
               .set({ maxSessions: c.sessions })
               .where(eq(coffeeChatReps.id, c.rep));
+          }
+          return { kind: sug.kind };
+        }
+        if (sug.kind === "move") {
+          // A chat that breaks a rule now: move it (pinned, back to draft) or remove it.
+          const from = parseKey(sug.from);
+          const p = state.placements.find((x) => x.room === from.room && x.sessionId === from.session);
+          if (!p) throw new TRPCError({ code: "CONFLICT", message: errors.unknownFix });
+          if (sug.to) {
+            await tx
+              .update(coffeeChatPlacements)
+              .set({ room: sug.to.room, sessionId: sug.to.session, pinned: true, status: "draft", sentAt: null })
+              .where(eq(coffeeChatPlacements.id, p.id));
+          } else {
+            await tx.delete(coffeeChatPlacements).where(eq(coffeeChatPlacements.id, p.id));
           }
           return { kind: sug.kind };
         }

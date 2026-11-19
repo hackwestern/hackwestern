@@ -8,9 +8,11 @@ import {
 import {
   applySuggestion,
   blockedSessions,
+  boardFixes,
   cellKey,
   checkBoard,
   findFixes,
+  invalidChats,
   parseKey,
   repCount,
   repKeyAt,
@@ -301,5 +303,37 @@ describe("sessionsForChats", () => {
     expect(repCount(r.board, "a:0")).toBe(2);
     const few = { ...one, reps: [{ ...one.reps[0]!, free: ["10"] }] };
     expect(repCount(schedule([few], ROOMS, SESS, []).board, "a:0")).toBe(1);
+  });
+});
+describe("pins are re-checked (boardFixes)", () => {
+  // Sun Life blocks 13, 14 and 15; sunlife:0 is free 10, 11, 14 and 16.
+  const pinned = (rep: string, room: string, session: string): Board => ({
+    [cellKey(room, session)]: { type: "chat", rep, pinned: true },
+  });
+
+  test("a pinned chat now in a workshop window -> move to a free session", () => {
+    const board = pinned("sunlife:0", "2241", "14");
+    expect(invalidChats(DEMO, SESS, board)).toMatchObject([{ rep: "sunlife:0", session: "14", problem: "workshop", pinned: true }]);
+    const fix = boardFixes(DEMO, ROOMS, SESS, board).find((f) => f.problem === "invalid")!;
+    expect(fix).toMatchObject({ sponsor: "sunlife", session: "14", reason: "workshop" });
+    expect(fix.suggestion).toEqual({ kind: "move", from: "2241|14", to: { rep: "sunlife:0", room: "2241", session: "10" } });
+    const ap = applySuggestion(DEMO, SESS, board, {}, fix.suggestion);
+    expect(ap.board).toEqual({ "2241|10": { type: "chat", rep: "sunlife:0", pinned: true } });
+    expect(invalidChats(DEMO, SESS, ap.board)).toEqual([]);
+  });
+
+  test("a rep no longer free, or a sponsor that unsubmitted", () => {
+    const notFree = pinned("startech:0", "2241", "10");
+    expect(invalidChats(DEMO, SESS, notFree)).toMatchObject([{ problem: "notFree" }]);
+    const unsub = pinned("commure:0", "2241", "10");
+    const fix = boardFixes(DEMO, ROOMS, SESS, unsub).find((f) => f.problem === "invalid")!;
+    expect(fix).toMatchObject({ reason: "notSubmitted", suggestion: { kind: "move", from: "2241|10", to: null } });
+    expect(applySuggestion(DEMO, SESS, unsub, {}, fix.suggestion).board).toEqual({});
+  });
+
+  test("a valid board has no invalid fixes, and the scheduler's output is valid", () => {
+    const r = schedule(DEMO, ROOMS, SESS, [MENTORS]);
+    expect(invalidChats(DEMO, SESS, r.board)).toEqual([]);
+    expect(boardFixes(DEMO, ROOMS, SESS, r.board)).toEqual(r.fixes);
   });
 });
