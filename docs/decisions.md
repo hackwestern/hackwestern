@@ -387,6 +387,40 @@
 
 **Also (coffee chats):** on the organizer coffee chat board, "organizer events" means ad hoc room bookings organizers make (for example a sponsor who wants a room last minute), not run-of-show events. Schedule events don't go on the coffee chat board, and ad hoc bookings don't need their own tab.
 
+## 2026-11-19: Sponsors plan coffee chats on one calendar (Jazz)
+
+**Decision:** Sponsor setup is three steps: 1 Calendar (add named reps, plan blocks), 2 Shortlist, 3 Confirm. The calendar (named reps across the top, Sat 10 AM-5 PM in 15-minute rows) replaces the Format, Chat length, Availability and Preview steps. Each block has its own reps, chat length (15 or 30 min) and hackers per chat. Sponsors never see rooms; organizers assign them. Only named reps exist. Full spec: `docs/specs/sponsor-chat-calendar.md`.
+- Group size: a room holds 6 people, reps and hackers together, so hackers per chat is at most 6 minus the block's reps.
+- Over package hours: allowed and flagged (amber). Organizers send the confirmations and can resize the time.
+- No minimum block length. A soft note recommends at least 1 hour. Replaces the old 1-hour minimum.
+- Buffer: 30-minute chats run 25 min + 5 min break; 15-minute chats run back to back (Claude's suggestion, pending Jazz's OK). The slot math stays 15/30.
+- After invites go out, sponsors can still move or cancel chats, with a strong warning. Changes send hackers an update that needs reconfirming. Replaces "locked once invites go out" for sponsors.
+- The organizer dashboard reads the same blocks, so its labels use 15/30-minute chats too (no 20-minute chats).
+
+**Why:** One calendar shows what sponsors are planning without abstract rules ("at least 1 hour", "blocks merge", how hours are counted); the hours strip shows the clock-time rule.
+
+**Alternatives:** the numbered step flow (`mocks/sponsor-chat-setup-steps-v1`) and the modals (a/b/c-v1): more steps, and the rules have to be explained in text.
+
+## 2026-11-19: Setup deadline Friday night; help ping = lead's phone + Slack post with the sponsor's phone (Jazz)
+
+**Decision (deadline):** Sponsors submit their coffee chat setup by Fri Nov 20, 11:59 PM (Jazz: "by Friday night"; exact time pending). Organizers auto-fill and send invites Saturday morning. Later changes are allowed with the strong warning (see the calendar entry).
+
+**Decision (help ping, proposed, pending Jazz's OK):** Sponsors give their phone number in the setup flow. "Need help" shows their HW lead's name and phone (from HW Contacts) for direct contact, and "Send to the sponsor team" posts to the sponsor Slack channel with the sponsor, message, location and the sponsor's phone, @mentioning their HW lead. Whoever takes it reacts in Slack and calls back. The dashboard doesn't track help requests (no status, no queue).
+
+**Why:** Each sponsor has a dedicated lead, but leads get busy; Slack lets the whole team see it while the mention keeps clear ownership. Tracking help on the dashboard was work nobody needs.
+
+**Alternatives:** lead's phone only (fails when the lead is busy, and nobody else knows); Slack only (no clear owner); keep the dashboard help queue (Jazz: doesn't need managing).
+
+**Not pushed:** the sponsor-dashboard commits stay local until Jazz says to push.
+
+## 2026-11-19: Organizers contact sponsors by phone, not Slack nudges (Jazz)
+
+**Decision:** The organizer coffee chat board has no "Nudge on Slack". "Contact" lists the sponsor's named reps (with the phone each gave in "+ Add rep"), the sponsor's main phone (from setup) and their HW lead. Each person has Copy, Message (an `sms:` link that opens Messages with a drafted text the organizer can edit first) and Call (`tel:`). Mock: `mocks/organizer-coffee-cards-grid-v2`.
+
+**Why:** Sponsors aren't on our Slack, so a nudge can't reach them. A drafted text saves typing on a phone at the event.
+
+**Alternatives:** Slack nudge (sponsors aren't there); email (slow on the day). `sms:` does nothing on most Windows laptops, so Copy stays next to it.
+
 ## 2026-11-19: Guided tours on the organizer dashboard
 
 **Decision:** Each tab of /internal/sponsors (Sponsors, Run of show, Coffee chats, Sponsor judging, Task pings) has a short tour of 3 to 5 steps, drawn with the sponsor portal's overlay (dim, ring, "Step n of N", bottom sheet on phones, centred callout when a target is missing). A "Tour" button in the dashboard header starts the open tab's tour. The first time an organizer opens a tab, a "New here?" card offers it (Start / No thanks); the answer is remembered per tab in localStorage (`hw-organizer-tour-seen:<tab>`), never forced. Tours are data in `src/lib/organizer-tours.ts`, copy in `src/content/organizer-tour.ts`, targets are `data-tour` attributes on the tabs. Switching tabs ends a running tour. Shared pieces moved out of the sponsor tour without changing it: `useTarget` (use-tour-target.ts), `TourOffer` (tour-offer.tsx) and generic `hasSeen`/`markSeen`.
