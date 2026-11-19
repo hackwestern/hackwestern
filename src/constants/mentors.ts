@@ -62,13 +62,6 @@ export const MentorsList: Mentor[] = [
     linkedin: "https://www.linkedin.com/in/hadytoman/",
   },
   {
-    name: "Aleks Bursac",
-    skills: ["Product sense", "Next.js", "React Native", "Figma", "Demos"],
-    tags: ["Software Engineering", "Product Management", "Design"],
-    image: "/landing/mentors/aleksb.webp",
-    linkedin: "https://www.linkedin.com/in/aleksbrsc/",
-  },
-  {
     name: "William Liu",
     skills: ["Project scoping", "Debugging", "Design", "Figma"],
     tags: ["Software Engineering", "Product Management", "Design"],
