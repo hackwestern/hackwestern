@@ -111,6 +111,7 @@ export async function bookingRows(now: Date = new Date()): Promise<string[][]> {
       lastName: applications.lastName,
       userName: users.name,
       slotTime: coffeeChats.slotTime,
+      expiresAt: coffeeChats.expiresAt,
       durationMinutes: coffeeChats.durationMinutes,
       room: coffeeChats.room,
       status: coffeeChats.status,

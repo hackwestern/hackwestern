@@ -43,6 +43,9 @@ const CHAT: CoffeeChatNotice = {
   durationMinutes: 15,
   room: "Rm 2241",
   status: "pending",
+  placementId: null,
+  repName: null,
+  expiresAt: null,
 };
 
 type Call = { method: string; args: URLSearchParams; auth: string };

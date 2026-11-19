@@ -169,16 +169,32 @@ export function coffeeChatsOverlap(
  * write it back later (e.g. for the sheet mirror).
  */
 export function effectiveCoffeeChatStatus(
-  chat: { status: CoffeeChatStatus; slotTime: string },
+  chat: CoffeeChatClock,
   now: Date = new Date(),
 ): CoffeeChatStatus {
   if (chat.status !== "pending") return chat.status;
-  return now >= coffeeChatExpiresAt(chat.slotTime) ? "expired" : "pending";
+  return now >= chatExpiresAt(chat) ? "expired" : "pending";
+}
+
+/**
+ * A chat's status and times. Session invites (src/lib/coffee-chat-invites.ts)
+ * carry their own `expiresAt` (the invite round's answer-by time); old
+ * per-slot requests leave it null and expire 20 minutes before the chat.
+ */
+export type CoffeeChatClock = {
+  status: CoffeeChatStatus;
+  slotTime: string;
+  expiresAt?: Date | null;
+};
+
+/** When a pending chat stops being answerable. */
+export function chatExpiresAt(chat: Pick<CoffeeChatClock, "slotTime" | "expiresAt">): Date {
+  return chat.expiresAt ?? coffeeChatExpiresAt(chat.slotTime);
 }
 
 /** True when the chat still holds a seat right now. */
 export function isActiveCoffeeChat(
-  chat: { status: CoffeeChatStatus; slotTime: string },
+  chat: CoffeeChatClock,
   now: Date = new Date(),
 ): boolean {
   const status = effectiveCoffeeChatStatus(chat, now);

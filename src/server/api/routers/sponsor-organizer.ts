@@ -136,6 +136,7 @@ export const sponsorOrganizerRouter = createTRPCRouter({
             sponsorId: coffeeChats.sponsorId,
             room: coffeeChats.room,
             slotTime: coffeeChats.slotTime,
+            expiresAt: coffeeChats.expiresAt,
             durationMinutes: coffeeChats.durationMinutes,
             status: coffeeChats.status,
             firstName: applications.firstName,
