@@ -11,6 +11,7 @@ Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /li
 | # | Change | Status |
 |---|---|---|
 | 1 | Copy of v4 with every v4 change | Building |
+| 11 | Chatting preferences = Daniel's fixed-session model (`docs/specs/coffee-chat-sessions.md`): Q1 hackers per chat 1–5 (+ longer 1-on-1s), Q2 toggle grid of reps × sessions 10–11 … 4–5 (no 12–1), own workshop blocks cells, Q3 hours per rep 1/2/3/4+; "Up to N chats · up to N hackers"; Review & submit preferences; Confirmed schedule state; "Message organizers" link. Reconciled with Jazz's choices (crown primary, reps only in Your team, workshop only, two flows, no hours totals, Figtree) | Building |
 | 8 | Two separate flows, each with its own Review & submit, made obviously different: (1) Chatting preferences (required): Your team → Preferences → Review & submit preferences; (2) Shortlist (optional): Shortlist → Review & submit shortlist. Two entry cards on Chats; separate step rails; shortlist locked until preferences are submitted (seat cap comes from them) | Building |
 | 9 | Remove "+ Add rep" from the chatting preferences step (reps only created in Your team; an "Edit your team" link instead). The block's "+ rep" chip stays, assigning existing reps only | Building |
 | 10 | No pixel font (Pix32): Figtree everywhere | Building |
@@ -19,7 +20,7 @@ Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /li
 | 5 | Views: Shortlisted / Not shortlisted (plus everyone) | Building |
 | 6 | Shortlist one hacker at a time (swipe or tap Shortlist / Skip) as the default, with a list view to review | Building |
 | 7 | Every hacker card shows all sources: résumé, LinkedIn, GitHub, website (application "other link"), Devpost; one "Open profile" button opens them together (see popup note) | Building |
-| 2 | Chat blocks edited inline per `hackwestern-coffee-prefs/docs/specs/inline-chat-block-editing.md`: drag edges/move for time (times shown above edges), reps as avatar circles + "+ rep", "15 min \| 30 min" pill, −/+ stepper labelled "1-on-1" / "group of N" (max 5 hackers, 6 people), live "N chats · N hackers", trash; dashed lines per chat; resting one-line summary vs selected two-line controls (row grows); narrow blocks get an attached strip under the block; keyboard support. No popup or modal | Building |
+| 2 | SUPERSEDED by row 11 (fixed sessions). Was: chat blocks edited inline per `hackwestern-coffee-prefs/docs/specs/inline-chat-block-editing.md`: drag edges/move for time (times shown above edges), reps as avatar circles + "+ rep", "15 min \| 30 min" pill, −/+ stepper labelled "1-on-1" / "group of N" (max 5 hackers, 6 people), live "N chats · N hackers", trash; dashed lines per chat; resting one-line summary vs selected two-line controls (row grows); narrow blocks get an attached strip under the block; keyboard support. No popup or modal | Building |
 
 ## Default style for every mock (Jazz, 2026-11-19)
 Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /live site style; its README lists every source file:line) for ALL mocks, unless Jazz explicitly names another look for that mock. Current exception: `organizer-coffee-autofill-v6a/b/c` build on autofill-v5's look because Jazz asked for that explicitly.
@@ -100,6 +101,15 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 | 8 | Send and lock per sponsor; four status words: Needs shortlist, Ready to send, Sent, Confirmed | Done |
 | 9 | 8 rooms: 2241–2243 near, Ivey 1348–1358 (15 min walk); organizers decide rooms and clashes | Done |
 | 10 | "Couldn't be placed" as a clickable warning | Done |
+
+## Organizer coffee board v7: `organizer-coffee-v7` (from the audit + fixed sessions)
+| # | Change | Status |
+|---|---|---|
+| 1 | One screen, three bands: Sponsors (status + Contact), Needs a fix (one sentence + one action), Rooms (8 rooms × 6 sessions grid) | Building |
+| 2 | "Auto-schedule" from availability (hours per rep, near rooms first, then Ivey) → one "Send confirmed schedules & invites" | Building |
+| 3 | Sponsor tap shows only their availability grid, hackers per chat, hours per rep, phones (inline, no drawer) | Building |
+| 4 | Removed: legends, instructions, seat counts, hours, shortlist/hacker ID tables, per-sponsor sends | Building |
+| 5 | Hacker-v1 look, Figtree only | Building |
 
 ## Organizer dashboard restyle: `organizer-dashboard-restyle-v1` (replaces nav-a/b/c as the direction)
 | # | Change | Status |
