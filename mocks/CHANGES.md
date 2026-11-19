@@ -102,6 +102,18 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 | 9 | 8 rooms: 2241–2243 near, Ivey 1348–1358 (15 min walk); organizers decide rooms and clashes | Done |
 | 10 | "Couldn't be placed" as a clickable warning | Done |
 
+## Organizer coffee board v8: `organizer-coffee-v8` (Jazz likes v7)
+| # | Change | Status |
+|---|---|---|
+| 1 | "Needs a fix" → "Suggested fixes": problem → why → suggested fix → [Apply fix] [Contact] | Building |
+| 2 | Real scheduling algorithm in the mock (pure function, described in README) producing the schedule and the fixes | Building |
+| 3 | Extra bottom row "Workshops": which company's workshop is on in each session | Building |
+| 4 | Action buttons in one fixed position on every row (no wrapping) | Building |
+| 5 | Crown icon instead of "Main contact" | Building |
+| 6 | Status chips with counts, e.g. "Needs scheduling · 1 of 3" | Building |
+| 7 | One-line legend "■ Scheduled (room) · ✓ Free · ▨ Their event" above the availability grid; cells show "Rm 2243" | Building |
+| 8 | Company logos instead of names | Building |
+
 ## Organizer coffee board v7: `organizer-coffee-v7` (from the audit + fixed sessions)
 | # | Change | Status |
 |---|---|---|
