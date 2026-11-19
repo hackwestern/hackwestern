@@ -261,8 +261,8 @@ async function yourChats(setup: SponsorSetup): Promise<YourChat[]> {
  * sponsorPortal. The shortlist lives in sponsorShortlist. Once organizers
  * sent the sponsor's schedule, a team or preferences write needs
  * `confirmAfterInvites` (the "Invites are already out" warning), and
- * removeRep / savePrefs reconcile the hackers' invites in the same
- * transaction.
+ * removeRep, savePrefs and a rename in updateRep reconcile the hackers'
+ * invites in the same transaction.
  */
 export const coffeeChatSetupRouter = createTRPCRouter({
   get: publicProcedure
@@ -372,15 +372,18 @@ export const coffeeChatSetupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
-      const result = await db.transaction(async (tx) => {
+      const { jobs, ...result } = await db.transaction(async (tx) => {
         const sponsor = await lockForWrite(tx, input.sponsor, input.confirmAfterInvites);
-        await repOf(tx, sponsor.id, input.repId);
+        const rep = await repOf(tx, sponsor.id, input.repId);
         await tx
           .update(coffeeChatReps)
           .set({ name: input.name, phone: input.phone })
           .where(eq(coffeeChatReps.id, input.repId));
-        return { ok: true };
+        // Invites carry the rep's name: a rename re-asks their hackers.
+        const jobs = rep.name !== input.name ? await reconcileIfSent(tx, sponsor) : [];
+        return { ok: true, jobs };
       });
+      await deliver(jobs);
       mirrorCoffeeChatSetupLater();
       return result;
     }),

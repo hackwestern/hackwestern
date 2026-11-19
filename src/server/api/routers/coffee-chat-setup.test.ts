@@ -487,6 +487,32 @@ describe("coffeeChatSetup: edits after Send update invites", () => {
     }
   });
 
+  test("renaming a rep re-asks their hackers with the new name and tells them; a phone change doesn't", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(FRI_1030PM);
+    try {
+      const sp = await sentSponsor([{ name: "Ana", chats: 4, sessionId: "10", room: "1354" }]);
+      const [ana] = sp.reps;
+      await invite(sp.id, ana!.placementId, "10:15", "accepted", "Ana", "1354");
+      deliver.mockClear();
+      await setup.updateRep({ sponsor: sp.id, repId: ana!.repId, name: "Ana", phone: "5195550009", confirmAfterInvites: true });
+      expect(deliver).not.toHaveBeenCalled();
+      expect((await invitesOf(sp.id))[0]).toMatchObject({ status: "accepted", repName: "Ana" });
+
+      await setup.updateRep({ sponsor: sp.id, repId: ana!.repId, name: "Ana Li", phone: "5195550009", confirmAfterInvites: true });
+      expect((await invitesOf(sp.id))[0]).toMatchObject({
+        placementId: ana!.placementId,
+        status: "pending",
+        repName: "Ana Li",
+        notifiedAt: null,
+      });
+      expect(deliver).toHaveBeenCalledTimes(1);
+      expect(deliver.mock.calls[0]![0].map((j) => j.event)).toEqual(["reconfirm"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("lowering a rep's chats cancels invites to the chats that are gone", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(FRI_1030PM);

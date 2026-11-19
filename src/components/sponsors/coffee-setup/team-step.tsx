@@ -51,6 +51,9 @@ export function TeamStep({
     setError(e.message);
     announce(e.message);
   };
+  /** Invited hackers in a rep's sent chats. */
+  const invitedOf = (repId: string) =>
+    data.chats.filter((c) => c.repId === repId).reduce((n, c) => n + c.hackers.length, 0);
 
   const add = api.coffeeChatSetup.addRep.useMutation({ onError });
   const update = api.coffeeChatSetup.updateRep.useMutation({ onError });
@@ -79,24 +82,29 @@ export function TeamStep({
 
   const save = (form: { name: string; phone: string }, repId: string | null) => {
     setError(null);
-    guard((confirmAfterInvites) => {
-      const done = async (msg: string, own: boolean) => {
-        await (own ? refreshOwn() : refresh());
-        setEditing(null);
-        announce(msg);
-      };
-      if (repId) {
-        update.mutate(
-          { sponsor, repId, ...form, confirmAfterInvites },
-          { onSuccess: () => void done(copy.saved(form.name), true) },
-        );
-      } else {
-        add.mutate(
-          { sponsor, ...form, confirmAfterInvites },
-          { onSuccess: () => void done(copy.added(form.name), false) },
-        );
-      }
-    });
+    const rep = repId ? data.reps.find((r) => r.id === repId) : undefined;
+    guard(
+      (confirmAfterInvites) => {
+        const done = async (msg: string, own: boolean) => {
+          await (own ? refreshOwn() : refresh());
+          setEditing(null);
+          announce(msg);
+        };
+        if (repId) {
+          update.mutate(
+            { sponsor, repId, ...form, confirmAfterInvites },
+            { onSuccess: () => void done(copy.saved(form.name), true) },
+          );
+        } else {
+          add.mutate(
+            { sponsor, ...form, confirmAfterInvites },
+            { onSuccess: () => void done(copy.added(form.name), false) },
+          );
+        }
+      },
+      // A rename re-asks the rep's invited hackers (their invites name the rep).
+      rep && rep.name !== form.name ? invitedOf(rep.id) : 0,
+    );
   };
 
   return (
@@ -209,7 +217,7 @@ export function TeamStep({
                           },
                         ),
                       // Their chats go, so all their invited hackers are affected.
-                      data.chats.filter((c) => c.repId === rep.id).reduce((n, c) => n + c.hackers.length, 0),
+                      invitedOf(rep.id),
                     );
                   }}
                 >
