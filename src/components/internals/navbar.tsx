@@ -7,9 +7,7 @@ import { Profile } from "~/components/apply/profile";
 export const INTERNAL_LINKS = [
   { href: "/internal", label: "Home" },
   { href: "/internal/judging", label: "Judging Controls" },
-  { href: "/internal/roster", label: "Judge Roster" },
-  { href: "/internal/rubric", label: "Rubric" },
-  { href: "/internal/team-results", label: "Team Results" },
+  { href: "/internal/roster", label: "Judges and Teams" },
   { href: "/internal/clock", label: "Clock" },
   { href: "/internal/sponsors", label: "Sponsors" },
 ];

@@ -1,21 +1,16 @@
 import Link from "next/link";
 import { useMemo } from "react";
-import { useSession } from "next-auth/react";
 import SEO from "~/components/seo";
-import { InternalNavbar } from "~/components/internals/navbar";
-import { ControlAddJudge } from "~/components/judging/control/control-add-judge";
-import { ControlJudges } from "~/components/judging/control/control-judges";
+import { InternalPage } from "~/components/internals/page-shell";
 import { ControlProgress } from "~/components/judging/control/control-progress";
 import { ControlQueue } from "~/components/judging/control/control-queue";
 import { ControlQueueTable } from "~/components/judging/control/control-queue-table";
 import { ControlRanking } from "~/components/judging/control/control-ranking";
 import {
-  MUTED,
   errorText,
   queueFromProgress,
   useNow,
 } from "~/components/judging/control/control-shared";
-import { ControlSponsorTracks } from "~/components/judging/control/control-sponsor-tracks";
 import { api } from "~/utils/api";
 import { authRedirectOrganizer } from "~/utils/redirect";
 
@@ -28,7 +23,6 @@ function ago(ms: number): string {
 
 export default function JudgingControlRoom() {
   const now = useNow();
-  const { data: session } = useSession();
   const poll = { refetchInterval: POLL_MS };
   const progressQ = api.judging.admin.getProgress.useQuery(undefined, poll);
   const queue = useMemo(
@@ -48,61 +42,46 @@ export default function JudgingControlRoom() {
   return (
     <>
       <SEO title="Judging control room" noindex />
-      <InternalNavbar />
-      <div className="min-h-screen bg-[#eef1f6] px-4 pb-12 pt-8 font-figtree text-[#0b2238] sm:px-5">
-        <div className="mx-auto flex max-w-[1280px] flex-col gap-5">
-          <header className="flex flex-wrap items-end justify-between gap-4">
-            <div className="flex flex-col gap-1">
-              <span className={`text-sm ${MUTED}`}>
-                Hack Western 13 · Organizers
-              </span>
-              <h1 className="m-0 text-[28px] font-bold leading-tight lg:text-[34px]">
-                Judging control room
-              </h1>
-              <span className={`text-[13px] tabular-nums ${MUTED}`}>
-                {updatedAt ? `Updated ${ago(now - updatedAt)} ago` : "Loading…"}
-              </span>
-            </div>
+      <InternalPage
+        title="Judging control room"
+        subtitle={
+          updatedAt ? `Updated ${ago(now - updatedAt)} ago` : "Loading…"
+        }
+        actions={
+          <>
+            <Link
+              href="/internal/roster"
+              className="inline-flex min-h-11 items-center rounded-[10px] border border-[#5b3fa0] px-4 text-[15px] font-bold text-[#5b3fa0] no-underline hover:bg-white"
+            >
+              Judges &amp; teams
+            </Link>
             <Link
               href="/judge"
               className="inline-flex min-h-11 items-center rounded-[10px] bg-[#5b3fa0] px-4 text-[15px] font-bold text-white no-underline hover:bg-[#3f2a75]"
             >
               My judging (phone view)
             </Link>
-          </header>
+          </>
+        }
+      >
+        {failed && (
+          <p
+            aria-live="polite"
+            className="m-0 rounded-xl bg-[#fdecea] px-4 py-3 text-[15px] font-medium text-[#7a1a0f]"
+          >
+            Couldn&apos;t refresh ({errorText(failed)}). Trying again every 5
+            seconds.
+          </p>
+        )}
 
-          {failed && (
-            <p
-              aria-live="polite"
-              className="m-0 rounded-xl bg-[#fdecea] px-4 py-3 text-[15px] font-medium text-[#7a1a0f]"
-            >
-              Couldn&apos;t refresh ({errorText(failed)}). Trying again every 5
-              seconds.
-            </p>
-          )}
+        <ControlQueue queue={queue} />
+        <ControlProgress queue={queue} judges={judgesQ.data} now={now} />
 
-          <ControlQueue queue={queue} />
-          <ControlProgress queue={queue} judges={judgesQ.data} now={now} />
-
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:items-start">
-            <ControlJudges
-              judges={judgesQ.data}
-              queue={queue}
-              now={now}
-              myId={session?.user.id}
-            />
-            <ControlRanking ranking={rankingQ.data} queue={queue} />
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:items-start">
-            <ControlQueueTable queue={queue} now={now} />
-            <div className="flex min-w-0 flex-col gap-5">
-              <ControlSponsorTracks />
-              <ControlAddJudge />
-            </div>
-          </div>
+        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:items-start">
+          <ControlQueueTable queue={queue} now={now} />
+          <ControlRanking ranking={rankingQ.data} queue={queue} />
         </div>
-      </div>
+      </InternalPage>
     </>
   );
 }

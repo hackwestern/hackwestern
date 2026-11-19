@@ -41,11 +41,9 @@ export function ControlJudges({
   );
   const waiting = teams.filter((t) => !t.currentJudgeId);
 
-  // Organizers first, then sponsors; by name so rows don't jump between polls.
-  const rows = [...(judges ?? [])].sort(
-    (a, b) =>
-      (a.type === b.type ? 0 : a.type === "organizer" ? -1 : 1) ||
-      judgeName(a).localeCompare(judgeName(b)),
+  // By name so rows don't jump between polls.
+  const rows = [...(judges ?? [])].sort((a, b) =>
+    judgeName(a).localeCompare(judgeName(b)),
   );
 
   return (
@@ -74,13 +72,7 @@ export function ControlJudges({
               {rows.map((j) => {
                 const name = judgeName(j);
                 const hold = holdByJudge.get(j.id);
-                // Sponsor judges only score teams in their own tracks.
-                const options =
-                  j.type === "sponsored"
-                    ? waiting.filter((t) =>
-                        t.tracks?.some((tr) => j.track?.includes(tr)),
-                      )
-                    : waiting;
+                const options = waiting;
                 const choice = options.find((t) => t.teamId === picked[j.id])
                   ? picked[j.id]!
                   : (options[0]?.teamId ?? "");
@@ -95,11 +87,7 @@ export function ControlJudges({
                           {name}
                           {j.id === myId ? " (you)" : ""}
                         </span>
-                        <span className={`text-xs ${MUTED}`}>
-                          {j.type === "organizer"
-                            ? "Organizer"
-                            : `Sponsor · ${j.track?.join(", ") ?? "no track"}`}
-                        </span>
+                        <span className={`text-xs ${MUTED}`}>Organizer</span>
                       </div>
                     </td>
                     <td className={`${TD} font-semibold tabular-nums`}>
