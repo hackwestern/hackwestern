@@ -106,7 +106,7 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 | # | Change | Status |
 |---|---|---|
 | 1 | "Needs a fix" → "Suggested fixes": problem → why → suggested fix → [Apply fix] [Contact] | Building |
-| 2 | Real scheduling algorithm in the mock (pure function, described in README) producing the schedule and the fixes | Building |
+| 2 | Real scheduling algorithm in the mock (pure function, described in README) producing the schedule and the fixes; NEVER overlaps the sponsor's own workshop + 15-min buffers (also on drags and applied fixes), checked by asserts | Building |
 | 3 | Extra bottom row "Workshops": which company's workshop is on in each session | Building |
 | 4 | Action buttons in one fixed position on every row (no wrapping) | Building |
 | 5 | Crown icon instead of "Main contact" | Building |
