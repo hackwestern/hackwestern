@@ -20,7 +20,7 @@
  *   seats with the same sponsor, and isn't asked again by a sponsor they
  *   declined or let expire.
  * - Round 1 (the Friday ~10 PM Send): answer by Sat 10:00 AM. Round 2 opens
- *   Sat 10:30 AM, then a round every 30 minutes. A round's invite is
+ *   Sat 10:00 AM, as round 1 closes, then a round every 30 minutes. A round's invite is
  *   answered by the round's close or 30 minutes from when it actually ran,
  *   whichever is later, capped at the chat's last call (the old flow's lead:
  *   20 min; 35 for Ivey, a 15-min walk). Under 10 minutes to answer: that
@@ -58,8 +58,8 @@ export const LAST_CHAT_STARTS_AT = saturdayAt(
 
 /** Round 1 must be answered by Sat 10:00 AM. */
 export const ROUND_ONE_CLOSES_MIN = 10 * 60;
-/** Round 2 opens Sat 10:30 AM. */
-export const ROUND_TWO_OPENS_MIN = 10 * 60 + 30;
+/** Round 2 opens Sat 10:00 AM, as round 1 closes. */
+export const ROUND_TWO_OPENS_MIN = 10 * 60;
 /** Every round from 2 on gives this long to answer. */
 export const ROUND_MINUTES = 30;
 /** Walking time to Ivey, added to the last-call lead there. */
@@ -92,9 +92,8 @@ export function roundOpensAt(round: number): Date | null {
 }
 
 /**
- * The round running at `now`: 1 until Sat 10:30 AM, then 2, 3, ... every 30
- * minutes. (Between 10:00 and 10:30 round 1 is closed and nothing new is
- * offered.)
+ * The round running at `now`: 1 until Sat 10:00 AM, then 2, 3, ... every 30
+ * minutes (round 2 is 10:00 to 10:30).
  */
 export function currentRound(now: Date): number {
   const r2 = saturdayAt(ROUND_TWO_OPENS_MIN).getTime();

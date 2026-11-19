@@ -786,18 +786,18 @@ describe("delivery: each invite once, retried until it goes out", () => {
     // Dry run, kill switch off: counts only.
     const before = await db.select().from(coffeeChats);
     const preview = await previewDueInviteRound(at("11:25"));
-    expect(preview).toMatchObject({ status: "ok", round: 3, invites: 1 });
+    expect(preview).toMatchObject({ status: "ok", round: 4, invites: 1 });
     expect(await db.select().from(coffeeChats)).toEqual(before);
     expect(dm).not.toHaveBeenCalled();
 
-    // Round 3 (11:00-11:30) only ran at 11:25.
+    // Round 4 (11:00-11:30) only ran at 11:25.
     process.env.COFFEE_INVITES_ENABLED = "1";
     const out = await runDueInviteRounds(at("11:25"));
     expect(out.status).toBe("ran");
     const rows = await chatsOf(eps.id);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      round: 3,
+      round: 4,
       slotTime: "15:00",
       expiresAt: at("11:55"),
     });

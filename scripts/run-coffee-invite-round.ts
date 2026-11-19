@@ -7,7 +7,7 @@ import {
 } from "~/server/api/utils/coffee-chat-invites";
 
 // One tick of the Saturday coffee chat invites: the current round
-// (runDueInviteRounds: a no-op before 10:30 AM and after the last chat; a
+// (runDueInviteRounds: a no-op before 10:00 AM Saturday and after the last chat; a
 // late or missed round catches up as the current one), then the delivery
 // sweep (any pending invite whose DM or email hasn't gone out yet). Run by
 // .github/workflows/coffee-invite-rounds.yml every 10 minutes on Saturday.
@@ -37,7 +37,7 @@ export async function main(argv: readonly string[], liveFlag?: string) {
       `Coffee invite round at ${now.toISOString()}. Mode: DRY RUN (set COFFEE_ROUNDS_LIVE=true to send).`,
     );
     console.log(
-      `Round ${preview.round}: ${preview.status}, would invite ${preview.invites}, seats left open ${preview.unfilled}.`,
+      `Round ${preview.round}: ${preview.status}, would invite ${preview.invites}, seats no one could fill ${preview.unfilled}.`,
     );
     console.log(`Sweep: ${unnotified} invite(s) waiting to be sent.`);
     console.log("Done. Nothing written or sent.");
@@ -55,7 +55,7 @@ export async function main(argv: readonly string[], liveFlag?: string) {
     const open =
       r.status === "ok" ? r.unfilled.reduce((n, u) => n + u.open, 0) : 0;
     console.log(
-      `Round ${r.round}: ${r.status}, invited ${created}, seats left open ${open}; sent ${counts(out.delivery)}.`,
+      `Round ${r.round}: ${r.status}, invited ${created}, seats no one could fill ${open}; sent ${counts(out.delivery)}.`,
     );
   } else {
     console.log(`Round: ${out.status}.`);

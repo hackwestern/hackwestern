@@ -300,7 +300,7 @@ export const coffeeSessionsCopy = {
     booked: "Room booked.",
     sent: (chats: number, invited: number, open: number) =>
       `Sent ${plural(chats, "chat")}. Invited ${plural(invited, "hacker")}` +
-      (open > 0 ? `; ${plural(open, "seat")} still open, offered again Saturday 10:30 AM.` : "."),
+      (open > 0 ? `; ${plural(open, "seat")} still open, offered again from Saturday 10 AM.` : "."),
     /** Sponsors who changed after invites; Send confirmed their schedule again. */
     reconfirmed: (n: number) =>
       `Re-confirmed ${plural(n, "sponsor")} who changed after invites.`,
@@ -371,7 +371,7 @@ export const coffeeSessionsCopy = {
       before: " marks every draft chat confirmed, re-confirms sponsors who changed after invites (their hackers were already asked again when they saved), and updates the locked ",
       bold: "Coffee Chat Room Grid",
       after:
-        " tab (on the live site only). Each sponsor sees their confirmed chats under Your chats in their portal. Hackers get one invite per seat on Slack (email if Slack can't reach them): people the sponsor met at their booth first, then their shortlist, then hackers interested in them. They answer by Sat 10 AM; open seats are offered again from 10:30 AM every 30 minutes.",
+        " tab (on the live site only). Each sponsor sees their confirmed chats under Your chats in their portal. Hackers get one invite per seat on Slack (email if Slack can't reach them): people the sponsor met at their booth first, then their shortlist, then hackers interested in them. They answer by Sat 10 AM; open seats are offered again from 10 AM every 30 minutes.",
     },
     /** Sponsors and organizers name the same state differently. */
     sameWord: `A sponsor's "Confirmed" (in their portal) means the same as your "Sent" here.`,

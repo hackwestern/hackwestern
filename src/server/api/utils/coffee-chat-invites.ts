@@ -933,7 +933,7 @@ export type DueRoundOutcome =
   | { status: "ran"; result: RoundResult; delivery: DeliveryResult };
 
 /**
- * The timed rounds (2+, Saturday from 10:30 AM, every 30 minutes). Safe to
+ * The timed rounds (2+, Saturday from 10:00 AM, every 30 minutes). Safe to
  * call from any request: a no-op when the kill switch is off, before round
  * 2, after the last chat of the day starts ("over": no lock, no board
  * read), within a minute of the last run, while another run holds the
