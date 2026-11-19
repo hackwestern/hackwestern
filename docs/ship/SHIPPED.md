@@ -30,7 +30,7 @@ The whole build is done, tested and pushed. It's on PR #1165 with a Vercel previ
 - **Help** shows their Hack Western lead's phone and Noah as the emergency contact, each with a copy button. There's no request form.
 - **Judging:**
   - Several reps can judge on one login, scoring 1 to 10 in half points, with a rubric.
-  - They submit a ranked top 3.
+  - They submit a ranked top 5 (1st to 5th).
   - The page opens Sunday 9 AM.
 
 **Organizers:**
@@ -44,7 +44,7 @@ The whole build is done, tested and pushed. It's on PR #1165 with a Vercel previ
 - **Send (Noah only):**
   - Asks first, then confirms the schedules and invites hackers: one per seat, people met at the booth first, then the shortlist, then interested hackers.
   - Hackers answer by Sat 10 AM. Open seats are offered again every 30 minutes from 10:30.
-- **Judging tab:** top 3, and PCBWay's top 3 entered by Devpost link.
+- **Judging tab:** top 5, and PCBWay's top 5 entered by Devpost link.
 
 **Safety:**
 - Invites can't go out from dev or previews. A kill switch is on only on the production deploy, and there's a dry mode for testing.

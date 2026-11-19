@@ -39,7 +39,7 @@ const NOTE = "m-0 text-sm font-medium text-dashboard-text-medium";
  * couldn't fit flagged, Notify hackers (Slack,
  * or email for members not on Slack; only members without their current
  * times, "Notify again" after a confirm) with members not reached listed, Open round 2 (after a
- * confirm; sponsors can't submit a top 3 until then), and the sponsor top
+ * confirm; sponsors can't submit a top 5 until then), and the sponsor top
  * teams for the cheat check.
  */
 export function PresentationsPanel({
@@ -186,8 +186,8 @@ export function PresentationsPanel({
                 ? copy.rescheduleConfirm(confirming.changed)
                 : confirming.kind === "round2"
                   ? confirming.open
-                    ? copy.round2.openConfirm
-                    : copy.round2.closeConfirm
+                    ? copy.round2.openConfirm(data.finalTop)
+                    : copy.round2.closeConfirm(data.finalTop)
                   : copy.resendConfirm(notices.reached)}
             </p>
             <div className="flex shrink-0 gap-2">

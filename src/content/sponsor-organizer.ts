@@ -120,7 +120,7 @@ export const sponsorOrganizerCopy = {
       invites: "Invites",
       judgingShortlist: "Shortlist",
       presentations: "Presentations",
-      topThree: "Top 3",
+      topPicks: (top: number) => `Top ${top}`,
     },
     pill: {
       arrival: ["Not arrived", "Arrived"] as const,
@@ -160,8 +160,8 @@ export const sponsorOrganizerCopy = {
       presentations: (n: number, next: string | null) =>
         next ? `${n} scheduled · next ${next}` : `${n} scheduled`,
       noPresentations: "Not scheduled",
-      topThreeSent: (time: string) => `Sent ${time}`,
-      topThreeNot: "Not sent",
+      topPicksSent: (time: string) => `Sent ${time}`,
+      topPicksNot: "Not sent",
     },
   },
 
@@ -303,7 +303,7 @@ export const sponsorOrganizerCopy = {
       },
       Sunday: {
         shortlists: "Shortlists sent",
-        topFive: "Top 3 sent",
+        topSent: (top: number) => `Top ${top} sent`,
         round2: "Round 2",
         missingRooms: "Missing judging rooms",
       },
@@ -315,7 +315,7 @@ export const sponsorOrganizerCopy = {
       link: "Portal link",
       slots: "Chat slots (booked/asked)",
       round1: "Round 1 shortlist",
-      round2: "Round 2 top 3",
+      round2: (top: number) => `Round 2 top ${top}`,
       where: "Where now",
     },
     /** A sheet-only field when the sponsor sheet didn't load. */

@@ -19,7 +19,7 @@ export const sponsorJudgingCopy = {
   back: "Back to sponsor hub",
   title: "Judging",
   intro: (top: number) =>
-    `Each of you scores projects out of 10, in half points. Save the strongest to your shortlist and send it. After presentations, rank your top ${top}: 1st, 2nd and 3rd place.`,
+    `Each of you scores projects out of 10, in half points. Save the strongest to your shortlist and send it. After presentations, rank your top ${top}: 1st to ${ordinal(top)} place.`,
   trackTag: (track: string) => `Showing teams in ${track}`,
   invalid: {
     title: "Link not recognised",
@@ -286,10 +286,10 @@ export const sponsorJudgingCopy = {
     closed: "Judging has closed.",
     round2Closed: "Round 2 isn't open yet. It opens after presentations.",
     noPrizeTrack: "Judging is only for sponsors with a prize track.",
-    noSlot:
-      "Round 2 is locked: no teams presented to you, so you can't rank a top 3.",
-    digital:
-      "Digital sponsors don't judge in the portal. Send your top 3 to your Hack Western contact.",
+    noSlot: (top: number) =>
+      `Round 2 is locked: no teams presented to you, so you can't rank a top ${top}.`,
+    digital: (top: number) =>
+      `Digital sponsors don't judge in the portal. Send your top ${top} to your Hack Western contact.`,
     notDigital: "That sponsor isn't a digital prize track sponsor.",
     digitalNoMatch: (place: number, link: string) =>
       `${ordinal(place)} place: "${link}" doesn't match a submitted team in this sponsor's track.`,
@@ -337,14 +337,14 @@ export const sponsorJudgingCopy = {
         notOpen: "Not open",
         ranking: "Ranking",
         locked: "Locked: no presentations",
-        submitted: "Top 3 sent",
+        submitted: (top: number) => `Top ${top} sent`,
         digitalWaiting: "Waiting for the spon team",
         digitalEntered: "Entered by the spon team",
       },
       notes: {
         remote: "Judges remotely; presentations are online.",
-        digital:
-          "Digital sponsor: top 3 entered by the spon team from Devpost links.",
+        digital: (top: number) =>
+          `Digital sponsor: top ${top} entered by the spon team from Devpost links.`,
       },
     },
     schedule: {

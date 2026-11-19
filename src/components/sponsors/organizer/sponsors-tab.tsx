@@ -61,6 +61,7 @@ import {
   MAX_SPONSOR_PICKS,
   MIN_SPONSOR_PICKS,
 } from "~/lib/sponsor-judging-rooms";
+import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
 import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
 import {
   leadsSponsor,
@@ -379,7 +380,7 @@ export function SponsorsTab({
   summaries: ReadonlyMap<string, SponsorSummary>;
   summaryLoading: boolean;
   summaryFailed: boolean;
-  /** Organizers have opened round 2 (Sunday top 3). */
+  /** Organizers have opened round 2 (Sunday top 5). */
   round2Open: boolean;
   /** Run-of-show blocks for Sunday's "Where now"; null if not loaded. */
   items: readonly RunOfShowItem[] | null;
@@ -673,7 +674,7 @@ export function SponsorsTab({
               warn: false,
             },
             {
-              label: dayCopy.stats.Sunday.topFive,
+              label: dayCopy.stats.Sunday.topSent(SPONSOR_FINAL_TOP),
               value: of(
                 registered.filter((s) => s.sunday.finalSubmittedAt).length,
                 registered.length,
@@ -868,7 +869,7 @@ export function SponsorsTab({
             },
             {
               key: "round2",
-              header: dayCopy.columns.round2,
+              header: dayCopy.columns.round2(SPONSOR_FINAL_TOP),
               cell: registeredOnly((summary) => (
                 <Round2Cell summary={summary} round2Open={round2Open} />
               )),

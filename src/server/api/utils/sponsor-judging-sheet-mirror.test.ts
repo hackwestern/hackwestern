@@ -111,7 +111,7 @@ const fixture: JudgingSheetInput = {
   finals: [
     {
       sponsorId: "s-scotia",
-      teamIds: ["t1", "t3", "t5"],
+      teamIds: ["t1", "t3", "t5", "t2", "t4"],
       submittedAt: new Date("2026-11-22T12:05:00-05:00"),
     },
   ],
@@ -148,9 +148,9 @@ const fixture: JudgingSheetInput = {
 };
 
 describe("judgingSheetRows", () => {
-  test("one wide row per sponsor with 1st-3rd place, then presentations", () => {
+  test("one wide row per sponsor with 1st-5th place, then presentations", () => {
     const rows = judgingSheetRows(fixture);
-    const pad = (row: string[]) => [...row, ...blank(12 - row.length)];
+    const pad = (row: string[]) => [...row, ...blank(14 - row.length)];
     expect(rows).toEqual(
       [
         [
@@ -166,10 +166,12 @@ describe("judgingSheetRows", () => {
           "Shortlist sent",
           "Shortlist (team IDs)",
           "Round 2 status",
-          "Top 3 sent",
+          "Top 5 sent",
           "1st place",
           "2nd place",
           "3rd place",
+          "4th place",
+          "5th place",
           "Notes",
         ],
         [
@@ -179,12 +181,14 @@ describe("judgingSheetRows", () => {
           "Shortlist sent",
           ts("2026-11-22T09:50:00-05:00"),
           "t2, t1, t3",
-          "Top 3 sent",
+          "Top 5 sent",
           ts("2026-11-22T12:05:00-05:00"),
           // Team ID + Devpost link; no link = ID only; never invented.
           "t1 · devpost.com/software/alpha",
           "t3",
           "t5",
+          "t2 · devpost.com/software/bravo",
+          "t4",
           "",
         ],
         [
@@ -195,6 +199,8 @@ describe("judgingSheetRows", () => {
           "",
           "",
           "Ranking",
+          "",
+          "",
           "",
           "",
           "",
@@ -213,6 +219,8 @@ describe("judgingSheetRows", () => {
           "",
           "",
           "",
+          "",
+          "",
           "Judges remotely; presentations are online.",
         ],
         [
@@ -227,7 +235,9 @@ describe("judgingSheetRows", () => {
           "",
           "",
           "",
-          "Digital sponsor: top 3 entered by the spon team from Devpost links.",
+          "",
+          "",
+          "Digital sponsor: top 5 entered by the spon team from Devpost links.",
         ],
         [],
         ["Presentations"],
@@ -524,7 +534,7 @@ describe("loadJudgingSheetInput", () => {
       "10:00 AM",
       "Rm 2110",
       "Slack",
-      ...blank(5),
+      ...blank(7),
     ]);
     const row = rows.find((r) => r[0] === scotia!.name)!;
     expect(row.slice(8, 10)).toEqual([teamIds[1], teamIds[0]]);

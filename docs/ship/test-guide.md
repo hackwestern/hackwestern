@@ -105,11 +105,11 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 - Edge cases: removing a rep moves their invited hackers to another open seat of the sponsor (they must confirm again) or cancels their invite, and tells them. Fewer chats or a new group size re-asks or cancels the invites that no longer fit. With the run of show unreadable, those edits are refused ("We can't read the event schedule right now…"). A submit or a shortlist change doesn't count as an edit. An API call without the confirm flag gets PRECONDITION_FAILED ("Invites are already out. Confirm the change to save it.").
 
 ### Sponsor · Judging (needs F)
-- Goal: score, shortlist, then rank a top 3.
+- Goal: score, shortlist, then rank a top 5.
 - Starting point: `/sponsors/<uuid>/picks?preview=judging` for a sponsor whose prize track box is ticked on Sponsor Day-Of, with seeded teams. Without `?preview=judging`, before Sun 9:00 AM the page shows "Judging opens Sunday 9:00 AM", the same as the locked nav item.
-- Steps: 1. Pick a name in "Who's judging?" (Your team reps, or "Someone else"). 2. Score in One at a time or in List. 3. Open Rubric. 4. Score as a second rep. 5. Send the shortlist. 6. In round 2, submit exactly 3.
+- Steps: 1. Pick a name in "Who's judging?" (Your team reps, or "Someone else"). 2. Score in One at a time or in List. 3. Open Rubric. 4. Score as a second rep. 5. Send the shortlist. 6. In round 2, submit exactly 5 (1st to 5th).
 - Expected result: a 1 to 10 strip in half points, dimmed until touched. Each project shows "Dana 9.5 · Kevin 6" and the average. Reps 3 or more points apart get an amber flag. Two reps split the list alphabetically ("Your 2" / "Everyone's 6").
-- Edge cases: no prize track, PCBWay ("Digital sponsors don't judge in the portal…"), an empty shortlist, more than 15 shortlisted (Send stays off: "Your room has 15 presentation slots. Remove N teams before you send."), after scheduling each shortlisted team shows "Presents 10:06 AM" under "Each presentation: 3 min pitch · 2 min Q&A", round 2 closed or no presentation slot, and the wrong count ("Submit exactly 3 teams."). A name in different case replaces the score instead of adding one. TinyFish shows "Remote (judges online)".
+- Edge cases: no prize track, PCBWay ("Digital sponsors don't judge in the portal…"), an empty shortlist, more than 15 shortlisted (Send stays off: "Your room has 15 presentation slots. Remove N teams before you send."), after scheduling each shortlisted team shows "Presents 10:06 AM" under "Each presentation: 3 min pitch · 2 min Q&A", round 2 closed or no presentation slot, and the wrong count ("Submit exactly 5 teams."). A name in different case replaces the score instead of adding one. TinyFish shows "Remote (judges online)".
 
 ## Organizer side
 
@@ -157,9 +157,9 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 - Edge cases: kill switch off (`"disabled"`, nothing written), nothing sent (`"nothingSent"`), and an unreadable run of show (nothing written). Re-running only fills seats not offered this round. Before Sat 10:30 AM it's round 1, answered by Sat 10:00 AM or 20 minutes before the chat (35 for Ivey). To preview a later round, run `npx tsx scripts/run-coffee-invite-round.ts --now=2026-11-21T15:30:00Z`, a dry run that only counts. On the board, a sent sponsor's open row shows "Invites: N accepted · N waiting · N open".
 
 ### Organizer · Judging tab (needs F)
-- Goal: follow judging and enter PCBWay's top 3.
-- Steps: 1. Check per-rep scores. 2. Under "Digital sponsors", paste three Devpost links or team IDs. 3. Save.
-- Expected result: each match shows its name, ID and link. Save stays off until all three match different submitted teams in the track.
+- Goal: follow judging and enter PCBWay's top 5.
+- Steps: 1. Check per-rep scores. 2. Under "Digital sponsors", paste five Devpost links or team IDs (1st to 5th place). 3. Save.
+- Expected result: each match shows its name, ID and link. Save stays off until all five match different submitted teams in the track.
 - Edge cases: no match ("…doesn't match a submitted team…"), two matches ("…Paste the team ID instead."), and a missing PCBWay DB row (one is created). PCBWay never shows under Presentations. Schedule presentations that places nothing keeps its label and says "Nothing scheduled yet. See why below.", with lines like "<team> · Sun Life has no judging room on Sponsor Day-Of".
 
 ## Hand-offs between the two sides

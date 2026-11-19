@@ -10,7 +10,7 @@ How sponsor track judging should run, and what the site does at each step.
 | 9:00 to 10:00 | Round 1. Sponsors go through the Devposts in their track on the portal and shortlist teams. |
 | 10:00 to 11:30 | Presentations. Each sponsor track has a room and shortlisted teams come in to present. |
 | After 11:30 | Round 2. Each sponsor picks their top 5 from the teams that presented and sends it to us. |
-| Then | The web team runs the cheat check on every top 3 team. |
+| Then | The web team runs the cheat check on every top 5 team. |
 
 Sponsor rooms so far: Scotiabank in Rm 2110, Canada Life in Rm 2230, QNX in Rm 2235.
 

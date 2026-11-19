@@ -367,11 +367,11 @@ function digitalEntry(name: string) {
  * Sponsor judging on /sponsors/[uuid]/picks: each rep scores submitted
  * teams 1-10 in half points (several reps share one login: "Who's
  * judging?"), the sponsor saves some to a shortlist, then submits a ranked
- * top SPONSOR_FINAL_TOP (1st-3rd). The sponsor's private UUID is the
+ * top SPONSOR_FINAL_TOP (1st-5th). The sponsor's private UUID is the
  * credential, as on their other portal pages; every read and write is
  * scoped to that sponsor, and only teams they can see (submitted, in their
  * track; same rule as Lucas's listAllTeams) can be reviewed or submitted.
- * Digital sponsors have no portal; organizers enter their top 3
+ * Digital sponsors have no portal; organizers enter their top 5
  * (submitDigital). Organizers read everything through `overview`.
  */
 export const sponsorScoringRouter = createTRPCRouter({
@@ -622,7 +622,7 @@ export const sponsorScoringRouter = createTRPCRouter({
     }),
 
   /**
-   * Submit the ranked top SPONSOR_FINAL_TOP (1st, 2nd, 3rd): exactly that
+   * Submit the ranked top SPONSOR_FINAL_TOP (1st to 5th): exactly that
    * many, no repeats, all teams that presented to this sponsor and still
    * eligible. Only once organizers have opened round 2, and only for a
    * sponsor with a placed presentation slot (no slot: FORBIDDEN, Jazz
@@ -657,7 +657,7 @@ export const sponsorScoringRouter = createTRPCRouter({
       // Round 2 ranks only teams that presented to this sponsor. No placed
       // slot (sent late, no room, none fit) means no round 2 for them.
       if (round.slots.length === 0) {
-        throw new TRPCError({ code: "FORBIDDEN", message: errors.noSlot });
+        throw new TRPCError({ code: "FORBIDDEN", message: errors.noSlot(SPONSOR_FINAL_TOP) });
       }
       const allowed = new Set(
         round.slots.map((s) => s.teamId).filter((id) => eligible.has(id)),
@@ -677,7 +677,7 @@ export const sponsorScoringRouter = createTRPCRouter({
 
   /**
    * Organizers: a digital sponsor's track teams (submitted, in its track)
-   * for matching pasted Devpost links on the organizer tab, with the top 3
+   * for matching pasted Devpost links on the organizer tab, with the top 5
    * entered so far.
    */
   digitalTeams: protectedOrganizerProcedure
@@ -707,12 +707,12 @@ export const sponsorScoringRouter = createTRPCRouter({
     }),
 
   /**
-   * Organizers enter a digital sponsor's 1st-3rd place by pasting Devpost
+   * Organizers enter a digital sponsor's 1st-5th place by pasting Devpost
    * links (a team ID works too). Each link must match a different
    * submitted team in that sponsor's track, or nothing is saved. Stored
    * like a portal submission and mirrored to the Sponsor Judging tab.
    * Works after judging closes: it's organizer-only, and the spon team may
-   * get a digital sponsor's top 3 late.
+   * get a digital sponsor's top 5 late.
    */
   submitDigital: protectedOrganizerProcedure
     .input(
@@ -759,7 +759,7 @@ export const sponsorScoringRouter = createTRPCRouter({
    * still judge (submitted, in their track) count toward progress and
    * tallies; a withdrawn team stays in that sponsor's submitted list,
    * flagged `eligible: false`. Digital sponsors are listed with
-   * `digital: true` (their top 3 is entered on this tab).
+   * `digital: true` (their top 5 is entered on this tab).
    */
   overview: protectedOrganizerProcedure.query(async () => {
     const [registered, reviewRows, scoreRows, finals, tracks] =
@@ -874,7 +874,7 @@ export const sponsorScoringRouter = createTRPCRouter({
       finalTop: SPONSOR_FINAL_TOP,
       /** Sponsors whose saved submission hasn't reached the sheet yet. */
       unsyncedCount: finals.filter((f) => f.sheetSyncedAt === null).length,
-      /** Digital prize track entries (top 3 entered here), in list order. */
+      /** Digital prize track entries (top 5 entered here), in list order. */
       digital: digitalEntries(),
       sponsors: perSponsor.map((s) => ({
         sponsorId: s.sponsorId,

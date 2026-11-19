@@ -93,10 +93,10 @@ export const sponsorPresentationsCopy = {
       close: "Close round 2",
       opening: "Opening…",
       closing: "Closing…",
-      openConfirm:
-        "Open round 2 for every sponsor? Sponsors with presentations rank the teams that presented and submit their top 3.",
-      closeConfirm:
-        "Close round 2? Sponsors can't submit a top 3 until you open it again. Rankings already submitted are kept.",
+      openConfirm: (top: number) =>
+        `Open round 2 for every sponsor? Sponsors with presentations rank the teams that presented and submit their top ${top}.`,
+      closeConfirm: (top: number) =>
+        `Close round 2? Sponsors can't submit a top ${top} until you open it again. Rankings already submitted are kept.`,
       openSince: (time: string) => `Round 2 open since ${time}`,
       closed: "Round 2 closed. Open it after presentations.",
     },

@@ -18,7 +18,7 @@ import { sponsorFinalPicks } from "~/server/db/schema";
 // except the track read in listAllTeams.
 export const sponsorJudgingRouter = createTRPCRouter({
   /**
-   * The team ids a sponsor has submitted (their ranked top 3, best first),
+   * The team ids a sponsor has submitted (their ranked top 5, best first),
    * from the database. Public, keyed by the sponsor's private UUID. Empty
    * when they haven't submitted yet.
    */

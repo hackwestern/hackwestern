@@ -59,7 +59,7 @@ export function hasPrizeTrack(
 
 /**
  * Whether the sponsor is a digital prize track sponsor (no portal; the spon
- * team enters their top 3).
+ * team enters their top 5).
  */
 export function isDigitalJudging(sponsorName: string): boolean {
   return prizeTrackOf(sponsorName, DIGITAL_JUDGING_SPONSORS) !== null;
