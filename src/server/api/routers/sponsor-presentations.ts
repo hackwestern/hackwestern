@@ -12,6 +12,7 @@ import {
   slotsKey,
 } from "~/lib/sponsor-presentations";
 import { hasPrizeTrack } from "~/lib/sponsor-prize-tracks";
+import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
 import {
   createTRPCRouter,
@@ -289,7 +290,8 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         round2OpenedAt(),
       ]);
     // Only prize track sponsors take part in judging.
-    const sponsors = registered.filter((s) => hasPrizeTrack(s.name));
+    const prizeTracks = await prizeTrackSponsors();
+    const sponsors = registered.filter((s) => hasPrizeTrack(s.name, prizeTracks));
     const names = await teamNames([
       ...new Set([...rows.map((r) => r.teamId), ...topIds]),
     ]);
@@ -458,6 +460,7 @@ export const sponsorPresentationsRouter = createTRPCRouter({
       // transaction; the sends are read inside it, so the stored schedule
       // always matches one consistent set of shortlists.
       // Only prize track sponsors present (src/content/sponsor-prize-tracks.ts).
+      const prizeTracks = await prizeTrackSponsors();
       const trackSponsors = (
         await db
           .select({
@@ -465,7 +468,7 @@ export const sponsorPresentationsRouter = createTRPCRouter({
             name: sponsorJudgingSponsors.name,
           })
           .from(sponsorJudgingSponsors)
-      ).filter((s) => hasPrizeTrack(s.name));
+      ).filter((s) => hasPrizeTrack(s.name, prizeTracks));
       const trackIds = new Set(trackSponsors.map((s) => s.id));
       const rooms = await judgingRoomsById(trackSponsors);
 

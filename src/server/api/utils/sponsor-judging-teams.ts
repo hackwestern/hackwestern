@@ -4,6 +4,7 @@ import { and, arrayOverlaps, eq, inArray } from "drizzle-orm";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { type TrackValue } from "~/lib/sponsor-track";
 import { db } from "~/server/db";
+import { assertSheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
 import { applications, teams, users } from "~/server/db/schema";
 import {
   SHEET_TAB,
@@ -224,6 +225,8 @@ export async function writeChosenTeams(
   sponsorName: string,
   teamIds: readonly string[],
 ) {
+  // Throws with writes off, so the caller never marks the picks synced.
+  assertSheetWritesEnabled("judging sheet picks");
   const sheets = await getSheetsClient();
   const spreadsheetId = getSpreadsheetId();
 

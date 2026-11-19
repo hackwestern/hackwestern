@@ -15,6 +15,7 @@ import {
   sortCoffeeChatSlots,
 } from "~/lib/coffee-chats";
 import { hasPrizeTrack } from "~/lib/sponsor-prize-tracks";
+import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
   fetchAllChosenTeams,
@@ -134,7 +135,7 @@ export const sponsorPortalRouter = createTRPCRouter({
           picksCount: picks.length,
           // Only prize track sponsors judge (src/content/sponsor-prize-tracks.ts);
           // the others see a "No prize track" tile instead of Judging.
-          hasPrizeTrack: hasPrizeTrack(sponsorName),
+          hasPrizeTrack: hasPrizeTrack(sponsorName, await prizeTrackSponsors()),
           // Coffee chats: 0 minutes means the sponsor never sees the booking
           // link at all.
           maxCoffeeChatMinutes,
@@ -152,7 +153,7 @@ export const sponsorPortalRouter = createTRPCRouter({
           workshopLocation: null,
           workshopTime: null,
           picksCount: 0,
-          hasPrizeTrack: hasPrizeTrack(sponsorName),
+          hasPrizeTrack: hasPrizeTrack(sponsorName, await prizeTrackSponsors()),
           maxCoffeeChatMinutes: 0,
           maxCoffeeChatBlocks: coffeeChatBlocksFor(0),
           coffeeChatBookedCount: 0,
