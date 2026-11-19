@@ -3,6 +3,7 @@ import { useState } from "react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { card, focusRing, touch } from "~/components/judging/shared/judge-ui";
 import { DEFAULT_RUBRIC } from "~/components/judging/shared/rubric-scorer";
+import { SuperLikeMark } from "~/components/judging/shared/super-like";
 import { SearchAutocomplete } from "~/components/internals/search-autocomplete";
 import {
   type RoundSummary,
@@ -35,12 +36,28 @@ function RoundCard({ title, round }: { title: string; round: RoundSummary }) {
         </p>
       ) : (
         <>
-          <div className="flex items-baseline gap-2">
-            <span className="text-5xl font-semibold tabular-nums text-dashboard-text-active">
-              {one(round.average)}
-            </span>
-            <span className="text-base font-medium text-dashboard-text-light">
-              average overall
+          <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+            <div className="flex items-baseline gap-2">
+              <span className="text-5xl font-semibold tabular-nums text-dashboard-text-active">
+                {one(round.average)}
+              </span>
+              <span className="text-base font-medium text-dashboard-text-light">
+                average overall
+              </span>
+            </div>
+            {round.adventurous !== null && (
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-semibold tabular-nums text-dashboard-text-heavy">
+                  {one(round.adventurous)}
+                </span>
+                <span className="text-base font-medium text-dashboard-text-light">
+                  Adventurous track
+                </span>
+              </div>
+            )}
+            <span className="text-base font-medium text-dashboard-text-heavy">
+              {round.superLikes}{" "}
+              {round.superLikes === 1 ? "super like" : "super likes"}
             </span>
           </div>
 
@@ -105,7 +122,7 @@ function RoundCard({ title, round }: { title: string; round: RoundSummary }) {
                       scope="row"
                       className="py-1.5 pr-3 font-medium text-dashboard-text-heavy"
                     >
-                      {m.judgeName}
+                      {m.judgeName} <SuperLikeMark on={m.superLike} />
                     </th>
                     <td className="px-2 py-1.5 font-semibold tabular-nums">
                       {one(m.score)}

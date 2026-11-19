@@ -57,6 +57,7 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
       score: m.score,
       breakdown: m.breakdown,
       notes: m.breakdown?.notes ?? "",
+      superLike: m.breakdown?.superLike === true,
     })),
   );
 }

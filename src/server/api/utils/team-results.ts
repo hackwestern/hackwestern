@@ -2,6 +2,7 @@
 //
 // Pure maths for the organizer results page: every team with the averages of
 // all the marks it got. No database access, so it can be tested on its own.
+import { adventurousTrackScore } from "~/lib/judging-score";
 import { ratingsOf } from "~/server/api/utils/judge-comparison";
 
 export interface TeamInfo {
@@ -25,6 +26,7 @@ export interface MarkRow {
   /** team_mark.score_breakdown, { ratings: { [criterionId]: 0-10 }, notes? }. */
   breakdown: unknown;
   notes: string;
+  superLike: boolean;
 }
 
 export interface ResultMark {
@@ -34,6 +36,7 @@ export interface ResultMark {
   score: number;
   ratings: Record<string, number>;
   notes: string;
+  superLike: boolean;
 }
 
 export interface RoundSummary {
@@ -43,6 +46,14 @@ export interface RoundSummary {
   average: number | null;
   /** Average per criterion, over the marks that rated it. */
   criteria: Record<string, number>;
+  /**
+   * Average Adventurous track score (35% overall + 65% Adventurous), over the
+   * marks with an Adventurous rating. Null when none have one. Raw, not
+   * normalized; the organizer ranking normalizes it per judge.
+   */
+  adventurous: number | null;
+  /** How many judges super liked the team. */
+  superLikes: number;
   marks: ResultMark[];
 }
 
@@ -69,10 +80,16 @@ function summarize(marks: ResultMark[]): RoundSummary {
   const criteria: Record<string, number> = {};
   for (const [id, values] of perCriterion) criteria[id] = mean(values);
 
+  const track = marks
+    .map((m) => adventurousTrackScore(m.score, m.ratings))
+    .filter((v): v is number => v !== null);
+
   return {
     count: marks.length,
     average: marks.length > 0 ? mean(marks.map((m) => m.score)) : null,
     criteria,
+    adventurous: track.length > 0 ? mean(track) : null,
+    superLikes: marks.filter((m) => m.superLike).length,
     marks,
   };
 }
@@ -99,6 +116,7 @@ export function buildTeamResults(
     score: r.score,
     ratings: ratingsOf(r.breakdown),
     notes: r.notes,
+    superLike: r.superLike,
   });
 
   return [...teams]

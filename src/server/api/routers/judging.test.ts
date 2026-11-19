@@ -1380,6 +1380,72 @@ describe("getLatestRanking", () => {
   });
 });
 
+describe("getAdventurousRanking", () => {
+  test("ranks 35% overall + 65% Adventurous, normalized per judge, without touching the general ranking", async () => {
+    const {
+      org,
+      judges: js,
+      teamIds,
+    } = await setupRoom({ tableCount: 2, judgeCount: 3 });
+    const [t1, t2] = teamIds as [string, string];
+    // t1: overall 6, Adventurous 10 -> track 8.6
+    // t2: overall 8, Adventurous 2  -> track 4.1
+    // So t2 leads the general ranking and t1 leads the track.
+    const marks = {
+      [t1]: { score: 6, adventurous: 10 },
+      [t2]: { score: 8, adventurous: 2 },
+    };
+    for (const judge of js) {
+      for (const stop of await stopsOf(judge.caller)) {
+        const m = marks[stop.team!.id]!;
+        await judge.caller.judging.me.submitStop({
+          assignmentId: stop.id,
+          teamId: stop.team!.id,
+          score: m.score,
+          breakdown: {
+            ratings: { innovation: m.score, adventurous: m.adventurous },
+          },
+        });
+      }
+    }
+    // Ignored by the track: a sponsored mark, and a mark with no Adventurous
+    // rating (an organizer judge who isn't in the room).
+    const sponsor = await makeJudge({ type: "sponsored", tracks: ["General"] });
+    const stray = await makeJudge();
+    await db.insert(teamMarks).values([
+      {
+        teamId: t2,
+        judgeId: sponsor.session.user.id,
+        score: 10,
+        roundType: "sponsored",
+        scoreBreakdown: { ratings: { adventurous: 10 } },
+      },
+      {
+        teamId: t2,
+        judgeId: stray.session.user.id,
+        score: 10,
+        scoreBreakdown: { ratings: { innovation: 10 } },
+      },
+    ]);
+
+    const track = await org.caller.judging.admin.getAdventurousRanking();
+    expect(track.map((r) => r.team_id)).toEqual([t1, t2]);
+    expect(Number(track[0]?.normalized_score)).toBeCloseTo(1, 5);
+    expect(Number(track[1]?.normalized_score)).toBeCloseTo(-1, 5);
+    expect(Number(track[1]?.num_marks)).toBe(3);
+
+    const general = await org.caller.judging.admin.getLatestRanking();
+    expect(general[0]?.team_id).toBe(t2);
+  });
+
+  test("is organizer-only", async () => {
+    const judge = await makeJudge();
+    await expect(
+      judge.caller.judging.admin.getAdventurousRanking(),
+    ).rejects.toThrow();
+  });
+});
+
 /* ---------- table status trigger ---------- */
 
 describe("judging_table.status trigger", () => {

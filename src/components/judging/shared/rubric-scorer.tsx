@@ -1,4 +1,5 @@
 import { focusRing } from "~/components/judging/shared/judge-ui";
+import { ADVENTUROUS_ID } from "~/lib/judging-score";
 
 /** Every criterion is scored on the same slider, from 0 to 10 in half steps. */
 export const RUBRIC_MIN = 0;
@@ -15,6 +16,11 @@ export interface RubricCriterion {
   description: string;
   /** Relative importance. Ignored unless the rubric is weighted. */
   weight: number;
+  /**
+   * A track criterion (Adventurous): judges still rate it, but it's left out
+   * of the overall score and only feeds its track's score.
+   */
+  track?: boolean;
 }
 
 export interface Rubric {
@@ -26,16 +32,28 @@ export interface Rubric {
 
 export type Ratings = Record<string, number | undefined>;
 
-/** The default rubric: four criteria, equal weight. */
+/**
+ * The default rubric. The four general criteria count equally toward the
+ * overall score; Adventurous only feeds the Adventurous track score (every
+ * team is in the track), so it doesn't move the general ranking.
+ * Completeness is off the rubric: organizers check it for the top teams.
+ */
 export const DEFAULT_RUBRIC: Rubric = {
   title: "General judging rubric",
   weighted: false,
   criteria: [
     {
       id: "innovation",
-      name: "Innovation & Creativity",
+      name: "Innovation + Impact",
       description:
-        "How unique or original is the project idea? Does it present a new solution to a problem or use technology in an unexpected way?",
+        "How original is the idea, and how much would it matter to the people it's built for?",
+      weight: 1,
+    },
+    {
+      id: "creativity",
+      name: "Creativity",
+      description:
+        "How inventive is the approach? Does it use technology or ideas in an unexpected way?",
       weight: 1,
     },
     {
@@ -46,18 +64,19 @@ export const DEFAULT_RUBRIC: Rubric = {
       weight: 1,
     },
     {
-      id: "completeness",
-      name: "Completeness",
+      id: "design",
+      name: "Design/Polish",
       description:
-        "Does the project work as intended? Are there any major bugs or broken features?",
+        "How user-friendly, visually appealing and finished does the project feel?",
       weight: 1,
     },
     {
-      id: "design",
-      name: "Design",
+      id: ADVENTUROUS_ID,
+      name: "Adventurous",
       description:
-        "How user-friendly and visually appealing is the project? Is the interface intuitive and easy to navigate?",
+        "How bold is the project? Did the team take risks with an ambitious idea or tools new to them?",
       weight: 1,
+      track: true,
     },
   ],
 };
@@ -78,6 +97,7 @@ export const ratingOf = (c: RubricCriterion, ratings: Ratings) => {
 /**
  * Turns ratings into the 0-10 score the backend stores: the weighted average
  * of the criterion ratings (a plain average when the rubric isn't weighted).
+ * Track criteria count toward `rated` but not toward the score.
  * It only means something once every criterion has been rated.
  */
 export function scoreRubric(
@@ -91,6 +111,7 @@ export function scoreRubric(
   for (const c of rubric.criteria) {
     const rating = ratingOf(c, ratings);
     if (rating !== undefined) rated += 1;
+    if (c.track) continue;
     const weight = effectiveWeight(rubric, c);
     totalWeight += weight;
     part += weight * (rating ?? RUBRIC_MIN);

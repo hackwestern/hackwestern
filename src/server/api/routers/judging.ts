@@ -7,6 +7,11 @@ import {
   protectedOrganizerProcedure,
   protectedProcedure,
 } from "~/server/api/trpc";
+import {
+  ADVENTUROUS_GENERAL_WEIGHT,
+  ADVENTUROUS_ID,
+  ADVENTUROUS_RATING_WEIGHT,
+} from "~/lib/judging-score";
 import { db, extractRows } from "~/server/db";
 import { judgingAssignments, judges, users } from "~/server/db/schema";
 import { maybeTriggerSweepOnJudgingComplete } from "~/server/api/utils/cheat-check-sweep";
@@ -118,6 +123,54 @@ async function getRanking() {
     normalized_score: number;
     num_marks: number;
   }>(result);
+}
+
+type AdventurousRow = {
+  team_id: string;
+  team_name: string;
+  normalized_score: number;
+  num_marks: number;
+};
+
+/**
+ * The Adventurous track ranking, normalized the same way as the general one.
+ * Each mark's track score is 35% its overall score (the general criteria
+ * average) + 65% its Adventurous rating; marks without an Adventurous rating
+ * are left out. Regular-round marks from organizer judges only.
+ */
+async function getAdventurousRanking() {
+  const result = await db.execute<AdventurousRow>(sql`
+    WITH track AS (
+      SELECT
+        m.team_id,
+        m.judge_id,
+        ${ADVENTUROUS_GENERAL_WEIGHT}::double precision * m.score
+          + ${ADVENTUROUS_RATING_WEIGHT}::double precision
+            * (m.score_breakdown -> 'ratings' ->> ${ADVENTUROUS_ID})::double precision
+          AS score
+      FROM team_mark m
+      JOIN "judge" j ON j.id = m.judge_id
+      WHERE m.round_type = 'regular'
+        AND j.type = 'organizer'
+        AND jsonb_typeof(m.score_breakdown -> 'ratings' -> ${ADVENTUROUS_ID}) = 'number'
+    ),
+    judge_stats AS (
+      SELECT judge_id, AVG(score) AS mu, STDDEV_POP(score) AS sigma
+      FROM track
+      GROUP BY judge_id
+    )
+    SELECT
+      tr.team_id,
+      t.name AS team_name,
+      AVG((tr.score - js.mu) / NULLIF(js.sigma, 0)) AS normalized_score,
+      COUNT(*) AS num_marks
+    FROM track tr
+    JOIN judge_stats js ON js.judge_id = tr.judge_id
+    JOIN team t ON t.id = tr.team_id
+    GROUP BY tr.team_id, t.name
+    ORDER BY normalized_score DESC NULLS LAST
+  `);
+  return extractRows<AdventurousRow>(result);
 }
 
 /**
@@ -393,6 +446,13 @@ export const judgingRouter = createTRPCRouter({
 
     getLatestRanking: protectedOrganizerProcedure.query(async () => {
       return withErrorHandling(() => getRanking(), "Failed to get ranking");
+    }),
+
+    getAdventurousRanking: protectedOrganizerProcedure.query(async () => {
+      return withErrorHandling(
+        () => getAdventurousRanking(),
+        "Failed to get the Adventurous ranking",
+      );
     }),
 
     getAllJudges: protectedOrganizerProcedure.query(async () => {
