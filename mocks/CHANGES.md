@@ -57,6 +57,12 @@ Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /li
 | 17 | Shortlist cards show each hacker's website link | Building |
 | 11 | Map works exactly like the hacker live site map (pinch / ⌘-Ctrl + scroll zoom, drag to move, same buttons and text) | Building |
 
+## In the real app (build)
+| # | What | Status |
+|---|---|---|
+| 1 | Organizer Coffee chats tab replaced by the v8 board (algorithm + tests, migration 0058, tRPC router, UI, Help), worktree coffee-prefs, not pushed | Building |
+| 2 | Follow-ups: sponsor preferences flow (v5), hacker invites from the new schedule, Coffee Chat Setup tab columns for sessions | Not yet |
+
 ## Final mocks
 - **Sponsor portal (final):** `sponsor-portal-flow-hacker-v3` (hacker-v2's look + everything below)
 - **Organizer coffee chats (final candidates):** `organizer-coffee-autofill-v6a`, `-v6b`, `-v6c` (autofill-v5's look; three ways to show sponsor info on the same page)
