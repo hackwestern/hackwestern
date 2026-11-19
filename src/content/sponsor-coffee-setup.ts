@@ -335,7 +335,8 @@ export const sponsorSetupCopy = {
     format: (hackersPerChat: number, minutes: number) =>
       hackersPerChat === 1 ? `1-on-1 · ${minutes} min` : `Group of ${hackersPerChat} · ${minutes} min`,
     chatCount: (n: number) => plural(n, "chat"),
-    until: (end: string) => `until ${end}`,
+    /** When chats in a cut (or short) session run: "2:30–3:00". */
+    between: (start: string, end: string) => `${start}–${end}`,
     hackers: (n: number) => (n === 0 ? "No hackers yet" : plural(n, "hacker")),
     status: { pending: "Invited", accepted: "Confirmed" } as Record<string, string>,
     repChats: (n: number) => plural(n, "chat"),

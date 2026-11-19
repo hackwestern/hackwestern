@@ -37,6 +37,7 @@ import {
 import {
   COFFEE_SESSIONS,
   WORKSHOP_BUFFER_MIN,
+  sessionWindow,
   type Building,
 } from "~/lib/coffee-chat-sessions";
 
@@ -185,29 +186,21 @@ export type InviteWorkshop = {
 };
 
 /**
- * Chat start times that fit inside a session: back to back from the start,
- * each a full chat long, none overlapping a workshop window (setup or start
- * minus 15 min, to end plus 15 min). A session cut by a window keeps only
- * the chats that fit, e.g. 1:00-2:00 with setup at 1:45 -> 1:00 and 1:15.
+ * Chat start times inside a session: back to back through its usable
+ * window (sessionWindow, the same window the organizer board and the
+ * sponsor's "Your chats" use), each a full chat long. A session cut by a
+ * workshop window (setup or start minus 15 min, to end plus 15 min) keeps
+ * only the whole chats in the part left, e.g. 1:00-2:00 with setup at 1:45
+ * -> 1:00 and 1:15.
  */
 export function sessionChatStarts(
   session: { start: number; end: number },
   chatMinutes: number,
   workshops: readonly InviteWorkshop[] = [],
 ): number[] {
+  const w = sessionWindow(session, workshops, chatMinutes);
   const out: number[] = [];
-  for (
-    let t = session.start;
-    t + chatMinutes <= session.end;
-    t += chatMinutes
-  ) {
-    const clash = workshops.some((w) => {
-      const from = (w.setup ?? w.start) - WORKSHOP_BUFFER_MIN;
-      const to = w.end + WORKSHOP_BUFFER_MIN;
-      return t < to && from < t + chatMinutes;
-    });
-    if (!clash) out.push(t);
-  }
+  for (let t = w?.start ?? 0; w && t + chatMinutes <= w.end; t += chatMinutes) out.push(t);
   return out;
 }
 

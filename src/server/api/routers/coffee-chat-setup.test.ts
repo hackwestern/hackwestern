@@ -1,4 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
+import type * as InvitesModule from "~/server/api/utils/coffee-chat-invites";
+import type * as RunOfShowModule from "~/server/api/utils/run-of-show-sheet";
 import { asc, eq } from "drizzle-orm";
 import { faker } from "@faker-js/faker";
 
@@ -16,6 +18,8 @@ import {
   sponsorScans,
 } from "~/server/db/schema";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
+import { layoutOf } from "~/server/api/utils/coffee-chat-invites";
+import { loadBoardState } from "~/server/api/utils/coffee-chat-sessions-board";
 
 const { stamp, ros, deliver } = vi.hoisted(() => ({
   stamp: Date.now(),
@@ -28,7 +32,7 @@ const { stamp, ros, deliver } = vi.hoisted(() => ({
 }));
 
 vi.mock("~/server/api/utils/coffee-chat-invites", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("~/server/api/utils/coffee-chat-invites")>()),
+  ...(await importOriginal<typeof InvitesModule>()),
   deliverInviteNotices: deliver,
 }));
 
@@ -37,7 +41,7 @@ vi.mock("~/server/api/utils/coffee-chat-invites", async (importOriginal) => ({
 // "LateCo<stamp>"'s runs 13:00-14:20 -> 2-3 keeps 2:45-3:00: one 15-min
 // chat, no 30-min one.
 vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("~/server/api/utils/run-of-show-sheet")>()),
+  ...(await importOriginal<typeof RunOfShowModule>()),
   getRunOfShow: () =>
     ros.fail ? Promise.reject(new Error("sheet down")) : Promise.resolve({
       readAt: "2026-11-21T12:00:00.000Z",
@@ -50,6 +54,16 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
           column: "sponsor-workshop",
           title: `WorkCo${stamp} Workshop`,
           location: "Rm 2230",
+          sponsors: [],
+        },
+        {
+          id: "Saturday-13:00-sponsor-workshop-cut",
+          day: "Saturday",
+          start: "13:00",
+          end: "14:00",
+          column: "sponsor-workshop",
+          title: `CutCo${stamp} Workshop`,
+          location: "Rm 2232",
           sponsors: [],
         },
         {
@@ -507,5 +521,35 @@ describe("coffeeChatSetup: edits after Send update invites", () => {
     await setup.savePrefs({ sponsor: id, hackersPerChat: 2, reps: [{ id: a.id, chatsWanted: 2, free: ["10"] }] });
     await setup.removeRep({ sponsor: id, repId: a.id });
     expect(deliver).not.toHaveBeenCalled();
+  });
+});
+
+describe("coffeeChatSetup: Your chats times", () => {
+  test("a session cut by their workshop starts late, at the same times hackers are invited to", async () => {
+    // CutCo's workshop is 1-2, so with 30-min groups its 2-3 is only 2:30-3:00.
+    const id = await sponsor(`CutCo${stamp}`);
+    const a = await setup.addRep({ sponsor: id, name: "Ana", phone: "5195550001" });
+    await setup.savePrefs({ sponsor: id, hackersPerChat: 2, reps: [{ id: a.id, chatsWanted: 3, free: ["14", "16"] }] });
+    await setup.submitPrefs({ sponsor: id });
+    await db.insert(coffeeChatPlacements).values([
+      { repId: a.id, sessionId: "14", room: "2241", status: "sent", sentAt: new Date() },
+      { repId: a.id, sessionId: "16", room: "2242", status: "sent", sentAt: new Date() },
+    ]);
+
+    const res = await setup.get({ sponsor: id });
+    expect(res.chats.map((c) => [c.sessionId, c.chats, c.start, c.end])).toEqual([
+      ["14", 1, "14:30", "15:00"],
+      ["16", 2, "16:00", "17:00"],
+    ]);
+
+    // Track B's seats for the same placements: the same start times.
+    const clock = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+    const seats = layoutOf(await loadBoardState(), (p) => p.sponsorId === id);
+    for (const c of res.chats) {
+      const starts = seats.filter((x) => x.placementId === c.placementId).map((x) => x.start);
+      expect(starts.length, c.sessionId).toBe(c.chats);
+      expect(clock(starts[0]!)).toBe(c.start);
+      expect(clock(starts.at(-1)! + seats[0]!.minutes)).toBe(c.end);
+    }
   });
 });

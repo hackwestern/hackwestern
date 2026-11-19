@@ -15,6 +15,7 @@ import {
   type PlanChat,
   type PlanInput,
 } from "~/lib/coffee-chat-invites";
+import { COFFEE_SESSIONS, chatsInWindow, usableWindow } from "~/lib/coffee-chat-sessions";
 
 const FRI_10PM = new Date("2026-11-20T22:00:00-05:00");
 const at = (hhmm: string) => new Date(`2026-11-21T${hhmm}:00-05:00`);
@@ -85,6 +86,26 @@ describe("seat times", () => {
     expect(sessionChatStarts({ start: 600, end: 660 }, 15, ws3)).toEqual([
       630, 645,
     ]);
+  });
+
+  test("seat times are usableWindow's, chat by chat, for full and partial sessions", () => {
+    // Sun Life sets up at 2:00 (blocked 1:45-3:15); another sponsor at 10:00.
+    const cases = [
+      [{ setup: min("14:00"), start: min("14:00"), end: min("15:00") }],
+      [{ start: min("10:00"), end: min("10:20") }],
+      [],
+    ];
+    for (const ws of cases) {
+      for (const minutes of [15, 30]) {
+        for (const s of COFFEE_SESSIONS) {
+          const w = usableWindow(s.id, ws, minutes);
+          const fromWindow = w
+            ? Array.from({ length: chatsInWindow(w, minutes) }, (_, k) => w.start + k * minutes)
+            : [];
+          expect(sessionChatStarts(s, minutes, ws), `${s.id} @ ${minutes}`).toEqual(fromWindow);
+        }
+      }
+    }
   });
 
   test("a session fully inside the window has no chats", () => {

@@ -166,7 +166,10 @@ export function YourChats({ data }: { data: SetupData }) {
 }
 
 function ChatCard({ chat, data }: { chat: Chat; data: SetupData }) {
-  const fullHour = chat.end === `${String(Number(chat.start.slice(0, 2)) + 1).padStart(2, "0")}:00`;
+  // A session cut by their workshop starts late or ends early: say when.
+  const fullHour =
+    chat.start.endsWith(":00") &&
+    chat.end === `${String(Number(chat.start.slice(0, 2)) + 1).padStart(2, "0")}:00`;
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-dashboard-sm border-l-4 border-dashboard-action-primary bg-dashboard-bg-highlight p-2 text-xs text-dashboard-text-medium">
       <span className="text-sm font-semibold text-dashboard-text-heavy">
@@ -174,7 +177,7 @@ function ChatCard({ chat, data }: { chat: Chat; data: SetupData }) {
       </span>
       <span>
         {copy.format(data.hackersPerChat, data.chatMinutes)} · {copy.chatCount(chat.chats)}
-        {!fullHour && ` · ${copy.until(shortClock(chat.end))}`}
+        {!fullHour && ` · ${copy.between(shortClock(chat.start), shortClock(chat.end))}`}
       </span>
       <span className="font-semibold text-dashboard-text-heavy">{copy.hackers(chat.hackers.length)}</span>
       {chat.hackers.length > 0 && (

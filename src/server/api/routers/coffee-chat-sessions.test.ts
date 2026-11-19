@@ -1,4 +1,8 @@
 import { beforeAll, describe, expect, test, vi } from "vitest";
+import type * as InvitesModule from "~/server/api/utils/coffee-chat-invites";
+import type * as RunOfShowModule from "~/server/api/utils/run-of-show-sheet";
+import type * as SenderModule from "~/server/api/utils/coffee-chat-sender";
+import type * as RoomGridModule from "~/server/api/utils/coffee-chat-room-grid-mirror";
 import { and, eq } from "drizzle-orm";
 import { db } from "~/server/db";
 import { createCaller } from "~/server/api/root";
@@ -25,7 +29,7 @@ const { names, ros, mirror, hw, deliver } = vi.hoisted(() => {
      * What HW Contacts says Noah's login email is: an email, null (no
      * login email) or "unreadable". Set to the organizer's email below.
      */
-    hw: { sender: "unreadable" as string | null | "unreadable" },
+    hw: { sender: "unreadable" as string | null },
     names: { work: `WorkCo${stamp}`, team: `TeamCo${stamp}`, late: `LateCo${stamp}`, busy: `BusyCo${stamp}` },
     /** Flip to make the run-of-show read fail, or to turn sheet writes on. */
     ros: { fail: false, writes: false },
@@ -38,13 +42,13 @@ const { names, ros, mirror, hw, deliver } = vi.hoisted(() => {
 });
 
 vi.mock("~/server/api/utils/coffee-chat-invites", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("~/server/api/utils/coffee-chat-invites")>()),
+  ...(await importOriginal<typeof InvitesModule>()),
   deliverInviteNotices: deliver,
 }));
 
 // WorkCo's workshop is 13:00-14:00 -> 1-2 is blocked, 2-3 is partial (2:15-3:00).
 vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("~/server/api/utils/run-of-show-sheet")>()),
+  ...(await importOriginal<typeof RunOfShowModule>()),
   sheetWritesEnabled: () => ros.writes,
   getRunOfShow: () =>
     ros.fail ? Promise.reject(new Error("sheet down")) : Promise.resolve({
@@ -71,7 +75,7 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
 
 // HW Contacts is never read in tests: the sender's login email comes from `hw`.
 vi.mock("~/server/api/utils/coffee-chat-sender", async (importOriginal) => {
-  const real = await importOriginal<typeof import("~/server/api/utils/coffee-chat-sender")>();
+  const real = await importOriginal<typeof SenderModule>();
   return {
     ...real,
     checkCoffeeSender: (email: string | null | undefined) =>
@@ -81,7 +85,7 @@ vi.mock("~/server/api/utils/coffee-chat-sender", async (importOriginal) => {
 
 // Spy on the Room Grid mirror (it never writes here: no sheet in tests).
 vi.mock("~/server/api/utils/coffee-chat-room-grid-mirror", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("~/server/api/utils/coffee-chat-room-grid-mirror")>()),
+  ...(await importOriginal<typeof RoomGridModule>()),
   mirrorRoomGrid: mirror,
 }));
 

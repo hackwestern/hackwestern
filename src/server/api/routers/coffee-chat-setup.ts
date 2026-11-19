@@ -70,7 +70,11 @@ export type YourChat = {
   building: "near" | "ivey";
   /** Chats this rep runs in this session (the last one may be partial). */
   chats: number;
-  /** "HH:MM": session start, and where their chats end inside it. */
+  /**
+   * "HH:MM": when their first chat starts and their last one ends, inside
+   * the session's usable window (a session cut by their workshop starts
+   * late or ends early). Same times as the hackers' invites.
+   */
   start: string;
   end: string;
   /** Invited hackers so far (track B's invites), first names only. */
@@ -188,6 +192,8 @@ async function repOf(tx: Tx, sponsorId: string, repId: string) {
 /** Sent chats for this sponsor's reps, with invited hackers. */
 async function yourChats(setup: SponsorSetup): Promise<YourChat[]> {
   if (!setup.confirmed || setup.reps.length === 0) return [];
+  // Usable part of each session: the same rule as the board and the invites.
+  const windows = setupWindows(setup.workshops, setup.chatMinutes);
   const rows = await db
     .select()
     .from(coffeeChatPlacements)
@@ -229,10 +235,12 @@ async function yourChats(setup: SponsorSetup): Promise<YourChat[]> {
     const session = COFFEE_SESSIONS.find((s) => s.id === p.sessionId);
     const building = buildingOf(p.room);
     if (!rep || !session || !building) return [];
-    // A rep's chats fill their sessions in time order; the last may be partial.
+    // A rep's chats fill their sessions in time order, each up to the whole
+    // chats its usable window holds; the last may hold fewer.
     const mine = rows.filter((x) => x.repId === rep.id).map((x) => x.sessionId);
     const chats =
-      chatsBySession(mine, rep.chatsWanted, setup.chatsPerSession).get(p.sessionId) ?? 0;
+      chatsBySession(mine, rep.chatsWanted, (id) => windows.chats[id] ?? 0).get(p.sessionId) ?? 0;
+    const start = (windows.partial[p.sessionId] ?? session).start;
     return [
       {
         placementId: p.id,
@@ -241,8 +249,8 @@ async function yourChats(setup: SponsorSetup): Promise<YourChat[]> {
         room: p.room,
         building,
         chats,
-        start: clock(session.start),
-        end: clock(session.start + Math.max(1, chats) * setup.chatMinutes),
+        start: clock(start),
+        end: clock(start + Math.max(1, chats) * setup.chatMinutes),
         hackers: hackerRows
           .filter((h) => h.placementId === p.id)
           .map((h) => ({
