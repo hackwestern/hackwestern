@@ -444,7 +444,7 @@
 - All 8 rooms (2241-2243 and Ivey 1348-1358) are open Sat 10 AM-5 PM; no special Ivey rules and no Ivey question for sponsors. Sponsors see the building and walk time once assigned.
 - Setup asks "If rooms are tight, can we shift your chats?" (Not flexible / Within 1 hour / Anytime 10 AM–5 PM).
 - A busy-times strip shows event-wide room use per 30 min, drafts included, updated live (target: within ~5 s) so sponsors planning together in the Friday workshop see each other's plans. Information only, never blocking.
-- The planning calendar shows the sponsor's availability (prefilled from sponsor info, editable) as shaded bands; blocks outside it get a note, not a block.
+- The planning calendar shows the sponsor's own schedule for the day (their workshop and setup, meals, stage time, from the run of show) as read-only events behind the room columns, so they plan chats around what they're supposed to be doing. Chats may overlap them; an overlap with their own workshop gets an amber note, nothing is blocked.
 - Reps chatting in Ivey are not restricted from the booth; nothing enforced.
 - New step 1 "Your team" (reps with optional phone/email, sponsor's main phone required) before the calendar. Calendar columns are rooms; a block lists its reps, so a shared room shows once.
 
