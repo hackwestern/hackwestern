@@ -121,7 +121,7 @@ const Scan = () => {
                   key={item.id}
                   variant="featured"
                   kind={item.type === "meal" ? "meal" : "activity"}
-                  title={item.description ?? item.code}
+                  title={item.name}
                   meta={itemMeta(item)}
                 >
                   <DashboardButton
@@ -164,7 +164,7 @@ const Scan = () => {
                   <ActivityCard
                     key={item.id}
                     kind={item.type === "meal" ? "meal" : "activity"}
-                    title={item.description ?? item.code}
+                    title={item.name}
                     meta={itemMeta(item)}
                     onClick={() => openScanner(item)}
                   />
