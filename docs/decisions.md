@@ -650,3 +650,26 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 - Hacker invites and each primary contact's confirmed schedule from Send (a TODO in the router's `send`).
 - Coffee Chat Setup tab columns for the session model (hackers per chat, reps with chats wanted and free sessions, primary rep).
 - Room Grid tab: merged 4-row blocks and grey organizer bookings (needs batchUpdate). Desktop drag to move isn't built yet (tap Move works everywhere). The organizer tour's coffee steps still describe the old board.
+## 2026-11-19: Jazz's answers to the full plan (Q1–Q11): simplifications locked in
+
+**Coffee chats, sponsor side:**
+- Keep the shortlist. Sponsors submit ONE shortlist by 9:30 PM Fri; hackers they talked to that evening (scanned) are first choice. ALL hacker invites go out at 10 PM Fri.
+- Each rep picks a number of chats (0 allowed = that rep doesn't chat); the time breakdown is shown ("6 chats · 1 h 30 min"). No hours anywhere.
+- No 30-minute 1-on-1 option: 1-on-1 = 15 min, groups = 30 min.
+- Drop the live "hackers free" column counts from the availability grid.
+- Sun Life's 1–2 session overlaps its workshop buffer (setup 2:00): the algorithm may use it only until 1:30 (partial session, 1:00–1:30). Note for the algorithm; applies to any session cut by a buffer.
+- After Send, the sponsor's portal shows their confirmed schedule ("Your chats" calendar).
+
+**Organizer coffee board:** no Contact button, no Text/Call: each phone number has a copy icon beside it. Show how many chats each rep asked for. Only Noah Medland can press "Send confirmed schedules & invites" on Friday night (matched by his login email; others see it disabled with "Only Noah sends").
+
+**Invites:** invite exactly the number of seats. Round 1 Fri 10 PM, accept by Sat 10:00 AM. Round 2 Sat 10:30 AM for seats still open, 30 minutes to accept; further automatic rounds the same way (30 minutes each) until the chat. (Open: 10–11 AM chats can only be filled by round 1.)
+
+**Sponsor help:** scrapped as a tracked feature. Sponsors message their point of contact (their HW lead) directly; if the lead isn't available, Noah Medland is the emergency contact. The portal Help shows the lead's name + number (copy) and Noah as the fallback. No Slack DM, no I'm-on-it, no dashboard section. Supersedes the tracked-help decision (same day).
+
+**My sponsors:** People lists reps only (crown on primary); speakers' and presenters' phones aren't needed. Login matching by login email stays.
+
+**Run of show and task pings:** low priority, future to-do.
+
+**Judging:** no modes. Same experience as judging hackers' projects: one at a time or a list. Sponsors send a ranked top 3 (1st, 2nd, 3rd), not a top 5. The Sponsor Judging tab now has 1st–3rd place only.
+
+**Leads:** Caroline Ge (Manulife) and Alice Nguyen (Commure) are right; Sponsor Status updated.

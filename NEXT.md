@@ -41,3 +41,15 @@ Review `mocks/sponsor-chat-calendar-v1` with Jazz (spec: `docs/specs/sponsor-cha
 5. Done 2026-11-19: "Rationale + Decisions" tab in the sheet (first tab) summarizing every decision; keep it in sync with docs/decisions.md.
 - Build: merge Sponsor Status into Sponsor Day-Of; rebuild Coffee Chat Setup columns for the session model; Sponsor requested help flow (Slack DM + I'm on it + 5-min escalation).
 - Overnight unattended build: Jazz said no for now (2026-11-19). Build order if/when it runs: sponsor setup → invites → task pings + help + My sponsors (v3 layout) → sheet mirrors; judging Saturday.
+
+## 8-hour build plan (Jazz, 2026-11-19) — start in a FRESH session
+Read first: docs/decisions.md (all 2026-11-19 entries, esp. "Jazz's answers to the full plan"), docs/specs/coffee-chat-sessions.md, hackwestern-sponsor-dash/mocks/CHANGES.md. Mocks: sponsor = mocks/sponsor-portal-flow-hacker-v6, organizer coffee = mocks/organizer-coffee-v8, My sponsors = mocks/organizer-my-sponsors-v3, judging = mocks/sponsor-judging-redesign-d-v1 (but: no modes, 1-at-a-time or list, top 3).
+0. (30 min, main branch first) Merge coffee-prefs into sponsor-dashboard once its review fixes pass. Make shared changes once (schema additions, router registration, sponsors.tsx tabs) before worktrees.
+Parallel tracks, each its own worktree + port + code review before merge:
+A. Sponsor coffee chat setup (portal): Your team (name+phone, crown), preferences (hackers per chat 1–5, availability grid, chats per rep incl. 0), review & submit, shortlist (shared, cap, scanned first, due 9:30 PM), Your chats calendar after Send. Fri 5 PM.
+B. Hacker invites from the schedule: exact seats, round 1 Fri 10 PM (accept by Sat 10 AM), round 2 Sat 10:30 AM + automatic 30-min rounds; order scanned → shortlist → interested; existing Slack Accept/Decline + email fallback.
+C. Organizer board tweaks: copy icon on phones (no Contact/Text/Call), chats asked per rep, Noah-only Send, partial session (1:00–1:30) for buffer-cut sessions, sheet Room Grid mirror.
+D. My sponsors (v3 tables, reps only) + login-email matching + portal Help = lead's number + Noah emergency.
+E. Sheet: merge Sponsor Status into Sponsor Day-Of; Coffee Chat Setup columns for sessions; Sponsor Judging writes (top 3).
+F. (Saturday) Judging: one at a time or list, Holia-style 1–10 half-point score + rubric, several reps, ranked top 3, digital entry by Devpost link.
+Future (low priority): run of show + task pings rework.
