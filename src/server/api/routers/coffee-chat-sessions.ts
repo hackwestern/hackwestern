@@ -165,7 +165,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
             sessionId: input.sessionId,
             forSponsorId: input.forSponsorId,
             label: input.label,
-            note: input.note || null,
+            note: input.note === "" ? null : input.note,
             createdBy: ctx.session.user.id,
           })
           .returning({ id: coffeeChatRoomBookings.id });

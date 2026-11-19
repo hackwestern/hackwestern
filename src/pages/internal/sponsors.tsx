@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import SEO from "~/components/seo";
 import { InternalNavbar } from "~/components/internals/navbar";
-import { CoffeeChatsTab } from "~/components/sponsors/organizer/coffee-chats-tab";
+import { CoffeeSessionsTab } from "~/components/sponsors/organizer/coffee-sessions/coffee-sessions-tab";
 import { JudgingTab } from "~/components/sponsors/organizer/judging-tab";
 import {
   OrganizerTabList,
@@ -138,7 +138,7 @@ export default function SponsorOrganizerHome() {
                 jumpToHelp={loc.jumpToHelp}
               />
             ) : tab === "coffee" ? (
-              <CoffeeChatsTab sponsor={loc.sponsor} />
+              <CoffeeSessionsTab sponsor={loc.sponsor} />
             ) : tab === "judging" ? (
               <JudgingTab sponsor={focusId} />
             ) : schedule.isLoading ? (
