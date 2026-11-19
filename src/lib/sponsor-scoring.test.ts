@@ -1,14 +1,27 @@
 import { describe, expect, it } from "vitest";
-import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "./sponsor-picks";
 import { ORGANIZER_TABS, parseOrganizerLocation } from "./sponsor-organizer";
 import {
+  SCORE_VALUES,
   SPONSOR_FINAL_TOP,
+  aggregateScores,
   browseTeams,
+  cleanJudgeName,
   finalTopIsValid,
   formatAverage,
+  formatScore,
   formatSubmittedTime,
+  halvesToScore,
   initialRanking,
+  isValidHalves,
   isValidScore,
+  judgeKey,
+  linkIsAmbiguous,
+  matchTeamByLink,
+  scoreToHalves,
+  splitJudges,
+  splitTeams,
+  stepScore,
+  teamIdAndLink,
   judgingOpen,
   moveItem,
   rankingError,
@@ -27,27 +40,177 @@ const review = (teamId: string, patch: Partial<TeamReview> = {}) => ({
 });
 
 describe("SPONSOR_FINAL_TOP", () => {
-  it("is exactly 5 and fits Lucas's sheet limits", () => {
-    expect(SPONSOR_FINAL_TOP).toBe(5);
+  it("is a ranked top 3 (1st, 2nd, 3rd; Jazz 2026-11-19)", () => {
+    expect(SPONSOR_FINAL_TOP).toBe(3);
     expect(finalTopIsValid(SPONSOR_FINAL_TOP)).toBe(true);
-    expect(SPONSOR_FINAL_TOP).toBeGreaterThanOrEqual(MIN_SPONSOR_PICKS);
-    expect(SPONSOR_FINAL_TOP).toBeLessThanOrEqual(MAX_SPONSOR_PICKS);
   });
 
-  it("allows up to 10, never more, and never below the sheet minimum", () => {
+  it("allows 1 to 10 whole teams, never more", () => {
+    expect(finalTopIsValid(1)).toBe(true);
     expect(finalTopIsValid(10)).toBe(true);
     expect(finalTopIsValid(11)).toBe(false);
-    expect(finalTopIsValid(MIN_SPONSOR_PICKS - 1)).toBe(false);
-    expect(finalTopIsValid(5.5)).toBe(false);
+    expect(finalTopIsValid(0)).toBe(false);
+    expect(finalTopIsValid(2.5)).toBe(false);
   });
 });
 
-describe("isValidScore", () => {
-  it("takes whole numbers 1-10 only", () => {
-    expect([1, 5, 10].every(isValidScore)).toBe(true);
-    for (const bad of [0, 11, -1, 5.5, NaN, "7", null, undefined]) {
+describe("half-point scores", () => {
+  it("takes 1-10 in half points only", () => {
+    expect([1, 1.5, 5, 8.5, 10].every(isValidScore)).toBe(true);
+    for (const bad of [0, 0.5, 10.5, 11, -1, 5.25, NaN, "7", null, undefined]) {
       expect(isValidScore(bad)).toBe(false);
     }
+  });
+
+  it("lists every value 1, 1.5 ... 10", () => {
+    expect(SCORE_VALUES).toHaveLength(19);
+    expect(SCORE_VALUES[0]).toBe(1);
+    expect(SCORE_VALUES[1]).toBe(1.5);
+    expect(SCORE_VALUES.at(-1)).toBe(10);
+  });
+
+  it("stores halves 2-20 and reads them back", () => {
+    expect(scoreToHalves(8.5)).toBe(17);
+    expect(scoreToHalves(1)).toBe(2);
+    expect(scoreToHalves(10)).toBe(20);
+    expect(halvesToScore(17)).toBe(8.5);
+    expect(() => scoreToHalves(8.25)).toThrow();
+    expect([2, 11, 20].every(isValidHalves)).toBe(true);
+    expect([1, 21, 7.5].some(isValidHalves)).toBe(false);
+  });
+
+  it("steps by 0.5 inside 1-10; an unscored step starts in the middle", () => {
+    expect(stepScore(8, 1)).toBe(8.5);
+    expect(stepScore(8, -1)).toBe(7.5);
+    expect(stepScore(10, 1)).toBe(10);
+    expect(stepScore(1, -1)).toBe(1);
+    expect(stepScore(null, 0)).toBe(5.5);
+  });
+
+  it("formats without a trailing .0", () => {
+    expect(formatScore(9)).toBe("9");
+    expect(formatScore(8.5)).toBe("8.5");
+  });
+});
+
+describe("aggregateScores (several reps)", () => {
+  it("keeps who gave each score, averages, and flags a 3-point gap", () => {
+    const agg = aggregateScores([
+      { teamId: "t1", judge: "Dana W.", score: 9 },
+      { teamId: "t1", judge: "Marcus O.", score: 5 },
+      { teamId: "t2", judge: "Dana W.", score: 7 },
+      { teamId: "t2", judge: "Priya S.", score: 8.5 },
+    ]);
+    expect(agg.get("t1")).toEqual({
+      byJudge: [
+        { judge: "Dana W.", score: 9 },
+        { judge: "Marcus O.", score: 5 },
+      ],
+      average: 7,
+      disagreement: {
+        high: { judge: "Dana W.", score: 9 },
+        low: { judge: "Marcus O.", score: 5 },
+      },
+    });
+    expect(agg.get("t2")).toMatchObject({ average: 7.75, disagreement: null });
+    expect(agg.has("t3")).toBe(false);
+  });
+
+  it("flags exactly 3 apart, not 2.5", () => {
+    const at = (a: number, b: number) =>
+      aggregateScores([
+        { teamId: "t", judge: "A", score: a },
+        { teamId: "t", judge: "B", score: b },
+      ]).get("t")!.disagreement;
+    expect(at(8, 5)).not.toBeNull();
+    expect(at(8, 5.5)).toBeNull();
+  });
+
+  it("counts a rep once whatever the name's case or spacing", () => {
+    const agg = aggregateScores([
+      { teamId: "t", judge: "Dana W.", score: 9 },
+      { teamId: "t", judge: " dana  w. ", score: 6 },
+    ]);
+    expect(agg.get("t")!.byJudge).toHaveLength(1);
+    expect(agg.get("t")!.average).toBe(6);
+  });
+});
+
+describe("splitJudges / splitTeams", () => {
+  it("splits between the reps plus me, in runs, extra teams to the first", () => {
+    const judges = splitJudges(["Dana W.", "Marcus O."], [], "Leo T.");
+    expect(judges).toEqual(["Dana W.", "Marcus O.", "Leo T."]);
+    const runs = splitTeams(["a", "b", "c", "d", "e", "f", "g"], judges);
+    expect(runs.get(judgeKey("Dana W."))).toEqual(["a", "b", "c"]);
+    expect(runs.get(judgeKey("Marcus O."))).toEqual(["d", "e"]);
+    expect(runs.get(judgeKey("leo t."))).toEqual(["f", "g"]);
+  });
+
+  it("doesn't add me twice; with no reps listed, uses who has scored", () => {
+    expect(splitJudges(["Dana W."], [], "dana w.")).toEqual(["Dana W."]);
+    expect(splitJudges([], ["Priya", "Ann"], "Zed")).toEqual([
+      "Ann",
+      "Priya",
+      "Zed",
+    ]);
+    expect(splitTeams(["a"], [])).toEqual(new Map());
+  });
+});
+
+describe("cleanJudgeName / judgeKey", () => {
+  it("strips zero-width characters before keying", () => {
+    const hidden = "​Dana‌‍ W.﻿";
+    expect(cleanJudgeName(hidden)).toBe("Dana W.");
+    expect(judgeKey(hidden)).toBe(judgeKey("dana w."));
+    expect(cleanJudgeName(" ​ ")).toBe("");
+  });
+});
+
+describe("matchTeamByLink (digital top 3)", () => {
+  const teams = [
+    { id: "a1c3e5f70912", devpostUrl: "https://devpost.com/software/cool-app" },
+    { id: "b2", devpostUrl: "https://devpost.com/software/other/" },
+    { id: "c3", devpostUrl: null },
+  ];
+
+  it("matches a pasted Devpost link however it's written", () => {
+    for (const link of [
+      "https://devpost.com/software/cool-app",
+      "devpost.com/software/cool-app",
+      "www.devpost.com/software/Cool-App/",
+      "http://devpost.com/software/cool-app?ref=share#top",
+    ]) {
+      expect(matchTeamByLink(link, teams)?.id).toBe("a1c3e5f70912");
+    }
+    expect(matchTeamByLink("devpost.com/software/other", teams)?.id).toBe("b2");
+  });
+
+  it("matches a team ID too, and nothing else", () => {
+    expect(matchTeamByLink("C3", teams)?.id).toBe("c3");
+    expect(matchTeamByLink("devpost.com/software/nope", teams)).toBeNull();
+    expect(matchTeamByLink("devpost.com", teams)).toBeNull();
+    expect(matchTeamByLink("   ", teams)).toBeNull();
+  });
+
+  it("matches nothing when two teams share a link (ambiguous)", () => {
+    const shared = [
+      ...teams,
+      { id: "d4", devpostUrl: "devpost.com/software/cool-app/" },
+    ];
+    const link = "https://devpost.com/software/cool-app";
+    expect(matchTeamByLink(link, shared)).toBeNull();
+    expect(linkIsAmbiguous(link, shared)).toBe(true);
+    expect(linkIsAmbiguous(link, teams)).toBe(false);
+    // A team ID still picks one.
+    expect(matchTeamByLink("d4", shared)?.id).toBe("d4");
+    expect(linkIsAmbiguous("d4", shared)).toBe(false);
+  });
+
+  it("shows a team as ID + Devpost link", () => {
+    expect(
+      teamIdAndLink("a1c3e5f70912", "https://devpost.com/software/cool-app/"),
+    ).toBe("a1c3e5f70912 · devpost.com/software/cool-app");
+    expect(teamIdAndLink("c3", null)).toBe("c3");
   });
 });
 
@@ -63,32 +226,28 @@ describe("judgingOpen", () => {
 describe("rankingError", () => {
   const shortlist = new Set(["a", "b", "c", "d", "e", "f"]);
 
-  it("accepts exactly five shortlisted, distinct teams", () => {
-    expect(rankingError(["a", "b", "c", "d", "e"], shortlist)).toBeNull();
+  it("accepts exactly three shortlisted, distinct teams", () => {
+    expect(rankingError(["a", "b", "c"], shortlist)).toBeNull();
   });
 
   it("refuses the wrong count", () => {
-    expect(rankingError(["a", "b", "c", "d"], shortlist)).toBe("wrongCount");
-    expect(rankingError(["a", "b", "c", "d", "e", "f"], shortlist)).toBe(
+    expect(rankingError(["a", "b"], shortlist)).toBe("wrongCount");
+    expect(rankingError(["a", "b", "c", "d", "e"], shortlist)).toBe(
       "wrongCount",
     );
     expect(rankingError([], shortlist)).toBe("wrongCount");
   });
 
   it("refuses duplicates", () => {
-    expect(rankingError(["a", "a", "b", "c", "d"], shortlist)).toBe(
-      "duplicate",
-    );
+    expect(rankingError(["a", "a", "b"], shortlist)).toBe("duplicate");
   });
 
   it("refuses teams not on the shortlist", () => {
-    expect(rankingError(["a", "b", "c", "d", "z"], shortlist)).toBe(
-      "notShortlisted",
-    );
+    expect(rankingError(["a", "b", "z"], shortlist)).toBe("notShortlisted");
   });
 
   it("follows a configured size", () => {
-    expect(rankingError(["a", "b", "c"], shortlist, 3)).toBeNull();
+    expect(rankingError(["a", "b", "c", "d", "e"], shortlist, 5)).toBeNull();
   });
 });
 

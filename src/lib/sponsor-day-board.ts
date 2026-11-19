@@ -123,7 +123,7 @@ export type SundayJudging = {
   /** Teams scored and shortlisted so far on the portal. */
   scored: number;
   shortlisted: number;
-  /** Top 5 submitted in round 2; null = not yet. */
+  /** Top 3 submitted in round 2; null = not yet. */
   finalSubmittedAt: Date | string | null;
 };
 
@@ -148,7 +148,7 @@ export function round1State(j: SundayJudging): Round1State {
   return { kind: "not-started" };
 }
 
-/** Round 2: top 5 sent, open and not sent yet, or not open. */
+/** Round 2: top 3 sent, open and not sent yet, or not open. */
 export function round2State(
   j: SundayJudging,
   round2Open: boolean,

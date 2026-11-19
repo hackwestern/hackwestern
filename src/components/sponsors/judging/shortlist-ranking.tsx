@@ -5,7 +5,9 @@ import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import {
+  formatAverage,
   formatSubmittedTime,
+  teamIdAndLink,
   initialRanking,
   moveItem,
   reconcileRanking,
@@ -180,13 +182,15 @@ export function ShortlistRanking({
               >
                 <span
                   className={cn(
-                    "inline-flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums",
+                    "inline-flex h-7 min-w-9 shrink-0 items-center justify-center rounded-full px-1.5 text-xs font-bold tabular-nums",
                     inTop
                       ? "bg-dashboard-action-primary text-dashboard-text-inverse"
                       : "bg-dashboard-bg-nav text-dashboard-text-medium",
                   )}
                 >
-                  {copy.shortlist.rank(i + 1)}
+                  {i < top
+                    ? copy.shortlist.placeShort(i + 1)
+                    : copy.shortlist.rank(i + 1)}
                 </span>
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                   {/* leading-7 matches the rank badge, so the badge sits
@@ -194,10 +198,13 @@ export function ShortlistRanking({
                   <span className="break-words text-base font-semibold leading-7 text-dashboard-text-heavy">
                     {team.name}
                   </span>
+                  <span className="break-all text-xs font-medium tabular-nums text-dashboard-text-light">
+                    {teamIdAndLink(team.id, team.devpostUrl)}
+                  </span>
                   <span className="text-sm font-medium tabular-nums text-dashboard-text-light">
                     {team.score === null
                       ? copy.shortlist.noScore
-                      : copy.shortlist.scoreOf(team.score)}
+                      : copy.shortlist.scoreOf(formatAverage(team.score)!)}
                     {presented?.get(id) &&
                       ` · ${copy.round.presentsAt(presented.get(id)!)}`}
                   </span>

@@ -7,11 +7,17 @@ import {
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
+import { DigitalJudging } from "~/components/sponsors/organizer/digital-judging";
 import { PresentationsPanel } from "~/components/sponsors/organizer/presentations-panel";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { sponsorColorIndexes } from "~/lib/sponsor-colors";
-import { formatAverage, formatSubmittedTime } from "~/lib/sponsor-scoring";
+import {
+  formatAverage,
+  formatScore,
+  formatSubmittedTime,
+  teamIdAndLink,
+} from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
 import { api, type RouterOutputs } from "~/utils/api";
 
@@ -139,6 +145,8 @@ export function JudgingTab({ sponsor }: { sponsor: string | null }) {
         </div>
       </div>
 
+      <DigitalJudging names={data.digital} top={data.finalTop} />
+
       <div
         role="tabpanel"
         id="judging-view-panel"
@@ -221,6 +229,7 @@ function BySponsor({
               </div>
               <p className="m-0 text-sm font-medium tabular-nums text-dashboard-text-medium">
                 {copy.scored(s.scored)} · {copy.shortlisted(s.shortlisted)}
+                {s.judges > 0 && ` · ${copy.judges(s.judges)}`}
               </p>
               {s.final && (
                 <ol className="m-0 flex list-none flex-col divide-y divide-dashboard-border-subtle p-0">
@@ -243,6 +252,18 @@ function BySponsor({
                         >
                           {t.name}
                         </span>
+                        <span className="break-all text-xs font-medium tabular-nums text-dashboard-text-light">
+                          {teamIdAndLink(t.teamId, t.devpostUrl)}
+                        </span>
+                        {t.byJudge.length > 0 && (
+                          <span className="text-xs font-medium tabular-nums text-dashboard-text-medium">
+                            {t.byJudge
+                              .map((j) =>
+                                copy.byJudge(j.judge, formatScore(j.score)),
+                              )
+                              .join(" · ")}
+                          </span>
+                        )}
                         {!t.eligible && (
                           <span className="text-xs font-semibold text-dashboard-text-warning">
                             {copy.ineligible}
@@ -273,7 +294,7 @@ function BySponsor({
                       <span className="shrink-0 text-sm font-medium tabular-nums text-dashboard-text-light">
                         {t.score === null
                           ? copy.noScore
-                          : copy.scoreOf(t.score)}
+                          : copy.scoreOf(formatAverage(t.score)!)}
                       </span>
                       {t.devpostUrl && (
                         <a

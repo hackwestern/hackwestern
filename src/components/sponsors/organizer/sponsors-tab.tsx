@@ -379,7 +379,7 @@ export function SponsorsTab({
   summaries: ReadonlyMap<string, SponsorSummary>;
   summaryLoading: boolean;
   summaryFailed: boolean;
-  /** Organizers have opened round 2 (Sunday top 5). */
+  /** Organizers have opened round 2 (Sunday top 3). */
   round2Open: boolean;
   /** Run-of-show blocks for Sunday's "Where now"; null if not loaded. */
   items: readonly RunOfShowItem[] | null;

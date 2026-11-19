@@ -34,7 +34,7 @@ const NOTE = "m-0 text-sm font-medium text-dashboard-text-medium";
  * couldn't fit flagged, Notify hackers (Slack,
  * or email for members not on Slack; only members without their current
  * times, "Notify again" after a confirm) with members not reached listed, Open round 2 (after a
- * confirm; sponsors can't submit a top 5 until then), and the sponsor top
+ * confirm; sponsors can't submit a top 3 until then), and the sponsor top
  * teams for the cheat check.
  */
 export function PresentationsPanel({

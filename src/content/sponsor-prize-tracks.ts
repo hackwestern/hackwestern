@@ -16,3 +16,15 @@ export const SPONSOR_PRIZE_TRACKS = [
   "TinyFish",
   "PCBWay",
 ] as const;
+
+// Digital prize track sponsors (Sponsor Day-Of "In person / Digital" =
+// Digital; Jazz, 2026-11-19). They have no portal link: the spon team enters
+// their 1st-3rd place by Devpost link on the organizer Sponsor judging tab.
+// Matched loosely, like the list above.
+export const DIGITAL_JUDGING_SPONSORS = ["PCBWay"] as const;
+
+// In-person sponsors that judge remotely through the portal (Jazz,
+// 2026-11-19). Their judging room, on the presentation schedule, the
+// Sponsor Judging tab and hackers' notices, is REMOTE_JUDGING_ROOM.
+export const REMOTE_JUDGING_SPONSORS = ["TinyFish"] as const;
+export const REMOTE_JUDGING_ROOM = "Remote (judges online)";

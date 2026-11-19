@@ -234,7 +234,7 @@ export type SponsorSummaries = {
   totals: SummaryTotals;
   /** Sunday judging: rooms, picks and status, incl. unregistered companies. */
   judging: JudgingBoard | null;
-  /** Organizers have opened round 2 (top 5). */
+  /** Organizers have opened round 2 (top 3). */
   round2Open: boolean;
 };
 
@@ -376,7 +376,7 @@ export function buildSponsorSummaries({
   limits?: readonly SlotLimit[];
   /** Sunday judging board (buildJudgingBoard); null when not read. */
   judging?: JudgingBoard | null;
-  /** Sunday portal progress per sponsor id (reviews, sends, top 5). */
+  /** Sunday portal progress per sponsor id (reviews, sends, top 3). */
   sunday?: ReadonlyMap<string, SundayJudging>;
   /** Placed presentation slots (every sponsor). */
   presentations?: readonly (PresentationSlot & { sponsorId: string })[];

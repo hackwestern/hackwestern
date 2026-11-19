@@ -1,4 +1,9 @@
-import { SPONSOR_PRIZE_TRACKS } from "~/content/sponsor-prize-tracks";
+import {
+  DIGITAL_JUDGING_SPONSORS,
+  REMOTE_JUDGING_ROOM,
+  REMOTE_JUDGING_SPONSORS,
+  SPONSOR_PRIZE_TRACKS,
+} from "~/content/sponsor-prize-tracks";
 
 /**
  * Loose comparison key for a sponsor name: invisible characters, case,
@@ -50,4 +55,19 @@ export function hasPrizeTrack(
   tracks: readonly string[] = SPONSOR_PRIZE_TRACKS,
 ): boolean {
   return prizeTrackOf(sponsorName, tracks) !== null;
+}
+
+/**
+ * Whether the sponsor is a digital prize track sponsor (no portal; the spon
+ * team enters their top 3).
+ */
+export function isDigitalJudging(sponsorName: string): boolean {
+  return prizeTrackOf(sponsorName, DIGITAL_JUDGING_SPONSORS) !== null;
+}
+
+/** REMOTE_JUDGING_ROOM for a sponsor that judges remotely, else null. */
+export function remoteJudgingRoom(sponsorName: string): string | null {
+  return prizeTrackOf(sponsorName, REMOTE_JUDGING_SPONSORS) !== null
+    ? REMOTE_JUDGING_ROOM
+    : null;
 }

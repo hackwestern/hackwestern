@@ -715,3 +715,29 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Decision:** My sponsors identifies the organizer as one HW Contacts row (by Login email), and a Day-Of HW lead or task Owner cell matches that row: a full name must fit exactly one row; a first name alone matches only if exactly one row has that first name (else a row whose whole name is that word). A name that fits several rows matches nobody. HW Contacts reads (organizer list and portal phones) are cached 90 s; a failed read keeps the last good value, and if there's none the Sponsors tab says "Can't read HW Contacts" instead of quietly showing All sponsors.
 **Why:** the first-name rule could show a sponsor to the wrong Noah; two people with one name were indistinguishable; mySponsors polled the sheet every 15 s per organizer.
 **Alternatives:** match every same-named organizer (wrong person sees it); read the sheet on every poll.
+
+## 2026-11-19: Track F judging build: per-rep half-point scores, top 3, wide Sponsor Judging tab, digital entry
+
+**Decision:**
+- Each rep's score lives in `sponsor_team_score` (halves 2-20). The shortlist and ranking sort by the team average. `sponsor_team_review.score` is kept at the rounded average so the organizer day board's "scored" count stays right.
+- Who's judging lists the reps on Your team plus "Someone else". The name is remembered per phone. With 2+ reps the list is split evenly between them in team-name order (no table numbers in the app yet). Reps 3+ points apart get a "talk it through" flag.
+- Portal browsing is One at a time or List only.
+- `SPONSOR_FINAL_TOP = 3`. Picks are stored in `sponsor_final_pick` and mirrored to the wide Sponsor Judging tab (one row per prize track sponsor, 1st-3rd place as "team ID · devpost link", then a Presentations table). The writer for the deleted "Judging" tab is removed; `getChosenTeams` reads the database. A failed or disabled sheet write never blocks the save.
+- Digital sponsors (PCBWay) are refused in the portal. Organizers enter their 1st-3rd by Devpost link or team ID on the Sponsor judging tab; each must match a different submitted team in the track. A DB row is created for the sponsor on first entry.
+- TinyFish's judging room is always "Remote (judges online)".
+
+**Why:** Jazz's 2026-11-19 answers (top 3, one at a time or list, several reps), the sheet-cut decision (Judging tab deleted), and the coordinator's bug report that saving failed against the deleted tab.
+
+**Alternatives:** keep one score per sponsor (loses who gave what); split by table (no table data yet); write picks to a new sheet tab as the record (the DB is the record, the sheet is a view).
+
+## 2026-11-19: Track F review fixes: digital gate, panel picks from the DB
+
+**Decision:**
+- One guard (`assertPortalJudge`, src/server/api/utils/sponsor-judging-guard.ts) covers every public judging and scoring procedure, including `sponsorJudging.listAllTeams` and `getChosenTeams`. No prize track or digital = FORBIDDEN. "Digital" is `DIGITAL_JUDGING_SPONSORS`, the content copy of the sheet's In person / Digital column, never whether a DB row exists.
+- The Run-of-show "Sponsor track judging" panel counts each sponsor's saved picks from `sponsor_final_pick` (0 until they submit), not the deleted "Judging" tab. `MIN_SPONSOR_PICKS = SPONSOR_FINAL_TOP` (3).
+- `submitDigital` works after judging closes (organizer-only; the spon team may enter PCBWay's top 3 late).
+- A Devpost link that matches more than one team in the track matches none; the organizer pastes the team ID.
+
+**Why:** code review of track F: PCBWay's UUID could still read the roster and top 3, and the panel always showed picks as unknown after the tab was deleted.
+
+**Alternatives:** read In person / Digital from the Sponsor Day-Of sheet on each call (track E's parser isn't on this branch, and it adds a sheet read to every portal request); keep counting the sheet (always unknown now).
