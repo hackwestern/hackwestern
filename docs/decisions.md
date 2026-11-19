@@ -376,3 +376,13 @@
 **Why:** Jazz asked for tabs that make sense and for the app to match the sheet. The sheet is not read by production yet (only the sponsor-dashboard branch and local dev), so renaming was safe the day before the event. An .xlsx backup from before the change is in `_local/` and the sheet's version history has every earlier state.
 
 **Alternatives:** Move the team availability block out of RUN OF SHOW and merge Workshops and Ceremonies into one tab (rejected for now: the parsers find those blocks and tabs by position and name, so it means parser changes the day before the event); reorganize a copy of the sheet (rejected by Jazz); put "TBD" in empty cells (rejected: the app shows it as data, the way booth "TBD" already shows).
+
+## 2026-11-19: The sponsor list comes from the Spon Team sheet, not a separate master sheet (Jazz)
+
+**Decision:** The organizer Sponsors tab (`sponsorDashboard.getSponsors`), "Sync from sponsor sheet" (`syncSponsors`) and the status-row check read the sponsor list from the Spon Team sheet's "Sponsor Day-Of" tab (falls back to "Contract Breakdown"): header row = column A "Sponsor Name", HW lead and "To do / mismatches" found by header name, list ends at the first blank name. `SPONSOR_MASTER_SHEET` is no longer read. Tier, amount and company contact aren't on that sheet, so they show blank. Sponsor Day-Of is now an app-read (orange) tab.
+
+**Why:** Jazz wants one sheet with all the info live. The Sponsors tab sat on "Loading…" because the master sheet ID wasn't set, and that one missing read failed the whole query.
+
+**Alternatives:** keep the master sheet and set its ID (two sheets drift); read the list from Sponsor Status (it only has the 7 registered sponsors, not all 15).
+
+**Also (coffee chats):** on the organizer coffee chat board, "organizer events" means ad hoc room bookings organizers make (for example a sponsor who wants a room last minute), not run-of-show events. Schedule events don't go on the coffee chat board, and ad hoc bookings don't need their own tab.

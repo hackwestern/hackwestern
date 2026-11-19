@@ -72,7 +72,7 @@ export const sponsorPortalRouter = createTRPCRouter({
   /**
    * Get public sponsor portal info for /sponsors/[id]. Public.
    * Resolves the sponsor UUID to its name, then loads their HW contact
-   * from the master sheet and their room number and booth location
+   * from the Sponsor Day-Of tab and their room number and booth location
    * from the "sponsor info" tab. The HW contact name is matched against
    * the HW contacts sheet to attach a phone number when one is listed.
    * Also returns their coffee-chat allowance ("Coffee Chat Max Minutes"

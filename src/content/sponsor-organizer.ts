@@ -33,12 +33,12 @@ export const sponsorOrganizerCopy = {
   board: {
     updatedAgo: (ago: string) => `Updated ${ago} ago`,
     loading: "Loading…",
-    sync: "Sync from master sheet",
+    sync: "Sync from sponsor sheet",
     syncing: "Syncing…",
     synced: (n: number) =>
       n === 1
-        ? "Synced 1 sponsor from the master sheet."
-        : `Synced ${n} sponsors from the master sheet.`,
+        ? "Synced 1 sponsor from the Sponsor Day-Of tab."
+        : `Synced ${n} sponsors from the Sponsor Day-Of tab.`,
     syncFailed: (message: string) => `Sync failed: ${message}`,
     statusFailed: (message: string) => `Couldn't update status: ${message}`,
     dismiss: "Dismiss",
@@ -54,7 +54,7 @@ export const sponsorOrganizerCopy = {
       total: "Sponsors",
       picks: "Picks received",
       unregistered: "No private link yet",
-      offSheet: "Not on master sheet",
+      offSheet: "Not on Sponsor Day-Of",
     },
     columns: {
       company: "Company",
@@ -68,7 +68,7 @@ export const sponsorOrganizerCopy = {
       page: "Sponsor page",
     },
     tableLabel: "Sponsors",
-    notOnMaster: "Not on master sheet",
+    notOnMaster: "Not on Sponsor Day-Of",
     roomTbd: "Room TBD",
     room: (room: string) => (/^\d/.test(room) ? `Room ${room}` : room),
     boothTbd: "TBD",
@@ -90,7 +90,7 @@ export const sponsorOrganizerCopy = {
     copiedLabel: (name: string) => `Copied ${name}'s link`,
     openPage: (name: string) => `Open ${name}'s sponsor page in a new tab`,
     linkPending: "Link pending sync",
-    empty: "No sponsors yet. Sync from the master sheet to load them.",
+    empty: "No sponsors yet. Add them to the Sponsor Day-Of tab, then sync.",
     noMatch: "No sponsors match this search and filter.",
     clearFilters: "Clear search and filter",
 
@@ -136,7 +136,7 @@ export const sponsorOrganizerCopy = {
       status: { accepted: "Accepted", pending: "Waiting" },
       roomLabel: "Sponsor room",
       notRegistered:
-        "This sponsor has no private link yet, so no chats or help. Sync from the master sheet.",
+        "This sponsor has no private link yet, so no chats or help. Sync from the sponsor sheet.",
     },
   },
 

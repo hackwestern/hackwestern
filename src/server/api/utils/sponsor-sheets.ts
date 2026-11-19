@@ -19,7 +19,7 @@ import { sponsorJudgingSponsors } from "~/server/db/schema";
 
 // Sponsor judging Google Sheet. Layout: tab "Judging", header in row 2
 // ("Sponsor Name" | "Chosen Teams (Id)"), data from row 3 down. Column A
-// holds the sponsor name (matching the master sheet spelling), column B
+// holds the sponsor name (matching the Sponsor Day-Of spelling), column B
 // holds that sponsor's chosen team ids as a comma-separated list. Sponsors
 // only ever see their UUID (private URL); it never appears in the sheet.
 export const SHEET_TAB = "Judging";
@@ -116,14 +116,11 @@ export function getSpreadsheetId(): string {
 }
 
 /**
- * One acquired-sponsor row from the master sheet. Layout of the master
- * spreadsheet ("HW 13 Sponsors" tab): a goal/progress block on rows 1-9,
- * a header row (`Company Name | Tier | Amount $$ | Company Contact | HW
- * Contact | Notes`), then one row per acquired sponsor. The header row is
- * found by scanning for "Company Name" in column A rather than hardcoding its
- * row number, since the block moves as organizers edit the sheet.
+ * One sponsor row from the "Sponsor Day-Of" tab of the Spon Team sheet (the
+ * one sheet, RUN_OF_SHOW_SHEET). Tier, amount and company contact aren't on
+ * that sheet, so they come back empty and show as blanks.
  */
-interface MasterSponsorRow {
+interface SheetSponsorRow {
   name: string;
   tier: string;
   amount: string;
@@ -132,66 +129,82 @@ interface MasterSponsorRow {
   notes: string;
 }
 
-const MASTER_HEADER_LABEL = "company name";
+/** Newest name first; the tab was "Contract Breakdown" before 2026-11-19. */
+const SPONSOR_LIST_TAB_NAMES = ["sponsor day-of", "contract breakdown"];
+const SPONSOR_LIST_HEADER = "sponsor name";
 
 export function cell(row: string[] | undefined, index: number): string {
   return String(row?.[index] ?? "").trim();
 }
 
-export async function fetchMasterSponsors(): Promise<MasterSponsorRow[]> {
-  const spreadsheetId = env.SPONSOR_MASTER_SHEET;
-  if (!spreadsheetId) {
+/**
+ * Every sponsor on the Sponsor Day-Of tab, in sheet order. The header row is
+ * the first row whose column A is "Sponsor Name"; "HW lead" and the
+ * "To do / mismatches" column are found by header name. The list ends at the
+ * first blank name, so the footer rows under it are not sponsors.
+ */
+export async function fetchSheetSponsors(): Promise<SheetSponsorRow[]> {
+  const sheets = await getSheetsClient();
+  const spreadsheetId = getSpreadsheetId();
+  let tab: string | null = null;
+  for (const name of SPONSOR_LIST_TAB_NAMES) {
+    tab = await findTabTitle(sheets, spreadsheetId, name);
+    if (tab) break;
+  }
+  if (!tab) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message: "SPONSOR_MASTER_SHEET env variable is not set",
+      message: 'No "Sponsor Day-Of" tab in the Spon Team sheet',
     });
   }
 
-  const sheets = await getSheetsClient();
-  const tab = env.SPONSOR_MASTER_SHEET_TAB ?? "HW 13 Sponsors";
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${tab}!A1:F`,
+    range: `'${tab}'!A1:Z`,
   });
-
   const rows = res.data.values ?? [];
   const headerIndex = rows.findIndex(
-    (row) => cell(row, 0).toLowerCase() === MASTER_HEADER_LABEL,
+    (row) => cell(row, 0).toLowerCase() === SPONSOR_LIST_HEADER,
   );
   if (headerIndex === -1) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message: `No "${MASTER_HEADER_LABEL}" header found in column A of tab "${tab}"`,
+      message: `No "Sponsor Name" header in column A of tab "${tab}"`,
     });
   }
+  const header = (rows[headerIndex] ?? []).map((h) =>
+    String(h).trim().toLowerCase(),
+  );
+  const leadCol = header.indexOf("hw lead");
+  const notesCol = header.findIndex((h) => h.startsWith("to do"));
 
-  const sponsors: MasterSponsorRow[] = [];
+  const sponsors: SheetSponsorRow[] = [];
   const seen = new Set<string>();
   for (const row of rows.slice(headerIndex + 1)) {
     const name = cell(row, 0);
-    // Stop at the end of the acquired-sponsors block (blank name), and skip
-    // any duplicate name so the private-link list stays one row per sponsor.
+    // Stop at the end of the sponsor block (blank name), and skip any
+    // duplicate name so the private-link list stays one row per sponsor.
     if (!name) break;
     if (seen.has(name)) continue;
     seen.add(name);
     sponsors.push({
       name,
-      tier: cell(row, 1),
-      amount: cell(row, 2),
-      companyContact: cell(row, 3),
-      hwContact: cell(row, 4),
-      notes: cell(row, 5),
+      tier: "",
+      amount: "",
+      companyContact: "",
+      hwContact: leadCol === -1 ? "" : cell(row, leadCol),
+      notes: notesCol === -1 ? "" : cell(row, notesCol),
     });
   }
   return sponsors;
 }
 
 /**
- * Sponsor names from the master sponsor sheet, in sheet order. This is the
+ * Sponsor names from the Sponsor Day-Of tab, in sheet order. This is the
  * source of truth for which sponsors get a private judging link.
  */
-export async function fetchMasterSponsorNames(): Promise<string[]> {
-  return (await fetchMasterSponsors()).map((sponsor) => sponsor.name);
+export async function fetchSheetSponsorNames(): Promise<string[]> {
+  return (await fetchSheetSponsors()).map((sponsor) => sponsor.name);
 }
 
 export async function fetchColumnA(

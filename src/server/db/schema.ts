@@ -355,11 +355,11 @@ export const userType = pgEnum("user_type", [
 ]);
 
 // Sponsor judging: maps a private UUID (handed to a sponsor as their URL) to
-// the sponsor's name as spelled in the master sheet. The judging Google Sheet
+// the sponsor's name as spelled on the Sponsor Day-Of tab. The judging Google Sheet
 // itself keeps storing the name in column A; the UUID never appears there.
 export const sponsorJudgingSponsors = pgTable("sponsor_judging_sponsor", {
   id: uuid("id").defaultRandom().notNull().primaryKey(),
-  // Must match the "Company Name" spelling in the master sheet, since this is
+  // Must match the "Sponsor Name" spelling on the Sponsor Day-Of tab, since this is
   // what the judging sheet rows are keyed on.
   name: varchar("name", { length: 255 }).notNull().unique(),
   // v1 rep count; no longer read (v2 uses coffee_chat_style/per_slot).

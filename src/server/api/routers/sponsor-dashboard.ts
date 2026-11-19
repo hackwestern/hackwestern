@@ -12,8 +12,8 @@ import {
   cell,
   fetchAllChosenTeams,
   fetchAllSponsorInfo,
-  fetchMasterSponsors,
-  fetchMasterSponsorNames,
+  fetchSheetSponsors,
+  fetchSheetSponsorNames,
   getSheetsClient,
   getSpreadsheetId,
 } from "~/server/api/utils/sponsor-sheets";
@@ -23,7 +23,7 @@ import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
 export const sponsorDashboardRouter = createTRPCRouter({
   /**
    * Register a sponsor and get their private UUID. Organizer-only. The name
-   * must match the master sheet's "Company Name" spelling, since that is what
+   * must match the Sponsor Day-Of tab's "Sponsor Name" spelling, since that is what
    * the judging sheet is keyed on.
    */
   registerSponsor: protectedOrganizerProcedure
@@ -53,13 +53,13 @@ export const sponsorDashboardRouter = createTRPCRouter({
    * Full sponsor board for organizers: every acquired sponsor from the master
    * sheet (tier, amount, contacts, notes), joined with their private-link UUID
    * and their current picks from the judging sheet. Sponsors that are
-   * registered but no longer on the master sheet are appended with an empty
+   * registered but no longer on the Sponsor Day-Of tab are appended with an empty
    * tier so typos stay visible instead of silently disappearing. Organizer-only.
    */
   getSponsors: protectedOrganizerProcedure.query(async () => {
     try {
       const [master, registered, sheets, spreadsheetId] = await Promise.all([
-        fetchMasterSponsors(),
+        fetchSheetSponsors(),
         db.query.sponsorJudgingSponsors.findMany(),
         getSheetsClient(),
         Promise.resolve(getSpreadsheetId()),
@@ -108,7 +108,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
           amount: "",
           companyContact: "",
           hwContact,
-          notes: "Registered but missing from the master sheet",
+          notes: "Registered but not on the Sponsor Day-Of tab",
           sponsorId: row.id,
           teamIds: picks.get(row.name) ?? [],
           status: info?.status ?? "Not arrived",
@@ -179,11 +179,11 @@ export const sponsorDashboardRouter = createTRPCRouter({
             },
           });
         } else {
-          // No status row yet. Only add one for a real sponsor (on the master
-          // sheet or registered), spelled as it is there, so a mistyped name
+          // No status row yet. Only add one for a real sponsor (on the sponsor
+          // list or registered), spelled as it is there, so a mistyped name
           // returns an error instead of creating a duplicate sponsor row.
           const [master, registered] = await Promise.all([
-            fetchMasterSponsors(),
+            fetchSheetSponsors(),
             db.query.sponsorJudgingSponsors.findMany(),
           ]);
           const canonicalName = [
@@ -230,7 +230,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
    * caller can build each sponsor's judging link.
    */
   syncSponsors: protectedOrganizerProcedure.mutation(async () => {
-    const names = await fetchMasterSponsorNames();
+    const names = await fetchSheetSponsorNames();
     if (names.length === 0) return [];
 
     await db
