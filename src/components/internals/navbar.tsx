@@ -10,6 +10,7 @@ export const INTERNAL_LINKS = [
   { href: "/internal/roster", label: "Judge Roster" },
   { href: "/internal/rubric", label: "Rubric" },
   { href: "/internal/team-results", label: "Team Results" },
+  { href: "/internal/clock", label: "Clock" },
   { href: "/internal/sponsors", label: "Sponsors" },
 ];
 
