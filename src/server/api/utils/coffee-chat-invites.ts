@@ -82,6 +82,7 @@ import {
   loadBoardState,
   type BoardState,
 } from "~/server/api/utils/coffee-chat-sessions-board";
+import { mirrorCoffeeInvitesLater } from "~/server/api/utils/coffee-chat-invites-sheet-mirror";
 import { mirrorCoffeeChats } from "~/server/api/utils/coffee-chat-sheet-mirror";
 import { db } from "~/server/db";
 import {
@@ -970,6 +971,7 @@ export async function runAndDeliver<T extends { jobs: InviteJob[] }>(
 ): Promise<T & { delivery: DeliveryResult }> {
   const out = await db.transaction(fn);
   const delivery = await deliverInviteNotices(out.jobs);
+  mirrorCoffeeInvitesLater();
   return { ...out, delivery };
 }
 
@@ -1017,6 +1019,7 @@ export async function runDueInviteRounds(
     if (!result) return { status: "busy" };
     // The sweep sends this round's invites and retries any earlier ones.
     const delivery = await deliverUnnotifiedInvites(now);
+    mirrorCoffeeInvitesLater();
     return { status: "ran", result, delivery };
   } catch (error) {
     console.error(

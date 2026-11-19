@@ -30,6 +30,7 @@ import {
   reconcileInvitesAfterChange,
   type InviteJob,
 } from "~/server/api/utils/coffee-chat-invites";
+import { mirrorCoffeeInvitesLater } from "~/server/api/utils/coffee-chat-invites-sheet-mirror";
 import {
   findSponsor,
   loadSponsorSetup,
@@ -163,9 +164,11 @@ async function reconcileIfSent(
   return result.jobs;
 }
 
-/** After the commit: tell hackers about re-asked or cancelled invites. */
+/** After the commit: tell hackers about re-asked or cancelled invites; the Invites tab follows. */
 async function deliver(jobs: InviteJob[]): Promise<void> {
-  if (jobs.length) await deliverInviteNotices(jobs);
+  if (!jobs.length) return;
+  await deliverInviteNotices(jobs);
+  mirrorCoffeeInvitesLater();
 }
 
 const confirmInput = { confirmAfterInvites: z.boolean().optional() };

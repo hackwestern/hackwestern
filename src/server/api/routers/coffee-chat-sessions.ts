@@ -18,6 +18,7 @@ import {
 } from "~/lib/coffee-chat-sessions";
 import { createTRPCRouter, protectedOrganizerProcedure } from "~/server/api/trpc";
 import { mirrorRoomGrid } from "~/server/api/utils/coffee-chat-room-grid-mirror";
+import { mirrorCoffeeInvitesLater } from "~/server/api/utils/coffee-chat-invites-sheet-mirror";
 import { checkCoffeeSender, type SenderCheck } from "~/server/api/utils/coffee-chat-sender";
 import {
   deliverInviteNotices,
@@ -83,9 +84,10 @@ async function reconcileSent(
   return (await reconcileInvitesAfterChange(tx, sponsorId, { removingPlacementIds })).jobs;
 }
 
-/** After the commit: hackers hear about the change, and the Room Grid tab follows. */
+/** After the commit: hackers hear about the change, and the Room Grid and Invites tabs follow. */
 async function afterSentChange(r: { jobs: InviteJob[]; sent: boolean }): Promise<void> {
   if (r.jobs.length) await deliverInviteNotices(r.jobs);
+  if (r.sent) mirrorCoffeeInvitesLater();
   await remirrorIf(r.sent);
 }
 
@@ -420,6 +422,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       return { sent, reconfirmed, round };
     });
     const delivery = await deliverInviteNotices(round.jobs);
+    mirrorCoffeeInvitesLater();
     const mirror = await mirrorRoomGrid(await loadBoardState(), { now });
     return {
       sent: sent.length,
