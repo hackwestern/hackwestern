@@ -482,3 +482,9 @@ It's a grey tab (app writes; don't type in it), listed on "Start here". "Start h
 **Why:** sponsors meet people at the booth who weren't on their shortlist; choosing the rep at scan time sends the hacker to the person who actually wants to talk to them.
 
 **Alternatives:** the names "Met at booth", "Walk-ins" ("walk-in" sounds uninvited), "Leads" (sales talk); offering the next seat with any rep (the wrong person may get the chat).
+
+## 2026-11-19: No sponsor chats within 15 minutes of their own workshop; organizer board v6 in v5's look (Jazz)
+
+**Decision:** Sponsors can't plan chats from 15 minutes before their own workshop setup starts to 15 minutes after their workshop ends (Sun Life: 1:45–3:45 PM). The calendar shows it as a blocked band and refuses blocks there. Lunch and dinner stay allowed, shown as dotted outlines. Replaces "chats may overlap their own workshop with an amber note". Coffee chats start at 10:00 AM (nothing before). Organizer board: autofill-v5's look, rooms first, sponsor info on the same page (no side drawer), Contact instead of Slack nudges; three layout versions v6a/b/c. Every mock change and its status is tracked in `hackwestern-sponsor-dash/mocks/CHANGES.md`.
+
+**Why:** reps need time to set up and get to their workshop; meals are flexible. Jazz kept losing track of which mock had which change.
