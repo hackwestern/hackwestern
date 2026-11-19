@@ -498,6 +498,132 @@ export const coffeeChatLimits = pgTable(
   ],
 );
 
+// Coffee chat sessions (docs/specs/coffee-chat-sessions.md): a sponsor's
+// chatting preferences. One row per sponsor; submittedAt null = not
+// submitted yet (organizers see "Not submitted" and can't schedule them).
+export const coffeeChatPrefs = pgTable(
+  "coffee_chat_pref",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .primaryKey()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    hackersPerChat: smallint("hackers_per_chat").default(1).notNull(),
+    // 1-on-1s only: 30 minutes instead of 15.
+    longerOneOnOne: boolean("longer_one_on_one").default(false).notNull(),
+    // 1, 2, 3 or 4 (4 = "4+", no cap).
+    hoursPerRep: smallint("hours_per_rep").notNull(),
+    submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 }),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    check("coffee_chat_pref_hackers_check", sql`${t.hackersPerChat} between 1 and 5`),
+    check("coffee_chat_pref_hours_check", sql`${t.hoursPerRep} between 1 and 4`),
+  ],
+);
+
+// A sponsor's named rep for coffee chats. Exactly one primary contact (the
+// crown) per sponsor; every rep has a phone.
+export const coffeeChatReps = pgTable(
+  "coffee_chat_rep",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(),
+    phone: varchar("phone", { length: 32 }).notNull(),
+    email: varchar("email", { length: 255 }),
+    isPrimary: boolean("is_primary").default(false).notNull(),
+    // Organizer cap from a "fewer hours" suggested fix; null = the sponsor's
+    // hours per rep.
+    maxHours: smallint("max_hours"),
+    // Order the sponsor listed them in.
+    position: smallint("position").default(0).notNull(),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("coffee_chat_rep_sponsor_idx").on(t.sponsorId),
+    uniqueIndex("coffee_chat_rep_primary_idx")
+      .on(t.sponsorId)
+      .where(sql`${t.isPrimary}`),
+  ],
+);
+
+// The 1-hour sessions a rep ticked as free (session ids from
+// src/lib/coffee-chat-sessions.ts: "10", "11", "13"-"16").
+export const coffeeChatRepSessions = pgTable(
+  "coffee_chat_rep_session",
+  {
+    repId: uuid("rep_id")
+      .notNull()
+      .references(() => coffeeChatReps.id, { onDelete: "cascade" }),
+    sessionId: varchar("session_id", { length: 4 }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.repId, t.sessionId] })],
+);
+
+export const coffeeChatPlacementStatusEnum = pgEnum(
+  "coffee_chat_placement_status",
+  ["draft", "sent"],
+);
+
+// One rep in one room for one session, from Auto-schedule or an organizer.
+// Draft until Send; pinned = an organizer placed it (move, applied fix) and
+// re-running Auto-schedule keeps it. A room holds one thing per session
+// (also checked against room bookings in the router).
+export const coffeeChatPlacements = pgTable(
+  "coffee_chat_placement",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    repId: uuid("rep_id")
+      .notNull()
+      .references(() => coffeeChatReps.id, { onDelete: "cascade" }),
+    sessionId: varchar("session_id", { length: 4 }).notNull(),
+    room: varchar("room", { length: 8 }).notNull(),
+    pinned: boolean("pinned").default(false).notNull(),
+    status: coffeeChatPlacementStatusEnum("status").default("draft").notNull(),
+    sentAt: timestamp("sent_at", { mode: "date", precision: 3 }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex("coffee_chat_placement_room_idx").on(t.room, t.sessionId),
+    uniqueIndex("coffee_chat_placement_rep_idx").on(t.repId, t.sessionId),
+  ],
+);
+
+// An organizer's ad hoc room booking on the coffee chat board (e.g. a
+// sponsor who wants a room last minute, or mentors). forSponsorId null =
+// for organizers or someone else, named in `label`.
+export const coffeeChatRoomBookings = pgTable(
+  "coffee_chat_room_booking",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    sessionId: varchar("session_id", { length: 4 }).notNull(),
+    room: varchar("room", { length: 8 }).notNull(),
+    forSponsorId: uuid("for_sponsor_id").references(
+      () => sponsorJudgingSponsors.id,
+      { onDelete: "set null" },
+    ),
+    label: varchar("label", { length: 255 }).notNull(),
+    note: varchar("note", { length: 255 }),
+    createdBy: varchar("created_by", { length: 255 }).references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [uniqueIndex("coffee_chat_room_booking_cell_idx").on(t.room, t.sessionId)],
+);
+
 // A hacker's interest ranking of the sponsors (1 = most interested). Feeds each
 // sponsor's coffee-chat shortlist. One row per (hacker, sponsor), and a hacker
 // can't give two sponsors the same rank.
