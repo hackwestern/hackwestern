@@ -216,6 +216,44 @@ export function invitesAffected(
   return n;
 }
 
+/**
+ * The setup the sent chats imply, as a "before" for invitesAffected: each
+ * rep free exactly where they were placed, wanting at least the chats those
+ * placements hold (Send places only the sessions a rep's chats need, so
+ * every placed session was full but the last). Hackers per chat isn't kept
+ * from Send, so today's value is used.
+ */
+export function sentSnapshot(
+  chats: readonly { repId: string; sessionId: string }[],
+  workshops: readonly { start: string; end: string }[],
+  current: SetupSnapshot,
+): SetupSnapshot {
+  const fits = setupWindows(workshops, chatMinutes(current)).chats;
+  const reps = [...new Set(chats.map((c) => c.repId))].map((id) => {
+    const placed = COFFEE_SESSIONS.map((s) => s.id as string).filter((s) =>
+      chats.some((c) => c.repId === id && c.sessionId === s),
+    );
+    const least = placed.slice(0, -1).reduce((n, s) => n + (fits[s] ?? 0), 0) + 1;
+    const now = current.reps.find((r) => r.id === id);
+    return { id, free: placed, chatsWanted: Math.max(now?.chatsWanted ?? 0, least) };
+  });
+  return { hackersPerChat: current.hackersPerChat, reps };
+}
+
+/**
+ * Invited hackers in sent chats the current setup changes (the status
+ * card's "This affects N invited hackers"): invitesAffected from what the
+ * sent chats imply to the setup now, so the card and the dialog count the
+ * same way.
+ */
+export function invitesOutOfLine(
+  chats: readonly { repId: string; sessionId: string; hackers: readonly unknown[] }[],
+  workshops: readonly { start: string; end: string }[],
+  current: SetupSnapshot,
+): number {
+  return invitesAffected(chats, workshops, sentSnapshot(chats, workshops, current), current);
+}
+
 /** A sent chat as this device last saw it (for "Organizers moved …"). */
 export type SeenChat = { repId: string; sessionId: string; room: string; start: string };
 

@@ -32,7 +32,8 @@ From the walkthrough (`clarity-review.md`) and the build as a whole. Each item n
 ### Changes after invites: one message
 - **What's too complicated:** the warning dialog, the status card and the organizer board say three different things, and the dialog overcounts hackers (bug B4).
 - **Decision:**
-  - One sentence, used by the dialog and the status card: "This affects N invited hackers. They'll be told and asked to confirm again." N counts only invites in the chats being changed.
+  - One sentence, used by the dialog and the status card: "This affects N invited hackers. Organizers will update their chats, and the hackers will be told." It's true for every edit (a rename re-asks, a removed chat moves or cancels). N counts only invites in the chats being changed.
+  - One rule for N (`invitesAffected` in src/lib/coffee-chat-setup.ts). The dialog compares the saved setup with the edit. The status card compares what the sent chats imply with the setup now (`invitesOutOfLine`), so the two agree. A rename counts the rep's invited hackers, since their invites name the rep.
   - The organizer board's flag reads "Changed after invites · <time>".
 - **Why:** the same event should read the same everywhere.
 - **What the user loses:** nothing.

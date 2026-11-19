@@ -5,6 +5,7 @@ import {
   availChats,
   chatChanges,
   invitesAffected,
+  invitesOutOfLine,
   parseSeenChats,
   repChatCap,
   setupTotals,
@@ -102,6 +103,30 @@ describe("invitesAffected: the change-after-invites count (B4)", () => {
   });
   test("a removed rep's chats all count", () => {
     expect(invitesAffected(chats, [], saved, { ...saved, reps: saved.reps.slice(1) })).toBe(6);
+  });
+});
+
+describe("invitesOutOfLine: the status card's count, by the dialog's rule", () => {
+  // Dana wants 3 thirty-minute chats: 2 at 10, the last 1 at 11 (as sent).
+  const sent = [
+    { repId: "dana", sessionId: "10", hackers: [1, 2] },
+    { repId: "dana", sessionId: "11", hackers: [3] },
+  ];
+  const setup = (free: string[], chatsWanted: number) => ({
+    hackersPerChat: 2,
+    reps: [{ id: "dana", chatsWanted, free }],
+  });
+  test("the setup as sent changes nothing, even with a partial last chat", () => {
+    expect(invitesOutOfLine(sent, [], setup(["10", "11"], 3))).toBe(0);
+    // More chats wanted adds chats; the sent ones stay.
+    expect(invitesOutOfLine(sent, [], setup(["10", "11", "13"], 6))).toBe(0);
+  });
+  test("an unticked session or a chat that's gone counts, like the dialog", () => {
+    expect(invitesOutOfLine(sent, [], setup(["11"], 3))).toBe(2);
+    expect(invitesOutOfLine(sent, [], setup(["10", "11"], 2))).toBe(1);
+    expect(invitesOutOfLine(sent, [], setup(["10", "11"], 2))).toBe(
+      invitesAffected(sent, [], setup(["10", "11"], 3), setup(["10", "11"], 2)),
+    );
   });
 });
 

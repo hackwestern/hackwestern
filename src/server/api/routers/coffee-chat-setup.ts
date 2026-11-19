@@ -10,6 +10,7 @@ import {
   MAX_SETUP_REPS,
   MIN_PHONE_DIGITS,
   availableFree,
+  invitesOutOfLine,
   phoneDigits,
   setupWindows,
 } from "~/lib/coffee-chat-setup";
@@ -288,15 +289,12 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         );
       const sentAt = sentTimes[0]?.at ?? null;
       const hackers = chats.flatMap((c) => c.hackers);
-      // Invites in sent chats the sponsor's current setup no longer fits
-      // (rep not free that session, or no chats wanted there): organizers
-      // move those chats and the hackers are asked again.
-      const changedInvites = chats
-        .filter((c) => {
-          const rep = setup.reps.find((r) => r.id === c.repId);
-          return !rep?.free.includes(c.sessionId) || c.chats === 0;
-        })
-        .reduce((n, c) => n + c.hackers.length, 0);
+      // Invites in sent chats the sponsor's current setup changes: the
+      // dialog's rule (invitesAffected), from what the sent chats imply.
+      const changedInvites = invitesOutOfLine(chats, setup.workshops, {
+        hackersPerChat: setup.hackersPerChat,
+        reps: setup.reps,
+      });
       return {
         ...setup,
         scannedCount: scanned[0]?.n ?? 0,

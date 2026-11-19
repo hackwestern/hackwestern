@@ -25,12 +25,13 @@ const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? name;
 /**
  * The one sentence for a change after invites (simplify-decisions, "Changes
  * after invites"), used by the warning dialog and the status card. N counts
- * only invites in the chats being changed.
+ * only invites in the chats being changed (invitesAffected). True for every
+ * edit: a rename re-asks, a removed chat moves or cancels.
  */
 const afterInvitesEffect = (n: number) =>
   n === 0
     ? "This doesn't affect any invited hackers."
-    : `This affects ${plural(n, "invited hacker")}. They'll be told and asked to confirm again.`;
+    : `This affects ${plural(n, "invited hacker")}. Organizers will update their chats, and the hackers will be told.`;
 
 export const sponsorSetupCopy = {
   seoTitle: "Coffee chats",
