@@ -13,10 +13,16 @@
 export const PRESENTATION_WINDOW_START = 10 * 60;
 /** Last slot ends by 11:30. */
 export const PRESENTATION_WINDOW_END = 11 * 60 + 30;
-export const PRESENTATION_SLOT_MINUTES = 5;
+/**
+ * One slot: 3 min pitch, 2 min Q&A, 1 min to switch teams (Jazz,
+ * 2026-11-19: 15 slots exactly fill 10:00-11:30).
+ */
+export const PRESENTATION_SLOT_MINUTES = 6;
+export const PRESENTATION_PITCH_MINUTES = 3;
+export const PRESENTATION_QA_MINUTES = 2;
 /**
  * A team's next presentation starts at least this long after its previous
- * one started: 5 minutes presenting, 5 minutes to walk to the next room.
+ * one started: 6 minutes in the slot, 4 minutes to walk to the next room.
  */
 export const PRESENTATION_MIN_GAP_MINUTES = 10;
 
@@ -34,7 +40,7 @@ export const PRESENTATION_WINDOW: PresentationWindow = {
   minGapMinutes: PRESENTATION_MIN_GAP_MINUTES,
 };
 
-/** Slots one room has in the window (18 for 10:00-11:30 at 5 minutes). */
+/** Slots one room has in the window (15 for 10:00-11:30 at 6 minutes). */
 export function slotsPerRoom(window: PresentationWindow = PRESENTATION_WINDOW) {
   return Math.max(
     0,
@@ -43,6 +49,12 @@ export function slotsPerRoom(window: PresentationWindow = PRESENTATION_WINDOW) {
 }
 
 export const PRESENTATION_SLOTS_PER_ROOM = slotsPerRoom();
+
+/**
+ * Most teams a sponsor can send for round 1: one per slot in their room
+ * (15). sponsorScoring.sendShortlist refuses more.
+ */
+export const SHORTLIST_MAX = PRESENTATION_SLOTS_PER_ROOM;
 
 export type PresentationRequest = {
   sponsorId: string;
@@ -329,7 +341,7 @@ export type JudgingRound = "shortlist" | "sent" | "locked" | "rank";
  * room, or none of their teams fit). A sponsor with no slot can't rank in
  * round 2 (Jazz, 2026-11-18); sponsorScoring.submit refuses them too.
  * Before that, "sent" (shortlist sent, waiting for round 2) or "shortlist"
- * (round 1, nothing sent). No top 3 can be submitted until round 2 is
+ * (round 1, nothing sent). No top list can be submitted until round 2 is
  * open. For the picks page; takes sponsorScoring.get's `round`.
  */
 export function judgingRound(round: {

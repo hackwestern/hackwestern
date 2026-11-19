@@ -20,7 +20,7 @@ Only sponsors with a prize track judge: Scotiabank, Sunlife, Canada Life, QNX, T
 
 ## Round 1: shortlist
 
-Sponsors shortlist as many teams as they want. A presentation is about 5 minutes, so the 10:00 to 11:30 block fits about 18 teams per room. Around 20 is the realistic top end.
+Sponsors shortlist up to 15 teams (Jazz, 2026-11-19). Each presentation slot is 6 minutes: a 3 minute pitch, 2 minutes of Q&A and 1 minute to switch teams, so the 10:00 to 11:30 block fits exactly 15 per room. The cap comes from the slot count (`SHORTLIST_MAX` in `src/lib/sponsor-presentations.ts`): sponsors can save more while browsing, but Send shortlist stays off until they're down to 15, and the server refuses more.
 
 When they're done, the sponsor sends us the shortlist. That's all they do. We take it from there.
 
@@ -28,11 +28,12 @@ When they're done, the sponsor sends us the shortlist. That's all they do. We ta
 
 Sponsors don't book times. We run the automation:
 
-1. Every shortlisted team gets one 5 minute slot in each sponsor's room that shortlisted them.
-2. A team is never double booked. If a team is on 3 sponsors' shortlists, its 3 slots never overlap: each one starts at least 10 minutes after the last one started, so there's a 5 minute gap to walk to the next room.
+1. Every shortlisted team gets one 6 minute slot in each sponsor's room that shortlisted them.
+2. A team is never double booked. If a team is on 3 sponsors' shortlists, its 3 slots never overlap: each one starts at least 10 minutes after the last one started, so there are at least 4 minutes to walk to the next room.
 3. The schedule is rearranged automatically to make that work. Organizers don't move slots by hand.
 4. If a team can't fit (too many teams, not enough slots), it's flagged for organizers instead of silently dropped.
 5. Hackers get a Slack message with their room and time for each sponsor, and see the same on their dashboard. A hacker who isn't on Slack gets the same times by email.
+6. Once scheduled, sponsors see each team's presentation time on their shortlist, with "Each presentation: 3 min pitch · 2 min Q&A".
 
 ## Round 2: top 5
 
@@ -48,7 +49,7 @@ The web team runs the cheat check on every team in any sponsor's top 5 before wi
 
 - **Portal (`/sponsors/<id>/picks`, prize track sponsors only):** browse the track's Devposts, score out of 10, shortlist. A "Send shortlist" step ends round 1. Once organizers open round 2, the same page switches to it: rank and submit the top 5, picked only from the teams that presented. Before that it shows the sent shortlist and says round 2 opens after presentations.
 - **Organizer, Sponsor judging tab (`?tab=judging`):** who has sent a shortlist, a "Schedule presentations" button, the schedule by room and by team (with any team that couldn't fit), "Notify hackers", "Open round 2" (with a confirm; "Close round 2" undoes it), a By hacker view (every scheduled hacker by team with their slots and how they heard: Slack sent or emailed with the time, not on Slack, failed, not sent yet; filter by room or to Not reached), and Final results (each sponsor's submitted top 5 in rank order with Devpost link, the team's hackers and the submit time, or "Not submitted yet").
-- **Scheduler rule:** slots are 5 minutes from 10:00, one room per sponsor. A team's presentations never overlap, and each starts at least 10 minutes after its previous one.
+- **Scheduler rule:** slots are 6 minutes from 10:00 (15 per room), one room per sponsor. A team's presentations never overlap, and each starts at least 10 minutes after its previous one.
 - **Hackers:** each team member gets a Slack DM with their rooms and times when the schedule is sent (or an email if Slack can't find them), and sees them on their dashboard once anyone on their team has been sent those times. Slack looks them up by the email they use on Slack (set in the notification center on /live) first, then the email they applied with; the email always goes to the email they applied with. The times also show in the /live notification center with how they were sent (Slack DM or Email).
 - **Notify, per member:** "Notify hackers" only messages members who don't have their current times yet (never sent, failed, or their times changed; someone emailed because they're not on Slack counts as reached), so pressing it twice or retrying never messages anyone twice. "Notify again" resends to everyone after a confirm. The tab lists members neither Slack nor email reached, and why. Scheduling again keeps members notified when their team's times don't change, and the confirm step says how many hackers who already have their times would get new ones.
 - **Cheat check:** the top 5 teams go to the existing cheat check.

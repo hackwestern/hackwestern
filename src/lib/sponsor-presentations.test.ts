@@ -4,12 +4,14 @@ import {
   PRESENTATION_SLOTS_PER_ROOM,
   PRESENTATION_WINDOW_END,
   PRESENTATION_WINDOW_START,
+  SHORTLIST_MAX,
   formatPresentationTime,
   gapViolations,
   groupSlots,
   schedulePresentations,
   type PresentationRequest,
 } from "./sponsor-presentations";
+import { MAX_SPONSOR_PICKS } from "./sponsor-picks";
 
 const ids = (prefix: string, n: number) =>
   Array.from({ length: n }, (_, i) => `${prefix}${String(i).padStart(2, "0")}`);
@@ -45,9 +47,14 @@ function expectValid(
 }
 
 describe("schedulePresentations", () => {
-  it("has 18 five-minute slots per room from 10:00 to 11:30", () => {
-    expect(PRESENTATION_SLOTS_PER_ROOM).toBe(18);
+  it("has 15 six-minute slots per room from 10:00 to 11:30", () => {
+    expect(PRESENTATION_SLOTS_PER_ROOM).toBe(15);
     expect(PRESENTATION_MIN_GAP_MINUTES).toBe(10);
+  });
+
+  it("caps the round 1 shortlist at one team per slot", () => {
+    expect(SHORTLIST_MAX).toBe(PRESENTATION_SLOTS_PER_ROOM);
+    expect(MAX_SPONSOR_PICKS).toBe(SHORTLIST_MAX);
   });
 
   it("gives each shortlisted team one slot in the sponsor's room", () => {
@@ -57,8 +64,8 @@ describe("schedulePresentations", () => {
     const result = schedulePresentations(requests);
     expect(result.slots.map((s) => [s.teamId, s.start])).toEqual([
       ["a", 600],
-      ["b", 605],
-      ["c", 610],
+      ["b", 606],
+      ["c", 612],
     ]);
     expect(result.unplaced).toEqual([]);
     expectValid(requests, result);
@@ -82,17 +89,17 @@ describe("schedulePresentations", () => {
   });
 
   it("fits many teams on every shortlist by rearranging", () => {
-    // 9 teams in all 3 rooms: each team needs 3 starts 10 minutes apart,
-    // and every room is half full of them.
-    const shared = ids("s", 9);
+    // 7 teams in all 3 rooms: each team needs 3 starts 10 minutes apart,
+    // and every room (15 slots) is full.
+    const shared = ids("s", 7);
     const requests = [
-      { sponsorId: "a", room: "A", teamIds: [...shared, ...ids("a", 9)] },
-      { sponsorId: "b", room: "B", teamIds: [...shared, ...ids("b", 9)] },
-      { sponsorId: "c", room: "C", teamIds: [...shared, ...ids("c", 9)] },
+      { sponsorId: "a", room: "A", teamIds: [...shared, ...ids("a", 8)] },
+      { sponsorId: "b", room: "B", teamIds: [...shared, ...ids("b", 8)] },
+      { sponsorId: "c", room: "C", teamIds: [...shared, ...ids("c", 8)] },
     ];
     const result = schedulePresentations(requests);
     expect(result.unplaced).toEqual([]);
-    expect(result.slots).toHaveLength(54);
+    expect(result.slots).toHaveLength(45);
     expectValid(requests, result);
   });
 
@@ -115,10 +122,10 @@ describe("schedulePresentations", () => {
 
   it("flags teams that don't fit instead of dropping them", () => {
     const requests = [
-      { sponsorId: "scotia", room: "Rm 2110", teamIds: ids("t", 21) },
+      { sponsorId: "scotia", room: "Rm 2110", teamIds: ids("t", 18) },
     ];
     const result = schedulePresentations(requests);
-    expect(result.slots).toHaveLength(18);
+    expect(result.slots).toHaveLength(15);
     expect(result.unplaced).toHaveLength(3);
     expect(result.unplaced.every((u) => u.sponsorId === "scotia")).toBe(true);
     expectValid(requests, result);
@@ -282,7 +289,8 @@ describe("search limit", () => {
   it("finishes a hopeless team at the default limit", async () => {
     const { SEARCH_LIMIT } = await import("./sponsor-presentations");
     expect(SEARCH_LIMIT).toBe(50_000);
-    // One team on 12 shortlists needs 12 slots 10 minutes apart: 9 fit.
+    // One team on 12 shortlists needs 12 slots 10 minutes apart: with
+    // 6-minute slots that's every other slot, so 8 fit.
     const requests = ids("s", 12).map((sponsorId, i) => ({
       sponsorId,
       room: `Rm ${i}`,
@@ -292,8 +300,8 @@ describe("search limit", () => {
     const result = schedulePresentations(requests);
     expect(Date.now() - started).toBeLessThan(2000);
     expectValid(requests, result);
-    expect(result.slots).toHaveLength(9);
-    expect(result.unplaced).toHaveLength(3);
+    expect(result.slots).toHaveLength(8);
+    expect(result.unplaced).toHaveLength(4);
   });
 });
 

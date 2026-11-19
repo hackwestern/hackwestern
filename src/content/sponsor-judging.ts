@@ -247,8 +247,13 @@ export const sponsorJudgingCopy = {
   /** Round 1 ends with Send shortlist; round 2 ranks teams that presented. */
   round: {
     sendHeading: "Your shortlist",
-    sendIntro:
-      "When you're happy with it, send it to us. We'll schedule each team to present in your room from 10:00.",
+    sendIntro: (max: number) =>
+      `When you're happy with it, send it to us: up to ${max} teams, one per presentation slot. We'll schedule each team to present in your room from 10:00.`,
+    tooMany: (max: number, have: number) =>
+      `Your room has ${max} presentation slots. Remove ${plural(have - max, "team", "teams")} before you send.`,
+    /** Shown with the schedule: what one presentation slot holds. */
+    format: (pitch: number, qa: number) =>
+      `Each presentation: ${pitch} min pitch · ${qa} min Q&A`,
     send: "Send shortlist",
     resend: "Send again",
     sending: "Sending…",
@@ -274,6 +279,8 @@ export const sponsorJudgingCopy = {
   errors: {
     unknownSponsor: "Unknown sponsor link",
     emptyShortlist: "Shortlist at least one team before sending.",
+    tooMany: (max: number) =>
+      `Send at most ${max} teams: your room has ${max} presentation slots.`,
     notEligible: "That team isn't one you can judge.",
     trackUnavailable: "Couldn't load your prize track. Try again in a minute.",
     closed: "Judging has closed.",

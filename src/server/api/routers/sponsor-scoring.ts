@@ -11,6 +11,7 @@ import {
   isDigitalJudging,
   prizeTrackOf,
 } from "~/lib/sponsor-prize-tracks";
+import { SHORTLIST_MAX } from "~/lib/sponsor-presentations";
 import {
   HALVES_MAX,
   HALVES_MIN,
@@ -569,7 +570,8 @@ export const sponsorScoringRouter = createTRPCRouter({
 
   /**
    * End round 1: snapshot the sponsor's current shortlist (eligible teams
-   * only) as the one organizers schedule from. Sending again replaces it;
+   * only, at most SHORTLIST_MAX: one per presentation slot) as the one
+   * organizers schedule from. Sending again replaces it;
    * the schedule only changes when organizers schedule again.
    */
   sendShortlist: publicProcedure
@@ -599,6 +601,12 @@ export const sponsorScoringRouter = createTRPCRouter({
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: errors.emptyShortlist,
+        });
+      }
+      if (teamIds.length > SHORTLIST_MAX) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: errors.tooMany(SHORTLIST_MAX),
         });
       }
       const sentAt = new Date();

@@ -109,7 +109,7 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 - Starting point: `/sponsors/<uuid>/picks?preview=judging` for a sponsor whose prize track box is ticked on Sponsor Day-Of, with seeded teams. Without `?preview=judging`, before Sun 9:00 AM the page shows "Judging opens Sunday 9:00 AM", the same as the locked nav item.
 - Steps: 1. Pick a name in "Who's judging?" (Your team reps, or "Someone else"). 2. Score in One at a time or in List. 3. Open Rubric. 4. Score as a second rep. 5. Send the shortlist. 6. In round 2, submit exactly 3.
 - Expected result: a 1 to 10 strip in half points, dimmed until touched. Each project shows "Dana 9.5 · Kevin 6" and the average. Reps 3 or more points apart get an amber flag. Two reps split the list alphabetically ("Your 2" / "Everyone's 6").
-- Edge cases: no prize track, PCBWay ("Digital sponsors don't judge in the portal…"), an empty shortlist, round 2 closed or no presentation slot, and the wrong count ("Submit exactly 3 teams."). A name in different case replaces the score instead of adding one. TinyFish shows "Remote (judges online)".
+- Edge cases: no prize track, PCBWay ("Digital sponsors don't judge in the portal…"), an empty shortlist, more than 15 shortlisted (Send stays off: "Your room has 15 presentation slots. Remove N teams before you send."), after scheduling each shortlisted team shows "Presents 10:06 AM" under "Each presentation: 3 min pitch · 2 min Q&A", round 2 closed or no presentation slot, and the wrong count ("Submit exactly 3 teams."). A name in different case replaces the score instead of adding one. TinyFish shows "Remote (judges online)".
 
 ## Organizer side
 

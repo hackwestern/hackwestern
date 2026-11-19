@@ -6,12 +6,16 @@
 const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
 
+/** "3 min pitch · 2 min Q&A": what one presentation slot holds. */
+export const presentationFormat = (pitch: number, qa: number) =>
+  `${pitch} min pitch · ${qa} min Q&A`;
+
 export const sponsorPresentationsCopy = {
   /** Organizer, ?tab=judging. */
   organizer: {
     heading: "Presentations",
-    intro:
-      "Each sponsor sends a shortlist. Scheduling gives every shortlisted team a 5 minute slot in that sponsor's room from 10:00, at least 10 minutes apart for the same team.",
+    intro: (slot: number, perRoom: number, gap: number) =>
+      `Each sponsor sends a shortlist of up to ${perRoom} teams. Scheduling gives every shortlisted team a ${slot}-minute slot in that sponsor's room from 10:00, at least ${gap} minutes apart for the same team.`,
     sentLabel: "Shortlists",
     sent: (time: string, n: number) =>
       `Sent ${time} · ${plural(n, "team", "teams")}`,
@@ -181,8 +185,8 @@ export const sponsorPresentationsCopy = {
       `*Your sponsor presentations on Sunday* (${team})`,
     line: (time: string, sponsor: string, room: string) =>
       `• ${time}: ${sponsor}, ${room}`,
-    footer:
-      "Each presentation is 5 minutes. Be at the room a few minutes early. Your times are also on",
+    footer: (pitch: number, qa: number) =>
+      `Each presentation is a ${pitch} min pitch and ${qa} min of Q&A. Be at the room a few minutes early. Your times are also on`,
   },
 
   /** Email to a team member Slack can't find (same times as the DM). */
@@ -191,8 +195,8 @@ export const sponsorPresentationsCopy = {
     subject: (team: string) => `Your sponsor presentation times for ${team}`,
     greeting: (firstName: string) =>
       firstName ? `Hi ${firstName},` : "Hi there,",
-    intro: (team: string) =>
-      `Here are ${team}'s sponsor presentations on Sunday. Each one is 5 minutes, so be at the room a few minutes early.`,
+    intro: (team: string, pitch: number, qa: number) =>
+      `Here are ${team}'s sponsor presentations on Sunday. Each one is a ${pitch} min pitch and ${qa} min of Q&A, so be at the room a few minutes early.`,
     line: (time: string, sponsor: string, room: string) =>
       `${time}: ${sponsor}, ${room}`,
     action: "See your times on your Live page",

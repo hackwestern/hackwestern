@@ -9,7 +9,12 @@ import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { PresentationHackers } from "~/components/sponsors/organizer/presentation-hackers";
 import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
 import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
-import { formatPresentationTime } from "~/lib/sponsor-presentations";
+import {
+  formatPresentationTime,
+  PRESENTATION_MIN_GAP_MINUTES,
+  PRESENTATION_SLOT_MINUTES,
+  SHORTLIST_MAX,
+} from "~/lib/sponsor-presentations";
 import { formatSubmittedTime } from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
 import { api, type RouterOutputs } from "~/utils/api";
@@ -125,7 +130,13 @@ export function PresentationsPanel({
           />
           {copy.heading}
         </h2>
-        <p className={NOTE}>{copy.intro}</p>
+        <p className={NOTE}>
+          {copy.intro(
+            PRESENTATION_SLOT_MINUTES,
+            SHORTLIST_MAX,
+            PRESENTATION_MIN_GAP_MINUTES,
+          )}
+        </p>
       </div>
 
       {/* Who has sent a shortlist. */}
