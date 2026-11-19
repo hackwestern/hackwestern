@@ -352,3 +352,19 @@
 **Alternatives:** Sponsors book rooms themselves (rejected: room clashes); capping requests in the form (rejected: sponsors can't see other sponsors' requests); invite-only slots or early booking for shortlisted hackers (rejected for direct placement).
 
 **Open:** the sponsor edit deadline (mock uses Thu Nov 19, 11:59 PM as a placeholder).
+
+## 2026-11-18: Spon Team sheet reorganized around each sponsor's lead (Jazz)
+
+**Decision:** Contract Breakdown is the per-sponsor day-of hub: new columns B-H (HW lead, lead phone looked up from HW Contacts, stage, workshop, coffee chats, judging, "To do / mismatches") inserted before the contract checkboxes, plus a footer for all on-site sponsors. Team Assignments is one row per spon team member, all formulas (sponsors led and count from Contract Breakdown column B, phone from HW Contacts, availability and on-call from RUN OF SHOW). live sponsor info got rows for Canada Life, CSE, Scotiabank, StarTech and Sun Life. RUN OF SHOW, Coffee Chats, Judging, HW Contacts and Coffee Chat Room Grid layouts were not touched.
+
+**Why:** One place per sponsor for the lead on the day, and one source per fact (assignments in Contract Breakdown column B, phones in HW Contacts) so nothing goes stale. The app reads live sponsor info, Judging, Coffee Chats and the room grid by fixed columns or header rows, so their layout stays as is.
+
+**Alternatives:** Rewrite Contract Breakdown from scratch (rejected: loses checkbox validation and tier colours); a new "Sponsor Day-Of" tab (rejected: Jazz wanted it on Contract Breakdown); writing the sheet with the app's service account (rejected: bypasses the SHEET_WRITES guard; edits were made in Jazz's own browser session).
+
+## 2026-11-19: Docs and mocks go in PR #1165; sd-* branches pushed as backups (Jazz)
+
+**Decision:** mocks/, docs/ (incl. decisions.md), NEXT.md and context/ are committed to sponsor-dashboard (force-added; the shared .git/info/exclude is unchanged). _local/ and _to_delete/ stay out. ops-pings and the 14 sd-* worktree branches are pushed to origin as-is, no PRs.
+
+**Why:** A teammate needs to pull the full picture. The repo is public, so files were scanned for secrets, phone numbers, the sheet link and full names first.
+
+**Alternatives:** A companion docs branch (keeps the PR diff app-only); leaving the sd-* branches local.
