@@ -92,33 +92,35 @@ export const ORGANIZER_TOURS: Record<OrganizerTab, TourDef> = {
   coffee: {
     id: "coffee",
     steps: [
+      // The v8 board: every target is always on the page (Sponsors band,
+      // Suggested fixes, Rooms grid, Send bar).
       {
         id: "strip",
         page: "any",
         target: "coffee-strip",
-        placement: "bottom",
+        placement: "right",
         ...t.coffee.strip,
+      },
+      {
+        id: "fixes",
+        page: "any",
+        target: "coffee-fixes",
+        placement: "right",
+        ...t.coffee.fixes,
       },
       {
         id: "table",
         page: "any",
         target: "coffee-table",
-        placement: "top",
+        placement: "left",
         ...t.coffee.table,
       },
       {
-        id: "block",
+        id: "send",
         page: "any",
-        target: "coffee-block",
-        placement: "right",
-        ...t.coffee.block,
-      },
-      {
-        id: "free",
-        page: "any",
-        target: "coffee-free",
-        placement: "right",
-        ...t.coffee.free,
+        target: "coffee-send",
+        placement: "top",
+        ...t.coffee.send,
       },
     ],
   },

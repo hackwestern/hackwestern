@@ -15,9 +15,14 @@ import {
 import { roomGridRows } from "~/server/api/utils/coffee-chat-room-grid-mirror";
 import { loadBoardState } from "~/server/api/utils/coffee-chat-sessions-board";
 
-const { names, ros, mirror } = vi.hoisted(() => {
+const { names, ros, mirror, hw } = vi.hoisted(() => {
   const stamp = Date.now();
   return {
+    /**
+     * What HW Contacts says Noah's login email is: an email, null (no
+     * login email) or "unreadable". Set to the organizer's email below.
+     */
+    hw: { sender: "unreadable" as string | null | "unreadable" },
     names: { work: `WorkCo${stamp}`, team: `TeamCo${stamp}`, late: `LateCo${stamp}`, busy: `BusyCo${stamp}` },
     /** Flip to make the run-of-show read fail, or to turn sheet writes on. */
     ros: { fail: false, writes: false },
@@ -25,7 +30,7 @@ const { names, ros, mirror } = vi.hoisted(() => {
   };
 });
 
-// WorkCo's workshop is 13:00-14:00 -> sessions 1-2 and 2-3 are blocked.
+// WorkCo's workshop is 13:00-14:00 -> 1-2 is blocked, 2-3 is partial (2:15-3:00).
 vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
   ...(await importOriginal<typeof import("~/server/api/utils/run-of-show-sheet")>()),
   sheetWritesEnabled: () => ros.writes,
@@ -52,13 +57,27 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
     }),
 }));
 
+// HW Contacts is never read in tests: the sender's login email comes from `hw`.
+vi.mock("~/server/api/utils/coffee-chat-sender", async (importOriginal) => {
+  const real = await importOriginal<typeof import("~/server/api/utils/coffee-chat-sender")>();
+  return {
+    ...real,
+    checkCoffeeSender: (email: string | null | undefined) =>
+      Promise.resolve(real.senderCheckOf(email, hw.sender)),
+  };
+});
+
 // Spy on the Room Grid mirror (it never writes here: no sheet in tests).
 vi.mock("~/server/api/utils/coffee-chat-room-grid-mirror", async (importOriginal) => ({
   ...(await importOriginal<typeof import("~/server/api/utils/coffee-chat-room-grid-mirror")>()),
   mirrorRoomGrid: mirror,
 }));
 
-const organizer = createCaller(createInnerTRPCContext({ session: await mockOrganizerSession(db) }));
+const noahSession = await mockOrganizerSession(db);
+const organizer = createCaller(createInnerTRPCContext({ session: noahSession }));
+const otherOrganizer = createCaller(createInnerTRPCContext({ session: await mockOrganizerSession(db) }));
+// `organizer` is Noah: HW Contacts' Login email matches them.
+hw.sender = noahSession.user.email!.toLowerCase();
 const hacker = createCaller(createInnerTRPCContext({ session: await mockSession(db) }));
 const anon = createCaller(createInnerTRPCContext({ session: null }));
 
@@ -112,7 +131,9 @@ describe("board and auto-schedule", () => {
     const board = await organizer.coffeeChatSessions.getBoard();
     const work = board.sponsors.find((s) => s.name === names.work)!;
     const late = board.sponsors.find((s) => s.name === names.late)!;
-    expect(work.blocked).toEqual(["13", "14"]);
+    // 12:45-14:15 with travel: 1-2 is blocked, 2-3 is usable 2:15-3:00 (3 chats of 15 min).
+    expect(work.blocked).toEqual(["13"]);
+    expect(work.partial).toEqual({ "14": { start: 855, end: 900 } });
     expect(work.status).toEqual({ kind: "need", done: 0, total: 1 });
     expect(late.status).toEqual({ kind: "not" });
     expect(board.sponsors.find((s) => s.name === names.busy)!.status).toEqual({ kind: "unavailable" });
@@ -190,6 +211,28 @@ describe("guards", () => {
 });
 
 describe("send", () => {
+  test("only Noah sends; nobody can when HW Contacts can't be read", async () => {
+    const msg = (p: Promise<unknown>) => p.then(() => "ok", (e: { code?: string; message?: string }) => `${e.code}: ${e.message}`);
+    const other = await otherOrganizer.coffeeChatSessions.getBoard();
+    expect(other.sender).toEqual({ canSend: false, reason: "notSender" });
+    expect(await msg(otherOrganizer.coffeeChatSessions.send())).toBe("FORBIDDEN: Only Noah sends the confirmed schedule.");
+    expect((await organizer.coffeeChatSessions.getBoard()).sender).toEqual({ canSend: true, reason: null });
+    const was = hw.sender;
+    try {
+      hw.sender = "unreadable";
+      expect((await organizer.coffeeChatSessions.getBoard()).sender).toEqual({ canSend: false, reason: "sheetUnreadable" });
+      expect(await msg(organizer.coffeeChatSessions.send())).toBe(
+        "PRECONDITION_FAILED: Can't read HW Contacts, so nobody can send right now. Try again in a minute.",
+      );
+      hw.sender = null;
+      expect(await code(organizer.coffeeChatSessions.send())).toBe("PRECONDITION_FAILED");
+    } finally {
+      hw.sender = was;
+    }
+    // Nothing was sent by any refused call.
+    expect((await db.select().from(coffeeChatPlacements)).every((r) => r.status === "draft")).toBe(true);
+  });
+
   test("marks drafts sent, writes nothing to the sheet, invites not built", async () => {
     const res = await organizer.coffeeChatSessions.send();
     expect(res).toMatchObject({ sheet: "disabled", invites: "not-built" });
@@ -305,5 +348,75 @@ describe("sent changes re-mirror the Room Grid tab", () => {
     } finally {
       ros.writes = false;
     }
+  });
+});
+
+describe("0 chats and what changed", () => {
+  test("all reps at 0 -> no chats asked; 0 plus blocked -> no availability; 0 is never placed", async () => {
+    const zero = `ZeroCo${Date.now()}`;
+    const mixed = `MixCo${Date.now()}`;
+    await addSponsor(zero, true, [{ name: "Zed", chats: 0, free: ["10", "11"] }]);
+    // Mo doesn't chat; Mia wants chats but ticked nothing.
+    await addSponsor(mixed, true, [
+      { name: "Mo", chats: 0, free: ["16"] },
+      { name: "Mia", chats: 4, free: [] },
+    ]);
+    const board = await organizer.coffeeChatSessions.getBoard();
+    expect(board.sponsors.find((s) => s.name === zero)!.status).toEqual({ kind: "none" });
+    expect(board.sponsors.find((s) => s.name === mixed)!.status).toEqual({ kind: "unavailable" });
+    await organizer.coffeeChatSessions.autoSchedule();
+    expect(await placementOf("Zed")).toEqual([]);
+    expect(await placementOf("Mo")).toEqual([]);
+    expect((await organizer.coffeeChatSessions.getBoard()).fixes.filter((f) => f.sponsor === ids[zero] || f.sponsor === ids[mixed])).toEqual([]);
+  });
+
+  test("after Send with no sponsor edit, nothing is flagged as changed", async () => {
+    await organizer.coffeeChatSessions.send();
+    const board = await organizer.coffeeChatSessions.getBoard();
+    const sent = board.sponsors.filter((s) => s.status.kind === "sent");
+    expect(sent.length).toBeGreaterThan(0);
+    for (const sp of sent) {
+      expect(sp.changedAfterSend, sp.name).toBe(false);
+      expect(sp.change, sp.name).toBeNull();
+    }
+  });
+
+  test("a sponsor that edits after Send is flagged, with when", async () => {
+    let board = await organizer.coffeeChatSessions.getBoard();
+    const team = () => board.sponsors.find((s) => s.name === names.team)!;
+    const later = new Date(Date.now() + 60_000);
+    await db.update(coffeeChatPrefs).set({ updatedAt: later }).where(eq(coffeeChatPrefs.sponsorId, ids[names.team]!));
+    board = await organizer.coffeeChatSessions.getBoard();
+    expect(team().changedAfterSend).toBe(true);
+    expect(team().change).toEqual({ kind: "editedAfterSend", at: later });
+    expect(board.lastScheduledAt).not.toBeNull();
+  });
+});
+
+describe("partial session shortfall", () => {
+  test("a rep in a cut session gets an add-a-session fix; applying it places them and sets the cap", async () => {
+    // WorkCo's 2-3 is usable 2:15-3:00: 3 one-on-ones. Wren wants 4.
+    const [rep] = await db
+      .insert(coffeeChatReps)
+      .values({ sponsorId: ids[names.work]!, name: "Wren", phone: "5195550198", chatsWanted: 4, position: 5 })
+      .returning();
+    await db.insert(coffeeChatRepSessions).values(["14", "16"].map((sessionId) => ({ repId: rep!.id, sessionId })));
+    await organizer.coffeeChatSessions.autoSchedule();
+    const mine = () => db.select().from(coffeeChatPlacements).where(eq(coffeeChatPlacements.repId, rep!.id));
+    const [placed] = await mine();
+    expect(placed!.sessionId).toBe("16"); // the full session first
+    const used = (await db.select().from(coffeeChatPlacements)).filter((p) => p.sessionId === "14").map((p) => p.room);
+    const free14 = (["2241", "2242", "2243", "1348", "1352", "1354", "1356", "1358"] as const).find((r) => !used.includes(r))!;
+    await organizer.coffeeChatSessions.movePlacement({ placementId: placed!.id, room: free14, sessionId: "14" });
+    const board = await organizer.coffeeChatSessions.getBoard();
+    expect(board.placements.find((p) => p.repId === rep!.id)!.window).toEqual({ start: 855, end: 900 });
+    const fix = board.fixes.find((f) => f.reason === "partial" && f.items[0]!.rep === rep!.id)!;
+    expect(fix).toMatchObject({ items: [{ chats: { got: 3, want: 4 } }], suggestion: { kind: "extra", place: { session: "16" } } });
+    await organizer.coffeeChatSessions.applyFix({ fixId: fix.id });
+    expect((await mine()).map((p) => p.sessionId).sort()).toEqual(["14", "16"]);
+    const [row] = await db.select().from(coffeeChatReps).where(eq(coffeeChatReps.id, rep!.id));
+    expect(row!.maxSessions).toBe(2);
+    const after = await organizer.coffeeChatSessions.getBoard();
+    expect(after.fixes.filter((f) => f.items.some((i) => i.rep === rep!.id))).toEqual([]);
   });
 });

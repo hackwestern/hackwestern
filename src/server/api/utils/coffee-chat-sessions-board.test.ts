@@ -17,6 +17,7 @@ const chat: BoardPlacement = {
   pinned: false,
   status: "draft",
   sentAt: null,
+  window: { start: 600, end: 660 },
 };
 const booking: BoardBooking = {
   id: "b1",
@@ -28,6 +29,7 @@ const booking: BoardBooking = {
 };
 const state = {
   workshopsAvailable: true,
+  lastScheduledAt: null,
   sponsors: [],
   sched: [],
   placements: [chat],
