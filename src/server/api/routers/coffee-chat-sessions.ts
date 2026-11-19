@@ -18,6 +18,10 @@ import {
 import { createTRPCRouter, protectedOrganizerProcedure } from "~/server/api/trpc";
 import { mirrorRoomGrid } from "~/server/api/utils/coffee-chat-room-grid-mirror";
 import { checkCoffeeSender, type SenderCheck } from "~/server/api/utils/coffee-chat-sender";
+import {
+  deliverInviteNotices,
+  sendRoundOneInvites,
+} from "~/server/api/utils/coffee-chat-invites";
 import { sheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
 import {
   assertCellFree,
@@ -289,24 +293,33 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       });
     }
     const now = new Date();
-    const sent = await boardWrite(async (tx, state) => {
+    // One transaction: mark every draft chat sent, then invite hackers to
+    // their seats (scanned → shortlist → interested). Both take the same
+    // board lock, so a page-load round can't run in between. Messages go
+    // out after the commit (deliverInviteNotices never throws).
+    const { sent, round } = await boardWrite(async (tx, state) => {
       assertWorkshopsKnown(state);
-      return tx
+      const sent = await tx
         .update(coffeeChatPlacements)
         .set({ status: "sent", sentAt: now })
         .where(eq(coffeeChatPlacements.status, "draft"))
         .returning({ id: coffeeChatPlacements.id });
+      const round = await sendRoundOneInvites(tx, { now });
+      return { sent, round };
     });
-    // TODO(coffee chat invites): send each sponsor's primary contact their
-    // confirmed schedule and invite hackers for each sent chat (scanned →
-    // shortlist → interested; 20-min expiry, 35 for Ivey). Not built yet:
-    // the old invite flow (coffee-chat-requests) is per 15-min slot and
-    // needs porting to sessions. See docs/decisions.md 2026-11-19.
+    const delivery = await deliverInviteNotices(round.jobs);
     const mirror = await mirrorRoomGrid(await loadBoardState(), { now });
     return {
       sent: sent.length,
       sheet: mirror.ok ? ("written" as const) : mirror.error === "disabled" ? ("disabled" as const) : ("failed" as const),
-      invites: "not-built" as const,
+      invites: {
+        status: round.status,
+        created: round.status === "ok" ? round.created.length : 0,
+        openSeats:
+          round.status === "ok" ? round.unfilled.reduce((n, u) => n + u.open, 0) : 0,
+        // Messages actually handed to Slack or email (0 while invites are off).
+        delivered: delivery.slack + delivery.email,
+      },
     };
   }),
 });

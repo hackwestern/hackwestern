@@ -176,9 +176,8 @@ export const coffeeSessionsCopy = {
         ? "1-on-1 · 15 min"
         : `Group of ${p.hackersPerChat}`,
     toInvite: (n: number) => `${n} hackers to invite`,
-    // Until hacker invites are built, Send only saves and confirms.
-    sent: "Confirmed",
-    afterSend: "Confirmed. Hacker invites aren't sent yet.",
+    sent: "Sent",
+    afterSend: "Sent. Hackers are invited; this sponsor sees it under Your chats.",
     pinned: "Pinned: Auto-schedule keeps it here.",
   },
 
@@ -202,10 +201,10 @@ export const coffeeSessionsCopy = {
     fixesOpen: (n: number) => `${n} fix${n === 1 ? "" : "es"} open`,
     autoSchedule: "Auto-schedule",
     rerun: "Re-run auto-schedule",
-    send: "Save & confirm schedule",
+    send: "Send confirmed schedules & invites",
     working: "Working…",
-    sentAt: (time: string) => `Confirmed ${time}`,
-    nothingToSend: "Nothing new to confirm.",
+    sentAt: (time: string) => `Sent ${time}`,
+    nothingToSend: "Nothing new to send.",
     /** Beside the disabled Send button for anyone but Noah. */
     onlyNoah: "Only Noah sends",
   },
@@ -252,8 +251,11 @@ export const coffeeSessionsCopy = {
     moved: "Moved.",
     removed: "Removed.",
     booked: "Room booked.",
-    sent: (n: number) =>
-      `Schedule confirmed (${plural(n, "chat")}). Hacker invites aren't sent yet.`,
+    sent: (chats: number, invited: number, open: number) =>
+      `Sent ${plural(chats, "chat")}. Invited ${plural(invited, "hacker")}` +
+      (open > 0 ? `; ${plural(open, "seat")} still open, offered again Saturday 10:30 AM.` : "."),
+    /** Invites are switched off on this server (dev, previews). */
+    invitesOff: "Invites are switched off on this server, so no hacker was messaged.",
     sheetOff: "Sheet writes are off here, so the Room Grid tab wasn't updated.",
     sheetFailed: "Couldn't update the Room Grid tab. The schedule is saved.",
   },
@@ -314,7 +316,7 @@ export const coffeeSessionsCopy = {
       before: " marks every draft chat confirmed and updates the locked ",
       bold: "Coffee Chat Room Grid",
       after:
-        " tab (on the live site only). It doesn't message sponsors or invite hackers yet; that part isn't built.",
+        " tab (on the live site only). Each sponsor sees their confirmed chats under Your chats in their portal. Hackers get one invite per seat on Slack (email if Slack can't reach them): people the sponsor scanned first, then their shortlist, then hackers interested in them. They answer by Sat 10 AM; open seats are offered again from 10:30 AM every 30 minutes.",
     },
     after: {
       lead: "After Send:",

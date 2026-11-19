@@ -16,7 +16,9 @@ import {
   countUnnotifiedInvites,
   deliverInviteNotices,
   deliverUnnotifiedInvites,
+  invitesDeliveryLive,
   invitesEnabled,
+  type InviteJob,
   previewDueInviteRound,
   reconcileInvitesAfterChange,
   resetInviteRoundThrottle,
@@ -833,5 +835,17 @@ describe("kill switch default", () => {
     vi.stubEnv("VERCEL_ENV", "production");
     vi.stubEnv("COFFEE_INVITES_ENABLED", "0");
     expect(invitesEnabled()).toBe(false);
+  });
+
+  test('"dry" plans and saves invites but never delivers them', async () => {
+    vi.stubEnv("VITEST", "");
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("COFFEE_INVITES_ENABLED", "dry");
+    expect(invitesEnabled()).toBe(true);
+    expect(invitesDeliveryLive()).toBe(false);
+    const r = await deliverInviteNotices([{} as InviteJob, {} as InviteJob]);
+    expect(r).toEqual({ slack: 0, email: 0, failed: 0, skipped: 2 });
+    vi.stubEnv("COFFEE_INVITES_ENABLED", "1");
+    expect(invitesDeliveryLive()).toBe(true);
   });
 });

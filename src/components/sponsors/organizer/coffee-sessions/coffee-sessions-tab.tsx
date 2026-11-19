@@ -94,7 +94,12 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   });
   const send = api.coffeeChatSessions.send.useMutation({
     onSuccess: (r) => {
-      toast.success(r.sent ? copy.toast.sent(r.sent) : copy.bar.nothingToSend);
+      toast.success(
+        r.sent || r.invites.created
+          ? copy.toast.sent(r.sent, r.invites.created, r.invites.openSeats)
+          : copy.bar.nothingToSend,
+      );
+      if (r.invites.status === "disabled") toast.message(copy.toast.invitesOff);
       if (r.sheet === "disabled") toast.info(copy.toast.sheetOff);
       if (r.sheet === "failed") toast.error(copy.toast.sheetFailed);
     },

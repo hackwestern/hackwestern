@@ -98,12 +98,26 @@ type Conn = Db | InviteTx;
  * on preview deploys, a local `next start` or a script. Tests are off
  * unless they set COFFEE_INVITES_ENABLED=1 themselves.
  */
+function invitesFlag(): string | undefined {
+  return process.env.COFFEE_INVITES_ENABLED ?? env.COFFEE_INVITES_ENABLED;
+}
+
+/**
+ * Whether rounds create invites. "dry" also counts: invites are planned and
+ * saved (so /live, the board and Your chats show them) but nothing is sent;
+ * see invitesDeliveryLive. Use "dry" for local walkthroughs.
+ */
 export function invitesEnabled(): boolean {
-  const flag = process.env.COFFEE_INVITES_ENABLED ?? env.COFFEE_INVITES_ENABLED;
-  if (flag === "1") return true;
+  const flag = invitesFlag();
+  if (flag === "1" || flag === "dry") return true;
   if (flag === "0") return false;
   if (process.env.VITEST) return false;
   return (process.env.VERCEL_ENV ?? env.VERCEL_ENV) === "production";
+}
+
+/** Whether invite messages really go to Slack or email ("dry" = never). */
+export function invitesDeliveryLive(): boolean {
+  return invitesFlag() !== "dry" && invitesEnabled();
 }
 
 /** What a hacker hears about: a new invite, a changed one, or a cancel. */
@@ -778,7 +792,9 @@ export async function deliverInviteNotices(
 ): Promise<DeliveryResult> {
   const result: DeliveryResult = { slack: 0, email: 0, failed: 0, skipped: 0 };
   if (jobs.length === 0) return result;
-  if (!invitesEnabled()) {
+  if (!invitesDeliveryLive()) {
+    // Counts only: no names or ids in logs.
+    if (invitesEnabled()) console.info(`[coffee invites] dry run: ${jobs.length} notice(s) not sent`);
     result.skipped = jobs.length;
     return result;
   }
@@ -865,7 +881,7 @@ export async function deliverUnnotifiedInvites(
   now: Date = new Date(),
 ): Promise<DeliveryResult> {
   const none: DeliveryResult = { slack: 0, email: 0, failed: 0, skipped: 0 };
-  if (!invitesEnabled()) return none;
+  if (!invitesDeliveryLive()) return none;
   try {
     const rows = await db
       .select({ id: coffeeChats.id })

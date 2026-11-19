@@ -233,9 +233,13 @@ describe("send", () => {
     expect((await db.select().from(coffeeChatPlacements)).every((r) => r.status === "draft")).toBe(true);
   });
 
-  test("marks drafts sent, writes nothing to the sheet, invites not built", async () => {
+  test("marks drafts sent, writes nothing to the sheet, runs the invite round (switched off in tests)", async () => {
     const res = await organizer.coffeeChatSessions.send();
-    expect(res).toMatchObject({ sheet: "disabled", invites: "not-built" });
+    // The kill switch is off under vitest, so the round creates and sends nothing.
+    expect(res).toMatchObject({
+      sheet: "disabled",
+      invites: { status: "disabled", created: 0, openSeats: 0, delivered: 0 },
+    });
     expect(res.sent).toBeGreaterThan(0);
     const rows = await db.select().from(coffeeChatPlacements);
     expect(rows.every((r) => r.status === "sent" && r.sentAt)).toBe(true);
