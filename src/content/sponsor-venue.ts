@@ -75,6 +75,6 @@ export const sponsorVenueCopy = {
       "This will be unlocked on Sunday at 9:00 AM. Please come to the sponsor judging debrief at 8:30 AM. There will be coffee!",
     /** The judging page itself before it opens (same rule as the nav). */
     pageTitle: "Judging opens Sunday 9:00 AM",
-    home: "Back to Home",
+    home: "Back to Today",
   },
 } as const;

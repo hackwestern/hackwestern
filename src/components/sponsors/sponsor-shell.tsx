@@ -45,6 +45,15 @@ const NAV_BY_PATH: Record<string, NavId> = {
   "/sponsors/[uuid]/map": "map",
 };
 
+const NAV_LABELS: Record<NavId, string> = {
+  home: copy.home,
+  chats: copy.chats,
+  scan: copy.scan,
+  schedule: copy.schedule,
+  judging: copy.judging,
+  map: copy.map,
+};
+
 type NavItem = {
   id: NavId;
   label: string;
@@ -167,7 +176,9 @@ export function SponsorShell({
         },
       ]
     : [];
-  const activeLabel = items.find((i) => i.id === active)?.label;
+  // The section's name, even when its nav item is hidden (Judging for a
+  // sponsor without a prize track).
+  const activeLabel = active ? NAV_LABELS[active] : undefined;
   const topTitle = barTitle ?? heading ?? activeLabel ?? sponsorPortalCopy.brand;
 
   const frame = (

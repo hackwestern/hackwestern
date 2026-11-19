@@ -13,7 +13,7 @@ const only = process.argv[3] ?? null;
 const OUT = path.resolve("docs/ship/walkthrough/portal-v6", phase);
 fs.mkdirSync(OUT, { recursive: true });
 
-const base = `${BASE}/sponsors/${SPONSORS.test}`;
+const baseOf = (who = "test") => `${BASE}/sponsors/${SPONSORS[who]}`;
 const routes = [
   ["01-today", ""],
   ["02-chats", "/coffee-chats"],
@@ -24,8 +24,9 @@ const routes = [
   ["07-shortlist-review", "/coffee-chats?flow=shortlist&step=2"],
   ["08-scan", "/scan"],
   ["09-schedule", "/schedule?day=saturday"],
-  ["10-judging-locked", "/picks"],
-  ["11-judging", "/picks?preview=judging"],
+  // Sun Life: Test Sponsor has no prize track.
+  ["10-judging-locked", "/picks", null, "sunlife"],
+  ["11-judging", "/picks?preview=judging", null, "sunlife"],
   ["12-map", "/map"],
   ["13-help", "", "help"],
 ];
@@ -33,9 +34,9 @@ const routes = [
 const phone = /^\s*\(?\d{3}\)?[ .-]?(?!555)\d{3}[ .-]\d{4}\s*$/;
 for (const w of [390, 1280]) {
   const { page } = await open(w);
-  for (const [name, href, action] of routes) {
+  for (const [name, href, action, who] of routes) {
     if (only && !name.startsWith(only)) continue;
-    const res = await page.goto(base + href, { waitUntil: "networkidle", timeout: 120000 });
+    const res = await page.goto(baseOf(who ?? "test") + href, { waitUntil: "networkidle", timeout: 120000 });
     if (res && res.status() === 404) {
       console.log(`[skip] ${name} 404`);
       continue;
