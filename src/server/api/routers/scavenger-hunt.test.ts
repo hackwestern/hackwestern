@@ -465,6 +465,35 @@ describe("scavengerHuntRouter basic endpoints", () => {
       }
     });
   });
+
+  describe("getLeaderboard", () => {
+    beforeEach(async () => {
+      await db
+        .update(users)
+        .set({ scavengerHuntEarned: 120 })
+        .where(eq(users.id, session.user.id));
+      await db
+        .update(users)
+        .set({ scavengerHuntEarned: 999 })
+        .where(eq(users.id, organizerSession.user.id));
+    });
+
+    test("returns only hackers, sorted by earned points descending", async () => {
+      const leaderboard = await organizerCaller.scavengerHunt.getLeaderboard();
+      const ids = leaderboard.map((u) => u.id);
+      expect(ids).toContain(session.user.id);
+      expect(ids).not.toContain(organizerSession.user.id);
+      const earned = leaderboard.map((u) => u.earned ?? 0);
+      expect(earned).toEqual([...earned].sort((a, b) => b - a));
+      expect(earned.every((e) => e > 0)).toBe(true);
+    });
+
+    test("throws error if user is not an organizer", async () => {
+      await expect(caller.scavengerHunt.getLeaderboard()).rejects.toThrow(
+        "User is not an organizer",
+      );
+    });
+  });
 });
 
 describe("scavengerHuntRouter redemption endpoints", () => {

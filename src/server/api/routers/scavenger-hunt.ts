@@ -452,6 +452,19 @@ export const scavengerHuntRouter = createTRPCRouter({
       return await getUserPoints(requestedUserId);
     }),
 
+  // All hackers in descending order of EARNED points
+  getLeaderboard: protectedOrganizerProcedure.query(async () => {
+    return await db
+      .select({
+        id: users.id,
+        name: users.name,
+        earned: users.scavengerHuntEarned,
+      })
+      .from(users)
+      .where(and(eq(users.type, "hacker"), gt(users.scavengerHuntEarned, 0)))
+      .orderBy(desc(users.scavengerHuntEarned));
+  }),
+
   // Redeem a Reward (only accessible to users)
   redeem: protectedProcedure
     .input(
