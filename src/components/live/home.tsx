@@ -201,7 +201,7 @@ const HackerHome = () => {
                     <ActivityCard
                       key={scan.id}
                       kind={scan.itemType === "meal" ? "meal" : "activity"}
-                      title={formatTitle(scan.itemDescription ?? scan.itemCode)}
+                      title={formatTitle(scan.itemName)}
                       meta={`${time} · ${scan.points > 0 ? "+" : ""}${scan.points} pts`}
                     />
                   );

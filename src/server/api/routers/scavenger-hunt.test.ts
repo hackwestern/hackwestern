@@ -24,12 +24,12 @@ import { getOrCreateHackerId } from "~/server/api/utils/hacker-id";
 // ---- helpers ----
 const insertTestItem = async (
   overrides: Partial<typeof scavengerHuntItems.$inferInsert> = {},
-  code = `123456789012`,
+  name = `123456789012`, // Names must be unique among items that are not deleted
 ) => {
   const [item] = await db
     .insert(scavengerHuntItems)
     .values({
-      code: code,
+      name,
       points: 25,
       type: "activity",
       startsAt: new Date("2026-11-21T14:00:00Z"),
@@ -74,9 +74,9 @@ await db.insert(applications).values({
 
 // Tests
 describe("scavengerHuntRouter basic endpoints", () => {
-  // getScavengerHuntItem tests
+  // getScavengerHuntItemById tests
   let item: Awaited<ReturnType<typeof insertTestItem>>; // declare outside so tests can use it
-  describe("getScavengerHuntItem", () => {
+  describe("getScavengerHuntItemById", () => {
     beforeEach(async () => {
       item = await insertTestItem();
     });
@@ -89,16 +89,23 @@ describe("scavengerHuntRouter basic endpoints", () => {
     });
 
     test("returns inserted item", async () => {
-      const result = await caller.scavengerHunt.getScavengerHuntItem({
-        code: item.code,
-      });
+      const result =
+        await organizerCaller.scavengerHunt.getScavengerHuntItemById({
+          id: item.id,
+        });
 
       expect(result.id).toBe(item.id);
     });
 
-    test("throws error if code not found", async () => {
+    test("hackers can't read items", async () => {
       await expect(
-        caller.scavengerHunt.getScavengerHuntItem({ code: "nonexistent" }),
+        caller.scavengerHunt.getScavengerHuntItemById({ id: item.id }),
+      ).rejects.toThrow(TRPCError);
+    });
+
+    test("throws error if id not found", async () => {
+      await expect(
+        organizerCaller.scavengerHunt.getScavengerHuntItemById({ id: -1 }),
       ).rejects.toThrow();
     });
 
@@ -110,7 +117,9 @@ describe("scavengerHuntRouter basic endpoints", () => {
 
       // Should throw error when trying to get soft-deleted item
       try {
-        (await caller.scavengerHunt.getScavengerHuntItem({ code: item.code }),
+        (await organizerCaller.scavengerHunt.getScavengerHuntItemById({
+          id: item.id,
+        }),
           expect.fail("Route should return a TRPCError"));
       } catch (err) {
         expect(err).toBeInstanceOf(TRPCError);
@@ -125,11 +134,11 @@ describe("scavengerHuntRouter basic endpoints", () => {
   describe("getAllScavengerHuntItems", () => {
     afterEach(async () => {
       // Clean up test items
-      const testCodes = ["GETALL-001", "GETALL-002", "GETALL-003"];
-      for (const code of testCodes) {
+      const testNames = ["GETALL-001", "GETALL-002", "GETALL-003"];
+      for (const name of testNames) {
         await db
           .delete(scavengerHuntItems)
-          .where(eq(scavengerHuntItems.code, code));
+          .where(eq(scavengerHuntItems.name, name));
       }
     });
 
@@ -140,36 +149,27 @@ describe("scavengerHuntRouter basic endpoints", () => {
 
     test("returns all non-deleted items", async () => {
       // Create multiple test items
-      const item1 = await insertTestItem(
-        { code: "GETALL-001", points: 10 },
-        "GETALL-001",
-      );
-      const item2 = await insertTestItem(
-        { code: "GETALL-002", points: 20 },
-        "GETALL-002",
-      );
-      const item3 = await insertTestItem(
-        { code: "GETALL-003", points: 30 },
-        "GETALL-003",
-      );
+      const item1 = await insertTestItem({ points: 10 }, "GETALL-001");
+      const item2 = await insertTestItem({ points: 20 }, "GETALL-002");
+      const item3 = await insertTestItem({ points: 30 }, "GETALL-003");
 
       const result = await caller.scavengerHunt.getAllScavengerHuntItems();
 
       expect(result.length).toBeGreaterThanOrEqual(3);
-      const resultCodes = result.map((item) => item.code);
-      expect(resultCodes).toContain(item1.code);
-      expect(resultCodes).toContain(item2.code);
-      expect(resultCodes).toContain(item3.code);
+      const resultNames = result.map((item) => item.name);
+      expect(resultNames).toContain(item1.name);
+      expect(resultNames).toContain(item2.name);
+      expect(resultNames).toContain(item3.name);
     });
 
     /*test("excludes soft-deleted items", async () => {
       // Create items
       const activeItem = await insertTestItem(
-        { code: "GETALL-001", points: 10 },
+        { points: 10 },
         "GETALL-001",
       );
       const deletedItem = await insertTestItem(
-        { code: "GETALL-002", points: 20 },
+        { points: 20 },
         "GETALL-002",
       );
 
@@ -182,16 +182,13 @@ describe("scavengerHuntRouter basic endpoints", () => {
       const result = await caller.scavengerHunt.getAllScavengerHuntItems();
 
       // Should only return the active item
-      const resultCodes = result.map((item) => item.code);
-      expect(resultCodes).toContain(activeItem.code);
-      expect(resultCodes).not.toContain(deletedItem.code);
+      const resultNames = result.map((item) => item.name);
+      expect(resultNames).toContain(activeItem.name);
+      expect(resultNames).not.toContain(deletedItem.name);
     });*/
 
     test("works without authentication (public procedure)", async () => {
-      const item = await insertTestItem(
-        { code: "GETALL-001", points: 10 },
-        "GETALL-001",
-      );
+      const item = await insertTestItem({ points: 10 }, "GETALL-001");
 
       // Create unauthenticated caller
       const unauthenticatedCtx = createInnerTRPCContext({ session: null });
@@ -201,23 +198,19 @@ describe("scavengerHuntRouter basic endpoints", () => {
         await unauthenticatedCaller.scavengerHunt.getAllScavengerHuntItems();
 
       expect(result.length).toBeGreaterThanOrEqual(1);
-      const resultCodes = result.map((i) => i.code);
-      expect(resultCodes).toContain(item.code);
+      const resultNames = result.map((i) => i.name);
+      expect(resultNames).toContain(item.name);
     });
 
     test("returns items with correct structure", async () => {
-      const item = await insertTestItem(
-        { code: "GETALL-001", points: 25, description: "Test item" },
-        "GETALL-001",
-      );
+      const item = await insertTestItem({ points: 25 }, "GETALL-001");
 
       const result = await caller.scavengerHunt.getAllScavengerHuntItems();
 
       const foundItem = result.find((i) => i.id === item.id);
       expect(foundItem).toBeDefined();
-      expect(foundItem?.code).toBe(item.code);
       expect(foundItem?.points).toBe(25);
-      expect(foundItem?.description).toBe("Test item");
+      expect(foundItem?.name).toBe("GETALL-001");
       expect(foundItem?.deletedAt).toBeNull();
     });
   });
@@ -244,7 +237,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
     test("successfully scans and awards points", async () => {
       const scanResult = await organizerCaller.scavengerHunt.scan({
         userId: session.user.id,
-        itemCode: testItem.code,
+        itemId: testItem.id,
       });
       expect(scanResult.success).toBe(true);
 
@@ -267,7 +260,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
       const hackerId = await getOrCreateHackerId(session.user.id);
       const scanResult = await organizerCaller.scavengerHunt.scan({
         userId: hackerId,
-        itemCode: testItem.code,
+        itemId: testItem.id,
       });
       expect(scanResult.success).toBe(true);
 
@@ -283,7 +276,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
     test("throws error if scanning same item twice", async () => {
       const firstScanResult = await organizerCaller.scavengerHunt.scan({
         userId: session.user.id,
-        itemCode: testItem.code,
+        itemId: testItem.id,
       });
       expect(firstScanResult.success).toBe(true);
       expect(firstScanResult.message).toBe("Item scanned successfully");
@@ -291,7 +284,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
       try {
         await organizerCaller.scavengerHunt.scan({
           userId: session.user.id,
-          itemCode: testItem.code,
+          itemId: testItem.id,
         });
 
         // If we get here, the test should fail because the function should throw an error
@@ -315,7 +308,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
       try {
         await caller.scavengerHunt.scan({
           userId: session.user.id,
-          itemCode: testItem.code,
+          itemId: testItem.id,
         });
 
         // If we get here, the test should fail because the function should throw an error
@@ -332,7 +325,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
       try {
         await organizerCaller.scavengerHunt.scan({
           userId: session.user.id,
-          itemCode: "nonexistent-code",
+          itemId: -1,
         });
         expect.fail("Route should return a TRPCError");
       } catch (err) {
@@ -353,7 +346,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
       try {
         await organizerCaller.scavengerHunt.scan({
           userId: session.user.id,
-          itemCode: testItem.code,
+          itemId: testItem.id,
         });
         expect.fail("Route should return a TRPCError");
       } catch (err) {
@@ -373,7 +366,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
 
       const scanResult = await organizerCaller.scavengerHunt.scan({
         userId: session.user.id,
-        itemCode: testItem.code,
+        itemId: testItem.id,
       });
       expect(scanResult.success).toBe(true);
     });
@@ -383,7 +376,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
       try {
         await organizerCaller.scavengerHunt.scan({
           userId: nonExistentUserId,
-          itemCode: testItem.code,
+          itemId: testItem.id,
         });
         expect.fail("Route should return a TRPCError");
       } catch (err) {
@@ -926,14 +919,16 @@ describe("scavengerHuntRouter scan endpoints", () => {
       expect(deletedItem?.deletedAt).toBeInstanceOf(Date);
     });
 
-    test("soft-deleted item cannot be retrieved via getScavengerHuntItem", async () => {
+    test("soft-deleted item cannot be retrieved via getScavengerHuntItemById", async () => {
       await organizerCaller.scavengerHunt.deleteScavengerHuntItem({
         itemId: testItem.id,
       });
 
       // Should throw error when trying to get soft-deleted item
       await expect(
-        caller.scavengerHunt.getScavengerHuntItem({ code: testItem.code }),
+        organizerCaller.scavengerHunt.getScavengerHuntItemById({
+          id: testItem.id,
+        }),
       ).rejects.toThrow();
     });
 
@@ -950,7 +945,7 @@ describe("scavengerHuntRouter scan endpoints", () => {
       try {
         await organizerCaller.scavengerHunt.scan({
           userId: testUser.user.id,
-          itemCode: testItem.code,
+          itemId: testItem.id,
         });
         expect.fail("Route should return a TRPCError");
       } catch (err) {
@@ -975,7 +970,7 @@ describe("scavengerHuntRouter scan endpoints", () => {
       // Scan the item first
       await organizerCaller.scavengerHunt.scan({
         userId: testUser.user.id,
-        itemCode: testItem.code,
+        itemId: testItem.id,
       });
 
       // Verify scan exists
@@ -1037,4 +1032,30 @@ describe("scavengerHuntRouter scan endpoints", () => {
       ).rejects.toThrow();
     });
   });
+});
+
+describe("scavengerHuntRouter item status", () => {
+  afterEach(async () => {
+    await db
+      .delete(scavengerHuntItems)
+      .where(eq(scavengerHuntItems.name, "STATUS-TEST"));
+  });
+
+  test.each(["draft", "disabled"] as const)(
+    "%s items are hidden from the scanner and can't be scanned",
+    async (status) => {
+      const item = await insertTestItem({ status }, "STATUS-TEST");
+      const scannable = await caller.scavengerHunt.getAllScavengerHuntItems();
+      expect(scannable.map((i) => i.id)).not.toContain(item.id);
+      await expect(
+        organizerCaller.scavengerHunt.getScavengerHuntItemById({ id: item.id }),
+      ).rejects.toThrow("Item not found");
+      await expect(
+        organizerCaller.scavengerHunt.scan({
+          userId: session.user.id,
+          itemId: item.id,
+        }),
+      ).rejects.toThrow("can't be scanned");
+    },
+  );
 });

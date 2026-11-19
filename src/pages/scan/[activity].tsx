@@ -42,14 +42,10 @@ interface LegacyNavigator extends Navigator {
 const ScanActivityPage = () => {
   const router = useRouter();
   const activityParam = router.query?.activity as string;
-  // Try to parse as itemId (number), fallback to code if it's a string
-  const itemId = activityParam
-    ? isNaN(Number(activityParam))
-      ? null
-      : Number(activityParam)
-    : null;
-  const itemCode =
-    activityParam && isNaN(Number(activityParam)) ? activityParam : null;
+  const itemId =
+    activityParam && !isNaN(Number(activityParam))
+      ? Number(activityParam)
+      : null;
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -76,23 +72,13 @@ const ScanActivityPage = () => {
   const scanMutation = api.scavengerHunt.scan.useMutation();
   const _utils = api.useUtils();
 
-  // Fetch item details - try by ID first, then by code
-  const { data: itemDataById, isLoading: loadingById } =
+  const { data: itemData, isLoading: itemLoading } =
     api.scavengerHunt.getScavengerHuntItemById.useQuery(
       { id: itemId! },
       { enabled: !!itemId },
     );
 
-  const { data: itemDataByCode, isLoading: loadingByCode } =
-    api.scavengerHunt.getScavengerHuntItem.useQuery(
-      { code: itemCode! },
-      { enabled: !!itemCode && !itemId },
-    );
-
-  const itemData = itemDataById ?? itemDataByCode;
-  const itemLoading = loadingById ?? loadingByCode;
-
-  const activityName = itemData?.description ?? itemData?.code ?? "Activity";
+  const activityName = itemData?.name ?? "Activity";
   const isWinnable = itemData?.winPoints != null;
 
   // QR Code scanning using camera stream
@@ -367,7 +353,6 @@ const ScanActivityPage = () => {
       await scanMutation.mutateAsync({
         userId,
         itemId: itemData.id,
-        itemCode: itemData.code,
         activityType: isWinnable ? activityTypeRef.current : undefined,
       });
       const userName = await fetchUserName(userId);
@@ -430,7 +415,7 @@ const ScanActivityPage = () => {
         <h1 className="text-[32px] font-bold leading-[1.2] text-dashboard-text-heavy">
           {activityName}
         </h1>
-        {!itemLoading && !itemData && (itemId ?? itemCode) && (
+        {!itemLoading && !itemData && itemId !== null && (
           <p className="text-sm font-medium text-dashboard-status-warning">
             Item not found
           </p>
