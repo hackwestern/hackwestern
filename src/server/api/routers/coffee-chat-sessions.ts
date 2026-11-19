@@ -20,6 +20,8 @@ import { mirrorRoomGrid } from "~/server/api/utils/coffee-chat-room-grid-mirror"
 import { checkCoffeeSender, type SenderCheck } from "~/server/api/utils/coffee-chat-sender";
 import {
   deliverInviteNotices,
+  invitesDeliveryLive,
+  invitesEnabled,
   reconcileInvitesAfterChange,
   sendRoundOneInvites,
   type InviteJob,
@@ -402,6 +404,11 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
           round.status === "ok" ? round.unfilled.reduce((n, u) => n + u.open, 0) : 0,
         // Messages actually handed to Slack or email (0 while invites are off).
         delivered: delivery.slack + delivery.email,
+        /**
+         * COFFEE_INVITES_ENABLED=dry: invites were saved but nobody was
+         * messaged. The toast says so.
+         */
+        dryRun: invitesEnabled() && !invitesDeliveryLive(),
       },
     };
   }),

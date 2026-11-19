@@ -239,6 +239,19 @@ export const coffeeSessionsCopy = {
     onlyNoah: "Only Noah sends",
   },
 
+  /** The one pause before Send: it messages hackers and can't be undone. */
+  sendConfirm: {
+    title: "Send schedules and invites?",
+    body: (sponsors: number, hackers: number) => {
+      const who = sponsors === 1 ? "1 sponsor's" : `${sponsors} sponsors'`;
+      return hackers > 0
+        ? `Send ${who} schedules and invite up to ${plural(hackers, "hacker")}? Hackers get a Slack message now.`
+        : `Send ${who} schedules? No new hackers are invited.`;
+    },
+    send: "Send now",
+    cancel: "Cancel",
+  },
+
   /**
    * What changed since the board was last scheduled or sent, for an
    * organizer arriving hours after sponsors acted. Only sponsors write
@@ -290,6 +303,8 @@ export const coffeeSessionsCopy = {
     /** Invites are switched off on this server (dev, previews). */
     invitesOff: "Invites are switched off on this server, so no hacker was messaged.",
     sheetOff: "Sheet writes are off here, so the Room Grid tab wasn't updated.",
+    /** COFFEE_INVITES_ENABLED=dry: added to the Send toast. */
+    dryRun: " (dry run: nothing was messaged)",
     sheetFailed: "Couldn't update the Room Grid tab. The schedule is saved.",
   },
 

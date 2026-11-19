@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import { CircleCheck } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -6,6 +7,7 @@ import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import {
   COFFEE_ROOMS,
   COFFEE_SESSIONS,
+  chatsInWindow,
   type CoffeeRoomId,
   type CoffeeSessionId,
 } from "~/lib/coffee-chat-sessions";
@@ -38,6 +40,7 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   const [moving, setMoving] = useState<string | null>(null);
   const [booking, setBooking] = useState<{ room: string; session: string } | null>(null);
   const [applying, setApplying] = useState<string | null>(null);
+  const [confirmSend, setConfirmSend] = useState(false);
 
   // ?sponsor= (an id or name) opens that sponsor's row once.
   useEffect(() => {
@@ -94,9 +97,11 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   });
   const send = api.coffeeChatSessions.send.useMutation({
     onSuccess: (r) => {
+      const dry = r.invites.dryRun && r.invites.created > 0 ? copy.toast.dryRun : "";
       toast.success(
         r.sent || r.invites.created
           ? copy.toast.sent(r.sent, r.invites.created, r.invites.openSeats) +
+              dry +
               (r.reconfirmed ? ` ${copy.toast.reconfirmed(r.reconfirmed)}` : "")
           : r.reconfirmed
             ? copy.toast.reconfirmed(r.reconfirmed)
@@ -260,9 +265,72 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
           setSelected(null);
           auto.mutate();
         }}
-        onSend={() => send.mutate()}
+        onSend={() => setConfirmSend(true)}
+      />
+      <SendConfirm
+        board={data}
+        open={confirmSend}
+        onClose={() => setConfirmSend(false)}
+        onSend={() => {
+          setConfirmSend(false);
+          send.mutate();
+        }}
       />
     </div>
+  );
+}
+
+/**
+ * Send messages hackers and can't be undone, so it asks once: how many
+ * sponsors' schedules go out and up to how many hackers get invited (every
+ * seat in the draft chats).
+ */
+function SendConfirm({
+  board,
+  open,
+  onClose,
+  onSend,
+}: {
+  board: SessionBoardData;
+  open: boolean;
+  onClose: () => void;
+  onSend: () => void;
+}) {
+  const c = copy.sendConfirm;
+  const drafts = board.placements.filter((p) => p.status === "draft");
+  const sponsorOf = new Map(board.sponsors.map((sp) => [sp.id, sp]));
+  const sponsors = new Set([
+    ...drafts.map((p) => p.sponsorId),
+    ...board.sponsors.filter((sp) => sp.changedAfterSend).map((sp) => sp.id),
+  ]).size;
+  const hackers = drafts.reduce((n, p) => {
+    const sp = sponsorOf.get(p.sponsorId);
+    return sp ? n + chatsInWindow(p.window, sp.chatMinutes) * sp.hackersPerChat : n;
+  }, 0);
+  return (
+    <AlertDialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
+      <AlertDialog.Portal>
+        <AlertDialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/30" />
+        <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-32px)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-dashboard-lg bg-dashboard-bg-surface p-6 font-figtree text-dashboard-text-heavy shadow-dashboard-card">
+          <AlertDialog.Title className="m-0 text-xl font-bold">{c.title}</AlertDialog.Title>
+          <AlertDialog.Description className="m-0 text-base text-dashboard-text-medium">
+            {c.body(sponsors, hackers)}
+          </AlertDialog.Description>
+          <div className="flex flex-col gap-2 sm:flex-row-reverse">
+            <AlertDialog.Action asChild>
+              <DashboardButton variant="primary" className="min-h-11 sm:w-auto sm:px-5" onClick={onSend}>
+                {c.send}
+              </DashboardButton>
+            </AlertDialog.Action>
+            <AlertDialog.Cancel asChild>
+              <DashboardButton variant="outline" className="h-11 sm:w-auto sm:px-5">
+                {c.cancel}
+              </DashboardButton>
+            </AlertDialog.Cancel>
+          </div>
+        </AlertDialog.Content>
+      </AlertDialog.Portal>
+    </AlertDialog.Root>
   );
 }
 
