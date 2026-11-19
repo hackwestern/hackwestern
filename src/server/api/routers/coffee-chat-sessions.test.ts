@@ -306,7 +306,7 @@ describe("send", () => {
     // The kill switch is off under vitest, so the round creates and sends nothing.
     expect(res).toMatchObject({
       sheet: "disabled",
-      invites: { status: "disabled", created: 0, openSeats: 0, delivered: 0, dryRun: false },
+      invites: { status: "disabled", created: 0, unfilledSeats: 0, delivered: 0, dryRun: false },
     });
     expect(res.sent).toBeGreaterThan(0);
     const rows = await db.select().from(coffeeChatPlacements);

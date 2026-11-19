@@ -44,6 +44,16 @@ export function SponsorsBand({
 }) {
   // Not submitted first: those need chasing.
   const list = [...board.sponsors].sort((a, b) => Number(a.submitted) - Number(b.submitted));
+  // Seats are re-offered at once, so an empty seat is a problem flag.
+  const anySent = board.placements.some((p) => p.status === "sent");
+  const invites = api.coffeeChatInvites.status.useQuery(undefined, {
+    enabled: anySent,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: false,
+  });
+  const unfilledOf = new Map(
+    (invites.data?.sponsors ?? []).map((s) => [s.sponsorId, s.totals.unfilled]),
+  );
   const submitted = board.sponsors.filter((s) => s.submitted).length;
   return (
     <Card labelledBy="coffee-sponsors" tour="coffee-strip">
@@ -59,9 +69,11 @@ export function SponsorsBand({
           {list.map((sp) => {
             const isOpen = open === sp.id;
             const status = statusText(sp.status);
+            const unfilled = unfilledOf.get(sp.id) ?? 0;
             const flags = [
               ...(sp.changedAfterSend ? [sc.changedAfterSend] : []),
               ...statusFlags(sp.status),
+              ...(unfilled > 0 ? [sc.flags.unfilled(unfilled)] : []),
             ];
             return (
               <li key={sp.id} className="border-t border-dashboard-border-subtle first:border-t-0">
@@ -243,8 +255,9 @@ function SponsorDetail({ sponsor: sp, board }: { sponsor: BoardSponsor; board: S
 }
 
 /**
- * One line once a sponsor is sent: "Invites: 6 accepted · 3 waiting · 3
- * open" (coffeeChatInvites.status, every chat of theirs together).
+ * One line once a sponsor is sent: "6 accepted · 3 waiting"
+ * (coffeeChatInvites.status, every chat of theirs together). Empty seats
+ * show as a problem flag on the row, not here.
  */
 function InviteSummary({ sponsorId }: { sponsorId: string }) {
   const status = api.coffeeChatInvites.status.useQuery(
@@ -256,7 +269,7 @@ function InviteSummary({ sponsorId }: { sponsorId: string }) {
   const t = sponsor.totals;
   return (
     <p className="m-0 text-sm font-semibold text-dashboard-text-heavy">
-      {sc.invites(t.accepted, t.pending, t.open)}
+      {sc.invites(t.accepted, t.pending)}
       {!status.data.enabled && (
         <span className="block font-normal text-dashboard-text-light">{sc.invitesOff}</span>
       )}

@@ -64,15 +64,19 @@ export const coffeeSessionsCopy = {
     flags: {
       notPlaced: (n: number) => `${plural(n, "rep")} short of chats`,
       broken: (n: number) => `${plural(n, "chat")} ${n === 1 ? "needs" : "need"} a fix`,
+      /** Seats are re-offered at once; one left empty means no eligible hacker is free. */
+      unfilled: (n: number) => `${plural(n, "seat")} couldn't be filled (no one free)`,
     },
     /** Flag on a sponsor that edited after the schedule was sent. */
     changedAfterSend: "Changed after invites",
     openLabel: (name: string, status: string, flags: string[] = []) =>
       [name, status, ...flags].join(", "),
     notSubmittedYet: "Nothing submitted yet.",
-    /** Once a sponsor is sent: their hackers' invites, all chats together. */
-    invites: (accepted: number, waiting: number, open: number) =>
-      `Invites: ${accepted} accepted · ${waiting} waiting · ${open} open`,
+    /**
+     * Once a sponsor is sent: their hackers' invites, all chats together.
+     * No declined or open count: a "no" is replaced by the next hacker.
+     */
+    invites: (accepted: number, waiting: number) => `${accepted} accepted · ${waiting} waiting`,
     invitesOff: "Invites are switched off on this server, so none go out.",
     facts: (p: { hackersPerChat: number }) =>
       p.hackersPerChat === 1
@@ -245,7 +249,7 @@ export const coffeeSessionsCopy = {
     body: (sponsors: number, hackers: number) => {
       const who = sponsors === 1 ? "1 sponsor's" : `${sponsors} sponsors'`;
       return hackers > 0
-        ? `Send ${who} schedules and fill up to ${plural(hackers, "open seat")}? Invited hackers get a Slack message now.`
+        ? `Send ${who} schedules and invite hackers to ${plural(hackers, "seat")}? Invited hackers get a Slack message now.`
         : `Send ${who} schedules? No new hackers are invited.`;
     },
     send: "Send now",
@@ -298,9 +302,8 @@ export const coffeeSessionsCopy = {
     undo: "Undo",
     restored: "Put back.",
     booked: "Room booked.",
-    sent: (chats: number, invited: number, open: number) =>
-      `Sent ${plural(chats, "chat")}. Invited ${plural(invited, "hacker")}` +
-      (open > 0 ? `; ${plural(open, "seat")} still open, offered again from Saturday 10 AM.` : "."),
+    sent: (chats: number, invited: number) =>
+      `Sent ${plural(chats, "chat")}. Invited ${plural(invited, "hacker")}.`,
     /** Sponsors who changed after invites; Send confirmed their schedule again. */
     reconfirmed: (n: number) =>
       `Re-confirmed ${plural(n, "sponsor")} who changed after invites.`,
@@ -371,7 +374,7 @@ export const coffeeSessionsCopy = {
       before: " marks every draft chat confirmed, re-confirms sponsors who changed after invites (their hackers were already asked again when they saved), and updates the locked ",
       bold: "Coffee Chat Room Grid",
       after:
-        " tab (on the live site only). Each sponsor sees their confirmed chats under Your chats in their portal. Hackers get one invite per seat on Slack (email if Slack can't reach them): people the sponsor met at their booth first, then their shortlist, then hackers interested in them. They answer by Sat 10 AM; open seats are offered again from 10 AM every 30 minutes.",
+        " tab (on the live site only). Each sponsor sees their confirmed chats under Your chats in their portal. Hackers get one invite per seat on Slack (email if Slack can't reach them): people the sponsor met at their booth first, then their shortlist, then hackers interested in them. They answer by Sat 10 AM. When someone declines, their seat goes to the next hacker right away; from 10 AM Saturday, new invites go out every 30 minutes.",
     },
     /** Sponsors and organizers name the same state differently. */
     sameWord: `A sponsor's "Confirmed" (in their portal) means the same as your "Sent" here.`,

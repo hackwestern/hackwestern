@@ -9,9 +9,9 @@ import {
   roundClosesAt,
 } from "~/lib/coffee-chat-invites";
 import {
+  coffeeChatStartsAt,
   coffeeChatTimeOf,
   effectiveCoffeeChatStatus,
-  type CoffeeChatStatus,
 } from "~/lib/coffee-chat-requests";
 import { minutesOfClock } from "~/lib/coffee-chat-sessions";
 import {
@@ -31,7 +31,8 @@ import { loadBoardState } from "~/server/api/utils/coffee-chat-sessions-board";
 export type InviteSeat = {
   chatId: string;
   name: string;
-  status: CoffeeChatStatus;
+  /** Only live invites are listed: declined and expired ones are replaced. */
+  status: "pending" | "accepted";
   round: number | null;
   source: string | null;
   /** ISO answer-by time. */
@@ -49,8 +50,12 @@ export type InviteChatStatus = {
   /** Seats held now (pending or accepted). */
   filled: number;
   accepted: number;
-  open: number;
-  /** Every invite this chat has had, newest round last. */
+  /**
+   * Seats no eligible hacker could fill (before the chat starts). Seats are
+   * re-offered at once, so this is a problem to show, not a normal count.
+   */
+  unfilled: number;
+  /** The live invites (waiting or accepted), oldest first. */
   invites: InviteSeat[];
 };
 
@@ -58,7 +63,12 @@ export type InviteSponsorStatus = {
   sponsorId: string;
   name: string;
   chats: InviteChatStatus[];
-  totals: { seats: number; accepted: number; pending: number; open: number };
+  totals: {
+    seats: number;
+    accepted: number;
+    pending: number;
+    unfilled: number;
+  };
 };
 
 export type InviteStatus = {
@@ -74,7 +84,8 @@ export type InviteStatus = {
 
 // Hacker invites from the confirmed coffee chat schedule (track B of the
 // 8-hour build): one invite per seat, round 1 Fri 10 PM, then automatic
-// 30-minute rounds on Saturday. Organizers only. The server code and its
+// 30-minute rounds on Saturday from 10 AM. A declined seat is re-offered at
+// once. Organizers only. The server code and its
 // contract: src/server/api/utils/coffee-chat-invites.ts and
 // docs/handoff/build-b-cc-invites.md.
 export const coffeeChatInvitesRouter = createTRPCRouter({
@@ -107,12 +118,16 @@ export const coffeeChatInvitesRouter = createTRPCRouter({
         const name =
           [r.firstName, r.lastName].filter((x) => x?.trim()).join(" ") ||
           (r.userName ?? "");
+        const status = effectiveCoffeeChatStatus(r, now);
+        // Declined and expired invites aren't shown: their seat was offered
+        // to the next hacker.
+        if (status !== "pending" && status !== "accepted") continue;
         byChat.set(key, [
           ...(byChat.get(key) ?? []),
           {
             chatId: r.id,
             name,
-            status: effectiveCoffeeChatStatus(r, now),
+            status,
             round: r.round,
             source: r.source,
             expiresAt: r.expiresAt?.toISOString() ?? null,
@@ -131,16 +146,18 @@ export const coffeeChatInvitesRouter = createTRPCRouter({
             const accepted = invites.filter(
               (i) => i.status === "accepted",
             ).length;
+            const slotTime = coffeeChatTimeOf(c.start);
+            const ahead = coffeeChatStartsAt(slotTime) > now;
             return {
               placementId: c.placementId,
               repName: c.repName,
               room: c.room,
-              slotTime: coffeeChatTimeOf(c.start),
+              slotTime,
               minutes: c.minutes,
               seats: c.seats,
               filled,
               accepted,
-              open: Math.max(0, c.seats - filled),
+              unfilled: ahead ? Math.max(0, c.seats - filled) : 0,
               invites,
             };
           });
@@ -155,7 +172,7 @@ export const coffeeChatInvitesRouter = createTRPCRouter({
             seats: sum((c) => c.seats),
             accepted: sum((c) => c.accepted),
             pending: sum((c) => c.filled - c.accepted),
-            open: sum((c) => c.open),
+            unfilled: sum((c) => c.unfilled),
           },
         });
       }
@@ -172,7 +189,7 @@ export const coffeeChatInvitesRouter = createTRPCRouter({
   /**
    * Run the current round now for every sponsor with sent placements (or
    * one sponsor): the safety net if no traffic triggered the timed round.
-   * Fills only seats not offered this round yet.
+   * Fills only empty seats.
    */
   runRoundNow: protectedOrganizerProcedure
     .input(z.object({ sponsorId: z.string().uuid().optional() }).optional())

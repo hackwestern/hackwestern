@@ -159,7 +159,7 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
       const dry = r.invites.dryRun && r.invites.created > 0 ? copy.toast.dryRun : "";
       toast.success(
         r.sent || r.invites.created
-          ? copy.toast.sent(r.sent, r.invites.created, r.invites.openSeats) +
+          ? copy.toast.sent(r.sent, r.invites.created) +
               dry +
               (r.reconfirmed ? ` ${copy.toast.reconfirmed(r.reconfirmed)}` : "")
           : r.reconfirmed

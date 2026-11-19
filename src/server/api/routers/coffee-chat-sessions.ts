@@ -429,7 +429,8 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       invites: {
         status: round.status,
         created: round.status === "ok" ? round.created.length : 0,
-        openSeats:
+        /** Seats no eligible hacker could fill (the board flags them). */
+        unfilledSeats:
           round.status === "ok" ? round.unfilled.reduce((n, u) => n + u.open, 0) : 0,
         // Messages actually handed to Slack or email (0 while invites are off).
         delivered: delivery.slack + delivery.email,

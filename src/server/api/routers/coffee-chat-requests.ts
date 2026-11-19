@@ -883,6 +883,16 @@ async function saveSlotLimit(input: {
   });
 }
 
+/**
+ * A session invite (it has a placement) that was declined or expired: its
+ * seat went to the next hacker, so sponsor and organizer lists leave it out
+ * (decision 2026-11-19, "no open seats shown"). Old-flow requests keep
+ * every status.
+ */
+function replacedInvite(placementId: string | null, status: string): boolean {
+  return !!placementId && (status === "declined" || status === "expired");
+}
+
 export const coffeeChatRequestsRouter = createTRPCRouter({
   /**
    * The sponsor's chat request: 1-on-1 with N reps, or one group of M
@@ -1018,23 +1028,27 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           room: coffeeChats.room,
           repName: coffeeChats.repName,
           status: coffeeChats.status,
+          placementId: coffeeChats.placementId,
         })
         .from(coffeeChats)
         .innerJoin(users, eq(users.id, coffeeChats.userId))
         .leftJoin(applications, eq(applications.userId, coffeeChats.userId))
         .where(eq(coffeeChats.sponsorId, sponsor.id))
         .orderBy(asc(coffeeChats.slotTime), asc(coffeeChats.createdAt));
-      const chats: SponsorCoffeeChat[] = rows.map(
-        ({ firstName, userName, ...row }) => {
+      const chats: SponsorCoffeeChat[] = rows.flatMap(
+        ({ firstName, userName, placementId, ...row }) => {
           const { status, startsAt } = coffeeChatTimes(row, now);
-          return {
-            ...row,
-            firstName: firstName?.trim()
-              ? firstName.trim()
-              : (userName?.trim().split(/\s+/)[0] ?? ""),
-            status,
-            startsAt,
-          };
+          if (replacedInvite(placementId, status)) return [];
+          return [
+            {
+              ...row,
+              firstName: firstName?.trim()
+                ? firstName.trim()
+                : (userName?.trim().split(/\s+/)[0] ?? ""),
+              status,
+              startsAt,
+            },
+          ];
         },
       );
       // Only this sponsor's blocks (same UUID scoping as their chats). The
@@ -1146,6 +1160,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           durationMinutes: coffeeChats.durationMinutes,
           room: coffeeChats.room,
           status: coffeeChats.status,
+          placementId: coffeeChats.placementId,
         })
         .from(coffeeChats)
         .innerJoin(
@@ -1161,15 +1176,18 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         ),
       [...COFFEE_CHAT_ROOMS] as string[],
     ]);
-    const chats: OrganizerCoffeeChat[] = rows.map(
-      ({ userName, firstName, ...row }) => {
+    const chats: OrganizerCoffeeChat[] = rows.flatMap(
+      ({ userName, firstName, placementId, ...row }) => {
         const { status, startsAt } = coffeeChatTimes(row, now);
-        return {
-          ...row,
-          firstName: firstName?.trim() ? firstName : (userName ?? ""),
-          status,
-          startsAt,
-        };
+        if (replacedInvite(placementId, status)) return [];
+        return [
+          {
+            ...row,
+            firstName: firstName?.trim() ? firstName : (userName ?? ""),
+            status,
+            startsAt,
+          },
+        ];
       },
     );
     return { chats, rooms };

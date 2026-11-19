@@ -744,19 +744,23 @@ describe("coffeeChatInvites router", () => {
       seats: 1,
       accepted: 1,
       filled: 1,
-      open: 0,
+      unfilled: 0,
       room: "Rm 2241",
     });
-    expect(a.chats[1]!.invites.map((i) => [i.name, i.status, i.round])).toEqual(
-      [
-        ["h6 Person", "expired", 1],
-        ["h9 Person", "declined", 2],
-      ],
-    );
-    expect(a.chats[2]!.invites.map((i) => [i.name, i.status, i.round])).toEqual(
-      [["h1 Person", "declined", 1]],
-    );
-    expect(a.totals).toMatchObject({ seats: 6, accepted: 1 });
+    expect(a.chats[0]!.invites.map((i) => [i.name, i.status])).toEqual([
+      ["h5 Person", "accepted"],
+    ]);
+    // Declined and expired invites aren't listed: they were replaced. The
+    // seats no one could take are counted as unfilled (a board problem).
+    expect(a.chats[1]!.invites).toEqual([]);
+    expect(a.chats[2]!.invites).toEqual([]);
+    expect(a.chats[1]).toMatchObject({ filled: 0, unfilled: 1 });
+    expect(a.totals).toEqual({
+      seats: 6,
+      accepted: 1,
+      pending: 0,
+      unfilled: 5,
+    });
     // The kill switch is off here: Run now writes nothing.
     expect(await organizer.coffeeChatInvites.runRoundNow()).toMatchObject({
       status: "disabled",
