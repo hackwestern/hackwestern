@@ -4,7 +4,6 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import { ScanLine } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { CoffeeChatSummary } from "~/components/sponsors/coffee-chat-summary";
 import { DayPicker } from "~/components/sponsors/day-picker";
 import { SponsorHelp } from "~/components/sponsors/help-button";
 import { HappeningNowBanner } from "~/components/sponsors/happening-now";
@@ -140,7 +139,8 @@ export default function SponsorSchedulePage() {
       <WorkshopDetails workshops={data.workshops} />
       {shownDay === "Saturday" && (
         <>
-          <CoffeeChatSummary setup={data.coffeeChat} />
+          {/* The old window/hours CoffeeChatSummary is unlinked: the
+              session model lives on the Chats page (track A). */}
           <nav
             aria-label={coffeeChatCopy.hub.linksLabel}
             className="grid grid-cols-1 gap-3 sm:grid-cols-2"

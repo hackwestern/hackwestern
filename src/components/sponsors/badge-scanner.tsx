@@ -14,6 +14,7 @@ import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { hoverTint, pressable } from "~/components/sponsors/sponsor-shell";
+import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
 import { sponsorScanCopy } from "~/content/sponsor-scan";
 import { formatClock } from "~/lib/run-of-show";
 import {
@@ -502,7 +503,7 @@ function OfferStep({
           <StepHeading headingRef={headingRef}>
             {times.length > 0 || timesQ.isError
               ? copy.card.heading(hacker.firstName)
-              : copy.card.noTimes.title}
+              : sponsorSetupCopy.scan.heading(hacker.firstName)}
           </StepHeading>
           {free && (
             <p className="m-0 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-dashboard-text-medium">
@@ -518,15 +519,19 @@ function OfferStep({
         </div>
       </div>
 
+      {/* Every scan can go on Met at Hacker Fair: invited first. */}
+      <MetAtFair
+        sponsor={sponsor}
+        userId={hacker.userId}
+        firstName={hacker.firstName}
+        announce={announce}
+      />
+
       {timesQ.isError ? (
         <p className="m-0 rounded-dashboard-lg bg-dashboard-bg-inset p-4 text-base text-dashboard-text-medium">
           {copy.card.timesError}
         </p>
-      ) : times.length === 0 ? (
-        <p className="m-0 rounded-dashboard-lg bg-dashboard-bg-inset p-4 text-base text-dashboard-text-medium">
-          {copy.card.noTimes.body(hacker.firstName)}
-        </p>
-      ) : (
+      ) : times.length === 0 ? null : (
         <form
           className="flex flex-col gap-5"
           onSubmit={(event) => {
@@ -666,6 +671,93 @@ function OfferStep({
         </DashboardButton>
       )}
     </DashboardPanel>
+  );
+}
+
+/**
+ * "Met at Hacker Fair": pick which rep wants to talk to them (from Your
+ * team), then record the scan (sponsor_scan) so they're invited first.
+ */
+function MetAtFair({
+  sponsor,
+  userId,
+  firstName,
+  announce,
+}: {
+  sponsor: string;
+  userId: string;
+  firstName: string;
+  announce: (message: string) => void;
+}) {
+  const metCopy = sponsorSetupCopy.scan;
+  // A rep from Your team, by id (the server looks up the name); null = Anyone.
+  const [repId, setRepId] = useState<string | null>(null);
+  const setupQ = api.coffeeChatSetup.get.useQuery(
+    { sponsor },
+    { retry: false, refetchOnWindowFocus: false },
+  );
+  const record = api.coffeeChatSetup.recordScan.useMutation({
+    onSuccess: () => announce(metCopy.added(firstName)),
+    onError: () => announce(metCopy.error),
+  });
+  const reps = setupQ.data?.reps ?? [];
+  const chip = (on: boolean) =>
+    cn(
+      "min-h-11 rounded-full border px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+      on
+        ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
+        : cn("border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-medium", hoverTint),
+      pressable,
+    );
+  if (record.isSuccess) {
+    return (
+      <p className="m-0 flex items-start gap-2 rounded-dashboard-lg bg-dashboard-bg-highlight p-4 text-base font-semibold text-dashboard-text-heavy">
+        <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-dashboard-status-live" />
+        {metCopy.added(firstName)}
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-3 rounded-dashboard-lg bg-dashboard-bg-inset p-4">
+      {reps.length > 0 && (
+        <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
+          <legend className="mb-2 p-0 text-sm font-semibold text-dashboard-text-heavy">
+            {metCopy.metLegend}
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" aria-pressed={repId === null} className={chip(repId === null)} onClick={() => setRepId(null)}>
+              {metCopy.noRep}
+            </button>
+            {reps.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                aria-pressed={repId === r.id}
+                className={chip(repId === r.id)}
+                onClick={() => setRepId(r.id)}
+              >
+                {r.name}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      <DashboardButton
+        className={cn("md:h-11", pressable)}
+        aria-disabled={record.isPending || undefined}
+        onClick={() => {
+          if (record.isPending) return;
+          record.mutate({ sponsor, userId, repId });
+        }}
+      >
+        {record.isPending ? metCopy.adding : metCopy.add}
+      </DashboardButton>
+      {record.isError && (
+        <p role="alert" className="m-0 text-sm font-semibold text-dashboard-text-warning">
+          {metCopy.error}
+        </p>
+      )}
+    </div>
   );
 }
 

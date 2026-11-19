@@ -10,7 +10,7 @@ export const sponsorScanCopy = {
   offerIntro:
     "Pick an open time. They'll get your offer on their live site and accept or decline.",
   intro:
-    "Point your camera at the QR code on a hacker's badge or their live site. They'll get your offer and accept or decline.",
+    "Point your camera at the QR code on a hacker's badge or their live site. Add them to Met at Hacker Fair and we'll invite them first.",
 
   camera: {
     heading: "Hold the QR code inside the frame",

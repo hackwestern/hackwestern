@@ -12,6 +12,9 @@ import { mockOrganizerSession, mockSession } from "~/server/auth";
 import { db } from "~/server/db";
 import {
   applications,
+  coffeeChatPrefs,
+  coffeeChatRepSessions,
+  coffeeChatReps,
   sponsorInterests,
   sponsorJudgingSponsors,
 } from "~/server/db/schema";
@@ -32,6 +35,18 @@ async function sponsor() {
     .values({ name: `Sponsor ${faker.string.alphanumeric(10)}` })
     .returning();
   return row!;
+}
+
+/** Submitted chatting preferences with 4 seats: opens the shortlist. */
+async function withSeats(sponsorId: string) {
+  await db
+    .insert(coffeeChatPrefs)
+    .values({ sponsorId, hackersPerChat: 1, submittedAt: new Date() });
+  const [rep] = await db
+    .insert(coffeeChatReps)
+    .values({ sponsorId, name: "Dana", phone: "5195550142", isPrimary: true, chatsWanted: 4 })
+    .returning();
+  await db.insert(coffeeChatRepSessions).values({ repId: rep!.id, sessionId: "10" });
 }
 
 async function hacker(
@@ -99,6 +114,7 @@ describe("candidates from the interest form", () => {
 
   test("only form candidates can be shortlisted", async () => {
     const mine = await sponsor();
+    await withSeats(mine.id);
     const candidate = await hacker(false);
     // Ranked the sponsor in the app, but isn't on the form list.
     const inAppOnly = await hacker(true, mine.id);
