@@ -49,7 +49,7 @@ const sponsor = (over: Partial<BoardSessionSponsor>): BoardSessionSponsor => ({
   workshops: [],
   blocked: ["14", "15"],
   partial: { "13": { start: 780, end: 810 } },
-  status: { kind: "scheduled", done: 1, total: 1 },
+  status: { kind: "scheduled", done: 1, total: 1, broken: 0 },
   reps: [
     { id: "r1", name: "Dana", phone: "5195550101", isPrimary: true, chatsWanted: 3, sessionsWanted: 2, maxSessions: null, free: ["10", "13"] },
   ],

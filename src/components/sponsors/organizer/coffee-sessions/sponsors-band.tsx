@@ -1,6 +1,7 @@
 import { Check, ChevronRight } from "lucide-react";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import { COFFEE_SESSIONS, chatsInWindow } from "~/lib/coffee-chat-sessions";
+import { sponsorLogo } from "~/lib/sponsor-logos";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import {
@@ -13,6 +14,7 @@ import {
   PeopleList,
   sessionLabel,
   StatusChip,
+  statusFlags,
   statusText,
   type BoardSponsor,
   type SessionBoardData,
@@ -21,9 +23,13 @@ import {
 const copy = coffeeSessionsCopy;
 const sc = copy.sponsors;
 
+/** The row button's id, so a ?sponsor= link can scroll to it and focus it. */
+export const sponsorRowId = (sponsorId: string) => `coffee-sponsor-${sponsorId}`;
+
 /**
- * Sponsors band: logo + status chip ("Submitted, needs scheduling"), how
- * many reps are placed, and a "Changed after invites" flag. Opening a row
+ * Sponsors band: logo + name, the stage chip ("Needs scheduling", "Sent")
+ * and problem flags beside it ("1 rep not placed", "Changed after
+ * invites"). Opening a row
  * shows its availability grid, preferences and people (phones with a copy
  * icon) inline (no drawer).
  */
@@ -53,16 +59,20 @@ export function SponsorsBand({
           {list.map((sp) => {
             const isOpen = open === sp.id;
             const status = statusText(sp.status);
-            const tally = "done" in sp.status ? sp.status : null;
+            const flags = [
+              ...(sp.changedAfterSend ? [sc.changedAfterSend] : []),
+              ...statusFlags(sp.status),
+            ];
             return (
               <li key={sp.id} className="border-t border-dashboard-border-subtle first:border-t-0">
                 <button
                   type="button"
+                  id={sponsorRowId(sp.id)}
                   aria-expanded={isOpen}
-                  aria-label={sc.openLabel(sp.name, status)}
+                  aria-label={sc.openLabel(sp.name, status, flags)}
                   onClick={() => onOpen(sp.id)}
                   className={cn(
-                    "flex min-h-16 w-full min-w-0 cursor-pixel-hover items-center gap-2 rounded-dashboard-md py-1.5 text-left",
+                    "flex min-h-16 w-full min-w-0 scroll-mt-4 cursor-pixel-hover items-center gap-2 rounded-dashboard-md py-1.5 text-left",
                     focusRing,
                   )}
                 >
@@ -74,19 +84,23 @@ export function SponsorsBand({
                     )}
                   />
                   <span className="flex min-w-0 flex-col items-start gap-1.5">
-                    <Logo name={sp.name} />
+                    {/* Small logos are hard to read: the name is always in text too. */}
+                    <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                      <Logo name={sp.name} />
+                      {sponsorLogo(sp.name) && (
+                        <span className="text-[15px] font-semibold text-dashboard-text-heavy">{sp.name}</span>
+                      )}
+                    </span>
                     <span className="flex flex-wrap items-center gap-1.5">
                       <StatusChip status={sp.status} />
-                      {sp.changedAfterSend && (
-                        <span className="inline-flex min-h-6 items-center rounded-dashboard-md bg-dashboard-bg-task px-2 py-0.5 text-[13px] font-semibold leading-tight text-dashboard-text-warning">
-                          {sc.changedAfterSend}
+                      {flags.map((f) => (
+                        <span
+                          key={f}
+                          className="inline-flex min-h-6 items-center rounded-dashboard-md bg-dashboard-bg-task px-2 py-0.5 text-[13px] font-semibold leading-tight text-dashboard-text-warning"
+                        >
+                          {f}
                         </span>
-                      )}
-                      {tally && tally.total > 0 && sp.status.kind !== "sent" && (
-                        <span className="text-[13px] text-dashboard-text-light">
-                          {sc.placed(tally.done, tally.total)}
-                        </span>
-                      )}
+                      ))}
                     </span>
                   </span>
                 </button>
@@ -148,6 +162,13 @@ function SponsorDetail({ sponsor: sp, board }: { sponsor: BoardSponsor; board: S
                 className="text-left align-middle text-[13px] font-semibold leading-tight text-dashboard-text-heavy [overflow-wrap:anywhere]"
               >
                 {r.name}
+                {board.walks
+                  .filter((w) => w.repId === r.id)
+                  .map((w) => (
+                    <span key={w.sessionId} className="block text-[11px] font-semibold text-dashboard-text-warning">
+                      {sc.walk(w.toIvey, sessionLabel(w.sessionId))}
+                    </span>
+                  ))}
                 {(() => {
                   // Placed chats short of what they asked (a partial session): say so.
                   const mine = board.placements.filter((p) => p.repId === r.id);

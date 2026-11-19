@@ -26,6 +26,8 @@ export const sponsorOrganizerCopy = {
     headingAt: (time: string) => `Happening now · ${time}`,
     tableLabel: "Now and next on the run of show",
     eventNow: "Event now",
+    /** In place of "Event now" before the event starts: nothing is on yet. */
+    upNext: "Up next",
     eventNext: "Next event",
     taskNow: "Task now",
     taskNext: "Next task",
@@ -61,7 +63,7 @@ export const sponsorOrganizerCopy = {
     noPrefs: (sponsor: string) =>
       `${sponsor} hasn't sent coffee chat preferences`,
     notScheduled: (sponsor: string, placed: number, reps: number) =>
-      `${sponsor} sent preferences but only ${placed} of ${reps} ${reps === 1 ? "rep is" : "reps are"} scheduled`,
+      `${sponsor}: ${placed} of ${reps} ${reps === 1 ? "rep" : "reps"} scheduled`,
     changed: (sponsor: string) =>
       `${sponsor} changed their coffee chat preferences after the schedule was sent`,
     overdueTask: (task: string, when: string, owner: string | null) =>
@@ -110,7 +112,7 @@ export const sponsorOrganizerCopy = {
       arrival: "Arrival",
       booth: "Booth",
       portalLink: "Portal link",
-      ccWorkshop: "Coffee chat workshop",
+      ccWorkshop: "Came to the Friday coffee chat briefing",
       theirWorkshop: "Their workshop",
       preferences: "Preferences",
       shortlist: "Shortlist",
@@ -139,8 +141,11 @@ export const sponsorOrganizerCopy = {
       linkGiven: (time: string) => `Given ${time}`,
       linkNotGiven: "Not given yet",
       notRegistered: "No private link yet. Sync from the sponsor sheet.",
+      /** The sheet writes seats as "2230 (50)": say "2230 · 50 seats". */
       workshop: (when: string, room: string | null) =>
-        room ? `${when} · ${room}` : when,
+        room
+          ? `${when} · ${room.replace(/\s*\((\d+)\)\s*$/, " · $1 seats")}`
+          : when,
       noWorkshop: "No workshop",
       submitted: (time: string) => `Submitted ${time}`,
       notSubmitted: "Not submitted",
@@ -180,6 +185,8 @@ export const sponsorOrganizerCopy = {
         : `Synced ${n} sponsors from the Sponsor Day-Of tab.`,
     syncFailed: (message: string) => `Sync failed: ${message}`,
     statusFailed: (message: string) => `Couldn't update status: ${message}`,
+    /** A pill saved but the sheet wasn't (sheet writes off): the server's note. */
+    statusNote: (sponsor: string, note: string) => `${sponsor}: ${note}`,
     dismiss: "Dismiss",
     loadFailed: (message: string) => `Couldn't load sponsors: ${message}.`,
     retry: "Try again",

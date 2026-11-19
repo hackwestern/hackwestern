@@ -12,6 +12,7 @@ import {
   availSessions,
   blockedSessions,
   boardFixes,
+  buildingSwitches,
   partialSessions,
   cellKey,
   invalidChats,
@@ -35,6 +36,7 @@ import {
   type UsableWindow,
 } from "~/lib/coffee-chat-sessions";
 import type { RunOfShowItem } from "~/lib/run-of-show";
+import { isDigitalJudging } from "~/lib/sponsor-prize-tracks";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { db } from "~/server/db";
@@ -81,8 +83,14 @@ export type BoardSponsorStatus =
    * their workshops (reps at 0 chats don't count).
    */
   | { kind: "unavailable" }
-  | { kind: "need" | "scheduled"; done: number; total: number }
-  | { kind: "sent"; done: number; total: number };
+  /**
+   * The stage once they submitted with reps who want chats: nothing placed
+   * ("need"), placed with drafts not sent yet ("scheduled"), or every chat
+   * placed is sent ("sent"). Problems ride along as separate counts: reps who
+   * want chats but have none that count (`total - done`), and chats on the
+   * board that break a rule now (`broken`).
+   */
+  | { kind: "need" | "scheduled" | "sent"; done: number; total: number; broken: number };
 
 /**
  * The sponsor's latest change the board hasn't caught up with: their
@@ -153,6 +161,11 @@ export type SessionBoard = {
   scheduled: boolean;
   fixes: Fix[];
   draftCount: number;
+  /**
+   * Reps booked back to back in two buildings: `session` is the later chat,
+   * `toIvey` whether that one is in Ivey. Allowed; the board shows a note.
+   */
+  walks: { repId: string; sessionId: string; toIvey: boolean }[];
   /** Latest Send, or null. */
   sentAt: Date | null;
   /**
@@ -261,12 +274,13 @@ export async function loadBoardState(
   const sponsorOfRep = new Map(reps.map((r) => [r.id, r.sponsorId]));
 
   // Sponsors doing coffee chats: in the Coffee Chat Setup tab, or with
-  // preferences or reps saved.
+  // preferences or reps saved. Digital sponsors (PCBWay) never do.
   const doing = registered.filter(
     (s) =>
-      prefOf.has(s.id) ||
-      reps.some((r) => r.sponsorId === s.id) ||
-      sheetNames.has(s.name.toLowerCase()),
+      !isDigitalJudging(s.name) &&
+      (prefOf.has(s.id) ||
+        reps.some((r) => r.sponsorId === s.id) ||
+        sheetNames.has(s.name.toLowerCase())),
   );
 
   const placements: BoardPlacement[] = placementRows.map((p) => ({
@@ -352,13 +366,15 @@ export async function loadBoardState(
         ? { kind: "none" }
         : free === 0
         ? { kind: "unavailable" }
-        : mine.length > 0 &&
-          mine.every((p) => p.status === "sent") &&
-          tally.done === tally.total
-        ? { kind: "sent", ...tally }
         : {
-            kind: tally.done === tally.total && tally.total > 0 ? "scheduled" : "need",
+            kind:
+              mine.length === 0
+                ? "need"
+                : mine.every((p) => p.status === "sent")
+                  ? "sent"
+                  : "scheduled",
             ...tally,
+            broken: mine.filter((p) => bad.includes(cellKey(p.room, p.sessionId))).length,
           };
     // Sponsors are the only ones who write their preferences, so an update
     // after the board was scheduled or sent is the sponsor's change.
@@ -424,6 +440,19 @@ export function sessionBoardOf(state: BoardState): SessionBoard {
       ? boardFixes(state.sched, COFFEE_ROOMS, COFFEE_SESSIONS, state.board)
       : [],
     draftCount: state.placements.filter((p) => p.status === "draft").length,
+    walks: [...buildingSwitches(state.board, COFFEE_ROOMS, COFFEE_SESSIONS)].flatMap(
+      ([repId, later]) =>
+        later.map((sessionId) => {
+          const room = state.placements.find(
+            (p) => p.repId === repId && p.sessionId === sessionId,
+          )?.room;
+          return {
+            repId,
+            sessionId,
+            toIvey: COFFEE_ROOMS.find((r) => r.id === room)?.building === "ivey",
+          };
+        }),
+    ),
     sentAt: sent.length ? new Date(Math.max(...sent.map((d) => d.getTime()))) : null,
     lastScheduledAt: state.lastScheduledAt,
   };

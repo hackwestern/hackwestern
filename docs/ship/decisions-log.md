@@ -69,6 +69,15 @@ Calls made during the unattended build, and anything blocked or left for Jazz. P
   - The reconfirm count only counts sponsors whose already-sent chats were re-stamped.
   - *Not changed:* a sponsor who hasn't been sent can still save preferences when the run of show can't be read. Refusing would block every sponsor at the Friday workshop during a sheet outage, and the organizer board already rejects chats that land in a workshop window.
 
+- **Fix loop, organizer side (Step 5):**
+  1. *Board stage* is worked out from the sponsor's own chats: none placed = "Needs scheduling", any draft = "Scheduled, not sent", all sent = "Sent". A sponsor with sent chats and a new draft reads "Scheduled, not sent" until Noah sends again. Problems are one flag beside it: broken chats ("1 chat needs a fix") win over unplaced reps ("1 rep not placed"), so one problem isn't counted twice. Considered: "Sent" whenever anything was sent (hides new drafts waiting for Send).
+  2. *Back-to-back buildings* is a preference inside `pickRoom`: the building of the rep's chat right before or after goes first, unless a teammate already set the building for that session (the team rule stays the hard one). Considered: a hard block (could leave reps unplaced), a fix suggestion (more noise than a note).
+  3. *"Up to M hackers"* in the Send confirm counts every seat in the draft chats (whole chats in each chat's usable window × hackers per chat). The real number can be lower when there aren't enough hackers to invite, hence "up to".
+  4. *Undo after Remove* covers draft chats (a new `placeChat`, pinned, same checks as a move) and bookings. A sent chat gets no Undo, because removing it already told its hackers. Considered: a confirm on every Remove (slower for the common draft case).
+  5. *Digital sponsors* are filtered by the fixed list (`isDigitalJudging`), the same source as Integration 6, in Needs attention, the coffee board, Presentations, and My sponsors' coffee chat and presentation rows.
+  6. *The summary card's Auto-schedule button* wasn't checked in the browser: the shared walkthrough DB is already scheduled and sent, and clearing it would break the sponsor-side agent's walk. Its condition (sponsors submitted, nothing placed) matches the line that tells you to press it.
+  7. *Lint* had errors in files outside this run's changes (test table resets, a redundant union type). They were fixed so the check is clean: the resets keep an `eslint-disable-next-line` with the reason.
+
 ## Blocked / for Jazz
 
 - **Task pings already in Slack:** if any were synced in production before pings were turned off, those scheduled Slack messages will still send. Check Slack's scheduled messages for the ping bot and cancel them. (I can't see production Slack.)

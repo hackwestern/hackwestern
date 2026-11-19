@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Check, Copy, Crown } from "lucide-react";
+import { Check, Copy } from "lucide-react";
+import { PrimaryCrownIcon } from "~/components/sponsors/organizer/primary-crown";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import { sponsorLogo } from "~/lib/sponsor-logos";
 import { cn } from "~/lib/utils";
@@ -78,16 +79,7 @@ export function Logo({
 }
 
 export function PrimaryCrown() {
-  return (
-    <span
-      role="img"
-      aria-label={copy.phone.primary}
-      title={copy.phone.primary}
-      className="inline-flex text-dashboard-border-task"
-    >
-      <Crown aria-hidden className="size-4 fill-current" strokeWidth={1.5} />
-    </span>
-  );
+  return <PrimaryCrownIcon label={copy.phone.primary} />;
 }
 
 const STATUS_STYLE: Record<BoardSponsor["status"]["kind"], string> = {
@@ -101,6 +93,18 @@ const STATUS_STYLE: Record<BoardSponsor["status"]["kind"], string> = {
 
 export function statusText(status: BoardSponsor["status"]): string {
   return copy.sponsors.status[status.kind];
+}
+
+/**
+ * Problems shown beside the stage chip: chats that break a rule now, else
+ * reps who want chats and have none ("1 rep not placed"). A sponsor with
+ * nothing placed yet shows only its stage, "Needs scheduling".
+ */
+export function statusFlags(status: BoardSponsor["status"]): string[] {
+  if (!("done" in status) || status.kind === "need") return [];
+  const f = copy.sponsors.flags;
+  if (status.broken > 0) return [f.broken(status.broken)];
+  return status.done < status.total ? [f.notPlaced(status.total - status.done)] : [];
 }
 
 export function StatusChip({ status }: { status: BoardSponsor["status"] }) {

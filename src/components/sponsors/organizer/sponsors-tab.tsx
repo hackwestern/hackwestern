@@ -446,6 +446,13 @@ export function SponsorsTab({
       }
       setNote({ tone: "error", text: copy.statusFailed(err.message) });
     },
+    // Sheet writes off: nothing was written, so the pill goes back on the
+    // refetch. Say why instead of snapping back silently.
+    onSuccess: (data) => {
+      if (!data.sheetWritten && data.note) {
+        setNote({ tone: "ok", text: copy.statusNote(data.sponsorName, data.note) });
+      }
+    },
     onSettled: async (_data, _err, { sponsorName }) => {
       setInFlightBoth(removeInFlight(inFlightRef.current, sponsorName));
       // Refetch once nothing else is saving, so a refetch can't briefly
@@ -481,6 +488,11 @@ export function SponsorsTab({
         withCcWorkshop(old, sponsorName, !attended),
       );
       setNote({ tone: "error", text: copy.statusFailed(err.message) });
+    },
+    onSuccess: (data) => {
+      if (!data.sheetWritten && data.note) {
+        setNote({ tone: "ok", text: copy.statusNote(data.sponsorName, data.note) });
+      }
     },
     onSettled: async (_data, _err, { sponsorName }) => {
       setInFlightBoth(removeInFlight(inFlightRef.current, sponsorName));
@@ -1357,7 +1369,7 @@ export function SponsorsTab({
       )}
       {note && showMine && (
         <p
-          role="alert"
+          role={note.tone === "error" ? "alert" : "status"}
           className="m-0 text-sm font-semibold text-dashboard-text-warning"
         >
           {note.text}

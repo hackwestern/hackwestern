@@ -252,8 +252,11 @@ describe("coffee chat offer", () => {
 describe("presentation notify", () => {
   /** One scheduled team with one hacker; their organizer caller. */
   async function scheduledHacker(slackEmail: string | null) {
+    // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
     await db.delete(sponsorPresentationNotices);
+    // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
     await db.delete(sponsorPresentations);
+    // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
     await db.delete(sponsorShortlistSends);
     const organizer = createCaller(
       createInnerTRPCContext({ session: await mockOrganizerSession(db) }),

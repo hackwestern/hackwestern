@@ -51,10 +51,17 @@ export function senderLoginEmail(rows: readonly (readonly unknown[])[]): string 
   return null;
 }
 
+/**
+ * Noah's login email from HW Contacts: an email, null (none in the sheet),
+ * or "unreadable" when the sheet can't be read. ("unreadable" is a plain
+ * string, so the type is just string | null.)
+ */
+type SenderEmail = string | null;
+
 /** The check for a signed-in email against the sender's login email. */
 export function senderCheckOf(
   userEmail: string | null | undefined,
-  sender: string | null | "unreadable",
+  sender: SenderEmail,
 ): SenderCheck {
   if (sender === "unreadable") return { canSend: false, reason: "sheetUnreadable" };
   if (!sender) return { canSend: false, reason: "noLoginEmail" };
@@ -63,7 +70,7 @@ export function senderCheckOf(
     : { canSend: false, reason: "notSender" };
 }
 
-async function readSenderEmail(): Promise<string | null | "unreadable"> {
+async function readSenderEmail(): Promise<SenderEmail> {
   try {
     const sheets = await getSheetsClient();
     const res = await sheets.spreadsheets.values.get({
@@ -81,7 +88,7 @@ async function readSenderEmail(): Promise<string | null | "unreadable"> {
 // isn't hit that often. Send itself always reads fresh.
 const CACHE_MS = 60_000;
 const FAIL_CACHE_MS = 15_000;
-let cached: { at: number; value: string | null | "unreadable" } | null = null;
+let cached: { at: number; value: SenderEmail } | null = null;
 
 /**
  * May this user press Send? `fresh` skips the cache (Send itself uses it,
@@ -93,7 +100,7 @@ export async function checkCoffeeSender(
 ): Promise<SenderCheck> {
   const now = Date.now();
   const ttl = cached?.value === "unreadable" ? FAIL_CACHE_MS : CACHE_MS;
-  if (opts.fresh || !cached || now - cached.at > ttl) {
+  if (opts.fresh === true || !cached || now - cached.at > ttl) {
     cached = { at: now, value: await readSenderEmail() };
   }
   return senderCheckOf(userEmail, cached.value);

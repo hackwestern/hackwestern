@@ -117,27 +117,27 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 - Goal: see what needs doing at a glance.
 - Starting point: `/internal/sponsors`.
 - Steps: 1. Read "Needs attention now" and "Now and next". 2. Follow a link.
-- Expected result: items like "<Sponsor> hasn't sent coffee chat preferences", "…sent preferences but only 0 of 3 reps are scheduled", "…changed their coffee chat preferences after the schedule was sent", and up to 3 overdue tasks. They're grouped "Your sponsors" / "Other sponsors" (or "All sponsors") / "Run of show tasks". When there's nothing: "All clear". Now and next shows the event and the task now and next, with the owner.
+- Expected result: items like "<Sponsor> hasn't sent coffee chat preferences", "<Sponsor>: 0 of 3 reps scheduled", "…changed their coffee chat preferences after the schedule was sent", and up to 3 overdue tasks. They're grouped "Your sponsors" / "Other sponsors" (or "All sponsors") / "Run of show tasks". When there's nothing: "All clear". Digital sponsors (PCBWay) never appear. Now and next shows the event and the task now and next, with the owner; before the event the first row reads "Up next". "Open coffee chats" opens the board scrolled to that sponsor's row, opened, with focus on it.
 - Edge cases: a task counts as overdue for an hour after its window. `?tab=pings` and `#help` open Sponsors. The Task pings tab is gone.
 
 ### Organizer · My sponsors
 - Goal: see your own sponsors' people and logistics.
 - Starting point: the Sponsors tab, signed in as an HW lead (see Signing in).
 - Steps: 1. Open a sponsor tab. 2. Copy a phone. 3. Switch to All sponsors (`?list=all`). 4. Tap Arrival or Booth.
-- Expected result: "You lead N sponsors". People shows the reps, with the crown on "Main contact". The Coffee chats rows show Preferences, Shortlist, Schedule ("2 of 3 reps placed") and Invites ("0 of 4 accepted" or "Not sent"). With sheet writes off, a pill saves and notes "Not written (sheet writes off)".
-- Edge cases: the test organizer matches nobody and lands on All sponsors. Unreadable HW Contacts shows "Can't read HW Contacts…". The Coffee chat workshop pill ticks the "At CC workshop" checkbox on Sponsor Day-Of (with sheet writes off it saves and notes "Not written (sheet writes off)"). Without that column it's disabled with "Add an \"At CC workshop\" checkbox column…".
+- Expected result: "You lead N sponsors". People shows the reps, with the crown and the words "Main contact" beside the main contact. "Their workshop" reads like "Sat 1:00 PM · 2230 · 50 seats". The Coffee chats rows show Preferences, Shortlist, Schedule ("2 of 3 reps placed") and Invites ("0 of 4 accepted" or "Not sent"). With sheet writes off, a pill goes back after the save and the note above the tabs says "<Sponsor>: Not written (sheet writes off)". A digital sponsor (PCBWay) has no Coffee chats block and no presentation rows.
+- Edge cases: the test organizer matches nobody and lands on All sponsors. Unreadable HW Contacts shows "Can't read HW Contacts…". The "Came to the Friday coffee chat briefing" pill ticks the "At CC workshop" checkbox on Sponsor Day-Of (with sheet writes off it notes "<Sponsor>: Not written (sheet writes off)"). Without that column it's disabled with "Add an \"At CC workshop\" checkbox column…".
 
 ### Organizer · Read the coffee board
 - Goal: see who submitted and what to do next.
 - Starting point: `/internal/sponsors?tab=coffee`, after the seed.
 - Steps: 1. Read the summary card. 2. Open a sponsor row. 3. Copy a phone. 4. Open Help.
-- Expected result: "5 sponsors submitted. Run Auto-schedule, then Noah sends schedules and invites by 10 PM. 1 sponsor still hasn't submitted." Chips read "Not submitted" or "Submitted, needs scheduling", with "0 of 3 reps placed". People shows "Asked for 4 chats · 2 h" plus the phone. The copy icon flips to "Copied". The board refreshes every 15 s.
+- Expected result: "5 sponsors submitted. Run Auto-schedule, then Noah sends schedules and invites by 10 PM. 1 sponsor still hasn't submitted.", with an "Auto-schedule" button in the same card. Each row shows the logo and the name in text. The chip is the stage: "Not submitted", "Needs scheduling", "Scheduled, not sent" or "Sent". Problems show beside it as a separate flag: "1 rep not placed", "1 chat needs a fix" or "Changed after invites". People shows "Asked for 4 chats · 2 h" plus the phone, and "Main contact" beside the crown. The copy icon flips to "Copied". The board refreshes every 15 s. Digital sponsors (PCBWay) aren't on the board.
 - Edge cases: "Submitted, no chats asked" (every rep at 0), "Submitted, no availability", and an unreadable run of show ("Can't read the run of show…", which pauses writes).
 
 ### Organizer · Schedule and fix
 - Goal: place every rep in a room.
 - Steps: 1. Auto-schedule. 2. Apply a suggested fix. 3. Move a chat to an empty cell. 4. Remove a chat. 5. Book a room. 6. Re-run Auto-schedule.
-- Expected result: "Placed N chats." Scotiabank's fix reads "put all 3 reps in Ivey (…) at 1-2 so they stay together." Moves and fixes are pinned and survive a re-run. Chips change to "Scheduled (draft)". Sponsors and hackers can't see drafts.
+- Expected result: "Placed N chats." Scotiabank's fix reads "put all 3 reps in Ivey (…) at 1-2 so they stay together." Moves and fixes are pinned and survive a re-run. Chips change to "Scheduled, not sent". Sponsors and hackers can't see drafts. Picking a chat scrolls its panel into view above the Send bar. "Removed." has an Undo for a draft chat or a booking (not for a sent chat). A rep's back-to-back chats stay in one building when a room is free there; when not, the rep row and the chat panel say "Walk to Ivey between chats (2–3)" (or "Walk back from Ivey…"). It's never blocked.
 - Edge cases: a taken room ("Rm 2241 is taken at 1-2."), the workshop window ("That's during Sun Life's workshop."), a rep who isn't free, and a rep already busy. Two organizers editing at once: "Someone else just changed the board…". Partial-session fixes ("3 of 4 chats", "add a session") come from a sponsor ticking a cut session. Moving or fixing a sent chat keeps it "Sent"; its invited hackers are asked to confirm the new room or time.
 
 ### Organizer · Send (Noah only)
@@ -145,6 +145,7 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 - Steps: 1. As the test organizer, look at the Send bar. 2. As Noah, press Send.
 - Expected result (committed HEAD): others see the button disabled with "Only Noah sends". Noah's button reads "Save & confirm schedule". It marks drafts sent and shows "Schedule confirmed (N chats). Hacker invites aren't sent yet." plus "Sheet writes are off here, so the Room Grid tab wasn't updated." Chips change to "Sent". No invites go out.
 - Expected result (uncommitted wiring): the button reads "Send confirmed schedules & invites". Send runs `sendRoundOneInvites` in the same transaction, and the toast reads "Sent N chats. Invited M hackers", with open seats offered again at Sat 10:30 AM. With invites off you get "Invites are switched off on this server, so no hacker was messaged."
+- **Fix loop (Step 5):** pressing Send opens one confirm: "Send N sponsors' schedules and invite up to M hackers? Hackers get a Slack message now." (Send now / Cancel). M counts every seat in the draft chats. With `COFFEE_INVITES_ENABLED=dry` the toast adds "(dry run: nothing was messaged)". After Send, a sponsor with an unplaced rep reads "Sent" + "1 rep not placed".
 - Send also re-confirms sponsors flagged "Changed after invites" (toast "Re-confirmed N sponsors who changed after invites."), and the flag clears. The Send button stays up while any sponsor is flagged, even with no drafts.
 - Edge cases: Noah's login email blank ("…nobody can send. Add it in the sheet."), HW Contacts unreadable, someone else forcing the call (FORBIDDEN), and no drafts ("Nothing new to confirm."). To fake Send without Noah: `update coffee_chat_placement set status='sent', sent_at=now() where status='draft';` (this sends no invites).
 
@@ -152,14 +153,14 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 - Goal: see who's invited and run a round by hand.
 - Starting point: the app started with `COFFEE_INVITES_ENABLED=1`, and placements sent.
 - Steps: 1. Open `/api/trpc/coffeeChatInvites.status` in the browser. 2. In the console: `await fetch('/api/trpc/coffeeChatInvites.runRoundNow',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({json:{}})}).then(r=>r.json())`.
-- Expected result: per sponsor and chat you see seats, filled, accepted and open, plus each invite's status, round and source (Scanned, Shortlist, Interested). A round writes one invite per open seat: scanned hackers first, then the shortlist, then interested. A hacker holds at most 2 live invites.
+- Expected result: per sponsor and chat you see seats, filled, accepted and open, plus each invite's status, round and source (Met at their booth, Shortlist, Interested). A round writes one invite per open seat: scanned hackers first, then the shortlist, then interested. A hacker holds at most 2 live invites.
 - Edge cases: kill switch off (`"disabled"`, nothing written), nothing sent (`"nothingSent"`), and an unreadable run of show (nothing written). Re-running only fills seats not offered this round. Before Sat 10:30 AM it's round 1, answered by Sat 10:00 AM or 20 minutes before the chat (35 for Ivey). To preview a later round, run `npx tsx scripts/run-coffee-invite-round.ts --now=2026-11-21T15:30:00Z`, a dry run that only counts. On the board, a sent sponsor's open row shows "Invites: N accepted · N waiting · N open".
 
 ### Organizer · Judging tab (needs F)
 - Goal: follow judging and enter PCBWay's top 3.
 - Steps: 1. Check per-rep scores. 2. Under "Digital sponsors", paste three Devpost links or team IDs. 3. Save.
 - Expected result: each match shows its name, ID and link. Save stays off until all three match different submitted teams in the track.
-- Edge cases: no match ("…doesn't match a submitted team…"), two matches ("…Paste the team ID instead."), and a missing PCBWay DB row (one is created).
+- Edge cases: no match ("…doesn't match a submitted team…"), two matches ("…Paste the team ID instead."), and a missing PCBWay DB row (one is created). PCBWay never shows under Presentations. Schedule presentations that places nothing keeps its label and says "Nothing scheduled yet. See why below.", with lines like "<team> · Sun Life has no judging room on Sponsor Day-Of".
 
 ## Hand-offs between the two sides
 
@@ -167,7 +168,7 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 - Goal: an organizer arriving cold sees the new submit.
 - Starting point: Test Sponsor's portal in one window, the board in another.
 - Steps: 1. The sponsor submits. 2. Wait up to 15 s.
-- Expected result: Test Sponsor joins the board (it does once it has reps) as "Submitted, needs scheduling". "Since last time" lists "Test Sponsor submitted · <time>". Needs attention says "…only 0 of N reps are scheduled". Every setup save starts the Coffee Chat Setup mirror; with dev sheet writes off it logs once and writes nothing.
+- Expected result: Test Sponsor joins the board (it does once it has reps) as "Needs scheduling". "Since last time" lists "Test Sponsor submitted · <time>". Needs attention says "Test Sponsor: 0 of N reps scheduled". Every setup save starts the Coffee Chat Setup mirror; with dev sheet writes off it logs once and writes nothing.
 - Edge cases: edits before scheduling show "edited reps or times since the last new chat". A sponsor with reps but no submit stays "Not submitted".
 
 ### Both · Organizer schedules → sponsor sees the schedule (needs A)

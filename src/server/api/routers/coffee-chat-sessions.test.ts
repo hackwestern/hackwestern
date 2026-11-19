@@ -196,7 +196,7 @@ describe("board and auto-schedule", () => {
     // 12:45-14:15 with travel: 1-2 is blocked, 2-3 is usable 2:15-3:00 (3 chats of 15 min).
     expect(work.blocked).toEqual(["13"]);
     expect(work.partial).toEqual({ "14": { start: 855, end: 900 } });
-    expect(work.status).toEqual({ kind: "need", done: 0, total: 1 });
+    expect(work.status).toEqual({ kind: "need", done: 0, total: 1, broken: 0 });
     expect(late.status).toEqual({ kind: "not" });
     expect(board.sponsors.find((s) => s.name === names.busy)!.status).toEqual({ kind: "unavailable" });
     expect(late.reps[0]!.isPrimary).toBe(true);
@@ -211,7 +211,7 @@ describe("board and auto-schedule", () => {
     expect(wes.map((p) => p.sessionId)).toEqual(["10"]);
     expect((await placementOf("Tia")).length).toBe(2);
     const board = await organizer.coffeeChatSessions.getBoard();
-    expect(board.sponsors.find((s) => s.name === names.team)!.status).toEqual({ kind: "scheduled", done: 2, total: 2 });
+    expect(board.sponsors.find((s) => s.name === names.team)!.status).toEqual({ kind: "scheduled", done: 2, total: 2, broken: 0 });
     expect(board.draftCount).toBe(4);
   });
 });
@@ -261,7 +261,13 @@ describe("guards", () => {
     expect(await db.select().from(coffeeChatRoomBookings)).toHaveLength(0);
 
     const [tom] = await placementOf("Tom");
+    // Undo puts a removed draft chat back, pinned; a taken cell is refused.
     await organizer.coffeeChatSessions.removePlacement({ placementId: tom!.id });
+    const back = { repId: tom!.repId, room: tom!.room as "2241", sessionId: tom!.sessionId as "10" };
+    await organizer.coffeeChatSessions.placeChat(back);
+    expect((await placementOf("Tom"))[0]).toMatchObject({ room: tom!.room, sessionId: tom!.sessionId, pinned: true, status: "draft" });
+    expect(await code(organizer.coffeeChatSessions.placeChat(back))).toBe("CONFLICT");
+    await organizer.coffeeChatSessions.removePlacement({ placementId: (await placementOf("Tom"))[0]!.id });
     const board = await organizer.coffeeChatSessions.getBoard();
     const fix = board.fixes.find((f) => f.sponsor === ids[names.team]);
     expect(fix?.suggestion.kind).toBe("session");
@@ -300,7 +306,7 @@ describe("send", () => {
     // The kill switch is off under vitest, so the round creates and sends nothing.
     expect(res).toMatchObject({
       sheet: "disabled",
-      invites: { status: "disabled", created: 0, openSeats: 0, delivered: 0 },
+      invites: { status: "disabled", created: 0, openSeats: 0, delivered: 0, dryRun: false },
     });
     expect(res.sent).toBeGreaterThan(0);
     const rows = await db.select().from(coffeeChatPlacements);
@@ -368,7 +374,8 @@ describe("pins are re-checked", () => {
       .where(and(eq(coffeeChatRepSessions.repId, ids.Tia!), eq(coffeeChatRepSessions.sessionId, "11")));
     let board = await organizer.coffeeChatSessions.getBoard();
     const team = () => board.sponsors.find((s) => s.name === names.team)!;
-    expect(team().status).toEqual({ kind: "need", done: 1, total: 2 });
+    // Still sent; the broken chat is a separate flag ("1 chat needs a fix").
+    expect(team().status).toEqual({ kind: "sent", done: 1, total: 2, broken: 1 });
     const fix = board.fixes.find((f) => f.sponsor === ids[names.team]);
     expect(fix).toMatchObject({ problem: "invalid", reason: "notFree", session: "11" });
     expect(fix!.suggestion).toMatchObject({ kind: "move", to: { rep: ids.Tia, session: "15" } });
@@ -386,7 +393,7 @@ describe("pins are re-checked", () => {
     expect(events()).toEqual(["reconfirm"]);
     board = await organizer.coffeeChatSessions.getBoard();
     expect(board.fixes.filter((f) => f.sponsor === ids[names.team])).toEqual([]);
-    expect(team().status).toEqual({ kind: "sent", done: 2, total: 2 });
+    expect(team().status).toEqual({ kind: "sent", done: 2, total: 2, broken: 0 });
   });
 });
 

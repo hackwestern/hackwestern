@@ -92,7 +92,7 @@ export function NowAndNextPanel({
     ? [
         {
           key: "event-now",
-          label: copy.eventNow,
+          label: r.phase === "before" ? copy.upNext : copy.eventNow,
           value:
             r.phase === "before" && r.eventsNext[0]
               ? muted(
@@ -156,7 +156,9 @@ export function NowAndNextPanel({
         ) : r ? (
           <table className="w-full border-collapse text-left text-sm">
             <caption className="sr-only">{copy.tableLabel}</caption>
-            <tbody aria-live="polite">
+            {/* Not a live region: it refreshes every minute, and screen
+                readers would re-read the whole table each time. */}
+            <tbody>
               {rows.map((row) => (
                 <tr
                   key={row.key}

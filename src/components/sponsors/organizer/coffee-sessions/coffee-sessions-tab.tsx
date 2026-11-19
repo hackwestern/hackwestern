@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import { CircleCheck } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -6,6 +7,7 @@ import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import {
   COFFEE_ROOMS,
   COFFEE_SESSIONS,
+  chatsInWindow,
   type CoffeeRoomId,
   type CoffeeSessionId,
 } from "~/lib/coffee-chat-sessions";
@@ -15,7 +17,7 @@ import { FixesBand } from "./fixes-band";
 import { HelpSheet } from "./help-sheet";
 import { type SessionBoardData } from "./parts";
 import { BookingForm, CellDetail, RoomsGrid, cellAt, keyOf, moveCheck, splitKey } from "./rooms-grid";
-import { SponsorsBand } from "./sponsors-band";
+import { SponsorsBand, sponsorRowId } from "./sponsors-band";
 
 const copy = coffeeSessionsCopy;
 
@@ -38,14 +40,25 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   const [moving, setMoving] = useState<string | null>(null);
   const [booking, setBooking] = useState<{ room: string; session: string } | null>(null);
   const [applying, setApplying] = useState<string | null>(null);
+  const [confirmSend, setConfirmSend] = useState(false);
 
-  // ?sponsor= (an id or name) opens that sponsor's row once.
+  // ?sponsor= (an id or name) opens that sponsor's row once, scrolls it into
+  // view and moves focus there ("Open coffee chats" from Needs attention or
+  // My sponsors). Once per link: the 15 s refetch doesn't re-open it.
+  const jumpedTo = useRef<string | null>(null);
   useEffect(() => {
-    if (!sponsor || !board.data) return;
+    if (!sponsor || !board.data || jumpedTo.current === sponsor) return;
     const s = board.data.sponsors.find(
       (x) => x.id === sponsor.toLowerCase() || x.name.toLowerCase() === sponsor.toLowerCase(),
     );
-    if (s) setOpen(s.id);
+    if (!s) return;
+    jumpedTo.current = sponsor;
+    setOpen(s.id);
+    requestAnimationFrame(() => {
+      const row = document.getElementById(sponsorRowId(s.id));
+      row?.scrollIntoView({ block: "start", behavior: "smooth" });
+      row?.focus({ preventScroll: true });
+    });
   }, [sponsor, board.data]);
 
   // Esc leaves move mode or closes the detail.
@@ -77,13 +90,58 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   });
   const movePlacement = api.coffeeChatSessions.movePlacement.useMutation({ onError, onSettled: refresh });
   const moveBooking = api.coffeeChatSessions.moveBooking.useMutation({ onError, onSettled: refresh });
+  const placeChat = api.coffeeChatSessions.placeChat.useMutation({
+    onSuccess: () => toast.success(copy.toast.restored),
+    onError,
+    onSettled: refresh,
+  });
+  // A draft chat or a booking can be put back from the toast. A sent chat
+  // can't: its hackers were already told.
   const removePlacement = api.coffeeChatSessions.removePlacement.useMutation({
-    onSuccess: () => toast.success(copy.toast.removed),
+    onSuccess: (_r, input) => {
+      const p = board.data?.placements.find((x) => x.id === input.placementId);
+      toast.success(
+        copy.toast.removed,
+        p && p.status === "draft"
+          ? {
+              action: {
+                label: copy.toast.undo,
+                onClick: () =>
+                  placeChat.mutate({
+                    repId: p.repId,
+                    room: p.room as CoffeeRoomId,
+                    sessionId: p.sessionId as CoffeeSessionId,
+                  }),
+              },
+            }
+          : undefined,
+      );
+    },
     onError,
     onSettled: refresh,
   });
   const removeBooking = api.coffeeChatSessions.removeBooking.useMutation({
-    onSuccess: () => toast.success(copy.toast.removed),
+    onSuccess: (_r, input) => {
+      const b = board.data?.bookings.find((x) => x.id === input.bookingId);
+      toast.success(
+        copy.toast.removed,
+        b
+          ? {
+              action: {
+                label: copy.toast.undo,
+                onClick: () =>
+                  bookRoom.mutate({
+                    room: b.room as CoffeeRoomId,
+                    sessionId: b.sessionId as CoffeeSessionId,
+                    label: b.label,
+                    note: b.note ?? "",
+                    forSponsorId: b.forSponsorId,
+                  }),
+              },
+            }
+          : undefined,
+      );
+    },
     onError,
     onSettled: refresh,
   });
@@ -94,9 +152,11 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   });
   const send = api.coffeeChatSessions.send.useMutation({
     onSuccess: (r) => {
+      const dry = r.invites.dryRun && r.invites.created > 0 ? copy.toast.dryRun : "";
       toast.success(
         r.sent || r.invites.created
           ? copy.toast.sent(r.sent, r.invites.created, r.invites.openSeats) +
+              dry +
               (r.reconfirmed ? ` ${copy.toast.reconfirmed(r.reconfirmed)}` : "")
           : r.reconfirmed
             ? copy.toast.reconfirmed(r.reconfirmed)
@@ -222,7 +282,25 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
         </div>
       </header>
 
-      <BoardSummary board={data} />
+      <BoardSummary
+        board={data}
+        action={
+          // The line says "Run Auto-schedule": the button sits right beside it.
+          !data.scheduled && data.sponsors.some((sp) => sp.submitted) ? (
+            <DashboardButton
+              variant="primary"
+              disabled={busy || locked}
+              onClick={() => {
+                setSelected(null);
+                auto.mutate();
+              }}
+              className="shrink-0 sm:w-auto"
+            >
+              {busy ? copy.bar.working : copy.bar.autoSchedule}
+            </DashboardButton>
+          ) : undefined
+        }
+      />
 
       {!data.workshopsAvailable && (
         <p role="alert" className="m-0 rounded-dashboard-lg bg-dashboard-bg-task/40 px-4 py-3 text-sm text-dashboard-text-task">
@@ -260,9 +338,72 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
           setSelected(null);
           auto.mutate();
         }}
-        onSend={() => send.mutate()}
+        onSend={() => setConfirmSend(true)}
+      />
+      <SendConfirm
+        board={data}
+        open={confirmSend}
+        onClose={() => setConfirmSend(false)}
+        onSend={() => {
+          setConfirmSend(false);
+          send.mutate();
+        }}
       />
     </div>
+  );
+}
+
+/**
+ * Send messages hackers and can't be undone, so it asks once: how many
+ * sponsors' schedules go out and up to how many hackers get invited (every
+ * seat in the draft chats).
+ */
+function SendConfirm({
+  board,
+  open,
+  onClose,
+  onSend,
+}: {
+  board: SessionBoardData;
+  open: boolean;
+  onClose: () => void;
+  onSend: () => void;
+}) {
+  const c = copy.sendConfirm;
+  const drafts = board.placements.filter((p) => p.status === "draft");
+  const sponsorOf = new Map(board.sponsors.map((sp) => [sp.id, sp]));
+  const sponsors = new Set([
+    ...drafts.map((p) => p.sponsorId),
+    ...board.sponsors.filter((sp) => sp.changedAfterSend).map((sp) => sp.id),
+  ]).size;
+  const hackers = drafts.reduce((n, p) => {
+    const sp = sponsorOf.get(p.sponsorId);
+    return sp ? n + chatsInWindow(p.window, sp.chatMinutes) * sp.hackersPerChat : n;
+  }, 0);
+  return (
+    <AlertDialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
+      <AlertDialog.Portal>
+        <AlertDialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/30" />
+        <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-32px)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-dashboard-lg bg-dashboard-bg-surface p-6 font-figtree text-dashboard-text-heavy shadow-dashboard-card">
+          <AlertDialog.Title className="m-0 text-xl font-bold">{c.title}</AlertDialog.Title>
+          <AlertDialog.Description className="m-0 text-base text-dashboard-text-medium">
+            {c.body(sponsors, hackers)}
+          </AlertDialog.Description>
+          <div className="flex flex-col gap-2 sm:flex-row-reverse">
+            <AlertDialog.Action asChild>
+              <DashboardButton variant="primary" className="min-h-11 sm:w-auto sm:px-5" onClick={onSend}>
+                {c.send}
+              </DashboardButton>
+            </AlertDialog.Action>
+            <AlertDialog.Cancel asChild>
+              <DashboardButton variant="outline" className="h-11 sm:w-auto sm:px-5">
+                {c.cancel}
+              </DashboardButton>
+            </AlertDialog.Cancel>
+          </div>
+        </AlertDialog.Content>
+      </AlertDialog.Portal>
+    </AlertDialog.Root>
   );
 }
 

@@ -9,6 +9,7 @@ import {
   applySuggestion,
   blockedSessions,
   boardFixes,
+  buildingSwitches,
   cellKey,
   checkBoard,
   findFixes,
@@ -177,6 +178,39 @@ describe("ordering and rooms", () => {
     const at10 = repKeyAt(r.board, "a:0", "10");
     const at11 = repKeyAt(r.board, "a:0", "11");
     expect(at10 && at11 && parseKey(at10).room).toBe(at11 && parseKey(at11).room);
+  });
+
+  test("a rep's back-to-back chats stay in one building (B8)", () => {
+    // Dana is pinned in Ivey at 2-3; her 1-2 chat goes to Ivey too, not near.
+    const dana = mini("t", [["13", "14"]], 2);
+    const pin: Pin = { room: "1348", session: "14", type: "chat", rep: "t:0" };
+    const r = schedule([dana], ROOMS, SESS, [pin]);
+    const at13 = repKeyAt(r.board, "t:0", "13");
+    expect(at13 && parseKey(at13).room).toBe("1348");
+    expect(buildingSwitches(r.board, ROOMS, SESS).size).toBe(0);
+  });
+
+  test("a building switch is allowed when the building is full, and listed", () => {
+    const dana = mini("t", [["13", "14"]], 2);
+    const ivey = ROOMS.filter((x) => x.building === "ivey");
+    const pins: Pin[] = [
+      { room: "1348", session: "14", type: "chat", rep: "t:0" },
+      ...ivey.map((x): Pin => ({ room: x.id, session: "13", type: "booking", ref: `b${x.id}` })),
+    ];
+    const r = schedule([dana], ROOMS, SESS, pins);
+    const at13 = repKeyAt(r.board, "t:0", "13");
+    // Never blocked: she still gets 1-2, in a near room.
+    expect(at13 && ROOMS.find((x) => x.id === parseKey(at13).room)?.building).toBe("near");
+    expect(r.fixes).toEqual([]);
+    expect(buildingSwitches(r.board, ROOMS, SESS).get("t:0")).toEqual(["14"]);
+  });
+
+  test("11-12 and 1-2 aren't back to back", () => {
+    const board: Board = {
+      [cellKey("1348", "11")]: { type: "chat", rep: "a:0" },
+      [cellKey("2241", "13")]: { type: "chat", rep: "a:0" },
+    };
+    expect(buildingSwitches(board, ROOMS, SESS).size).toBe(0);
   });
 
   test("no room anywhere -> fewer chats", () => {

@@ -6,6 +6,19 @@
 const plural = (n: number, one: string, many = `${one}s`) =>
   `${n} ${n === 1 ? one : many}`;
 
+/**
+ * "Dana's chat you placed by hand at 1–2" (an organizer moved or fixed it),
+ * "Dana's sent chat at 1–2", or "Dana's chat at 1–2". Auto-schedule keeps
+ * the first two where they are.
+ */
+export type ChatHow = "hand" | "sent" | null;
+const chatAt = (rep: string, s: string, how: ChatHow) =>
+  how === "hand"
+    ? `${rep}'s chat you placed by hand at ${s}`
+    : how === "sent"
+      ? `${rep}'s sent chat at ${s}`
+      : `${rep}'s chat at ${s}`;
+
 const workshopsUnknown =
   "Can't read the run of show, so workshop times are unknown. Try again in a minute.";
 
@@ -40,15 +53,22 @@ export const coffeeSessionsCopy = {
       none: "Submitted, no chats asked",
       /** Submitted, but no rep who wants chats has a session they can do. */
       unavailable: "Submitted, no availability",
-      need: "Submitted, needs scheduling",
-      scheduled: "Scheduled (draft)",
+      need: "Needs scheduling",
+      scheduled: "Scheduled, not sent",
       sent: "Sent",
     },
-    /** Under the chip: how many reps who want chats are placed. */
-    placed: (done: number, total: number) => `${done} of ${plural(total, "rep")} placed`,
+    /**
+     * The problem flag beside the stage chip, e.g. "Sent" + "1 rep not
+     * placed". One stage per sponsor; problems listed separately.
+     */
+    flags: {
+      notPlaced: (n: number) => `${plural(n, "rep")} not placed`,
+      broken: (n: number) => `${plural(n, "chat")} ${n === 1 ? "needs" : "need"} a fix`,
+    },
     /** Flag on a sponsor that edited after the schedule was sent. */
     changedAfterSend: "Changed after invites",
-    openLabel: (name: string, status: string) => `${name}, ${status}`,
+    openLabel: (name: string, status: string, flags: string[] = []) =>
+      [name, status, ...flags].join(", "),
     notSubmittedYet: "Nothing submitted yet.",
     /** Once a sponsor is sent: their hackers' invites, all chats together. */
     invites: (accepted: number, waiting: number, open: number) =>
@@ -79,6 +99,12 @@ export const coffeeSessionsCopy = {
     /** A session a workshop's travel buffer cuts: only part of it is usable. */
     repPartial: (rep: string, s: string, time: string) => `${rep} free ${s}, usable ${time}`,
     people: "People",
+    /**
+     * A rep booked back to back in two buildings (allowed, never blocked):
+     * a 15-minute walk between chats. `s` is the later session.
+     */
+    walk: (toIvey: boolean, s: string) =>
+      toIvey ? `Walk to Ivey between chats (${s})` : `Walk back from Ivey between chats (${s})`,
     /** A rep placed for fewer chats than asked (a partial session), e.g. "3 of 4 chats". */
     chatsOf: (got: number, want: number) => `${got} of ${plural(want, "chat")}`,
     /** Next to each rep in People, e.g. "Asked for 6 chats · 1.5 h". */
@@ -90,7 +116,7 @@ export const coffeeSessionsCopy = {
     copyLabel: (name: string, phone: string) => `Copy ${name}'s number, ${phone}`,
     copied: "Copied",
     copiedLabel: (phone: string) => `Copied ${phone}`,
-    primary: "Primary contact",
+    primary: "Main contact",
   },
 
   fixes: {
@@ -120,14 +146,14 @@ export const coffeeSessionsCopy = {
     extra: (rep: string, room: string, s: string) => `add a session: put ${rep} in ${room} at ${s}.`,
     /** A chat already on the board that breaks a rule now. */
     invalid: {
-      workshop: (rep: string, s: string, pinned: boolean, sponsor: string) =>
-        `${rep}'s ${pinned ? "pinned " : ""}chat at ${s} is now during ${sponsor}'s workshop.`,
-      notFree: (rep: string, s: string, pinned: boolean) =>
-        `${rep}'s ${pinned ? "pinned " : ""}chat at ${s} is at a time ${rep} isn't free anymore.`,
-      notSubmitted: (rep: string, s: string, pinned: boolean, sponsor: string) =>
-        `${rep}'s ${pinned ? "pinned " : ""}chat at ${s} is placed, but ${sponsor} hasn't submitted.`,
-      overCap: (rep: string, s: string, pinned: boolean) =>
-        `${rep}'s ${pinned ? "pinned " : ""}chat at ${s} is one more than ${rep} now wants.`,
+      workshop: (rep: string, s: string, how: ChatHow, sponsor: string) =>
+        `${chatAt(rep, s, how)} is now during ${sponsor}'s workshop.`,
+      notFree: (rep: string, s: string, how: ChatHow) =>
+        `${chatAt(rep, s, how)} is at a time ${rep} isn't free anymore.`,
+      notSubmitted: (rep: string, s: string, how: ChatHow, sponsor: string) =>
+        `${chatAt(rep, s, how)} is placed, but ${sponsor} hasn't submitted.`,
+      overCap: (rep: string, s: string, how: ChatHow) =>
+        `${chatAt(rep, s, how)} is one more than ${rep} now wants.`,
     },
     move: (room: string, s: string) => `move to ${s} (${room}) / remove.`,
     removeIt: "remove it.",
@@ -182,7 +208,7 @@ export const coffeeSessionsCopy = {
     toInvite: (n: number) => `${n} hackers to invite`,
     sent: "Sent",
     afterSend: "Sent. Hackers are invited; this sponsor sees it under Your chats.",
-    pinned: "Pinned: Auto-schedule keeps it here.",
+    pinned: "Placed by hand: Auto-schedule keeps it here.",
   },
 
   booking: {
@@ -211,6 +237,19 @@ export const coffeeSessionsCopy = {
     nothingToSend: "Nothing new to send.",
     /** Beside the disabled Send button for anyone but Noah. */
     onlyNoah: "Only Noah sends",
+  },
+
+  /** The one pause before Send: it messages hackers and can't be undone. */
+  sendConfirm: {
+    title: "Send schedules and invites?",
+    body: (sponsors: number, hackers: number) => {
+      const who = sponsors === 1 ? "1 sponsor's" : `${sponsors} sponsors'`;
+      return hackers > 0
+        ? `Send ${who} schedules and invite up to ${plural(hackers, "hacker")}? Hackers get a Slack message now.`
+        : `Send ${who} schedules? No new hackers are invited.`;
+    },
+    send: "Send now",
+    cancel: "Cancel",
   },
 
   /**
@@ -254,6 +293,9 @@ export const coffeeSessionsCopy = {
     fixApplied: "Fix applied.",
     moved: "Moved.",
     removed: "Removed.",
+    /** On the "Removed." toast for a draft chat or a booking. */
+    undo: "Undo",
+    restored: "Put back.",
     booked: "Room booked.",
     sent: (chats: number, invited: number, open: number) =>
       `Sent ${plural(chats, "chat")}. Invited ${plural(invited, "hacker")}` +
@@ -264,6 +306,8 @@ export const coffeeSessionsCopy = {
     /** Invites are switched off on this server (dev, previews). */
     invitesOff: "Invites are switched off on this server, so no hacker was messaged.",
     sheetOff: "Sheet writes are off here, so the Room Grid tab wasn't updated.",
+    /** COFFEE_INVITES_ENABLED=dry: added to the Send toast. */
+    dryRun: " (dry run: nothing was messaged)",
     sheetFailed: "Couldn't update the Room Grid tab. The schedule is saved.",
   },
 
@@ -271,6 +315,8 @@ export const coffeeSessionsCopy = {
   errors: {
     roomTaken: (room: string, s: string) => `${room} is taken at ${s}.`,
     repBusy: (rep: string, s: string) => `${rep} already has a chat at ${s}.`,
+    repAtCap: (n: number) =>
+      `This rep already has ${n === 1 ? "1 session" : `${n} sessions`}, all their chats need. Remove one first.`,
     duringWorkshop: (sponsor: string) => `That's during ${sponsor}'s workshop.`,
     notFree: (rep: string, s: string) => `${rep} isn't free at ${s}.`,
     notSubmitted: (sponsor: string) => `${sponsor} hasn't submitted yet.`,
@@ -297,20 +343,21 @@ export const coffeeSessionsCopy = {
     close: "Close",
     give: {
       lead: "What sponsors give us",
-      rest: " (at the Friday 5 PM workshop): their team (one primary contact, every rep has a phone), hackers per chat (1–5; a 1-on-1 is 15 min, a group 30), which 1-hour sessions each rep is free (10–11, 11–12, 1–2, 2–3, 3–4, 4–5), and how many chats each rep wants. The shortlist is optional, up to their number of hacker seats.",
+      rest: " (at the Friday 5 PM workshop): their team (one main contact, every rep has a phone), hackers per chat (1–5; a 1-on-1 is 15 min, a group 30), which 1-hour sessions each rep is free (10–11, 11–12, 1–2, 2–3, 3–4, 4–5), and how many chats each rep wants. The shortlist is optional, up to their number of hacker seats.",
     },
     checksTitle: "Auto-schedule checks, for every placement:",
     checks: [
       "Only sessions the rep ticked as free.",
       "No more sessions than the rep's chats need.",
       "Never during the sponsor's own workshop, or 15 minutes before setup / after it ends (travel buffer).",
-      "A session that buffer cuts can still use the part before or after the cut, in whole chats (Sun Life sets up at 2:00, so its 1–2 runs 1:00–1:30). That rep gets fewer chats from it.",
+      "A session that buffer cuts can still use the part before or after the cut, in whole chats. For example, a workshop with setup at 2:00 leaves 1:00–1:30 of its 1–2 for 30-minute chats. That rep gets fewer chats from it. The board shows the part left on each cell.",
       "Reps who asked for 0 chats aren't placed.",
       "Never two chats in one room at once, never one rep in two places.",
       "Near rooms (2241–2243) first, then Ivey (1348–1358, a 15-minute walk).",
       "A sponsor's reps in the same session stay in one building.",
+      "A rep's back-to-back chats stay in one building when a room is free there. When not, the rep gets a \"Walk to Ivey between chats\" note; it's never blocked.",
       "Sponsors with the fewest free sessions are placed first.",
-      "Your manual moves are pinned: re-running Auto-schedule keeps them.",
+      "Chats you place by hand (moves and applied fixes) stay put: re-running Auto-schedule keeps them.",
     ],
     fixes: {
       before: "Anything that can't be placed becomes a ",
@@ -323,8 +370,10 @@ export const coffeeSessionsCopy = {
       before: " marks every draft chat confirmed, re-confirms sponsors who changed after invites (their hackers were already asked again when they saved), and updates the locked ",
       bold: "Coffee Chat Room Grid",
       after:
-        " tab (on the live site only). Each sponsor sees their confirmed chats under Your chats in their portal. Hackers get one invite per seat on Slack (email if Slack can't reach them): people the sponsor scanned first, then their shortlist, then hackers interested in them. They answer by Sat 10 AM; open seats are offered again from 10:30 AM every 30 minutes.",
+        " tab (on the live site only). Each sponsor sees their confirmed chats under Your chats in their portal. Hackers get one invite per seat on Slack (email if Slack can't reach them): people the sponsor met at their booth first, then their shortlist, then hackers interested in them. They answer by Sat 10 AM; open seats are offered again from 10:30 AM every 30 minutes.",
     },
+    /** Sponsors and organizers name the same state differently. */
+    sameWord: `A sponsor's "Confirmed" (in their portal) means the same as your "Sent" here.`,
     after: {
       lead: "After Send:",
       rest: " a confirmed chat you move or fix stays confirmed, and its invited hackers are asked right away to confirm the new room or time. Removing one moves its hackers to another open seat of that sponsor, or cancels their invite and tells them. Sponsor edits (fewer chats, a removed rep, a new group size) update invites the same way. Moves, removals and booking changes update the Room Grid tab right away.",

@@ -28,6 +28,7 @@ import type {
   SundayJudging,
 } from "~/lib/sponsor-day-board";
 import type { JudgingBoard, JudgingRow } from "~/lib/sponsor-judging-rooms";
+import { isDigitalJudging } from "~/lib/sponsor-prize-tracks";
 import { seatsLeft } from "~/server/api/utils/coffee-chat-capacity";
 
 export const ORGANIZER_HOME_PATH = "/internal/sponsors";
@@ -800,6 +801,8 @@ export function needsAttention({
     const noPrefs: AttentionItem[] = [];
     for (const s of byName) {
       if (isMine(s.sponsorId) !== mine) continue;
+      // Digital sponsors (PCBWay) don't do coffee chats: only judging.
+      if (isDigitalJudging(s.name)) continue;
       const c = s.chats;
       const base = { mine, sponsorId: s.sponsorId, sponsor: s.name };
       if (!c.prefsSubmittedAt) {

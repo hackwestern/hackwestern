@@ -60,7 +60,7 @@ export const coffeeChatInvitesCopy = {
   /** Organizer invite status (coffeeChatInvites router). */
   status: {
     source: {
-      scanned: "Scanned",
+      scanned: "Met at their booth",
       shortlist: "Shortlist",
       interested: "Interested",
     } as Record<string, string>,

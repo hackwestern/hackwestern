@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { sessionCap } from "~/lib/coffee-chat-schedule";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
@@ -20,6 +21,8 @@ import { mirrorRoomGrid } from "~/server/api/utils/coffee-chat-room-grid-mirror"
 import { checkCoffeeSender, type SenderCheck } from "~/server/api/utils/coffee-chat-sender";
 import {
   deliverInviteNotices,
+  invitesDeliveryLive,
+  invitesEnabled,
   reconcileInvitesAfterChange,
   sendRoundOneInvites,
   type InviteJob,
@@ -261,6 +264,34 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       return { ok: true };
     }),
 
+  /**
+   * Put a draft chat back by hand: the "Undo" after removing one. Pinned,
+   * like a move. Same checks as a move (rep free, cell empty).
+   */
+  placeChat: protectedOrganizerProcedure
+    .input(z.object({ repId: z.string().uuid(), room, sessionId }))
+    .mutation(async ({ input }) => {
+      // Undo after Remove. It always places a NEW draft chat: invites of a
+      // removed sent chat were cancelled by reconcile and aren't restored
+      // (the board only offers Undo for draft chats). A draft needs no
+      // reconcile; it reaches hackers on the next Send.
+      return boardWrite(async (tx, state) => {
+        assertRepCanChat(state, input.repId, input.sessionId);
+        assertCellFree(state, input.room, input.sessionId);
+        // Adding a chat, unlike a move, can push a rep past their cap.
+        const rep = state.sched.flatMap((sp) => sp.reps).find((r) => r.id === input.repId);
+        const has = state.placements.filter((p) => p.repId === input.repId).length;
+        if (rep && has >= sessionCap(rep)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: errors.repAtCap(has) });
+        }
+        const [row] = await tx
+          .insert(coffeeChatPlacements)
+          .values({ repId: input.repId, room: input.room, sessionId: input.sessionId, pinned: true })
+          .returning({ id: coffeeChatPlacements.id });
+        return { id: row!.id };
+      });
+    }),
+
   /** Ad hoc room booking on an empty cell (a sponsor, mentors, organizers). */
   bookRoom: protectedOrganizerProcedure
     .input(
@@ -402,6 +433,11 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
           round.status === "ok" ? round.unfilled.reduce((n, u) => n + u.open, 0) : 0,
         // Messages actually handed to Slack or email (0 while invites are off).
         delivered: delivery.slack + delivery.email,
+        /**
+         * COFFEE_INVITES_ENABLED=dry: invites were saved but nobody was
+         * messaged. The toast says so.
+         */
+        dryRun: invitesEnabled() && !invitesDeliveryLive(),
       },
     };
   }),
