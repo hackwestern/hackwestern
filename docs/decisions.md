@@ -436,3 +436,18 @@
 **Planning direction (proposed, pending Jazz's answers):** near rooms for short chats, 1-on-1s, "Met at booth" picks and ad hoc bookings; Ivey for planned blocks of at least 1 hour, 30-minute and group chats. One sponsor stays in one building at a time; a rep needs at least 30 minutes between a near room and Ivey. Offers for Ivey chats expire about 35 minutes before the chat (20 + 15 walking) instead of 20. Calendar columns become rooms ("Room 1, Room 2"), with reps listed on each block. A "Your team" step comes before the calendar. Setup asks how flexible they are and whether Ivey is OK. A busy-times strip shows the near rooms separately.
 
 **Open:** Ivey only when near rooms are full, or the default for long planned blocks? Do Ivey reps still cover the booth? Who wins a clash (package, first to submit, or Jazz decides)?
+
+## 2026-11-19: Coffee chat rooms: organizers decide; live busy strip; availability shown (Jazz)
+
+**Decision:**
+- Sponsors never choose or request rooms; organizers decide placement and settle clashes by hand (no automatic tie-break). Planning columns are "Room 1, Room 2" only.
+- All 8 rooms (2241-2243 and Ivey 1348-1358) are open Sat 10 AM-5 PM; no special Ivey rules and no Ivey question for sponsors. Sponsors see the building and walk time once assigned.
+- Setup asks "If rooms are tight, can we shift your chats?" (Not flexible / Within 1 hour / Anytime 10 AM–5 PM).
+- A busy-times strip shows event-wide room use per 30 min, drafts included, updated live (target: within ~5 s) so sponsors planning together in the Friday workshop see each other's plans. Information only, never blocking.
+- The planning calendar shows the sponsor's availability (prefilled from sponsor info, editable) as shaded bands; blocks outside it get a note, not a block.
+- Reps chatting in Ivey are not restricted from the booth; nothing enforced.
+- New step 1 "Your team" (reps with optional phone/email, sponsor's main phone required) before the calendar. Calendar columns are rooms; a block lists its reps, so a shared room shows once.
+
+**How (build):** autosave every block edit as a draft on the server; a small room-load query polled every ~5 s (react-query refetchInterval). Websockets rejected for now: more to build and run the day before the event for no visible gain at ~10 sponsors.
+
+**Supersedes:** the proposed clash rule, the Ivey-default question and the Ivey question in "two pools" (2026-11-19).
