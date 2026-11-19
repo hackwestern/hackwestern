@@ -129,7 +129,16 @@ function useChatMoves(
  * After Send it shows live invite counts and only organizers' changes
  * (simplify-decisions, "Hacker activity as counts, not a change log").
  */
-export function SetupStatus({ sponsor, data }: { sponsor: string; data: SetupData }) {
+export function SetupStatus({
+  sponsor,
+  data,
+  flowStep,
+}: {
+  sponsor: string;
+  data: SetupData;
+  /** On a preferences step (1-3): before a submit, say which step. */
+  flowStep?: number;
+}) {
   const seen = useLastSeen(sponsor);
   const moves = useChatMoves(sponsor, data, seen?.visit);
   const state = setupState({
@@ -159,8 +168,13 @@ export function SetupStatus({ sponsor, data }: { sponsor: string; data: SetupDat
   const lastSeen = seen?.lastSeen ?? null;
   const fresh = lastSeen && seen ? events.filter((e) => !e.mine && e.at > lastSeen && e.at <= seen.visit) : [];
   const shown = fresh.length ? fresh : events.slice(0, 1);
-  const title =
-    state.kind === "accepted" ? s.state.accepted(state.accepted, state.seats) : s.state[state.kind];
+  // Still filling in preferences: where they are, not "Draft saved".
+  const inFlow = !!flowStep && (state.kind === "notStarted" || state.kind === "draft");
+  const title = inFlow
+    ? s.inFlow(flowStep, s.flowSteps.length, s.flowSteps[flowStep - 1] ?? "")
+    : state.kind === "accepted"
+      ? s.state.accepted(state.accepted, state.seats)
+      : s.state[state.kind];
   const todo =
     state.kind === "notStarted"
       ? s.todo.notStarted
@@ -229,9 +243,11 @@ export function SetupStatus({ sponsor, data }: { sponsor: string; data: SetupDat
           {s.editedAfterSend(data.seats.changed)}
         </p>
       )}
-      <p className={cn("m-0 text-base font-semibold", needsAction ? "text-dashboard-text-warning" : "text-dashboard-text-heavy")}>
-        {todo}
-      </p>
+      {!inFlow && (
+        <p className={cn("m-0 text-base font-semibold", needsAction ? "text-dashboard-text-warning" : "text-dashboard-text-heavy")}>
+          {todo}
+        </p>
+      )}
       <p className="m-0 text-base text-dashboard-text-medium">{next}</p>
     </section>
   );
@@ -500,10 +516,11 @@ export function useAnnounce() {
     setMessage("");
     requestAnimationFrame(() => setMessage(text));
   }, []);
+  const clear = useCallback(() => setMessage(""), []);
   const region = (
     <p role="status" className="sr-only">
       {message}
     </p>
   );
-  return { announce, region };
+  return { announce, clear, region };
 }

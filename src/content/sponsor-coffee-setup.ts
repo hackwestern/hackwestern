@@ -123,6 +123,9 @@ export const sponsorSetupCopy = {
       submittedShortlist: "You submitted your shortlist",
       saved: "You saved changes",
     } as Record<string, string>,
+    /** While filling in preferences (not submitted yet): where they are. */
+    inFlow: (n: number, total: number, what: string) => `Step ${n} of ${total}: ${what}`,
+    flowSteps: ["add your team", "say when they're free", "review and submit"],
     editedAfterSend: (n: number) =>
       `You changed your setup after invites went out. ${afterInvitesEffect(n)}`,
     at: (what: string, when: string) => `${what} · ${when}`,
@@ -197,6 +200,9 @@ export const sponsorSetupCopy = {
     nowPrimary: (name: string) => `${name} is now the main contact.`,
     added: (name: string) => `${name} added.`,
     removed: (name: string) => `${name} removed.`,
+    undo: "Undo",
+    undoLabel: (name: string) => `Undo removing ${name}`,
+    restored: (name: string) => `${name} is back.`,
     saved: (name: string) => `${name} saved.`,
     needName: "Add their name.",
     needPhone: "Add a phone number we can call or text.",
@@ -221,6 +227,12 @@ export const sponsorSetupCopy = {
     editTeam: "Edit your team",
     yourDay: "Your events",
     yourWorkshop: "Your workshop",
+    /** Legend for the hatched cells, shown only when the grid has one. */
+    legend: "Your workshop, with 15 minutes' travel time either side",
+    /** A rep at 0 chats: their row is greyed. */
+    doesntChat: "Doesn't chat",
+    /** A rep free no time at all, in place of "4 chats · 2 h". */
+    noFreeTime: "No free time",
     workshopAt: (when: string) => `Your workshop ${when}`,
     buffer: "Buffer · travel time",
     workshopsUnknown:
@@ -341,7 +353,7 @@ export const sponsorSetupCopy = {
     submitted: "Shortlist submitted",
     submittedBody: "Thanks! We'll invite people you met at your booth first, then your shortlist.",
     edit: "Edit shortlist",
-    lockedSubmitted: "Your shortlist is submitted. Tap Edit shortlist to change it.",
+    lockedSubmitted: "Your shortlist is submitted. Editing un-submits it until you submit again.",
     skipForNow: "Skip for now",
   },
 

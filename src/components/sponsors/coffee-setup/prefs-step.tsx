@@ -257,6 +257,7 @@ export function PrefsStep({
           data={data}
           windows={windows}
           free={Object.fromEntries(repState.map((r) => [r.rep.id, r.free]))}
+          chatsWanted={Object.fromEntries(repState.map((r) => [r.rep.id, r.chatsWanted]))}
           onToggle={(repId, sessionId) =>
             edit((d) => {
               const r = repDraft(d, repId);
@@ -307,8 +308,14 @@ export function PrefsStep({
                         <Plus aria-hidden className="size-4" />
                       </StepBtn>
                     </span>
-                    <span className="min-w-[9rem] text-sm font-semibold text-dashboard-text-link" aria-live="polite">
-                      {copy.chatsAndTime(chatsWanted, minutes)}
+                    <span
+                      className={cn(
+                        "min-w-[9rem] text-sm font-semibold",
+                        chatsWanted > 0 && avail === 0 ? "text-dashboard-text-warning" : "text-dashboard-text-link",
+                      )}
+                      aria-live="polite"
+                    >
+                      {chatsWanted > 0 && avail === 0 ? copy.noFreeTime : copy.chatsAndTime(chatsWanted, minutes)}
                     </span>
                   </span>
                 </div>

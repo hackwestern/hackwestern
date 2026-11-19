@@ -62,19 +62,19 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 - Starting point: Test Sponsor's `/sponsors/<uuid>/coffee-chats`. The status card says "Not started". The preferences card's "Start" is the only filled button; the shortlist card is locked and "Add a hacker" is an outline button below.
 - Steps: 1. Start "Chatting preferences". 2. Add two reps with names and phones. 3. Tap the second rep's crown. 4. Edit, then remove a rep.
 - Expected result: "<name> added." The first rep gets the crown, labelled "Main contact"; the others show "Make main contact", and a tap moves it ("<name> is now the main contact."). If you remove the main contact, the crown goes to the next rep. The status card changes to "Draft saved, not submitted". The button to go on reads "Next: When they're free".
-- Edge cases: a blank name or phone, a phone under 7 digits ("That phone number looks too short."), a 13th rep (max 12), and Next with no reps ("Add at least one rep to continue."). There's no email field.
+- Edge cases: a blank name and phone (both errors show at once), a phone under 7 digits ("That phone number looks too short."), a 13th rep (max 12), and Next with no reps ("Add at least one rep to continue."). There's no email field. Before Send, Remove shows "<name> removed. Undo", and Undo brings the rep back with their times, chats and crown. While on a preferences step before submitting, the status card says "Step N of 3: …".
 
 ### Sponsor · Chatting preferences (needs A)
 - Goal: hackers per chat, when each rep is free, and how many chats each wants.
 - Starting point: step 2. Use Sun Life to see its workshop blocked. The workshop comes from the run of show.
 - Steps: 1. Pick 1 to 5 hackers per chat. 2. Untick some sessions. 3. Change chats per rep, including 0. 4. Reload.
 - Expected result: "1-on-1 · 15 min · 4 hackers an hour per rep" or "Groups of 3 · 30 min · 6 hackers an hour per rep". New reps start at 4 chats with every open session ticked. Headers read "10–11 AM" … "4–5 PM", and the workshop row is "Your events": its session shows "Your workshop <time>", hatched and not tickable. Under the 1–5 pick: "Each chat: 1 rep + N hackers". Changes save 0.8 s later ("Saving…", "Saved.") and survive the reload. The totals read "Up to N chats · up to M hackers". A rep at 0 reads "Doesn't chat".
-- Edge cases: a rep with nothing ticked ("…isn't free any time Saturday."), more chats than the free sessions hold ("…is free for 2 hours, so up to 8 chats."), and the DB going down mid-edit ("Not saved, retrying…", retried every 3 s). If the run of show is unreadable, nothing is blocked and you see "We can't read the event schedule right now…". A session the workshop buffer only cuts can be ticked and says which part is left, e.g. "1:00–1:30 only" (Sun Life, groups). Switching between 1-on-1s and groups changes that part, and a session with no whole chat left becomes blocked. Below the chats: "Something doesn't fit? Ask an organizer" opens the portal Help. At 390 px the grid scrolls inside its box, with "Scroll for later times →" above it.
+- Edge cases: a rep with nothing ticked ("…isn't free any time Saturday.", and "No free time" beside their chats), a rep at 0 chats (row greyed, "Doesn't chat"), more chats than the free sessions hold ("…is free for 2 hours, so up to 8 chats."), and the DB going down mid-edit ("Not saved, retrying…", retried every 3 s). If the run of show is unreadable, nothing is blocked and you see "We can't read the event schedule right now…". A session the workshop buffer only cuts can be ticked and says which part is left, e.g. "1:00–1:30 only" (Sun Life, groups). Switching between 1-on-1s and groups changes that part, and a session with no whole chat left becomes blocked. Below the chats: "Something doesn't fit? Ask an organizer" opens the portal Help. At 390 px the grid scrolls inside its box, with "Scroll for later times →" above it.
 
 ### Sponsor · Review & submit (needs A)
 - Goal: check the summary and submit.
 - Steps: 1. Open step 3. 2. Tap "Submit preferences".
-- Expected result: "Everything checks out." The summary reads like "Groups of 3 · 30 min · up to 6 chats · up to 18 hackers", plus "Organizers call <name> at <phone>." After submitting: "Preferences submitted". The status card says "Submitted, waiting for organizers to schedule", and Shortlist unlocks.
+- Expected result: "Everything checks out." The read-only grid shows plain ticks. The summary reads like "Groups of 3 · 30 min · up to 6 chats · up to 18 hackers", plus "Organizers call <name> at <phone>." in bold. After submitting: "Preferences submitted". The status card says "Submitted, waiting for organizers to schedule", and Shortlist unlocks.
 - Edge cases: no chats possible ("No rep has a chat at a time they're free…"), no crown, and no reps. Editing after a submit turns the button into "Submit changes". The preferences stay submitted, and a resubmit moves the submit time forward.
 
 ### Sponsor · Scan a hacker (needs A)
@@ -88,7 +88,7 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 - Goal: pick hackers to invite after the scanned ones.
 - Starting point: preferences submitted. Open "Shortlist".
 - Steps: 1. Use "One at a time" (Skip / Shortlist) or List. 2. Shortlist a few. 3. Submit. 4. Tap "Edit shortlist".
-- Expected result: scanned hackers come first in a read-only block. The block is headed "People you met · invited first". The cap line reads "14 seats · 3 taken by people you met · shortlist up to 11". Submitting shows "Shortlist submitted", and Edit reopens the list.
+- Expected result: scanned hackers come first in a read-only block. The block is headed "People you met · invited first". The cap line reads "14 seats · 3 taken by people you met · shortlist up to 11". Submitting shows "Shortlist submitted"; the banner says "Editing un-submits it until you submit again." and the Remove buttons are hidden. Edit reopens the list.
 - Edge cases: locked before preferences are submitted. At the cap: "Your shortlist is full. Remove someone to add another." Lowering chats after shortlisting: only "You now have room for 3 on your shortlist. Remove 2." (no "5 of 3"), and the home card reads "5 shortlisted, room for 3. Remove 2.". An empty submit is allowed. With no candidates you see "No hackers to show yet. Check back soon." The handoff says scans don't count against the cap. The code subtracts them, which matches the decisions log.
 
 ### Sponsor · Your chats (needs A)
@@ -106,7 +106,7 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 
 ### Sponsor · Judging (needs F)
 - Goal: score, shortlist, then rank a top 3.
-- Starting point: `/sponsors/<uuid>/picks` for a sponsor whose prize track box is ticked on Sponsor Day-Of, with seeded teams.
+- Starting point: `/sponsors/<uuid>/picks?preview=judging` for a sponsor whose prize track box is ticked on Sponsor Day-Of, with seeded teams. Without `?preview=judging`, before Sun 9:00 AM the page shows "Judging opens Sunday 9:00 AM", the same as the locked nav item.
 - Steps: 1. Pick a name in "Who's judging?" (Your team reps, or "Someone else"). 2. Score in One at a time or in List. 3. Open Rubric. 4. Score as a second rep. 5. Send the shortlist. 6. In round 2, submit exactly 3.
 - Expected result: a 1 to 10 strip in half points, dimmed until touched. Each project shows "Dana 9.5 · Kevin 6" and the average. Reps 3 or more points apart get an amber flag. Two reps split the list alphabetically ("Your 2" / "Everyone's 6").
 - Edge cases: no prize track, PCBWay ("Digital sponsors don't judge in the portal…"), an empty shortlist, round 2 closed or no presentation slot, and the wrong count ("Submit exactly 3 teams."). A name in different case replaces the score instead of adding one. TinyFish shows "Remote (judges online)".

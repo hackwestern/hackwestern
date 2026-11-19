@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CircleCheck, ScanLine } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
@@ -39,7 +39,9 @@ export function ShortlistFlow({
 }) {
   const utils = api.useUtils();
   const q = api.sponsorShortlist.list.useQuery({ sponsor }, { retry: 1, refetchOnWindowFocus: false });
-  const { announce, region } = useAnnounce();
+  const { announce, clear, region } = useAnnounce();
+  // "<name> shortlisted." belongs to the step it happened on.
+  useEffect(() => clear(), [step, clear]);
   const [view, setView] = useState<View>("one");
   const [filter, setFilter] = useState<Filter>("shortlisted");
   const [skipped, setSkipped] = useState<Set<string>>(() => new Set());
@@ -166,7 +168,7 @@ export function ShortlistFlow({
         ) : (
           <ul className="m-0 flex list-none flex-col p-0">
             {picked.map((h) => (
-              <HackerRow key={h.userId} hacker={h} disabled={busy || submitted} canAdd={!full} onToggle={() => toggle(h)} />
+              <HackerRow key={h.userId} hacker={h} disabled={busy} hidden={submitted} canAdd={!full} onToggle={() => toggle(h)} />
             ))}
           </ul>
         )}
@@ -295,7 +297,7 @@ export function ShortlistFlow({
           ) : (
             <ul className="m-0 flex list-none flex-col p-0">
               {listed.map((h) => (
-                <HackerRow key={h.userId} hacker={h} disabled={busy || submitted} canAdd={!full} onToggle={() => toggle(h)} />
+                <HackerRow key={h.userId} hacker={h} disabled={busy} hidden={submitted} canAdd={!full} onToggle={() => toggle(h)} />
               ))}
             </ul>
           )}
@@ -338,11 +340,14 @@ function HackerCard({ hacker }: { hacker: InterestedHacker }) {
 function HackerRow({
   hacker,
   disabled,
+  hidden,
   canAdd,
   onToggle,
 }: {
   hacker: InterestedHacker;
   disabled: boolean;
+  /** Submitted: no Shortlist / Remove until they tap Edit shortlist. */
+  hidden: boolean;
   canAdd: boolean;
   onToggle: () => void;
 }) {
@@ -358,6 +363,7 @@ function HackerRow({
           </span>
           {studyLine(hacker) && <span className="text-sm text-dashboard-text-medium">{studyLine(hacker)}</span>}
         </span>
+        {!hidden && (
         <DashboardButton
           variant={hacker.shortlisted ? "outline" : "small"}
           className={cn("h-11 shrink-0", pressable, blocked && "opacity-dashboard-disabled")}
@@ -367,6 +373,7 @@ function HackerRow({
         >
           {hacker.shortlisted ? copy.remove : copy.add}
         </DashboardButton>
+        )}
       </div>
       <HackerLinks name={hacker.name} links={hacker} />
     </li>

@@ -36,10 +36,32 @@ export function SponsorHelpProvider({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  // The button that opened Help gets focus back on close (Radix can't
+  // know it: the dialog is opened from context, not a Dialog.Trigger).
+  const opener = useRef<HTMLElement | null>(null);
   return (
-    <HelpContext.Provider value={{ open: () => setOpen(true) }}>
+    <HelpContext.Provider
+      value={{
+        open: () => {
+          opener.current =
+            document.activeElement instanceof HTMLElement
+              ? document.activeElement
+              : null;
+          setOpen(true);
+        },
+      }}
+    >
       {children}
-      <HelpContacts sponsor={sponsor} open={open} onOpenChange={setOpen} />
+      <HelpContacts
+        sponsor={sponsor}
+        open={open}
+        onOpenChange={setOpen}
+        onCloseAutoFocus={(event) => {
+          if (!opener.current?.isConnected) return;
+          event.preventDefault();
+          opener.current.focus();
+        }}
+      />
     </HelpContext.Provider>
   );
 }
@@ -114,10 +136,12 @@ function HelpContacts({
   sponsor,
   open,
   onOpenChange,
+  onCloseAutoFocus,
 }: {
   sponsor: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCloseAutoFocus: (event: Event) => void;
 }) {
   const c = copy.contacts;
   const { loading, lead, emergency } = useHelpContacts(sponsor);
@@ -126,6 +150,7 @@ function HelpContacts({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 motion-reduce:animate-none" />
         <Dialog.Content
+          onCloseAutoFocus={onCloseAutoFocus}
           className={cn(
             "fixed z-50 flex max-h-[90dvh] w-full flex-col gap-4 overflow-y-auto bg-dashboard-bg-surface p-6 font-figtree font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card focus:outline-none",
             "inset-x-0 bottom-0 rounded-t-dashboard-2xl pb-[max(1.5rem,env(safe-area-inset-bottom))]",

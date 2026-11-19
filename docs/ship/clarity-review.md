@@ -46,6 +46,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: Escape closes the dialog, but focus goes back to the page body, not to the "Need help?" button.
 - Fix: return focus to the button that opened the dialog.
 - Screens: `01-sponsor-firstvisit-help.png`, `01-sponsor-firstvisit-help-390.png`
+- **Fixed:** Help remembers the button that opened it, and Escape or Close puts focus back on it.
 
 ### Sponsor · Your team · Step 1 · Chats home, Not started
 - What to do: unclear. "Add a hacker" is the first and boldest button, but the required job is "Start" on the Chatting preferences card further down.
@@ -69,7 +70,8 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   - At 390 the rep name wraps mid-word ("Walkthr / ough Dana") because Primary, Edit and Remove take the row.
   - The page has two `<main>` landmarks (site wrapper and `#sponsor-main`).
 - Fix: show both field errors at once. While the user is still in the setup steps, have the status card say "Step 1 of 3: add your team". Put the rep's actions on their own line at phone width. Drop the outer `<main>`.
-- **Fixed ("Since you were last here"):** the sponsor's own saves and submits are never listed under "Since you were last here", only as "Last change". (The rest of this step is below.)
+- **Fixed ("Since you were last here"):** the sponsor's own saves and submits are never listed under "Since you were last here", only as "Last change".
+- **Fixed (the rest):** a blank Save shows both "Add their name." and "Add a phone number we can call or text." at once, each field marked invalid. Until preferences are submitted, the status card on a preferences step reads "Step 1 of 3: add your team" (then "say when they're free", "review and submit") with no "You need to" line. The portal shell's content area is now a `div` with the same `#sponsor-main` id, so the page has one `main` landmark (the app root's). (`after/portal-07-team-both-errors*.png`)
 - Plain wording:
   - "Next: Chatting preferences" (button) → "Next: When they're free"
 - Screens: `02-sponsor-team-step1-empty.png`, `02-sponsor-team-blank-save.png`, `02-sponsor-team-short-phone.png`, `02-sponsor-team-added-first.png`, `02-sponsor-team-two-reps-dana-primary-390.png`
@@ -86,7 +88,8 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   - "Primary" (badge) → "Main contact"
   - "The crown marks your primary contact. Organizers use their name and phone…" → "The crown marks your main contact. Organizers call this person."
 - Screens: `02-sponsor-team-crown-moved.png`, `02-sponsor-team-edit-open.png`, `02-sponsor-team-remove-confirm.png`, `02-sponsor-team-after-remove.png`
-- **Fixed (crown and wording):** the crown button says "Main contact" on the main contact and "Make main contact" on everyone else. "Main contact" replaces "Primary" / "primary contact" everywhere on the sponsor side (badge, review, errors, "<name> is now the main contact."). The hint reads "The crown marks your main contact. Organizers call this person…". (`after/portal-02-team*.png`) The Undo for Remove is below.
+- **Fixed (crown and wording):** the crown button says "Main contact" on the main contact and "Make main contact" on everyone else. "Main contact" replaces "Primary" / "primary contact" everywhere on the sponsor side (badge, review, errors, "<name> is now the main contact."). The hint reads "The crown marks your main contact. Organizers call this person…". (`after/portal-02-team*.png`)
+- **Fixed (Undo):** before Send, "Walkthrough Kevin removed. Undo" shows above the list; Undo adds the rep back with the same name, phone, free sessions and chats (and the crown, if they had it). After Send there's no Undo: the warning dialog already asked, and their invites were moved or cancelled. (`after/portal-07-team-undo*.png`)
 
 ### Sponsor · Chatting preferences · Step 1 · Hackers per chat
 - Expected: "Groups of 3 · 30 min · 6 hackers an hour per rep" and an autosave ("Saving…", "Saved."). **Happened:** the summary line is right. **"Saved." never appears**, and "Saving…" flashes for under a second in the footer (bug B6).
@@ -113,7 +116,8 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Plain wording:
   - "Your day" (row label) → "Your events"
 - Screens: `03-sponsor-prefs-sunlife-workshop.png`, `03-sponsor-prefs-sunlife-workshop-390-b.png`, `03-sponsor-prefs-dana-not-free.png`, `03-sponsor-prefs-too-many-chats.png`, `03-sponsor-prefs-after-reload.png`
-- **Fixed (headers, row label, scroll):** headers read "10–11 AM" … "4–5 PM", the row label is "Your events", and when the grid is wider than its box a "Scroll for later times →" line and a right-edge fade show (390 px; 1280 now fits). (`after/portal-03-prefs-grid*.png`) The legend and the 0-chats row are below.
+- **Fixed (headers, row label, scroll):** headers read "10–11 AM" … "4–5 PM", the row label is "Your events", and when the grid is wider than its box a "Scroll for later times →" line and a right-edge fade show (390 px; 1280 now fits). (`after/portal-03-prefs-grid*.png`)
+- **Fixed (legend, 0 chats):** the legend shows only when the grid has a hatched cell, as one readable item: "Your workshop, with 15 minutes' travel time either side". A rep at 0 chats has their row greyed with "Doesn't chat" in place of "6 of 6 sessions". (`after/portal-07-prefs-zero-chats*.png`)
 
 ### Sponsor · Chatting preferences · Step 3 · How many chats
 - Expected: 4 chats each to start, 0 gives "Doesn't chat", totals "Up to N chats · up to M hackers". **Happened:** as expected.
@@ -124,6 +128,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Fix: when a rep has no free time, show "No free time" in place of the chats-and-hours label.
 - Plain wording: "Need something different? Contact organizers" → "Something doesn't fit? Ask an organizer". It opens Help, as the guide expects.
 - **Fixed (wording):** "Something doesn't fit? Ask an organizer", still opening Help.
+- **Fixed (no free time):** a rep with chats but no free session shows "No free time" (in the warning colour) in place of "4 chats · 2 h". (`after/portal-07-prefs-zero-chats*.png`)
 
 ### Sponsor · Review & submit · Step 1 · Review (step 3 of 3)
 - Expected: "Everything checks out.", "Groups of 3 · 30 min · up to 6 chats · up to 18 hackers", "Organizers call <name> at <phone>." **Happened:** as expected.
@@ -133,6 +138,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: the read-only grid uses the same filled checkboxes as the editable one, so it looks clickable. "Organizers call … at …" is small grey text but it's the key fact.
 - Fix: show the review grid as plain ticks (no box). Make the call line normal body text.
 - Screens: `04-sponsor-review-step3.png`, `04-sponsor-review-390*.png`
+- **Fixed:** the read-only grid shows plain ticks with no box, and "Organizers call <name> at <phone>." is bold body text. (`after/portal-07-review*.png`)
 
 ### Sponsor · Review & submit · Step 2 · Submitted
 - Expected: "Preferences submitted", status card "Submitted, waiting for organizers to schedule", Shortlist unlocks. **Happened:** as expected.
@@ -185,7 +191,8 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Plain wording:
   - "People you scanned · First choice" → "People you met · invited first"
 - Screens: `06-sponsor-shortlist-open.png`, `06-sponsor-shortlist-one-at-a-time.png`, `06-sponsor-shortlist-list.png`
-- **Fixed (wording, steps box):** the block is "People you met · invited first", each row "Met at your booth · Talked to <rep>", and the cap line "N seats · M taken by people you met · shortlist up to K". The scan line is out of the steps box (two steps now). The message clearing is below.
+- **Fixed (wording, steps box):** the block is "People you met · invited first", each row "Met at your booth · Talked to <rep>", and the cap line "N seats · M taken by people you met · shortlist up to K". The scan line is out of the steps box (two steps now).
+- **Fixed (message):** the "<name> shortlisted." announcement is cleared when the step changes.
 
 ### Sponsor · Shortlist · Step 2 · Review, submit, edit
 - Expected: "Shortlist submitted", Edit reopens. **Happened:** as expected.
@@ -195,6 +202,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: in the submitted view, the Remove buttons look half-disabled next to the line "Tap Edit shortlist to change it."
 - Fix: say it up front: "Editing un-submits your shortlist until you submit again." Hide the Remove buttons while it's submitted.
 - Screens: `06-sponsor-shortlist-review.png`, `06-sponsor-shortlist-submitted.png`, `06-sponsor-shortlist-submitted-390.png`
+- **Fixed:** the submitted banner says it up front: "Your shortlist is submitted. Editing un-submits it until you submit again." The Remove and Shortlist buttons are hidden while it's submitted. (`after/portal-07-shortlist-submitted*.png`)
 
 ### Sponsor · Shortlist · Step 3 · Over the cap (edge)
 - Expected: "Your shortlist has 5 people but you now have 3 seats. Remove 2." **Happened:** "3 of 1 shortlisted", "Your shortlist has 3 people but you now have 1 seat. Remove 2." **and** "All 1 seats are shortlisted…" at the same time. The home card reads "3 of 1 seats" (bug B5).
@@ -247,6 +255,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: Sun Life's side nav shows "Judging · Sun 9 AM" with a lock, yet the page opens fine from the link.
 - Fix: either open the page from the nav, or show a "Opens Sun 9 AM" screen. Don't do one in the nav and the other on the page.
 - Screens: `21-sponsor-judging-whos-judging.png`, `21-sponsor-judging-whos-judging-390*.png`
+- **Fixed:** the page follows the nav. Before Sunday 9:00 AM `/picks` shows "Judging opens Sunday 9:00 AM", the debrief note and "Back to Home"; `?preview=judging` (which the nav keeps) still opens it for testing. The judging components weren't changed. (`after/portal-07-judging-locked*.png`)
 
 ### Sponsor · Judging · Step 2 · Score, rubric, second rep, list
 - Expected: 1–10 strip in half points, dimmed until touched; "Dana 9.5 · Kevin 6", the average, an amber flag; split "Your N / Everyone's N". **Happened:** all as expected ("avg 7.8", "Dana 9.5 · Kevin 6: talk it through", "Your 5 / Everyone's 14").

@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
+import { Lock } from "lucide-react";
 
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
@@ -10,6 +12,8 @@ import { ShortlistSend } from "~/components/sponsors/judging/shortlist-send";
 import { useSponsorJudging } from "~/components/sponsors/judging/use-sponsor-judging";
 import { pressable, SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
+import { sponsorVenueCopy } from "~/content/sponsor-venue";
+import { judgingUnlocked } from "~/lib/sponsor-judging-unlock";
 import {
   formatPresentationTime,
   judgingRound,
@@ -64,6 +68,35 @@ export default function SponsorJudgingPage() {
     setStep(s);
     if (focus) stepRefs.current.get(s)?.focus();
   };
+
+  // Same rule as the nav: locked until Sunday 9:00 AM, unless previewing.
+  if (
+    router.isReady &&
+    router.query.preview !== "judging" &&
+    !judgingUnlocked(new Date())
+  ) {
+    const locked = sponsorVenueCopy.judgingLocked;
+    return (
+      <SponsorShell title={copy.seoTitle}>
+        <DashboardPanel className="items-start gap-3">
+          <h1 className="dashboard-h1 m-0 flex items-center gap-2">
+            <Lock aria-hidden className="size-6 shrink-0" />
+            {locked.pageTitle}
+          </h1>
+          <p className="m-0 text-base text-dashboard-text-medium">
+            {locked.message}
+          </p>
+          <DashboardButton
+            asChild
+            variant="outline"
+            className={cn("h-11", pressable)}
+          >
+            <Link href={`/sponsors/${uuid}`}>{locked.home}</Link>
+          </DashboardButton>
+        </DashboardPanel>
+      </SponsorShell>
+    );
+  }
 
   if (!router.isReady || (validUuid && query.isLoading)) {
     return (

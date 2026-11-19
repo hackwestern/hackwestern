@@ -163,7 +163,7 @@ export function ReviewStep({
           ))}
         </ul>
         {primary && (
-          <p className="m-0 text-sm text-dashboard-text-light">{copy.contactLine(primary.name, primary.phone)}</p>
+          <p className="m-0 text-base font-semibold text-dashboard-text-heavy">{copy.contactLine(primary.name, primary.phone)}</p>
         )}
       </div>
 

@@ -70,7 +70,7 @@ export default function SponsorCoffeeChatsPage() {
     return shell(
       <>
         <BackToChats href={base} />
-        {status}
+        <SetupStatus sponsor={id} data={data} flowStep={screen.step} />
         <FlowHeader
           tag={f.tag}
           title={f.title}
