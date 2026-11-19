@@ -151,6 +151,18 @@ const activityNotFound = () =>
     message: "This activity was deleted. Refresh the page.",
   });
 
+const rewardNotDeleted = () => isNull(scavengerHuntRewards.deletedAt);
+
+// Redeemable: not deleted and not a draft or disabled
+const rewardIsOpen = () =>
+  and(eq(scavengerHuntRewards.status, "active"), rewardNotDeleted());
+
+const rewardNotFound = () =>
+  new TRPCError({
+    code: "NOT_FOUND",
+    message: "This reward was deleted. Refresh the page.",
+  });
+
 // * Safe Functions: Check is done within the transaction to avoid race conditions */
 const redeemPrize = async (
   userId: string,
@@ -162,7 +174,7 @@ const redeemPrize = async (
     await db.transaction(async (tx) => {
       // Get reward to check quantity if needed
       const reward = await tx.query.scavengerHuntRewards.findFirst({
-        where: eq(scavengerHuntRewards.id, rewardId),
+        where: and(eq(scavengerHuntRewards.id, rewardId), rewardIsOpen()),
       });
       if (!reward) {
         throw new TRPCError({
@@ -293,6 +305,7 @@ export const scavengerHuntRouter = createTRPCRouter({
   getAllRewards: protectedOrganizerProcedure.query(async () => {
     try {
       const rewards = await db.query.scavengerHuntRewards.findMany({
+        where: rewardIsOpen(),
         orderBy: (rewards, { asc }) => [asc(rewards.name)],
       });
 
@@ -312,7 +325,7 @@ export const scavengerHuntRouter = createTRPCRouter({
       try {
         const { id } = input;
         const reward = await db.query.scavengerHuntRewards.findFirst({
-          where: eq(scavengerHuntRewards.id, id),
+          where: and(eq(scavengerHuntRewards.id, id), rewardIsOpen()),
         });
 
         if (!reward) {
@@ -615,6 +628,119 @@ export const scavengerHuntRouter = createTRPCRouter({
       }, "Failed to update activity");
     }),
 
+  // * REWARDS (organizer Rewards tab) * //
+  getScavengerHuntRewards: protectedOrganizerProcedure.query(async () => {
+    return withErrorHandling(
+      () =>
+        db
+          .select({
+            id: scavengerHuntRewards.id,
+            name: scavengerHuntRewards.name,
+            description: scavengerHuntRewards.description,
+            costPoints: scavengerHuntRewards.costPoints,
+            quantity: scavengerHuntRewards.quantity,
+            status: scavengerHuntRewards.status,
+            redemptions: sql<number>`count(${scavengerHuntRedemptions.id})::int`,
+          })
+          .from(scavengerHuntRewards)
+          .leftJoin(
+            scavengerHuntRedemptions,
+            eq(scavengerHuntRedemptions.rewardId, scavengerHuntRewards.id),
+          )
+          .where(rewardNotDeleted())
+          .groupBy(scavengerHuntRewards.id)
+          .orderBy(scavengerHuntRewards.name, scavengerHuntRewards.id),
+      "Failed to fetch rewards",
+    );
+  }),
+
+  saveReward: protectedOrganizerProcedure
+    .input(
+      z.object({
+        id: z.number().optional(), // Omit to create
+        name: z.string().trim().min(1).max(100),
+        description: z
+          .string()
+          .trim()
+          .nullable()
+          .transform((d) => (d ? d : null)),
+        costPoints: z.number().int().min(0).max(32767),
+        quantity: z.number().int().min(0).max(2147483647).nullable(), // Null means unlimited
+        status: z.enum(["draft", "active"]).optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      return withErrorHandling(async () => {
+        const { id, status, ...rest } = input;
+        const values = { ...rest, ...(status && { status }) };
+
+        const duplicateName = () =>
+          new TRPCError({
+            code: "CONFLICT",
+            message: `A reward named "${input.name}" already exists`,
+          });
+        // The unique index also blocks this; checking first gives a clear message
+        const duplicate = await db.query.scavengerHuntRewards.findFirst({
+          columns: { id: true },
+          where: and(
+            sql`lower(${scavengerHuntRewards.name}) = lower(${input.name})`,
+            rewardNotDeleted(),
+            id !== undefined ? ne(scavengerHuntRewards.id, id) : undefined,
+          ),
+        });
+        if (duplicate) throw duplicateName();
+
+        try {
+          if (id !== undefined) {
+            const updated = await db
+              .update(scavengerHuntRewards)
+              .set(values)
+              .where(and(eq(scavengerHuntRewards.id, id), rewardNotDeleted()))
+              .returning({ id: scavengerHuntRewards.id });
+            if (!updated.length) throw rewardNotFound();
+            return;
+          }
+          await db.insert(scavengerHuntRewards).values(values);
+        } catch (error) {
+          // Another organizer saved the same name after the check above
+          if (isUniqueViolation(error)) throw duplicateName();
+          throw error;
+        }
+      }, "Failed to save reward");
+    }),
+
+  setRewardStatus: protectedOrganizerProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        status: z.enum(["draft", "active", "disabled"]),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      return withErrorHandling(async () => {
+        const updated = await db
+          .update(scavengerHuntRewards)
+          .set({ status: input.status })
+          .where(and(eq(scavengerHuntRewards.id, input.id), rewardNotDeleted()))
+          .returning({ id: scavengerHuntRewards.id });
+        if (!updated.length) throw rewardNotFound();
+      }, "Failed to update reward");
+    }),
+
+  // Soft delete, so past redemptions keep their reward
+  deleteReward: protectedOrganizerProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      return withErrorHandling(async () => {
+        await db
+          .update(scavengerHuntRewards)
+          .set({ deletedAt: new Date() })
+          .where(
+            and(eq(scavengerHuntRewards.id, input.id), rewardNotDeleted()),
+          );
+      }, "Failed to delete reward");
+    }),
+
   // * POINTS ENDPOINTS * //
   // Gets a User's Own Points
   getPoints: protectedProcedure.query(async ({ ctx }) => {
@@ -671,7 +797,7 @@ export const scavengerHuntRouter = createTRPCRouter({
 
         // Check if reward exists
         const reward = await db.query.scavengerHuntRewards.findFirst({
-          where: eq(scavengerHuntRewards.id, rewardId),
+          where: and(eq(scavengerHuntRewards.id, rewardId), rewardIsOpen()),
         });
         if (!reward) {
           throw new TRPCError({
@@ -715,7 +841,7 @@ export const scavengerHuntRouter = createTRPCRouter({
 
         // Check if reward exists
         const reward = await db.query.scavengerHuntRewards.findFirst({
-          where: eq(scavengerHuntRewards.id, rewardId),
+          where: and(eq(scavengerHuntRewards.id, rewardId), rewardIsOpen()),
         });
         if (!reward) {
           throw new TRPCError({

@@ -1346,13 +1346,23 @@ export const scavengerHuntScans = pgTable(
   ],
 );
 
-export const scavengerHuntRewards = pgTable("scavenger_hunt_reward", {
-  id: serial("id").primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  costPoints: smallint("cost_points").notNull(),
-  description: text("description"),
-  quantity: integer("quantity"),
-});
+export const scavengerHuntRewards = pgTable(
+  "scavenger_hunt_reward",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    costPoints: smallint("cost_points").notNull(),
+    description: text("description"),
+    quantity: integer("quantity"),
+    status: scavengerHuntItemStatus("status").default("active").notNull(),
+    deletedAt: timestamp("deleted_at", { mode: "date", precision: 3 }),
+  },
+  (t) => [
+    uniqueIndex("scavenger_hunt_reward_name_unique")
+      .on(sql`lower(${t.name})`)
+      .where(sql`${t.deletedAt} IS NULL`),
+  ],
+);
 
 export const scavengerHuntRedemptions = pgTable(
   "scavenger_hunt_redemption",

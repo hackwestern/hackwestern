@@ -3,6 +3,7 @@ import {
   Calendar,
   ClipboardList,
   Gavel,
+  Gift,
   GraduationCap,
   Handshake,
   House,
@@ -393,6 +394,7 @@ const SIDEBAR_ICONS: Record<string, LucideIcon> = {
   scan: ScanLine,
   judge: Gavel,
   activities: ClipboardList,
+  rewards: Gift,
 };
 
 const SidebarIcon = ({

@@ -1442,3 +1442,148 @@ describe("scavengerHuntRouter activity endpoints", () => {
     );
   });
 });
+
+describe("scavengerHuntRouter reward endpoints", () => {
+  afterEach(async () => {
+    const rewards = await db.query.scavengerHuntRewards.findMany({
+      where: (t, { like }) => like(t.name, "RWD-TEST%"),
+    });
+    for (const reward of rewards) {
+      await db
+        .delete(scavengerHuntRedemptions)
+        .where(eq(scavengerHuntRedemptions.rewardId, reward.id));
+      await db
+        .delete(scavengerHuntRewards)
+        .where(eq(scavengerHuntRewards.id, reward.id));
+    }
+  });
+
+  const base = {
+    name: "RWD-TEST Hoodie",
+    description: "Black, all sizes",
+    costPoints: 50,
+    quantity: 20,
+  };
+  const findMine = async () =>
+    (await organizerCaller.scavengerHunt.getScavengerHuntRewards()).filter(
+      (r) => r.name.startsWith("RWD-TEST"),
+    );
+
+  test("creates and edits a reward", async () => {
+    await organizerCaller.scavengerHunt.saveReward(base);
+    const [created] = await findMine();
+    expect(created).toMatchObject({
+      ...base,
+      status: "active",
+      redemptions: 0,
+    });
+
+    await organizerCaller.scavengerHunt.saveReward({
+      id: created!.id,
+      name: "RWD-TEST Sticker",
+      description: "  ",
+      costPoints: 5,
+      quantity: null,
+    });
+    const [edited] = await findMine();
+    expect(edited).toMatchObject({
+      id: created!.id,
+      name: "RWD-TEST Sticker",
+      description: null,
+      costPoints: 5,
+      quantity: null,
+    });
+  });
+
+  test("rejects a duplicate name, ignoring case", async () => {
+    await organizerCaller.scavengerHunt.saveReward(base);
+    await expect(
+      organizerCaller.scavengerHunt.saveReward({
+        ...base,
+        name: "rwd-test HOODIE",
+      }),
+    ).rejects.toThrow("already exists");
+  });
+
+  test("a deleted reward's name can be used again", async () => {
+    await organizerCaller.scavengerHunt.saveReward(base);
+    const [created] = await findMine();
+    await organizerCaller.scavengerHunt.deleteReward({ id: created!.id });
+    expect(await findMine()).toHaveLength(0);
+
+    await organizerCaller.scavengerHunt.saveReward(base);
+    expect(await findMine()).toHaveLength(1);
+  });
+
+  test.each(["draft", "disabled"] as const)(
+    "a %s reward is hidden from redeem pages and can't be redeemed",
+    async (status) => {
+      const reward = await insertTestReward({ name: "RWD-TEST Mug", status });
+
+      const open = await organizerCaller.scavengerHunt.getAllRewards();
+      expect(open.map((r) => r.id)).not.toContain(reward.id);
+      await expect(
+        organizerCaller.scavengerHunt.getRewardById({ id: reward.id }),
+      ).rejects.toThrow("Reward not found");
+      await expect(
+        caller.scavengerHunt.redeem({ rewardId: reward.id }),
+      ).rejects.toThrow("Reward not found");
+      // Still listed for organizers
+      expect((await findMine())[0]).toMatchObject({ id: reward.id, status });
+    },
+  );
+
+  test("disabling and enabling a reward", async () => {
+    const reward = await insertTestReward({ name: "RWD-TEST Mug" });
+    await organizerCaller.scavengerHunt.setRewardStatus({
+      id: reward.id,
+      status: "disabled",
+    });
+    expect((await findMine())[0]?.status).toBe("disabled");
+    await organizerCaller.scavengerHunt.setRewardStatus({
+      id: reward.id,
+      status: "active",
+    });
+    expect((await findMine())[0]?.status).toBe("active");
+  });
+
+  test("counts redemptions, which stay after the reward is deleted", async () => {
+    const reward = await insertTestReward({ name: "RWD-TEST Mug" });
+    await db
+      .insert(scavengerHuntRedemptions)
+      .values({ userId: session.user.id, rewardId: reward.id });
+    expect((await findMine())[0]?.redemptions).toBe(1);
+
+    await organizerCaller.scavengerHunt.deleteReward({ id: reward.id });
+    const left = await db.query.scavengerHuntRedemptions.findMany({
+      where: eq(scavengerHuntRedemptions.rewardId, reward.id),
+    });
+    expect(left).toHaveLength(1);
+  });
+
+  test("editing or disabling a deleted reward fails", async () => {
+    const reward = await insertTestReward({ name: "RWD-TEST Mug" });
+    await organizerCaller.scavengerHunt.deleteReward({ id: reward.id });
+    await expect(
+      organizerCaller.scavengerHunt.saveReward({ ...base, id: reward.id }),
+    ).rejects.toThrow("deleted");
+    await expect(
+      organizerCaller.scavengerHunt.setRewardStatus({
+        id: reward.id,
+        status: "disabled",
+      }),
+    ).rejects.toThrow("deleted");
+  });
+
+  test("hackers can't manage rewards", async () => {
+    await expect(
+      caller.scavengerHunt.getScavengerHuntRewards(),
+    ).rejects.toThrow(TRPCError);
+    await expect(caller.scavengerHunt.saveReward(base)).rejects.toThrow(
+      TRPCError,
+    );
+    await expect(caller.scavengerHunt.deleteReward({ id: 1 })).rejects.toThrow(
+      TRPCError,
+    );
+  });
+});

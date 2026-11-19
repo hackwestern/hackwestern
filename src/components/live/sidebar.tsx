@@ -34,6 +34,7 @@ export const SidebarNav = ({
           </div>
         )}
         {isOrganizer && <SectionLink tab="activities" name="Activities" />}
+        {isOrganizer && <SectionLink tab="rewards" name="Rewards" />}
         {isOrganizer && (
           <SectionLink tab="judge" name="Judging" href="/judge" />
         )}
