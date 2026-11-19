@@ -28,7 +28,7 @@ export const sponsorRowId = (sponsorId: string) => `coffee-sponsor-${sponsorId}`
 
 /**
  * Sponsors band: logo + name, the stage chip ("Needs scheduling", "Sent")
- * and problem flags beside it ("1 rep not placed", "Changed after
+ * and problem flags beside it ("1 rep short of chats", "Changed after
  * invites"). Opening a row
  * shows its availability grid, preferences and people (phones with a copy
  * icon) inline (no drawer).
@@ -159,7 +159,7 @@ function SponsorDetail({ sponsor: sp, board }: { sponsor: BoardSponsor; board: S
             <tr key={r.id}>
               <th
                 scope="row"
-                className="text-left align-middle text-[13px] font-semibold leading-tight text-dashboard-text-heavy [overflow-wrap:anywhere]"
+                className="min-w-[7rem] text-left align-middle text-[13px] font-semibold leading-tight text-dashboard-text-heavy [overflow-wrap:break-word]"
               >
                 {r.name}
                 {board.walks

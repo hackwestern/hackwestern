@@ -380,6 +380,14 @@ function HackerStep({
   const utils = api.useUtils();
   // A rep from Your team, by id (the server looks up the name); null = Anyone.
   const [repId, setRepId] = useState<string | null>(null);
+  // Scanned before: start from the rep already credited, not "Anyone".
+  const creditedRep = scanQ.data?.repName ?? null;
+  const repList = setupQ.data?.reps;
+  useEffect(() => {
+    if (!creditedRep || !repList) return;
+    const match = repList.find((r) => r.name === creditedRep);
+    if (match) setRepId(match.id);
+  }, [creditedRep, repList]);
   const record = api.coffeeChatSetup.recordScan.useMutation({
     onSuccess: () => {
       if (hackerQ.data) announce(metCopy.added(hackerQ.data.firstName));

@@ -238,7 +238,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         return { jobs: await reconcileSent(tx, state, p.sponsorId), sent: p.status === "sent" };
       });
       await afterSentChange(after);
-      return { ok: true };
+      return { ok: true, sent: after.sent };
     }),
 
   /**

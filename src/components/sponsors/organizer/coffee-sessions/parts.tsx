@@ -97,7 +97,7 @@ export function statusText(status: BoardSponsor["status"]): string {
 
 /**
  * Problems shown beside the stage chip: chats that break a rule now, else
- * reps who want chats and have none ("1 rep not placed"). A sponsor with
+ * reps who want chats and have none ("1 rep short of chats"). A sponsor with
  * nothing placed yet shows only its stage, "Needs scheduling".
  */
 export function statusFlags(status: BoardSponsor["status"]): string[] {

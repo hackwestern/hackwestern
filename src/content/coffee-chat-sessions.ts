@@ -62,7 +62,7 @@ export const coffeeSessionsCopy = {
      * placed". One stage per sponsor; problems listed separately.
      */
     flags: {
-      notPlaced: (n: number) => `${plural(n, "rep")} not placed`,
+      notPlaced: (n: number) => `${plural(n, "rep")} short of chats`,
       broken: (n: number) => `${plural(n, "chat")} ${n === 1 ? "needs" : "need"} a fix`,
     },
     /** Flag on a sponsor that edited after the schedule was sent. */
@@ -245,7 +245,7 @@ export const coffeeSessionsCopy = {
     body: (sponsors: number, hackers: number) => {
       const who = sponsors === 1 ? "1 sponsor's" : `${sponsors} sponsors'`;
       return hackers > 0
-        ? `Send ${who} schedules and invite up to ${plural(hackers, "hacker")}? Hackers get a Slack message now.`
+        ? `Send ${who} schedules and fill up to ${plural(hackers, "open seat")}? Invited hackers get a Slack message now.`
         : `Send ${who} schedules? No new hackers are invited.`;
     },
     send: "Send now",
@@ -292,6 +292,7 @@ export const coffeeSessionsCopy = {
     scheduled: (n: number) => `Placed ${plural(n, "chat")}.`,
     fixApplied: "Fix applied.",
     moved: "Moved.",
+    movedSent: "Moved. Hackers invited to this chat were asked to confirm the new time or room.",
     removed: "Removed.",
     /** On the "Removed." toast for a draft chat or a booking. */
     undo: "Undo",

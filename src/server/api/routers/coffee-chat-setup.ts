@@ -618,12 +618,12 @@ export const coffeeChatSetupRouter = createTRPCRouter({
       const insert = db
         .insert(sponsorScans)
         .values({ sponsorId: sponsor.id, userId: input.userId, repName: rep });
-      await (rep
-        ? insert.onConflictDoUpdate({
-            target: [sponsorScans.sponsorId, sponsorScans.userId],
-            set: { repName: rep },
-          })
-        : insert.onConflictDoNothing());
+      // The card pre-selects the rep already credited, so whatever is sent
+      // (including "Anyone") is the sponsor's current choice.
+      await insert.onConflictDoUpdate({
+        target: [sponsorScans.sponsorId, sponsorScans.userId],
+        set: { repName: rep },
+      });
       return { ok: true };
     }),
 });

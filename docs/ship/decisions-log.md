@@ -81,6 +81,13 @@ Calls made during the unattended build, and anything blocked or left for Jazz. P
   1. *"Organizers moved <rep>'s chat" is worked out per device.* There's no move history (placements are updated in place, no timestamp) and the brief rules out schema changes. The portal keeps the sent chats it last saw in localStorage and compares; a move shows under "Since you were last here", then as "Last change", without a time. Considered: a new `moved_at` column (schema change, not allowed), reading `coffee_chat` answer-by times (only set when hackers are re-asked, so moves with no invites would be missed).
   2. *"Change your team or times" goes straight to Your team.* The "Invites are already out" dialog still shows at the first edit, with the exact count for that edit. Considered: showing the dialog on the link itself (it can't count anything yet, so it would be a vaguer second warning).
 
+- **Final walkthrough fixes (Step 6):**
+  - F1: a second scan pre-selects the rep already credited, and an explicit "Anyone" clears it.
+  - F2: moving a chat now confirms. For a sent chat it says the invited hackers were asked to confirm.
+  - F4: rep names wrap at spaces on phones.
+  - *F3, simplified:* the board's flag reads "1 rep short of chats" (fewer sessions than their chats need). Needs attention only lists sponsors with a rep who has no chat at all. Considered: making Needs attention recompute the board's per-rep session math (a second copy of the scheduler rules).
+  - The Send confirm says "fill up to N open seats", not "invite up to N hackers". N is seats, and fewer hackers may be available.
+
 ## Blocked / for Jazz
 
 - **Task pings already in Slack:** if any were synced in production before pings were turned off, those scheduled Slack messages will still send. Check Slack's scheduled messages for the ping bot and cancel them. (I can't see production Slack.)

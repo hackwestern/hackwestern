@@ -378,10 +378,14 @@ describe("coffeeChatSetup.recordScan", () => {
     await setup.recordScan({ sponsor: id, userId: hacker });
     await setup.recordScan({ sponsor: id, userId: hacker, repId: dana.id });
     expect(await code(setup.recordScan({ sponsor: id, userId: hacker, repId: theirs.id }))).toBe("NOT_FOUND");
-    await setup.recordScan({ sponsor: id, userId: hacker });
-    const rows = await db.select().from(sponsorScans).where(eq(sponsorScans.sponsorId, id));
+    let rows = await db.select().from(sponsorScans).where(eq(sponsorScans.sponsorId, id));
     expect(rows).toHaveLength(1);
     expect(rows[0]!.repName).toBe("Dana W.");
+    // The card pre-selects the credited rep, so an explicit "Anyone" clears it.
+    await setup.recordScan({ sponsor: id, userId: hacker });
+    rows = await db.select().from(sponsorScans).where(eq(sponsorScans.sponsorId, id));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.repName).toBeNull();
     expect((await setup.get({ sponsor: id })).scannedCount).toBe(1);
 
     const notHacker = (await mockSession(db)).user.id;

@@ -88,7 +88,11 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
       return refresh();
     },
   });
-  const movePlacement = api.coffeeChatSessions.movePlacement.useMutation({ onError, onSettled: refresh });
+  const movePlacement = api.coffeeChatSessions.movePlacement.useMutation({
+    onSuccess: (r) => toast.success(r.sent ? copy.toast.movedSent : copy.toast.moved),
+    onError,
+    onSettled: refresh,
+  });
   const moveBooking = api.coffeeChatSessions.moveBooking.useMutation({ onError, onSettled: refresh });
   const placeChat = api.coffeeChatSessions.placeChat.useMutation({
     onSuccess: () => toast.success(copy.toast.restored),
