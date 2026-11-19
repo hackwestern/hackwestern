@@ -11,6 +11,7 @@ import { ShortlistRanking } from "~/components/sponsors/judging/shortlist-rankin
 import { ShortlistSend } from "~/components/sponsors/judging/shortlist-send";
 import { useSponsorJudging } from "~/components/sponsors/judging/use-sponsor-judging";
 import { pressable, SponsorShell } from "~/components/sponsors/sponsor-shell";
+import { useNow } from "~/components/sponsors/use-now";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { sponsorVenueCopy } from "~/content/sponsor-venue";
 import { judgingUnlocked } from "~/lib/sponsor-judging-unlock";
@@ -38,6 +39,8 @@ export default function SponsorJudgingPage() {
     useSponsorJudging(uuid, validUuid);
   const data = query.data;
 
+  // Ticks like the shell's nav, so the page unlocks at 9:00 without a reload.
+  const now = useNow();
   const [step, setStep] = useState<Step>("browse");
   const stepRefs = useRef(new Map<Step, HTMLButtonElement>());
 
@@ -76,7 +79,7 @@ export default function SponsorJudgingPage() {
   if (
     router.isReady &&
     router.query.preview !== "judging" &&
-    !judgingUnlocked(new Date())
+    !judgingUnlocked(now)
   ) {
     const locked = sponsorVenueCopy.judgingLocked;
     return (
