@@ -52,4 +52,4 @@ C. Organizer board tweaks: copy icon on phones (no Contact/Text/Call), chats ask
 D. My sponsors (v3 tables, reps only) + login-email matching + portal Help = lead's number + Noah emergency.
 E. Sheet: merge Sponsor Status into Sponsor Day-Of; Coffee Chat Setup columns for sessions; Sponsor Judging writes (top 3).
 F. (Saturday) Judging: one at a time or list, Holia-style 1–10 half-point score + rubric, several reps, ranked top 3, digital entry by Devpost link.
-Future (low priority): run of show + task pings rework.
+Future: task pings are OFF (decision 2026-11-19). Build instead: "Now and next" under Happening now (event now + next, current task + next task with owner). Hide the Task pings tab; leave the ping code switched off.

@@ -673,3 +673,8 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Judging:** no modes. Same experience as judging hackers' projects: one at a time or a list. Sponsors send a ranked top 3 (1st, 2nd, 3rd), not a top 5. The Sponsor Judging tab now has 1st–3rd place only.
 
 **Leads:** Caroline Ge (Manulife) and Alice Nguyen (Commure) are right; Sponsor Status updated.
+
+## 2026-11-19: Turn off task pings for now; show tasks as "Now and next" with the run of show (Jazz)
+
+**Decision:** The task pinging system (automatic Slack DMs to task owners, the Task pings tab, ping log, overdue Text buttons) is turned off and hidden for the event: too confusing. Instead, the organizer dashboard shows "Now and next" under Happening now: the event happening now and the next one, plus the current task and the NEXT task from RUN OF SHOW (with its owner). No pings, no marking done. The pinging code stays in the repo, switched off, for later.
+**Why:** organizers only need to glance at what's on and what's next; pings and logs added noise.
