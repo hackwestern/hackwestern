@@ -215,3 +215,41 @@ export function invitesAffected(
   }
   return n;
 }
+
+/** A sent chat as this device last saw it (for "Organizers moved …"). */
+export type SeenChat = { repId: string; sessionId: string; room: string; start: string };
+
+/** What organizers changed in the sent chats since this device last looked. */
+export type ChatChange =
+  | { kind: "moved"; repId: string; from: string; to: string | null; room: string | null }
+  | { kind: "removed"; repId: string; from: string };
+
+/**
+ * Compares the sent chats this device saw last time with today's, by
+ * placement id: a new session or room is a move, a missing chat a removal.
+ * There's no move history in the database (no schema change), so the
+ * sponsor's "Last change" is worked out per device, like "Since you were
+ * last here". `from` / `to` are start times ("HH:MM").
+ */
+export function chatChanges(
+  before: Readonly<Record<string, SeenChat>>,
+  now: readonly ({ placementId: string } & SeenChat)[],
+): ChatChange[] {
+  const out: ChatChange[] = [];
+  const byId = new Map(now.map((c) => [c.placementId, c]));
+  for (const [id, was] of Object.entries(before)) {
+    const c = byId.get(id);
+    if (!c) {
+      out.push({ kind: "removed", repId: was.repId, from: was.start });
+    } else if (c.sessionId !== was.sessionId || c.room !== was.room) {
+      out.push({
+        kind: "moved",
+        repId: c.repId,
+        from: was.start,
+        to: c.sessionId !== was.sessionId ? c.start : null,
+        room: c.room !== was.room ? c.room : null,
+      });
+    }
+  }
+  return out;
+}

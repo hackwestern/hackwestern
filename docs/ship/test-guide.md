@@ -95,7 +95,7 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 - Goal: see the confirmed schedule.
 - Starting point: organizers sent this sponsor (see the hand-off flows).
 - Steps: 1. Open the Chats home. 2. Switch between Calendar and List. 3. Filter by rep.
-- Expected result: the status card comes first, then "Your chats", then "Your setup" (links: "Change your team or times", "Shortlist" with its count, "Add a hacker" with the booth count). The status card says "Scheduled, invites going out", or "Scheduled, X of Y seats accepted" once a hacker accepts. The calendar has the six sessions down the side ("10–11 AM" … "4–5 PM") and one column per rep, each chat with its room ("Rm 2241", "Main building" or "Ivey, 15 min walk"), the format, the chat count and invited first names marked Invited or Confirmed. At 390 px all six sessions show; with more reps than fit, "Scroll for later times →" shows above the table with a fade on its right edge.
+- Expected result: the status card comes first, then "Your chats", then "Your setup" (links: "Change your team or times", "Shortlist" with its count, "Add a hacker" with the booth count). The status card says "Scheduled, invites going out", or "Scheduled, X of Y seats accepted" once a hacker accepts, then "Invites: A accepted · W waiting · O open". "Last change" lists only organizers' actions: "Organizers confirmed your chats · <time>" (each Send or re-send) and, once this device has seen the chats before, "Organizers moved <rep>'s 1:00 chat to 3:00, Rm 1348" or "Organizers removed <rep>'s 1:00 chat". "Next" says hackers answer "by Sat 10 AM" until round 1 closes. The calendar has the six sessions down the side ("10–11 AM" … "4–5 PM") and one column per rep, each chat with its room ("Rm 2241", "Main building" or "Ivey, 15 min walk"), the format, the chat count and invited first names marked Invited or Confirmed. At 390 px all six sessions show; with more reps than fit, "Scroll for later times →" shows above the table with a fade on its right edge.
 - Edge cases: a sent chat that organizers move stays here with its new room or time. A session cut by the workshop shows its real times (e.g. "2:30–3:00"), the same times hackers are invited to.
 
 ### Sponsor · Change after invites (needs A)
@@ -172,8 +172,8 @@ Test Sponsor has no seed data. Use it to walk the sponsor flow from the start. L
 
 ### Both · Organizer schedules → sponsor sees the schedule (needs A)
 - Steps: 1. Auto-schedule. 2. The sponsor reloads. 3. Send (or the SQL). 4. The sponsor reloads.
-- Expected result: after step 2 the sponsor still sees "Submitted, waiting for organizers…". After step 4 they see "Scheduled, invites going out", "Confirmed" and the calendar. The primary contact gets no message (not built).
-- Edge cases: moving a sent chat keeps it on the portal with its new room or time. Removing one takes it off right away, and its hackers move to another seat or are told it's cancelled.
+- Expected result: after step 2 the sponsor still sees "Submitted, waiting for organizers…". After step 4 they see "Scheduled, invites going out", "Invites: 0 accepted · N waiting · M open", "Organizers confirmed your chats · <time>" and the calendar. The main contact gets no message (not built).
+- Edge cases: moving a sent chat keeps it on the portal with its new room or time, and a device that saw it before shows "Organizers moved <rep>'s <time> chat to …" under "Since you were last here" (then "Last change"). Removing one takes it off right away ("Organizers removed …"), and its hackers move to another seat or are told it's cancelled.
 
 ### Both · Sponsor changes after invites → organizer notices (needs A)
 - Steps: 1. On a sent sponsor, untick a session that has a sent chat and pick "Change anyway". 2. Look at the board.

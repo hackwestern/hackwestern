@@ -67,6 +67,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   - At 390 the rep name wraps mid-word ("Walkthr / ough Dana") because Primary, Edit and Remove take the row.
   - The page has two `<main>` landmarks (site wrapper and `#sponsor-main`).
 - Fix: show both field errors at once. While the user is still in the setup steps, have the status card say "Step 1 of 3: add your team". Put the rep's actions on their own line at phone width. Drop the outer `<main>`.
+- **Fixed ("Since you were last here"):** the sponsor's own saves and submits are never listed under "Since you were last here", only as "Last change". (The rest of this step is below.)
 - Plain wording:
   - "Next: Chatting preferences" (button) → "Next: When they're free"
 - Screens: `02-sponsor-team-step1-empty.png`, `02-sponsor-team-blank-save.png`, `02-sponsor-team-short-phone.png`, `02-sponsor-team-added-first.png`, `02-sponsor-team-two-reps-dana-primary-390.png`
@@ -208,6 +209,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Fix: once Sent, put "Your chats" first and shrink the setup cards into one line of links. Default to List at phone width. Fade the calendar's right edge.
 - Screens: `14-sponsor-yourchats-after-send.png`, `14-sponsor-yourchats-list.png`, `14-sponsor-yourchats-filter-kevin.png`, `20-sponsor-yourchats-after-answers.png`
 - **Fixed (order and columns):** after Send, "Your chats" comes right after the status card, and the setup cards fold into one "Your setup" list: "Change your team or times", "Shortlist" and "Add a hacker". The calendar now has sessions down the side and reps across, so all six sessions show at 1280 and at 390 with two reps (no sideways scroll); a wider team scrolls with a "Scroll for later times →" line and a fade on the right edge. Session labels have AM/PM. The selected rep filter is tinted, not filled. "Last change" is covered in the status-card fix below. (`after/portal-02-chats-home-sent*.png`)
+- **Fixed (status card):** after Send the card adds live counts ("Invites: 1 accepted · 8 waiting · 9 open"), and "Last change" lists only what organizers did: "Organizers confirmed your chats · Thu 10:28 AM" (every Send or re-send) and "Organizers moved Walkthrough Dana's 1:00 chat to 3:00, Rm 1348" (or "…removed…") when a sent chat's session or room changed. Moves are worked out on the device by comparing the sent chats it saw last time (no move history in the DB, no schema change), so they show without a time. "Next" now says "hackers answer their invites by Sat 10 AM" until round 1 closes. (`after/portal-14-status-card*.png`)
 
 ### Sponsor · Your chats · Step 2 · List and rep filter
 - Expected: List and Calendar switch, and filtering by rep works. **Happened:** as expected.
@@ -424,6 +426,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   4. Next: "hackers answer their invites. If someone can't make it, we invite the next person on your list." Clear, but it gives no time ("by Sat 10 AM").
 - After an organizer moved Dana's chat and Noah re-sent: "Last change" still reads "Organizers scheduled your chats · 10:28 AM". It doesn't say **Dana's 1–2 chat moved to 3–4**. Question 2 is unclear. (`18-handoff-sponsor-after-move-resend.png`)
 - Fix: write moves into "Last change" ("Organizers moved Dana's chat to 3–4, Rm 1348"). Add "Hackers answer by Sat 10 AM" to Next.
+- **Fixed:** "Last change" shows "Organizers confirmed your chats · <time>" for each Send and "Organizers moved <rep>'s 1:00 chat to 3:00, Rm 1348" when a sent chat moved (detected per device, no time shown); "Next" says "by Sat 10 AM". Question 2 is answered. (`after/portal-14-status-card*.png`)
 
 ### Both · Sponsor changes after invites → organizer notices · Organizer side, fresh
 1. State: the summary says "1 sponsor changed after invites. Check their chats, then Noah sends again." The chip shows "Changed after invites". Clear.
@@ -443,6 +446,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 ### Both · Invites: hacker invited → answers → both sides see it
 - Hacker side (`/live`): toast "Test Sponsor wants to chat with you · Sat 10:00 AM, 30 min · View". The Coffee chats tab shows "Needs your answer · Reply by 9:25 AM · 46 h 55 min left" with Accept and Decline. Accepting gives "Accepted. You're chatting with Test Sponsor at 10:00 AM." Declining asks inline ("Decline Sun Life's chat? The time goes to another hacker. Yes, decline / Keep"). Clear on both counts. (`19-hacker-*.png`)
 - Sponsor side: "Scheduled, 1 of 18 seats accepted", "Alex · Confirmed". As expected. "Last change" doesn't mention the acceptance (same fix as above).
+- **Fixed (by decision):** acceptances show as live counts on the status card ("Invites: 1 accepted · 8 waiting · 9 open") and as names in "Your chats", not as change-log lines.
 - Organizer side: "Invites: 0 accepted · 9 waiting · 9 open" before the answers. The status endpoint shows the accept.
 
 ---

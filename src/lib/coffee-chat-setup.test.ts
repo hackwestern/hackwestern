@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { windowAt, workshopWindows } from "~/lib/coffee-chat-schedule";
 import {
   availChats,
+  chatChanges,
   invitesAffected,
   repChatCap,
   setupTotals,
@@ -100,5 +101,30 @@ describe("invitesAffected: the change-after-invites count (B4)", () => {
   });
   test("a removed rep's chats all count", () => {
     expect(invitesAffected(chats, [], saved, { ...saved, reps: saved.reps.slice(1) })).toBe(6);
+  });
+});
+
+describe("chatChanges: organizer moves for the sponsor's Last change", () => {
+  const seen = {
+    p1: { repId: "dana", sessionId: "13", room: "2242", start: "13:00" },
+    p2: { repId: "dana", sessionId: "14", room: "1348", start: "14:00" },
+    p3: { repId: "kevin", sessionId: "10", room: "1352", start: "10:00" },
+  };
+  test("a new session, a new room and a removed chat", () => {
+    expect(
+      chatChanges(seen, [
+        { placementId: "p1", repId: "dana", sessionId: "15", room: "1348", start: "15:00" },
+        { placementId: "p2", repId: "dana", sessionId: "14", room: "2241", start: "14:00" },
+      ]),
+    ).toEqual([
+      { kind: "moved", repId: "dana", from: "13:00", to: "15:00", room: "1348" },
+      { kind: "moved", repId: "dana", from: "14:00", to: null, room: "2241" },
+      { kind: "removed", repId: "kevin", from: "10:00" },
+    ]);
+  });
+  test("nothing changed, or a first look, is no change", () => {
+    const now = Object.entries(seen).map(([placementId, c]) => ({ placementId, ...c }));
+    expect(chatChanges(seen, now)).toEqual([]);
+    expect(chatChanges({}, now)).toEqual([]);
   });
 });

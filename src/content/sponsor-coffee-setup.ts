@@ -110,13 +110,15 @@ export const sponsorSetupCopy = {
       notStarted: "Next: you submit your preferences. Then organizers confirm chat times Friday evening.",
       draft: "Next: you submit. Then organizers confirm chat times Friday evening.",
       waiting: "Next: organizers confirm chat times Friday evening, then invite hackers.",
-      scheduled:
-        "Next: hackers answer their invites. If someone can't make it, we invite the next person on your list.",
+      scheduled: (answerBy: string | null) =>
+        answerBy
+          ? `Next: hackers answer their invites by ${answerBy}. If someone can't make it, we invite the next person on your list.`
+          : "Next: hackers answer their invites. If someone can't make it, we invite the next person on your list.",
     },
     changes: {
       since: "Since you were last here",
       last: "Last change",
-      scheduled: "Organizers scheduled your chats",
+      scheduled: "Organizers confirmed your chats",
       submittedPrefs: "You submitted your chatting preferences",
       submittedShortlist: "You submitted your shortlist",
       saved: "You saved changes",
@@ -124,6 +126,19 @@ export const sponsorSetupCopy = {
     editedAfterSend: (n: number) =>
       `You changed your setup after invites went out. ${afterInvitesEffect(n)}`,
     at: (what: string, when: string) => `${what} · ${when}`,
+    /** Round 1's answer-by time (Sat 10:00 AM), in "Next". */
+    roundOneAnswerBy: "Sat 10 AM",
+    /** After Send: live invite counts, not a change log. */
+    invites: (accepted: number, waiting: number, open: number) =>
+      `Invites: ${accepted} accepted · ${waiting} waiting · ${open} open`,
+    /** A sent chat organizers moved or removed (from, to: "2:00"). */
+    moved: (rep: string, from: string, to: string | null, room: string | null) =>
+      to && room
+        ? `Organizers moved ${rep}'s ${from} chat to ${to}, Rm ${room}`
+        : to
+          ? `Organizers moved ${rep}'s ${from} chat to ${to}`
+          : `Organizers moved ${rep}'s ${from} chat to Rm ${room ?? ""}`,
+    removed: (rep: string, from: string) => `Organizers removed ${rep}'s ${from} chat`,
   },
 
   /** Before any change once invites are out (spec: "Changes after invites"). */

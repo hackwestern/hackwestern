@@ -5,7 +5,8 @@ import { ArrowRight, Check, ChevronLeft, CircleAlert, Clock } from "lucide-react
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { pressable } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorSetupCopy as copy } from "~/content/sponsor-coffee-setup";
-import { setupEvents, setupState } from "~/lib/coffee-chat-setup";
+import { roundClosesAt } from "~/lib/coffee-chat-invites";
+import { chatChanges, setupEvents, setupState, type SeenChat } from "~/lib/coffee-chat-setup";
 import { cn } from "~/lib/utils";
 import type { RouterOutputs } from "~/utils/api";
 
@@ -40,32 +41,97 @@ export const clockOf = (min: number) =>
 export const cardClass =
   "flex flex-col gap-4 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card sm:p-6";
 
-/** When this device last opened this sponsor's coffee chats (per device). */
-function useLastSeen(sponsor: string, ready: boolean): Date | null | undefined {
-  const [lastSeen, setLastSeen] = useState<Date | null | undefined>(undefined);
+/**
+ * When this device last opened this sponsor's coffee chats (per device),
+ * and when this visit started: changes made during this visit are the
+ * sponsor's own, so they're never "Since you were last here".
+ */
+function useLastSeen(sponsor: string): { lastSeen: Date | null; visit: Date } | undefined {
+  const [seen, setSeen] = useState<{ lastSeen: Date | null; visit: Date } | undefined>(undefined);
+  // Read once per mount: a second run (React strict mode in dev) would read
+  // back the time the first run just wrote.
+  const read = useRef(false);
   const key = `hw-coffee-setup-seen:${sponsor}`;
   useEffect(() => {
-    if (!ready || lastSeen !== undefined) return;
+    if (seen !== undefined || read.current) return;
+    read.current = true;
+    const visit = new Date();
     let prev: Date | null = null;
     try {
       const raw = window.localStorage.getItem(key);
       prev = raw ? new Date(raw) : null;
-      window.localStorage.setItem(key, new Date().toISOString());
+      window.localStorage.setItem(key, visit.toISOString());
     } catch {
       prev = null;
     }
-    setLastSeen(prev && !Number.isNaN(prev.getTime()) ? prev : null);
-  }, [key, ready, lastSeen]);
-  return lastSeen;
+    setSeen({ lastSeen: prev && !Number.isNaN(prev.getTime()) ? prev : null, visit });
+  }, [key, seen]);
+  return seen;
+}
+
+type MoveNote = { text: string; at: string };
+
+/**
+ * Organizer moves of sent chats, worked out on this device (chatChanges):
+ * the sent chats it last saw are kept in localStorage, and each change
+ * found is remembered (newest 5) so "Last change" keeps showing it.
+ */
+function useChatMoves(
+  sponsor: string,
+  data: SetupData,
+  visit: Date | undefined,
+): { text: string; at: Date }[] {
+  const [notes, setNotes] = useState<MoveNote[]>([]);
+  const key = `hw-coffee-chats-seen:${sponsor}`;
+  const signature = data.chats.map((c) => `${c.placementId}:${c.sessionId}:${c.room}`).join(",");
+  useEffect(() => {
+    if (!data.confirmed || !visit) return;
+    let stored: { chats?: Record<string, SeenChat>; notes?: MoveNote[] } = {};
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (raw) stored = JSON.parse(raw) as typeof stored;
+    } catch {
+      // Blocked or bad storage: nothing to compare against.
+    }
+    const repName = (id: string) => data.reps.find((r) => r.id === id)?.name ?? "";
+    // Found on this visit: just before it, so it's "since you were last
+    // here" now and "Last change" next time.
+    const now = new Date(visit.getTime() - 1).toISOString();
+    const found = chatChanges(stored.chats ?? {}, data.chats).map((c) => ({
+      text:
+        c.kind === "removed"
+          ? copy.status.removed(repName(c.repId), shortClock(c.from))
+          : copy.status.moved(repName(c.repId), shortClock(c.from), c.to ? shortClock(c.to) : null, c.room),
+      at: now,
+    }));
+    const next = {
+      chats: Object.fromEntries(
+        data.chats.map((c) => [c.placementId, { repId: c.repId, sessionId: c.sessionId, room: c.room, start: c.start }]),
+      ),
+      notes: [...found, ...(stored.notes ?? [])].slice(0, 5),
+    };
+    try {
+      window.localStorage.setItem(key, JSON.stringify(next));
+    } catch {
+      // Not remembered on this device; still shown this time.
+    }
+    setNotes(next.notes);
+    // `signature` stands for the chats' ids, sessions and rooms.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, data.confirmed, signature, visit]);
+  return notes.map((n) => ({ text: n.text, at: new Date(n.at) }));
 }
 
 /**
  * Big, plain status at the top of every coffee chat screen: where things
  * stand, what changed (and who did it), whether they need to act, and
  * what happens next. Sponsors come back cold, hours after organizers act.
+ * After Send it shows live invite counts and only organizers' changes
+ * (simplify-decisions, "Hacker activity as counts, not a change log").
  */
 export function SetupStatus({ sponsor, data }: { sponsor: string; data: SetupData }) {
-  const lastSeen = useLastSeen(sponsor, true);
+  const seen = useLastSeen(sponsor);
+  const moves = useChatMoves(sponsor, data, seen?.visit);
   const state = setupState({
     repCount: data.reps.length,
     updatedAt: data.updatedAt,
@@ -73,10 +139,26 @@ export function SetupStatus({ sponsor, data }: { sponsor: string; data: SetupDat
     confirmed: data.confirmed,
     seats: data.seats,
   });
-  const events = setupEvents(data);
-  const fresh = lastSeen ? events.filter((e) => e.at > lastSeen) : [];
-  const shown = fresh.length ? fresh : events.slice(0, 1);
   const s = copy.status;
+  // After Send, "Last change" is what organizers did: Send (and re-sends)
+  // and moves of sent chats. Before, it's the sponsor's own submits and
+  // saves, which are never "Since you were last here".
+  const events: { key: string; text: string; at: Date; mine: boolean }[] = data.confirmed
+    ? [
+        ...setupEvents({ sentAt: data.sentAt, submittedAt: null, shortlistSubmittedAt: null, updatedAt: null }).map(
+          (e) => ({ key: e.kind, text: s.at(s.changes[e.kind] ?? e.kind, whenEastern(e.at)), at: e.at, mine: false }),
+        ),
+        ...moves.map((m, i) => ({ key: `move-${i}`, text: m.text, at: m.at, mine: false })),
+      ].sort((a, b) => b.at.getTime() - a.at.getTime())
+    : setupEvents(data).map((e) => ({
+        key: e.kind,
+        text: s.at(s.changes[e.kind] ?? e.kind, whenEastern(e.at)),
+        at: e.at,
+        mine: true,
+      }));
+  const lastSeen = seen?.lastSeen ?? null;
+  const fresh = lastSeen && seen ? events.filter((e) => !e.mine && e.at > lastSeen && e.at <= seen.visit) : [];
+  const shown = fresh.length ? fresh : events.slice(0, 1);
   const title =
     state.kind === "accepted" ? s.state.accepted(state.accepted, state.seats) : s.state[state.kind];
   const todo =
@@ -96,9 +178,10 @@ export function SetupStatus({ sponsor, data }: { sponsor: string; data: SetupDat
         ? s.next.draft
         : state.kind === "waiting"
           ? s.next.waiting
-          : s.next.scheduled;
+          : s.next.scheduled(Date.now() < roundClosesAt(1).getTime() ? s.roundOneAnswerBy : null);
   const needsAction = state.kind === "notStarted" || state.kind === "draft";
   const done = state.kind === "invitesGoingOut" || state.kind === "accepted";
+  const waiting = data.chats.flatMap((c) => c.hackers).filter((h) => h.status === "pending").length;
 
   return (
     <section
@@ -124,14 +207,19 @@ export function SetupStatus({ sponsor, data }: { sponsor: string; data: SetupDat
         </span>
         <p className="m-0 text-xl font-bold leading-snug text-dashboard-text-heavy sm:text-2xl">{title}</p>
       </div>
+      {data.confirmed && (
+        <p className="m-0 text-base font-semibold text-dashboard-text-heavy">
+          {s.invites(data.seats.accepted, waiting, Math.max(0, data.seats.total - data.seats.accepted - waiting))}
+        </p>
+      )}
       {shown.length > 0 && (
         <div className="flex flex-col gap-0.5">
           <span className="text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
             {fresh.length ? s.changes.since : s.changes.last}
           </span>
           {shown.map((e) => (
-            <p key={e.kind} className="m-0 text-base text-dashboard-text-medium">
-              {s.at(s.changes[e.kind] ?? e.kind, whenEastern(e.at))}
+            <p key={e.key} className="m-0 text-base text-dashboard-text-medium">
+              {e.text}
             </p>
           ))}
         </div>
