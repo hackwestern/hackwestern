@@ -7,14 +7,14 @@ Status: **Done** = in the mock and checked. **Building** = a subagent is adding 
 ## Default style for every mock (Jazz, 2026-11-19)
 Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /live site style; its README lists every source file:line) for ALL mocks, but with Figtree for all text and NO Pix32 pixel font (Jazz dislikes it, 2026-11-19), unless Jazz explicitly names another look for that mock. Current exception: `organizer-coffee-autofill-v6a/b/c` build on autofill-v5's look because Jazz asked for that explicitly.
 
-## Sponsor portal v6: `sponsor-portal-flow-hacker-v6` (latest final, building)
+## Sponsor portal v6: `sponsor-portal-flow-hacker-v6` (latest final)
 | # | Change | Status |
 |---|---|---|
-| 1 | No rep emails; "Add each rep from Sun Life."; name + phone required; company names never wrap | Building |
-| 2 | Per-rep "How many chats?" stepper with time shown, replaces hours per rep | Building |
-| 3 | Help is a modal; confirmation "Sent. We'll contact you at 555-0142."; no Slack text; close returns to the same page | Building |
-| 4 | Shortlist one at a time + "Who's shortlisting?"; one shared team shortlist labelled by who picked, live | Building |
-| 5 | "Your chats" calendar view (reps × sessions, room + building), toggle by rep | Building |
+| 1 | No rep emails; "Add each rep from Sun Life."; name + phone required; company names never wrap | Done |
+| 2 | Per-rep "How many chats?" stepper with time shown, replaces hours per rep | Done |
+| 3 | Help is a modal; confirmation "Sent. We'll contact you at 555-0142."; no Slack text; close returns to the same page | Done |
+| 4 | Shortlist one at a time + "Who's shortlisting?"; one shared team shortlist labelled by who picked, live | Done |
+| 5 | "Your chats" calendar view (reps × sessions, room + building), toggle by rep | Done |
 
 ## Sponsor portal v5: `sponsor-portal-flow-hacker-v5` 
 | # | Change | Status |
