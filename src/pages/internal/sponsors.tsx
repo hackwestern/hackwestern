@@ -67,13 +67,22 @@ export default function SponsorOrganizerHome() {
     refetchInterval: 30000,
   });
   const me = mine.data?.me ?? null;
-  // My sponsors unless ?list=all (or no HW Contacts match).
+  // My sponsors unless ?list=all, or no HW Contacts match, or they lead no
+  // sponsor (then All sponsors, with My sponsors one tap away).
+  const leadsAny =
+    !!me &&
+    (sheetSponsors.data ?? []).some((s) => leadsSponsor(s.hwContact, me));
   const view: "mine" | "all" =
-    me && router.query.list !== "all" ? "mine" : "all";
+    me &&
+    router.query.list !== "all" &&
+    (leadsAny || router.query.list === "mine")
+      ? "mine"
+      : "all";
   const setView = (v: "mine" | "all") => {
     const query = { ...router.query };
     if (v === "all") query.list = "all";
-    else delete query.list;
+    else if (leadsAny) delete query.list;
+    else query.list = "mine";
     void router.replace({ pathname: router.pathname, query }, undefined, {
       shallow: true,
       scroll: false,
@@ -105,13 +114,7 @@ export default function SponsorOrganizerHome() {
       taskMinutes: TASK_MINUTES,
     });
   }, [mine.data, summary.data, sheetSponsors.data, me, schedule.data, now]);
-  const attentionScope: "yours" | "everyone" =
-    me &&
-    (sheetSponsors.data ?? []).some(
-      (s) => s.sponsorId && leadsSponsor(s.hwContact, me),
-    )
-      ? "yours"
-      : "everyone";
+  const attentionScope: "yours" | "everyone" = leadsAny ? "yours" : "everyone";
   const summaries = useMemo(
     () =>
       new Map<string, SponsorSummary>(

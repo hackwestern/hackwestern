@@ -35,7 +35,7 @@ export const sponsorOrganizerCopy = {
     noNextTask: "No more team tasks",
     notStarted: (when: string) => `Hack Western starts ${when}`,
     over: "Event over",
-    at: (when: string) => `at ${when}`,
+    at: (when: string) => when,
     room: (room: string) => room,
     owner: (owner: string | null) => (owner ? owner : "No owner"),
     ownerLabel: "Owner",
