@@ -365,7 +365,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
     }),
 
   /**
-   * Send: only Noah Medland (matched by login email on HW Contacts, read
+   * Send: only Noah Medland or a "Same view as" Noah row (login email on HW Contacts, read
    * fresh). Every draft chat becomes sent (sentAt now), sponsors who changed
    * after invites get their sent chats re-confirmed (sentAt now), then the Room Grid
    * tab is mirrored (only when sheetWritesEnabled(); locally nothing is

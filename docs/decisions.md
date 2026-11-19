@@ -752,3 +752,9 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Why:** 3 + 2 minutes plus a switch is the typical hackathon pitch, and 20 teams don't fit 90 minutes. Per-rep scores on their own laptops let several reps judge at once; the sheet covers an outage.
 **Alternatives:** 5-min slots for 18 teams (no switch time, so running late compounds); 7-min slots for 12; a longer window for 20 (needs a run-of-show change); keeping top 3; a blank backup sheet the app doesn't fill.
 **Supersedes:** "Sponsors send a ranked top 3" (Q1–Q11, 2026-11-19), and the 5-minute slot and 20-team shortlist cap.
+
+## 2026-11-19: Jazz sees Noah's view (HW Contacts "Same view as")
+
+**Decision:** HW Contacts gets a "Same view as" column. When the signed-in organizer's row names another person there, the dashboard uses that person's row: their sponsors in My sponsors, their tasks in Now and next, and their permissions. Jazz's row names Noah Medland, so she sees his My sponsors and can press "Send confirmed schedules & invites". The Send check runs on the server: Noah's login email, plus the login email of any row whose "Same view as" is Noah. The fail-closed rules stay: if HW Contacts can't be read, or Noah's row has no login email, nobody can send. One level only (if A names B and B names C, A gets B's row). A missing or blank column, an unknown name, or a name that fits several rows changes nothing. Send's note now reads "Only Noah (or someone with Noah's view) sends".
+**Why:** Jazz runs the dashboard alongside Noah and needs to see and do what he does. Keeping it in the private sheet means no emails in the public repo, and it's undone by clearing one cell.
+**Alternatives:** hardcoding Jazz's email in the code (leaks an email into a public repo, and needs a deploy to change); an admin role (a schema and auth change, and broader than "see what Noah sees").

@@ -1,15 +1,20 @@
 /**
- * Who may press Send on the organizer coffee chat board: only Noah Medland
- * (docs/decisions.md 2026-11-19, Q1-Q11). He's matched the way "My sponsors"
- * matches organizers: the signed-in user's email against the HW Contacts tab's
- * "Login email" column (case-insensitive), on the row named Noah Medland.
- * The email lives only in the private sheet, never in the repo. If the tab
- * can't be read, or that row has no login email, nobody can send.
+ * Who may press Send on the organizer coffee chat board: only Noah Medland,
+ * or someone whose HW Contacts "Same view as" names him (docs/decisions.md
+ * 2026-11-19, Q1-Q11 and "Jazz sees Noah's view"). He's matched the way "My
+ * sponsors" matches organizers: the signed-in user's email against the HW
+ * Contacts tab's "Login email" column (case-insensitive), on the row named
+ * Noah Medland. The emails live only in the private sheet, never in the
+ * repo. If the tab can't be read, or Noah's row has no login email, nobody
+ * can send.
  */
-import { normalizePersonName } from "~/server/api/utils/sponsor-hw-contacts";
+import { viewRowOf } from "~/lib/sponsor-organizer";
+import {
+  normalizePersonName,
+  parseHwContacts,
+} from "~/server/api/utils/sponsor-hw-contacts";
 import {
   HW_CONTACTS_TAB,
-  cell,
   getSheetsClient,
   getSpreadsheetId,
 } from "~/server/api/utils/sponsor-sheets";
@@ -29,43 +34,51 @@ export type SenderCheck =
 const normEmail = (v: string) => v.replace(/\p{Cf}/gu, "").trim().toLowerCase();
 
 /**
- * The sender's login email from HW Contacts rows (A1 down), or null. The
- * header row is found by its "Name" and "Login email" cells in the first
+ * The login emails that may send, from HW Contacts rows (A1 down): Noah's
+ * first, then every row whose "Same view as" names Noah (one level, see
+ * viewRowOf). Null when there's no Noah row or it has no login email, so
+ * nobody can send. The header row is found by its "Name" cell in the first
  * three rows, so moving columns doesn't break it. Pure, for tests.
  */
-export function senderLoginEmail(rows: readonly (readonly unknown[])[]): string | null {
-  for (let i = 0; i < Math.min(rows.length, 3); i++) {
-    const head = (rows[i] ?? []).map((c) => String(c ?? "").trim().toLowerCase());
-    const nameCol = head.indexOf("name");
-    const emailCol = head.indexOf("login email");
-    if (nameCol === -1 || emailCol === -1) continue;
-    const want = normalizePersonName(COFFEE_SENDER_NAME);
-    for (const row of rows.slice(i + 1)) {
-      const r = row.map((c) => String(c ?? ""));
-      if (normalizePersonName(cell(r, nameCol)) !== want) continue;
-      const email = normEmail(cell(r, emailCol));
-      return email.includes("@") ? email : null;
+export function senderLoginEmails(
+  rows: readonly (readonly unknown[])[],
+): string[] | null {
+  const contacts = parseHwContacts(rows);
+  const want = normalizePersonName(COFFEE_SENDER_NAME);
+  const noah = contacts.findIndex((c) => normalizePersonName(c.name) === want);
+  if (noah === -1) return null;
+  const email = (i: number) => {
+    const e = normEmail(contacts[i]!.loginEmail);
+    return e.includes("@") ? e : null;
+  };
+  const noahEmail = email(noah);
+  if (!noahEmail) return null;
+  const out = [noahEmail];
+  contacts.forEach((_, i) => {
+    const e = email(i);
+    if (i !== noah && e && !out.includes(e) && viewRowOf(i, contacts) === noah) {
+      out.push(e);
     }
-    return null;
-  }
-  return null;
+  });
+  return out;
 }
 
 /**
- * Noah's login email from HW Contacts: an email, null (none in the sheet),
- * or "unreadable" when the sheet can't be read. ("unreadable" is a plain
- * string, so the type is just string | null.)
+ * The login emails that may send (Noah's first), null (no Noah email in
+ * the sheet), or "unreadable" when the sheet can't be read. A single email
+ * string is accepted too.
  */
-type SenderEmail = string | null;
+type SenderEmail = string | readonly string[] | null;
 
-/** The check for a signed-in email against the sender's login email. */
+/** The check for a signed-in email against the senders' login emails. */
 export function senderCheckOf(
   userEmail: string | null | undefined,
   sender: SenderEmail,
 ): SenderCheck {
   if (sender === "unreadable") return { canSend: false, reason: "sheetUnreadable" };
-  if (!sender) return { canSend: false, reason: "noLoginEmail" };
-  return userEmail && normEmail(userEmail) === sender
+  const allowed = typeof sender === "string" ? [sender] : (sender ?? []);
+  if (!allowed.length) return { canSend: false, reason: "noLoginEmail" };
+  return userEmail && allowed.includes(normEmail(userEmail))
     ? { canSend: true, reason: null }
     : { canSend: false, reason: "notSender" };
 }
@@ -77,7 +90,7 @@ async function readSenderEmail(): Promise<SenderEmail> {
       spreadsheetId: getSpreadsheetId(),
       range: `'${HW_CONTACTS_TAB}'!A1:Z`,
     });
-    return senderLoginEmail(res.data.values ?? []);
+    return senderLoginEmails(res.data.values ?? []);
   } catch (error) {
     console.error("coffee chat send: HW Contacts read failed", error);
     return "unreadable";

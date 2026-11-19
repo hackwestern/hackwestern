@@ -431,7 +431,7 @@ function ActionBar({
   const changed = board.sponsors.some((sp) => sp.changedAfterSend);
   const allSent = board.scheduled && board.draftCount === 0 && board.sentAt && !changed;
   const sentTime = board.sentAt ? timeOf(board.sentAt) : "";
-  // Only Noah sends (checked again on the server). If HW Contacts can't be
+  // Only Noah, or someone with his view, sends (checked again on the server). If HW Contacts can't be
   // read, nobody can: say why instead of "Only Noah sends".
   const sender = board.sender;
   const whyNot = sender.canSend

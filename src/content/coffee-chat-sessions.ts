@@ -235,8 +235,8 @@ export const coffeeSessionsCopy = {
     working: "Working…",
     sentAt: (time: string) => `Sent ${time}`,
     nothingToSend: "Nothing new to send.",
-    /** Beside the disabled Send button for anyone but Noah. */
-    onlyNoah: "Only Noah sends",
+    /** Beside the disabled Send button for anyone but Noah (or someone with his HW Contacts "Same view as"). */
+    onlyNoah: "Only Noah (or someone with Noah's view) sends",
   },
 
   /** The one pause before Send: it messages hackers and can't be undone. */

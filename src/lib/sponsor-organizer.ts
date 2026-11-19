@@ -546,20 +546,44 @@ function normalName(value: string): string {
 export type OrganizerContact = { row: number; name: string };
 
 /**
+ * The row whose view this HW Contacts row gets: the one person its "Same
+ * view as" cell names (decisions 2026-11-19, "Jazz sees Noah's view"), or
+ * the row itself. One level only: the named person's own "Same view as" is
+ * ignored, so there are no chains. A blank cell, an unknown name, or a cell
+ * that fits several rows keeps the row's own view.
+ */
+export function viewRowOf(
+  row: number,
+  contacts: readonly { name: string; sameViewAs?: string }[],
+): number {
+  const cell = contacts[row]?.sameViewAs?.trim();
+  if (!cell) return row;
+  const hits = contactRowsNamed(
+    cell,
+    contacts.map((c) => c.name),
+  );
+  return hits.size === 1 ? [...hits][0]! : row;
+}
+
+/**
  * The HW Contacts row whose "Login email" is the signed-in organizer's
- * email (case-insensitive, spaces ignored). Null when nobody matches, so the
- * page shows All sponsors only (decisions 2026-11-19).
+ * email (case-insensitive, spaces ignored), after "Same view as"
+ * (viewRowOf): someone with Noah's view gets Noah's row and name, so the
+ * page is the one Noah sees. Null when nobody matches, so the page shows
+ * All sponsors only (decisions 2026-11-19).
  */
 export function organizerForEmail(
   email: string | null | undefined,
-  contacts: readonly { name: string; loginEmail: string }[],
+  contacts: readonly { name: string; loginEmail: string; sameViewAs?: string }[],
 ): OrganizerContact | null {
   const want = (email ?? "").trim().toLowerCase();
   if (!want) return null;
-  const row = contacts.findIndex(
+  const own = contacts.findIndex(
     (c) => c.loginEmail.trim().toLowerCase() === want && c.name.trim(),
   );
-  return row === -1 ? null : { row, name: contacts[row]!.name.trim() };
+  if (own === -1) return null;
+  const row = viewRowOf(own, contacts);
+  return { row, name: contacts[row]!.name.trim() };
 }
 
 /**
