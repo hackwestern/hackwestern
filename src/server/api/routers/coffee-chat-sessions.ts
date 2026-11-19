@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
@@ -335,7 +335,8 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
 
   /**
    * Send: only Noah Medland (matched by login email on HW Contacts, read
-   * fresh). Every draft chat becomes sent (sentAt now), then the Room Grid
+   * fresh). Every draft chat becomes sent (sentAt now), sponsors who changed
+   * after invites get their sent chats re-confirmed (sentAt now), then the Room Grid
    * tab is mirrored (only when sheetWritesEnabled(); locally nothing is
    * written). If HW Contacts can't be read, nobody can send.
    */
@@ -352,20 +353,35 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
     // their seats (scanned → shortlist → interested). Both take the same
     // board lock, so a page-load round can't run in between. Messages go
     // out after the commit (deliverInviteNotices never throws).
-    const { sent, round } = await boardWrite(async (tx, state) => {
+    const { sent, reconfirmed, round } = await boardWrite(async (tx, state) => {
       assertWorkshopsKnown(state);
       const sent = await tx
         .update(coffeeChatPlacements)
         .set({ status: "sent", sentAt: now })
         .where(eq(coffeeChatPlacements.status, "draft"))
         .returning({ id: coffeeChatPlacements.id });
+      // Sponsors who changed after invites: their invites were already
+      // updated when they saved, so Send re-confirms their sent chats (new
+      // sent time), which clears "Changed after invites".
+      const changed = state.sponsors.filter((s) => s.changedAfterSend);
+      const repIds = changed.flatMap((s) => s.reps.map((r) => r.id));
+      if (repIds.length) {
+        await tx
+          .update(coffeeChatPlacements)
+          .set({ sentAt: now })
+          .where(
+            and(eq(coffeeChatPlacements.status, "sent"), inArray(coffeeChatPlacements.repId, repIds)),
+          );
+      }
       const round = await sendRoundOneInvites(tx, { now });
-      return { sent, round };
+      return { sent, reconfirmed: changed.length, round };
     });
     const delivery = await deliverInviteNotices(round.jobs);
     const mirror = await mirrorRoomGrid(await loadBoardState(), { now });
     return {
       sent: sent.length,
+      /** Sponsors who changed after invites, re-confirmed by this Send. */
+      reconfirmed,
       sheet: mirror.ok ? ("written" as const) : mirror.error === "disabled" ? ("disabled" as const) : ("failed" as const),
       invites: {
         status: round.status,

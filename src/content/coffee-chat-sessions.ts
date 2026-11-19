@@ -254,6 +254,9 @@ export const coffeeSessionsCopy = {
     sent: (chats: number, invited: number, open: number) =>
       `Sent ${plural(chats, "chat")}. Invited ${plural(invited, "hacker")}` +
       (open > 0 ? `; ${plural(open, "seat")} still open, offered again Saturday 10:30 AM.` : "."),
+    /** Sponsors who changed after invites; Send confirmed their schedule again. */
+    reconfirmed: (n: number) =>
+      `Re-confirmed ${plural(n, "sponsor")} who changed after invites.`,
     /** Invites are switched off on this server (dev, previews). */
     invitesOff: "Invites are switched off on this server, so no hacker was messaged.",
     sheetOff: "Sheet writes are off here, so the Room Grid tab wasn't updated.",
@@ -313,7 +316,7 @@ export const coffeeSessionsCopy = {
     },
     send: {
       lead: "Send (Noah only, by 10 PM Friday):",
-      before: " marks every draft chat confirmed and updates the locked ",
+      before: " marks every draft chat confirmed, re-confirms sponsors who changed after invites (their hackers were already asked again when they saved), and updates the locked ",
       bold: "Coffee Chat Room Grid",
       after:
         " tab (on the live site only). Each sponsor sees their confirmed chats under Your chats in their portal. Hackers get one invite per seat on Slack (email if Slack can't reach them): people the sponsor scanned first, then their shortlist, then hackers interested in them. They answer by Sat 10 AM; open seats are offered again from 10:30 AM every 30 minutes.",

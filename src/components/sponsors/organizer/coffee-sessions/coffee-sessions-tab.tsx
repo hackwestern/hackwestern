@@ -96,8 +96,11 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     onSuccess: (r) => {
       toast.success(
         r.sent || r.invites.created
-          ? copy.toast.sent(r.sent, r.invites.created, r.invites.openSeats)
-          : copy.bar.nothingToSend,
+          ? copy.toast.sent(r.sent, r.invites.created, r.invites.openSeats) +
+              (r.reconfirmed ? ` ${copy.toast.reconfirmed(r.reconfirmed)}` : "")
+          : r.reconfirmed
+            ? copy.toast.reconfirmed(r.reconfirmed)
+            : copy.bar.nothingToSend,
       );
       if (r.invites.status === "disabled") toast.message(copy.toast.invitesOff);
       if (r.sheet === "disabled") toast.info(copy.toast.sheetOff);
@@ -279,7 +282,9 @@ function ActionBar({
 }) {
   const b = copy.bar;
   const nFix = board.fixes.length;
-  const allSent = board.scheduled && board.draftCount === 0 && board.sentAt;
+  // A sponsor who changed after invites still needs Noah's Send to re-confirm.
+  const changed = board.sponsors.some((sp) => sp.changedAfterSend);
+  const allSent = board.scheduled && board.draftCount === 0 && board.sentAt && !changed;
   const sentTime = board.sentAt ? timeOf(board.sentAt) : "";
   // Only Noah sends (checked again on the server). If HW Contacts can't be
   // read, nobody can: say why instead of "Only Noah sends".

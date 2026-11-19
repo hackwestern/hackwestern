@@ -304,7 +304,7 @@ describe("send", () => {
     const board = await organizer.coffeeChatSessions.getBoard();
     expect(board.sponsors.find((s) => s.name === names.team)!.status.kind).toBe("sent");
     expect(board.draftCount).toBe(0);
-    expect((await organizer.coffeeChatSessions.send()).sent).toBe(0);
+    expect(await organizer.coffeeChatSessions.send()).toMatchObject({ sent: 0, reconfirmed: 0 });
   });
 
   test("moving a sent chat keeps it sent and asks its invited hacker to confirm the new room", async () => {
@@ -480,6 +480,28 @@ describe("0 chats and what changed", () => {
     expect(team().changedAfterSend).toBe(true);
     expect(team().change).toEqual({ kind: "editedAfterSend", at: later });
     expect(board.lastScheduledAt).not.toBeNull();
+  });
+
+  test("Send re-confirms a sponsor who changed after invites, and the flag clears", async () => {
+    const before = await placementOf("Tom");
+    // Two minutes on: after the edit above.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(Date.now() + 120_000));
+    try {
+      const res = await organizer.coffeeChatSessions.send();
+      expect(res).toMatchObject({ sent: 0, reconfirmed: 1 });
+      const [tom] = await placementOf("Tom");
+      expect(tom!.status).toBe("sent");
+      expect(tom!.sentAt!.getTime()).toBeGreaterThan(before[0]!.sentAt!.getTime());
+      const board = await organizer.coffeeChatSessions.getBoard();
+      const team = board.sponsors.find((s) => s.name === names.team)!;
+      expect(team.changedAfterSend).toBe(false);
+      expect(team.change).toBeNull();
+      // Nothing left: a second Send confirms nothing.
+      expect(await organizer.coffeeChatSessions.send()).toMatchObject({ sent: 0, reconfirmed: 0 });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
