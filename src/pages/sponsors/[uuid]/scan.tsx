@@ -5,6 +5,7 @@ import {
   ScheduleSkeleton,
 } from "~/components/sponsors/schedule-states";
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
+import { sponsorPortalCopy } from "~/content/sponsor-portal";
 import { sponsorScanCopy as copy } from "~/content/sponsor-scan";
 import { badgeCodeOf } from "~/lib/use-qr-scanner";
 import { api } from "~/utils/api";
@@ -29,7 +30,11 @@ export default function SponsorScanPage() {
   );
 
   const shell = (children: React.ReactNode) => (
-    <SponsorShell title={copy.seoTitle} heading={hacker ? copy.offerTitle : copy.title}>
+    <SponsorShell
+      title={copy.seoTitle}
+      heading={hacker ? copy.offerTitle : copy.title}
+      barTitle={sponsorPortalCopy.nav.scan}
+    >
       {children}
     </SponsorShell>
   );

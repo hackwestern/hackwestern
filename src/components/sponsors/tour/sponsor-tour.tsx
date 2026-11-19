@@ -236,7 +236,8 @@ export function SponsorTour({
               aria-hidden
               className="size-[18px] shrink-0 text-dashboard-text-active"
             />
-            <span className="hidden sm:inline">{copy.menu.button}</span>
+            {/* Labelled on phones too: a bare compass reads as nothing. */}
+            <span>{copy.menu.button}</span>
           </button>
         </Popover.Trigger>
         <Popover.Portal>
