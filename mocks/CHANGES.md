@@ -93,6 +93,14 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 | 3 | Hacker-v1 look, phone first | Done |
 | 4 | Sheet: "Sponsor Judging" tab with team IDs and 1st–5th place columns | Done (tab created; app code to fill it is in the build) |
 
+## Sponsor judging D: `sponsor-judging-redesign-d-v1`
+| # | Change | Status |
+|---|---|---|
+| 1 | Score is a scrollable 1–10 in 0.5 steps, like Holia's judging UX | Building |
+| 2 | "Rubric" button opens Holia's (latest) rubric as a modal | Building |
+| 3 | Three ways through the Devposts: one at a time, 5 at a time, quick pass (swipe Yes/Maybe/No) | Building |
+| 4 | Several reps on one account: "Who's judging?", list split between reps, scores show who gave them, disagreement flag, live updates | Building |
+
 ## Organizer sponsors home: `organizer-sponsors-home-v1`
 | # | Change | Status |
 |---|---|---|
