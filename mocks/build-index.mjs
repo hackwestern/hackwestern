@@ -104,14 +104,7 @@ for (const name of readdirSync(root)) {
   });
 }
 
-const buildSections = (list) => GROUPS.map(([title], i) => {
-  const items = list
-    .filter((m) => m.group === i)
-    .sort((a, b) => b.modified - a.modified || b.version - a.version);
-  if (items.length === 0) return "";
-  const cards = items
-    .map(
-      (m) => `
+const cardHtml = (m) => `
       <div class="card" data-name="${esc(m.name)}" data-style="${esc(m.style[0])}">
         <a class="link" href="${esc(m.href)}">
           <div class="thumb">${m.thumb ? `<img loading="lazy" src="${esc(m.thumb)}" alt="">` : `<span>No screenshot</span>`}</div>
@@ -123,11 +116,21 @@ const buildSections = (list) => GROUPS.map(([title], i) => {
           </div>
         </a>
         <button class="like" type="button" aria-pressed="false" aria-label="Like ${esc(m.name)}">♡</button>
-      </div>`,
-    )
-    .join("");
-  return `<section><h2>${esc(title)} <span class="count">${items.length}</span></h2><div class="grid">${cards}</div></section>`;
+      </div>`;
+
+const buildSections = (list) => GROUPS.map(([title], i) => {
+  const items = list
+    .filter((m) => m.group === i)
+    .sort((a, b) => b.modified - a.modified || b.version - a.version);
+  if (items.length === 0) return "";
+  return `<section><h2>${esc(title)} <span class="count">${items.length}</span></h2><div class="grid">${items.map(cardHtml).join("")}</div></section>`;
 }).join("");
+
+// One flat list, newest first by when the mock's page was last written.
+const buildRecent = (list) => {
+  const items = [...list].sort((a, b) => b.modified - a.modified);
+  return `<section><h2>Most recently built <span class="count">${items.length}</span></h2><div class="grid">${items.map(cardHtml).join("")}</div></section>`;
+};
 
 const render = (list, pageTitle, intro, nav) => `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -156,6 +159,9 @@ const render = (list, pageTitle, intro, nav) => `<!doctype html>
   .tools button { font:inherit; font-size:14px; padding:9px 12px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; min-height:44px; }
   .tools button[aria-pressed="true"] { border-color:#e11d48; color:#e11d48; }
   #msg { color:var(--muted); font-size:13px; }
+  .seg { display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .seg button { border:0; border-radius:0; min-height:44px; }
+  .seg button[aria-pressed="true"] { background:var(--accent); color:#fff; }
   .style { margin-top:6px; font-size:12px; color:var(--muted); }
   .chip { display:inline-block; font-weight:600; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:999px; padding:1px 8px; margin-right:2px; }
   select { font:inherit; font-size:14px; padding:9px 10px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); min-height:44px; }
@@ -176,12 +182,16 @@ const render = (list, pageTitle, intro, nav) => `<!doctype html>
   <div class="tools">
     <input id="q" type="search" placeholder="Filter by name" aria-label="Filter mocks by name">
     <select id="styleFilter" aria-label="Filter by style"><option value="">All styles</option>${[...new Set(list.map((m) => m.style[0]))].map((st) => `<option>${esc(st)}</option>`).join("")}</select>
+    <div class="seg" role="group" aria-label="Sort mocks">
+      <button id="sortTopic" type="button" aria-pressed="true">Topic</button>
+      <button id="sortRecent" type="button" aria-pressed="false">Most recent</button>
+    </div>
     <button id="onlyLiked" type="button" aria-pressed="false">♥ Liked only (<span id="likedCount">0</span>)</button>
     <button id="copyLikes" type="button">Copy my likes</button>
     <span id="msg" role="status"></span>
   </div>
 </header>
-<main>${buildSections(list)}</main>
+<main><div id="byTopic">${buildSections(list)}</div><div id="byRecent" hidden>${buildRecent(list)}</div></main>
 <script>
   // Likes live in this browser only (localStorage), keyed by mock folder name,
   // so they survive rebuilding this page. "Copy my likes" gives a list to paste.
@@ -231,6 +241,23 @@ const render = (list, pageTitle, intro, nav) => `<!doctype html>
     catch { window.prompt("Copy your likes:", text); }
     setTimeout(() => (msg.textContent = ""), 3000);
   });
+  // Sort view: Topic (grouped) or Most recent (flat, newest first). Remembered per browser.
+  const SORT_KEY = "hw-mock-sort";
+  const topicBtn = document.getElementById("sortTopic");
+  const recentBtn = document.getElementById("sortRecent");
+  function setSort(mode) {
+    const recent = mode === "recent";
+    document.getElementById("byTopic").hidden = recent;
+    document.getElementById("byRecent").hidden = !recent;
+    topicBtn.setAttribute("aria-pressed", String(!recent));
+    recentBtn.setAttribute("aria-pressed", String(recent));
+    try { localStorage.setItem(SORT_KEY, mode); } catch {}
+  }
+  topicBtn.addEventListener("click", () => setSort("topic"));
+  recentBtn.addEventListener("click", () => setSort("recent"));
+  let savedSort = "topic";
+  try { savedSort = localStorage.getItem(SORT_KEY) || "topic"; } catch {}
+  setSort(savedSort);
   paint();
 </script>
 </body></html>`;
