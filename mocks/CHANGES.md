@@ -109,7 +109,7 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 | 2 | One card per sponsor: logo, booth, crowned primary contact with Text/Call (fixed position), "Right now" checklist with one-tap actions, "Your jobs for them" from the run of show, coffee chat and judging status lines, needs attention | Building |
 | 3 | "Your next tasks" at the top (overdue first) | Building |
 | 4 | On call = covering all sponsors (banner); lead with no sponsors = empty state | Building |
-| 5 | Build need: HW Contacts gets an email column to match logins to leads | Not yet |
+| 5 | Build need: HW Contacts gets an email column to match logins to leads | Done in the sheet (column C "Login email"); app code in the build |
 | 6 | Always-visible "Help" top right → "How it works" sheet (Sponsors · Coffee chats · Judging · Task pings · Where data lives), content from `_data/organizer-help.md` incl. the auto-schedule checks | Building |
 
 ## Organizer coffee board v8: `organizer-coffee-v8` (Jazz likes v7)
