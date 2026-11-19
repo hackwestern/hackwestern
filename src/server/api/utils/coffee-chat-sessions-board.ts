@@ -35,6 +35,7 @@ import {
   type UsableWindow,
 } from "~/lib/coffee-chat-sessions";
 import type { RunOfShowItem } from "~/lib/run-of-show";
+import { isDigitalJudging } from "~/lib/sponsor-prize-tracks";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { db } from "~/server/db";
@@ -267,12 +268,13 @@ export async function loadBoardState(
   const sponsorOfRep = new Map(reps.map((r) => [r.id, r.sponsorId]));
 
   // Sponsors doing coffee chats: in the Coffee Chat Setup tab, or with
-  // preferences or reps saved.
+  // preferences or reps saved. Digital sponsors (PCBWay) never do.
   const doing = registered.filter(
     (s) =>
-      prefOf.has(s.id) ||
-      reps.some((r) => r.sponsorId === s.id) ||
-      sheetNames.has(s.name.toLowerCase()),
+      !isDigitalJudging(s.name) &&
+      (prefOf.has(s.id) ||
+        reps.some((r) => r.sponsorId === s.id) ||
+        sheetNames.has(s.name.toLowerCase())),
   );
 
   const placements: BoardPlacement[] = placementRows.map((p) => ({

@@ -318,6 +318,21 @@ describe("needsAttention", () => {
     ]);
     expect(items[3]).toMatchObject({ task: "Sponsor Bay coverage" });
   });
+  it("leaves digital sponsors (PCBWay) out: they don't do coffee chats", () => {
+    const items = needsAttention({
+      sponsors: [
+        { sponsorId: "1", name: "PCBWay", chats: { ...base, prefsSubmittedAt: null } },
+        { sponsorId: "2", name: "Ace", chats: { ...base, prefsSubmittedAt: null } },
+      ],
+      tasks: [],
+      now,
+      taskStart: start,
+      taskMinutes: 30,
+    });
+    expect(items).toEqual([
+      { kind: "no-prefs", mine: false, sponsorId: "2", sponsor: "Ace" },
+    ]);
+  });
   it("lists the organizer's own sponsors first, then everyone else's", () => {
     const items = needsAttention({
       sponsors: [

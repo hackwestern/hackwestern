@@ -14,7 +14,7 @@ import {
   type SponsorSummary,
   type StatusPill,
 } from "~/lib/sponsor-organizer";
-import { hasPrizeTrack } from "~/lib/sponsor-prize-tracks";
+import { hasPrizeTrack, isDigitalJudging } from "~/lib/sponsor-prize-tracks";
 import { cn } from "~/lib/utils";
 
 const copy = sponsorOrganizerCopy.mine;
@@ -340,6 +340,7 @@ function SponsorTables({
     (w) => w.sponsor?.toLowerCase() === sponsor.name.toLowerCase(),
   );
   const chats = data?.chats;
+  const digital = isDigitalJudging(sponsor.name);
   const judging = summary ? round1State(summary.sunday) : null;
   const slots = summary?.sunday.slots ?? [];
 
@@ -437,7 +438,11 @@ function SponsorTables({
         <Row
           id="cc-workshop"
           label={a.ccWorkshop}
-          sub={status !== null && sponsor.atCcWorkshop === null ? copy.pill.ccNoColumn : undefined}
+          sub={
+            status !== null && sponsor.atCcWorkshop === null
+              ? copy.pill.ccNoColumn
+              : undefined
+          }
         >
           {status === null ? (
             <Muted>{dayCopy.noSheet}</Muted>
@@ -473,86 +478,93 @@ function SponsorTables({
         </Row>
       </Block>
 
-      <Block id="chats" title={copy.sections.chats}>
-        <Row id="preferences" label={a.preferences}>
-          {!chats ? (
-            <Muted>{v.none}</Muted>
-          ) : chats.prefsSubmittedAt ? (
-            v.submitted(dayTime(chats.prefsSubmittedAt))
-          ) : (
-            <span className="font-semibold text-dashboard-text-warning">
-              {v.notSubmitted}
-            </span>
-          )}
-        </Row>
-        <Row id="shortlist" label={a.shortlist}>
-          {!chats ? (
-            <Muted>{v.none}</Muted>
-          ) : chats.shortlistSubmittedAt ? (
-            v.submitted(dayTime(chats.shortlistSubmittedAt))
-          ) : (
-            <Muted>{v.shortlistOptional}</Muted>
-          )}
-        </Row>
-        <Row id="schedule" label={a.schedule}>
-          {!chats ? (
-            <Muted>{v.none}</Muted>
-          ) : chats.repsChatting === 0 ? (
-            <Muted>{v.noReps}</Muted>
-          ) : (
-            <span
-              className={cn(
-                chats.repsPlaced < chats.repsChatting &&
-                  chats.prefsSubmittedAt &&
-                  "font-semibold text-dashboard-text-warning",
-              )}
-            >
-              {v.placed(chats.repsPlaced, chats.repsChatting)}
-              {chats.scheduleSent && ` · ${v.confirmed}`}
-            </span>
-          )}
-        </Row>
-        <Row id="invites" label={a.invites}>
-          {!chats || chats.invites === 0 ? (
-            <Muted>{v.invitesNotSent}</Muted>
-          ) : (
-            v.invites(chats.accepted, chats.invites)
-          )}
-        </Row>
-      </Block>
+      {/* Digital sponsors (PCBWay) don't do coffee chats or present. */}
+      {!digital && (
+        <Block id="chats" title={copy.sections.chats}>
+          <Row id="preferences" label={a.preferences}>
+            {!chats ? (
+              <Muted>{v.none}</Muted>
+            ) : chats.prefsSubmittedAt ? (
+              v.submitted(dayTime(chats.prefsSubmittedAt))
+            ) : (
+              <span className="font-semibold text-dashboard-text-warning">
+                {v.notSubmitted}
+              </span>
+            )}
+          </Row>
+          <Row id="shortlist" label={a.shortlist}>
+            {!chats ? (
+              <Muted>{v.none}</Muted>
+            ) : chats.shortlistSubmittedAt ? (
+              v.submitted(dayTime(chats.shortlistSubmittedAt))
+            ) : (
+              <Muted>{v.shortlistOptional}</Muted>
+            )}
+          </Row>
+          <Row id="schedule" label={a.schedule}>
+            {!chats ? (
+              <Muted>{v.none}</Muted>
+            ) : chats.repsChatting === 0 ? (
+              <Muted>{v.noReps}</Muted>
+            ) : (
+              <span
+                className={cn(
+                  chats.repsPlaced < chats.repsChatting &&
+                    chats.prefsSubmittedAt &&
+                    "font-semibold text-dashboard-text-warning",
+                )}
+              >
+                {v.placed(chats.repsPlaced, chats.repsChatting)}
+                {chats.scheduleSent && ` · ${v.confirmed}`}
+              </span>
+            )}
+          </Row>
+          <Row id="invites" label={a.invites}>
+            {!chats || chats.invites === 0 ? (
+              <Muted>{v.invitesNotSent}</Muted>
+            ) : (
+              v.invites(chats.accepted, chats.invites)
+            )}
+          </Row>
+        </Block>
+      )}
 
       {hasPrizeTrack(sponsor.name) && (
         <Block id="judging" title={copy.sections.judging}>
-          <Row id="judging-shortlist" label={a.judgingShortlist}>
-            {!judging ? (
-              <Muted>{v.none}</Muted>
-            ) : judging.kind === "sent" ? (
-              dayCopy.round1.sent(judging.teams, dayTime(judging.at))
-            ) : judging.kind === "working" ? (
-              dayCopy.round1.working(judging.scored, judging.shortlisted)
-            ) : (
-              <Muted>{dayCopy.round1.notStarted}</Muted>
-            )}
-          </Row>
-          <Row id="presentations" label={a.presentations}>
-            {slots.length === 0 ? (
-              <Muted>{v.noPresentations}</Muted>
-            ) : (
-              v.presentations(
-                slots.length,
-                (() => {
-                  const first = slots[0];
-                  if (!first) return null;
-                  const hh = String(Math.floor(first.start / 60)).padStart(
-                    2,
-                    "0",
-                  );
-                  const mm = String(first.start % 60).padStart(2, "0");
-                  return `${formatClock(`${hh}:${mm}`)}${first.room ? ` · ${first.room}` : ""}`;
-                })(),
-              )
-            )}
-          </Row>
+          {!digital && (
+            <>
+              <Row id="judging-shortlist" label={a.judgingShortlist}>
+                {!judging ? (
+                  <Muted>{v.none}</Muted>
+                ) : judging.kind === "sent" ? (
+                  dayCopy.round1.sent(judging.teams, dayTime(judging.at))
+                ) : judging.kind === "working" ? (
+                  dayCopy.round1.working(judging.scored, judging.shortlisted)
+                ) : (
+                  <Muted>{dayCopy.round1.notStarted}</Muted>
+                )}
+              </Row>
+              <Row id="presentations" label={a.presentations}>
+                {slots.length === 0 ? (
+                  <Muted>{v.noPresentations}</Muted>
+                ) : (
+                  v.presentations(
+                    slots.length,
+                    (() => {
+                      const first = slots[0];
+                      if (!first) return null;
+                      const hh = String(Math.floor(first.start / 60)).padStart(
+                        2,
+                        "0",
+                      );
+                      const mm = String(first.start % 60).padStart(2, "0");
+                      return `${formatClock(`${hh}:${mm}`)}${first.room ? ` · ${first.room}` : ""}`;
+                    })(),
+                  )
+                )}
+              </Row>
+            </>
+          )}
           <Row id="top-three" label={a.topThree}>
             {summary?.sunday.finalSubmittedAt ? (
               v.topThreeSent(dayTime(summary.sunday.finalSubmittedAt))
