@@ -147,12 +147,50 @@
     {
       "auth": "organizer",
       "dynamic": false,
+      "file": "src/pages/internal/roster.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/internal/roster",
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
+    },
+    {
+      "auth": "organizer",
+      "dynamic": false,
+      "file": "src/pages/internal/rubric.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/internal/rubric",
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
+    },
+    {
+      "auth": "organizer",
+      "dynamic": false,
       "file": "src/pages/internal/sponsors.tsx",
       "hasGetServerSideProps": true,
       "route": "/internal/sponsors",
       "serverGuards": [
         "authRedirectOrganizer"
       ]
+    },
+    {
+      "auth": "organizer",
+      "dynamic": false,
+      "file": "src/pages/internal/team-results.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/internal/team-results",
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
+    },
+    {
+      "auth": "none-detected",
+      "dynamic": false,
+      "file": "src/pages/judge.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/judge",
+      "serverGuards": []
     },
     {
       "auth": "session",
@@ -181,6 +219,16 @@
       "hasGetServerSideProps": false,
       "route": "/logout",
       "serverGuards": []
+    },
+    {
+      "auth": "organizer",
+      "dynamic": false,
+      "file": "src/pages/map.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/map",
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
     },
     {
       "auth": "session",
