@@ -14,7 +14,7 @@ import {
   type SeenChats,
 } from "~/lib/coffee-chat-setup";
 import { cn } from "~/lib/utils";
-import type { RouterOutputs } from "~/utils/api";
+import { api, type RouterOutputs } from "~/utils/api";
 
 export type SetupData = RouterOutputs["coffeeChatSetup"]["get"];
 
@@ -100,6 +100,22 @@ const seenChatsOf = (data: SetupData): SeenChats["chats"] =>
   );
 
 /**
+ * After the sponsor's own save (a rep removed or renamed, preferences
+ * saved): refetch, and remember the new chats as seen before the page
+ * gets them, so their own change never reads as "Organizers moved …".
+ * Resolves with the fresh data.
+ */
+export function useRefreshOwn(sponsor: string) {
+  const utils = api.useUtils();
+  return useCallback(async (): Promise<SetupData> => {
+    const fresh = await utils.client.coffeeChatSetup.get.query({ sponsor });
+    if (fresh.confirmed) writeSeen(sponsor, { ...readSeen(sponsor), chats: seenChatsOf(fresh) });
+    utils.coffeeChatSetup.get.setData({ sponsor }, fresh);
+    return fresh;
+  }, [sponsor, utils]);
+}
+
+/**
  * Organizer moves of sent chats, worked out on this device (chatChanges):
  * the sent chats it last saw are kept in localStorage, and each change
  * found is remembered (newest 5) so "Last change" keeps showing it.
@@ -118,7 +134,7 @@ function useChatMoves(
     // Found on this visit: just before it, so it's "since you were last
     // here" now and "Last change" next time.
     const now = new Date(visit.getTime() - 1).toISOString();
-    const found = chatChanges(stored.chats, data.chats).map((c) => ({
+    const found = chatChanges(stored.chats, data.chats, new Set(data.reps.map((r) => r.id))).map((c) => ({
       text:
         c.kind === "removed"
           ? copy.status.removed(repName(c.repId), shortClock(c.from))

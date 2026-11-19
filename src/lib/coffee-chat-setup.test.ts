@@ -111,12 +111,13 @@ describe("chatChanges: organizer moves for the sponsor's Last change", () => {
     p2: { repId: "dana", sessionId: "14", room: "1348", start: "14:00" },
     p3: { repId: "kevin", sessionId: "10", room: "1352", start: "10:00" },
   };
+  const team = new Set(["dana", "kevin"]);
   test("a new session, a new room and a removed chat", () => {
     expect(
       chatChanges(seen, [
         { placementId: "p1", repId: "dana", sessionId: "15", room: "1348", start: "15:00" },
         { placementId: "p2", repId: "dana", sessionId: "14", room: "2241", start: "14:00" },
-      ]),
+      ], team),
     ).toEqual([
       { kind: "moved", repId: "dana", from: "13:00", to: "15:00", room: "1348" },
       { kind: "moved", repId: "dana", from: "14:00", to: null, room: "2241" },
@@ -125,8 +126,16 @@ describe("chatChanges: organizer moves for the sponsor's Last change", () => {
   });
   test("nothing changed, or a first look, is no change", () => {
     const now = Object.entries(seen).map(([placementId, c]) => ({ placementId, ...c }));
-    expect(chatChanges(seen, now)).toEqual([]);
-    expect(chatChanges({}, now)).toEqual([]);
+    expect(chatChanges(seen, now, team)).toEqual([]);
+    expect(chatChanges({}, now, team)).toEqual([]);
+  });
+  test("the sponsor removing a rep isn't an organizer removal", () => {
+    const now = [
+      { placementId: "p1", repId: "dana", sessionId: "13", room: "2242", start: "13:00" },
+      { placementId: "p2", repId: "dana", sessionId: "14", room: "1348", start: "14:00" },
+    ];
+    // Kevin is gone from the team: his missing chat is the sponsor's own change.
+    expect(chatChanges(seen, now, new Set(["dana"]))).toEqual([]);
   });
 });
 

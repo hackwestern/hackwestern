@@ -18,7 +18,15 @@ import { MAX_HACKERS_PER_CHAT, MIN_HACKERS_PER_CHAT, isSessionId } from "~/lib/c
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { AvailabilityGrid } from "./availability-grid";
-import { cardClass, LinkButton, StepFooter, useAfterInvites, useAnnounce, type SetupData } from "./shared";
+import {
+  cardClass,
+  LinkButton,
+  StepFooter,
+  useAfterInvites,
+  useAnnounce,
+  useRefreshOwn,
+  type SetupData,
+} from "./shared";
 
 const copy = sponsorSetupCopy.prefs;
 
@@ -62,6 +70,7 @@ export function PrefsStep({
   const utils = api.useUtils();
   const { announce, region } = useAnnounce();
   const { guard, dialog } = useAfterInvites(data);
+  const refreshOwn = useRefreshOwn(sponsor);
   const openHelp = useOpenSponsorHelp();
   const [draft, setDraft] = useState<Draft>(() => draftOf(data));
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +117,8 @@ export function PrefsStep({
           reps: Object.fromEntries(Object.entries(x.reps).filter(([id]) => ids.has(id))),
         }));
       }
-      await utils.coffeeChatSetup.get.invalidate({ sponsor });
+      // Their own save may move or drop sent chats: seen, not "Organizers …".
+      await refreshOwn();
       return true;
     } catch (e) {
       dirty.current = true;

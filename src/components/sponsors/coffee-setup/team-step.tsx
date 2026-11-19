@@ -13,6 +13,7 @@ import {
   StepFooter,
   useAfterInvites,
   useAnnounce,
+  useRefreshOwn,
   type SetupData,
 } from "./shared";
 
@@ -43,6 +44,9 @@ export function TeamStep({
   // Before Send, a removed rep can come back (with their times and chats).
   const [removed, setRemoved] = useState<SetupData["reps"][number] | null>(null);
   const refresh = () => utils.coffeeChatSetup.get.invalidate({ sponsor });
+  // Saves that can move or drop sent chats: remember the result as seen,
+  // so the sponsor's own change isn't shown as an organizer's.
+  const refreshOwn = useRefreshOwn(sponsor);
   const onError = (e: { message: string }) => {
     setError(e.message);
     announce(e.message);
@@ -76,20 +80,20 @@ export function TeamStep({
   const save = (form: { name: string; phone: string }, repId: string | null) => {
     setError(null);
     guard((confirmAfterInvites) => {
-      const done = async (msg: string) => {
-        await refresh();
+      const done = async (msg: string, own: boolean) => {
+        await (own ? refreshOwn() : refresh());
         setEditing(null);
         announce(msg);
       };
       if (repId) {
         update.mutate(
           { sponsor, repId, ...form, confirmAfterInvites },
-          { onSuccess: () => void done(copy.saved(form.name)) },
+          { onSuccess: () => void done(copy.saved(form.name), true) },
         );
       } else {
         add.mutate(
           { sponsor, ...form, confirmAfterInvites },
-          { onSuccess: () => void done(copy.added(form.name)) },
+          { onSuccess: () => void done(copy.added(form.name), false) },
         );
       }
     });
@@ -196,7 +200,7 @@ export function TeamStep({
                           { sponsor, repId: rep.id, confirmAfterInvites },
                           {
                             onSuccess: () =>
-                              void refresh().then(() => {
+                              void refreshOwn().then(() => {
                                 // After Send their invites were moved or
                                 // cancelled, so there's nothing to undo.
                                 setRemoved(data.confirmed ? null : rep);

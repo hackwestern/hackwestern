@@ -229,18 +229,21 @@ export type ChatChange =
  * placement id: a new session or room is a move, a missing chat a removal.
  * There's no move history in the database (no schema change), so the
  * sponsor's "Last change" is worked out per device, like "Since you were
- * last here". `from` / `to` are start times ("HH:MM").
+ * last here". `from` / `to` are start times ("HH:MM"). A missing chat of a
+ * rep no longer on the team (`repIds`) isn't a removal: only the sponsor
+ * removes reps, so it's their own change.
  */
 export function chatChanges(
   before: Readonly<Record<string, SeenChat>>,
   now: readonly ({ placementId: string } & SeenChat)[],
+  repIds: ReadonlySet<string>,
 ): ChatChange[] {
   const out: ChatChange[] = [];
   const byId = new Map(now.map((c) => [c.placementId, c]));
   for (const [id, was] of Object.entries(before)) {
     const c = byId.get(id);
     if (!c) {
-      out.push({ kind: "removed", repId: was.repId, from: was.start });
+      if (repIds.has(was.repId)) out.push({ kind: "removed", repId: was.repId, from: was.start });
     } else if (c.sessionId !== was.sessionId || c.room !== was.room) {
       out.push({
         kind: "moved",
