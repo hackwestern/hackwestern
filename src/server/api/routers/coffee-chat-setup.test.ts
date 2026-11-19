@@ -174,13 +174,23 @@ describe("coffeeChatSetup: preferences", () => {
     expect(await code(setup.submitPrefs({ sponsor: id }))).toBe("BAD_REQUEST");
   });
 
-  test("savePrefs refuses another sponsor's rep", async () => {
+  test("savePrefs skips reps that aren't theirs (removed elsewhere, or another sponsor's)", async () => {
     const id = await sponsor();
     const other = await sponsor();
+    const mine = await setup.addRep({ sponsor: id, name: "Me", phone: "5195550001" });
     const a = await setup.addRep({ sponsor: other, name: "A", phone: "5195550001" });
-    expect(
-      await code(setup.savePrefs({ sponsor: id, hackersPerChat: 1, reps: [{ id: a.id, chatsWanted: 1, free: [] }] })),
-    ).toBe("NOT_FOUND");
+    const res = await setup.savePrefs({
+      sponsor: id,
+      hackersPerChat: 2,
+      reps: [
+        { id: a.id, chatsWanted: 1, free: [] },
+        { id: mine.id, chatsWanted: 3, free: ["10"] },
+      ],
+    });
+    expect(res.skipped).toBe(1);
+    const [theirs] = await db.select().from(coffeeChatReps).where(eq(coffeeChatReps.id, a.id));
+    expect(theirs!.chatsWanted).toBe(4);
+    expect((await setup.get({ sponsor: id })).reps[0]!.chatsWanted).toBe(3);
   });
 });
 
@@ -283,11 +293,15 @@ describe("coffeeChatSetup: after organizers send", () => {
 });
 
 describe("coffeeChatSetup.recordScan", () => {
-  test("records a scan once, updates the rep, refuses non-hackers", async () => {
+  test("records a scan once, updates the rep by id, refuses non-hackers and other sponsors' reps", async () => {
     const id = await sponsor();
+    const other = await sponsor();
     const hacker = await admittedHacker(false);
+    const dana = await setup.addRep({ sponsor: id, name: "Dana W.", phone: "5195550001" });
+    const theirs = await setup.addRep({ sponsor: other, name: "Mallory", phone: "5195550002" });
     await setup.recordScan({ sponsor: id, userId: hacker });
-    await setup.recordScan({ sponsor: id, userId: hacker, repName: "Dana W." });
+    await setup.recordScan({ sponsor: id, userId: hacker, repId: dana.id });
+    expect(await code(setup.recordScan({ sponsor: id, userId: hacker, repId: theirs.id }))).toBe("NOT_FOUND");
     await setup.recordScan({ sponsor: id, userId: hacker });
     const rows = await db.select().from(sponsorScans).where(eq(sponsorScans.sponsorId, id));
     expect(rows).toHaveLength(1);
@@ -297,7 +311,7 @@ describe("coffeeChatSetup.recordScan", () => {
     const notHacker = (await mockSession(db)).user.id;
     expect(await code(setup.recordScan({ sponsor: id, userId: notHacker }))).toBe("NOT_FOUND");
     expect(await code(setup.recordScan({ sponsor: faker.string.uuid(), userId: hacker }))).toBe("NOT_FOUND");
-    // Unused rep table import guard: reps are untouched by scans.
-    expect(await db.select().from(coffeeChatReps).where(eq(coffeeChatReps.sponsorId, id))).toEqual([]);
+    // Scans never touch Your team.
+    expect(await db.select().from(coffeeChatReps).where(eq(coffeeChatReps.sponsorId, id))).toHaveLength(1);
   });
 });

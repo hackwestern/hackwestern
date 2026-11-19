@@ -157,7 +157,53 @@ export type SponsorCandidate = {
   linkedIn: string | null;
   devpost: string | null;
   extraLink: string | null;
+  /** From the application, only when shared (null otherwise). */
+  school?: string | null;
+  program?: string | null;
+  /** "1st" … "5th+" year of study. */
+  year?: string | null;
 };
+
+export const NO_STUDY = { school: null, program: null, year: null };
+
+/** School, program and year from an application row (blank answers dropped). */
+export function studyFields(r: {
+  school: string | null;
+  schoolOther: string | null;
+  major: string | null;
+  yearOfStudy: string | null;
+}): { school: string | null; program: string | null; year: string | null } {
+  const school = r.school?.trim() === "Other" ? r.schoolOther?.trim() : r.school?.trim();
+  const year = r.yearOfStudy && /^\d/.test(r.yearOfStudy) ? r.yearOfStudy : null;
+  return { school: school ? school : null, program: r.major ?? null, year };
+}
+
+/** Study fields for hackers who agreed to share with sponsors. */
+async function studyByUser(userIds: readonly string[]) {
+  if (userIds.length === 0) return new Map<string, ReturnType<typeof studyFields>>();
+  const rows = await db
+    .select({
+      userId: applications.userId,
+      school: applications.school,
+      schoolOther: applications.schoolOther,
+      major: applications.major,
+      yearOfStudy: applications.yearOfStudy,
+    })
+    .from(applications)
+    .where(
+      and(
+        inArray(applications.userId, [...userIds]),
+        eq(applications.agreeShareWithSponsors, true),
+      ),
+    );
+  return new Map(rows.map((r) => [r.userId, studyFields(r)]));
+}
+
+/** Adds school, program and year to shared candidates. */
+async function withStudy(hackers: SponsorCandidate[]): Promise<SponsorCandidate[]> {
+  const study = await studyByUser(hackers.filter((h) => h.shared).map((h) => h.userId));
+  return hackers.map((h) => ({ ...h, ...(h.shared ? (study.get(h.userId) ?? NO_STUDY) : NO_STUDY) }));
+}
 
 /**
  * Where the candidate list came from: the interest form ranking, or the
@@ -337,7 +383,7 @@ export async function sponsorCandidates(
     );
     return {
       source: "interestForm",
-      hackers: candidatesFromInterestForm(ranked, profiles),
+      hackers: await withStudy(candidatesFromInterestForm(ranked, profiles)),
     };
   }
 
@@ -347,7 +393,7 @@ export async function sponsorCandidates(
   });
   return {
     source: "inAppRanking",
-    hackers: fallback.map((h, index) => ({
+    hackers: await withStudy(fallback.map((h, index) => ({
       userId: h.userId,
       hackerId: h.hackerId,
       rank: index + 1,
@@ -360,6 +406,6 @@ export async function sponsorCandidates(
       linkedIn: h.linkedIn,
       devpost: h.devpost,
       extraLink: null,
-    })),
+    }))),
   };
 }

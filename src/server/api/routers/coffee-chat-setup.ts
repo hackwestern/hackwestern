@@ -424,10 +424,11 @@ export const coffeeChatSetupRouter = createTRPCRouter({
           .select({ id: coffeeChatReps.id })
           .from(coffeeChatReps)
           .where(eq(coffeeChatReps.sponsorId, sponsor.id));
+        // A rep removed in another tab is skipped, not an error: the page
+        // refetches and drops it.
         const mine = new Set(reps.map((r) => r.id));
-        if (input.reps.some((r) => !mine.has(r.id))) {
-          throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownRep });
-        }
+        const known = input.reps.filter((r) => mine.has(r.id));
+        const skipped = input.reps.length - known.length;
         await tx
           .insert(coffeeChatPrefs)
           .values({
@@ -443,7 +444,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
               updatedAt: new Date(),
             },
           });
-        for (const r of input.reps) {
+        for (const r of known) {
           await tx
             .update(coffeeChatReps)
             .set({ chatsWanted: r.chatsWanted })
@@ -456,7 +457,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
               .values(free.map((s) => ({ repId: r.id, sessionId: s })));
           }
         }
-        return { ok: true };
+        return { ok: true, skipped };
       });
       // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
       return result;
@@ -471,21 +472,22 @@ export const coffeeChatSetupRouter = createTRPCRouter({
     .input(z.object({ sponsor: sponsorInput, ...confirmInput }))
     .mutation(async ({ input }) => {
       const sponsor = await findSponsor(input.sponsor);
-      const setup = await loadSponsorSetup(sponsor);
-      if (setup.reps.length === 0) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: errors.noReps });
-      }
-      if (!setup.reps.some((r) => r.isPrimary)) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: errors.noPrimary });
-      }
-      if (setup.totals.chats === 0) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: errors.noChats });
-      }
       const now = new Date();
       await db.transaction(async (tx) => {
         // A submit isn't an edit: updated_at stays (organizer board's
         // "Changed after invites" flag).
         await lockForWrite(tx, sponsor.id, input.confirmAfterInvites, { bump: false });
+        // Checked under the lock, so a rep edit in another tab can't slip in.
+        const setup = await loadSponsorSetup(sponsor, tx);
+        if (setup.reps.length === 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: errors.noReps });
+        }
+        if (!setup.reps.some((r) => r.isPrimary)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: errors.noPrimary });
+        }
+        if (setup.totals.chats === 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: errors.noChats });
+        }
         await tx
           .insert(coffeeChatPrefs)
           .values({ sponsorId: sponsor.id, submittedAt: now })
@@ -501,14 +503,16 @@ export const coffeeChatSetupRouter = createTRPCRouter({
   /**
    * A sponsor scanned a hacker at their booth ("Met at Hacker Fair"):
    * record it so they're invited first. Scanning twice keeps the first
-   * time; picking a rep later updates who wants to talk to them.
+   * time; picking a rep later updates who wants to talk to them. The rep
+ * is chosen by id from Your team; the name is looked up here.
    */
   recordScan: publicProcedure
     .input(
       z.object({
         sponsor: sponsorInput,
         userId: z.string().trim().min(1).max(255),
-        repName: z.string().trim().max(255).optional(),
+        /** A rep from Your team, or null/absent for "Anyone". */
+        repId: z.string().uuid().nullable().optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -521,7 +525,15 @@ export const coffeeChatSetupRouter = createTRPCRouter({
       if (!hacker || hacker.type !== "hacker" || !isAdmittedStatus(hacker.status)) {
         throw new TRPCError({ code: "NOT_FOUND", message: errors.notAHacker });
       }
-      const rep = input.repName ? input.repName : null;
+      let rep: string | null = null;
+      if (input.repId) {
+        const [row] = await db
+          .select({ name: coffeeChatReps.name })
+          .from(coffeeChatReps)
+          .where(and(eq(coffeeChatReps.id, input.repId), eq(coffeeChatReps.sponsorId, sponsor.id)));
+        if (!row) throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownRep });
+        rep = row.name;
+      }
       const insert = db
         .insert(sponsorScans)
         .values({ sponsorId: sponsor.id, userId: input.userId, repName: rep });

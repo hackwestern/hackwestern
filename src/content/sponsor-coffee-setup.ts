@@ -208,6 +208,7 @@ export const sponsorSetupCopy = {
     next: "Next: Review & submit",
     saving: "Saving…",
     saved: "Saved.",
+    retrying: "Not saved, retrying…",
     noReps: "Add your team first.",
   },
 
@@ -263,8 +264,15 @@ export const sponsorSetupCopy = {
     ],
     locked: "Submit your chatting preferences first. Your seats come from them.",
     goPrefs: "Go to chatting preferences",
-    seats: (n: number, max: number) => `${n} of ${max} seats`,
+    seats: (n: number, max: number) => `${n} of ${max}`,
     seatsSuffix: "shortlisted",
+    /** "14 seats · 3 taken by people you scanned · shortlist up to 11" */
+    capLine: (seats: number, scanned: number, cap: number) =>
+      scanned === 0
+        ? `${plural(seats, "seat")} · shortlist up to ${cap}`
+        : `${plural(seats, "seat")} · ${scanned} taken by people you scanned · shortlist up to ${cap}`,
+    sentNote:
+      "Your chats are scheduled. Changes here only affect who's offered seats in later rounds.",
     noSeats: "Your preferences have no chats yet, so there are no seats to fill.",
     viewLabel: "View",
     oneAtATime: "One at a time",
@@ -292,6 +300,7 @@ export const sponsorSetupCopy = {
     notShared: "First name only. This hacker didn't share their full profile.",
     noTeam: "No team yet",
     reviewNext: "Next: Review & submit",
+    year: (y: string) => `${y} year`,
     reviewHeading: "Review & submit shortlist",
     reviewEmpty: "Your shortlist is empty. You can still submit: we'll invite hackers who asked to chat with you.",
     submit: "Submit shortlist",
@@ -359,6 +368,8 @@ export const sponsorSetupCopy = {
     shortlistFull: (max: number) =>
       `All ${max} seats are shortlisted. Remove someone to add another.`,
     notCandidate: "This hacker isn't on your list.",
+    overCap: (picked: number, cap: number) =>
+      `Your shortlist has ${plural(picked, "person", "people")} but you now have ${plural(cap, "seat")}. Remove ${picked - cap}.`,
     loadError: "Couldn't load your coffee chat setup.",
     saveError: "Couldn't save. Try again.",
   },

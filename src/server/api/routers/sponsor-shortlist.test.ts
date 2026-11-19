@@ -190,6 +190,42 @@ describe("sponsorShortlist: seats, submit, scanned", () => {
     expect(await updatedAt()).toBe(before);
   });
 
+  test("people you scanned take seats: cap = seats - scanned", async () => {
+    const mine = await sponsor();
+    await withSeats(mine.id, 2);
+    const scannedOne = await hackerRanking(null, true);
+    await db.insert(sponsorScans).values({ sponsorId: mine.id, userId: scannedOne });
+    const a = await hackerRanking(mine.id, true);
+    const b = await hackerRanking(mine.id, true);
+    const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
+    expect([res.seats, res.maxShortlist]).toEqual([2, 1]);
+    await anon.sponsorShortlist.add({ sponsor: mine.id, userId: a });
+    await expect(
+      anon.sponsorShortlist.add({ sponsor: mine.id, userId: b }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  test("seats lowered below the shortlist: kept, but submit is refused with how many to remove", async () => {
+    const mine = await sponsor();
+    await withSeats(mine.id, 3);
+    const ids = [
+      await hackerRanking(mine.id, true),
+      await hackerRanking(mine.id, true),
+      await hackerRanking(mine.id, true),
+    ];
+    for (const userId of ids) await anon.sponsorShortlist.add({ sponsor: mine.id, userId });
+    await db.update(coffeeChatReps).set({ chatsWanted: 1 }).where(eq(coffeeChatReps.sponsorId, mine.id));
+    const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
+    expect([res.picked, res.maxShortlist]).toEqual([3, 1]);
+    await expect(anon.sponsorShortlist.submit({ sponsor: mine.id })).rejects.toMatchObject({
+      code: "CONFLICT",
+      message: "Your shortlist has 3 people but you now have 1 seat. Remove 2.",
+    });
+    await anon.sponsorShortlist.remove({ sponsor: mine.id, userId: ids[0]! });
+    await anon.sponsorShortlist.remove({ sponsor: mine.id, userId: ids[1]! });
+    await anon.sponsorShortlist.submit({ sponsor: mine.id });
+  });
+
   test("submit locks the list; reopen unlocks it", async () => {
     const mine = await sponsor();
     await withSeats(mine.id, 4);

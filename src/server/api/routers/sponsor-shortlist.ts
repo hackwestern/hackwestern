@@ -12,8 +12,10 @@ import {
 } from "~/server/api/trpc";
 import { loadSponsorSetup } from "~/server/api/utils/coffee-chat-setup";
 import {
+  NO_STUDY,
   safeProfileUrl,
   sponsorCandidates,
+  studyFields,
   type CandidateSource,
   type SponsorCandidate,
 } from "~/server/api/utils/sponsor-shortlist";
@@ -43,6 +45,9 @@ export type ScannedHacker = {
   shared: boolean;
   team: string | null;
   repName: string | null;
+  school: string | null;
+  program: string | null;
+  year: string | null;
   resume: string | null;
   github: string | null;
   linkedIn: string | null;
@@ -92,8 +97,11 @@ async function shortlistedIds(sponsorId: string) {
 }
 
 /** Scanned hackers, first scan first. Anyone no longer admitted drops off. */
-async function scannedHackers(sponsorId: string): Promise<ScannedHacker[]> {
-  const rows = await db
+async function scannedHackers(
+  sponsorId: string,
+  conn: Pick<typeof db, "select"> = db,
+): Promise<ScannedHacker[]> {
+  const rows = await conn
     .select({
       userId: sponsorScans.userId,
       repName: sponsorScans.repName,
@@ -107,6 +115,10 @@ async function scannedHackers(sponsorId: string): Promise<ScannedHacker[]> {
       github: applications.githubLink,
       linkedIn: applications.linkedInLink,
       devpost: applications.devpostLink,
+      school: applications.school,
+      schoolOther: applications.schoolOther,
+      major: applications.major,
+      yearOfStudy: applications.yearOfStudy,
     })
     .from(sponsorScans)
     .innerJoin(users, eq(users.id, sponsorScans.userId))
@@ -136,6 +148,7 @@ async function scannedHackers(sponsorId: string): Promise<ScannedHacker[]> {
         github: shared ? safeProfileUrl(r.github) : null,
         linkedIn: shared ? safeProfileUrl(r.linkedIn) : null,
         devpost: shared ? safeProfileUrl(r.devpost) : null,
+        ...(shared ? studyFields(r) : NO_STUDY),
       };
     });
 }
@@ -164,6 +177,48 @@ async function assertShortlistOpen(
   if (!allowSubmitted && pref?.shortlistSubmittedAt) {
     throw new TRPCError({ code: "CONFLICT", message: setupErrors.shortlistSubmitted });
   }
+}
+
+/** Lock the sponsor row: every shortlist write and preference save takes it. */
+async function lockSponsor(tx: Tx, sponsorId: string) {
+  await tx
+    .select({ id: sponsorJudgingSponsors.id })
+    .from(sponsorJudgingSponsors)
+    .where(eq(sponsorJudgingSponsors.id, sponsorId))
+    .for("update");
+}
+
+/** Shortlist cap: hacker seats minus people they scanned (decisions 2026-11-19). */
+const capOf = (seats: number, scanned: number) => Math.max(0, seats - scanned);
+
+/**
+ * The cap and how many picks count against it, read inside the locked
+ * transaction. Picks count only while still on the candidate list and not
+ * scanned (scanned hackers already take a seat).
+ */
+async function capState(
+  tx: Tx,
+  sponsor: { id: string; name: string },
+  candidates: readonly { userId: string }[],
+) {
+  const [setup, scanned] = await Promise.all([
+    loadSponsorSetup(sponsor, tx),
+    scannedHackers(sponsor.id, tx),
+  ]);
+  const scannedIds = new Set(scanned.map((h) => h.userId));
+  const countable = candidates.map((h) => h.userId).filter((id) => !scannedIds.has(id));
+  const [total] = countable.length
+    ? await tx
+        .select({ n: count() })
+        .from(sponsorShortlists)
+        .where(
+          and(
+            eq(sponsorShortlists.sponsorId, sponsor.id),
+            inArray(sponsorShortlists.userId, countable),
+          ),
+        )
+    : [{ n: 0 }];
+  return { cap: capOf(setup.totals.hackers, scanned.length), picked: total?.n ?? 0 };
 }
 
 /** Whether the logged-in viewer (if any) is an organizer. */
@@ -198,10 +253,16 @@ export const sponsorShortlistRouter = createTRPCRouter({
       hackers: InterestedHacker[];
       /** Hackers they scanned at their booth, first scan first. */
       scanned: ScannedHacker[];
-      /** The shortlist cap: their hacker seats from chatting preferences. */
+      /** Hacker seats from chatting preferences. */
+      seats: number;
+      /** The shortlist cap: seats minus people they scanned (never < 0). */
       maxShortlist: number;
+      /** Shortlisted hackers counted against the cap. */
+      picked: number;
       prefsSubmitted: boolean;
       submittedAt: Date | null;
+      /** Organizers sent this sponsor's schedule. */
+      sent: boolean;
       source: CandidateSource;
       showSource: boolean;
     }> => {
@@ -215,16 +276,20 @@ export const sponsorShortlistRouter = createTRPCRouter({
       ]);
       const picked = new Set(ids);
       const scannedIds = new Set(scanned.map((h) => h.userId));
+      // Scanned hackers are listed on their own, first; not twice.
+      const hackers = candidates.hackers
+        .filter((h) => !scannedIds.has(h.userId))
+        .map((h) => ({ ...h, shortlisted: picked.has(h.userId) }));
       return {
         sponsorName: sponsor.name,
-        // Scanned hackers are listed on their own, first; not twice.
-        hackers: candidates.hackers
-          .filter((h) => !scannedIds.has(h.userId))
-          .map((h) => ({ ...h, shortlisted: picked.has(h.userId) })),
+        hackers,
         scanned,
-        maxShortlist: setup.totals.hackers,
+        seats: setup.totals.hackers,
+        maxShortlist: capOf(setup.totals.hackers, scanned.length),
+        picked: hackers.filter((h) => h.shortlisted).length,
         prefsSubmitted: !!setup.submittedAt,
         submittedAt: setup.shortlistSubmittedAt,
+        sent: setup.confirmed,
         source: candidates.source,
         showSource,
       };
@@ -235,17 +300,16 @@ export const sponsorShortlistRouter = createTRPCRouter({
    * Add a candidate to the shortlist. Anyone not on the sponsor's current
    * candidate list is a 404. Adding twice is a no-op. Opens once chatting
    * preferences are submitted; closed while the shortlist is submitted.
-   * Capped at the sponsor's hacker seats (from their preferences), counting
-   * only picks still on the list.
+   * Capped at the sponsor's hacker seats minus people they scanned, read
+   * under the sponsor-row lock (so a preference save can't race it).
+   * Allowed after Send with no confirm: it only changes who's offered
+   * seats in later rounds.
    */
   add: publicProcedure
     .input(z.object({ sponsor: sponsorInput, userId: userIdInput }))
     .mutation(async ({ input }) => {
       const sponsor = await findSponsor(input.sponsor);
-      const [{ hackers }, setup] = await Promise.all([
-        sponsorCandidates(sponsor),
-        loadSponsorSetup(sponsor),
-      ]);
+      const { hackers } = await sponsorCandidates(sponsor);
       const eligible = hackers.find((h) => h.userId === input.userId);
       if (!eligible) {
         throw new TRPCError({
@@ -253,14 +317,8 @@ export const sponsorShortlistRouter = createTRPCRouter({
           message: errors.notCandidate,
         });
       }
-      const cap = setup.totals.hackers;
       await db.transaction(async (tx) => {
-        // Lock the sponsor row so two adds can't both pass the cap.
-        await tx
-          .select({ id: sponsorJudgingSponsors.id })
-          .from(sponsorJudgingSponsors)
-          .where(eq(sponsorJudgingSponsors.id, sponsor.id))
-          .for("update");
+        await lockSponsor(tx, sponsor.id);
         await assertShortlistOpen(tx, sponsor.id);
         const [already] = await tx
           .select({ userId: sponsorShortlists.userId })
@@ -272,21 +330,8 @@ export const sponsorShortlistRouter = createTRPCRouter({
             ),
           );
         if (already) return;
-        // The cap counts only picks still on the candidate list, so a pick
-        // who has dropped off doesn't hold a place.
-        const [total] = await tx
-          .select({ n: count() })
-          .from(sponsorShortlists)
-          .where(
-            and(
-              eq(sponsorShortlists.sponsorId, sponsor.id),
-              inArray(
-                sponsorShortlists.userId,
-                hackers.map((h) => h.userId),
-              ),
-            ),
-          );
-        if ((total?.n ?? 0) >= cap) {
+        const { cap, picked } = await capState(tx, sponsor, hackers);
+        if (picked >= cap) {
           throw new TRPCError({
             code: "CONFLICT",
             message: setupErrors.shortlistFull(cap),
@@ -310,6 +355,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const sponsor = await findSponsor(input.sponsor);
       await db.transaction(async (tx) => {
+        await lockSponsor(tx, sponsor.id);
         await assertShortlistOpen(tx, sponsor.id, { needPrefs: false });
         await tx
           .delete(sponsorShortlists)
@@ -326,16 +372,27 @@ export const sponsorShortlistRouter = createTRPCRouter({
 
   /**
    * Review & submit the shortlist: sets coffee_chat_pref.shortlist_
-   * submitted_at. Needs submitted chatting preferences. An empty shortlist
-   * may be submitted (seats then go to scanned and interested hackers).
+   * submitted_at. Needs submitted chatting preferences, and no more picks
+   * than the cap (preferences may have lowered it since). An empty
+   * shortlist may be submitted (seats then go to scanned and interested
+   * hackers).
    */
   submit: publicProcedure
     .input(z.object({ sponsor: sponsorInput }))
     .mutation(async ({ input }) => {
       const sponsor = await findSponsor(input.sponsor);
+      const { hackers } = await sponsorCandidates(sponsor);
       const now = new Date();
       await db.transaction(async (tx) => {
+        await lockSponsor(tx, sponsor.id);
         await assertShortlistOpen(tx, sponsor.id, { allowSubmitted: true });
+        const { cap, picked } = await capState(tx, sponsor, hackers);
+        if (picked > cap) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: setupErrors.overCap(picked, cap),
+          });
+        }
         await tx
           .update(coffeeChatPrefs)
           // Not updated_at: that marks preference/rep edits only.
@@ -351,10 +408,13 @@ export const sponsorShortlistRouter = createTRPCRouter({
     .input(z.object({ sponsor: sponsorInput }))
     .mutation(async ({ input }) => {
       const sponsor = await findSponsor(input.sponsor);
-      await db
-        .update(coffeeChatPrefs)
-        .set({ shortlistSubmittedAt: null })
-        .where(eq(coffeeChatPrefs.sponsorId, sponsor.id));
+      await db.transaction(async (tx) => {
+        await lockSponsor(tx, sponsor.id);
+        await tx
+          .update(coffeeChatPrefs)
+          .set({ shortlistSubmittedAt: null })
+          .where(eq(coffeeChatPrefs.sponsorId, sponsor.id));
+      });
       // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
       return { ok: true };
     }),
