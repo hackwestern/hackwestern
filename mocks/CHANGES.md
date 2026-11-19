@@ -14,27 +14,29 @@ Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /li
 ## Sponsor portal: `sponsor-portal-flow-hacker-v3`
 | # | Change | Status |
 |---|---|---|
-| 1 | Look: hacker /live site (hacker-v2), not the refined or app look | Building |
-| 2 | 4 nav tabs + one Help button; content starts at the top on phones (portal review) | Building |
-| 3 | Judging is its own nav tab (Today, Chats, Schedule, Judging, Map), from Lucas's flow on main + Nov 18 rules; only for prize-track sponsors | Building |
-| 4 | Schedule in the organizer Run of show style (hacker-v2) | Building |
-| 5 | Schedule "Show hackathon events" shows ALL 35 events from the RUN OF SHOW sheet | Building |
-| 6 | Map: remove "find a room"; show Julian's Level 1 / Level 2 maps from the live site; Sponsor Bay with their spot; Ivey line | Building |
-| 7 | Help: "Your name" and "Phone we can call back" required, prefilled from main contact, editable | Building |
-| 8 | Chats setup = 4 steps: Your team, Calendar, Shortlist, Confirm; "Submit by Fri Nov 20, 11:59 PM" | Building |
-| 9 | Your team starts EMPTY; add reps with name, phone, email; main contact name + phone required | Building |
-| 10 | Calendar view kept; drag to create/resize/move (from calendar-v1); tap on phones | Building |
-| 11 | Columns are rooms ("Room 1, Room 2"); a shared room shows as ONE block with both reps | Building |
-| 12 | "Organizers assign real rooms after you confirm"; sponsors never pick rooms | Building |
-| 13 | 25 min chat + 5 min break for 30-min chats; room limit 6 = reps + hackers; over-hours allowed in amber | Building |
-| 14 | Flexibility question: Not flexible / Within 1 hour / Anytime 10–5 | Building |
-| 15 | Live busy-times strip (all sponsors, drafts included, updates every few seconds) | Building |
-| 16 | Their own schedule on the calendar: own workshop and meals | Building |
-| 17 | NO chats within 15 min of their OWN workshop (before or after, setup included); lunch and dinner shown as dotted outlines, allowed | Building (asked 2026-11-19, late) |
-| 18 | After submit: Shortlist + "Met at Hacker Fair" lists | Building |
-| 19 | Scan: "Which rep wants to talk to them?", then the offer (time, rep, building) | Building |
-| 20 | Assigned rooms show building + walk: "Ivey, Rm 1352 · 15 min walk · leave by 9:45"; Ivey offers expire 35 min before | Building |
-| 21 | Editing after invites: allowed with a strong warning; hackers reconfirm | Building |
+| 1 | Look: hacker /live site (hacker-v2), not the refined or app look | Done |
+| 2 | 4 nav tabs + one Help button; content starts at the top on phones (portal review) | Done |
+| 3 | Judging is its own nav tab (Today, Chats, Schedule, Judging, Map), from Lucas's flow on main + Nov 18 rules; only for prize-track sponsors | Done |
+| 4 | Schedule in the organizer Run of show style (hacker-v2) | Done |
+| 5 | Schedule "Show hackathon events" shows ALL 35 events from the RUN OF SHOW sheet | Done |
+| 6 | Map: remove "find a room"; show Julian's Level 1 / Level 2 maps from the live site; Sponsor Bay with their spot; Ivey line | Done |
+| 7 | Help: "Your name" and "Phone we can call back" required, prefilled from main contact, editable | Done |
+| 8 | Chats setup = 4 steps: Your team, Calendar, Shortlist, Confirm; "Submit by Fri Nov 20, 11:59 PM" | Done |
+| 9 | Your team starts EMPTY; add reps with name, phone, email; main contact name + phone required | Done |
+| 10 | Calendar view kept; drag to create/resize/move (from calendar-v1); tap on phones | Done |
+| 11 | Columns are rooms ("Room 1, Room 2"); a shared room shows as ONE block with both reps | Done |
+| 12 | "Organizers assign real rooms after you confirm"; sponsors never pick rooms | Done |
+| 13 | 25 min chat + 5 min break for 30-min chats; room limit 6 = reps + hackers; over-hours allowed in amber | Done |
+| 14 | Flexibility question: Not flexible / Within 1 hour / Anytime 10–5 | Done |
+| 15 | Live busy-times strip (all sponsors, drafts included, updates every few seconds) | Done |
+| 16 | Their own schedule on the calendar: own workshop and meals | Done |
+| 17 | NO chats within 15 min of their OWN workshop (before or after, setup included); lunch and dinner shown as dotted outlines, allowed | Done |
+| 18 | After submit: Shortlist + "Met at Hacker Fair" lists | Done |
+| 19 | Scan: "Which rep wants to talk to them?", then the offer (time, rep, building) | Done |
+| 20 | Assigned rooms show building + walk: "Ivey, Rm 1352 · 15 min walk · leave by 9:45"; Ivey offers expire 35 min before | Done |
+| 21 | Editing after invites: allowed with a strong warning; hackers reconfirm | Done |
+
+Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lunch uses the sheet's 12–1:30; Sponsor Bay shown as Rm 1235 (sheet says SM Atrium); Priya + Leo moved to 12:30–1:30 to clear the workshop zone; stage times and Sun Life's judging room (Rm 2240) are placeholders.
 
 ## Organizer coffee chats: `organizer-coffee-autofill-v6a/b/c`
 | # | Change | Status |
@@ -49,6 +51,17 @@ Use the look of `sponsor-portal-flow-hacker-v1/index.html#today` (the hacker /li
 | 8 | Send and lock per sponsor; four status words: Needs shortlist, Ready to send, Sent, Confirmed | Building |
 | 9 | 8 rooms: 2241–2243 near, Ivey 1348–1358 (15 min walk); organizers decide rooms and clashes | Building |
 | 10 | "Couldn't be placed" as a clickable warning | Building |
+
+## Organizer dashboard redesign (all sections, phone first): `organizer-dashboard-nav-a/b/c-v1`
+| # | Change | Status |
+|---|---|---|
+| 1 | Redesign the whole organizer dashboard end to end, keeping the real data: Sponsors, Run of show, Coffee chats, Sponsor judging, Task pings | Building |
+| 2 | Coffee chats and Sponsor judging are "WIP" placeholders for now | Building |
+| 3 | Mainly viewed on phones: find the best way to switch sections; 3 versions: A bottom tab bar, B swipeable top tabs, C home hub + header switcher | Building |
+| 4 | Hacker-v1 look (default style) | Building |
+| 5 | Sponsors uses the approved organizer-sponsors-home-v1 content (cards on phones, detail on its own screen, no drawer, "Left" removed) | Building |
+| 6 | Run of show uses the real sheet (35 events, 55 tasks, team availability) from `_data/run-of-show-snapshot.json` | Building |
+| 7 | Task pings: Up next + Ping log; no sponsor help queue (help goes to Slack) | Building |
 
 ## Organizer sponsors home: `organizer-sponsors-home-v1`
 | # | Change | Status |
