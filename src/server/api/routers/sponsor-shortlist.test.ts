@@ -175,6 +175,21 @@ describe("sponsorShortlist: seats, submit, scanned", () => {
     expect((await anon.sponsorShortlist.list({ sponsor: mine.id })).maxShortlist).toBe(1);
   });
 
+  test("shortlist submit, reopen and picks leave coffee_chat_pref.updated_at alone", async () => {
+    const mine = await sponsor();
+    await withSeats(mine.id, 4);
+    const a = await hackerRanking(mine.id, true);
+    const updatedAt = async () =>
+      (await db.select().from(coffeeChatPrefs).where(eq(coffeeChatPrefs.sponsorId, mine.id)))[0]!.updatedAt.getTime();
+    const before = await updatedAt();
+    await new Promise((r) => setTimeout(r, 5));
+    await anon.sponsorShortlist.add({ sponsor: mine.id, userId: a });
+    await anon.sponsorShortlist.remove({ sponsor: mine.id, userId: a });
+    await anon.sponsorShortlist.submit({ sponsor: mine.id });
+    await anon.sponsorShortlist.reopen({ sponsor: mine.id });
+    expect(await updatedAt()).toBe(before);
+  });
+
   test("submit locks the list; reopen unlocks it", async () => {
     const mine = await sponsor();
     await withSeats(mine.id, 4);

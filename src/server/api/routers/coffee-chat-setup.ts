@@ -94,11 +94,17 @@ async function invitedHackers(conn: Pick<typeof db, "select">, sponsorId: string
  * crown or pass a cap). Once organizers sent the sponsor's schedule, a
  * change is allowed only with `confirmAfterInvites` (the page shows the
  * "Invites are already out" warning first); otherwise PRECONDITION_FAILED.
- * Every write bumps coffee_chat_pref.updated_at, so updated_at later than
+ * Every rep or preference edit bumps coffee_chat_pref.updated_at (submits
+ * pass bump: false), so updated_at later than
  * the latest placement sent_at means "the sponsor changed something after
  * Send" (track B reconfirms; docs/handoff/build-a-cc-setup.md).
  */
-async function lockForWrite(tx: Tx, sponsorId: string, confirmAfterInvites = false) {
+async function lockForWrite(
+  tx: Tx,
+  sponsorId: string,
+  confirmAfterInvites = false,
+  { bump = true } = {},
+) {
   const sponsor = await findSponsor(sponsorId, tx);
   await tx
     .select({ id: sponsorJudgingSponsors.id })
@@ -122,11 +128,13 @@ async function lockForWrite(tx: Tx, sponsorId: string, confirmAfterInvites = fal
       message: errors.afterInvites(await invitedHackers(tx, sponsor.id)),
     });
   }
-  const now = new Date();
-  await tx
-    .insert(coffeeChatPrefs)
-    .values({ sponsorId: sponsor.id, updatedAt: now })
-    .onConflictDoUpdate({ target: coffeeChatPrefs.sponsorId, set: { updatedAt: now } });
+  if (bump) {
+    const now = new Date();
+    await tx
+      .insert(coffeeChatPrefs)
+      .values({ sponsorId: sponsor.id, updatedAt: now })
+      .onConflictDoUpdate({ target: coffeeChatPrefs.sponsorId, set: { updatedAt: now } });
+  }
   return sponsor;
 }
 
@@ -475,13 +483,15 @@ export const coffeeChatSetupRouter = createTRPCRouter({
       }
       const now = new Date();
       await db.transaction(async (tx) => {
-        await lockForWrite(tx, sponsor.id, input.confirmAfterInvites);
+        // A submit isn't an edit: updated_at stays (organizer board's
+        // "Changed after invites" flag).
+        await lockForWrite(tx, sponsor.id, input.confirmAfterInvites, { bump: false });
         await tx
           .insert(coffeeChatPrefs)
           .values({ sponsorId: sponsor.id, submittedAt: now })
           .onConflictDoUpdate({
             target: coffeeChatPrefs.sponsorId,
-            set: { submittedAt: now, updatedAt: now },
+            set: { submittedAt: now },
           });
       });
       // after merge with build-e-sheet: void mirrorCoffeeChatSetup();

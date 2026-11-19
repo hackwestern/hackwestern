@@ -338,7 +338,8 @@ export const sponsorShortlistRouter = createTRPCRouter({
         await assertShortlistOpen(tx, sponsor.id, { allowSubmitted: true });
         await tx
           .update(coffeeChatPrefs)
-          .set({ shortlistSubmittedAt: now, updatedAt: now })
+          // Not updated_at: that marks preference/rep edits only.
+          .set({ shortlistSubmittedAt: now })
           .where(eq(coffeeChatPrefs.sponsorId, sponsor.id));
       });
       // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
@@ -352,7 +353,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
       const sponsor = await findSponsor(input.sponsor);
       await db
         .update(coffeeChatPrefs)
-        .set({ shortlistSubmittedAt: null, updatedAt: new Date() })
+        .set({ shortlistSubmittedAt: null })
         .where(eq(coffeeChatPrefs.sponsorId, sponsor.id));
       // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
       return { ok: true };

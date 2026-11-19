@@ -14,7 +14,7 @@
 ## For track B (invites / reconfirmation)
 
 - Changes after Send are allowed. Every team/preferences write returns PRECONDITION_FAILED ("Invites are already out. Changing this will ask N hackers…") unless the client passes `confirmAfterInvites: true`; the page shows that warning first.
-- Every sponsor write (`addRep`, `updateRep`, `removeRep`, `setPrimary`, `savePrefs`, `submitPrefs`) sets `coffee_chat_pref.updated_at = now` in the same transaction. **Edited after Send = `updated_at` > latest placement `sent_at`** (the `get` procedure returns this as `editedAfterSend`; tested).
+- Every rep or preference edit (`addRep`, `updateRep`, `removeRep`, `setPrimary`, `savePrefs`) sets `coffee_chat_pref.updated_at = now` in the same transaction. Submits (`submitPrefs`, shortlist `submit`/`reopen`) and shortlist picks never touch it (tested). **Edited after Send = `updated_at` > latest placement `sent_at`** (the `get` procedure returns this as `editedAfterSend`; tested).
 - What B must do when a sent sponsor edits:
   - **Removed rep**: `coffee_chat_rep` delete cascades to their placements and to `coffee_chat` rows with that `placement_id`. Those hackers lose their invite silently today. B should notify them (or soft-handle before the cascade; that needs a schema change, see below).
   - **Unticked session / fewer chats / different hackers per chat**: placements stay; the organizer board (track C) flags them invalid. B should reconfirm affected hackers after organizers move or remove the chat.

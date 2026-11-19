@@ -214,6 +214,19 @@ describe("coffeeChatSetup: every write bumps coffee_chat_pref.updated_at", () =>
       before = after;
     }
     expect((await stamp())!.longerOneOnOne).toBe(false);
+    // Submitting isn't an edit.
+    await tick();
+    await setup.addRep({ sponsor: id, name: "C", phone: "5195550009" });
+    const res = await setup.get({ sponsor: id });
+    await setup.savePrefs({
+      sponsor: id,
+      hackersPerChat: 1,
+      reps: res.reps.map((r) => ({ id: r.id, chatsWanted: 2, free: ["10"] })),
+    });
+    const edited = (await stamp())!.updatedAt.getTime();
+    await tick();
+    await setup.submitPrefs({ sponsor: id });
+    expect((await stamp())!.updatedAt.getTime()).toBe(edited);
   });
 });
 
@@ -252,9 +265,14 @@ describe("coffeeChatSetup: after organizers send", () => {
     expect(res.editedAfterSend).toBe(false);
 
     // A change now needs the warning confirmed, and is then flagged.
-    await expect(
-      setup.updateRep({ sponsor: id, repId: a.id, name: "Dana W.", phone: "5195550001" }),
-    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED", message: expect.stringContaining("1 hacker") });
+    const refused = await setup
+      .updateRep({ sponsor: id, repId: a.id, name: "Dana W.", phone: "5195550001" })
+      .then(
+        () => null,
+        (e: { code?: string; message: string }) => e,
+      );
+    expect(refused?.code).toBe("PRECONDITION_FAILED");
+    expect(refused?.message).toContain("1 hacker");
     await db.update(coffeeChatPlacements).set({ sentAt: new Date(Date.now() - 1000) }).where(eq(coffeeChatPlacements.repId, a.id));
     await setup.updateRep({ sponsor: id, repId: a.id, name: "Dana W.", phone: "5195550001", confirmAfterInvites: true });
     const after = await setup.get({ sponsor: id });
