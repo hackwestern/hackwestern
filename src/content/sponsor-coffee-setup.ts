@@ -132,9 +132,11 @@ export const sponsorSetupCopy = {
     at: (what: string, when: string) => `${what} · ${when}`,
     /** Round 1's answer-by time (Sat 10:00 AM), in "Next". */
     roundOneAnswerBy: "Sat 10 AM",
-    /** After Send: live invite counts, not a change log. */
-    invites: (accepted: number, waiting: number, open: number) =>
-      `Invites: ${accepted} accepted · ${waiting} waiting · ${open} open`,
+    /**
+     * After Send: live invite counts, not a change log. No declined or open
+     * count: a "no" is replaced by the next hacker.
+     */
+    invites: (accepted: number, waiting: number) => `${accepted} accepted · ${waiting} waiting`,
     /** A sent chat organizers moved or removed (from, to: "2:00"). */
     moved: (rep: string, from: string, to: string | null, room: string | null) =>
       to && room

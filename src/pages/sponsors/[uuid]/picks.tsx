@@ -30,7 +30,7 @@ type Step = (typeof STEPS)[number];
 // picks their name, goes through the submitted projects one at a time or as
 // a list and scores them 1-10 in half points; the sponsor saves some to a
 // shortlist and sends it, then ranks the teams that presented and submits
-// a top SPONSOR_FINAL_TOP (1st-3rd). See docs/decisions.md (2026-11-19).
+// a top SPONSOR_FINAL_TOP (1st-5th). See docs/decisions.md (2026-11-19).
 export default function SponsorJudgingPage() {
   const router = useRouter();
   const uuid = typeof router.query.uuid === "string" ? router.query.uuid : "";

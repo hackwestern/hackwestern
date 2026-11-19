@@ -3,6 +3,7 @@ import type * as Env from "~/env";
 
 import { mirrorCoffeeChats } from "~/server/api/utils/coffee-chat-sheet-mirror";
 import { sheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
+import { mirrorJudgingScores } from "~/server/api/utils/sponsor-judging-scores-mirror";
 import { mirrorSponsorJudging } from "~/server/api/utils/sponsor-judging-sheet-mirror";
 import { getSheetsClient } from "~/server/api/utils/sponsor-sheets";
 
@@ -46,7 +47,7 @@ describe("sheet writes under Vitest", () => {
     ]);
   });
 
-  test("both mirrors write nothing and say disabled", async () => {
+  test("every mirror writes nothing and says disabled", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const before = google.scopes.length;
     await expect(mirrorCoffeeChats()).resolves.toEqual({
@@ -54,6 +55,10 @@ describe("sheet writes under Vitest", () => {
       error: "disabled",
     });
     await expect(mirrorSponsorJudging()).resolves.toEqual({
+      ok: false,
+      error: "disabled",
+    });
+    await expect(mirrorJudgingScores()).resolves.toEqual({
       ok: false,
       error: "disabled",
     });

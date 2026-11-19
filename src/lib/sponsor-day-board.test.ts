@@ -228,7 +228,7 @@ describe("sundayWhere", () => {
       kind: "presenting",
       room: "Rm 2230",
       team: "Team Two",
-      until: "10:15",
+      until: "10:16",
     });
     // Between two slots: still in the room, nobody presenting.
     expect(

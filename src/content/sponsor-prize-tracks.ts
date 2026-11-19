@@ -19,7 +19,7 @@ export const SPONSOR_PRIZE_TRACKS = [
 
 // Digital prize track sponsors (Sponsor Day-Of "In person / Digital" =
 // Digital; Jazz, 2026-11-19). They have no portal link: the spon team enters
-// their 1st-3rd place by Devpost link on the organizer Sponsor judging tab.
+// their 1st-5th place by Devpost link on the organizer Sponsor judging tab.
 // Matched loosely, like the list above.
 export const DIGITAL_JUDGING_SPONSORS = ["PCBWay"] as const;
 

@@ -14,6 +14,7 @@ import {
   phoneDigits,
   setupWindows,
 } from "~/lib/coffee-chat-setup";
+import { effectiveCoffeeChatStatus } from "~/lib/coffee-chat-requests";
 import {
   COFFEE_SESSIONS,
   COFFEE_SESSION_IDS,
@@ -201,6 +202,8 @@ async function yourChats(setup: SponsorSetup): Promise<YourChat[]> {
         .select({
           placementId: coffeeChats.placementId,
           status: coffeeChats.status,
+          slotTime: coffeeChats.slotTime,
+          expiresAt: coffeeChats.expiresAt,
           firstName: applications.firstName,
           accountName: users.name,
         })
@@ -240,8 +243,14 @@ async function yourChats(setup: SponsorSetup): Promise<YourChat[]> {
         chats,
         start: clock(start),
         end: clock(start + Math.max(1, chats) * setup.chatMinutes),
+        // Waiting and accepted only: an invite past its answer-by (not yet
+        // written back as expired) is replaced, not shown.
         hackers: hackerRows
-          .filter((h) => h.placementId === p.id)
+          .filter(
+            (h) =>
+              h.placementId === p.id &&
+              effectiveCoffeeChatStatus(h, new Date()) !== "expired",
+          )
           .map((h) => ({
             firstName:
               [h.firstName, h.accountName?.trim().split(/\s+/)[0]]

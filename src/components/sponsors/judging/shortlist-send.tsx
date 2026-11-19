@@ -5,6 +5,12 @@ import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import {
+  formatPresentationTime,
+  PRESENTATION_PITCH_MINUTES,
+  PRESENTATION_QA_MINUTES,
+  SHORTLIST_MAX,
+} from "~/lib/sponsor-presentations";
+import {
   formatAverage,
   formatSubmittedTime,
   teamIdAndLink,
@@ -26,9 +32,11 @@ const iconButton = cn(
 
 /**
  * Round 1's shortlist step: the shortlisted teams (remove with X) and
- * "Send shortlist", which hands the list to organizers for scheduling.
- * Sending again replaces the sent list. Round 2 (ranking) opens on this
- * tab once organizers open it after presentations.
+ * "Send shortlist", which hands the list to organizers for scheduling (at
+ * most SHORTLIST_MAX, one per presentation slot). Once scheduled, each
+ * team shows its presentation time, in time order. Sending again replaces
+ * the sent list. Round 2 (ranking) opens on this tab once organizers open
+ * it after presentations.
  */
 export function ShortlistSend({
   sponsor,
@@ -50,6 +58,11 @@ export function ShortlistSend({
   onSave: (teamId: string, patch: ReviewPatch) => void;
   onBrowse: () => void;
 }) {
+  // Team id -> slot start, once presentations are scheduled.
+  const startOf = useMemo(
+    () => new Map(data.round.slots.map((s) => [s.teamId, s.start])),
+    [data.round.slots],
+  );
   const shortlist = useMemo(
     () =>
       data.teams
@@ -57,10 +70,13 @@ export function ShortlistSend({
         .map((t) => ({ ...t, score: reviews.get(t.id)?.score ?? null }))
         .sort(
           (a, b) =>
-            (b.score ?? 0) - (a.score ?? 0) || a.name.localeCompare(b.name),
+            (startOf.get(a.id) ?? Infinity) - (startOf.get(b.id) ?? Infinity) ||
+            (b.score ?? 0) - (a.score ?? 0) ||
+            a.name.localeCompare(b.name),
         ),
-    [data.teams, reviews],
+    [data.teams, reviews, startOf],
   );
+  const tooMany = shortlist.length > SHORTLIST_MAX;
   const sent = data.round.shortlistSent;
   const changed =
     sent !== null &&
@@ -98,8 +114,16 @@ export function ShortlistSend({
           {copy.round.sendHeading}
         </h2>
         <p className="m-0 text-base text-dashboard-text-medium">
-          {copy.round.sendIntro}
+          {copy.round.sendIntro(SHORTLIST_MAX)}
         </p>
+        {startOf.size > 0 && (
+          <p className="m-0 text-sm font-semibold text-dashboard-text-active">
+            {copy.round.format(
+              PRESENTATION_PITCH_MINUTES,
+              PRESENTATION_QA_MINUTES,
+            )}
+          </p>
+        )}
       </div>
 
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
@@ -119,6 +143,8 @@ export function ShortlistSend({
                 {team.score === null
                   ? copy.shortlist.noScore
                   : copy.shortlist.scoreOf(formatAverage(team.score)!)}
+                {startOf.has(team.id) &&
+                  ` · ${copy.round.presentsAt(formatPresentationTime(startOf.get(team.id)!))}`}
               </span>
               <ProjectLinks team={team} />
             </div>
@@ -167,6 +193,11 @@ export function ShortlistSend({
                   {copy.round.changed}
                 </span>
               )}
+              {tooMany && (
+                <span className="text-sm font-medium text-dashboard-status-warning">
+                  {copy.round.tooMany(SHORTLIST_MAX, shortlist.length)}
+                </span>
+              )}
               {send.isError && (
                 <span className="text-sm font-medium text-dashboard-status-warning">
                   {send.error.data?.code === "BAD_REQUEST"
@@ -180,6 +211,7 @@ export function ShortlistSend({
               disabled={
                 send.isPending ||
                 shortlist.length === 0 ||
+                tooMany ||
                 (sent !== null && !changed)
               }
               onClick={() => send.mutate({ sponsor })}

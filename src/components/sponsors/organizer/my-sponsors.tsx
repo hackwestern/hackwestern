@@ -15,6 +15,7 @@ import {
   type StatusPill,
 } from "~/lib/sponsor-organizer";
 import { hasPrizeTrack, isDigitalJudging } from "~/lib/sponsor-prize-tracks";
+import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
 
 const copy = sponsorOrganizerCopy.mine;
@@ -565,11 +566,11 @@ function SponsorTables({
               </Row>
             </>
           )}
-          <Row id="top-three" label={a.topThree}>
+          <Row id="top-picks" label={a.topPicks(SPONSOR_FINAL_TOP)}>
             {summary?.sunday.finalSubmittedAt ? (
-              v.topThreeSent(dayTime(summary.sunday.finalSubmittedAt))
+              v.topPicksSent(dayTime(summary.sunday.finalSubmittedAt))
             ) : (
-              <Muted>{v.topThreeNot}</Muted>
+              <Muted>{v.topPicksNot}</Muted>
             )}
           </Row>
         </Block>

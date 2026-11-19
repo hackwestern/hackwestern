@@ -36,7 +36,7 @@ import {
  * the run-of-show sheet (docs/flows/sponsor-judging.md). The app is the
  * source of truth: the tab is rewritten in full from the DB on every
  * judging change (shortlist sent, presentations scheduled, hackers
- * notified, top 3 submitted or entered) and by the organizer "Sync to
+ * notified, top 5 submitted or entered) and by the organizer "Sync to
  * sheet" button. Same pattern as the coffee chat mirror: its own tab
  * (created if missing), the spreadsheets write scope, writes one at a time,
  * and a failure is logged once and never blocks the action. Outside
@@ -45,7 +45,7 @@ import {
  * Layout (Jazz, 2026-11-19: "Sponsor Judging sheet tab is wide"):
  *   1. Sponsors: one row per prize track sponsor. Sponsor, In person /
  *      Digital, Judging room, Round 1 status, Shortlist sent, Shortlist
- *      (team IDs), Round 2 status, Top 3 sent, 1st, 2nd, 3rd place, Notes.
+ *      (team IDs), Round 2 status, Top 5 sent, 1st to 5th place, Notes.
  *      Place cells read "<team ID> · <Devpost link>".
  *   2. Presentations: one row per shortlisted or scheduled team per
  *      sponsor (Sponsor, Team ID, Team, Members, Time, Room, Notified).
@@ -164,7 +164,7 @@ export function judgingSheetRows(input: JudgingSheetInput): string[][] {
     const round2 = final
       ? digital
         ? status.digitalEntered
-        : status.submitted
+        : status.submitted(SPONSOR_FINAL_TOP)
       : digital
         ? status.digitalWaiting
         : !input.round2Open
@@ -187,7 +187,7 @@ export function judgingSheetRows(input: JudgingSheetInput): string[][] {
       timestamp(final?.submittedAt),
       ...places,
       digital
-        ? sheetCopy.sponsors.notes.digital
+        ? sheetCopy.sponsors.notes.digital(SPONSOR_FINAL_TOP)
         : remote
           ? sheetCopy.sponsors.notes.remote
           : "",

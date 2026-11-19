@@ -15,7 +15,7 @@ import { api } from "~/utils/api";
 const copy = sponsorJudgingCopy.organizer.digital;
 
 /**
- * Organizer entry of a digital sponsor's 1st-3rd place (PCBWay today: no
+ * Organizer entry of a digital sponsor's 1st-5th place (PCBWay today: no
  * portal). Paste each Devpost link (or team ID); the match (name, ID,
  * link) shows under the field to confirm, and Save is off until every
  * place matches a different submitted team in that sponsor's track. The

@@ -1,6 +1,10 @@
 import { LIVE_URL } from "~/content/coffee-chat-notify";
 import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
-import { formatPresentationTime } from "~/lib/sponsor-presentations";
+import {
+  formatPresentationTime,
+  PRESENTATION_PITCH_MINUTES,
+  PRESENTATION_QA_MINUTES,
+} from "~/lib/sponsor-presentations";
 import { escapeSlackText } from "~/server/slack/client";
 import { dmHacker } from "~/server/slack/dm";
 
@@ -40,7 +44,10 @@ export function presentationDmMessage(
       {
         type: "context",
         elements: [
-          { type: "mrkdwn", text: `${copy.footer} <${LIVE_URL}|${LIVE_URL}>` },
+          {
+            type: "mrkdwn",
+            text: `${copy.footer(PRESENTATION_PITCH_MINUTES, PRESENTATION_QA_MINUTES)} <${LIVE_URL}|${LIVE_URL}>`,
+          },
         ],
       },
     ],

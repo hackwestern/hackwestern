@@ -12,6 +12,7 @@ import {
   orderReps,
   organizerHomeHref,
   organizerForEmail,
+  viewRowOf,
   parseOrganizerLocation,
   pillDone,
   statusAfterPill,
@@ -170,6 +171,29 @@ describe("My sponsors matching", () => {
     const bare = [...two, "Noah"];
     expect(leadsSponsor("Noah", { row: 4, name: "Noah" }, bare)).toBe(true);
     expect(leadsSponsor("Noah", noah, bare)).toBe(false);
+  });
+  it("Same view as: the named person's row and name, one level only", () => {
+    const team = [
+      { name: "Noah Medland", loginEmail: "noah@example.test", sameViewAs: "" },
+      { name: "Robin Vale", loginEmail: "robin@example.test", sameViewAs: "Noah Medland" },
+      { name: "Kai Lund", loginEmail: "kai@example.test", sameViewAs: "Robin Vale" },
+      { name: "Sam Ortiz", loginEmail: "sam@example.test", sameViewAs: "Nobody Here" },
+      { name: "Lee Park", loginEmail: "lee@example.test", sameViewAs: "  " },
+    ];
+    // Same view: Robin sees exactly Noah's page, and keeps their own name for the header.
+    expect(organizerForEmail("robin@example.test", team)).toEqual({ ...noah, ownName: "Robin Vale" });
+    // No chains: Kai gets Robin's own row, not Noah's.
+    expect(viewRowOf(2, team)).toBe(1);
+    expect(organizerForEmail("kai@example.test", team)).toEqual({ row: 1, name: "Robin Vale", ownName: "Kai Lund" });
+    // Unknown name or blank: their own row.
+    expect(organizerForEmail("sam@example.test", team)).toEqual({ row: 3, name: "Sam Ortiz" });
+    expect(organizerForEmail("lee@example.test", team)).toEqual({ row: 4, name: "Lee Park" });
+    // No column at all: unchanged.
+    expect(viewRowOf(0, contacts)).toBe(0);
+    // A first name that fits two rows names nobody.
+    const twoNoahs = [...team, { name: "Noah Kim", loginEmail: "", sameViewAs: "" }];
+    twoNoahs[1] = { ...team[1]!, sameViewAs: "Noah" };
+    expect(viewRowOf(1, twoNoahs)).toBe(1);
   });
   it("same full name twice: matches by row, never the wrong one", () => {
     const dup = [

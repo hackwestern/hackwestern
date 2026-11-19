@@ -40,8 +40,8 @@ const review = (teamId: string, patch: Partial<TeamReview> = {}) => ({
 });
 
 describe("SPONSOR_FINAL_TOP", () => {
-  it("is a ranked top 3 (1st, 2nd, 3rd; Jazz 2026-11-19)", () => {
-    expect(SPONSOR_FINAL_TOP).toBe(3);
+  it("is a ranked top 5 (1st to 5th; Jazz 2026-11-19)", () => {
+    expect(SPONSOR_FINAL_TOP).toBe(5);
     expect(finalTopIsValid(SPONSOR_FINAL_TOP)).toBe(true);
   });
 
@@ -166,7 +166,7 @@ describe("cleanJudgeName / judgeKey", () => {
   });
 });
 
-describe("matchTeamByLink (digital top 3)", () => {
+describe("matchTeamByLink (digital top 5)", () => {
   const teams = [
     { id: "a1c3e5f70912", devpostUrl: "https://devpost.com/software/cool-app" },
     { id: "b2", devpostUrl: "https://devpost.com/software/other/" },
@@ -226,28 +226,32 @@ describe("judgingOpen", () => {
 describe("rankingError", () => {
   const shortlist = new Set(["a", "b", "c", "d", "e", "f"]);
 
-  it("accepts exactly three shortlisted, distinct teams", () => {
-    expect(rankingError(["a", "b", "c"], shortlist)).toBeNull();
+  it("accepts exactly five shortlisted, distinct teams", () => {
+    expect(rankingError(["a", "b", "c", "d", "e"], shortlist)).toBeNull();
   });
 
   it("refuses the wrong count", () => {
-    expect(rankingError(["a", "b"], shortlist)).toBe("wrongCount");
-    expect(rankingError(["a", "b", "c", "d", "e"], shortlist)).toBe(
+    expect(rankingError(["a", "b", "c", "d"], shortlist)).toBe("wrongCount");
+    expect(rankingError(["a", "b", "c", "d", "e", "f"], shortlist)).toBe(
       "wrongCount",
     );
     expect(rankingError([], shortlist)).toBe("wrongCount");
   });
 
   it("refuses duplicates", () => {
-    expect(rankingError(["a", "a", "b"], shortlist)).toBe("duplicate");
+    expect(rankingError(["a", "a", "b", "c", "d"], shortlist)).toBe(
+      "duplicate",
+    );
   });
 
   it("refuses teams not on the shortlist", () => {
-    expect(rankingError(["a", "b", "z"], shortlist)).toBe("notShortlisted");
+    expect(rankingError(["a", "b", "c", "d", "z"], shortlist)).toBe(
+      "notShortlisted",
+    );
   });
 
   it("follows a configured size", () => {
-    expect(rankingError(["a", "b", "c", "d", "e"], shortlist, 5)).toBeNull();
+    expect(rankingError(["a", "b", "c"], shortlist, 3)).toBeNull();
   });
 });
 

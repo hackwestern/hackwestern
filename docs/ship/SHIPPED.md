@@ -30,7 +30,8 @@ The whole build is done, tested and pushed. It's on PR #1165 with a Vercel previ
 - **Help** shows their Hack Western lead's phone and Noah as the emergency contact, each with a copy button. There's no request form.
 - **Judging:**
   - Several reps can judge on one login, scoring 1 to 10 in half points, with a rubric.
-  - They submit a ranked top 3.
+  - They submit a ranked top 5 (1st to 5th).
+  - Reps' scores fill a "Judging Scores" tab in the run-of-show sheet (production only). If the app is down, reps type scores there instead; the app never blanks a cell.
   - The page opens Sunday 9 AM.
 
 **Organizers:**
@@ -43,8 +44,9 @@ The whole build is done, tested and pushed. It's on PR #1165 with a Vercel previ
   - Undo after Remove.
 - **Send (Noah only):**
   - Asks first, then confirms the schedules and invites hackers: one per seat, people met at the booth first, then the shortlist, then interested hackers.
-  - Hackers answer by Sat 10 AM. Open seats are offered again every 30 minutes from 10:30.
-- **Judging tab:** top 3, and PCBWay's top 3 entered by Devpost link.
+  - Hackers answer by Sat 10 AM. When one declines, their seat goes to the next hacker right away. From 10 AM, new invites go out every 30 minutes.
+  - Screens show only accepted and waiting. A seat nobody eligible can take shows on the board as "1 seat couldn't be filled (no one free)".
+- **Judging tab:** top 5, and PCBWay's top 5 entered by Devpost link.
 
 **Safety:**
 - Invites can't go out from dev or previews. A kill switch is on only on the production deploy, and there's a dry mode for testing.

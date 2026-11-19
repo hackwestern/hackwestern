@@ -13,10 +13,16 @@
 export const PRESENTATION_WINDOW_START = 10 * 60;
 /** Last slot ends by 11:30. */
 export const PRESENTATION_WINDOW_END = 11 * 60 + 30;
-export const PRESENTATION_SLOT_MINUTES = 5;
+/**
+ * One slot: 3 min pitch, 2 min Q&A, 1 min to switch teams (Jazz,
+ * 2026-11-19: 15 slots exactly fill 10:00-11:30).
+ */
+export const PRESENTATION_SLOT_MINUTES = 6;
+export const PRESENTATION_PITCH_MINUTES = 3;
+export const PRESENTATION_QA_MINUTES = 2;
 /**
  * A team's next presentation starts at least this long after its previous
- * one started: 5 minutes presenting, 5 minutes to walk to the next room.
+ * one started: 6 minutes in the slot, 4 minutes to walk to the next room.
  */
 export const PRESENTATION_MIN_GAP_MINUTES = 10;
 
@@ -34,7 +40,7 @@ export const PRESENTATION_WINDOW: PresentationWindow = {
   minGapMinutes: PRESENTATION_MIN_GAP_MINUTES,
 };
 
-/** Slots one room has in the window (18 for 10:00-11:30 at 5 minutes). */
+/** Slots one room has in the window (15 for 10:00-11:30 at 6 minutes). */
 export function slotsPerRoom(window: PresentationWindow = PRESENTATION_WINDOW) {
   return Math.max(
     0,
@@ -43,6 +49,12 @@ export function slotsPerRoom(window: PresentationWindow = PRESENTATION_WINDOW) {
 }
 
 export const PRESENTATION_SLOTS_PER_ROOM = slotsPerRoom();
+
+/**
+ * Most teams a sponsor can send for round 1: one per slot in their room
+ * (15). sponsorScoring.sendShortlist refuses more.
+ */
+export const SHORTLIST_MAX = PRESENTATION_SLOTS_PER_ROOM;
 
 export type PresentationRequest = {
   sponsorId: string;
@@ -67,6 +79,11 @@ export type PresentationSchedule = {
   unplaced: { sponsorId: string; teamId: string }[];
   /** Sponsors with a shortlist but no room; none of their teams placed. */
   noRoom: { sponsorId: string; teamIds: string[] }[];
+  /**
+   * Teams past the first SHORTLIST_MAX of a sponsor's shortlist (in
+   * shortlist order): never scheduled. Only an old send can have them.
+   */
+  overCap: { sponsorId: string; teamIds: string[] }[];
 };
 
 /** Cap on backtracking steps per team, so a hopeless team can't hang it. */
@@ -90,14 +107,19 @@ const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
  * shortlists are placed first; each team's slots are found by
  * backtracking over the free slots, and a team that's still stuck is
  * fitted by moving already placed teams to other slots in the same room
- * (augmenting paths). Anything that can't fit is returned in `unplaced`,
- * and sponsors without a room in `noRoom`; nothing is dropped. The same
- * input always gives the same schedule.
+ * (augmenting paths). A sponsor gets at most `maxPerSponsor`
+ * (SHORTLIST_MAX) teams: the first ones in shortlist order; the rest are
+ * returned in `overCap`. Anything that can't fit is returned in
+ * `unplaced`, and sponsors without a room in `noRoom`; nothing is
+ * dropped. The same input always gives the same schedule.
  */
 export function schedulePresentations(
   requests: readonly PresentationRequest[],
   window: PresentationWindow = PRESENTATION_WINDOW,
-  { searchLimit = SEARCH_LIMIT }: { searchLimit?: number } = {},
+  {
+    searchLimit = SEARCH_LIMIT,
+    maxPerSponsor = SHORTLIST_MAX,
+  }: { searchLimit?: number; maxPerSponsor?: number } = {},
 ): PresentationSchedule {
   const slotCount = slotsPerRoom(window);
   const startOf = (i: number) => window.start + i * window.slotMinutes;
@@ -117,12 +139,18 @@ export function schedulePresentations(
   const sponsorIds = [...sponsors.keys()].sort(byText);
 
   const noRoom: PresentationSchedule["noRoom"] = [];
+  const overCap: PresentationSchedule["overCap"] = [];
   const grids = new Map<string, (string | null)[]>();
   const demand = new Map<string, number>();
   const wanted = new Map<string, string[]>();
   for (const sponsorId of sponsorIds) {
     const s = sponsors.get(sponsorId)!;
-    const teams = [...s.teams].sort(byText);
+    // The first maxPerSponsor in shortlist order (Set keeps send order).
+    const inOrder = [...s.teams];
+    if (inOrder.length > maxPerSponsor) {
+      overCap.push({ sponsorId, teamIds: inOrder.slice(maxPerSponsor) });
+    }
+    const teams = inOrder.slice(0, maxPerSponsor).sort(byText);
     if (!s.room) {
       noRoom.push({ sponsorId, teamIds: teams });
       continue;
@@ -265,7 +293,7 @@ export function schedulePresentations(
   }
   slots.sort((a, b) => a.start - b.start || byText(a.sponsorId, b.sponsorId));
 
-  return { slots, unplaced, noRoom };
+  return { slots, unplaced, noRoom, overCap };
 }
 
 /**
@@ -329,7 +357,7 @@ export type JudgingRound = "shortlist" | "sent" | "locked" | "rank";
  * room, or none of their teams fit). A sponsor with no slot can't rank in
  * round 2 (Jazz, 2026-11-18); sponsorScoring.submit refuses them too.
  * Before that, "sent" (shortlist sent, waiting for round 2) or "shortlist"
- * (round 1, nothing sent). No top 3 can be submitted until round 2 is
+ * (round 1, nothing sent). No top list can be submitted until round 2 is
  * open. For the picks page; takes sponsorScoring.get's `round`.
  */
 export function judgingRound(round: {

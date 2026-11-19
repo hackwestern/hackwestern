@@ -1,30 +1,34 @@
 import { sponsorVenueCopy as copy } from "~/content/sponsor-venue";
 import { SPONSOR_BAY_BOOTHS, boothFor } from "~/lib/sponsor-bay-layout";
 import { cn } from "~/lib/utils";
+import { sponsorCard, tapRow } from "./sponsor-shell-styles";
 
 /**
  * The Sponsor Bay floor: booths around the projector screen, with the
  * viewer's own booth highlighted (Jazz, 2026-11-18).
  */
-export function BoothLayout({ sponsorName }: { sponsorName?: string | null }) {
+export function BoothLayout({
+  sponsorName,
+  title,
+}: {
+  sponsorName?: string | null;
+  /** A heading inside the card (the Map page's "Your booth"). */
+  title?: React.ReactNode;
+}) {
   const mine = boothFor(sponsorName);
   return (
-    <figure className="m-0 flex flex-col gap-3">
+    <figure className={cn("m-0 flex flex-col gap-3", sponsorCard)}>
+      {title}
       <div
         role="img"
         aria-label={
           mine ? copy.booths.labelMine(mine.sponsor) : copy.booths.label
         }
-        className="flex flex-col gap-3 rounded-dashboard-2xl bg-dashboard-bg-surface p-4 shadow-dashboard-card sm:p-5"
+        className="flex flex-col gap-1.5 sm:gap-2"
       >
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-xs font-semibold uppercase tracking-wide text-dashboard-text-light">
-            {copy.booths.screen}
-          </span>
-          <span
-            aria-hidden
-            className="h-1 w-3/4 rounded-full bg-dashboard-text-heavy"
-          />
+        {/* The projector screen spans the three top booths. */}
+        <div className="mx-[20%] flex min-h-11 items-center justify-center rounded-dashboard-lg border border-dashed border-dashboard-border-control bg-dashboard-bg-inset text-xs font-semibold text-dashboard-text-medium sm:text-sm">
+          {copy.booths.screen}
         </div>
         <div
           aria-hidden
@@ -32,27 +36,20 @@ export function BoothLayout({ sponsorName }: { sponsorName?: string | null }) {
         >
           {SPONSOR_BAY_BOOTHS.map((b) => {
             const isMine = mine?.sponsor === b.sponsor;
-            const vertical = b.side === "left" || b.side === "right";
             return (
               <div
                 key={b.sponsor}
                 style={{ gridColumn: b.col, gridRow: b.row }}
                 className={cn(
-                  "flex items-center justify-center rounded-dashboard-sm border px-1 py-1.5 text-center text-xs font-semibold leading-tight",
+                  // Company names stay on one line (Jazz, v6).
+                  "flex min-w-0 items-center justify-center whitespace-nowrap rounded-dashboard-lg border px-0.5 text-center text-dashboard-micro font-semibold leading-tight sm:text-xs",
+                  tapRow,
                   isMine
                     ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse shadow-dashboard-card"
-                    : "border-dashboard-border-subtle bg-dashboard-bg-inset text-dashboard-text-medium",
-                  vertical && "min-h-16",
+                    : "border-dashboard-border-default bg-dashboard-bg-surface text-dashboard-text-medium",
                 )}
               >
-                <span
-                  className={cn(
-                    vertical && "[writing-mode:vertical-rl]",
-                    b.side === "left" && "rotate-180",
-                  )}
-                >
-                  {b.sponsor}
-                </span>
+                {b.sponsor}
               </div>
             );
           })}

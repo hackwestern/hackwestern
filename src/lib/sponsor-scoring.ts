@@ -6,16 +6,16 @@
  * Flow: a sponsor's reps each score teams 1-10 in half points (one login,
  * "Who's judging?"), the sponsor saves some to their shortlist, then ranks
  * the teams that presented and submits exactly SPONSOR_FINAL_TOP
- * (1st, 2nd, 3rd; Jazz 2026-11-19).
+ * (1st to 5th; Jazz 2026-11-19, replacing the earlier top 3).
  */
 
 /**
- * How many ranked teams a sponsor submits: 1st, 2nd and 3rd place. Exactly
+ * How many ranked teams a sponsor submits: 1st to 5th place. Exactly
  * this many, no more, no fewer. Jazz can raise it to at most
  * SPONSOR_FINAL_TOP_LIMIT (the Sponsor Judging sheet tab has one column per
  * place, so the sheet headers follow it).
  */
-export const SPONSOR_FINAL_TOP = 3;
+export const SPONSOR_FINAL_TOP = 5;
 export const SPONSOR_FINAL_TOP_LIMIT = 10;
 
 export const SCORE_MIN = 1;
@@ -442,7 +442,7 @@ export function splitTeams(
 }
 
 // ---------------------------------------------------------------------------
-// Digital sponsors: the spon team enters 1st-3rd by Devpost link
+// Digital sponsors: the spon team enters 1st-5th by Devpost link
 // ---------------------------------------------------------------------------
 
 /**

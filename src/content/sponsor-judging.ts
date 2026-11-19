@@ -19,7 +19,7 @@ export const sponsorJudgingCopy = {
   back: "Back to sponsor hub",
   title: "Judging",
   intro: (top: number) =>
-    `Each of you scores projects out of 10, in half points. Save the strongest to your shortlist and send it. After presentations, rank your top ${top}: 1st, 2nd and 3rd place.`,
+    `Each of you scores projects out of 10, in half points. Save the strongest to your shortlist and send it. After presentations, rank your top ${top}: 1st to ${ordinal(top)} place.`,
   trackTag: (track: string) => `Showing teams in ${track}`,
   invalid: {
     title: "Link not recognised",
@@ -247,8 +247,13 @@ export const sponsorJudgingCopy = {
   /** Round 1 ends with Send shortlist; round 2 ranks teams that presented. */
   round: {
     sendHeading: "Your shortlist",
-    sendIntro:
-      "When you're happy with it, send it to us. We'll schedule each team to present in your room from 10:00.",
+    sendIntro: (max: number) =>
+      `When you're happy with it, send it to us: up to ${max} teams, one per presentation slot. We'll schedule each team to present in your room from 10:00.`,
+    tooMany: (max: number, have: number) =>
+      `Your room has ${max} presentation slots. Remove ${plural(have - max, "team", "teams")} before you send.`,
+    /** Shown with the schedule: what one presentation slot holds. */
+    format: (pitch: number, qa: number) =>
+      `Each presentation: ${pitch} min pitch · ${qa} min Q&A`,
     send: "Send shortlist",
     resend: "Send again",
     sending: "Sending…",
@@ -274,15 +279,17 @@ export const sponsorJudgingCopy = {
   errors: {
     unknownSponsor: "Unknown sponsor link",
     emptyShortlist: "Shortlist at least one team before sending.",
+    tooMany: (max: number) =>
+      `Send at most ${max} teams: your room has ${max} presentation slots.`,
     notEligible: "That team isn't one you can judge.",
     trackUnavailable: "Couldn't load your prize track. Try again in a minute.",
     closed: "Judging has closed.",
     round2Closed: "Round 2 isn't open yet. It opens after presentations.",
     noPrizeTrack: "Judging is only for sponsors with a prize track.",
-    noSlot:
-      "Round 2 is locked: no teams presented to you, so you can't rank a top 3.",
-    digital:
-      "Digital sponsors don't judge in the portal. Send your top 3 to your Hack Western contact.",
+    noSlot: (top: number) =>
+      `Round 2 is locked: no teams presented to you, so you can't rank a top ${top}.`,
+    digital: (top: number) =>
+      `Digital sponsors don't judge in the portal. Send your top ${top} to your Hack Western contact.`,
     notDigital: "That sponsor isn't a digital prize track sponsor.",
     digitalNoMatch: (place: number, link: string) =>
       `${ordinal(place)} place: "${link}" doesn't match a submitted team in this sponsor's track.`,
@@ -330,14 +337,14 @@ export const sponsorJudgingCopy = {
         notOpen: "Not open",
         ranking: "Ranking",
         locked: "Locked: no presentations",
-        submitted: "Top 3 sent",
+        submitted: (top: number) => `Top ${top} sent`,
         digitalWaiting: "Waiting for the spon team",
         digitalEntered: "Entered by the spon team",
       },
       notes: {
         remote: "Judges remotely; presentations are online.",
-        digital:
-          "Digital sponsor: top 3 entered by the spon team from Devpost links.",
+        digital: (top: number) =>
+          `Digital sponsor: top ${top} entered by the spon team from Devpost links.`,
       },
     },
     schedule: {
@@ -353,6 +360,26 @@ export const sponsorJudgingCopy = {
       ],
       notified: { slack: "Slack", email: "Email", failed: "failed" },
     },
+  },
+
+  /**
+   * The "Judging Scores" tab (sponsor-judging-scores-mirror.ts): one block
+   * per in-person sponsor, filled as reps score. The app is the source of
+   * truth: where it has a value it wins; hand-typed cells survive only where
+   * the app has no value. The backup if the app is down, so the app never
+   * blanks a cell.
+   */
+  scoresSheet: {
+    tab: "Judging Scores",
+    note: "Filled by the app as reps score. Where the app has a score it wins over anything typed here; if the app is down, type scores here.",
+    headers: {
+      time: "Time",
+      teamId: "Team ID",
+      devpost: "Devpost",
+      average: "Average",
+    },
+    /** Placeholder header for an unused rep column; type a name over it. */
+    rep: (n: number) => `Rep ${n}`,
   },
 
   /** The organizer "Sponsor judging" tab on /internal/sponsors. */

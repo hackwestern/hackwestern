@@ -184,7 +184,7 @@ export function Round1Cell({ summary }: { summary: SponsorSummary }) {
   return <StatusText tone="quiet">{copy.round1.notStarted}</StatusText>;
 }
 
-/** Sunday round 2: top 3 sent, waiting on them, or not open yet. */
+/** Sunday round 2: top 5 sent, waiting on them, or not open yet. */
 export function Round2Cell({
   summary,
   round2Open,

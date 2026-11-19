@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import * as Popover from "@radix-ui/react-popover";
-import { CircleHelp, Compass } from "lucide-react";
+import { Compass } from "lucide-react";
 import {
   hoverTint,
   pressable,
@@ -227,13 +227,17 @@ export function SponsorTour({
             type="button"
             aria-label={copy.menu.label}
             className={cn(
-              "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm font-semibold text-dashboard-text-medium shadow-dashboard-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
+              // Tablets and up; on phones the same guides sit in Help.
+              "hidden min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface px-3 text-sm font-semibold text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary md:inline-flex",
               hoverTint,
               pressable,
             )}
           >
-            <CircleHelp aria-hidden className="size-4 shrink-0" />
-            <span className="hidden sm:inline">{copy.menu.button}</span>
+            <Compass
+              aria-hidden
+              className="size-5 shrink-0 text-dashboard-text-active"
+            />
+            <span>{copy.menu.button}</span>
           </button>
         </Popover.Trigger>
         <Popover.Portal>
@@ -248,22 +252,7 @@ export function SponsorTour({
             <p className="dashboard-section-label m-0 px-3 pb-1 pt-2 text-dashboard-text-light">
               {copy.menu.heading}
             </p>
-            <ul className="m-0 flex list-none flex-col p-0">
-              {howToToursFor(hasPrizeTrack).map((id) => (
-                <li key={id}>
-                  <MenuItem onClick={() => start(id)}>{tourName(id)}</MenuItem>
-                </li>
-              ))}
-              <li className="mt-1 border-t border-dashboard-border-subtle pt-1">
-                <MenuItem onClick={() => start(WELCOME_TOUR_ID)}>
-                  <Compass
-                    aria-hidden
-                    className="size-4 shrink-0 text-dashboard-action-primary"
-                  />
-                  {copy.menu.welcome}
-                </MenuItem>
-              </li>
-            </ul>
+            <SponsorTourList hasPrizeTrack={hasPrizeTrack} onPick={start} />
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>
@@ -281,6 +270,37 @@ export function SponsorTour({
 
       {overlay}
     </>
+  );
+}
+
+/**
+ * The how-to guides, then the portal tour: the How to menu (tablets and
+ * up) and Help's "Show me how" (every size) list the same tours.
+ */
+export function SponsorTourList({
+  hasPrizeTrack,
+  onPick,
+}: {
+  hasPrizeTrack?: boolean;
+  onPick: (id: SponsorTourId) => void;
+}) {
+  return (
+    <ul className="m-0 flex list-none flex-col p-0">
+      {howToToursFor(hasPrizeTrack).map((id) => (
+        <li key={id}>
+          <MenuItem onClick={() => onPick(id)}>{tourName(id)}</MenuItem>
+        </li>
+      ))}
+      <li className="mt-1 border-t border-dashboard-border-subtle pt-1">
+        <MenuItem onClick={() => onPick(WELCOME_TOUR_ID)}>
+          <Compass
+            aria-hidden
+            className="size-4 shrink-0 text-dashboard-action-primary"
+          />
+          {copy.menu.welcome}
+        </MenuItem>
+      </li>
+    </ul>
   );
 }
 

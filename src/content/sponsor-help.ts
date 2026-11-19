@@ -32,6 +32,8 @@ export const sponsorHelpCopy = {
   } satisfies Record<SponsorHelpReason, string>,
 
   button: "Need help?",
+  /** The page header's Help button (every sponsor page, phones and up). */
+  headerButton: "Help",
   buttonHint: "Text or call your Hack Western contact.",
 
   /** The portal Help: your HW lead, then the emergency contact. */

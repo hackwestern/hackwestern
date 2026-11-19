@@ -64,7 +64,10 @@ import {
 } from "~/server/api/utils/coffee-chat-capacity";
 import { buildChatBoard } from "~/server/api/utils/coffee-chat-board";
 import { coffeeChatTimes } from "~/server/api/utils/coffee-chat-expiry";
-import { kickDueInviteRounds } from "~/server/api/utils/coffee-chat-invites";
+import {
+  kickDueInviteRounds,
+  lockBoard,
+} from "~/server/api/utils/coffee-chat-invites";
 import { notifyCoffeeChat } from "~/server/api/utils/coffee-chat-notify";
 import { respondToCoffeeChat } from "~/server/api/utils/coffee-chat-respond";
 import { resolveScannedUserId } from "~/server/api/utils/hacker-id";
@@ -368,17 +371,24 @@ export type OrganizerCoffeeChat = {
 
 /**
  * Lock a chat for an organizer change: its sponsor row first (same order as
- * offers), then the chat. 404 when missing; 409 once it no longer holds a
- * seat (declined, expired, cancelled).
+ * offers), then the chat. A session invite (it has a placement) takes the
+ * board lock before both, as a decline and a round do (board, sponsor,
+ * chat), so a cancel or room move can't deadlock with a decline's refill.
+ * 404 when missing; 409 once it no longer holds a seat (declined, expired,
+ * cancelled).
  */
 async function lockActiveChat(tx: Tx, chatId: string, now: Date) {
   const [found] = await tx
-    .select({ sponsorId: coffeeChats.sponsorId })
+    .select({
+      sponsorId: coffeeChats.sponsorId,
+      placementId: coffeeChats.placementId,
+    })
     .from(coffeeChats)
     .where(eq(coffeeChats.id, chatId));
   if (!found) {
     throw new TRPCError({ code: "NOT_FOUND", message: errors.chatNotFound });
   }
+  if (found.placementId) await lockBoard(tx);
   await findSponsor(tx, found.sponsorId, true);
   const [chat] = await tx
     .select()
@@ -883,6 +893,16 @@ async function saveSlotLimit(input: {
   });
 }
 
+/**
+ * A session invite (it has a placement) that was declined or expired: its
+ * seat went to the next hacker, so sponsor and organizer lists leave it out
+ * (decision 2026-11-19, "no open seats shown"). Old-flow requests keep
+ * every status.
+ */
+function replacedInvite(placementId: string | null, status: string): boolean {
+  return !!placementId && (status === "declined" || status === "expired");
+}
+
 export const coffeeChatRequestsRouter = createTRPCRouter({
   /**
    * The sponsor's chat request: 1-on-1 with N reps, or one group of M
@@ -1018,23 +1038,27 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           room: coffeeChats.room,
           repName: coffeeChats.repName,
           status: coffeeChats.status,
+          placementId: coffeeChats.placementId,
         })
         .from(coffeeChats)
         .innerJoin(users, eq(users.id, coffeeChats.userId))
         .leftJoin(applications, eq(applications.userId, coffeeChats.userId))
         .where(eq(coffeeChats.sponsorId, sponsor.id))
         .orderBy(asc(coffeeChats.slotTime), asc(coffeeChats.createdAt));
-      const chats: SponsorCoffeeChat[] = rows.map(
-        ({ firstName, userName, ...row }) => {
+      const chats: SponsorCoffeeChat[] = rows.flatMap(
+        ({ firstName, userName, placementId, ...row }) => {
           const { status, startsAt } = coffeeChatTimes(row, now);
-          return {
-            ...row,
-            firstName: firstName?.trim()
-              ? firstName.trim()
-              : (userName?.trim().split(/\s+/)[0] ?? ""),
-            status,
-            startsAt,
-          };
+          if (replacedInvite(placementId, status)) return [];
+          return [
+            {
+              ...row,
+              firstName: firstName?.trim()
+                ? firstName.trim()
+                : (userName?.trim().split(/\s+/)[0] ?? ""),
+              status,
+              startsAt,
+            },
+          ];
         },
       );
       // Only this sponsor's blocks (same UUID scoping as their chats). The
@@ -1146,6 +1170,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
           durationMinutes: coffeeChats.durationMinutes,
           room: coffeeChats.room,
           status: coffeeChats.status,
+          placementId: coffeeChats.placementId,
         })
         .from(coffeeChats)
         .innerJoin(
@@ -1161,15 +1186,18 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         ),
       [...COFFEE_CHAT_ROOMS] as string[],
     ]);
-    const chats: OrganizerCoffeeChat[] = rows.map(
-      ({ userName, firstName, ...row }) => {
+    const chats: OrganizerCoffeeChat[] = rows.flatMap(
+      ({ userName, firstName, placementId, ...row }) => {
         const { status, startsAt } = coffeeChatTimes(row, now);
-        return {
-          ...row,
-          firstName: firstName?.trim() ? firstName : (userName ?? ""),
-          status,
-          startsAt,
-        };
+        if (replacedInvite(placementId, status)) return [];
+        return [
+          {
+            ...row,
+            firstName: firstName?.trim() ? firstName : (userName ?? ""),
+            status,
+            startsAt,
+          },
+        ];
       },
     );
     return { chats, rooms };

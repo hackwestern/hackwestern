@@ -3,6 +3,15 @@
 // portal home. Keep wording here, not in components.
 
 export const sponsorVenueCopy = {
+  /** The Map tab (/sponsors/[uuid]/map). */
+  page: {
+    seoTitle: "Map",
+    heading: "Map",
+    lead: "Your booth in the Sponsor Bay, then the venue floor plans.",
+    booth: "Your booth",
+    boothAt: (where: string) => `Your booth · ${where}`,
+    floorsHeading: "Floor plans",
+  },
   mapButton: "Map",
   mapButtonLabel: "Open the venue map",
   map: {
@@ -66,6 +75,6 @@ export const sponsorVenueCopy = {
       "This will be unlocked on Sunday at 9:00 AM. Please come to the sponsor judging debrief at 8:30 AM. There will be coffee!",
     /** The judging page itself before it opens (same rule as the nav). */
     pageTitle: "Judging opens Sunday 9:00 AM",
-    home: "Back to Home",
+    home: "Back to Today",
   },
 } as const;

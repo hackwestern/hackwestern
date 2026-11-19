@@ -159,7 +159,7 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
       const dry = r.invites.dryRun && r.invites.created > 0 ? copy.toast.dryRun : "";
       toast.success(
         r.sent || r.invites.created
-          ? copy.toast.sent(r.sent, r.invites.created, r.invites.openSeats) +
+          ? copy.toast.sent(r.sent, r.invites.created) +
               dry +
               (r.reconfirmed ? ` ${copy.toast.reconfirmed(r.reconfirmed)}` : "")
           : r.reconfirmed
@@ -431,7 +431,7 @@ function ActionBar({
   const changed = board.sponsors.some((sp) => sp.changedAfterSend);
   const allSent = board.scheduled && board.draftCount === 0 && board.sentAt && !changed;
   const sentTime = board.sentAt ? timeOf(board.sentAt) : "";
-  // Only Noah sends (checked again on the server). If HW Contacts can't be
+  // Only Noah, or someone with his view, sends (checked again on the server). If HW Contacts can't be
   // read, nobody can: say why instead of "Only Noah sends".
   const sender = board.sender;
   const whyNot = sender.canSend

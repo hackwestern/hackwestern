@@ -741,3 +741,43 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Why:** code review of track F: PCBWay's UUID could still read the roster and top 3, and the panel always showed picks as unknown after the tab was deleted.
 
 **Alternatives:** read In person / Digital from the Sponsor Day-Of sheet on each call (track E's parser isn't on this branch, and it adds a sheet read to every portal request); keep counting the sheet (always unknown now).
+
+## 2026-11-19: Judging round 1 = 6-minute presentations (up to 15 teams), ranked top 5, live "Judging Scores" sheet (Jazz)
+
+**Decision:**
+- In-person sponsors shortlist up to **15** teams for round 1 presentations, 10:00–11:30. Each slot is **6 minutes**: 3 min pitch, 2 min Q&A, 1 min switch (15 slots exactly fill 90 min). A team on several shortlists still gets 10 minutes between its presentations.
+- Each rep judges on their own laptop under "Who's judging?" (their own profile on that device) and scores every team they see, 1–10 in half points.
+- After the presentations, sponsors submit a **ranked top 5** (1st–5th). This replaces the top 3 from the Q1–Q11 answers, everywhere: portal, organizer judging tab, Sponsor Judging sheet, and digital (PCBWay) entry.
+- **Backup:** a "Judging Scores" sheet tab, one block per sponsor with presentation time, team ID + Devpost link, and one score column per rep. The app fills it as reps score (production only). If the app is down, reps type into the same cells. The app only writes cells it has a score for and never blanks one.
+**Why:** 3 + 2 minutes plus a switch is the typical hackathon pitch, and 20 teams don't fit 90 minutes. Per-rep scores on their own laptops let several reps judge at once; the sheet covers an outage.
+**Alternatives:** 5-min slots for 18 teams (no switch time, so running late compounds); 7-min slots for 12; a longer window for 20 (needs a run-of-show change); keeping top 3; a blank backup sheet the app doesn't fill.
+**Supersedes:** "Sponsors send a ranked top 3" (Q1–Q11, 2026-11-19), and the 5-minute slot and 20-team shortlist cap.
+
+## 2026-11-19: Jazz sees Noah's view (HW Contacts "Same view as")
+
+**Decision:** HW Contacts gets a "Same view as" column. When the signed-in organizer's row names another person there, the dashboard uses that person's row: their sponsors in My sponsors, their tasks in Now and next, and their permissions. Jazz's row names Noah Medland, so she sees his My sponsors and can press "Send confirmed schedules & invites". The Send check runs on the server: Noah's login email, plus the login email of any row whose "Same view as" is Noah. The fail-closed rules stay: if HW Contacts can't be read, or Noah's row has no login email, nobody can send. One level only (if A names B and B names C, A gets B's row). A missing or blank column, an unknown name, or a name that fits several rows changes nothing. Send's note now reads "Only Noah (or someone with Noah's view) sends".
+**Why:** Jazz runs the dashboard alongside Noah and needs to see and do what he does. Keeping it in the private sheet means no emails in the public repo, and it's undone by clearing one cell.
+**Alternatives:** hardcoding Jazz's email in the code (leaks an email into a public repo, and needs a deploy to change); an admin role (a schema and auth change, and broader than "see what Noah sees").
+
+## 2026-11-19: Declines re-send at once; round 1 expires 10 AM and new invites go out then; no open seats shown (Jazz)
+
+**Decision:**
+- When a hacker declines, their seat is offered to the next person straight away (met at the booth → shortlist → interested), with the current round's answer-by time.
+- Round 1 invites expire at Sat 10:00 AM, and new invites go out at 10:00 (not 10:30). Later rounds stay every 30 minutes.
+- There are no open seats: when a sponsor's booth list and shortlist run out, seats fill with hackers interested in them.
+- Screens show only Accepted and Waiting. Declined and expired invites are replaced, not shown, and there's no "open seat" count.
+**Why:** sponsors and organizers care about who's coming, not who said no. Filling every seat at once keeps chats full.
+**Supersedes:** "Friday-night declines wait for round 2 (10:30)" and the round-2 start time of 10:30 (decisions-log, invites D5).
+**Still possible:** a seat stays empty only if no eligible hacker is left (nobody interested and free at that time). The board shows that as a problem, not as a normal count.
+
+## 2026-11-19: Phone top bar is logo, title, Help; the How to guides move into Help on phones
+
+**Decision:** At phone widths the sponsor portal's top bar shows only the logo, a left-aligned truncating title and Help, like the v6 mock. The How to tours are listed inside the Help dialog under "Show me how" (every size); tablets and up keep the How to button in the header.
+**Why:** logo, title, How to and Help didn't fit at 390px. Help is where a lost sponsor looks first.
+**Alternatives:** an icon-only How to button (a bare compass reads as nothing); shortening the title (still overflows on long section names).
+
+## 2026-11-19: Several reps in one chat are handled by hand (Jazz)
+
+**Decision:** The model stays one rep per chat (1 rep + 1–5 hackers). If a sponsor wants two reps together, they ask organizers (Help / "Message organizers") and an organizer handles it by hand: book the room for them on the board, or tell the second rep to join the first rep's room. No co-host feature.
+**Why:** one rep-session = one room keeps auto-schedule, room counts and invites simple, and shared chats should be rare.
+**Alternatives:** enter the pair as one rep ("Dana & Marcus"); a real co-host field on chats (scheduler and UI work this close to the event).

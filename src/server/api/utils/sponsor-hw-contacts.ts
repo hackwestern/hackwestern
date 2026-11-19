@@ -232,16 +232,29 @@ export async function fetchHwContactNames(
   }
 }
 
-/** One HW Contacts row: name, phone and the person's sign-in email. */
-export type HwContact = { name: string; phone: string; loginEmail: string };
+/**
+ * One HW Contacts row: name, phone, the person's sign-in email, and "Same
+ * view as" (another person's name whose view this sign-in gets; blank =
+ * their own, see viewRowOf).
+ */
+export type HwContact = {
+  name: string;
+  phone: string;
+  loginEmail: string;
+  sameViewAs: string;
+};
 
 /**
- * Pick the Name, Phone and "Login email" columns from HW Contacts' header
- * row (any order). Null when the row isn't a header.
+ * Pick the Name, Phone, "Login email" and "Same view as" columns from HW
+ * Contacts' header row (any order; -1 when a column is missing). Null when
+ * the row isn't a header.
  */
-export function hwContactColumns(
-  header: readonly unknown[],
-): { name: number; phone: number; loginEmail: number } | null {
+export function hwContactColumns(header: readonly unknown[]): {
+  name: number;
+  phone: number;
+  loginEmail: number;
+  sameViewAs: number;
+} | null {
   const cells = header.map((c) =>
     String(c ?? "")
       .trim()
@@ -255,6 +268,7 @@ export function hwContactColumns(
     loginEmail: cells.findIndex(
       (c) => c.includes("login") && c.includes("email"),
     ),
+    sameViewAs: cells.findIndex((c) => c.includes("same view")),
   };
 }
 
@@ -277,6 +291,7 @@ export function parseHwContacts(
         name: at(row, cols.name).replace(/\s+/g, " "),
         phone: normalizePhoneNumber(at(row, cols.phone)),
         loginEmail: at(row, cols.loginEmail),
+        sameViewAs: at(row, cols.sameViewAs).replace(/\s+/g, " "),
       }))
       .filter((c) => c.name && c.name.toLowerCase() !== "name");
   }
@@ -288,7 +303,7 @@ async function readHwContacts(): Promise<HwContact[]> {
   const sheets = await getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: getSpreadsheetId(),
-    range: `${HW_CONTACTS_TAB}!A:F`,
+    range: `${HW_CONTACTS_TAB}!A:Z`,
   });
   return parseHwContacts(res.data.values ?? []);
 }

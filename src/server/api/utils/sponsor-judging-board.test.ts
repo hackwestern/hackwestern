@@ -45,7 +45,7 @@ async function sponsor(name: string) {
 describe("Run-of-show Sponsor track judging panel picks", () => {
   test("the top 3 is the minimum", () => {
     expect(MIN_SPONSOR_PICKS).toBe(SPONSOR_FINAL_TOP);
-    expect(MIN_SPONSOR_PICKS).toBe(3);
+    expect(MIN_SPONSOR_PICKS).toBe(5);
   });
 
   test("counts saved picks from the database, not the Judging tab", async () => {
@@ -53,13 +53,13 @@ describe("Run-of-show Sponsor track judging panel picks", () => {
     const waiting = await sponsor("QNX");
     await db.insert(sponsorFinalPicks).values({
       sponsorId: done.id,
-      teamIds: ["a", "b", "c"],
+      teamIds: ["a", "b", "c", "d", "e"],
       submittedAt: new Date(),
     });
 
     const sheet = await judgingSheet();
     expect(chosen).not.toHaveBeenCalled();
-    expect(sheet?.pickCount(done.name)).toBe(3);
+    expect(sheet?.pickCount(done.name)).toBe(5);
     // Registered but not submitted: 0, not unknown.
     expect(sheet?.pickCount(waiting.name)).toBe(0);
 
@@ -69,7 +69,7 @@ describe("Run-of-show Sponsor track judging panel picks", () => {
       sheet,
     });
     const by = (id: string) => board.rows.find((r) => r.sponsorId === id);
-    expect(by(done.id)).toMatchObject({ picks: 3, tooFewPicks: false });
+    expect(by(done.id)).toMatchObject({ picks: 5, tooFewPicks: false });
     expect(by(waiting.id)).toMatchObject({
       picks: 0,
       tooFewPicks: true,

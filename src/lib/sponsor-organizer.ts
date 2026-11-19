@@ -235,7 +235,7 @@ export type SponsorSummaries = {
   totals: SummaryTotals;
   /** Sunday judging: rooms, picks and status, incl. unregistered companies. */
   judging: JudgingBoard | null;
-  /** Organizers have opened round 2 (top 3). */
+  /** Organizers have opened round 2 (top 5). */
   round2Open: boolean;
 };
 
@@ -377,7 +377,7 @@ export function buildSponsorSummaries({
   limits?: readonly SlotLimit[];
   /** Sunday judging board (buildJudgingBoard); null when not read. */
   judging?: JudgingBoard | null;
-  /** Sunday portal progress per sponsor id (reviews, sends, top 3). */
+  /** Sunday portal progress per sponsor id (reviews, sends, top 5). */
   sunday?: ReadonlyMap<string, SundayJudging>;
   /** Placed presentation slots (every sponsor). */
   presentations?: readonly (PresentationSlot & { sponsorId: string })[];
@@ -543,23 +543,50 @@ function normalName(value: string): string {
  * in the HW Contacts list (its identity, so two people with the same name
  * stay apart), `name` is what the page shows.
  */
-export type OrganizerContact = { row: number; name: string };
+export type OrganizerContact = { row: number; name: string; ownName?: string };
+
+/**
+ * The row whose view this HW Contacts row gets: the one person its "Same
+ * view as" cell names (decisions 2026-11-19, "Jazz sees Noah's view"), or
+ * the row itself. One level only: the named person's own "Same view as" is
+ * ignored, so there are no chains. A blank cell, an unknown name, or a cell
+ * that fits several rows keeps the row's own view.
+ */
+export function viewRowOf(
+  row: number,
+  contacts: readonly { name: string; sameViewAs?: string }[],
+): number {
+  const cell = contacts[row]?.sameViewAs?.trim();
+  if (!cell) return row;
+  const hits = contactRowsNamed(
+    cell,
+    contacts.map((c) => c.name),
+  );
+  return hits.size === 1 ? [...hits][0]! : row;
+}
 
 /**
  * The HW Contacts row whose "Login email" is the signed-in organizer's
- * email (case-insensitive, spaces ignored). Null when nobody matches, so the
- * page shows All sponsors only (decisions 2026-11-19).
+ * email (case-insensitive, spaces ignored), after "Same view as"
+ * (viewRowOf): someone with Noah's view gets Noah's row and name, so the
+ * page is the one Noah sees. Null when nobody matches, so the page shows
+ * All sponsors only (decisions 2026-11-19).
  */
 export function organizerForEmail(
   email: string | null | undefined,
-  contacts: readonly { name: string; loginEmail: string }[],
+  contacts: readonly { name: string; loginEmail: string; sameViewAs?: string }[],
 ): OrganizerContact | null {
   const want = (email ?? "").trim().toLowerCase();
   if (!want) return null;
-  const row = contacts.findIndex(
+  const own = contacts.findIndex(
     (c) => c.loginEmail.trim().toLowerCase() === want && c.name.trim(),
   );
-  return row === -1 ? null : { row, name: contacts[row]!.name.trim() };
+  if (own === -1) return null;
+  const row = viewRowOf(own, contacts);
+  const name = contacts[row]!.name.trim();
+  const ownName = contacts[own]!.name.trim();
+  // ownName differs only when "Same view as" borrowed someone else's view.
+  return row === own ? { row, name } : { row, name, ownName };
 }
 
 /**

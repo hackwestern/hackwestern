@@ -4,7 +4,9 @@ name: Coffee Chat Invite Rounds
 # Every 10 minutes on Sat Nov 21 2026, 9 AM to 5 PM Eastern (clocks fell back
 # Nov 1, so ET = UTC-5: 14:00 to 22:00 UTC), runs scripts/run-coffee-invite-round.ts:
 #   1. the current invite round (runDueInviteRounds): a no-op before round 2
-#      (10:30 AM) and after the last chat; a late or missed round catches up;
+#      (10:00 AM, as round 1 closes) and after the last chat; a late or missed
+#      round catches up. Each round also refills seats whose invite expired;
+#      declines are refilled at once by the app, not here;
 #   2. the delivery sweep: DMs (or emails) every pending invite not sent yet,
 #      including failed sends from earlier. Each invite goes out once.
 # The app also runs rounds from page traffic; this makes them certain.

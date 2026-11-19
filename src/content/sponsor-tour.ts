@@ -9,6 +9,9 @@ export const sponsorTourCopy = {
     label: "How to guides",
     heading: "How to…",
     welcome: "Take the portal tour",
+    /** The same guides inside Help, where phones find them (no How to
+     * button in the phone top bar). */
+    helpHeading: "Show me how",
   },
   offer: {
     title: "New here?",
@@ -67,7 +70,7 @@ export const sponsorTourCopy = {
         },
         map: {
           title: "The venue map",
-          body: "One tap from every page. Replay this tour or find a quick how-to with the button next to it.",
+          body: "Floor plans and your booth, one tap from every page. Replay this tour or find a quick how-to with How to, at the top of the page.",
         },
       },
     },

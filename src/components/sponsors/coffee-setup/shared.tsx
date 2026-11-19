@@ -252,7 +252,7 @@ export function SetupStatus({
       </div>
       {data.confirmed && (
         <p className="m-0 text-base font-semibold text-dashboard-text-heavy">
-          {s.invites(data.seats.accepted, waiting, Math.max(0, data.seats.total - data.seats.accepted - waiting))}
+          {s.invites(data.seats.accepted, waiting)}
         </p>
       )}
       {shown.length > 0 && (

@@ -1,7 +1,11 @@
 import { LIVE_URL } from "~/content/coffee-chat-notify";
 import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
 import { env } from "~/env";
-import { formatPresentationTime } from "~/lib/sponsor-presentations";
+import {
+  formatPresentationTime,
+  PRESENTATION_PITCH_MINUTES,
+  PRESENTATION_QA_MINUTES,
+} from "~/lib/sponsor-presentations";
 import {
   emailButton,
   emailParagraph,
@@ -33,10 +37,15 @@ export function presentationEmail(
       copy.line(formatPresentationTime(s.start), s.sponsorName, s.room),
     );
   const greeting = copy.greeting(firstName(member.name));
+  const intro = copy.intro(
+    teamName,
+    PRESENTATION_PITCH_MINUTES,
+    PRESENTATION_QA_MINUTES,
+  );
   const text = [
     greeting,
     "",
-    copy.intro(teamName),
+    intro,
     "",
     ...lines,
     "",
@@ -47,7 +56,7 @@ export function presentationEmail(
   ].join("\n");
   const html = emailShell([
     emailParagraph(escapeHtml(greeting)),
-    emailParagraph(escapeHtml(copy.intro(teamName))),
+    emailParagraph(escapeHtml(intro)),
     emailParagraph(lines.map(escapeHtml).join("<br>")),
     emailButton(LIVE_URL, copy.action),
     emailParagraph(escapeHtml(copy.signoff)),

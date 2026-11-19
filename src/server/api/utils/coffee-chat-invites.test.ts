@@ -18,6 +18,7 @@ import {
   deliverUnnotifiedInvites,
   invitesDeliveryLive,
   invitesEnabled,
+  kickDueInviteRounds,
   type InviteJob,
   previewDueInviteRound,
   reconcileInvitesAfterChange,
@@ -27,6 +28,7 @@ import {
   sendRoundOneInvites,
 } from "~/server/api/utils/coffee-chat-invites";
 import { loadCoffeeChatNotices } from "~/server/api/utils/coffee-chat-notify";
+import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { db } from "~/server/db";
 import {
   applications,
@@ -94,7 +96,7 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
     typeof import("~/server/api/utils/run-of-show-sheet")
   >()),
   sheetWritesEnabled: () => false,
-  getRunOfShow: () =>
+  getRunOfShow: vi.fn(() =>
     Promise.resolve({
       readAt: "2026-11-20T12:00:00.000Z",
       items: [
@@ -115,7 +117,22 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
       workshops: [],
       availability: { people: [], slots: [] },
     }),
+  ),
 }));
+
+// The real kick and delivery; the status test stops the kick once so no
+// round runs behind it, and one test makes a delivery reject.
+vi.mock("~/server/api/utils/coffee-chat-invites", async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import("~/server/api/utils/coffee-chat-invites")
+    >();
+  return {
+    ...actual,
+    kickDueInviteRounds: vi.fn(actual.kickDueInviteRounds),
+    deliverInviteNotices: vi.fn(actual.deliverInviteNotices),
+  };
+});
 
 const FRI_10PM = new Date("2026-11-20T22:00:00-05:00");
 const at = (hhmm: string) => new Date(`2026-11-21T${hhmm}:00-05:00`);
@@ -493,17 +510,20 @@ describe("Saturday rounds", () => {
     ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
-  test("round 2 at 10:30: declines and expired seats pass on, 10-11 AM never refilled, drafts never touched", async () => {
+  test("round 2 at 10:00: a decline with no one left stays empty; expired seats refill as round 1 closes; drafts never touched", async () => {
     process.env.COFFEE_INVITES_ENABLED = "1";
     const before = await chatsOf(alpha.id);
     const h1 = before.find((c) => c.userId === ids.h1)!;
     const h5 = before.find((c) => c.userId === ids.h5)!;
+    // h1 declines Saturday morning: everyone else Alpha could ask already
+    // holds an Alpha seat, so nobody is invited in its place.
     await respondToCoffeeChat(
       ids.h1!,
       { chatId: h1.id, answer: "decline" },
       at("08:00"),
       0,
     );
+    expect(await chatsOf(alpha.id)).toHaveLength(before.length);
     await respondToCoffeeChat(
       ids.h5!,
       { chatId: h5.id, answer: "accept" },
@@ -513,21 +533,27 @@ describe("Saturday rounds", () => {
     // A new interested hacker shows up Saturday morning.
     await interested(alpha.id, ["h9"]);
 
-    vi.setSystemTime(at("10:30"));
-    const out = await runDueInviteRounds(at("10:30"));
+    // Round 1 closes at 10:00 and round 2 opens at once (not 10:30).
+    vi.setSystemTime(at("10:00"));
+    const out = await runDueInviteRounds(at("10:00"));
     expect(out.status).toBe("ran");
     const rows = await chatsOf(alpha.id);
     const round2 = rows.filter((c) => c.round === 2);
-    // h9 takes the earliest open seat: 11:15 (h6 let it expire), answer by
-    // its last call 10:55. 11:30 (declined by h1) and 11:45 (h2 let it
-    // expire) have no one left; 13:xx expired too.
+    // h9 takes the earliest empty seat: 11:15 (h6 let it expire), answer by
+    // round 2's close, 10:30. 11:30 (declined by h1), 11:45 and 1:xx have no
+    // one left: those who let them expire aren't asked again.
     expect(
       round2.map((c) => [
         c.slotTime,
         keyOf(c.userId),
         c.expiresAt?.toISOString(),
       ]),
-    ).toEqual([["11:15", "h9", at("10:55").toISOString()]]);
+    ).toEqual([["11:15", "h9", at("10:30").toISOString()]]);
+    expect(
+      out.status === "ran" &&
+        out.result.status === "ok" &&
+        out.result.unfilled.map((u) => u.open),
+    ).toEqual([1, 1, 1, 1]);
     // Delivered by the round's sweep.
     expect(dm).toHaveBeenCalledTimes(1);
     expect(round2[0]!.notifiedAt).not.toBeNull();
@@ -540,27 +566,138 @@ describe("Saturday rounds", () => {
     // Gamma was never sent: no invites, even though h9 etc. are interested.
     expect(await chatsOf(gamma.id)).toEqual([]);
 
-    // Running again inside the same round changes nothing.
+    // Running again changes nothing: every empty seat has no one left.
     resetInviteRoundThrottle();
-    const again = await runDueInviteRounds(at("10:40"));
+    const again = await runDueInviteRounds(at("10:10"));
     expect(
       again.status === "ran" &&
         again.result.status === "ok" &&
         again.result.created,
     ).toEqual([]);
 
-    // If h9 declines, the seat waits for round 3 (nobody is left, so it stays open).
+    // h9 declines: nobody is left, so the seat stays empty (and the next
+    // round doesn't invent anyone either).
     await respondToCoffeeChat(
       ids.h9!,
       { chatId: round2[0]!.id, answer: "decline" },
-      at("10:45"),
+      at("10:15"),
       0,
     );
     resetInviteRoundThrottle();
-    const r3 = await runDueInviteRounds(at("11:00"));
+    const r3 = await runDueInviteRounds(at("10:30"));
     expect(
       r3.status === "ran" && r3.result.status === "ok" && r3.result.created,
     ).toEqual([]);
+    vi.setSystemTime(FRI_10PM);
+  });
+
+  test("declines re-send at once, in a chain: scanned, shortlist, interested, each with the current round's answer-by", async () => {
+    process.env.COFFEE_INVITES_ENABLED = "1";
+    vi.setSystemTime(FRI_10PM);
+    // One 1-on-1 seat at 3:00.
+    const theta = await sponsor(
+      `Theta${Date.now()}`,
+      { hackersPerChat: 1 },
+      { chats: 1 },
+      [{ sessionId: "15", room: "2244", status: "sent" }],
+    );
+    for (const k of ["t1", "t2", "t3", "t4", "t5"]) await hacker(k);
+    await db
+      .insert(sponsorScans)
+      .values({ sponsorId: theta.id, userId: ids.t1! });
+    await db
+      .insert(sponsorShortlists)
+      .values({ sponsorId: theta.id, userId: ids.t2! });
+    await interested(theta.id, ["t3", "t4", "t5"]);
+    await db.transaction((tx) =>
+      sendRoundOneInvites(tx, { sponsorIds: [theta.id], now: FRI_10PM }),
+    );
+    const live = async () =>
+      (await chatsOf(theta.id))
+        .filter((c) => c.status === "pending" || c.status === "accepted")
+        .map((c) => [keyOf(c.userId), c.source, c.round, c.expiresAt]);
+    expect(await live()).toEqual([["t1", "scanned", 1, at("10:00")]]);
+
+    // Friday 11 PM: t1 declines. t2 (shortlist) is invited in the same
+    // transaction, answer by Sat 10 AM (round 1), and hears right away.
+    dm.mockClear();
+    const fri = new Date("2026-11-20T23:00:00-05:00");
+    vi.setSystemTime(fri);
+    const t1 = (await chatsOf(theta.id))[0]!;
+    await respondToCoffeeChat(
+      ids.t1!,
+      { chatId: t1.id, answer: "decline" },
+      fri,
+      2000,
+    );
+    expect(await live()).toEqual([["t2", "shortlist", 1, at("10:00")]]);
+    expect(dm).toHaveBeenCalledTimes(1);
+    expect(
+      (dm.mock.calls[0] as unknown as [{ chatId: string }])[0].chatId,
+    ).toBe((await chatsOf(theta.id)).find((c) => c.userId === ids.t2)!.id);
+
+    // Sat 9:30, still round 1: t2 declines; t3 also answers by 10 AM.
+    vi.setSystemTime(at("09:30"));
+    const t2 = (await chatsOf(theta.id)).find((c) => c.userId === ids.t2)!;
+    await respondToCoffeeChat(
+      ids.t2!,
+      { chatId: t2.id, answer: "decline" },
+      at("09:30"),
+      0,
+    );
+    expect(await live()).toEqual([["t3", "interested", 1, at("10:00")]]);
+
+    // t3 accepts, then backs out at 10:40 (round 3): t4 gets 30 minutes.
+    const t3 = (await chatsOf(theta.id)).find((c) => c.userId === ids.t3)!;
+    await respondToCoffeeChat(
+      ids.t3!,
+      { chatId: t3.id, answer: "accept" },
+      at("09:40"),
+      0,
+    );
+    vi.setSystemTime(at("10:40"));
+    await respondToCoffeeChat(
+      ids.t3!,
+      { chatId: t3.id, answer: "decline" },
+      at("10:40"),
+      0,
+    );
+    expect(await live()).toEqual([["t4", "interested", 3, at("11:10")]]);
+
+    // t4 lets it expire: the next round (its expiry sweep) asks t5, with
+    // 30 minutes from when it ran (round 4 closes 11:30).
+    vi.setSystemTime(at("11:12"));
+    resetInviteRoundThrottle();
+    const out = await runDueInviteRounds(at("11:12"));
+    expect(out.status).toBe("ran");
+    expect(await live()).toEqual([["t5", "interested", 4, at("11:42")]]);
+
+    // t5 declines: nobody is left. Nobody who said no is asked again.
+    await respondToCoffeeChat(
+      ids.t5!,
+      {
+        chatId: (await chatsOf(theta.id)).find((c) => c.userId === ids.t5)!
+          .id,
+        answer: "decline",
+      },
+      at("11:20"),
+      0,
+    );
+    expect(await live()).toEqual([]);
+    const all = await chatsOf(theta.id);
+    expect(all.map((c) => keyOf(c.userId))).toEqual([
+      "t1",
+      "t2",
+      "t3",
+      "t4",
+      "t5",
+    ]);
+    // Clean up so later tests (and their counts) don't see Theta.
+    await db.delete(coffeeChats).where(eq(coffeeChats.sponsorId, theta.id));
+    await db
+      .update(coffeeChatPlacements)
+      .set({ status: "draft" })
+      .where(eq(coffeeChatPlacements.repId, theta.repId));
     vi.setSystemTime(FRI_10PM);
   });
 
@@ -606,9 +743,13 @@ describe("coffeeChatInvites router", () => {
       { code: "FORBIDDEN" },
     );
 
-    const status = await organizer.coffeeChatInvites.status({
-      sponsorId: alpha.id,
-    });
+    vi.setSystemTime(FRI_10PM);
+    const statusOf = async () => {
+      // No round or sweep behind the read: this test only reads.
+      vi.mocked(kickDueInviteRounds).mockImplementationOnce(() => undefined);
+      return organizer.coffeeChatInvites.status({ sponsorId: alpha.id });
+    };
+    const status = await statusOf();
     expect(status.enabled).toBe(false);
     expect(status.sponsors.map((s) => s.name)).toEqual([names.alpha]);
     const a = status.sponsors[0]!;
@@ -624,19 +765,41 @@ describe("coffeeChatInvites router", () => {
       seats: 1,
       accepted: 1,
       filled: 1,
-      open: 0,
+      unfilled: 0,
       room: "Rm 2241",
     });
-    expect(a.chats[1]!.invites.map((i) => [i.name, i.status, i.round])).toEqual(
-      [
-        ["h6 Person", "expired", 1],
-        ["h9 Person", "declined", 2],
-      ],
+    expect(a.chats[0]!.invites.map((i) => [i.name, i.status])).toEqual([
+      ["h5 Person", "accepted"],
+    ]);
+    // Declined and expired invites aren't listed: they were replaced.
+    expect(a.chats[1]!.invites).toEqual([]);
+    expect(a.chats[2]!.invites).toEqual([]);
+    // The kill switch is off: no round fills seats, so none is flagged.
+    expect(a.chats[1]).toMatchObject({ filled: 0, unfilled: 0 });
+    expect(a.totals).toEqual({
+      seats: 6,
+      accepted: 1,
+      pending: 0,
+      unfilled: 0,
+    });
+
+    // On (dry counts too): the seats no one could take are a board problem.
+    process.env.COFFEE_INVITES_ENABLED = "dry";
+    const on = (await statusOf()).sponsors[0]!;
+    expect(on.chats[1]).toMatchObject({ filled: 0, unfilled: 1 });
+    expect(on.totals.unfilled).toBe(5);
+    // Sat 10:46: 11:15's last call (10:55) leaves under 10 minutes, so its
+    // seat can't be offered any more and isn't flagged.
+    vi.setSystemTime(at("10:46"));
+    const late = (await statusOf()).sponsors[0]!;
+    expect(late.chats.map((c) => c.unfilled)).toEqual([0, 0, 1, 1, 1, 1]);
+    vi.setSystemTime(FRI_10PM);
+    // The run of show unreadable: no round runs, so nothing is flagged.
+    vi.mocked(getRunOfShow).mockRejectedValueOnce(new Error("sheet down"));
+    expect((await statusOf()).sponsors.every((s) => s.totals.unfilled === 0)).toBe(
+      true,
     );
-    expect(a.chats[2]!.invites.map((i) => [i.name, i.status, i.round])).toEqual(
-      [["h1 Person", "declined", 1]],
-    );
-    expect(a.totals).toMatchObject({ seats: 6, accepted: 1 });
+    delete process.env.COFFEE_INVITES_ENABLED;
     // The kill switch is off here: Run now writes nothing.
     expect(await organizer.coffeeChatInvites.runRoundNow()).toMatchObject({
       status: "disabled",
@@ -786,18 +949,18 @@ describe("delivery: each invite once, retried until it goes out", () => {
     // Dry run, kill switch off: counts only.
     const before = await db.select().from(coffeeChats);
     const preview = await previewDueInviteRound(at("11:25"));
-    expect(preview).toMatchObject({ status: "ok", round: 3, invites: 1 });
+    expect(preview).toMatchObject({ status: "ok", round: 4, invites: 1 });
     expect(await db.select().from(coffeeChats)).toEqual(before);
     expect(dm).not.toHaveBeenCalled();
 
-    // Round 3 (11:00-11:30) only ran at 11:25.
+    // Round 4 (11:00-11:30) only ran at 11:25.
     process.env.COFFEE_INVITES_ENABLED = "1";
     const out = await runDueInviteRounds(at("11:25"));
     expect(out.status).toBe("ran");
     const rows = await chatsOf(eps.id);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      round: 3,
+      round: 4,
       slotTime: "15:00",
       expiresAt: at("11:55"),
     });
@@ -847,5 +1010,274 @@ describe("kill switch default", () => {
     expect(r).toEqual({ slack: 0, email: 0, failed: 0, skipped: 2 });
     vi.stubEnv("COFFEE_INVITES_ENABLED", "1");
     expect(invitesDeliveryLive()).toBe(true);
+  });
+});
+
+/**
+ * The SQL the app runs inside transactions while `fn` runs, in order. Every
+ * transaction's session reads the logger from the db's shared options when
+ * it starts, so swapping it in records them. The logger runs just before
+ * each statement, so `onQuery` can also make one fail (a Postgres error).
+ */
+async function queriesDuring(
+  fn: () => Promise<unknown>,
+  onQuery: (query: string) => void = () => undefined,
+): Promise<string[]> {
+  const { session } = db as unknown as {
+    session: { options: { logger?: unknown } };
+  };
+  const before = session.options.logger;
+  const log: string[] = [];
+  session.options.logger = {
+    logQuery: (query: string) => {
+      log.push(query);
+      onQuery(query);
+    },
+  };
+  try {
+    await fn();
+  } finally {
+    session.options.logger = before;
+  }
+  return log;
+}
+
+const BOARD_LOCK = /pg_advisory_xact_lock\(4812026112\)/;
+const SPONSOR_ROW_LOCK = /from "sponsor_judging_sponsor"[\s\S]*for update/;
+const CHAT_ROW_LOCK = /from "coffee_chat"[\s\S]*for update/;
+const firstOf = (log: string[], re: RegExp) => log.findIndex((q) => re.test(q));
+/** An error as the Postgres driver throws it, with its SQLSTATE. */
+const pgError = (code: string) =>
+  Object.assign(new Error(`postgres error ${code}`), { code });
+
+describe("lock order: board, sponsor, chat", () => {
+  test("a decline, an organizer room move and a cancel all take the board lock first", async () => {
+    process.env.COFFEE_INVITES_ENABLED = "1";
+    vi.setSystemTime(FRI_10PM);
+    const { createCaller } = await import("~/server/api/root");
+    const { createInnerTRPCContext } = await import("~/server/api/trpc");
+    const { mockOrganizerSession } = await import("~/server/auth");
+    const organizer = createCaller(
+      createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
+    );
+    // Two 1-on-1 seats at 3:00 and 3:15, both taken in round 1.
+    const kappa = await sponsor(
+      `Kappa${Date.now()}`,
+      { hackersPerChat: 1 },
+      { chats: 2 },
+      [{ sessionId: "15", room: "2245", status: "sent" }],
+    );
+    for (const k of ["k1", "k2"]) {
+      await hacker(k);
+      await db
+        .insert(sponsorScans)
+        .values({ sponsorId: kappa.id, userId: ids[k]! });
+    }
+    await db.transaction((tx) =>
+      sendRoundOneInvites(tx, { sponsorIds: [kappa.id], now: FRI_10PM }),
+    );
+    const chatOf = async (key: string) =>
+      (await chatsOf(kappa.id)).find((c) => c.userId === ids[key])!;
+
+    const decline = await queriesDuring(async () => {
+      const k2 = await chatOf("k2");
+      await respondToCoffeeChat(
+        ids.k2!,
+        { chatId: k2.id, answer: "decline" },
+        FRI_10PM,
+        0,
+      );
+    });
+    expect(firstOf(decline, BOARD_LOCK)).toBeGreaterThanOrEqual(0);
+    expect(firstOf(decline, BOARD_LOCK)).toBeLessThan(
+      firstOf(decline, CHAT_ROW_LOCK),
+    );
+
+    const k1 = await chatOf("k1");
+    for (const action of [
+      () =>
+        organizer.coffeeChatRequests.moveRoom({
+          chatId: k1.id,
+          room: "Rm 2243",
+        }),
+      () => organizer.coffeeChatRequests.cancel({ chatId: k1.id }),
+    ]) {
+      const log = await queriesDuring(action);
+      const board = firstOf(log, BOARD_LOCK);
+      expect(board).toBeGreaterThanOrEqual(0);
+      expect(board).toBeLessThan(firstOf(log, SPONSOR_ROW_LOCK));
+      expect(firstOf(log, SPONSOR_ROW_LOCK)).toBeLessThan(
+        firstOf(log, CHAT_ROW_LOCK),
+      );
+    }
+    expect((await chatOf("k1")).status).toBe("cancelled");
+
+    await db.delete(coffeeChats).where(eq(coffeeChats.sponsorId, kappa.id));
+    await db
+      .update(coffeeChatPlacements)
+      .set({ status: "draft" })
+      .where(eq(coffeeChatPlacements.repId, kappa.repId));
+    // Importing the whole app router is slow on a busy machine.
+  }, 30_000);
+
+  test("a decline picked as a deadlock victim runs once more and still refills", async () => {
+    process.env.COFFEE_INVITES_ENABLED = "1";
+    vi.setSystemTime(FRI_10PM);
+    const lambda = await sponsor(
+      `Lambda${Date.now()}`,
+      { hackersPerChat: 1 },
+      { chats: 1 },
+      [{ sessionId: "15", room: "2246", status: "sent" }],
+    );
+    for (const k of ["l1", "l2"]) await hacker(k);
+    await db
+      .insert(sponsorScans)
+      .values({ sponsorId: lambda.id, userId: ids.l1! });
+    await interested(lambda.id, ["l2"]);
+    await db.transaction((tx) =>
+      sendRoundOneInvites(tx, { sponsorIds: [lambda.id], now: FRI_10PM }),
+    );
+    const [l1] = await chatsOf(lambda.id);
+    let deadlocks = 0;
+    const log = await queriesDuring(
+      () =>
+        respondToCoffeeChat(
+          ids.l1!,
+          { chatId: l1!.id, answer: "decline" },
+          FRI_10PM,
+          0,
+        ),
+      (query) => {
+        if (BOARD_LOCK.test(query) && deadlocks++ === 0) {
+          throw pgError("40P01");
+        }
+      },
+    );
+    expect(log.filter((q) => BOARD_LOCK.test(q)).length).toBeGreaterThan(1);
+    expect(
+      (await chatsOf(lambda.id)).map((c) => [keyOf(c.userId), c.status]),
+    ).toEqual([
+      ["l1", "declined"],
+      ["l2", "pending"],
+    ]);
+
+    await db.delete(coffeeChats).where(eq(coffeeChats.sponsorId, lambda.id));
+    await db
+      .update(coffeeChatPlacements)
+      .set({ status: "draft" })
+      .where(eq(coffeeChatPlacements.repId, lambda.repId));
+  });
+
+  test("Slack's budget: a board lock held past 1.5 s saves the decline without the refill; the next round fills the seat", async () => {
+    process.env.COFFEE_INVITES_ENABLED = "1";
+    vi.setSystemTime(FRI_10PM);
+    const mu = await sponsor(
+      `Mu${Date.now()}`,
+      { hackersPerChat: 1 },
+      { chats: 1 },
+      [{ sessionId: "15", room: "2247", status: "sent" }],
+    );
+    for (const k of ["m1", "m2"]) await hacker(k);
+    await db.insert(sponsorScans).values({ sponsorId: mu.id, userId: ids.m1! });
+    await interested(mu.id, ["m2"]);
+    await db.transaction((tx) =>
+      sendRoundOneInvites(tx, { sponsorIds: [mu.id], now: FRI_10PM }),
+    );
+    const [m1] = await chatsOf(mu.id);
+    const statuses = async () =>
+      (await chatsOf(mu.id)).map((c) => [keyOf(c.userId), c.status]);
+
+    // Another writer holds the board lock: with lock_timeout set, Postgres
+    // gives up on it with 55P03. PGlite runs one transaction at a time, so
+    // the held lock is simulated at the board lock statement.
+    const log = await queriesDuring(
+      () =>
+        respondToCoffeeChat(
+          ids.m1!,
+          { chatId: m1!.id, answer: "decline" },
+          FRI_10PM,
+          0,
+          { boardLockTimeoutMs: 1500 },
+        ),
+      (query) => {
+        if (BOARD_LOCK.test(query)) throw pgError("55P03");
+      },
+    );
+    const timeout = log.findIndex((q) =>
+      /set local lock_timeout = '1500ms'/.test(q),
+    );
+    expect(timeout).toBeGreaterThanOrEqual(0);
+    expect(timeout).toBeLessThan(firstOf(log, BOARD_LOCK));
+    // The second transaction takes the chat row only, without waiting.
+    expect(log.some((q) => /for update nowait/.test(q))).toBe(true);
+    expect(await statuses()).toEqual([["m1", "declined"]]);
+    expect(dm).not.toHaveBeenCalled();
+
+    // The next round offers the seat to m2.
+    await db.transaction((tx) =>
+      runInviteRound(tx, { sponsorIds: [mu.id], now: at("11:05") }),
+    );
+    expect(await statuses()).toEqual([
+      ["m1", "declined"],
+      ["m2", "pending"],
+    ]);
+
+    // Without the Slack budget (/live) there's no lock_timeout.
+    const m2 = (await chatsOf(mu.id)).find((c) => c.userId === ids.m2)!;
+    const live = await queriesDuring(() =>
+      respondToCoffeeChat(
+        ids.m2!,
+        { chatId: m2.id, answer: "accept" },
+        at("11:05"),
+        0,
+      ),
+    );
+    expect(live.some((q) => /lock_timeout/.test(q))).toBe(false);
+
+    await db.delete(coffeeChats).where(eq(coffeeChats.sponsorId, mu.id));
+    await db
+      .update(coffeeChatPlacements)
+      .set({ status: "draft" })
+      .where(eq(coffeeChatPlacements.repId, mu.repId));
+    vi.setSystemTime(FRI_10PM);
+  });
+
+  test("a delivery that rejects after the commit doesn't fail the decline", async () => {
+    process.env.COFFEE_INVITES_ENABLED = "1";
+    vi.setSystemTime(FRI_10PM);
+    const nu = await sponsor(
+      `Nu${Date.now()}`,
+      { hackersPerChat: 1 },
+      { chats: 1 },
+      [{ sessionId: "15", room: "2248", status: "sent" }],
+    );
+    for (const k of ["n1", "n2"]) await hacker(k);
+    await db.insert(sponsorScans).values({ sponsorId: nu.id, userId: ids.n1! });
+    await interested(nu.id, ["n2"]);
+    await db.transaction((tx) =>
+      sendRoundOneInvites(tx, { sponsorIds: [nu.id], now: FRI_10PM }),
+    );
+    const [n1] = await chatsOf(nu.id);
+    vi.mocked(deliverInviteNotices).mockRejectedValueOnce(new Error("boom"));
+    await expect(
+      respondToCoffeeChat(
+        ids.n1!,
+        { chatId: n1!.id, answer: "decline" },
+        FRI_10PM,
+        1000,
+      ),
+    ).resolves.toMatchObject({ chatId: n1!.id, status: "declined" });
+    expect(
+      (await chatsOf(nu.id)).map((c) => [keyOf(c.userId), c.status]),
+    ).toEqual([
+      ["n1", "declined"],
+      ["n2", "pending"],
+    ]);
+
+    await db.delete(coffeeChats).where(eq(coffeeChats.sponsorId, nu.id));
+    await db
+      .update(coffeeChatPlacements)
+      .set({ status: "draft" })
+      .where(eq(coffeeChatPlacements.repId, nu.repId));
   });
 });

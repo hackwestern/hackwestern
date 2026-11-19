@@ -1,3 +1,4 @@
+import { keepNamesTogether } from "~/lib/keep-names-together";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import {
   CalendarX,
@@ -913,7 +914,7 @@ function GridBlock({
               )}
             </span>
           )}
-          {entry.title}
+          {keepNamesTogether(entry.title, [sponsorName])}
         </span>
         {expanded && (
           <span className="relative m-0 flex items-start gap-1 text-xs leading-4 text-dashboard-text-medium">

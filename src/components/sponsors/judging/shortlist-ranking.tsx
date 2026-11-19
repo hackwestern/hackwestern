@@ -5,6 +5,10 @@ import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import {
+  PRESENTATION_PITCH_MINUTES,
+  PRESENTATION_QA_MINUTES,
+} from "~/lib/sponsor-presentations";
+import {
   formatAverage,
   formatSubmittedTime,
   teamIdAndLink,
@@ -151,6 +155,14 @@ export function ShortlistRanking({
             ? copy.round.presentedIntro(top)
             : copy.shortlist.intro(top)}
         </p>
+        {presented && (
+          <p className="m-0 text-sm font-semibold text-dashboard-text-active">
+            {copy.round.format(
+              PRESENTATION_PITCH_MINUTES,
+              PRESENTATION_QA_MINUTES,
+            )}
+          </p>
+        )}
       </div>
 
       <p className="sr-only" aria-live="polite">

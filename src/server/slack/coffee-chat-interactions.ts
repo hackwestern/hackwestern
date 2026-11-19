@@ -28,11 +28,17 @@ import { verifySlackRequest } from "~/server/slack/verify";
 const copy = coffeeChatNotifyCopy.slack.result;
 
 /**
- * Slack wants the HTTP answer within 3 s. Each slow step is capped so the
- * worst case (users.info + notify + response_url, plus the DB) stays near 2 s.
+ * Slack wants the HTTP answer within 3 s. Each slow step is capped, one after
+ * another: users.info 0.6 s, the board lock wait for a session invite 0.8 s
+ * (then a decline is saved without its refill and the next round fills the
+ * seat), notify and the next hacker's invite 0.8 s (side by side),
+ * response_url 0.6 s. Worst case about 2.8 s plus the DB queries, inside
+ * Slack's 3 s in practice. If it ever misses, the answer is still saved and
+ * the DM still updates through response_url.
  */
 export const INTERACTION_STEP_TIMEOUT_MS = 600;
 export const INTERACTION_NOTIFY_TIMEOUT_MS = 800;
+export const INTERACTION_BOARD_LOCK_TIMEOUT_MS = 800;
 
 const ANSWERS: Record<string, CoffeeChatAnswer> = {
   [COFFEE_CHAT_ACCEPT_ACTION]: "accept",
@@ -210,6 +216,7 @@ export async function handleCoffeeChatInteraction(
       { chatId: chatId.data, answer },
       deps.now,
       INTERACTION_NOTIFY_TIMEOUT_MS,
+      { boardLockTimeoutMs: INTERACTION_BOARD_LOCK_TIMEOUT_MS },
     );
     const outcome = result.status === "accepted" ? "accepted" : "declined";
     await reply(

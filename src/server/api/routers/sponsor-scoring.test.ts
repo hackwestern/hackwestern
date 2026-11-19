@@ -20,6 +20,7 @@ import {
   fetchSponsorTrack,
   fetchSponsorTracks,
 } from "~/server/api/utils/sponsor-judging-teams";
+import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
 import { setRound2Open } from "~/server/api/utils/sponsor-judging-settings";
 import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
 import {
@@ -112,13 +113,23 @@ async function team(
   return id;
 }
 
+/** The ranked top a sponsor submits (5). */
+const TOP = SPONSOR_FINAL_TOP;
+
+/** `n` submitted teams in the default track. */
+async function someTeams(n: number) {
+  const ids: string[] = [];
+  for (let i = 0; i < n; i++) ids.push(await team());
+  return ids;
+}
+
 /**
- * Five shortlisted teams. By default each also presented to the sponsor
- * (a placed slot), since round 2 ranks only teams that presented.
+ * TOP + 2 shortlisted teams. By default each also presented to the
+ * sponsor (a placed slot), since round 2 ranks only teams that presented.
  */
-async function shortlistFive(sponsorId: string, { present = true } = {}) {
+async function shortlistTeams(sponsorId: string, { present = true } = {}) {
   const ids = [];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < TOP + 2; i++) {
     const id = await team();
     await anon.sponsorScoring.review({
       sponsor: sponsorId,
@@ -168,17 +179,17 @@ describe("sponsorScoring.get", () => {
     expect(ids).toContain(inTrack);
     expect(ids).not.toContain(otherTrack);
     expect(ids).not.toContain(draft);
-    expect(res.finalTop).toBe(3);
+    expect(res.finalTop).toBe(5);
     expect(res.final).toBeNull();
   });
 
   test("retries a sheet write that failed after the submission saved", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id);
+    const ids = await shortlistTeams(s.id);
     mirrorSoon.mockResolvedValue(DOWN);
     await anon.sponsorScoring.submit({
       sponsor: s.id,
-      teamIds: ids.slice(0, 3),
+      teamIds: ids.slice(0, TOP),
     });
     // Still down: the query succeeds and says so; the retry runs in the
     // background.
@@ -195,7 +206,9 @@ describe("sponsorScoring.get", () => {
 
     // A minute later the next get retries; the one after reads the mark.
     const now = Date.now();
-    const clock = vi.spyOn(Date, "now").mockReturnValue(now + SHEET_RETRY_GAP_MS);
+    const clock = vi
+      .spyOn(Date, "now")
+      .mockReturnValue(now + SHEET_RETRY_GAP_MS);
     try {
       await expect(
         anon.sponsorScoring.get({ sponsor: s.id }),
@@ -204,7 +217,7 @@ describe("sponsorScoring.get", () => {
       await vi.waitFor(async () =>
         expect(
           (await anon.sponsorScoring.get({ sponsor: s.id })).final,
-        ).toMatchObject({ teamIds: ids.slice(0, 3), sheetSynced: true }),
+        ).toMatchObject({ teamIds: ids.slice(0, TOP), sheetSynced: true }),
       );
     } finally {
       clock.mockRestore();
@@ -219,9 +232,12 @@ describe("sponsorScoring.get", () => {
 
   test("get doesn't wait on a slow sheet retry", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id);
+    const ids = await shortlistTeams(s.id);
     mirrorSoon.mockResolvedValue(DOWN);
-    await anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) });
+    await anon.sponsorScoring.submit({
+      sponsor: s.id,
+      teamIds: ids.slice(0, TOP),
+    });
     // A mirror that never settles: get still answers.
     mirrorSoon.mockReset().mockReturnValue(new Promise(() => undefined));
     await expect(
@@ -232,17 +248,17 @@ describe("sponsorScoring.get", () => {
 
   test("a submitted team that withdrew drops out of the ranking", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id);
+    const ids = await shortlistTeams(s.id);
     await anon.sponsorScoring.submit({
       sponsor: s.id,
-      teamIds: ids.slice(0, 3),
+      teamIds: ids.slice(0, TOP),
     });
     await db
       .update(teams)
       .set({ submissionStatus: "draft" })
-      .where(eq(teams.id, ids[2]!));
+      .where(eq(teams.id, ids[TOP - 1]!));
     const res = await anon.sponsorScoring.get({ sponsor: s.id });
-    expect(res.final?.teamIds).toEqual(ids.slice(0, 2));
+    expect(res.final?.teamIds).toEqual(ids.slice(0, TOP - 1));
     expect(res.final?.ineligibleCount).toBe(1);
   });
 });
@@ -346,10 +362,10 @@ describe("sponsorScoring.review", () => {
 });
 
 describe("sponsorScoring.submit", () => {
-  test("saves exactly three ranked teams and mirrors the sheet", async () => {
+  test("saves exactly five ranked teams and mirrors the sheet", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id);
-    const ranked = [...ids].reverse().slice(0, 3);
+    const ids = await shortlistTeams(s.id);
+    const ranked = [...ids].reverse().slice(0, TOP);
     const res = await anon.sponsorScoring.submit({
       sponsor: s.id,
       teamIds: ranked,
@@ -362,13 +378,13 @@ describe("sponsorScoring.submit", () => {
 
   test("refuses the wrong count, duplicates and unshortlisted teams", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id);
+    const ids = await shortlistTeams(s.id);
     const extra = await team();
     const cases = [
-      ids.slice(0, 2),
-      [...ids.slice(0, 3), extra],
-      [ids[0]!, ids[0]!, ids[1]!],
-      [...ids.slice(0, 2), extra],
+      ids.slice(0, TOP - 1),
+      [...ids.slice(0, TOP), extra],
+      [ids[0]!, ...ids.slice(0, TOP - 1)],
+      [...ids.slice(0, TOP - 1), extra],
     ];
     for (const teamIds of cases) {
       await expect(
@@ -381,37 +397,40 @@ describe("sponsorScoring.submit", () => {
   test("another sponsor's shortlist doesn't count, and isn't touched", async () => {
     const a = await sponsor();
     const b = await sponsor();
-    const aIds = await shortlistFive(a.id);
+    const aIds = await shortlistTeams(a.id);
     // B has no slot of their own, so round 2 is locked for them.
     await expect(
-      anon.sponsorScoring.submit({ sponsor: b.id, teamIds: aIds.slice(0, 3) }),
+      anon.sponsorScoring.submit({
+        sponsor: b.id,
+        teamIds: aIds.slice(0, TOP),
+      }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect((await anon.sponsorScoring.get({ sponsor: a.id })).final).toBeNull();
   });
 
   test("a team that stopped being eligible can't be submitted", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id);
+    const ids = await shortlistTeams(s.id);
     track.mockResolvedValue("Best Domain");
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, TOP) }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
   test("refused once judging has closed", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id);
+    const ids = await shortlistTeams(s.id);
     closesAt = PAST;
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, TOP) }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     expect(mirrorSoon).not.toHaveBeenCalled();
   });
 
   test("a slow sheet write never marks a newer submission synced", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id);
-    const reranked = [...ids].reverse().slice(0, 3);
+    const ids = await shortlistTeams(s.id);
+    const reranked = [...ids].reverse().slice(0, TOP);
     // While the first ranking's sheet write is in flight, a second ranking
     // is submitted and its own sheet write fails.
     mirrorSoon.mockImplementationOnce(async () => {
@@ -421,7 +440,7 @@ describe("sponsorScoring.submit", () => {
       return SYNCED;
     });
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, TOP) }),
     ).resolves.toMatchObject({ sheetSynced: false });
     mirrorSoon.mockResolvedValue(DOWN);
     expect(
@@ -431,17 +450,17 @@ describe("sponsorScoring.submit", () => {
 
   test("still counts if the sheet write fails; resubmit replaces", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id);
+    const ids = await shortlistTeams(s.id);
     mirrorSoon.mockResolvedValue(DOWN);
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, TOP) }),
     ).resolves.toMatchObject({ sheetSynced: false });
     expect(
       (await anon.sponsorScoring.get({ sponsor: s.id })).final,
-    ).toMatchObject({ teamIds: ids.slice(0, 3), sheetSynced: false });
+    ).toMatchObject({ teamIds: ids.slice(0, TOP), sheetSynced: false });
 
     mirrorSoon.mockReset().mockResolvedValue(SYNCED);
-    const reranked = [ids[2]!, ids[0]!, ids[1]!];
+    const reranked = [ids[2]!, ids[0]!, ids[1]!, ...ids.slice(3, TOP)];
     await anon.sponsorScoring.submit({ sponsor: s.id, teamIds: reranked });
     expect(
       (await anon.sponsorScoring.get({ sponsor: s.id })).final,
@@ -466,10 +485,10 @@ describe("sponsorScoring.overview", () => {
     );
     const a = await sponsor();
     const b = await sponsor();
-    const ids = await shortlistFive(a.id);
+    const ids = await shortlistTeams(a.id);
     await anon.sponsorScoring.submit({
       sponsor: a.id,
-      teamIds: ids.slice(0, 3),
+      teamIds: ids.slice(0, TOP),
     });
     await anon.sponsorScoring.score({
       sponsor: b.id,
@@ -485,8 +504,8 @@ describe("sponsorScoring.overview", () => {
 
     const res = await organizer.sponsorScoring.overview();
     const sa = res.sponsors.find((s) => s.sponsorId === a.id)!;
-    expect(sa).toMatchObject({ scored: 5, shortlisted: 5 });
-    expect(sa.final?.teams.map((t) => t.teamId)).toEqual(ids.slice(0, 3));
+    expect(sa).toMatchObject({ scored: TOP + 2, shortlisted: TOP + 2 });
+    expect(sa.final?.teams.map((t) => t.teamId)).toEqual(ids.slice(0, TOP));
     expect(sa.final?.teams[0]).toMatchObject({ score: 10 });
     expect(sa.final?.teams[0]?.devpostUrl).toContain("devpost.com");
     // Final results list each team's hackers.
@@ -513,10 +532,10 @@ describe("sponsorScoring.overview", () => {
       createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
     );
     const a = await sponsor();
-    const ids = await shortlistFive(a.id);
+    const ids = await shortlistTeams(a.id);
     await anon.sponsorScoring.submit({
       sponsor: a.id,
-      teamIds: ids.slice(0, 3),
+      teamIds: ids.slice(0, TOP),
     });
     await db
       .update(teams)
@@ -525,7 +544,7 @@ describe("sponsorScoring.overview", () => {
 
     const res = await organizer.sponsorScoring.overview();
     const sa = res.sponsors.find((s) => s.sponsorId === a.id)!;
-    expect(sa).toMatchObject({ scored: 4, shortlisted: 4 });
+    expect(sa).toMatchObject({ scored: TOP + 1, shortlisted: TOP + 1 });
     expect(sa.final?.teams[0]).toMatchObject({
       teamId: ids[0],
       eligible: false,
@@ -543,11 +562,11 @@ describe("sponsorScoring.overview", () => {
     );
     const before = (await organizer.sponsorScoring.overview()).unsyncedCount;
     const a = await sponsor();
-    const ids = await shortlistFive(a.id);
+    const ids = await shortlistTeams(a.id);
     mirrorSoon.mockResolvedValue(DOWN);
     await anon.sponsorScoring.submit({
       sponsor: a.id,
-      teamIds: ids.slice(0, 3),
+      teamIds: ids.slice(0, TOP),
     });
     const res = await organizer.sponsorScoring.overview();
     expect(res.unsyncedCount).toBe(before + 1);
@@ -557,7 +576,7 @@ describe("sponsorScoring.overview", () => {
 describe("sponsorScoring.sendShortlist", () => {
   test("snapshots the shortlist; later edits don't change it until resent", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id);
+    const ids = await shortlistTeams(s.id);
     const sent = await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
     expect(sent.teamIds).toEqual([...ids].sort());
 
@@ -578,7 +597,7 @@ describe("sponsorScoring.sendShortlist", () => {
     await expect(
       anon.sponsorScoring.sendShortlist({ sponsor: s.id }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    await shortlistFive(s.id);
+    await shortlistTeams(s.id);
     closesAt = PAST;
     await expect(
       anon.sponsorScoring.sendShortlist({ sponsor: s.id }),
@@ -589,7 +608,7 @@ describe("sponsorScoring.sendShortlist", () => {
 describe("sponsorScoring round 2", () => {
   test("once scheduled, only teams that present can be ranked", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id, { present: false });
+    const ids = await shortlistTeams(s.id, { present: false });
     const late = await team();
     try {
       // Five of the shortlist present; `late` is ranked but never presented.
@@ -613,7 +632,7 @@ describe("sponsorScoring round 2", () => {
       await expect(
         anon.sponsorScoring.submit({
           sponsor: s.id,
-          teamIds: [late, ...ids.slice(0, 2)],
+          teamIds: [late, ...ids.slice(0, TOP - 1)],
         }),
       ).rejects.toMatchObject({
         code: "BAD_REQUEST",
@@ -627,17 +646,20 @@ describe("sponsorScoring round 2", () => {
         shortlisted: false,
       });
       await expect(
-        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
-      ).resolves.toMatchObject({ teamIds: ids.slice(0, 3) });
+        anon.sponsorScoring.submit({
+          sponsor: s.id,
+          teamIds: ids.slice(0, TOP),
+        }),
+      ).resolves.toMatchObject({ teamIds: ids.slice(0, TOP) });
     } finally {
       // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
       await db.delete(sponsorPresentations);
     }
   });
 
-  test("before organizers open round 2, the top 3 can't be submitted", async () => {
+  test("before organizers open round 2, the top 5 can't be submitted", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id, { present: false });
+    const ids = await shortlistTeams(s.id, { present: false });
     try {
       await db.insert(sponsorPresentations).values(
         ids.map((teamId, i) => ({
@@ -651,7 +673,10 @@ describe("sponsorScoring round 2", () => {
       const res = await anon.sponsorScoring.get({ sponsor: s.id });
       expect(res.round.round2Open).toBe(false);
       await expect(
-        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
+        anon.sponsorScoring.submit({
+          sponsor: s.id,
+          teamIds: ids.slice(0, TOP),
+        }),
       ).rejects.toMatchObject({
         code: "FORBIDDEN",
         message: "Round 2 isn't open yet. It opens after presentations.",
@@ -662,8 +687,11 @@ describe("sponsorScoring round 2", () => {
         (await anon.sponsorScoring.get({ sponsor: s.id })).round.round2Open,
       ).toBe(true);
       await expect(
-        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
-      ).resolves.toMatchObject({ teamIds: ids.slice(0, 3) });
+        anon.sponsorScoring.submit({
+          sponsor: s.id,
+          teamIds: ids.slice(0, TOP),
+        }),
+      ).resolves.toMatchObject({ teamIds: ids.slice(0, TOP) });
     } finally {
       // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
       await db.delete(sponsorPresentations);
@@ -683,13 +711,13 @@ describe("sponsorScoring round 2", () => {
   const noSlot = {
     code: "FORBIDDEN",
     message:
-      "Round 2 is locked: no teams presented to you, so you can't rank a top 3.",
+      "Round 2 is locked: no teams presented to you, so you can't rank a top 5.",
   };
 
   test("a sponsor who sent late (no rows) can't rank in round 2", async () => {
     const other = await sponsor();
     const s = await sponsor();
-    const ids = await shortlistFive(s.id, { present: false });
+    const ids = await shortlistTeams(s.id, { present: false });
     try {
       await scheduleFor(other.id, await team());
       await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
@@ -699,7 +727,10 @@ describe("sponsorScoring round 2", () => {
       expect(res.round.slots).toEqual([]);
       expect(res.round.round2Open).toBe(true);
       await expect(
-        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
+        anon.sponsorScoring.submit({
+          sponsor: s.id,
+          teamIds: ids.slice(0, TOP),
+        }),
       ).rejects.toMatchObject(noSlot);
       expect(mirrorSoon).not.toHaveBeenCalled();
       expect(
@@ -714,7 +745,7 @@ describe("sponsorScoring round 2", () => {
   test("a sponsor with no room (rows, none placed) can't rank in round 2", async () => {
     const other = await sponsor();
     const s = await sponsor();
-    const ids = await shortlistFive(s.id, { present: false });
+    const ids = await shortlistTeams(s.id, { present: false });
     try {
       await scheduleFor(other.id, await team());
       await db.insert(sponsorPresentations).values(
@@ -726,7 +757,10 @@ describe("sponsorScoring round 2", () => {
         })),
       );
       await expect(
-        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
+        anon.sponsorScoring.submit({
+          sponsor: s.id,
+          teamIds: ids.slice(0, TOP),
+        }),
       ).rejects.toMatchObject(noSlot);
     } finally {
       // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
@@ -736,10 +770,10 @@ describe("sponsorScoring round 2", () => {
 
   test("while round 2 is closed it says closed, not no slot", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id, { present: false });
+    const ids = await shortlistTeams(s.id, { present: false });
     await setRound2Open(false);
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, TOP) }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
       message: "Round 2 isn't open yet. It opens after presentations.",
@@ -748,7 +782,7 @@ describe("sponsorScoring round 2", () => {
 
   test("re-sending after scheduling keeps round 2 on the slots they have", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id, { present: false });
+    const ids = await shortlistTeams(s.id, { present: false });
     try {
       await db.insert(sponsorPresentations).values(
         ids.map((teamId, i) => ({
@@ -769,12 +803,15 @@ describe("sponsorScoring round 2", () => {
       await expect(
         anon.sponsorScoring.submit({
           sponsor: s.id,
-          teamIds: [added, ...ids.slice(0, 2)],
+          teamIds: [added, ...ids.slice(0, TOP - 1)],
         }),
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
       await expect(
-        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
-      ).resolves.toMatchObject({ teamIds: ids.slice(0, 3) });
+        anon.sponsorScoring.submit({
+          sponsor: s.id,
+          teamIds: ids.slice(0, TOP),
+        }),
+      ).resolves.toMatchObject({ teamIds: ids.slice(0, TOP) });
     } finally {
       // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
       await db.delete(sponsorPresentations);
@@ -805,7 +842,10 @@ describe("sponsorScoring prize track gate", () => {
       anon.sponsorScoring.sendShortlist({ sponsor: s.id }),
     ).rejects.toMatchObject(noTrack);
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: [t, t, t] }),
+      anon.sponsorScoring.submit({
+        sponsor: s.id,
+        teamIds: Array<string>(TOP).fill(t),
+      }),
     ).rejects.toMatchObject(noTrack);
     await expect(
       anon.sponsorJudging.listAllTeams({ sponsor: s.id }),
@@ -827,7 +867,7 @@ describe("sponsorScoring prize track gate", () => {
     }
   });
 
-  test("a digital sponsor's link can't read the roster or its top 3", async () => {
+  test("a digital sponsor's link can't read the roster or its top 5", async () => {
     // A DB row exists (submitDigital makes one); digital still decides.
     await db
       .insert(sponsorJudgingSponsors)
@@ -839,7 +879,7 @@ describe("sponsorScoring prize track gate", () => {
     const digital = {
       code: "FORBIDDEN",
       message:
-        "Digital sponsors don't judge in the portal. Send your top 3 to your Hack Western contact.",
+        "Digital sponsors don't judge in the portal. Send your top 5 to your Hack Western contact.",
     };
     await expect(
       anon.sponsorJudging.listAllTeams({ sponsor: row!.id }),
@@ -870,21 +910,24 @@ describe("sponsorScoring prize track gate", () => {
 });
 
 describe("sponsorScoring sheet mirror hooks", () => {
-  test("sending a shortlist and submitting a top 3 rewrite the tab", async () => {
+  test("sending a shortlist and submitting a top 5 rewrite the tab", async () => {
     const soon = vi.mocked(mirrorSponsorJudgingSoon);
     const s = await sponsor();
-    const ids = await shortlistFive(s.id);
+    const ids = await shortlistTeams(s.id);
     soon.mockClear();
     await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
     expect(soon).toHaveBeenCalledTimes(1);
     await anon.sponsorScoring.submit({
       sponsor: s.id,
-      teamIds: ids.slice(0, 3),
+      teamIds: ids.slice(0, TOP),
     });
     expect(soon).toHaveBeenCalledTimes(2);
     // A refused submit changes nothing and doesn't write.
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 2) }),
+      anon.sponsorScoring.submit({
+        sponsor: s.id,
+        teamIds: ids.slice(0, TOP - 1),
+      }),
     ).rejects.toBeTruthy();
     expect(soon).toHaveBeenCalledTimes(2);
   });
@@ -1025,7 +1068,7 @@ describe("sponsorScoring.score (several reps, half points)", () => {
       createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
     );
     const s = await sponsor();
-    const ids = await shortlistFive(s.id);
+    const ids = await shortlistTeams(s.id);
     await anon.sponsorScoring.score({
       sponsor: s.id,
       teamId: ids[0]!,
@@ -1034,7 +1077,7 @@ describe("sponsorScoring.score (several reps, half points)", () => {
     });
     await anon.sponsorScoring.submit({
       sponsor: s.id,
-      teamIds: ids.slice(0, 3),
+      teamIds: ids.slice(0, TOP),
     });
     const res = await organizer.sponsorScoring.overview();
     const row = res.sponsors.find((x) => x.sponsorId === s.id)!;
@@ -1049,50 +1092,51 @@ describe("sponsorScoring.score (several reps, half points)", () => {
   });
 });
 
-describe("sponsorScoring digital sponsors (top 3 by Devpost link)", () => {
+describe("sponsorScoring digital sponsors (top 5 by Devpost link)", () => {
   async function organizer() {
     return createCaller(
       createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
     );
   }
 
-  test("organizers enter 1st-3rd by Devpost link or team ID", async () => {
+  test("organizers enter 1st-5th by Devpost link or team ID", async () => {
     const org = await organizer();
-    const [a, b, c] = [await team(), await team(), await team()];
+    const all = await someTeams(TOP);
+    const [a, b, ...rest] = all;
     const res = await org.sponsorScoring.submitDigital({
       name: "PCBWay",
       links: [
         // Pasted without https, with www and a trailing slash.
         `www.devpost.com/software/${a}/`,
         `https://devpost.com/software/${b}?ref=x`,
-        c,
+        ...rest,
       ],
     });
-    expect(res.teamIds).toEqual([a, b, c]);
+    expect(res.teamIds).toEqual(all);
     expect(mirrorSoon).toHaveBeenCalled();
     const teamsRes = await org.sponsorScoring.digitalTeams({ name: "pcbway" });
-    expect(teamsRes.final?.teamIds).toEqual([a, b, c]);
+    expect(teamsRes.final?.teamIds).toEqual(all);
     const overview = await org.sponsorScoring.overview();
     expect(overview.digital).toEqual(["PCBWay"]);
     const pcb = overview.sponsors.find((x) => x.name === "PCBWay")!;
     expect(pcb).toMatchObject({ digital: true });
-    expect(pcb.final?.teams.map((t) => t.teamId)).toEqual([a, b, c]);
+    expect(pcb.final?.teams.map((t) => t.teamId)).toEqual(all);
   });
 
   test("refuses a link that matches no submitted team in the track", async () => {
     const org = await organizer();
-    const [a, b] = [await team(), await team()];
+    const ok = await someTeams(TOP - 1);
     const draft = await team("draft");
     await expect(
       org.sponsorScoring.submitDigital({
         name: "PCBWay",
-        links: [a, b, `devpost.com/software/${draft}`],
+        links: [...ok, `devpost.com/software/${draft}`],
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(
       org.sponsorScoring.submitDigital({
         name: "PCBWay",
-        links: [a, b, "devpost.com/software/nobody-built-this"],
+        links: [...ok, "devpost.com/software/nobody-built-this"],
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     // Outside the sponsor's track.
@@ -1101,53 +1145,54 @@ describe("sponsorScoring digital sponsors (top 3 by Devpost link)", () => {
     await expect(
       org.sponsorScoring.submitDigital({
         name: "PCBWay",
-        links: [inTrack, a, b],
+        links: [inTrack, ...ok],
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
   test("still works after judging closes (organizers enter it late)", async () => {
     const org = await organizer();
-    const [a, b, c] = [await team(), await team(), await team()];
+    const all = await someTeams(TOP);
     closesAt = PAST;
     await expect(
-      org.sponsorScoring.submitDigital({ name: "PCBWay", links: [a, b, c] }),
-    ).resolves.toMatchObject({ teamIds: [a, b, c] });
+      org.sponsorScoring.submitDigital({ name: "PCBWay", links: all }),
+    ).resolves.toMatchObject({ teamIds: all });
   });
 
   test("a link two teams share is refused as ambiguous; the team ID works", async () => {
     const org = await organizer();
-    const [a, b, c] = [await team(), await team(), await team()];
+    const all = await someTeams(TOP);
+    const [a, b, ...rest] = all;
     const shared = `https://devpost.com/software/shared-${a}`;
-    await db.update(teams).set({ devpostUrl: shared }).where(eq(teams.id, a));
-    await db.update(teams).set({ devpostUrl: shared }).where(eq(teams.id, b));
+    await db.update(teams).set({ devpostUrl: shared }).where(eq(teams.id, a!));
+    await db.update(teams).set({ devpostUrl: shared }).where(eq(teams.id, b!));
     await expect(
       org.sponsorScoring.submitDigital({
         name: "PCBWay",
-        links: [shared, b, c],
+        links: [shared, b!, ...rest],
       }),
     ).rejects.toMatchObject({
       code: "BAD_REQUEST",
       message: `1st place: "${shared}" matches more than one team in this sponsor's track. Paste the team ID instead.`,
     });
     await expect(
-      org.sponsorScoring.submitDigital({ name: "PCBWay", links: [a, b, c] }),
-    ).resolves.toMatchObject({ teamIds: [a, b, c] });
+      org.sponsorScoring.submitDigital({ name: "PCBWay", links: all }),
+    ).resolves.toMatchObject({ teamIds: all });
   });
 
   test("refuses the same team twice and a non-digital sponsor", async () => {
     const org = await organizer();
-    const [a, b] = [await team(), await team()];
+    const [a, ...rest] = await someTeams(TOP - 1);
     await expect(
       org.sponsorScoring.submitDigital({
         name: "PCBWay",
-        links: [a, `devpost.com/software/${a}`, b],
+        links: [a!, `devpost.com/software/${a}`, ...rest],
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     await expect(
       org.sponsorScoring.submitDigital({
         name: "Scotiabank",
-        links: [a, b, a],
+        links: [a!, ...rest, a!],
       }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
@@ -1156,7 +1201,7 @@ describe("sponsorScoring digital sponsors (top 3 by Devpost link)", () => {
     await expect(
       anon.sponsorScoring.submitDigital({
         name: "PCBWay",
-        links: ["a", "b", "c"],
+        links: ["a", "b", "c", "d", "e"],
       }),
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     const [row] = await db
@@ -1170,18 +1215,18 @@ describe("sponsorScoring digital sponsors (top 3 by Devpost link)", () => {
 });
 
 describe("sponsorJudging.getChosenTeams (database, not the deleted Judging tab)", () => {
-  test("returns the submitted top 3 from the DB, even when the sheet mirror failed", async () => {
+  test("returns the submitted top 5 from the DB, even when the sheet mirror failed", async () => {
     const s = await sponsor();
-    const ids = await shortlistFive(s.id);
+    const ids = await shortlistTeams(s.id);
     expect(
       await anon.sponsorJudging.getChosenTeams({ sponsor: s.id }),
     ).toMatchObject({ teamIds: [] });
     mirrorSoon.mockResolvedValue(DOWN);
     await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 3) }),
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, TOP) }),
     ).resolves.toMatchObject({ sheetSynced: false });
     expect(
       await anon.sponsorJudging.getChosenTeams({ sponsor: s.id }),
-    ).toMatchObject({ sponsorName: s.name, teamIds: ids.slice(0, 3) });
+    ).toMatchObject({ sponsorName: s.name, teamIds: ids.slice(0, TOP) });
   });
 });

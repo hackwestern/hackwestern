@@ -1,6 +1,20 @@
 // User-facing copy for the sponsor portal home (/sponsors/[uuid]) and the
 // shared bits of its sub-pages. Keep wording here, not in components.
 
+import { RUN_OF_SHOW_DATES } from "~/lib/run-of-show-time";
+
+/** "Nov 20 to 22, 2026", from the event dates. */
+function eventDateRange(): string {
+  const day = (iso: string) => new Date(`${iso}T12:00:00Z`);
+  const start = day(RUN_OF_SHOW_DATES.Friday);
+  const end = day(RUN_OF_SHOW_DATES.Sunday);
+  const month = start.toLocaleString("en-US", {
+    month: "short",
+    timeZone: "UTC",
+  });
+  return `${month} ${start.getUTCDate()} to ${end.getUTCDate()}, ${end.getUTCFullYear()}`;
+}
+
 export const sponsorPortalCopy = {
   seoTitle: "Sponsor Portal",
   brand: "Hack Western 13",
@@ -15,24 +29,27 @@ export const sponsorPortalCopy = {
     fallbackName: "Sponsor",
     logoAlt: (sponsor: string) => `${sponsor} logo`,
   },
-  // The portal's one nav: a side nav on tablets and up, a bottom tab bar on
-  // phones (Venue is side nav only; phones have the Map button).
+  // The portal's one nav (design: mocks/sponsor-portal-flow-hacker-v6): a
+  // side nav on tablets and up, a bottom tab bar on phones. Help is a
+  // button in the page header that opens a dialog over the current page.
   nav: {
     label: "Sponsor portal",
-    home: "Home",
+    home: "Today",
     scan: "Scan",
     chats: "Chats",
     schedule: "Schedule",
     judging: "Judging",
-    venue: "Venue",
-    howItWorks: "How this works",
+    map: "Map",
+    /** Beside the sponsor's logo at the top of the side nav. */
+    portal: "Sponsor portal",
+    homeLink: "Hack Western 13 sponsor portal home",
+    /** Bottom of the side nav. */
+    footer: `Times are Eastern · ${eventDateRange()}`,
     judgingLocked: (opens: string) => `Judging, locked. ${opens}`,
     judgingLockedTitle: "When judging opens",
     /** Beside Judging once it's open: has the team sent its top picks? */
     judgingSent: "Sent",
     judgingNotSent: "Not sent",
-    /** Slim top bar: "Hack Western 13 · Sat 2:14 PM". */
-    now: (when: string) => `Hack Western 13 · ${when}`,
   },
   /** Home, for sponsors without a prize track (no Judging in the nav). */
   noPrizeTrack: "No prize track: you're not judging this weekend.",
@@ -50,7 +67,8 @@ export const sponsorPortalCopy = {
       label: "Your Hack Western contact",
     },
   },
-  footer: "Need help during the hackathon? Text or call your Hack Western contact.",
+  footer:
+    "Need help during the hackathon? Text or call your Hack Western contact.",
   /** Under the welcome banner: the one thing to do now. */
   todo: {
     label: "What to do now",
