@@ -386,3 +386,11 @@
 **Alternatives:** keep the master sheet and set its ID (two sheets drift); read the list from Sponsor Status (it only has the 7 registered sponsors, not all 15).
 
 **Also (coffee chats):** on the organizer coffee chat board, "organizer events" means ad hoc room bookings organizers make (for example a sponsor who wants a room last minute), not run-of-show events. Schedule events don't go on the coffee chat board, and ad hoc bookings don't need their own tab.
+
+## 2026-11-19: Guided tours on the organizer dashboard
+
+**Decision:** Each tab of /internal/sponsors (Sponsors, Run of show, Coffee chats, Sponsor judging, Task pings) has a short tour of 3 to 5 steps, drawn with the sponsor portal's overlay (dim, ring, "Step n of N", bottom sheet on phones, centred callout when a target is missing). A "Tour" button in the dashboard header starts the open tab's tour. The first time an organizer opens a tab, a "New here?" card offers it (Start / No thanks); the answer is remembered per tab in localStorage (`hw-organizer-tour-seen:<tab>`), never forced. Tours are data in `src/lib/organizer-tours.ts`, copy in `src/content/organizer-tour.ts`, targets are `data-tour` attributes on the tabs. Switching tabs ends a running tour. Shared pieces moved out of the sponsor tour without changing it: `useTarget` (use-tour-target.ts), `TourOffer` (tour-offer.tsx) and generic `hasSeen`/`markSeen`.
+
+**Why:** Organizers pick up the dashboard mid-event and need to learn each view in a minute, the same way sponsors learn the portal.
+
+**Alternatives:** one long dashboard tour that switches tabs (longer, and most organizers only use one or two tabs); a How to menu like the sponsor portal's (more to build for five tabs that each need one tour); a tour library (same reasons as the portal tour, 2026-11-18).

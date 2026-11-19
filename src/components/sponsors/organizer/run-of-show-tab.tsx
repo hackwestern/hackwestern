@@ -104,7 +104,9 @@ export function RunOfShowTab({
 
   return (
     <>
-      <SheetEditButton href={data.sheetUrl} />
+      <div data-tour="ros-sheet">
+        <SheetEditButton href={data.sheetUrl} />
+      </div>
       {shownDay === COFFEE_CHAT_DAY_LABEL && (
         <div className="flex justify-end">
           <DashboardButton variant="link" asChild className="-mr-2">
@@ -118,14 +120,19 @@ export function RunOfShowTab({
       )}
       {/* The run of show gets the full width so its columns fit without
           sideways scrolling; the live room map sits with the rooms below. */}
-      <div className="min-w-0">
+      <div data-tour="ros-grid" className="min-w-0">
         <DayGrid
           mode="organizer"
           day={shownDay}
           now={now}
-          headerStart={<DayPicker value={shownDay} onChange={setDay} />}
+          headerStart={
+            <DayPicker value={shownDay} onChange={setDay} tourId="ros-days" />
+          }
           headerEnd={
-            <div className="flex flex-wrap items-center gap-x-4">
+            <div
+              data-tour="ros-toggles"
+              className="flex flex-wrap items-center gap-x-4"
+            >
               {data.availability.organizers.length > 0 && (
                 <OrganizersToggle
                   showOrganizers={showOrganizers}
@@ -171,10 +178,7 @@ export function RunOfShowTab({
 
       {/* Coffee chats are Saturday only: other days have no rooms section. */}
       {shownDay === COFFEE_CHAT_DAY_LABEL && (
-        <RoomsSection
-          jump={jumpToRooms}
-          onJumped={onJumped}
-        />
+        <RoomsSection jump={jumpToRooms} onJumped={onJumped} />
       )}
       {/* Not while loading: the day isn't known yet (no Sunday flash). */}
       {!summary.isLoading && shownDay === judgingDay && (

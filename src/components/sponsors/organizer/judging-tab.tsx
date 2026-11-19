@@ -102,6 +102,7 @@ export function JudgingTab({ sponsor }: { sponsor: string | null }) {
         <div
           role="tablist"
           aria-label={copy.viewsLabel}
+          data-tour="judging-views"
           className="grid grid-cols-2 gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1"
           onKeyDown={(e) => {
             if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;

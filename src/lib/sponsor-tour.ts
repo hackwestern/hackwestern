@@ -1,4 +1,5 @@
-// Pure logic for the sponsor portal's guided tours: which page a step lives
+// Pure logic for the guided tours (the sponsor portal's, and the organizer
+// dashboard's per-tab tours in organizer-tours.ts): which page a step lives
 // on, whether its target is there, where the callout goes, and saving
 // progress so a tour survives moving between pages. No React, no DOM
 // globals: the component passes in storage and a "is this target here?"
@@ -168,27 +169,40 @@ export function saveProgress(
   }
 }
 
-export function hasSeenWelcome(
-  storage: TourStorage | null,
-  sponsor: string,
-): boolean {
+/**
+ * Whether a "seen" flag is set under `key` (one per tour offer: a sponsor's
+ * welcome tour, an organizer dashboard tab). Storage that throws counts as
+ * seen, so a blocked browser is never nagged.
+ */
+export function hasSeen(storage: TourStorage | null, key: string): boolean {
   try {
-    return storage?.getItem(welcomeSeenKey(sponsor)) === "1";
+    return storage?.getItem(key) === "1";
   } catch {
     // Can't remember, so don't nag: treat as seen.
     return true;
   }
 }
 
+export function markSeen(storage: TourStorage | null, key: string): void {
+  try {
+    storage?.setItem(key, "1");
+  } catch {
+    // Nothing to do: the offer may show again next visit.
+  }
+}
+
+export function hasSeenWelcome(
+  storage: TourStorage | null,
+  sponsor: string,
+): boolean {
+  return hasSeen(storage, welcomeSeenKey(sponsor));
+}
+
 export function markWelcomeSeen(
   storage: TourStorage | null,
   sponsor: string,
 ): void {
-  try {
-    storage?.setItem(welcomeSeenKey(sponsor), "1");
-  } catch {
-    // Nothing to do: the offer may show again next visit.
-  }
+  markSeen(storage, welcomeSeenKey(sponsor));
 }
 
 /** Safe getter: `window.localStorage` itself can throw when blocked. */

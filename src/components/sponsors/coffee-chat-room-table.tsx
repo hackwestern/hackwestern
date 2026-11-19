@@ -140,6 +140,7 @@ export function CoffeeChatRoomTable({
       <div
         role="region"
         aria-label={copy.tableLabel}
+        data-tour="coffee-table"
         tabIndex={0}
         ref={region}
         className="max-h-[70vh] min-w-0 overflow-auto rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
@@ -260,6 +261,8 @@ function CellButton({
       aria-label={copy.cellLabel(cell.room, when, who)}
       onClick={(e) => onOpen(e.currentTarget)}
       data-highlighted={highlighted ? "true" : undefined}
+      // Tour targets: the tours use the first block and first free cell.
+      data-tour={free ? "coffee-free" : "coffee-block"}
       className={cn(
         "flex h-full min-h-14 w-full flex-col items-stretch gap-1 rounded-dashboard-sm border px-2 py-1.5 text-left text-xs leading-4",
         "transition-opacity duration-150 ease-out motion-reduce:transition-none",

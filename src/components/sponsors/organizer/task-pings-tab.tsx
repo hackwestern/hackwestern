@@ -94,6 +94,7 @@ export function TaskPingsTab({
         ref={helpRef}
         id="help"
         aria-labelledby="pings-help"
+        data-tour="pings-help"
         className="flex scroll-mt-4 flex-col gap-3"
       >
         <SectionHeading id="pings-help">{copy.helpHeading}</SectionHeading>
@@ -143,12 +144,20 @@ export function TaskPingsTab({
         </DashboardPanel>
       ) : (
         <>
-          <section aria-labelledby="pings-next" className="flex flex-col gap-3">
-            <SectionHeading id="pings-next">{copy.upNextHeading}</SectionHeading>
+          <section
+            aria-labelledby="pings-next"
+            data-tour="pings-next"
+            className="flex flex-col gap-3"
+          >
+            <SectionHeading id="pings-next">
+              {copy.upNextHeading}
+            </SectionHeading>
             <DashboardPanel className="gap-0 p-0">
               {a.upNext.length === 0 ? (
                 <p className="m-0 p-4 text-sm text-dashboard-text-medium sm:px-5">
-                  {s && !s.slackConnected ? copy.upNextNoSlack : copy.upNextEmpty}
+                  {s && !s.slackConnected
+                    ? copy.upNextNoSlack
+                    : copy.upNextEmpty}
                 </p>
               ) : (
                 <ol className="m-0 flex list-none flex-col p-0">
@@ -165,7 +174,11 @@ export function TaskPingsTab({
             </DashboardPanel>
           </section>
 
-          <section aria-labelledby="pings-log" className="flex flex-col gap-3">
+          <section
+            aria-labelledby="pings-log"
+            data-tour="pings-log"
+            className="flex flex-col gap-3"
+          >
             <div className="flex flex-col gap-1">
               <SectionHeading id="pings-log">{copy.logHeading}</SectionHeading>
               <p className="m-0 text-sm text-dashboard-text-light">

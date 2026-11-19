@@ -13,6 +13,7 @@ import {
 import { RunOfShowTab } from "~/components/sponsors/organizer/run-of-show-tab";
 import { SponsorsTab } from "~/components/sponsors/organizer/sponsors-tab";
 import { TaskPingsTab } from "~/components/sponsors/organizer/task-pings-tab";
+import { OrganizerTour } from "~/components/sponsors/tour/organizer-tour";
 import { HappeningNowBanner } from "~/components/sponsors/happening-now";
 import {
   LoadError,
@@ -84,11 +85,17 @@ export default function SponsorOrganizerHome() {
             tab === "pings" ? "max-w-[880px]" : "max-w-[1440px]",
           )}
         >
-          <PageIntro
-            eyebrow={copy.eyebrow}
-            title={copy.title}
-            intro={copy.intro}
-          />
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <PageIntro
+                eyebrow={copy.eyebrow}
+                title={copy.title}
+                intro={copy.intro}
+              />
+            </div>
+            {/* Tours the open tab; offers it once per tab. */}
+            <OrganizerTour tab={tab} />
+          </div>
           {/* On every tab. If the sheet is down the banner just isn't there;
               the Run of show tab says why. */}
           {schedule.data && (

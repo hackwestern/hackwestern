@@ -160,7 +160,7 @@ function CopyLinkButton({
   const url = `/sponsors/${sponsorId}`;
 
   return (
-    <div className="inline-flex items-center gap-1.5">
+    <div data-tour="org-copy-link" className="inline-flex items-center gap-1.5">
       <DashboardButton
         variant="small"
         onClick={() => {
@@ -828,6 +828,7 @@ export function SponsorsTab({
             onChange={setPickedDay}
             label={dayCopy.pickerLabel}
             dayLabel={(d) => dayCopy.short[d] ?? d}
+            tourId="org-days"
           />
           <span className="text-xs tabular-nums text-dashboard-text-light">
             {updatedAt
@@ -902,6 +903,7 @@ export function SponsorsTab({
       {/* Totals: the two that need someone to act read in warning colour. */}
       <dl
         aria-label={copy.statsLabel}
+        data-tour="org-stats"
         className="m-0 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3"
       >
         {stats.map((stat) => (
@@ -926,7 +928,7 @@ export function SponsorsTab({
 
       {/* Search and status filter */}
       <div className="flex flex-col gap-3">
-        <div className="relative w-full">
+        <div data-tour="org-search" className="relative w-full">
           <Search
             aria-hidden
             className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-dashboard-text-light"
@@ -1038,7 +1040,7 @@ export function SponsorsTab({
           picked day's fields; tap the name to open its chats and details. */}
       {filtered.length > 0 && (
         <ul className="m-0 flex list-none flex-col gap-3 p-0 sm:hidden">
-          {filtered.map((sponsor) => {
+          {filtered.map((sponsor, i) => {
             const row = rowAttrs(sponsor);
             const key = rowKey(sponsor);
             const summary = summaryOf(sponsor);
@@ -1048,6 +1050,7 @@ export function SponsorsTab({
               <li
                 key={key}
                 data-row={row.dataRow}
+                data-tour={i === 0 ? "org-sponsor-row" : undefined}
                 className={cn(
                   "flex scroll-mt-4 flex-col gap-3 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card",
                   row.targeted &&
@@ -1144,7 +1147,7 @@ export function SponsorsTab({
               </tr>
             </thead>
             <tbody>
-              {filtered.map((sponsor) => {
+              {filtered.map((sponsor, i) => {
                 const row = rowAttrs(sponsor);
                 const key = rowKey(sponsor);
                 const summary = summaryOf(sponsor);
@@ -1157,7 +1160,11 @@ export function SponsorsTab({
                 );
                 return (
                   <Fragment key={key}>
-                    <tr data-row={row.dataRow} className="scroll-mt-4">
+                    <tr
+                      data-row={row.dataRow}
+                      data-tour={i === 0 ? "org-sponsor-row" : undefined}
+                      className="scroll-mt-4"
+                    >
                       <th
                         scope="row"
                         className={cn(

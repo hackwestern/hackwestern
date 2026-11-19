@@ -13,6 +13,7 @@ export function DayPicker({
   days = RUN_OF_SHOW_DAYS,
   label = scheduleCopy.dayPicker,
   dayLabel = (day) => day,
+  tourId,
 }: {
   value: RunOfShowDay;
   onChange: (day: RunOfShowDay) => void;
@@ -21,11 +22,14 @@ export function DayPicker({
   label?: string;
   /** Short pill text, e.g. "Fri"; the full day stays the accessible name. */
   dayLabel?: (day: RunOfShowDay) => string;
+  /** A `data-tour` name, for a guided tour step on the pills. */
+  tourId?: string;
 }) {
   return (
     <div
       role="group"
       aria-label={label}
+      data-tour={tourId}
       className="inline-flex w-fit items-center gap-0.5 rounded-full bg-dashboard-bg-inset p-0.5"
     >
       {days.map((day) => {

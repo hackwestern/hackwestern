@@ -644,6 +644,7 @@ export function SponsorStrip({
     <>
       <ul
         aria-label={s.label}
+        data-tour="coffee-strip"
         className="m-0 flex list-none gap-2 overflow-x-auto p-0 pb-1"
       >
         {items.map((item) => {

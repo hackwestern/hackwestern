@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import * as Popover from "@radix-ui/react-popover";
 import { CircleHelp, Compass } from "lucide-react";
-import { DashboardButton } from "~/components/internals/dashboard-button";
 import {
   hoverTint,
   pressable,
 } from "~/components/sponsors/sponsor-shell-styles";
+import { TourOffer } from "~/components/sponsors/tour/tour-offer";
 import { TourOverlay } from "~/components/sponsors/tour/tour-overlay";
+import { useTarget } from "~/components/sponsors/tour/use-tour-target";
 import { sponsorTourCopy as copy } from "~/content/sponsor-tour";
 import {
   clickTargetOf,
@@ -19,7 +20,6 @@ import {
   pageOf,
   resolveStep,
   saveProgress,
-  targetSelector,
   type TourDef,
   type TourProgress,
 } from "~/lib/sponsor-tour";
@@ -42,63 +42,8 @@ export function startSponsorTour(id: SponsorTourId) {
   window.dispatchEvent(new CustomEvent(START_EVENT, { detail: id }));
 }
 
-/** How long a step waits for its target to render before centring. */
-const TARGET_GRACE_MS = 1200;
 /** How long to wait for a click's own navigation before offering a link. */
 const AWAY_GRACE_MS = 900;
-
-/** The first visible element for a `data-tour` name, if any. */
-function findTarget(target: string): Element | null {
-  for (const el of document.querySelectorAll(targetSelector(target))) {
-    const r = el.getBoundingClientRect();
-    if (r.width > 0 || r.height > 0) return el;
-  }
-  return null;
-}
-
-const isShown = (el: Element) => {
-  const r = el.getBoundingClientRect();
-  return r.width > 0 || r.height > 0;
-};
-
-/**
- * Watch for a step's target: it may render late (data loading, a dialog
- * opening, a tab switch) or go away (a dialog closing). The page is only
- * searched when the DOM changes and the current target is gone or hidden;
- * the overlay tracks the found element's position itself. `settled` turns
- * true once the grace time is up, so a missing target becomes a centred
- * callout instead of an endless wait.
- */
-function useTarget(target: string | undefined, stepKey: string) {
-  const [el, setEl] = useState<Element | null>(null);
-  const [settled, setSettled] = useState(false);
-  useEffect(() => {
-    setEl(null);
-    setSettled(!target);
-    if (!target) return;
-    let current: Element | null = null;
-    const look = () => {
-      if (current?.isConnected && isShown(current)) return;
-      current = findTarget(target);
-      setEl(current);
-    };
-    look();
-    const observer = new MutationObserver(look);
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      // Tab panels and dialogs show and hide through these.
-      attributes: true,
-      attributeFilter: ["hidden", "class", "style", "data-state"],
-    });
-    const grace = setTimeout(() => setSettled(true), TARGET_GRACE_MS);
-    return () => {
-      observer.disconnect();
-      clearTimeout(grace);
-    };
-  }, [target, stepKey]);
-  return { el, settled: settled || !!el };
-}
 
 /**
  * The sponsor portal's guided tours: a "How to" pill for the page header
@@ -325,6 +270,7 @@ export function SponsorTour({
 
       {offer && !progress && (
         <TourOffer
+          text={copy.offer}
           onStart={() => start(WELCOME_TOUR_ID)}
           onDismiss={() => {
             setOffer(false);
@@ -357,43 +303,5 @@ function MenuItem({
     >
       {children}
     </button>
-  );
-}
-
-/** "Take the tour?" on a sponsor's first visit. Never takes focus. */
-function TourOffer({
-  onStart,
-  onDismiss,
-}: {
-  onStart: () => void;
-  onDismiss: () => void;
-}) {
-  return (
-    <section
-      aria-label={copy.offer.title}
-      className="fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 flex flex-col gap-3 rounded-dashboard-2xl bg-dashboard-bg-surface p-4 font-figtree font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card duration-300 ease-out animate-in fade-in-0 slide-in-from-bottom-4 motion-reduce:animate-none sm:inset-x-auto sm:right-6 sm:w-[340px] md:bottom-6"
-    >
-      <div className="flex flex-col gap-0.5">
-        <h2 className="m-0 text-base font-semibold">{copy.offer.title}</h2>
-        <p className="m-0 text-sm text-dashboard-text-medium">
-          {copy.offer.body}
-        </p>
-      </div>
-      <div className="flex items-center justify-end gap-2">
-        <DashboardButton
-          variant="link"
-          onClick={onDismiss}
-          className="min-h-11"
-        >
-          {copy.offer.dismiss}
-        </DashboardButton>
-        <DashboardButton
-          onClick={onStart}
-          className={cn("h-auto min-h-11 w-auto py-2", pressable)}
-        >
-          {copy.offer.start}
-        </DashboardButton>
-      </div>
-    </section>
   );
 }

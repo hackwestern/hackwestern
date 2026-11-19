@@ -128,6 +128,7 @@ export function PresentationsPanel({
       {/* Who has sent a shortlist. */}
       <ul
         aria-label={copy.sentLabel}
+        data-tour="judging-sent"
         className="m-0 flex list-none flex-wrap gap-2 p-0"
       >
         {data.sponsors.map((s) => (
@@ -161,7 +162,7 @@ export function PresentationsPanel({
       </ul>
 
       {/* Schedule and notify. */}
-      <div className="flex flex-col gap-2">
+      <div data-tour="judging-actions" className="flex flex-col gap-2">
         {confirming ? (
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <p className={NOTE}>
@@ -255,6 +256,7 @@ export function PresentationsPanel({
             {/* Round 2: opened by hand once presentations are done. */}
             <DashboardButton
               variant="small"
+              data-tour="judging-round2"
               disabled={(!round2Open && data.slots.length === 0) || busy}
               onClick={() =>
                 setConfirming({ kind: "round2", open: !round2Open })
