@@ -41,16 +41,16 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 ## Organizer coffee chats: `organizer-coffee-autofill-v6a/b/c`
 | # | Change | Status |
 |---|---|---|
-| 1 | Build on autofill-v5's styling (Jazz's favourite) | v6a, v6c done; v6b building |
-| 2 | Coffee chats start at 10:00 AM; nothing before 10 | Building |
-| 3 | No "Nudge on Slack". "Contact" button: the sponsor's reps + main contact + HW lead, each with phone, Copy, Message (drafted, editable text) and Call | Building |
-| 4 | Rooms first, sponsor info on the SAME page. No side drawer/popup | Building |
-| 5 | Three versions of where sponsor info goes: v6a detail below the grid, v6b every sponsor listed below as expandable rows, v6c a sponsor timeline under the rooms on the same time axis | Building |
-| 6 | Clicking a sponsor shows everything the sponsor gave in hacker-v3: team with phones, main contact, their planned blocks, flexibility answer, slots (seats, booked, waiting), schedule overlaps, shortlist, Met at Hacker Fair | Building |
-| 7 | Organizer bookings = ad hoc room bookings only (e.g. a sponsor wants a room last minute); no schedule events, no separate tab | Building |
-| 8 | Send and lock per sponsor; four status words: Needs shortlist, Ready to send, Sent, Confirmed | Building |
-| 9 | 8 rooms: 2241–2243 near, Ivey 1348–1358 (15 min walk); organizers decide rooms and clashes | Building |
-| 10 | "Couldn't be placed" as a clickable warning | Building |
+| 1 | Build on autofill-v5's styling (Jazz's favourite) | Done |
+| 2 | Coffee chats start at 10:00 AM; nothing before 10 | Done |
+| 3 | No "Nudge on Slack". "Contact" button: the sponsor's reps + main contact + HW lead, each with phone, Copy, Message (drafted, editable text) and Call | Done |
+| 4 | Rooms first, sponsor info on the SAME page. No side drawer/popup | Done |
+| 5 | Three versions of where sponsor info goes: v6a detail below the grid, v6b every sponsor listed below as expandable rows, v6c a sponsor timeline under the rooms on the same time axis | Done |
+| 6 | Clicking a sponsor shows everything the sponsor gave in hacker-v3: team with phones, main contact, their planned blocks, flexibility answer, slots (seats, booked, waiting), schedule overlaps, shortlist, Met at Hacker Fair | Done |
+| 7 | Organizer bookings = ad hoc room bookings only (e.g. a sponsor wants a room last minute); no schedule events, no separate tab | Done |
+| 8 | Send and lock per sponsor; four status words: Needs shortlist, Ready to send, Sent, Confirmed | Done |
+| 9 | 8 rooms: 2241–2243 near, Ivey 1348–1358 (15 min walk); organizers decide rooms and clashes | Done |
+| 10 | "Couldn't be placed" as a clickable warning | Done |
 
 ## Organizer dashboard redesign (all sections, phone first): `organizer-dashboard-nav-a/b/c-v1`
 | # | Change | Status |
