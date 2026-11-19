@@ -121,6 +121,7 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 | 5 | Remove the sponsor expand/detail panel | Building |
 | 6 | Remove the "Organizers" checkbox on Run of show | Building |
 | 7 | Figtree only, no pixel font | Building |
+| 9 | Task pings: "Needs you now" (overdue tasks with Text / Mark done; "All clear" when empty) → "Now and next" (sponsor items now + next 3 tasks with owners, no duplicates) → "Done today (n)" collapsed → Ping log collapsed. Removed: subtitle, Slack routing paragraph (→ "?" tooltip), "Handed to Slack" badges (only failures shown), ping log caveat, hackathon-wide events | Building |
 | 8 | Set up: "Coffee chat workshop" shows who attended (rep / primary); new "Their workshop" column (time · room · HW lead setup) | Building |
 
 ## Organizer dashboard restyle: `organizer-dashboard-restyle-v1` (replaces nav-a/b/c as the direction)
