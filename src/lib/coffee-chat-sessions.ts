@@ -100,3 +100,25 @@ export function minutesOfClock(time: string | null | undefined): number | null {
   if (!m) return null;
   return Number(m[1]) * 60 + Number(m[2]);
 }
+
+/**
+ * How many chats each of a rep's sessions holds: full sessions in time order,
+ * then whatever is left of their wanted chats.
+ */
+export function chatsBySession(
+  sessionIds: readonly string[],
+  chatsWanted: number,
+  perSession: number,
+): Map<string, number> {
+  const ordered = COFFEE_SESSIONS.map((s) => s.id as string).filter((id) =>
+    sessionIds.includes(id),
+  );
+  const out = new Map<string, number>();
+  let left = chatsWanted;
+  for (const id of ordered) {
+    const n = Math.max(0, Math.min(perSession, left));
+    out.set(id, n);
+    left -= n;
+  }
+  return out;
+}

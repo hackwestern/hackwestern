@@ -11,7 +11,7 @@
  * (needs batchUpdate with the tab's sheetId, not the values API).
  */
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
-import { COFFEE_ROOMS, COFFEE_SESSIONS } from "~/lib/coffee-chat-sessions";
+import { COFFEE_ROOMS, COFFEE_SESSIONS, chatsBySession } from "~/lib/coffee-chat-sessions";
 import { formatClock } from "~/lib/run-of-show";
 import {
   googleBookingsSheet,
@@ -37,28 +37,6 @@ const stamp = (d: Date) =>
     dateStyle: "short",
     timeStyle: "short",
   });
-
-/**
- * How many chats each of a rep's sessions holds: full sessions in time order,
- * then whatever is left of their wanted chats.
- */
-export function chatsBySession(
-  sessionIds: readonly string[],
-  chatsWanted: number,
-  perSession: number,
-): Map<string, number> {
-  const ordered = COFFEE_SESSIONS.map((s) => s.id as string).filter((id) =>
-    sessionIds.includes(id),
-  );
-  const out = new Map<string, number>();
-  let left = chatsWanted;
-  for (const id of ordered) {
-    const n = Math.max(0, Math.min(perSession, left));
-    out.set(id, n);
-    left -= n;
-  }
-  return out;
-}
 
 /** The whole tab as rows from A1. Pure: tests build it from a board state. */
 export function roomGridRows(
