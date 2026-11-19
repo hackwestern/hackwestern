@@ -29,16 +29,16 @@ const copy = coffeeChatNotifyCopy.slack.result;
 
 /**
  * Slack wants the HTTP answer within 3 s. Each slow step is capped, one after
- * another: users.info 0.6 s, the board lock wait for a session invite 1.5 s
- * (then a decline is saved without its refill), notify and the next
- * hacker's invite 0.8 s (side by side), response_url 0.6 s. Worst case
- * about 3.5 s plus the DB queries, so a click that hits every cap at once
- * can miss Slack's 3 s (Slack marks the click as failed, but the answer is
- * saved and the DM still updates through response_url).
+ * another: users.info 0.6 s, the board lock wait for a session invite 0.8 s
+ * (then a decline is saved without its refill and the next round fills the
+ * seat), notify and the next hacker's invite 0.8 s (side by side),
+ * response_url 0.6 s. Worst case about 2.8 s plus the DB queries, inside
+ * Slack's 3 s in practice. If it ever misses, the answer is still saved and
+ * the DM still updates through response_url.
  */
 export const INTERACTION_STEP_TIMEOUT_MS = 600;
 export const INTERACTION_NOTIFY_TIMEOUT_MS = 800;
-export const INTERACTION_BOARD_LOCK_TIMEOUT_MS = 1500;
+export const INTERACTION_BOARD_LOCK_TIMEOUT_MS = 800;
 
 const ANSWERS: Record<string, CoffeeChatAnswer> = {
   [COFFEE_CHAT_ACCEPT_ACTION]: "accept",
