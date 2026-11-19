@@ -14,6 +14,7 @@ import {
   refillSeatsAfterNo,
   type InviteJob,
 } from "~/server/api/utils/coffee-chat-invites";
+import { mirrorCoffeeInvitesLater } from "~/server/api/utils/coffee-chat-invites-sheet-mirror";
 import {
   NOTIFY_TIMEOUT_MS,
   notifyCoffeeChat,
@@ -40,7 +41,7 @@ export async function respondToCoffeeChat(
   notifyTimeoutMs: number = NOTIFY_TIMEOUT_MS,
   options: RespondOptions = {},
 ) {
-  const { answer, jobs } = await recordAnswer(
+  const { answer, jobs, session } = await recordAnswer(
     userId,
     input,
     now,
@@ -59,6 +60,9 @@ export async function respondToCoffeeChat(
       })
     : null;
   if (delivery) waitUntil(delivery);
+  // A session invite's answer (and a decline's refill) changes the
+  // Coffee Chat Invites tab. Background, coalesced.
+  if (session) mirrorCoffeeInvitesLater();
   const event = answer.status === "accepted" ? "accepted" : "declined";
   await Promise.all([
     notifyCoffeeChat(event, { id: answer.chatId }, notifyTimeoutMs),
@@ -180,6 +184,7 @@ async function answerInTransaction(
         ...coffeeChatTimes({ ...chat, status: next }, now),
       },
       jobs,
+      session: Boolean(chat.placementId),
     };
   });
 }

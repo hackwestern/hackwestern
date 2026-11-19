@@ -67,6 +67,34 @@ export const coffeeChatInvitesCopy = {
     round: (n: number) => (n <= 1 ? "Round 1 (Fri)" : `Round ${n}`),
   },
 
+  /** The app-written, locked "Coffee Chat Invites" tab (one-way mirror). */
+  sheet: {
+    tab: "Coffee Chat Invites",
+    note: "Read-only. The app writes this tab. To change an invite, use the coffee chat board (Remove · Put first in line).",
+    updated: (when: string) => `Last updated ${when} ET`,
+    headers: [
+      "Sponsor",
+      "Rep",
+      "Session",
+      "Chat time",
+      "Room",
+      "Hacker",
+      "Hacker ID",
+      "Source",
+      "Status",
+      "Answer by",
+    ],
+    source: {
+      scanned: "Met at your booth",
+      shortlist: "Shortlist",
+      interested: "Interested",
+      organizer: "Added by organizer",
+    } as Record<string, string>,
+    status: { accepted: "Accepted", pending: "Waiting" },
+    /** The protected range's description in Sheets. */
+    protection: "App-written: change invites on the coffee chat board",
+  },
+
   errors: {
     workshopsUnknown:
       "Can't read the run of show, so workshop times are unknown. Invites weren't sent; try again in a minute.",
