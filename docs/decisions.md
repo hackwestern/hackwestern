@@ -678,3 +678,7 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 
 **Decision:** The task pinging system (automatic Slack DMs to task owners, the Task pings tab, ping log, overdue Text buttons) is turned off and hidden for the event: too confusing. Instead, the organizer dashboard shows "Now and next" under Happening now: the event happening now and the next one, plus the current task and the NEXT task from RUN OF SHOW (with its owner). No pings, no marking done. The pinging code stays in the repo, switched off, for later.
 **Why:** organizers only need to glance at what's on and what's next; pings and logs added noise.
+
+## 2026-11-19: Tracked sponsor help removed everywhere; design parked (Jazz)
+
+**Decision:** No "Sponsor requested help" anywhere in the build: no help rows in Now, no help request in Needs attention, no Slack DM / I'm on it / Resolved, no escalation. The sponsor portal's Help shows their HW lead's name + number (copy) and Noah as emergency contact. The full design is kept in docs/specs/parked-sponsor-help-requests.md for a later rebuild.
