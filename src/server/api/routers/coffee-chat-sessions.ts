@@ -355,9 +355,13 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
     // out after the commit (deliverInviteNotices never throws).
     const { sent, reconfirmed, round } = await boardWrite(async (tx, state) => {
       assertWorkshopsKnown(state);
+      // Stamp after the lock and the state read, so a sponsor save that
+      // committed while Send waited is older than this sentAt (else their
+      // "Changed after invites" flag would never clear).
+      const stamp = new Date();
       const sent = await tx
         .update(coffeeChatPlacements)
-        .set({ status: "sent", sentAt: now })
+        .set({ status: "sent", sentAt: stamp })
         .where(eq(coffeeChatPlacements.status, "draft"))
         .returning({ id: coffeeChatPlacements.id });
       // Sponsors who changed after invites: their invites were already
@@ -365,16 +369,24 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       // sent time), which clears "Changed after invites".
       const changed = state.sponsors.filter((s) => s.changedAfterSend);
       const repIds = changed.flatMap((s) => s.reps.map((r) => r.id));
-      if (repIds.length) {
-        await tx
-          .update(coffeeChatPlacements)
-          .set({ sentAt: now })
-          .where(
-            and(eq(coffeeChatPlacements.status, "sent"), inArray(coffeeChatPlacements.repId, repIds)),
-          );
-      }
-      const round = await sendRoundOneInvites(tx, { now });
-      return { sent, reconfirmed: changed.length, round };
+      const sentIds = new Set(sent.map((r) => r.id));
+      const touched = repIds.length
+        ? await tx
+            .update(coffeeChatPlacements)
+            .set({ sentAt: stamp })
+            .where(
+              and(eq(coffeeChatPlacements.status, "sent"), inArray(coffeeChatPlacements.repId, repIds)),
+            )
+            .returning({ id: coffeeChatPlacements.id, repId: coffeeChatPlacements.repId })
+        : [];
+      // Count sponsors whose already-sent chats this Send re-stamped (not
+      // ones whose drafts alone cleared the flag).
+      const repSponsor = new Map(changed.flatMap((s) => s.reps.map((r) => [r.id, s.id] as const)));
+      const reconfirmed = new Set(
+        touched.filter((t) => !sentIds.has(t.id)).map((t) => repSponsor.get(t.repId)),
+      ).size;
+      const round = await sendRoundOneInvites(tx, { now: stamp });
+      return { sent, reconfirmed, round };
     });
     const delivery = await deliverInviteNotices(round.jobs);
     const mirror = await mirrorRoomGrid(await loadBoardState(), { now });

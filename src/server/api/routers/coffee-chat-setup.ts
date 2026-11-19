@@ -33,6 +33,7 @@ import {
   loadSponsorSetup,
   type SponsorSetup,
 } from "~/server/api/utils/coffee-chat-setup";
+import { BOARD_LOCK_KEY } from "~/server/api/utils/coffee-chat-sessions-board";
 import { mirrorCoffeeChatSetupLater } from "~/server/api/utils/coffee-chat-setup-sheet-mirror";
 import { db } from "~/server/db";
 import {
@@ -119,6 +120,10 @@ async function lockForWrite(
   { bump = true } = {},
 ) {
   const sponsor = await findSponsor(sponsorId, tx);
+  // Board lock first, then the sponsor row: the same order as every
+  // organizer board write (boardWrite), so a sponsor save and an
+  // organizer fix can't deadlock. Reconcile re-takes it (re-entrant).
+  await tx.execute(sql`select pg_advisory_xact_lock(${sql.raw(BOARD_LOCK_KEY)})`);
   await tx
     .select({ id: sponsorJudgingSponsors.id })
     .from(sponsorJudgingSponsors)

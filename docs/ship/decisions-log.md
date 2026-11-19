@@ -63,6 +63,12 @@ Calls made during the unattended build, and anything blocked or left for Jazz. P
   8. *The Ivey-together fix doesn't reconcile invites:* it only moves unpinned chats, and a sent chat counts as pinned on the board, so it never touches an invited chat.
   9. *"At CC workshop" live column* added as K on Sponsor Day-Of (checkboxes on the 15 sponsor rows, header note). The contract checkboxes shifted one column right; the app finds every column by header.
 
+- **Integration review fixes:**
+  - Sponsor writes now take the board lock before the sponsor-row lock, the same order as organizer writes. A sponsor save during an organizer fix could otherwise deadlock.
+  - Send stamps its sent time after it gets the lock, so a sponsor save made while Send waited still gets its "Changed after invites" flag cleared.
+  - The reconfirm count only counts sponsors whose already-sent chats were re-stamped.
+  - *Not changed:* a sponsor who hasn't been sent can still save preferences when the run of show can't be read. Refusing would block every sponsor at the Friday workshop during a sheet outage, and the organizer board already rejects chats that land in a workshop window.
+
 ## Blocked / for Jazz
 
 - **Task pings already in Slack:** if any were synced in production before pings were turned off, those scheduled Slack messages will still send. Check Slack's scheduled messages for the ping bot and cancel them. (I can't see production Slack.)
