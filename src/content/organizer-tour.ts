@@ -63,7 +63,7 @@ export const organizerTourCopy = {
       },
       fixes: {
         title: "Suggested fixes",
-        body: "Anything Auto-schedule couldn't place, with why and a fix you can apply. If a fix needs the sponsor's OK, call their primary contact.",
+        body: "Anything Auto-schedule couldn't place, with why and a fix you can apply. If a fix needs the sponsor's OK, call their main contact.",
       },
       table: {
         title: "Rooms",

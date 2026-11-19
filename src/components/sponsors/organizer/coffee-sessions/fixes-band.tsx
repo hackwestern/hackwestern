@@ -1,5 +1,5 @@
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
+import { coffeeSessionsCopy, type ChatHow } from "~/content/coffee-chat-sessions";
 import { COFFEE_ROOMS } from "~/lib/coffee-chat-sessions";
 import {
   Card,
@@ -18,10 +18,11 @@ const fc = copy.fixes;
 
 /** Problem → why → Suggested → [Apply fix], as text. */
 export function fixView(fix: BoardFix, sp: BoardSponsor, board: Pick<SessionBoardData, "placements">) {
-  const pinnedAt = (key: string) => {
+  // Sent first: a sent chat is kept whether or not it was moved by hand.
+  const howAt = (key: string): ChatHow => {
     const [room, session] = key.split("|");
     const p = board.placements.find((x) => x.room === room && x.sessionId === session);
-    return !!p && (p.pinned || p.status === "sent");
+    return !p ? null : p.status === "sent" ? "sent" : p.pinned ? "hand" : null;
   };
   const rep = (id: string) => sp.reps.find((r) => r.id === id);
   const name = (id: string) => rep(id)?.name ?? "";
@@ -35,7 +36,7 @@ export function fixView(fix: BoardFix, sp: BoardSponsor, board: Pick<SessionBoar
     r === "partial" && first.chats
       ? fc.partialShort(name(first.rep), first.chats.got, first.chats.want)
       : g.kind === "move" && (r === "workshop" || r === "notFree" || r === "notSubmitted" || r === "overCap")
-      ? fc.invalid[r](name(first.rep), sessionLabel(fix.session), pinnedAt(g.from), sp.name)
+      ? fc.invalid[r](name(first.rep), sessionLabel(fix.session), howAt(g.from), sp.name)
       : fix.problem === "short"
         ? fc.short(name(first.rep), chats(first.rep, first.got), chats(first.rep, first.want))
         : fc.group(fix.items.length, sessionLabel(fix.session));

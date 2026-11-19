@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Check, Copy, Crown } from "lucide-react";
+import { Check, Copy } from "lucide-react";
+import { PrimaryCrownIcon } from "~/components/sponsors/organizer/primary-crown";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import { sponsorLogo } from "~/lib/sponsor-logos";
 import { cn } from "~/lib/utils";
@@ -78,16 +79,7 @@ export function Logo({
 }
 
 export function PrimaryCrown() {
-  return (
-    <span
-      role="img"
-      aria-label={copy.phone.primary}
-      title={copy.phone.primary}
-      className="inline-flex text-dashboard-border-task"
-    >
-      <Crown aria-hidden className="size-4 fill-current" strokeWidth={1.5} />
-    </span>
-  );
+  return <PrimaryCrownIcon label={copy.phone.primary} />;
 }
 
 const STATUS_STYLE: Record<BoardSponsor["status"]["kind"], string> = {
