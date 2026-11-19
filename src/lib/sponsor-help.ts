@@ -12,6 +12,15 @@ import { z } from "zod";
  */
 export const EMERGENCY_CONTACT_NAME = "Noah Medland";
 
+/**
+ * Tracked help (the request form, status polling, Slack posts and re-pings)
+ * is switched off for the event (decisions 2026-11-19): sponsors text or call
+ * their HW lead or the emergency contact instead. The code stays so it can
+ * come back; flip this to turn the public request/status/cancel routes and
+ * their Slack calls on again.
+ */
+export const TRACKED_HELP_ENABLED = false;
+
 export const SPONSOR_HELP_REASONS = [
   "swag",
   "tech",

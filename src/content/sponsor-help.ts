@@ -47,6 +47,10 @@ export const sponsorHelpCopy = {
     loading: "Loading…",
   },
 
+  /** Server error when the switched-off tracked help is called. */
+  trackedOff:
+    "Help requests are switched off. Text or call your Hack Western contact, or the emergency contact (Noah) under Need help.",
+
   sheet: {
     title: "What do you need?",
     description:

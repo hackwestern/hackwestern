@@ -17,7 +17,9 @@ import {
   SPONSOR_HELP_NOTE_MAX,
   SPONSOR_HELP_REASONS,
   type SponsorHelpReason,
+  TRACKED_HELP_ENABLED,
 } from "~/lib/sponsor-help";
+import { sponsorHelpCopy } from "~/content/sponsor-help";
 import {
   createTRPCRouter,
   protectedOrganizerProcedure,
@@ -122,6 +124,7 @@ function slackRef(row: HelpRow) {
  * moves ping_count from n to n+1, so concurrent polls send it once.
  */
 async function sendDueReping(row: HelpRow, sponsorName: string, now: Date) {
+  if (!TRACKED_HELP_ENABLED) return;
   const ref = slackRef(row);
   const step = dueHelpReping(row, now);
   if (!ref || !step) return;
@@ -168,6 +171,7 @@ async function markInSlack(
   sponsorName: string,
   outcome: SponsorHelpOutcome,
 ) {
+  if (!TRACKED_HELP_ENABLED) return;
   const ref = slackRef(row);
   if (ref)
     await markSponsorHelpMessage(ref, details(row, sponsorName), outcome);
@@ -200,7 +204,11 @@ export const sponsorHelpRouter = createTRPCRouter({
     };
   }),
 
-  /** Ask for help. One live request per sponsor. Public (UUID). */
+  /**
+   * Ask for help. One live request per sponsor. Public (UUID). Refused while
+   * tracked help is off (TRACKED_HELP_ENABLED), before anything is stored or
+   * posted to Slack.
+   */
   request: publicProcedure
     .input(
       sponsorInput.extend({
@@ -212,6 +220,12 @@ export const sponsorHelpRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }): Promise<SponsorHelpView> => {
+      if (!TRACKED_HELP_ENABLED) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: sponsorHelpCopy.trackedOff,
+        });
+      }
       const sponsor = await findSponsor(input.sponsor);
       const conflict = () =>
         new TRPCError({
@@ -264,11 +278,13 @@ export const sponsorHelpRouter = createTRPCRouter({
   /**
    * The sponsor's current request (live, or resolved in the last few
    * minutes), else null. Polled every 15s while live; sends a due re-ping on
-   * read, so no cron is needed.
+   * read, so no cron is needed. Inert (null, no DB read, no re-ping) while
+   * tracked help is off.
    */
   status: publicProcedure
     .input(sponsorInput)
     .query(async ({ input }): Promise<SponsorHelpView | null> => {
+      if (!TRACKED_HELP_ENABLED) return null;
       const sponsor = await findSponsor(input.sponsor);
       const row = await db.query.sponsorHelpRequests.findFirst({
         where: eq(sponsorHelpRequests.sponsorId, sponsor.id),
@@ -280,10 +296,11 @@ export const sponsorHelpRouter = createTRPCRouter({
       return toView(row);
     }),
 
-  /** The sponsor no longer needs help. */
+  /** The sponsor no longer needs help. A no-op while tracked help is off. */
   cancel: publicProcedure
     .input(sponsorInput.extend({ id: z.string().uuid() }))
     .mutation(async ({ input }) => {
+      if (!TRACKED_HELP_ENABLED) return { ok: true as const };
       const sponsor = await findSponsor(input.sponsor);
       const row = await closeRequest(
         and(
