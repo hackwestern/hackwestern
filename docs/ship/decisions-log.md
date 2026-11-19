@@ -40,6 +40,18 @@ Calls made during the unattended build, and anything blocked or left for Jazz. P
   5. *CC workshop pill:* attendance is stored in a new Sponsor Day-Of column "At CC workshop" (checkbox), read and written like Status. It's wired at merge. Considered: dropping the pill (Jazz asked for it), a DB column (the sheet is where the team already looks).
 - **Sheet writes were not fully gated:** saving a sponsor status wrote to the live sheet even with SHEET_WRITES off. This predates the build. Fixed in track E, and every write call is now checked to be gated.
 
+- **Sponsor setup (track A's open questions):**
+  1. *Scanned hackers count against the seat cap.* They fill seats first, so the shortlist shows "N seats · M taken by people you scanned · shortlist up to N − M". Considered: not counting them (sponsors would shortlist people who can never get a seat).
+  2. *Removing a rep after Send stays allowed behind the warning*, but must tell hackers. The removal calls track B's `reconcileInvitesAfterChange` with `removingPlacementIds` before the delete, so invited hackers get a cancellation and their seats are re-offered. Wired at merge. Considered: organizer-only removal (sponsors are never there at the same time to ask), soft delete (needs a migration).
+  3. *Shortlist cards* also show school, program and year where the application has them. Skills stay off.
+  4. *"Message organizers"* opens track D's Help (lead + Noah). There's no separate form.
+- **Judging (track F's open questions):**
+  1. The sheet's status words are fine, and the "In person / Digital" column stays.
+  2. The list is split between reps alphabetically. Splitting by table comes later.
+  3. Anyone on the sponsor login can send the shortlist and submit the top 3. One login is shared by the team.
+  4. *The Run-of-show judging panel* reads pick counts from the deleted tab and always shows "unknown". It now counts saved picks from the database (fix at merge).
+  5. *"No portal link for digital sponsors"* is decided by the sheet's In person / Digital column, not by whether a DB row exists. Checked at merge.
+
 ## Blocked / for Jazz
 
 - **Task pings already in Slack:** if any were synced in production before pings were turned off, those scheduled Slack messages will still send. Check Slack's scheduled messages for the ping bot and cancel them. (I can't see production Slack.)
