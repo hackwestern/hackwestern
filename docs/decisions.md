@@ -474,3 +474,11 @@ It's a grey tab (app writes; don't type in it), listed on "Start here". "Start h
 **Why:** organizers live in the sheet and want to see what sponsors entered, live during the Friday workshop. The app stays the source of truth, so the sheet can't drift.
 
 **Alternatives:** sponsors fill a sheet directly (no validation, no calendar); two-way sync (rejected before for the same reasons as coffee chat bookings); one tab per table (four tabs to keep in order).
+
+## 2026-11-19: "Met at Hacker Fair" list and picking a rep on scan; hacker-v3 is the final sponsor flow (Jazz)
+
+**Decision:** Chats has two lists: "Shortlist" (picked before the event) and "Met at Hacker Fair" (hackers a sponsor met at their booth and wants to chat with). Met at Hacker Fair picks are offered seats first (same as the earlier "manual (booth) picks first" auto-fill rule). Scanning a hacker asks "Which rep wants to talk to them?" (from Your team), then shows the next open seat with that rep (time, rep, building) with "Offer this seat" or "Add as Met at Hacker Fair". Offers expire 20 minutes before the chat, 35 for Ivey rooms. The final sponsor portal prototype is `mocks/sponsor-portal-flow-hacker-v3` (hacker-v2's look plus every decision from 2026-11-19).
+
+**Why:** sponsors meet people at the booth who weren't on their shortlist; choosing the rep at scan time sends the hacker to the person who actually wants to talk to them.
+
+**Alternatives:** the names "Met at booth", "Walk-ins" ("walk-in" sounds uninvited), "Leads" (sales talk); offering the next seat with any rep (the wrong person may get the chat).
