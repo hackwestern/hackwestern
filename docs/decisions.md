@@ -459,3 +459,18 @@
 **Why:** whoever is at the booth may not be the main contact; the team needs to know who to call and on which number.
 
 **Alternatives:** use only the main contact's number (wrong person when someone else is at the booth); optional fields (posts arrive with no way to call back).
+
+## 2026-11-19: Your team starts empty; coffee chat setup is mirrored to a "Coffee Chat Setup" sheet tab (Jazz)
+
+**Decision (Your team):** The "Your team" step starts empty with one blank rep row. No rep is prefilled and there's no "we filled this in" banner on that step: no source has rep names (the sheet's Coffee Chats tab only has rep counts). The calendar mocks' named reps are example data.
+
+**Decision (sheet):** Every save of a sponsor's coffee chat setup (draft or submit) rewrites the app-owned "Coffee Chat Setup" tab of the Spon Team sheet from the database, same pattern as the Sponsor Judging mirror (one writer, generation number, 5 s timeout, logs a failure once, never blocks the save, production or SHEET_WRITES=1 only). The tab was created 2026-11-19 with a note row and four stacked tables:
+- Sponsors: Sponsor, Status, Last saved, Main contact, Main phone, Can we shift chats?, Chatting hours (used / package), Chats, Hacker seats, Rooms at busiest time, Overlaps with their schedule, Notes
+- Team: Sponsor, Rep, Phone, Email
+- Chat blocks: Sponsor, Planning room, Reps, Start, End, Chat length, Hackers per chat, Chats, Hacker seats, Assigned room, Overlaps
+- Shortlist: Sponsor, Hacker, Hacker ID, Source (Shortlist / Met at booth)
+It's a grey tab (app writes; don't type in it), listed on "Start here". "Start here" rule updated: our team's phones live only in HW Contacts; sponsor phones come from their setup.
+
+**Why:** organizers live in the sheet and want to see what sponsors entered, live during the Friday workshop. The app stays the source of truth, so the sheet can't drift.
+
+**Alternatives:** sponsors fill a sheet directly (no validation, no calendar); two-way sync (rejected before for the same reasons as coffee chat bookings); one tab per table (four tabs to keep in order).
