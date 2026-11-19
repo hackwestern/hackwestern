@@ -543,7 +543,7 @@ function normalName(value: string): string {
  * in the HW Contacts list (its identity, so two people with the same name
  * stay apart), `name` is what the page shows.
  */
-export type OrganizerContact = { row: number; name: string };
+export type OrganizerContact = { row: number; name: string; ownName?: string };
 
 /**
  * The row whose view this HW Contacts row gets: the one person its "Same
@@ -583,7 +583,10 @@ export function organizerForEmail(
   );
   if (own === -1) return null;
   const row = viewRowOf(own, contacts);
-  return { row, name: contacts[row]!.name.trim() };
+  const name = contacts[row]!.name.trim();
+  const ownName = contacts[own]!.name.trim();
+  // ownName differs only when "Same view as" borrowed someone else's view.
+  return row === own ? { row, name } : { row, name, ownName };
 }
 
 /**

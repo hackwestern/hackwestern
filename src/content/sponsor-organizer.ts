@@ -83,6 +83,8 @@ export const sponsorOrganizerCopy = {
     all: "All sponsors",
     viewLabel: "Which sponsors to show",
     signedIn: (name: string) => `Signed in as ${name}`,
+    /** Someone with another organizer's view ("Same view as" in HW Contacts). */
+    signedInWithView: (own: string, view: string) => `Signed in as ${own} · ${view}'s view`,
     leads: (n: number) =>
       n === 0
         ? "You don't lead a sponsor"

@@ -180,11 +180,11 @@ describe("My sponsors matching", () => {
       { name: "Sam Ortiz", loginEmail: "sam@example.test", sameViewAs: "Nobody Here" },
       { name: "Lee Park", loginEmail: "lee@example.test", sameViewAs: "  " },
     ];
-    // Same view: Robin sees exactly Noah's page.
-    expect(organizerForEmail("robin@example.test", team)).toEqual(noah);
+    // Same view: Robin sees exactly Noah's page, and keeps their own name for the header.
+    expect(organizerForEmail("robin@example.test", team)).toEqual({ ...noah, ownName: "Robin Vale" });
     // No chains: Kai gets Robin's own row, not Noah's.
     expect(viewRowOf(2, team)).toBe(1);
-    expect(organizerForEmail("kai@example.test", team)).toEqual({ row: 1, name: "Robin Vale" });
+    expect(organizerForEmail("kai@example.test", team)).toEqual({ row: 1, name: "Robin Vale", ownName: "Kai Lund" });
     // Unknown name or blank: their own row.
     expect(organizerForEmail("sam@example.test", team)).toEqual({ row: 3, name: "Sam Ortiz" });
     expect(organizerForEmail("lee@example.test", team)).toEqual({ row: 4, name: "Lee Park" });
