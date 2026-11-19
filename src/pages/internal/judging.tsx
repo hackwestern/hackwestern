@@ -6,6 +6,7 @@ import { ControlAddJudge } from "~/components/judging/control/control-add-judge"
 import { ControlJudges } from "~/components/judging/control/control-judges";
 import { ControlProgress } from "~/components/judging/control/control-progress";
 import { ControlQueue } from "~/components/judging/control/control-queue";
+import { ControlResultsSheet } from "~/components/judging/control/control-results-sheet";
 import { ControlQueueTable } from "~/components/judging/control/control-queue-table";
 import { ControlRanking } from "~/components/judging/control/control-ranking";
 import {
@@ -97,6 +98,7 @@ export default function JudgingControlRoom() {
             <div className="flex min-w-0 flex-col gap-5">
               <ControlSponsorTracks />
               <ControlAddJudge />
+              <ControlResultsSheet />
             </div>
           </div>
         </div>

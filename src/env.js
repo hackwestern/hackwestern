@@ -92,6 +92,10 @@ export const env = createEnv({
     // Dedicated service account for sponsor judging Sheets access
     SPONSOR_SHEETS_CLIENT_EMAIL: z.string().optional(),
     SPONSOR_SHEETS_PRIVATE_KEY: z.string().optional(),
+    // Spreadsheet id that mirrors judging results live ("Results" + "Marks"
+    // tabs, rewritten on every mark). Share it with SPONSOR_SHEETS_CLIENT_EMAIL.
+    // Unset = no sync.
+    JUDGING_RESULTS_SHEET: z.string().optional(),
     GITHUB_TOKEN: z.string().optional(),
     // ISO 8601 datetime strings for the hacking window used in commit-timing cheat checks
     HACK_START: z.string().datetime().optional(),
@@ -173,6 +177,7 @@ export const env = createEnv({
     SPONSOR_MASTER_SHEET_TAB: process.env.SPONSOR_MASTER_SHEET_TAB,
     SPONSOR_SHEETS_CLIENT_EMAIL: process.env.SPONSOR_SHEETS_CLIENT_EMAIL,
     SPONSOR_SHEETS_PRIVATE_KEY: process.env.SPONSOR_SHEETS_PRIVATE_KEY,
+    JUDGING_RESULTS_SHEET: process.env.JUDGING_RESULTS_SHEET,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     HACK_START: process.env.HACK_START,
     HACK_END: process.env.HACK_END,

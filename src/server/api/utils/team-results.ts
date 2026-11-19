@@ -34,11 +34,15 @@ export interface ResultMark {
   score: number;
   ratings: Record<string, number>;
   notes: string;
+  /** The judge gave this team a super like (score_breakdown.superLike). */
+  superLike: boolean;
 }
 
 export interface RoundSummary {
   /** How many judges marked the team in this round. */
   count: number;
+  /** How many of those judges super liked the team. */
+  superLikes: number;
   /** Average overall score, or null with no marks. */
   average: number | null;
   /** Average per criterion, over the marks that rated it. */
@@ -71,6 +75,7 @@ function summarize(marks: ResultMark[]): RoundSummary {
 
   return {
     count: marks.length,
+    superLikes: marks.filter((m) => m.superLike).length,
     average: marks.length > 0 ? mean(marks.map((m) => m.score)) : null,
     criteria,
     marks,
@@ -99,6 +104,10 @@ export function buildTeamResults(
     score: r.score,
     ratings: ratingsOf(r.breakdown),
     notes: r.notes,
+    superLike:
+      typeof r.breakdown === "object" &&
+      r.breakdown !== null &&
+      (r.breakdown as { superLike?: unknown }).superLike === true,
   });
 
   return [...teams]
