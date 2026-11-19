@@ -1,0 +1,297 @@
+import { describe, expect, test, vi } from "vitest";
+
+import {
+  fetchAllSponsorInfo,
+  parseSponsorDayOfColumns,
+  parseSponsorDayOfRows,
+  sheetSponsorsFromDayOf,
+  sponsorInfoFromDayOf,
+  type SheetsClient,
+} from "~/server/api/utils/sponsor-sheets";
+import {
+  sponsorStatusCell,
+  writeSponsorStatus,
+} from "~/server/api/utils/sponsor-info-tab";
+import { prizeTrackNamesFromSheet } from "~/server/api/utils/sponsor-prize-track-sheet";
+
+// The real Sponsor Day-Of header row (2026-11-19, after the Sponsor Status
+// merge). Data rows below are fake.
+const HEADER = [
+  "Sponsor Name",
+  "In person / Digital",
+  "HW lead",
+  "Lead phone",
+  "Status",
+  "Booth location",
+  "Workshop room",
+  "Workshop time",
+  "Judging room",
+  "Team track filter",
+  "Sponsor Booth",
+  "Company Mentors",
+  "Resume & Profile Access",
+  "Dedicated Workshop",
+  "Coffee Chats & Interviews",
+  "Custom API / Prize Track",
+  "Opening Ceremony Stage Time",
+  "Other",
+];
+
+const row = (cells: Record<number, string>) =>
+  Array.from({ length: HEADER.length }, (_, i) => cells[i] ?? "");
+
+const ROWS = [
+  HEADER,
+  row({
+    0: "Acme",
+    1: "In person",
+    2: "Pat Lead",
+    4: "Checked in",
+    5: "Booth 3",
+    6: "Rm 1",
+    7: "1:00 PM",
+    8: "Rm 9",
+    9: "Best Domain",
+    13: "TRUE",
+    15: "TRUE",
+  }),
+  row({
+    0: "Globex",
+    1: "In person",
+    2: "Sam Lead",
+    13: "TRUE",
+    14: "TRUE",
+    15: "FALSE",
+  }),
+  row({ 0: "Initech", 1: "Digital", 8: "Remote", 15: "TRUE" }),
+  [],
+  ["Every on-site sponsor", "", "Footer text, not a sponsor"],
+];
+
+describe("parseSponsorDayOfColumns", () => {
+  test("finds each field by exact header name, not the contract checkboxes", () => {
+    const cols = parseSponsorDayOfColumns(HEADER);
+    expect(cols).toMatchObject({
+      name: 0,
+      format: 1,
+      hwLead: 2,
+      status: 4,
+      booth: 5,
+      workshopLocation: 6,
+      workshopTime: 7,
+      judgingRoom: 8,
+      track: 9,
+      prizeTrack: 15,
+      maxMinutes: -1,
+      notes: -1,
+    });
+  });
+
+  test("accepts the old Sponsor Status names", () => {
+    const cols = parseSponsorDayOfColumns([
+      "Sponsor Name",
+      "Status",
+      "Judging Room Number",
+      "Booth Location",
+      "HW Contact",
+      "Workshop Location",
+      "Workshop Time",
+      "Coffee Chat Max Minutes",
+      "Sponsor Track",
+    ]);
+    expect(cols).toMatchObject({
+      status: 1,
+      judgingRoom: 2,
+      booth: 3,
+      hwLead: 4,
+      workshopLocation: 5,
+      workshopTime: 6,
+      maxMinutes: 7,
+      track: 8,
+      prizeTrack: -1,
+    });
+  });
+});
+
+describe("Sponsor Day-Of reads", () => {
+  const dayOf = parseSponsorDayOfRows("Sponsor Day-Of", ROWS)!;
+
+  test("sponsor info stops at the first blank name", () => {
+    const info = sponsorInfoFromDayOf(dayOf)!;
+    expect([...info.keys()]).toEqual(["acme", "globex", "initech"]);
+    expect(info.get("acme")).toEqual({
+      status: "Checked in",
+      roomNumber: "Rm 9",
+      boothLocation: "Booth 3",
+      hwContact: "Pat Lead",
+      workshopLocation: "Rm 1",
+      workshopTime: "1:00 PM",
+      maxCoffeeChatMinutes: 0,
+      track: "Best Domain",
+      hasPrizeTrack: true,
+    });
+    // Blank cells read as before: Not arrived, TBD, an em dash, empty.
+    expect(info.get("globex")).toMatchObject({
+      status: "Not arrived",
+      roomNumber: "TBD",
+      boothLocation: "TBD",
+      workshopLocation: "",
+      track: null,
+      hasPrizeTrack: false,
+    });
+    expect(info.get("initech")).toMatchObject({
+      hwContact: "—",
+      roomNumber: "Remote",
+      hasPrizeTrack: true,
+    });
+  });
+
+  test("no Status column means the sheet isn't merged yet", () => {
+    const old = parseSponsorDayOfRows("Sponsor Day-Of", [
+      ["Sponsor Name", "In person / Digital", "HW lead"],
+      ["Acme", "In person", "Pat Lead"],
+    ])!;
+    expect(sponsorInfoFromDayOf(old)).toBeNull();
+  });
+
+  test("the sponsor list carries the prize track checkbox", () => {
+    const sponsors = sheetSponsorsFromDayOf(dayOf);
+    expect(sponsors.map((s) => [s.name, s.hwContact, s.hasPrizeTrack])).toEqual(
+      [
+        ["Acme", "Pat Lead", true],
+        ["Globex", "Sam Lead", false],
+        ["Initech", "", true],
+      ],
+    );
+    expect(prizeTrackNamesFromSheet(sponsors)).toEqual(["Acme", "Initech"]);
+  });
+
+  test("no prize track column gives no list (callers use the built-in one)", () => {
+    expect(
+      prizeTrackNamesFromSheet([{ name: "Acme", hasPrizeTrack: null }]),
+    ).toBeNull();
+  });
+
+  test("a missing header row reads as no tab", () => {
+    expect(parseSponsorDayOfRows("Sponsor Day-Of", [["Hello"]])).toBeNull();
+  });
+});
+
+/** A fake Sheets client over named tabs; records every write. */
+function fakeSheets(tabs: Record<string, string[][]>) {
+  const updates: { range: string; values: unknown }[] = [];
+  const client = {
+    spreadsheets: {
+      get: vi.fn(async () => ({
+        data: {
+          sheets: Object.keys(tabs).map((title) => ({ properties: { title } })),
+        },
+      })),
+      values: {
+        get: vi.fn(async ({ range }: { range: string }) => {
+          const title = /^'(.+)'!/.exec(range)?.[1] ?? "";
+          return { data: { values: tabs[title] ?? [] } };
+        }),
+        update: vi.fn(
+          async (req: { range: string; requestBody: { values: unknown } }) => {
+            updates.push({ range: req.range, values: req.requestBody.values });
+            return {};
+          },
+        ),
+      },
+    },
+  };
+  return { sheets: client as unknown as SheetsClient, updates };
+}
+
+describe("fetchAllSponsorInfo", () => {
+  test("reads Sponsor Day-Of once it has a Status column", async () => {
+    const { sheets } = fakeSheets({
+      "Sponsor Day-Of": ROWS,
+      "Sponsor Status": [
+        ["Sponsor Name", "Status"],
+        ["Acme", "Left"],
+      ],
+    });
+    const info = await fetchAllSponsorInfo(sheets, "id");
+    expect(info.get("acme")?.status).toBe("Checked in");
+  });
+
+  test("falls back to the old Sponsor Status tab before the merge", async () => {
+    const { sheets } = fakeSheets({
+      "Sponsor Day-Of": [
+        ["Sponsor Name", "HW lead"],
+        ["Acme", "Pat Lead"],
+      ],
+      "Sponsor Status": [
+        ["Sponsor Name", "Status"],
+        ["Acme", "Left"],
+      ],
+    });
+    const info = await fetchAllSponsorInfo(sheets, "id");
+    expect(info.get("acme")).toMatchObject({
+      status: "Left",
+      hasPrizeTrack: null,
+    });
+  });
+
+  test("never reads the retired (old) Sponsor Status tab", async () => {
+    const { sheets } = fakeSheets({
+      "Sponsor Day-Of": [
+        ["Sponsor Name", "HW lead"],
+        ["Acme", "Pat Lead"],
+      ],
+      "(old) Sponsor Status": [
+        ["Sponsor Name", "Status"],
+        ["Acme", "Left"],
+      ],
+    });
+    expect((await fetchAllSponsorInfo(sheets, "id")).size).toBe(0);
+  });
+});
+
+describe("sponsor status writes", () => {
+  const dayOf = parseSponsorDayOfRows("Sponsor Day-Of", ROWS)!;
+
+  test("target the Status column of the sponsor's own row", () => {
+    expect(sponsorStatusCell(dayOf, " globex ")).toEqual({
+      ok: true,
+      range: "'Sponsor Day-Of'!E3",
+    });
+    expect(sponsorStatusCell(dayOf, "Every on-site sponsor")).toEqual({
+      ok: false,
+      reason: "not-found",
+    });
+    const old = parseSponsorDayOfRows("Sponsor Day-Of", [
+      ["Sponsor Name"],
+      ["Acme"],
+    ])!;
+    expect(sponsorStatusCell(old, "Acme")).toEqual({
+      ok: false,
+      reason: "no-column",
+    });
+  });
+
+  test("write one cell and never add a row", async () => {
+    const { sheets, updates } = fakeSheets({ "Sponsor Day-Of": ROWS });
+    await expect(
+      writeSponsorStatus(sheets, "id", "Initech", "Left"),
+    ).resolves.toEqual({ ok: true, range: "'Sponsor Day-Of'!E4" });
+    expect(updates).toEqual([
+      { range: "'Sponsor Day-Of'!E4", values: [["Left"]] },
+    ]);
+
+    await expect(
+      writeSponsorStatus(sheets, "id", "Nobody", "Left"),
+    ).resolves.toEqual({ ok: false, reason: "not-found" });
+    expect(updates).toHaveLength(1);
+  });
+
+  test("no Sponsor Day-Of tab is reported, not created", async () => {
+    const { sheets, updates } = fakeSheets({});
+    await expect(
+      writeSponsorStatus(sheets, "id", "Acme", "Left"),
+    ).resolves.toEqual({ ok: false, reason: "no-tab" });
+    expect(updates).toHaveLength(0);
+  });
+});

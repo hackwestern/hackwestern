@@ -5,6 +5,7 @@ import { z } from "zod";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { env } from "~/env";
 import { hasPrizeTrack } from "~/lib/sponsor-prize-tracks";
+import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import {
   NOTE_MAX,
   SCORE_MAX,
@@ -84,7 +85,7 @@ async function findSponsor(id: string) {
  */
 async function findTrackSponsor(id: string) {
   const sponsor = await findSponsor(id);
-  if (!hasPrizeTrack(sponsor.name)) {
+  if (!hasPrizeTrack(sponsor.name, await prizeTrackSponsors())) {
     throw new TRPCError({ code: "FORBIDDEN", message: errors.noPrizeTrack });
   }
   return sponsor;
@@ -440,7 +441,8 @@ export const sponsorScoringRouter = createTRPCRouter({
       fetchSponsorTracks(),
     ]);
     // Only prize track sponsors take part in judging.
-    const sponsors = registered.filter((s) => hasPrizeTrack(s.name));
+    const prizeTracks = await prizeTrackSponsors();
+    const sponsors = registered.filter((s) => hasPrizeTrack(s.name, prizeTracks));
 
     const teamIds = [
       ...new Set([

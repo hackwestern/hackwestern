@@ -1,9 +1,9 @@
 import { eq, inArray } from "drizzle-orm";
 
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
-import { SPONSOR_PRIZE_TRACKS } from "~/content/sponsor-prize-tracks";
 import { formatPresentationTime, slotsKey } from "~/lib/sponsor-presentations";
 import { prizeTrackOf } from "~/lib/sponsor-prize-tracks";
+import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import {
   googleBookingsSheet,
   SHEET_WRITES_DISABLED,
@@ -199,8 +199,11 @@ export async function loadJudgingSheetInput(
     .from(sponsorJudgingSponsors)
     .orderBy(sponsorJudgingSponsors.name);
   // In list order; a track with no registered sponsor still gets a row.
-  const tracks = SPONSOR_PRIZE_TRACKS.flatMap((entry): TrackRow[] => {
-    const matched = registered.filter((s) => prizeTrackOf(s.name) === entry);
+  const trackList = await prizeTrackSponsors();
+  const tracks = trackList.flatMap((entry): TrackRow[] => {
+    const matched = registered.filter(
+      (s) => prizeTrackOf(s.name, trackList) === entry,
+    );
     return matched.length > 0
       ? matched.map((s) => ({ name: s.name, sponsorId: s.id }))
       : [{ name: entry, sponsorId: null }];

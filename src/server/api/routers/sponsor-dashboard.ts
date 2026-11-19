@@ -9,7 +9,6 @@ import {
   protectedOrganizerProcedure,
 } from "~/server/api/trpc";
 import {
-  cell,
   fetchAllChosenTeams,
   fetchAllSponsorInfo,
   fetchSheetSponsors,
@@ -17,7 +16,7 @@ import {
   getSheetsClient,
   getSpreadsheetId,
 } from "~/server/api/utils/sponsor-sheets";
-import { ensureSponsorInfoTab } from "~/server/api/utils/sponsor-info-tab";
+import { writeSponsorStatus } from "~/server/api/utils/sponsor-info-tab";
 import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
 
 export const sponsorDashboardRouter = createTRPCRouter({
@@ -130,8 +129,8 @@ export const sponsorDashboardRouter = createTRPCRouter({
   }),
 
   /**
-   * Set a sponsor's status in the "sponsor info" tab.
-   * Organizer-only.
+   * Set a sponsor's status in the Status column of the Sponsor Day-Of tab
+   * (Sponsor Status was merged into it on 2026-11-19). Organizer-only.
    */
   setSponsorStatus: protectedOrganizerProcedure
     .input(
@@ -143,69 +142,24 @@ export const sponsorDashboardRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       try {
         const sheets = await getSheetsClient();
-        const spreadsheetId = getSpreadsheetId();
-        const tab = await ensureSponsorInfoTab(sheets, spreadsheetId);
-
-        const res = await sheets.spreadsheets.values.get({
-          spreadsheetId,
-          range: `'${tab}'!A1:C`,
-        });
-
-        const rows = res.data.values ?? [];
-        const target = input.sponsorName.trim().toLowerCase();
-        let targetRowIndex = -1;
-
-        for (let i = 0; i < rows.length; i++) {
-          const name = cell(rows[i], 0);
-          const lower = name.toLowerCase();
-          if (
-            lower === target &&
-            lower !== "sponsor name" &&
-            lower !== "company name"
-          ) {
-            targetRowIndex = i + 1;
-            break;
-          }
-        }
-
-        if (targetRowIndex > 0) {
-          await sheets.spreadsheets.values.update({
-            spreadsheetId,
-            range: `'${tab}'!B${targetRowIndex}`,
-            valueInputOption: "RAW",
-            requestBody: {
-              majorDimension: "ROWS",
-              values: [[input.status]],
-            },
-          });
-        } else {
-          // No status row yet. Only add one for a real sponsor (on the sponsor
-          // list or registered), spelled as it is there, so a mistyped name
-          // returns an error instead of creating a duplicate sponsor row.
-          const [master, registered] = await Promise.all([
-            fetchSheetSponsors(),
-            db.query.sponsorJudgingSponsors.findMany(),
-          ]);
-          const canonicalName = [
-            ...master.map((sponsor) => sponsor.name),
-            ...registered.map((row) => row.name),
-          ].find((name) => name.trim().toLowerCase() === target);
-          if (!canonicalName) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: `Sponsor not found: ${input.sponsorName}`,
-            });
-          }
-
-          await sheets.spreadsheets.values.append({
-            spreadsheetId,
-            range: `'${tab}'!A:E`,
-            valueInputOption: "RAW",
-            insertDataOption: "INSERT_ROWS",
-            requestBody: {
-              majorDimension: "ROWS",
-              values: [[canonicalName, input.status, "TBD", "TBD", "—"]],
-            },
+        const result = await writeSponsorStatus(
+          sheets,
+          getSpreadsheetId(),
+          input.sponsorName,
+          input.status,
+        );
+        if (!result.ok) {
+          // A sponsor missing from Sponsor Day-Of gets no new row there:
+          // that tab is the sponsor list, edited by the spon team.
+          throw new TRPCError({
+            code:
+              result.reason === "not-found"
+                ? "NOT_FOUND"
+                : "INTERNAL_SERVER_ERROR",
+            message:
+              result.reason === "not-found"
+                ? `Sponsor not found on the Sponsor Day-Of tab: ${input.sponsorName}`
+                : 'The Sponsor Day-Of tab has no "Status" column',
           });
         }
 

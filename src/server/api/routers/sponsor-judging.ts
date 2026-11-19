@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { hasPrizeTrack } from "~/lib/sponsor-prize-tracks";
+import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
   SHEET_TAB,
@@ -34,7 +35,7 @@ export const sponsorJudgingRouter = createTRPCRouter({
       try {
         const sponsorName = await resolveSponsorName(input.sponsor);
         // Only prize track sponsors judge (same gate as listAllTeams).
-        if (!hasPrizeTrack(sponsorName)) {
+        if (!hasPrizeTrack(sponsorName, await prizeTrackSponsors())) {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: sponsorJudgingCopy.errors.noPrizeTrack,
@@ -91,7 +92,7 @@ export const sponsorJudgingRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const sponsorName = await resolveSponsorName(input.sponsor);
       // Only prize track sponsors judge (src/content/sponsor-prize-tracks.ts).
-      if (!hasPrizeTrack(sponsorName)) {
+      if (!hasPrizeTrack(sponsorName, await prizeTrackSponsors())) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: sponsorJudgingCopy.errors.noPrizeTrack,
