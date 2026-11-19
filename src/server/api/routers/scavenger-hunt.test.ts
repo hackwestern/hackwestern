@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { db } from "~/server/db";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -463,6 +463,94 @@ describe("scavengerHuntRouter basic endpoints", () => {
         expect(trpcErr.code).toBe("NOT_FOUND");
         expect(trpcErr.message).toBe("User not found");
       }
+    });
+  });
+
+  describe("getLeaderboard", () => {
+    const insertUser = async (
+      earned: number,
+      status: (typeof applications.$inferInsert)["status"],
+      type: "hacker" | "organizer" = "hacker",
+    ) => {
+      const id = faker.string.uuid();
+      await db.insert(users).values({
+        id,
+        email: faker.internet.email(),
+        type,
+        scavengerHuntEarned: earned,
+      });
+      await db.insert(applications).values({
+        ...ApplicationSeeder.createRandomWithoutUser(),
+        userId: id,
+        status,
+      });
+      return id;
+    };
+
+    let fixtureIds: string[] = [];
+    let top: string, tieA: string, tieB: string, zero: string;
+    let unapproved: string, organizer: string;
+
+    beforeEach(async () => {
+      top = await insertUser(1_000_001, "CONFIRMED");
+      tieA = await insertUser(1_000_000, "CONFIRMED");
+      tieB = await insertUser(1_000_000, "CONFIRMED");
+      zero = await insertUser(0, "CONFIRMED");
+      unapproved = await insertUser(2_000_000, "REJECTED");
+      organizer = await insertUser(3_000_000, "CONFIRMED", "organizer");
+      fixtureIds = [top, tieA, tieB, zero, unapproved, organizer];
+    });
+
+    afterEach(async () => {
+      await db.delete(users).where(inArray(users.id, fixtureIds));
+    });
+
+    test("returns the top N hackers by earned points, ties sorted by id", async () => {
+      const leaderboard = await organizerCaller.scavengerHunt.getLeaderboard({
+        limit: 3,
+      });
+      expect(leaderboard.map((u) => u.id)).toEqual([
+        top,
+        ...[tieA, tieB].sort(),
+      ]);
+    });
+
+    test("includes 0-point hackers and excludes non-approved hackers and non-hackers", async () => {
+      const leaderboard = await organizerCaller.scavengerHunt.getLeaderboard({
+        limit: 100_000,
+      });
+      const ids = leaderboard.map((u) => u.id);
+      expect(ids).toContain(zero);
+      expect(ids).not.toContain(unapproved);
+      expect(ids).not.toContain(organizer);
+    });
+
+    test("uses the application name when the account has no name", async () => {
+      const id = faker.string.uuid();
+      fixtureIds.push(id);
+      await db.insert(users).values({
+        id,
+        email: faker.internet.email(),
+        type: "hacker",
+        scavengerHuntEarned: 4_000_000,
+      });
+      await db.insert(applications).values({
+        ...ApplicationSeeder.createRandomWithoutUser(),
+        userId: id,
+        status: "CONFIRMED",
+        firstName: "Ada",
+        lastName: "Lovelace",
+      });
+      const leaderboard = await organizerCaller.scavengerHunt.getLeaderboard({
+        limit: 100_000,
+      });
+      expect(leaderboard.find((u) => u.id === id)?.name).toBe("Ada Lovelace");
+    });
+
+    test("throws error if user is not an organizer", async () => {
+      await expect(
+        caller.scavengerHunt.getLeaderboard({ limit: 10 }),
+      ).rejects.toThrow("User is not an organizer");
     });
   });
 });
