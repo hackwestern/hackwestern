@@ -198,6 +198,7 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 - `organizer-coffee-autofill-v4`, `-v5`, `organizer-coffee-cards-grid-v1`, `-v2`: organizer board experiments; v5's look won; cards-grid-v2 has the Contact panel to reuse
 
 ## Not in any mock yet
+- "Sponsor requested help" (decision 2026-11-19): sponsor Get help → Slack DM to lead/on-call with I'm on it → dashboard section with timer → Resolved; 5-min escalation to team channel; separate from Overdue tasks. Needs My sponsors v2 + sponsor portal help screen update.
 - Sponsor v5: block Sun Life's 1–2 session (overlaps the 1:45 travel buffer before workshop setup) so the sponsor page matches the organizer rule (pending Jazz's OK)
 - Judging (sponsor + organizer): show every team as team ID + Devpost link; digital top 5 entered by pasting Devpost links (app matches to team, shows name + ID to confirm) (decision 2026-11-19). Sponsor judging redesigns A/B/C show IDs only.
 - Organizer Sponsor judging: a "Digital sponsors" section where the spon team enters a digital sponsor's 1st–5th place (PCBWay today), filling the Sponsor Judging tab (decision 2026-11-19). Organizer redesigns A/B/C show judging as WIP, so this goes into the judging build.
