@@ -22,5 +22,11 @@ for (const W of [1280, 390]) {
   await wait(page, 500);
   console.log("focus after Esc:", await page.evaluate(() => document.activeElement?.textContent?.trim().slice(0, 30)));
   console.log("errors:", page.errors.slice(0, 5));
+  // A sponsor who hasn't submitted (Commure): the card is the filled button.
+  await page.goto(`${BASE}/sponsors/${SPONSORS.commure}`, { waitUntil: "networkidle" });
+  await wait(page, 1500);
+  console.log("commure top:", (await main.innerText()).split(/\n/).filter(Boolean).slice(0, 5).join(" / "));
+  console.log("commure filled (main):", await filledButtons(main));
+  await shot(page, `portal-01-home-not-submitted${tag}`, { full: false });
 }
 await close();

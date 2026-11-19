@@ -232,7 +232,7 @@ export function PrefsStep({
           })}
         </div>
         <p className="m-0 text-base font-semibold text-dashboard-text-link">{copy.format(draft.hackersPerChat)}</p>
-        <p className="m-0 text-sm text-dashboard-text-light">{copy.roomCap}</p>
+        <p className="m-0 text-sm text-dashboard-text-light">{copy.roomCap(draft.hackersPerChat)}</p>
       </fieldset>
 
       <hr className="m-0 border-dashboard-border-subtle" />

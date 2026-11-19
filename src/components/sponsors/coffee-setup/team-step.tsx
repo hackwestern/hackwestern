@@ -114,7 +114,7 @@ export function TeamStep({
                 <span className="break-words text-base font-semibold text-dashboard-text-heavy">{rep.name}</span>
                 <span className="whitespace-nowrap text-sm text-dashboard-text-light">{rep.phone}</span>
               </span>
-              <span className="flex items-center gap-1">
+              <span className="flex w-full flex-wrap items-center gap-1 sm:w-auto">
                 <button
                   type="button"
                   aria-pressed={rep.isPrimary}
@@ -139,7 +139,7 @@ export function TeamStep({
                   )}
                 >
                   <Crown aria-hidden className="size-4" />
-                  {rep.isPrimary && copy.primary}
+                  {rep.isPrimary ? copy.primary : copy.makePrimaryShort}
                 </button>
                 <DashboardButton
                   variant="link"

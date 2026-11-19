@@ -1,6 +1,9 @@
+import Link from "next/link";
 import { useRouter } from "next/router";
 import {
+  ArrowRight,
   Clock,
+  Coffee,
   Luggage,
   MapPin,
   Phone,
@@ -24,6 +27,8 @@ import { PhoneCopy } from "~/components/sponsors/phone-copy";
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { sponsorLogo } from "~/lib/sponsor-logos";
 import { BoothLayout } from "~/components/sponsors/booth-layout";
+import { pressable } from "~/components/sponsors/sponsor-shell-styles";
+import { cn } from "~/lib/utils";
 
 export default function SponsorHubPage() {
   const router = useRouter();
@@ -40,6 +45,12 @@ export default function SponsorHubPage() {
   );
 
   const data = sponsorQ.data;
+  // "What to do now": coffee chat preferences until they're submitted.
+  const setupQ = api.coffeeChatSetup.get.useQuery(
+    { sponsor: id },
+    { enabled: validUuid, retry: false, refetchOnWindowFocus: false },
+  );
+  const prefsIn = !!setupQ.data?.submittedAt;
   // One answer to "who do I contact?" (B11): the same HW lead (Sponsor
   // Day-Of) and emergency contact (Noah, HW Contacts) as the Help dialog,
   // read at runtime (never in the repo).
@@ -115,6 +126,46 @@ export default function SponsorHubPage() {
             {copy.welcome.body}
           </p>
         </section>
+
+        {/* The one thing to do now (filled until preferences are in). */}
+        {setupQ.data && (
+          <section aria-labelledby="todo-heading" className="flex flex-col gap-2">
+            <h2
+              id="todo-heading"
+              className="dashboard-section-label m-0 text-dashboard-text-light"
+            >
+              {copy.todo.label}
+            </h2>
+            <Link
+              href={`/sponsors/${id}/coffee-chats`}
+              className={cn(
+                "flex min-h-16 items-center gap-3 rounded-dashboard-2xl p-4 shadow-dashboard-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2 sm:p-5",
+                prefsIn
+                  ? "bg-dashboard-bg-surface text-dashboard-text-heavy [@media(hover:hover)]:hover:bg-dashboard-bg-highlight"
+                  : "bg-dashboard-action-primary text-dashboard-text-inverse",
+                pressable,
+              )}
+            >
+              <Coffee aria-hidden className="size-6 shrink-0" strokeWidth={1.67} />
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-lg font-semibold">
+                  {prefsIn ? copy.todo.chatsDone : copy.todo.chats}
+                </span>
+                <span
+                  className={cn(
+                    "text-sm font-medium",
+                    prefsIn
+                      ? "text-dashboard-text-medium"
+                      : "text-dashboard-text-inverse/90",
+                  )}
+                >
+                  {prefsIn ? copy.todo.chatsDoneHint : copy.todo.chatsHint}
+                </span>
+              </span>
+              <ArrowRight aria-hidden className="size-5 shrink-0" />
+            </Link>
+          </section>
+        )}
 
         {/* Judging isn't in the nav for them, so say why, once, quietly. */}
         {data?.hasPrizeTrack === false && (

@@ -56,7 +56,7 @@ export function ChatsHome({
       : copy.shortlist.seats(picked, cap);
 
   const header = (
-    <div className="flex flex-col gap-1.5">
+    <div data-tour="chats-home" className="flex flex-col gap-1.5">
       <h1 className="dashboard-h1 m-0">{copy.title}</h1>
       <p className="m-0 max-w-2xl text-base text-dashboard-text-medium">{copy.intro}</p>
     </div>

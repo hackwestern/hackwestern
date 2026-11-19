@@ -153,8 +153,8 @@ export const sponsorSetupCopy = {
   backStep: "Back",
   /** Opens the portal Help (HW lead + emergency contact). */
   help: {
-    question: "Need something different?",
-    contact: "Contact organizers",
+    question: "Something doesn't fit?",
+    contact: "Ask an organizer",
   },
   rail: {
     stepOf: (n: number, total: number) => `Step ${n} of ${total}`,
@@ -173,7 +173,7 @@ export const sponsorSetupCopy = {
   team: {
     heading: (sponsor: string) => `Add each rep from ${sponsor}.`,
     crownNote:
-      "The crown marks your primary contact. Organizers use their name and phone. The first rep you add gets it; tap another rep's crown to move it.",
+      "The crown marks your main contact. Organizers call this person. The first rep you add gets it; tap Make main contact on another rep to move it.",
     count: (n: number) => `Reps · ${n}`,
     empty: "No reps yet. Add the people from your team who'll chat with hackers.",
     name: "Name",
@@ -188,11 +188,13 @@ export const sponsorSetupCopy = {
     editLabel: (name: string) => `Edit ${name}`,
     remove: "Remove",
     removeLabel: (name: string) => `Remove ${name}`,
-    primary: "Primary",
-    primaryContact: "Primary contact",
-    makePrimary: (name: string) => `Make ${name} the primary contact`,
-    isPrimary: (name: string) => `${name} is the primary contact`,
-    nowPrimary: (name: string) => `${name} is now the primary contact.`,
+    primary: "Main contact",
+    primaryContact: "Main contact",
+    /** The crown button's visible text on a rep who isn't the main contact. */
+    makePrimaryShort: "Make main contact",
+    makePrimary: (name: string) => `Make ${name} the main contact`,
+    isPrimary: (name: string) => `${name} is the main contact`,
+    nowPrimary: (name: string) => `${name} is now the main contact.`,
     added: (name: string) => `${name} added.`,
     removed: (name: string) => `${name} removed.`,
     saved: (name: string) => `${name} saved.`,
@@ -200,7 +202,7 @@ export const sponsorSetupCopy = {
     needPhone: "Add a phone number we can call or text.",
     shortPhone: "That phone number looks too short.",
     full: (max: number) => `You can add up to ${max} reps.`,
-    next: "Next: Chatting preferences",
+    next: "Next: When they're free",
     needRep: "Add at least one rep to continue.",
   },
 
@@ -212,11 +214,12 @@ export const sponsorSetupCopy = {
     q1Label: "Hackers per chat",
     format: (n: number) =>
       n === 1 ? "1-on-1 · 15 min · 4 hackers an hour per rep" : `Groups of ${n} · 30 min · ${n * 2} hackers an hour per rep`,
-    roomCap: "Up to 6 people a chat: 1 rep and up to 5 hackers.",
+    /** Under the hackers-per-chat pick; follows the pick. */
+    roomCap: (n: number) => `Each chat: 1 rep + ${plural(n, "hacker")}`,
     q2: "When is each rep free?",
     q2Hint: "Untick any time a rep isn't free.",
     editTeam: "Edit your team",
-    yourDay: "Your day",
+    yourDay: "Your events",
     yourWorkshop: "Your workshop",
     workshopAt: (when: string) => `Your workshop ${when}`,
     buffer: "Buffer · travel time",
@@ -283,7 +286,7 @@ export const sponsorSetupCopy = {
     resubmit: "Submit changes",
     shortlistNext: "Next: Shortlist hackers",
     noChats: "No rep has a chat at a time they're free. Tick a session or add chats.",
-    noPrimary: "Pick a primary contact (the crown) in Your team.",
+    noPrimary: "Pick a main contact (the crown) in Your team.",
   },
 
   shortlist: {
@@ -291,20 +294,16 @@ export const sponsorSetupCopy = {
     title: "Shortlist",
     body: "Hackers you'd like to meet.",
     steps: ["Shortlist hackers", "Review & submit shortlist"],
-    how: [
-      "Shortlist hackers you'd like to meet here.",
-      "Scan hackers at your booth Friday night. We invite people you scan first.",
-      "Submit your shortlist when you're happy with it.",
-    ],
+    how: ["Shortlist hackers you'd like to meet here.", "Submit your shortlist when you're happy with it."],
     locked: "Submit your chatting preferences first. Your seats come from them.",
     goPrefs: "Go to chatting preferences",
     seats: (n: number, max: number) => `${n} of ${max}`,
     seatsSuffix: "shortlisted",
-    /** "14 seats · 3 taken by people you scanned · shortlist up to 11" */
+    /** "14 seats · 3 taken by people you met · shortlist up to 11" */
     capLine: (seats: number, scanned: number, cap: number) =>
       scanned === 0
         ? `${plural(seats, "seat")} · shortlist up to ${cap}`
-        : `${plural(seats, "seat")} · ${scanned} taken by people you scanned · shortlist up to ${cap}`,
+        : `${plural(seats, "seat")} · ${scanned} taken by people you met · shortlist up to ${cap}`,
     sentNote:
       "Your chats are scheduled. Changes here only affect who's offered seats in later rounds.",
     noSeats: "Your preferences have no chats yet, so there are no seats to fill.",
@@ -322,10 +321,10 @@ export const sponsorSetupCopy = {
     added: (name: string) => `${name} shortlisted.`,
     removed: (name: string) => `${name} removed.`,
     toggleError: "Couldn't update your shortlist. Try again.",
-    scannedHeading: "People you scanned · First choice",
-    scannedNote: "We invite people you scan first, before your shortlist.",
-    scannedBy: (rep: string) => `Scanned by ${rep}`,
-    scannedTag: "Met at Hacker Fair",
+    scannedHeading: "People you met · invited first",
+    scannedNote: "We invite people you met at your booth first, before your shortlist.",
+    scannedBy: (rep: string) => `Talked to ${rep}`,
+    scannedTag: "Met at your booth",
     filters: { shortlisted: "Shortlisted", not: "Not shortlisted", all: "Everyone" },
     filterLabel: "Show",
     noneShortlisted: "Nobody shortlisted yet.",
@@ -340,7 +339,7 @@ export const sponsorSetupCopy = {
     submit: "Submit shortlist",
     submitting: "Submitting…",
     submitted: "Shortlist submitted",
-    submittedBody: "Thanks! We'll invite people you scan first, then your shortlist.",
+    submittedBody: "Thanks! We'll invite people you met at your booth first, then your shortlist.",
     edit: "Edit shortlist",
     lockedSubmitted: "Your shortlist is submitted. Tap Edit shortlist to change it.",
     skipForNow: "Skip for now",
@@ -396,7 +395,7 @@ export const sponsorSetupCopy = {
     shortPhone: "That phone number looks too short.",
     badSession: "That isn't one of the chat sessions.",
     noReps: "Add at least one rep in Your team first.",
-    noPrimary: "Pick a primary contact (the crown) in Your team.",
+    noPrimary: "Pick a main contact (the crown) in Your team.",
     noChats: "No rep has a chat at a time they're free. Tick a session or add chats.",
     notAHacker: "That isn't a Hack Western hacker's badge.",
     prefsFirst: "Submit your chatting preferences first.",

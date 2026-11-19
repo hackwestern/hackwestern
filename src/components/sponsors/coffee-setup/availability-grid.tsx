@@ -48,7 +48,7 @@ export function AvailabilityGrid({
   return (
     <div className="flex flex-col gap-2">
       <ScrollHint label={copy.q2}>
-        <table className="w-full min-w-[600px] border-collapse text-sm">
+        <table className="w-full min-w-[520px] border-collapse text-sm">
           <thead>
             <tr className="bg-dashboard-bg-inset">
               <th scope="col" className="sticky left-0 z-10 w-28 bg-dashboard-bg-inset p-2 text-left font-medium text-dashboard-text-light">

@@ -26,6 +26,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   - "Use this portal to check your booth and judging details and pick your top projects." → "Use this portal to set up coffee chats, find your booth and, if you have a prize track, judge projects."
   - "Reach out to your HW contact." → "Text or call your Hack Western contact."
 - Screens: `01-sponsor-firstvisit-home.png`, `01-sponsor-firstvisit-home-390*.png`
+- **Fixed:** a "What to do now" card sits under the banner. Before preferences are submitted it's the filled, full-width "Tell us when your reps can chat · Required · at the Friday 5 PM workshop" link to Chats; after, it's a white "Your coffee chats" link. The banner reads "…set up coffee chats, find your booth and, if you have a prize track, judge projects.", so it no longer contradicts "No prize track". The footer reads "Need help during the hackathon? Text or call your Hack Western contact." The contact is fixed under B11. Still as before: the tour starts from the "New here?" card, not by itself. (`after/portal-01-home*.png`, `after/portal-01-home-not-submitted*.png`)
 
 ### Sponsor · First visit and Help · Step 2 · Welcome tour (8 steps)
 - What to do: clear. Big "Next" button, "Step N of 8".
@@ -36,6 +37,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Plain wording:
   - "Your booked chats and the hackers who want to meet you." → "Tell us when your reps can chat (required), then see your chats here."
 - Screens: `01-sponsor-firstvisit-tour-01..08.png` (and `-390`)
+- **Fixed:** step 4 reads "Tell us when your reps can chat (required), then see your chats here." Step 3 no longer promises a chat offer: "Scan their badge to add them to your list. We invite them to a coffee chat first." The "How to" coffee chat guide was still the old per-slot flow (pick a time, Candidates tab, targets that no longer exist); it's now "Coffee chats": set up on Chats, scan, point at the badge, Add to my list.
 
 ### Sponsor · First visit and Help · Step 3 · Need help? dialog
 - What to do: clear.
@@ -71,6 +73,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Plain wording:
   - "Next: Chatting preferences" (button) → "Next: When they're free"
 - Screens: `02-sponsor-team-step1-empty.png`, `02-sponsor-team-blank-save.png`, `02-sponsor-team-short-phone.png`, `02-sponsor-team-added-first.png`, `02-sponsor-team-two-reps-dana-primary-390.png`
+- **Fixed (wording, phone row):** the button reads "Next: When they're free". At 390 the crown, Edit and Remove sit on their own line under the name, so "Walkthrough Dana" no longer breaks mid-word. (`after/portal-02-team-390.png`)
 
 ### Sponsor · Your team · Step 3 · Move the crown, edit, remove
 - Expected: "Walkthrough Kevin is now the primary contact.", edit saves, removing the primary passes the crown on. **Happened:** all as expected.
@@ -83,6 +86,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
   - "Primary" (badge) → "Main contact"
   - "The crown marks your primary contact. Organizers use their name and phone…" → "The crown marks your main contact. Organizers call this person."
 - Screens: `02-sponsor-team-crown-moved.png`, `02-sponsor-team-edit-open.png`, `02-sponsor-team-remove-confirm.png`, `02-sponsor-team-after-remove.png`
+- **Fixed (crown and wording):** the crown button says "Main contact" on the main contact and "Make main contact" on everyone else. "Main contact" replaces "Primary" / "primary contact" everywhere on the sponsor side (badge, review, errors, "<name> is now the main contact."). The hint reads "The crown marks your main contact. Organizers call this person…". (`after/portal-02-team*.png`) The Undo for Remove is below.
 
 ### Sponsor · Chatting preferences · Step 1 · Hackers per chat
 - Expected: "Groups of 3 · 30 min · 6 hackers an hour per rep" and an autosave ("Saving…", "Saved."). **Happened:** the summary line is right. **"Saved." never appears**, and "Saving…" flashes for under a second in the footer (bug B6).
@@ -92,6 +96,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: the grey line "Up to 6 people a chat: 1 rep and up to 5 hackers." stays the same whatever you pick and reads like a second rule.
 - Fix: show "Saved" next to the footer after each autosave (the copy already exists). Delete the grey line, or change it to fit the pick ("Each chat: 1 rep + 3 hackers").
 - Screens: `03-sponsor-prefs-step2.png`, `03-sponsor-prefs-groups-of-3.png`
+- **Fixed (grey line):** it now follows the pick: "Each chat: 1 rep + 3 hackers".
 - **Fixed (B6):** the footer shows "Saving…", then "Saved." once the autosave lands, until the next edit. The footer note is now a live region, so both are read out. (`after/portal-03-prefs-saved*.png`)
 
 ### Sponsor · Chatting preferences · Step 2 · When is each rep free (grid)
@@ -108,6 +113,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Plain wording:
   - "Your day" (row label) → "Your events"
 - Screens: `03-sponsor-prefs-sunlife-workshop.png`, `03-sponsor-prefs-sunlife-workshop-390-b.png`, `03-sponsor-prefs-dana-not-free.png`, `03-sponsor-prefs-too-many-chats.png`, `03-sponsor-prefs-after-reload.png`
+- **Fixed (headers, row label, scroll):** headers read "10–11 AM" … "4–5 PM", the row label is "Your events", and when the grid is wider than its box a "Scroll for later times →" line and a right-edge fade show (390 px; 1280 now fits). (`after/portal-03-prefs-grid*.png`) The legend and the 0-chats row are below.
 
 ### Sponsor · Chatting preferences · Step 3 · How many chats
 - Expected: 4 chats each to start, 0 gives "Doesn't chat", totals "Up to N chats · up to M hackers". **Happened:** as expected.
@@ -117,6 +123,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - UX feedback: a rep free for no sessions still shows "4 chats · 2 h" next to the red "isn't free any time" message.
 - Fix: when a rep has no free time, show "No free time" in place of the chats-and-hours label.
 - Plain wording: "Need something different? Contact organizers" → "Something doesn't fit? Ask an organizer". It opens Help, as the guide expects.
+- **Fixed (wording):** "Something doesn't fit? Ask an organizer", still opening Help.
 
 ### Sponsor · Review & submit · Step 1 · Review (step 3 of 3)
 - Expected: "Everything checks out.", "Groups of 3 · 30 min · up to 6 chats · up to 18 hackers", "Organizers call <name> at <phone>." **Happened:** as expected.
@@ -178,6 +185,7 @@ Tracks A and F are merged on this branch, so every flow marked "needs A/F" in th
 - Plain wording:
   - "People you scanned · First choice" → "People you met · invited first"
 - Screens: `06-sponsor-shortlist-open.png`, `06-sponsor-shortlist-one-at-a-time.png`, `06-sponsor-shortlist-list.png`
+- **Fixed (wording, steps box):** the block is "People you met · invited first", each row "Met at your booth · Talked to <rep>", and the cap line "N seats · M taken by people you met · shortlist up to K". The scan line is out of the steps box (two steps now). The message clearing is below.
 
 ### Sponsor · Shortlist · Step 2 · Review, submit, edit
 - Expected: "Shortlist submitted", Edit reopens. **Happened:** as expected.
