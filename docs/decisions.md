@@ -518,3 +518,9 @@ Supersedes "lead's phone + Send to the sponsor team" as equal options (2026-11-1
 - Digital sponsors aren't on site and don't get a sponsor portal link. Build: `getSponsors`/`syncSponsors` skip rows marked Digital for private links and the on-site lists.
 - Digital sponsors with a prize track (today: PCBWay) give their top 5 to the spon team, who enter it on the organizer dashboard's Sponsor judging page ("Digital sponsors" section: pick 1st–5th from the track's teams). That fills the same 1st–5th place cells on the "Sponsor Judging" tab. RUN OF SHOW has the task at Sun 9:00 AM (owner blank: no digital sponsor has a lead).
 - The "Sponsor Judging" tab now lists all 15 sponsors with In person / Digital, Prize track (Yes/No) and judging room (blank + yellow where unknown).
+
+## 2026-11-19: Coffee Chat Room Grid is an app-written, locked view of all 8 rooms; Spon Team tab deleted (Jazz)
+
+**Decision (room grid):** "Coffee Chat Room Grid" was rebuilt: note rows, "Near the Sponsor Bay" (Rm 2241–2243, columns B–D, unchanged positions) and "Ivey building · 15-minute walk" (Rm 1348, 1352, 1354, 1356, 1358, columns E–I), header row 4, 15-minute rows 10:00 AM–4:45 PM in column A. The app writes it from the coffee chat board: one merged block per booking, "sponsor · reps · format · chats", no hacker names; organizer bookings grey. The tab is protected: only the app's service account and jazz.gu2004 can edit (the owner always can). Build: replace the old code that writes sponsor names into cells (`sponsor-coffee-chats.ts`) with this one-way view. The old Manulife placeholders (2241–2242, 10:00–12:30) were removed; Manulife has no coffee chats in its contract.
+
+**Decision (Spon Team):** deleted. Everything on it was copied from other tabs (phones from HW Contacts, sponsors led from Sponsor Day-Of, availability and on-call from RUN OF SHOW). The two "Saturday breaks" notes moved to RUN OF SHOW N6:N7. Recoverable from version history.
