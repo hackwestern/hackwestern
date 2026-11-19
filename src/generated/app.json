@@ -10627,9 +10627,6 @@
       "output": {
         "items": {
           "properties": {
-            "code": {
-              "type": "string"
-            },
             "deletedAt": {
               "anyOf": [
                 {
@@ -10642,16 +10639,6 @@
                 }
               ]
             },
-            "description": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "type": "string"
-                }
-              ]
-            },
             "endsAt": {
               "format": "date-time",
               "type": "string",
@@ -10659,6 +10646,9 @@
             },
             "id": {
               "type": "number"
+            },
+            "name": {
+              "type": "string"
             },
             "points": {
               "type": "number"
@@ -10677,6 +10667,13 @@
               "format": "date-time",
               "type": "string",
               "x-superjson": "Date"
+            },
+            "status": {
+              "enum": [
+                "draft",
+                "active",
+                "disabled"
+              ]
             },
             "type": {
               "enum": [
@@ -10700,9 +10697,9 @@
           },
           "required": [
             "type",
-            "description",
-            "code",
+            "status",
             "id",
+            "name",
             "points",
             "winPoints",
             "startsAt",
@@ -11085,21 +11082,11 @@
                 "id": {
                   "type": "string"
                 },
-                "itemCode": {
-                  "type": "string"
-                },
-                "itemDescription": {
-                  "anyOf": [
-                    {
-                      "type": "null"
-                    },
-                    {
-                      "type": "string"
-                    }
-                  ]
-                },
                 "itemId": {
                   "type": "number"
+                },
+                "itemName": {
+                  "type": "string"
                 },
                 "itemType": {
                   "enum": [
@@ -11121,9 +11108,8 @@
                 "id",
                 "type",
                 "itemId",
-                "itemCode",
                 "itemType",
-                "itemDescription",
+                "itemName",
                 "points",
                 "createdAt"
               ],
@@ -11139,10 +11125,7 @@
                 "id": {
                   "type": "string"
                 },
-                "itemCode": {
-                  "type": "null"
-                },
-                "itemDescription": {
+                "itemName": {
                   "type": "string"
                 },
                 "itemType": {
@@ -11162,9 +11145,8 @@
                 "id",
                 "type",
                 "rewardId",
-                "itemCode",
                 "itemType",
-                "itemDescription",
+                "itemName",
                 "points",
                 "createdAt"
               ],
@@ -11179,126 +11161,19 @@
       "type": "query"
     },
     {
-      "auth": "public",
+      "auth": "organizer",
       "errors": [
         {
-          "code": "BAD_REQUEST",
-          "httpStatus": 400,
-          "source": "input validation (data.zodError populated)"
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
         },
         {
-          "code": "INTERNAL_SERVER_ERROR",
-          "httpStatus": 500,
-          "source": "unhandled"
-        }
-      ],
-      "http": "GET /api/trpc/scavengerHunt.getScavengerHuntItem?input=<superjson>",
-      "input": {
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "type": "string"
-          }
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
         },
-        "required": [
-          "code"
-        ],
-        "type": "object"
-      },
-      "output": {
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "deletedAt": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "format": "date-time",
-                "type": "string",
-                "x-superjson": "Date"
-              }
-            ]
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "endsAt": {
-            "format": "date-time",
-            "type": "string",
-            "x-superjson": "Date"
-          },
-          "id": {
-            "type": "number"
-          },
-          "points": {
-            "type": "number"
-          },
-          "room": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
-          "startsAt": {
-            "format": "date-time",
-            "type": "string",
-            "x-superjson": "Date"
-          },
-          "type": {
-            "enum": [
-              "meal",
-              "workshop",
-              "sponsor_workshop",
-              "activity",
-              "bonus"
-            ]
-          },
-          "winPoints": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "number"
-              }
-            ]
-          }
-        },
-        "required": [
-          "type",
-          "description",
-          "code",
-          "id",
-          "points",
-          "winPoints",
-          "startsAt",
-          "endsAt",
-          "room",
-          "deletedAt"
-        ],
-        "type": "object"
-      },
-      "path": "scavengerHunt.getScavengerHuntItem",
-      "source": "src/server/api/routers/scavenger-hunt.ts",
-      "type": "query"
-    },
-    {
-      "auth": "public",
-      "errors": [
         {
           "code": "BAD_REQUEST",
           "httpStatus": 400,
@@ -11336,9 +11211,6 @@
       },
       "output": {
         "properties": {
-          "code": {
-            "type": "string"
-          },
           "deletedAt": {
             "anyOf": [
               {
@@ -11351,16 +11223,6 @@
               }
             ]
           },
-          "description": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "string"
-              }
-            ]
-          },
           "endsAt": {
             "format": "date-time",
             "type": "string",
@@ -11368,6 +11230,9 @@
           },
           "id": {
             "type": "number"
+          },
+          "name": {
+            "type": "string"
           },
           "points": {
             "type": "number"
@@ -11386,6 +11251,13 @@
             "format": "date-time",
             "type": "string",
             "x-superjson": "Date"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "active",
+              "disabled"
+            ]
           },
           "type": {
             "enum": [
@@ -11409,9 +11281,9 @@
         },
         "required": [
           "type",
-          "description",
-          "code",
+          "status",
           "id",
+          "name",
           "points",
           "winPoints",
           "startsAt",
@@ -11721,7 +11593,6 @@
         {
           "code": "BAD_REQUEST",
           "httpStatus": 400,
-          "message": "Either itemId or itemCode must be provided",
           "source": "handler"
         },
         {
@@ -11770,9 +11641,6 @@
             ],
             "type": "string"
           },
-          "itemCode": {
-            "type": "string"
-          },
           "itemId": {
             "type": "number"
           },
@@ -11781,7 +11649,8 @@
           }
         },
         "required": [
-          "userId"
+          "userId",
+          "itemId"
         ],
         "type": "object"
       },

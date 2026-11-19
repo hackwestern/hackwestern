@@ -40,19 +40,19 @@ const Schedule = () => {
   ];
 
   return (
-    <div className="mb-4 flex h-fit w-full flex-col px-3 py-4 sm:mb-8 sm:p-10">
-      {/* Single scrollable container for both headers and schedule */}
-      <div className="max-h-[calc(100vh-160px)] w-full overflow-x-auto overflow-y-auto pb-10 sm:pb-20">
-        <div className="min-w-[1090px] sm:min-w-[1210px]">
+    <div className="isolate mb-4 flex h-fit w-full flex-col sm:mb-8">
+      {/* Scrolls on its own on small screens; on desktop it fits and scrolls with the page like the other tabs */}
+      <div className="max-h-[calc(100vh-160px)] w-full overflow-x-auto overflow-y-auto pb-10 sm:pb-20 lg:max-h-none lg:overflow-visible">
+        <div className="min-w-[1000px] sm:min-w-[1100px] lg:min-w-[980px]">
           {/* Sticky category headers */}
-          <div className="sticky top-0 z-[60] mb-4 border-b border-gray-200 py-2 backdrop-blur-sm sm:mb-6 sm:border-b-2 sm:py-3">
-            <div className="grid grid-cols-[60px_repeat(11,1fr)] items-center gap-1 sm:grid-cols-[70px_repeat(11,1fr)] sm:gap-2">
+          <div className="sticky top-0 z-[60] mb-4 border-b border-gray-200 bg-dashboard-bg-page py-2 sm:mb-6 sm:border-b-2 sm:py-3">
+            <div className="grid grid-cols-[60px_repeat(10,1fr)] items-center gap-1.5 sm:gap-2">
               <div className="font-figtree text-[10px] font-semibold text-dashboard-text-light sm:text-xs"></div>
               {categoryLabels.map((label, i) => (
                 <div
                   key={i}
-                  // The sheet has three "Other" columns under one label
-                  className={`whitespace-pre-line text-center font-figtree text-[10px] font-semibold leading-tight text-dashboard-text-medium sm:text-xs ${i === categoryLabels.length - 1 ? "col-span-3" : ""}`}
+                  // The sheet has two "Other" columns under one label
+                  className={`whitespace-pre-line text-center font-figtree text-[10px] font-semibold leading-tight text-dashboard-text-medium sm:text-xs ${i === categoryLabels.length - 1 ? "col-span-2" : ""}`}
                 >
                   {label}
                 </div>
