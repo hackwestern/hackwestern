@@ -102,6 +102,14 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 | 9 | 8 rooms: 2241–2243 near, Ivey 1348–1358 (15 min walk); organizers decide rooms and clashes | Done |
 | 10 | "Couldn't be placed" as a clickable warning | Done |
 
+## Organizer "My sponsors" v2: `organizer-my-sponsors-v2` (tables, not cards)
+| # | Change | Status |
+|---|---|---|
+| 1 | No cards (Jazz hates them): everything as restyle-v2-style tables; no Set up / Coffee chats / Judging switch | Building |
+| 2 | "Now" table at the top merges Happening now + Your next tasks: help requests, overdue tasks, now, next 3 | Building |
+| 3 | Sponsor tabs with logos + "All sponsors"; a selected sponsor = one table of everything across Fri / Sat / Sun with actions | Building |
+| 4 | "Sponsor requested help" flow: I'm on it → "Noah is on it" → Resolved; 5-min escalation; Help text updated | Building |
+
 ## Organizer "My sponsors": `organizer-my-sponsors-v1`
 | # | Change | Status |
 |---|---|---|
@@ -198,7 +206,7 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 - `organizer-coffee-autofill-v4`, `-v5`, `organizer-coffee-cards-grid-v1`, `-v2`: organizer board experiments; v5's look won; cards-grid-v2 has the Contact panel to reuse
 
 ## Not in any mock yet
-- "Sponsor requested help" (decision 2026-11-19): sponsor Get help → Slack DM to lead/on-call with I'm on it → dashboard section with timer → Resolved; 5-min escalation to team channel; separate from Overdue tasks. Needs My sponsors v2 + sponsor portal help screen update.
+- Sponsor portal Help screen for the tracked help flow ("Get help" → "Noah is on the way").
 - Sponsor v5: block Sun Life's 1–2 session (overlaps the 1:45 travel buffer before workshop setup) so the sponsor page matches the organizer rule (pending Jazz's OK)
 - Judging (sponsor + organizer): show every team as team ID + Devpost link; digital top 5 entered by pasting Devpost links (app matches to team, shows name + ID to confirm) (decision 2026-11-19). Sponsor judging redesigns A/B/C show IDs only.
 - Organizer Sponsor judging: a "Digital sponsors" section where the spon team enters a digital sponsor's 1st–5th place (PCBWay today), filling the Sponsor Judging tab (decision 2026-11-19). Organizer redesigns A/B/C show judging as WIP, so this goes into the judging build.
