@@ -1,7 +1,7 @@
 # NEXT: sponsor dashboard (worktree `hackwestern-coffee-prefs`, branch `coffee-prefs`)
 
 ## Now
-1. Wait for / confirm the review-fix subagent finished on `coffee-prefs` (commits "Coffee chat board: …" after 89d41ac1). Then: `npx tsc --noEmit -p .`, `SKIP_ENV_VALIDATION=1 npx vitest run` (baseline: 1 known Apple Wallet failure), and merge `coffee-prefs` into `sponsor-dashboard` (in `~/hackwestern-sponsor-dash`, `git merge --no-edit coffee-prefs`). Don't push.
+1. DONE 2026-11-19: review fixes landed (953f5d08…fd5df066; tsc clean, vitest 1507 pass + known Apple Wallet failure) and coffee-prefs is merged into sponsor-dashboard locally (6c77a109). Not pushed. Open nit: the coffee board Help sheet's Send paragraph still mentions hacker invites (fix with track C).
 2. Start the 8-hour parallel build below.
 
 ## 8-hour build plan (code freeze ~2 PM Fri; sponsors use setup at the Fri 5 PM workshop)
