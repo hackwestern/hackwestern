@@ -338,6 +338,17 @@ export function CellDetail({
       </div>
       <p className="m-0 text-[15px] tabular-nums">{dc.toInvite(n)}</p>
       {part && <p className="m-0 text-sm text-dashboard-text-medium">{rc.partialNote}</p>}
+      {board.walks
+        .filter((w) => {
+          // This chat is either end of the walk: the later chat or the one before it.
+          const i = COFFEE_SESSIONS.findIndex((x) => x.id === w.sessionId);
+          return w.repId === c.placement.repId && (w.sessionId === session || COFFEE_SESSIONS[i - 1]?.id === session);
+        })
+        .map((w) => (
+          <p key={w.sessionId} className="m-0 text-sm font-medium text-dashboard-text-warning">
+            {copy.sponsors.walk(w.toIvey, sessionLabel(w.sessionId))}
+          </p>
+        ))}
       {sent && <p className="m-0 text-sm font-medium text-dashboard-text-warning">{dc.afterSend}</p>}
       {c.placement.pinned && <p className="m-0 text-sm text-dashboard-text-medium">{dc.pinned}</p>}
       {actions}

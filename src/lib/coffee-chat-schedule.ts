@@ -21,6 +21,8 @@
  * - most-constrained sponsors first, then the most-constrained rep;
  * - near rooms (2241-2243) before Ivey, and a sponsor's reps in the same
  *   session stay in one building;
+ * - a rep's back-to-back chats stay in one building when they can (a
+ *   preference, never a block: buildingSwitches() lists the rest);
  * - never two things in one room, never one rep in two places;
  * - anything short becomes a suggested fix.
  */
@@ -246,7 +248,55 @@ function sponsorIndex(sponsors: readonly SchedSponsor[]): Map<string, string> {
 type Ctx = {
   rooms: readonly SchedRoom[];
   sponsorOf: Map<string, string>;
+  /** In time order, to find a rep's back-to-back sessions. */
+  sessions: readonly SchedSession[];
 };
+
+/**
+ * Rooms of this rep's chats right before and right after session s (no gap
+ * between the hours, so 11-12 and 1-2 aren't back to back), before first.
+ */
+export function backToBackRooms(
+  board: Board,
+  sessions: readonly SchedSession[],
+  rep: string,
+  s: string,
+): string[] {
+  const i = sessions.findIndex((x) => x.id === s);
+  const cur = sessions[i];
+  if (!cur) return [];
+  const out: string[] = [];
+  for (const n of [sessions[i - 1], sessions[i + 1]]) {
+    if (!n || (n.end !== cur.start && n.start !== cur.end)) continue;
+    const k = repKeyAt(board, rep, n.id);
+    if (k) out.push(parseKey(k).room);
+  }
+  return out;
+}
+
+/**
+ * Reps booked back to back in two buildings (a 15-minute walk between
+ * chats). Allowed, never blocked: the scheduler avoids it when it can and
+ * the board shows a note. rep id -> the later session of each such pair.
+ */
+export function buildingSwitches(
+  board: Board,
+  rooms: readonly SchedRoom[],
+  sessions: readonly SchedSession[],
+): Map<string, string[]> {
+  const building = (room: string) => rooms.find((r) => r.id === room)?.building ?? null;
+  const out = new Map<string, string[]>();
+  for (const [k, v] of chatsOf(board)) {
+    const { room, session } = parseKey(k);
+    const i = sessions.findIndex((x) => x.id === session);
+    const prev = sessions[i - 1];
+    if (!prev || prev.end !== sessions[i]!.start) continue;
+    const pk = repKeyAt(board, v.rep, prev.id);
+    if (!pk || building(parseKey(pk).room) === building(room)) continue;
+    out.set(v.rep, [...(out.get(v.rep) ?? []), session]);
+  }
+  return out;
+}
 
 /** The building this sponsor's other reps use in session s, or null. */
 function teamBuilding(
@@ -267,9 +317,11 @@ function teamBuilding(
 
 /**
  * A room for this rep in session s: their team's building if a teammate is
- * already there, else near before Ivey. Keeps `prevRoom` (the rep's room the
- * hour before) when it's free. No room: `reason` is "full" (nothing free at
- * all) or the team's building that is full.
+ * already there (a hard rule). Otherwise the building of the rep's chat
+ * right before or after (so they don't walk 15 minutes between chats), else
+ * near before Ivey. Keeps the rep's room from the hour before or after when
+ * it's free. No room: `reason` is "full" (nothing free at all) or the
+ * team's building that is full.
  */
 function pickRoom(
   ctx: Ctx,
@@ -277,16 +329,21 @@ function pickRoom(
   sponsorId: string,
   rep: string,
   s: string,
-  prevRoom: string | null = null,
 ): { room: string } | { room: null; reason: "full" | Building } {
   const team = teamBuilding(ctx, board, sponsorId, s, rep);
-  const order: Building[] = team ? [team] : ["near", "ivey"];
+  const nextTo = backToBackRooms(board, ctx.sessions, rep, s);
+  const own = ctx.rooms.find((r) => r.id === nextTo[0])?.building ?? null;
+  const order: Building[] = team
+    ? [team]
+    : own === "ivey"
+      ? ["ivey", "near"]
+      : ["near", "ivey"];
   for (const g of order) {
     const free = ctx.rooms.filter(
       (r) => r.building === g && !board[cellKey(r.id, s)],
     );
     if (free.length > 0) {
-      return { room: (free.find((r) => r.id === prevRoom) ?? free[0]!).id };
+      return { room: (free.find((r) => nextTo.includes(r.id)) ?? free[0]!).id };
     }
   }
   const anyFree = ctx.rooms.some((r) => !board[cellKey(r.id, s)]);
@@ -317,7 +374,7 @@ export function schedule(
   sessions: readonly SchedSession[],
   pins: readonly Pin[],
 ): { board: Board; fixes: Fix[] } {
-  const ctx: Ctx = { rooms, sponsorOf: sponsorIndex(sponsors) };
+  const ctx: Ctx = { rooms, sponsorOf: sponsorIndex(sponsors), sessions };
   const board: Board = {};
   // 1. Pinned cells first, exactly as they are.
   placePins(board, pins);
@@ -348,16 +405,7 @@ export function schedule(
       for (const s of availSessions(sp, rep, sessions)) {
         if (left <= 0) break;
         if (repKeyAt(board, rep.id, s)) continue;
-        const i = sessions.findIndex((x) => x.id === s);
-        const prevKey = i > 0 ? repKeyAt(board, rep.id, sessions[i - 1]!.id) : null;
-        const pick = pickRoom(
-          ctx,
-          board,
-          sp.id,
-          rep.id,
-          s,
-          prevKey ? parseKey(prevKey).room : null,
-        );
+        const pick = pickRoom(ctx, board, sp.id, rep.id, s);
         // 5. No room in the right building: try their next session.
         if (!pick.room) continue;
         board[cellKey(pick.room, s)] = { type: "chat", rep: rep.id };
@@ -428,7 +476,7 @@ export function boardFixes(
   sessions: readonly SchedSession[],
   board: Board,
 ): Fix[] {
-  const ctx: Ctx = { rooms, sponsorOf: sponsorIndex(sponsors) };
+  const ctx: Ctx = { rooms, sponsorOf: sponsorIndex(sponsors), sessions };
   const invalid = invalidChats(sponsors, sessions, board);
   // Cells already suggested to an earlier fix count as taken.
   const taken: Board = { ...board };
@@ -472,7 +520,7 @@ export function findFixes(
   sessions: readonly SchedSession[],
   board: Board,
 ): Fix[] {
-  const ctx: Ctx = { rooms, sponsorOf: sponsorIndex(sponsors) };
+  const ctx: Ctx = { rooms, sponsorOf: sponsorIndex(sponsors), sessions };
   const fixes: Fix[] = [];
   for (const sp of sponsors.filter((x) => x.submitted)) {
     const groups = new Map<

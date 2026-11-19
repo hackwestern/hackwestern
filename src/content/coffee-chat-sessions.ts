@@ -86,6 +86,12 @@ export const coffeeSessionsCopy = {
     /** A session a workshop's travel buffer cuts: only part of it is usable. */
     repPartial: (rep: string, s: string, time: string) => `${rep} free ${s}, usable ${time}`,
     people: "People",
+    /**
+     * A rep booked back to back in two buildings (allowed, never blocked):
+     * a 15-minute walk between chats. `s` is the later session.
+     */
+    walk: (toIvey: boolean, s: string) =>
+      toIvey ? `Walk to Ivey between chats (${s})` : `Walk back from Ivey between chats (${s})`,
     /** A rep placed for fewer chats than asked (a partial session), e.g. "3 of 4 chats". */
     chatsOf: (got: number, want: number) => `${got} of ${plural(want, "chat")}`,
     /** Next to each rep in People, e.g. "Asked for 6 chats · 1.5 h". */
@@ -316,6 +322,7 @@ export const coffeeSessionsCopy = {
       "Never two chats in one room at once, never one rep in two places.",
       "Near rooms (2241–2243) first, then Ivey (1348–1358, a 15-minute walk).",
       "A sponsor's reps in the same session stay in one building.",
+      "A rep's back-to-back chats stay in one building when a room is free there. When not, the rep gets a \"Walk to Ivey between chats\" note; it's never blocked.",
       "Sponsors with the fewest free sessions are placed first.",
       "Your manual moves are pinned: re-running Auto-schedule keeps them.",
     ],

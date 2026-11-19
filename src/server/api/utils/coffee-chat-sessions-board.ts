@@ -12,6 +12,7 @@ import {
   availSessions,
   blockedSessions,
   boardFixes,
+  buildingSwitches,
   partialSessions,
   cellKey,
   invalidChats,
@@ -160,6 +161,11 @@ export type SessionBoard = {
   scheduled: boolean;
   fixes: Fix[];
   draftCount: number;
+  /**
+   * Reps booked back to back in two buildings: `session` is the later chat,
+   * `toIvey` whether that one is in Ivey. Allowed; the board shows a note.
+   */
+  walks: { repId: string; sessionId: string; toIvey: boolean }[];
   /** Latest Send, or null. */
   sentAt: Date | null;
   /**
@@ -434,6 +440,19 @@ export function sessionBoardOf(state: BoardState): SessionBoard {
       ? boardFixes(state.sched, COFFEE_ROOMS, COFFEE_SESSIONS, state.board)
       : [],
     draftCount: state.placements.filter((p) => p.status === "draft").length,
+    walks: [...buildingSwitches(state.board, COFFEE_ROOMS, COFFEE_SESSIONS)].flatMap(
+      ([repId, later]) =>
+        later.map((sessionId) => {
+          const room = state.placements.find(
+            (p) => p.repId === repId && p.sessionId === sessionId,
+          )?.room;
+          return {
+            repId,
+            sessionId,
+            toIvey: COFFEE_ROOMS.find((r) => r.id === room)?.building === "ivey",
+          };
+        }),
+    ),
     sentAt: sent.length ? new Date(Math.max(...sent.map((d) => d.getTime()))) : null,
     lastScheduledAt: state.lastScheduledAt,
   };

@@ -150,6 +150,13 @@ function SponsorDetail({ sponsor: sp, board }: { sponsor: BoardSponsor; board: S
                 className="text-left align-middle text-[13px] font-semibold leading-tight text-dashboard-text-heavy [overflow-wrap:anywhere]"
               >
                 {r.name}
+                {board.walks
+                  .filter((w) => w.repId === r.id)
+                  .map((w) => (
+                    <span key={w.sessionId} className="block text-[11px] font-semibold text-dashboard-text-warning">
+                      {sc.walk(w.toIvey, sessionLabel(w.sessionId))}
+                    </span>
+                  ))}
                 {(() => {
                   // Placed chats short of what they asked (a partial session): say so.
                   const mine = board.placements.filter((p) => p.repId === r.id);
