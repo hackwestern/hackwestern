@@ -320,7 +320,7 @@ export const coffeeSessionsCopy = {
     },
     after: {
       lead: "After Send:",
-      rest: " moving a confirmed chat puts it back to a draft until the next Send. Removing a confirmed chat or changing a booking updates the Room Grid tab right away.",
+      rest: " a confirmed chat you move or fix stays confirmed, and its invited hackers are asked right away to confirm the new room or time. Removing one moves its hackers to another open seat of that sponsor, or cancels their invite and tells them. Sponsor edits (fewer chats, a removed rep, a new group size) update invites the same way. Moves, removals and booking changes update the Room Grid tab right away.",
     },
     dataTitle: "Where data lives",
     data: "Spon Team RUN OF SHOW sheet: RUN OF SHOW, Sponsor Day-Of, Workshops, Opening + Closing Ceremonies, Coffee Chat Setup, Coffee Chat Room Grid (app-written, locked), HW Contacts, Sponsor Judging (app-written). Edits to grey tabs are overwritten by the app.",

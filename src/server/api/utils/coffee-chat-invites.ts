@@ -597,8 +597,8 @@ export async function reconcileInvitesAfterChange(
     };
   }
   const removing = new Set(opts.removingPlacementIds ?? []);
-  // Every current placement of the sponsor: a moved chat goes back to draft
-  // until it's sent again, but its hackers were already invited.
+  // Every current placement of the sponsor, draft or sent (a moved or fixed
+  // chat stays sent; a draft has no invites, so counting it is harmless).
   const layout = layoutOf(
     state,
     (p) => p.sponsorId === sponsorId && !removing.has(p.id),

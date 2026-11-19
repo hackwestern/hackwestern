@@ -5,17 +5,20 @@ import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
 import {
+  applications,
   coffeeChatPlacements,
   coffeeChatPrefs,
   coffeeChatRepSessions,
   coffeeChatReps,
   coffeeChatRoomBookings,
+  coffeeChats,
   sponsorJudgingSponsors,
 } from "~/server/db/schema";
+import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { roomGridRows } from "~/server/api/utils/coffee-chat-room-grid-mirror";
 import { loadBoardState } from "~/server/api/utils/coffee-chat-sessions-board";
 
-const { names, ros, mirror, hw } = vi.hoisted(() => {
+const { names, ros, mirror, hw, deliver } = vi.hoisted(() => {
   const stamp = Date.now();
   return {
     /**
@@ -27,8 +30,17 @@ const { names, ros, mirror, hw } = vi.hoisted(() => {
     /** Flip to make the run-of-show read fail, or to turn sheet writes on. */
     ros: { fail: false, writes: false },
     mirror: vi.fn(() => Promise.resolve({ ok: false as const, error: "disabled" })),
+    /** Spy on invite notices (nothing is ever sent from a test). */
+    deliver: vi.fn((_jobs: { event: string }[]) =>
+      Promise.resolve({ slack: 0, email: 0, failed: 0, skipped: 0 }),
+    ),
   };
 });
+
+vi.mock("~/server/api/utils/coffee-chat-invites", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("~/server/api/utils/coffee-chat-invites")>()),
+  deliverInviteNotices: deliver,
+}));
 
 // WorkCo's workshop is 13:00-14:00 -> 1-2 is blocked, 2-3 is partial (2:15-3:00).
 vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
@@ -100,6 +112,52 @@ async function addSponsor(name: string, submitted: boolean, reps: { name: string
     }
   }
 }
+
+/** Friday night, before round 1 closes: re-asked invites get Sat 10 AM. */
+const FRI_1030PM = new Date("2026-11-20T22:30:00-05:00");
+async function friday<T>(fn: () => Promise<T>): Promise<T> {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(FRI_1030PM);
+  try {
+    return await fn();
+  } finally {
+    vi.useRealTimers();
+  }
+}
+
+/** A hacker holding an invite to a placement's chat at `slotTime`. */
+async function invite(
+  placement: { id: string; room: string },
+  sponsorId: string,
+  repName: string,
+  slotTime: string,
+  status: "pending" | "accepted" = "accepted",
+) {
+  const session = await mockSession(db);
+  await db.insert(applications).values({
+    ...ApplicationSeeder.createRandomWithoutUser(),
+    userId: session.user.id,
+    status: "CONFIRMED",
+    agreeShareWithSponsors: true,
+  });
+  const [row] = await db
+    .insert(coffeeChats)
+    .values({
+      sponsorId,
+      userId: session.user.id,
+      slotTime,
+      durationMinutes: 15,
+      status,
+      placementId: placement.id,
+      room: "Rm " + placement.room,
+      repName,
+      round: 1,
+    })
+    .returning();
+  return row!;
+}
+const chatRow = async (id: string) => (await db.select().from(coffeeChats).where(eq(coffeeChats.id, id)))[0];
+const events = () => deliver.mock.calls.flatMap((c) => c[0].map((j) => j.event));
 
 const code = (p: Promise<unknown>) => p.then(() => "ok", (e: { code?: string }) => e.code);
 const placementOf = async (repName: string) =>
@@ -249,10 +307,27 @@ describe("send", () => {
     expect((await organizer.coffeeChatSessions.send()).sent).toBe(0);
   });
 
-  test("moving a sent chat puts it back to draft", async () => {
+  test("moving a sent chat keeps it sent and asks its invited hacker to confirm the new room", async () => {
     const [wes] = await placementOf("Wes");
-    await organizer.coffeeChatSessions.movePlacement({ placementId: wes!.id, room: "1356", sessionId: "10" });
-    expect((await placementOf("Wes"))[0]).toMatchObject({ status: "draft", sentAt: null });
+    const chat = await invite(wes!, ids[names.work]!, "Wes", "10:00");
+    deliver.mockClear();
+    await friday(() =>
+      organizer.coffeeChatSessions.movePlacement({ placementId: wes!.id, room: "1356", sessionId: "10" }),
+    );
+    expect((await placementOf("Wes"))[0]).toMatchObject({ status: "sent", sentAt: wes!.sentAt, room: "1356" });
+    expect(await chatRow(chat.id)).toMatchObject({
+      placementId: wes!.id,
+      slotTime: "10:00",
+      room: "Rm 1356",
+      status: "pending",
+      notifiedAt: null,
+      expiresAt: new Date("2026-11-21T09:25:00-05:00"), // Ivey: 35 min before
+    });
+    expect(events()).toEqual(["reconfirm"]);
+    // The sponsor isn't flagged as changed and there's nothing new to send.
+    const board = await organizer.coffeeChatSessions.getBoard();
+    expect(board.sponsors.find((s) => s.name === names.work)!.status.kind).toBe("sent");
+    expect(board.draftCount).toBe(0);
   });
 
   test("room grid rows: header, 15-min rows, chat text in the session's first row", async () => {
@@ -296,11 +371,18 @@ describe("pins are re-checked", () => {
     // Re-running keeps the pin (and the fix); applying the fix moves it.
     await organizer.coffeeChatSessions.autoSchedule();
     expect((await organizer.coffeeChatSessions.getBoard()).fixes.map((f) => f.id)).toContain(fix!.id);
-    await organizer.coffeeChatSessions.applyFix({ fixId: fix!.id });
+    const at11 = tia.find((p) => p.sessionId === "11")!;
+    const chat = await invite(at11, ids[names.team]!, "Tia", "11:00");
+    deliver.mockClear();
+    await friday(() => organizer.coffeeChatSessions.applyFix({ fixId: fix!.id }));
     expect((await placementOf("Tia")).map((p) => p.sessionId).sort()).toEqual(["10", "15"]);
+    // Still sent; the invite follows the chat to 3:00 and must be confirmed again.
+    expect((await placementOf("Tia")).find((p) => p.id === at11.id)).toMatchObject({ status: "sent", sentAt: at11.sentAt });
+    expect(await chatRow(chat.id)).toMatchObject({ placementId: at11.id, slotTime: "15:00", status: "pending" });
+    expect(events()).toEqual(["reconfirm"]);
     board = await organizer.coffeeChatSessions.getBoard();
     expect(board.fixes.filter((f) => f.sponsor === ids[names.team])).toEqual([]);
-    expect(team().status).toEqual({ kind: "scheduled", done: 2, total: 2 });
+    expect(team().status).toEqual({ kind: "sent", done: 2, total: 2 });
   });
 });
 
@@ -332,14 +414,18 @@ describe("run of show unreadable", () => {
 
 describe("sent changes re-mirror the Room Grid tab", () => {
   test("removing a sent chat or moving a booking after Send re-runs it, only with sheet writes on", async () => {
+    // A draft nobody was invited to (moves and fixes keep chats sent now).
+    const [draft] = await db
+      .insert(coffeeChatPlacements)
+      .values({ repId: ids.Bo!, room: "2243", sessionId: "16" })
+      .returning();
     const rows = await db.select().from(coffeeChatPlacements);
-    const draft = rows.find((r) => r.status === "draft")!;
     const sent = rows.filter((r) => r.status === "sent");
     expect(sent.length).toBeGreaterThan(1);
     ros.writes = true;
     try {
       mirror.mockClear();
-      await organizer.coffeeChatSessions.removePlacement({ placementId: draft.id });
+      await organizer.coffeeChatSessions.removePlacement({ placementId: draft!.id });
       expect(mirror).not.toHaveBeenCalled();
       await organizer.coffeeChatSessions.removePlacement({ placementId: sent[0]!.id });
       expect(mirror).toHaveBeenCalledTimes(1);
@@ -422,5 +508,26 @@ describe("partial session shortfall", () => {
     expect(row!.maxSessions).toBe(2);
     const after = await organizer.coffeeChatSessions.getBoard();
     expect(after.fixes.filter((f) => f.items.some((i) => i.rep === rep!.id))).toEqual([]);
+  });
+});
+
+describe("invites follow sent chats", () => {
+  test("removing a sent chat moves its hacker to another open seat of the sponsor", async () => {
+    // TeamCo: Tia at 10 (4 chats) and 15 (2 chats), Tom at 11, all sent.
+    const tia = await placementOf("Tia");
+    const at15 = tia.find((p) => p.sessionId === "15")!;
+    const at10 = tia.find((p) => p.sessionId === "10")!;
+    expect([at15.status, at10.status]).toEqual(["sent", "sent"]);
+    const chat = await invite(at15, ids[names.team]!, "Tia", "15:00");
+    deliver.mockClear();
+    await friday(() => organizer.coffeeChatSessions.removePlacement({ placementId: at15.id }));
+    expect(await chatRow(chat.id)).toMatchObject({
+      placementId: at10.id,
+      slotTime: "10:00",
+      status: "pending",
+      notifiedAt: null,
+    });
+    // Both hackers on that chat (one from the fix above) move to Tia's 10-11 seats.
+    expect(events()).toEqual(["reconfirm", "reconfirm"]);
   });
 });

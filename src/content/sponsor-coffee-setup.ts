@@ -372,5 +372,7 @@ export const sponsorSetupCopy = {
       `Your shortlist has ${plural(picked, "person", "people")} but you now have ${plural(cap, "seat")}. Remove ${picked - cap}.`,
     loadError: "Couldn't load your coffee chat setup.",
     saveError: "Couldn't save. Try again.",
+    scheduleUnknown:
+      "We can't read the event schedule right now, so this change wasn't saved. Try again in a minute.",
   },
 } as const;

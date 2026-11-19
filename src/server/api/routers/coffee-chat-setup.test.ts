@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { faker } from "@faker-js/faker";
 
 import { db } from "~/server/db";
@@ -17,13 +17,26 @@ import {
 } from "~/server/db/schema";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 
-const { stamp } = vi.hoisted(() => ({ stamp: Date.now() }));
+const { stamp, ros, deliver } = vi.hoisted(() => ({
+  stamp: Date.now(),
+  /** Flip to make the run-of-show read fail. */
+  ros: { fail: false },
+  /** Spy on invite notices (nothing is ever sent from a test). */
+  deliver: vi.fn((_jobs: { event: string }[]) =>
+    Promise.resolve({ slack: 0, email: 0, failed: 0, skipped: 0 }),
+  ),
+}));
+
+vi.mock("~/server/api/utils/coffee-chat-invites", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("~/server/api/utils/coffee-chat-invites")>()),
+  deliverInviteNotices: deliver,
+}));
 
 // "WorkCo<stamp>"'s workshop is 13:00-14:00 -> sessions 1-2 and 2-3 blocked.
 vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
   ...(await importOriginal<typeof import("~/server/api/utils/run-of-show-sheet")>()),
   getRunOfShow: () =>
-    Promise.resolve({
+    ros.fail ? Promise.reject(new Error("sheet down")) : Promise.resolve({
       readAt: "2026-11-21T12:00:00.000Z",
       items: [
         {
@@ -313,5 +326,148 @@ describe("coffeeChatSetup.recordScan", () => {
     expect(await code(setup.recordScan({ sponsor: faker.string.uuid(), userId: hacker }))).toBe("NOT_FOUND");
     // Scans never touch Your team.
     expect(await db.select().from(coffeeChatReps).where(eq(coffeeChatReps.sponsorId, id))).toHaveLength(1);
+  });
+});
+
+describe("coffeeChatSetup: edits after Send update invites", () => {
+  // Friday night, before round 1 closes: re-asked invites get Sat 10 AM.
+  const FRI_1030PM = new Date("2026-11-20T22:30:00-05:00");
+
+  /** A submitted sponsor with sent 1-on-1 chats: one placement per rep. */
+  async function sentSponsor(reps: { name: string; chats: number; sessionId: "10" | "11"; room: string }[]) {
+    const id = await sponsor();
+    const out: { repId: string; placementId: string }[] = [];
+    for (const r of reps) {
+      const rep = await setup.addRep({ sponsor: id, name: r.name, phone: "5195550001" });
+      out.push({ repId: rep.id, placementId: "" });
+    }
+    await setup.savePrefs({
+      sponsor: id,
+      hackersPerChat: 1,
+      reps: reps.map((r, i) => ({ id: out[i]!.repId, chatsWanted: r.chats, free: [r.sessionId] })),
+    });
+    await setup.submitPrefs({ sponsor: id });
+    for (const [i, r] of reps.entries()) {
+      const [p] = await db
+        .insert(coffeeChatPlacements)
+        .values({ repId: out[i]!.repId, sessionId: r.sessionId, room: r.room, status: "sent", sentAt: new Date() })
+        .returning();
+      out[i]!.placementId = p!.id;
+    }
+    return { id, reps: out };
+  }
+
+  async function invite(sponsorId: string, placementId: string, slotTime: string, status: "pending" | "accepted", repName: string, room: string) {
+    const userId = await admittedHacker();
+    await db.insert(coffeeChats).values({
+      sponsorId,
+      userId,
+      slotTime,
+      durationMinutes: 15,
+      status,
+      placementId,
+      room: `Rm ${room}`,
+      repName,
+      round: 1,
+    });
+    return userId;
+  }
+
+  const invitesOf = (sponsorId: string) =>
+    db.select().from(coffeeChats).where(eq(coffeeChats.sponsorId, sponsorId)).orderBy(asc(coffeeChats.slotTime));
+
+  test("removing a rep moves their hackers to an open seat first, cancels the rest, and tells them", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(FRI_1030PM);
+    try {
+      // Ana has 4 chats at 10; Ben 1 chat at 11.
+      const sp = await sentSponsor([
+        { name: "Ana", chats: 4, sessionId: "10", room: "1354" },
+        { name: "Ben", chats: 1, sessionId: "11", room: "1356" },
+      ]);
+      const [ana, ben] = sp.reps;
+      const kept = await invite(sp.id, ana!.placementId, "10:15", "accepted", "Ana", "1354");
+      await invite(sp.id, ana!.placementId, "10:00", "pending", "Ana", "1354");
+      deliver.mockClear();
+      await setup.removeRep({ sponsor: sp.id, repId: ana!.repId, confirmAfterInvites: true });
+
+      // The accepted hacker takes Ben's one seat and must confirm again; the
+      // other invite is cancelled (and its row goes with Ana's chats).
+      const rows = await invitesOf(sp.id);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        userId: kept,
+        placementId: ben!.placementId,
+        slotTime: "11:00",
+        status: "pending",
+        repName: "Ben",
+        room: "Rm 1356",
+        notifiedAt: null,
+      });
+      expect(deliver).toHaveBeenCalledTimes(1);
+      expect(deliver.mock.calls[0]![0].map((j) => j.event).sort()).toEqual(["cancelled", "reconfirm"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("lowering a rep's chats cancels invites to the chats that are gone", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(FRI_1030PM);
+    try {
+      const sp = await sentSponsor([{ name: "Cy", chats: 4, sessionId: "10", room: "2243" }]);
+      const [cy] = sp.reps;
+      const first = await invite(sp.id, cy!.placementId, "10:00", "accepted", "Cy", "2243");
+      await invite(sp.id, cy!.placementId, "10:45", "pending", "Cy", "2243");
+      deliver.mockClear();
+      await setup.savePrefs({
+        sponsor: sp.id,
+        hackersPerChat: 1,
+        reps: [{ id: cy!.repId, chatsWanted: 1, free: ["10"] }],
+        confirmAfterInvites: true,
+      });
+      const rows = await invitesOf(sp.id);
+      expect(rows.map((r) => [r.userId === first, r.slotTime, r.status])).toEqual([
+        [true, "10:00", "accepted"],
+        [false, "10:45", "cancelled"],
+      ]);
+      expect(deliver.mock.calls.flatMap((c) => c[0].map((j) => j.event))).toEqual(["cancelled"]);
+
+      // A save that changes nothing about the chats leaves invites alone.
+      deliver.mockClear();
+      await setup.savePrefs({
+        sponsor: sp.id,
+        hackersPerChat: 1,
+        reps: [{ id: cy!.repId, chatsWanted: 1, free: ["10"] }],
+        confirmAfterInvites: true,
+      });
+      expect(deliver).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("with the run of show unreadable, removing a rep after Send is refused and nothing changes", async () => {
+    const sp = await sentSponsor([{ name: "Di", chats: 4, sessionId: "10", room: "1348" }]);
+    await invite(sp.id, sp.reps[0]!.placementId, "10:00", "accepted", "Di", "1348");
+    ros.fail = true;
+    try {
+      expect(
+        await code(setup.removeRep({ sponsor: sp.id, repId: sp.reps[0]!.repId, confirmAfterInvites: true })),
+      ).toBe("PRECONDITION_FAILED");
+    } finally {
+      ros.fail = false;
+    }
+    expect(await invitesOf(sp.id)).toHaveLength(1);
+    expect(await db.select().from(coffeeChatReps).where(eq(coffeeChatReps.sponsorId, sp.id))).toHaveLength(1);
+  });
+
+  test("before Send, rep edits never touch invites", async () => {
+    const id = await sponsor();
+    const a = await setup.addRep({ sponsor: id, name: "Ed", phone: "5195550001" });
+    deliver.mockClear();
+    await setup.savePrefs({ sponsor: id, hackersPerChat: 2, reps: [{ id: a.id, chatsWanted: 2, free: ["10"] }] });
+    await setup.removeRep({ sponsor: id, repId: a.id });
+    expect(deliver).not.toHaveBeenCalled();
   });
 });

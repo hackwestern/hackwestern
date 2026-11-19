@@ -22,6 +22,11 @@ import {
 } from "~/lib/coffee-chat-sessions";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
+  deliverInviteNotices,
+  reconcileInvitesAfterChange,
+  type InviteJob,
+} from "~/server/api/utils/coffee-chat-invites";
+import {
   findSponsor,
   loadSponsorSetup,
   type SponsorSetup,
@@ -97,7 +102,8 @@ async function invitedHackers(conn: Pick<typeof db, "select">, sponsorId: string
  * Every rep or preference edit bumps coffee_chat_pref.updated_at (submits
  * pass bump: false), so updated_at later than
  * the latest placement sent_at means "the sponsor changed something after
- * Send" (track B reconfirms; docs/handoff/build-a-cc-setup.md).
+ * Send" (docs/handoff/build-a-cc-setup.md). `sent` says whether invites may
+ * exist, so the caller reconciles them (reconcileIfSent).
  */
 async function lockForWrite(
   tx: Tx,
@@ -135,7 +141,34 @@ async function lockForWrite(
       .values({ sponsorId: sponsor.id, updatedAt: now })
       .onConflictDoUpdate({ target: coffeeChatPrefs.sponsorId, set: { updatedAt: now } });
   }
-  return sponsor;
+  return { ...sponsor, sent: !!sent };
+}
+
+/**
+ * Once invites may be out, bring them in line with the change just made,
+ * in the same transaction (docs/ship/decisions-log.md, Integration 3):
+ * invites to a chat that moved or shrank are re-asked or cancelled. For a
+ * delete, call it BEFORE the delete with the placements going away (the
+ * delete cascades their invites). Deliver the jobs after the commit.
+ */
+async function reconcileIfSent(
+  tx: Tx,
+  sponsor: { id: string; sent: boolean },
+  removingPlacementIds?: string[],
+): Promise<InviteJob[]> {
+  if (!sponsor.sent) return [];
+  const result = await reconcileInvitesAfterChange(tx, sponsor.id, { removingPlacementIds });
+  if (result.status === "workshopsUnknown") {
+    // Invites can't be checked without workshop times, and a removed rep
+    // would drop theirs silently: refuse (the whole change rolls back).
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: errors.scheduleUnknown });
+  }
+  return result.jobs;
+}
+
+/** After the commit: tell hackers about re-asked or cancelled invites. */
+async function deliver(jobs: InviteJob[]): Promise<void> {
+  if (jobs.length) await deliverInviteNotices(jobs);
 }
 
 const confirmInput = { confirmAfterInvites: z.boolean().optional() };
@@ -225,9 +258,11 @@ async function yourChats(setup: SponsorSetup): Promise<YourChat[]> {
  * Sponsor portal coffee chat setup (track A of the 8-hour build): Your
  * team, chatting preferences, "Your chats" after Send, and recording booth
  * scans. Public procedures keyed by the sponsor's private portal UUID, like
- * sponsorPortal. The shortlist lives in sponsorShortlist. Every write is
- * refused once organizers sent the sponsor's schedule (Send on the board):
- * removing a rep would delete their sent chats.
+ * sponsorPortal. The shortlist lives in sponsorShortlist. Once organizers
+ * sent the sponsor's schedule, a team or preferences write needs
+ * `confirmAfterInvites` (the "Invites are already out" warning), and
+ * removeRep / savePrefs reconcile the hackers' invites in the same
+ * transaction.
  */
 export const coffeeChatSetupRouter = createTRPCRouter({
   get: publicProcedure
@@ -342,13 +377,27 @@ export const coffeeChatSetupRouter = createTRPCRouter({
       return result;
     }),
 
-  /** Remove a rep (and their ticks). The crown moves to the first rep left. */
+  /**
+   * Remove a rep (and their ticks and chats). The crown moves to the first
+   * rep left. After Send, their hackers' invites are moved to another open
+   * seat or cancelled first, and those hackers are told.
+   */
   removeRep: publicProcedure
     .input(z.object({ sponsor: sponsorInput, repId: z.string().uuid(), ...confirmInput }))
     .mutation(async ({ input }) => {
-      const result = await db.transaction(async (tx) => {
+      const { jobs, ...result } = await db.transaction(async (tx) => {
         const sponsor = await lockForWrite(tx, input.sponsor, input.confirmAfterInvites);
         const rep = await repOf(tx, sponsor.id, input.repId);
+        const placements = await tx
+          .select({ id: coffeeChatPlacements.id })
+          .from(coffeeChatPlacements)
+          .where(eq(coffeeChatPlacements.repId, rep.id));
+        // Before the delete: it cascades the placements and their invites.
+        const jobs = await reconcileIfSent(
+          tx,
+          sponsor,
+          placements.map((p) => p.id),
+        );
         await tx.delete(coffeeChatReps).where(eq(coffeeChatReps.id, rep.id));
         if (rep.isPrimary) {
           const [next] = await tx
@@ -363,10 +412,11 @@ export const coffeeChatSetupRouter = createTRPCRouter({
               .set({ isPrimary: true })
               .where(eq(coffeeChatReps.id, next.id));
           }
-          return { primaryId: next?.id ?? null };
+          return { primaryId: next?.id ?? null, jobs };
         }
-        return { primaryId: null };
+        return { primaryId: null, jobs };
       });
+      await deliver(jobs);
       // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
       return result;
     }),
@@ -396,7 +446,8 @@ export const coffeeChatSetupRouter = createTRPCRouter({
    * Save the chatting preferences step: hackers per chat (1-5; 1-on-1s are
    * always 15 min), and for every rep the sessions they're free and how
    * many chats they want (0 = doesn't chat). Sessions blocked by their
-   * workshop are dropped. Doesn't change whether they've submitted.
+   * workshop are dropped. Doesn't change whether they've submitted. After
+   * Send, invites are reconciled with fewer chats or a new chat length.
    */
   savePrefs: publicProcedure
     .input(
@@ -418,8 +469,8 @@ export const coffeeChatSetupRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const sponsor = await findSponsor(input.sponsor);
       const setup = await loadSponsorSetup(sponsor);
-      const result = await db.transaction(async (tx) => {
-        await lockForWrite(tx, sponsor.id, input.confirmAfterInvites);
+      const { jobs, ...result } = await db.transaction(async (tx) => {
+        const locked = await lockForWrite(tx, sponsor.id, input.confirmAfterInvites);
         const reps = await tx
           .select({ id: coffeeChatReps.id })
           .from(coffeeChatReps)
@@ -457,8 +508,9 @@ export const coffeeChatSetupRouter = createTRPCRouter({
               .values(free.map((s) => ({ repId: r.id, sessionId: s })));
           }
         }
-        return { ok: true, skipped };
+        return { ok: true, skipped, jobs: await reconcileIfSent(tx, locked) };
       });
+      await deliver(jobs);
       // after merge with build-e-sheet: void mirrorCoffeeChatSetup();
       return result;
     }),
