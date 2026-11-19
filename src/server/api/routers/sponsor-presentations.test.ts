@@ -28,6 +28,7 @@ import { sendPresentationDm } from "~/server/slack/presentation-dm";
 import { presentationDmMessage } from "~/server/slack/presentation-dm";
 import { sendViaMailjet } from "~/server/mail-mailjet";
 import { presentationEmail } from "~/server/api/utils/presentation-email";
+import { SHORTLIST_MAX } from "~/lib/sponsor-presentations";
 
 let slackToken: string | undefined;
 // Hoisted: the env mock reads it while modules load.
@@ -152,6 +153,31 @@ describe("sponsorPresentations.schedule", () => {
     await expect(
       organizer.sponsorPresentations.schedule(),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  test("an old send over the cap: the first 15 in shortlist order are scheduled, the rest flagged over-cap", async () => {
+    const s = await sponsor();
+    const ids: string[] = [];
+    for (let i = 0; i < SHORTLIST_MAX + 2; i++) ids.push(await team());
+    await send(s.id, ids);
+    rooms.mockResolvedValue(new Map([[s.id, "Rm 2110"]]));
+
+    const res = await organizer.sponsorPresentations.schedule();
+    expect(res).toMatchObject({ placed: SHORTLIST_MAX, unplaced: 2 });
+    const view = await organizer.sponsorPresentations.overview();
+    expect(new Set(view.slots.map((x) => x.teamId))).toEqual(
+      new Set(ids.slice(0, SHORTLIST_MAX)),
+    );
+    expect(
+      view.unplaced.map((u) => ({ teamId: u.teamId, reason: u.reason })),
+    ).toEqual(
+      expect.arrayContaining(
+        ids
+          .slice(SHORTLIST_MAX)
+          .map((teamId) => ({ teamId, reason: "over-cap" })),
+      ),
+    );
+    expect(view.unplaced).toHaveLength(2);
   });
 
   test("schedules every sent team, flags no-room sponsors, and replaces on rerun", async () => {

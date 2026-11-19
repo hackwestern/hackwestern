@@ -364,12 +364,14 @@ export const sponsorJudgingCopy = {
 
   /**
    * The "Judging Scores" tab (sponsor-judging-scores-mirror.ts): one block
-   * per in-person sponsor, filled as reps score. The backup if the app is
-   * down, so the app never blanks a cell people may have typed in.
+   * per in-person sponsor, filled as reps score. The app is the source of
+   * truth: where it has a value it wins; hand-typed cells survive only where
+   * the app has no value. The backup if the app is down, so the app never
+   * blanks a cell.
    */
   scoresSheet: {
     tab: "Judging Scores",
-    note: "Filled by the app as reps score. If the app is down, type scores here.",
+    note: "Filled by the app as reps score. Where the app has a score it wins over anything typed here; if the app is down, type scores here.",
     headers: {
       time: "Time",
       teamId: "Team ID",

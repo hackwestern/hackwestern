@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 
 import {
   SCORES_TAB,
+  SCORES_TIMEOUT_MS,
   SCORES_WIDTH,
   averageFormula,
   mirrorJudgingScores,
@@ -35,7 +36,7 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
 }));
 
 const NOTE =
-  "Filled by the app as reps score. If the app is down, type scores here.";
+  "Filled by the app as reps score. Where the app has a score it wins over anything typed here; if the app is down, type scores here.";
 const input: ScoresInput = {
   sponsors: [
     { id: "s-scotia", track: "Scotiabank", name: "Scotiabank" },
@@ -264,9 +265,14 @@ function fakeSheet(grid: unknown[][] | null) {
   const addTab = vi.fn(async (title: string) => {
     tabs.push(title);
   });
-  const read = vi.fn(async (_range: string) => grid ?? []);
+  // Like Sheets: a range on a missing tab fails to parse.
+  const read = vi.fn(async (range: string) => {
+    if (!tabs.includes(SCORES_TAB)) {
+      throw new Error(`Unable to parse range: ${range}`);
+    }
+    return grid ?? [];
+  });
   const sheet: ScoresSheet = {
-    tabTitles: async () => tabs,
     addTab,
     read,
     writeCells: async (cells, input) => {
@@ -277,11 +283,12 @@ function fakeSheet(grid: unknown[][] | null) {
 }
 
 describe("writeJudgingScores", () => {
-  test("adds the tab if missing, writes RAW cells then formulas, never a blank", async () => {
+  test("adds the tab only when the read says it's missing, then retries once; RAW cells then formulas, never a blank", async () => {
     const { sheet, calls, addTab, read } = fakeSheet(null);
     const n = await writeJudgingScores(sheet, blocks);
+    expect(addTab).toHaveBeenCalledTimes(1);
     expect(addTab).toHaveBeenCalledWith(SCORES_TAB);
-    expect(read).not.toHaveBeenCalled();
+    expect(read).toHaveBeenCalledTimes(2);
     expect(calls.map((c) => c.input)).toEqual(["RAW", "USER_ENTERED"]);
     const all = calls.flatMap((c) => c.cells);
     expect(all).toHaveLength(n);
@@ -300,6 +307,8 @@ describe("writeJudgingScores", () => {
       ["Scotiabank", "Rm 2110", "", "", "", "", "", "", "", "", "notes"],
     ]);
     await writeJudgingScores(sheet, blocks);
+    // One read per run, no tab listing.
+    expect(read).toHaveBeenCalledTimes(1);
     expect(read).toHaveBeenCalledWith(`'${SCORES_TAB}'!A:J`);
     const ranges = calls.flatMap((c) => c.cells.map((x) => x.range));
     expect(ranges.every((r) => /!([A-J])\d+$/.test(r))).toBe(true);
@@ -327,7 +336,11 @@ describe("mirrorJudgingScores", () => {
   test("calls made while one is queued share it, and a failure never throws", async () => {
     const { sheet } = fakeSheet(null);
     const load = vi.fn(async () => input);
-    const a = mirrorJudgingScores({ load, sheet: async () => sheet });
+    const a = mirrorJudgingScores({
+      load,
+      sheet: async () => sheet,
+      minIntervalMs: 0,
+    });
     const b = mirrorJudgingScores({ load, sheet: async () => sheet });
     expect(b).toBe(a);
     await expect(a).resolves.toMatchObject({ ok: true });
@@ -342,8 +355,118 @@ describe("mirrorJudgingScores", () => {
         sheet: async () => {
           throw new Error("403 forbidden");
         },
+        minIntervalMs: 0,
       }),
     ).resolves.toEqual({ ok: false, error: "403 forbidden" });
     error.mockRestore();
+  });
+
+  // Each fake clock starts past any run an earlier test made, since the
+  // mirror remembers when it last ran.
+  let clock = Date.now();
+  const fakeClock = () => {
+    clock += 3_600_000;
+    vi.useFakeTimers({ now: clock });
+  };
+
+  test("a burst of saves runs at most twice, at least the interval apart", async () => {
+    fakeClock();
+    try {
+      const { sheet, read } = fakeSheet([]);
+      const load = vi.fn(async () => input);
+      const deps = { load, sheet: async () => sheet, minIntervalMs: 5000 };
+      // The first run starts now; ten saves while it runs share one
+      // pending run, which waits out the interval.
+      const first = mirrorJudgingScores({ ...deps, minIntervalMs: 0 });
+      await vi.advanceTimersByTimeAsync(0);
+      const burst = Array.from({ length: 10 }, () =>
+        mirrorJudgingScores(deps),
+      );
+      expect(new Set(burst).size).toBe(1);
+      expect(burst[0]).not.toBe(first);
+      await first;
+      expect(read).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(4000);
+      expect(read).toHaveBeenCalledTimes(1);
+      // Still pending during the wait: a later save shares it too.
+      expect(mirrorJudgingScores(deps)).toBe(burst[0]);
+      await vi.advanceTimersByTimeAsync(1000);
+      await expect(burst[0]).resolves.toMatchObject({ ok: true });
+      expect(read).toHaveBeenCalledTimes(2);
+      expect(load).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("after a timeout the next run waits for the slow write to settle", async () => {
+    fakeClock();
+    const error = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    try {
+      let finish = () => undefined as void;
+      const events: string[] = [];
+      const { sheet } = fakeSheet([]);
+      const slow: ScoresSheet = {
+        ...sheet,
+        // The RAW batch hangs until finish(); the formula batch is quick.
+        writeCells: (_cells, input) =>
+          input !== "RAW"
+            ? Promise.resolve()
+            : new Promise<void>((resolve) => {
+                events.push("slow write started");
+                finish = () => {
+                  events.push("slow write settled");
+                  resolve();
+                };
+              }),
+      };
+      const load = vi.fn(async () => input);
+      const a = mirrorJudgingScores({
+        load,
+        sheet: async () => slow,
+        minIntervalMs: 0,
+      });
+      await vi.advanceTimersByTimeAsync(SCORES_TIMEOUT_MS);
+      await expect(a).resolves.toMatchObject({ ok: false });
+      const b = mirrorJudgingScores({
+        load: async () => {
+          events.push("next run read");
+          return input;
+        },
+        sheet: async () => sheet,
+        minIntervalMs: 0,
+      });
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(events).toEqual(["slow write started"]);
+      finish();
+      await expect(b).resolves.toMatchObject({ ok: true });
+      expect(events).toEqual([
+        "slow write started",
+        "slow write settled",
+        "next run read",
+      ]);
+    } finally {
+      error.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("skipped reps", () => {
+  test("are logged once per sponsor, naming the sponsor and the reps", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const many: ScoresBlock = {
+      ...blocks[0]!,
+      judges: ["A", "B", "C", "D", "E", "F", "G", "H"],
+    };
+    const { sheet } = fakeSheet([]);
+    await writeJudgingScores(sheet, [many]);
+    await writeJudgingScores(sheet, [many]);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]![0]).toContain("Scotiabank");
+    expect(warn.mock.calls[0]![0]).toContain("G, H");
+    warn.mockRestore();
   });
 });

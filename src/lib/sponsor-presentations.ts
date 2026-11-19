@@ -79,6 +79,11 @@ export type PresentationSchedule = {
   unplaced: { sponsorId: string; teamId: string }[];
   /** Sponsors with a shortlist but no room; none of their teams placed. */
   noRoom: { sponsorId: string; teamIds: string[] }[];
+  /**
+   * Teams past the first SHORTLIST_MAX of a sponsor's shortlist (in
+   * shortlist order): never scheduled. Only an old send can have them.
+   */
+  overCap: { sponsorId: string; teamIds: string[] }[];
 };
 
 /** Cap on backtracking steps per team, so a hopeless team can't hang it. */
@@ -102,14 +107,19 @@ const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
  * shortlists are placed first; each team's slots are found by
  * backtracking over the free slots, and a team that's still stuck is
  * fitted by moving already placed teams to other slots in the same room
- * (augmenting paths). Anything that can't fit is returned in `unplaced`,
- * and sponsors without a room in `noRoom`; nothing is dropped. The same
- * input always gives the same schedule.
+ * (augmenting paths). A sponsor gets at most `maxPerSponsor`
+ * (SHORTLIST_MAX) teams: the first ones in shortlist order; the rest are
+ * returned in `overCap`. Anything that can't fit is returned in
+ * `unplaced`, and sponsors without a room in `noRoom`; nothing is
+ * dropped. The same input always gives the same schedule.
  */
 export function schedulePresentations(
   requests: readonly PresentationRequest[],
   window: PresentationWindow = PRESENTATION_WINDOW,
-  { searchLimit = SEARCH_LIMIT }: { searchLimit?: number } = {},
+  {
+    searchLimit = SEARCH_LIMIT,
+    maxPerSponsor = SHORTLIST_MAX,
+  }: { searchLimit?: number; maxPerSponsor?: number } = {},
 ): PresentationSchedule {
   const slotCount = slotsPerRoom(window);
   const startOf = (i: number) => window.start + i * window.slotMinutes;
@@ -129,12 +139,18 @@ export function schedulePresentations(
   const sponsorIds = [...sponsors.keys()].sort(byText);
 
   const noRoom: PresentationSchedule["noRoom"] = [];
+  const overCap: PresentationSchedule["overCap"] = [];
   const grids = new Map<string, (string | null)[]>();
   const demand = new Map<string, number>();
   const wanted = new Map<string, string[]>();
   for (const sponsorId of sponsorIds) {
     const s = sponsors.get(sponsorId)!;
-    const teams = [...s.teams].sort(byText);
+    // The first maxPerSponsor in shortlist order (Set keeps send order).
+    const inOrder = [...s.teams];
+    if (inOrder.length > maxPerSponsor) {
+      overCap.push({ sponsorId, teamIds: inOrder.slice(maxPerSponsor) });
+    }
+    const teams = inOrder.slice(0, maxPerSponsor).sort(byText);
     if (!s.room) {
       noRoom.push({ sponsorId, teamIds: teams });
       continue;
@@ -277,7 +293,7 @@ export function schedulePresentations(
   }
   slots.sort((a, b) => a.start - b.start || byText(a.sponsorId, b.sponsorId));
 
-  return { slots, unplaced, noRoom };
+  return { slots, unplaced, noRoom, overCap };
 }
 
 /**

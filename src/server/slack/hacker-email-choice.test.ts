@@ -53,7 +53,7 @@ vi.mock("~/server/api/utils/coffee-chat-sheet-mirror", () => ({
   mirrorCoffeeChats: vi.fn(async () => undefined),
 }));
 vi.mock("~/server/api/utils/sponsor-judging-scores-mirror", () => ({
-  mirrorJudgingScoresSoon: vi.fn(async () => undefined),
+  mirrorJudgingScoresLater: vi.fn(),
 }));
 vi.mock("~/server/api/utils/sponsor-judging-sheet-mirror", () => ({
   mirrorSponsorJudging: vi.fn(async () => ({ ok: true, rows: 0 })),

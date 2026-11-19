@@ -135,6 +135,9 @@ export const sponsorPresentationsCopy = {
         `No slot left in ${sponsor}'s room that keeps this team's gaps`,
       "no-room": (sponsor: string) =>
         `${sponsor} has no judging room on Sponsor Day-Of`,
+      /** An old send with more teams than the cap: only the first 15 go. */
+      "over-cap": (sponsor: string) =>
+        `Not scheduled: over 15 on ${sponsor}'s shortlist (only the first 15 present)`,
     },
     roomOf: (sponsor: string, room: string) => `${sponsor} · ${room}`,
     slotCount: (n: number, max: number) => `${n}/${max}`,

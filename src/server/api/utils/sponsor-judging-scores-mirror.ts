@@ -1,3 +1,4 @@
+import { waitUntil } from "@vercel/functions";
 import { and, inArray, isNotNull } from "drizzle-orm";
 import { google } from "googleapis";
 
@@ -39,24 +40,34 @@ import {
  *   Time | Team ID | Devpost | <rep> ... (SCORES_REP_COLUMNS) | Average
  *   one row per presenting team, in presentation order
  *
- * Reps may type scores into these cells by hand, so unlike the Sponsor
- * Judging mirror this one never rewrites the tab. It reads the tab, then
- * writes only cells it has a value for: a score, a team's time, ID and
- * Devpost link, a rep's name over an empty or "Rep N" header, the Average
- * formula into an empty cell. It never writes an empty value, so it never
- * blanks a cell (a cleared score stays in the sheet), and it never touches
- * columns right of Average or rows outside its blocks. Blocks are found by
- * the sponsor name in column A, so blocks made by hand are reused; a team
- * keeps the row that has its team ID, and a rep the column with their name.
+ * The app is the source of truth; the sheet is the outage backup. Where
+ * the app has a value (a score, a team's time or Devpost link) the app's
+ * value wins and overwrites the cell. A hand-typed cell survives only where
+ * the app has no value: a score for a team and rep the app has no score
+ * for, or a cell outside the app's blocks. So unlike the Sponsor Judging
+ * mirror this one never rewrites the tab: it reads the tab, then writes
+ * only cells it has a value for (plus a rep's name over an empty or "Rep N"
+ * header, and the Average formula into an empty cell). It never writes an
+ * empty value, so it never blanks a cell (a score cleared in the app stays
+ * in the sheet), and it never touches columns right of Average. Blocks are
+ * found by the sponsor name in column A, so blocks made by hand are reused;
+ * a team keeps the row that has its team ID, and a rep the column with
+ * their name.
  *
- * Production only (sheetWritesEnabled). Runs after a score is saved and
- * after Schedule presentations; a failure is logged once and never blocks
- * the save.
+ * Production only (sheetWritesEnabled). Runs in the background after a
+ * score is saved and after Schedule presentations, at most once every
+ * SCORES_MIN_INTERVAL_MS (Sheets allows 60 reads a minute per user, shared
+ * with the other mirrors); a failure is logged once and never blocks the
+ * save.
  */
 
 const copy = sponsorJudgingCopy.scoresSheet;
 export const SCORES_TAB = copy.tab;
-/** Rep columns per block (D to I). More reps than this aren't written. */
+/**
+ * Rep columns per block (D to I): Time, Team ID, Devpost, six reps and
+ * Average fill A to J. More reps than this aren't written (logged once per
+ * sponsor).
+ */
 export const SCORES_REP_COLUMNS = 6;
 const TIME_COL = 0;
 const TEAM_COL = 1;
@@ -239,7 +250,8 @@ export function planScoreWrites(
     planned.set(`${row}:${col}`, text(value));
   };
 
-  put(0, 0, copy.note, "empty");
+  // The app's note: kept current, so a reworded note reaches the sheet.
+  put(0, 0, copy.note, "differs");
 
   // A new block goes below everything already in the app's columns.
   let lastUsed = -1;
@@ -342,7 +354,6 @@ export function planScoreWrites(
 
 /** The Sheets calls this mirror makes; tests pass a fake. */
 export type ScoresSheet = {
-  tabTitles(): Promise<string[]>;
   addTab(title: string): Promise<void>;
   /** Values with formulas as typed (valueRenderOption FORMULA). */
   read(range: string): Promise<unknown[][]>;
@@ -363,15 +374,13 @@ export async function googleScoresSheet(): Promise<ScoresSheet> {
   const spreadsheetId = runOfShowSpreadsheetId();
   const auth = new google.auth.JWT({ email, key, scopes: [WRITE_SCOPE] });
   await auth.authorize();
-  const sheets = google.sheets({ version: "v4", auth });
+  // A request timeout, so a hung call always settles and frees the queue.
+  const sheets = google.sheets({
+    version: "v4",
+    auth,
+    timeout: SCORES_REQUEST_TIMEOUT_MS,
+  });
   return {
-    async tabTitles() {
-      const res = await sheets.spreadsheets.get({
-        spreadsheetId,
-        fields: "sheets(properties(title))",
-      });
-      return (res.data.sheets ?? []).map((s) => s.properties?.title ?? "");
-    },
     async addTab(title) {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId,
@@ -398,27 +407,64 @@ export async function googleScoresSheet(): Promise<ScoresSheet> {
   };
 }
 
+/** Sheets' error for a range on a tab that doesn't exist. */
+const isMissingTab = (error: unknown) =>
+  /unable to parse range/i.test(
+    error instanceof Error ? error.message : String(error),
+  );
+
+/** Sponsor -> the skipped teams and reps last logged, so each logs once. */
+const loggedSkips = new Map<string, string>();
+
+/** Warn once per sponsor (until it changes) about what didn't fit. */
+function logSkipped(
+  skipped: readonly { sponsor: string; teamId?: string; judge?: string }[],
+) {
+  const bySponsor = new Map<string, { teams: string[]; reps: string[] }>();
+  for (const s of skipped) {
+    const entry = bySponsor.get(s.sponsor) ?? { teams: [], reps: [] };
+    if (s.judge) entry.reps.push(s.judge);
+    if (s.teamId) entry.teams.push(s.teamId);
+    bySponsor.set(s.sponsor, entry);
+  }
+  for (const [sponsor, { teams, reps }] of bySponsor) {
+    const key = JSON.stringify([teams, reps]);
+    if (loggedSkips.get(sponsor) === key) continue;
+    loggedSkips.set(sponsor, key);
+    const parts = [
+      reps.length > 0
+        ? `rep(s) ${reps.join(", ")} (only ${SCORES_REP_COLUMNS} rep columns)`
+        : "",
+      teams.length > 0 ? `team(s) ${teams.join(", ")} (no free row)` : "",
+    ].filter(Boolean);
+    console.warn(
+      `judging scores mirror: ${sponsor}: skipped ${parts.join("; ")} in the Judging Scores tab`,
+    );
+  }
+}
+
 /**
- * Read the tab (adding it if missing) and write the planned cells. Throws
- * on any Sheets error. Returns how many cells were written.
+ * Read the tab and write the planned cells. The read doubles as the "tab
+ * exists" check (no extra call): only when it fails because the tab is
+ * missing is the tab added and the read retried once. Throws on any other
+ * Sheets error. Returns how many cells were written.
  */
 export async function writeJudgingScores(
   sheet: ScoresSheet,
   blocks: readonly ScoresBlock[],
 ): Promise<number> {
   const tab = `'${SCORES_TAB}'`;
-  let grid: unknown[][] = [];
-  if (!(await sheet.tabTitles()).includes(SCORES_TAB)) {
+  const all = `${tab}!A:${colLetter(AVG_COL)}`;
+  let grid: unknown[][];
+  try {
+    grid = await sheet.read(all);
+  } catch (error) {
+    if (!isMissingTab(error)) throw error;
     await sheet.addTab(SCORES_TAB);
-  } else {
-    grid = await sheet.read(`${tab}!A:${colLetter(AVG_COL)}`);
+    grid = await sheet.read(all);
   }
   const { writes, skipped } = planScoreWrites(grid, blocks);
-  if (skipped.length > 0) {
-    console.warn(
-      `judging scores mirror: ${skipped.length} team(s) or rep(s) had no free row or column in the Judging Scores tab`,
-    );
-  }
+  logSkipped(skipped);
   const range = (w: CellWrite) => `${tab}!${colLetter(w.col)}${w.row + 1}`;
   const raw = writes.filter((w) => !w.formula);
   const formulas = writes.filter((w) => w.formula);
@@ -501,35 +547,52 @@ export async function loadScoresInput(): Promise<ScoresInput> {
   };
 }
 
-/** Longest one run may take before the queue moves on. */
+/** Longest one run's result waits on the sheet before reporting a timeout. */
 export const SCORES_TIMEOUT_MS = 5000;
-/** Longest a score save waits on the mirror before responding. */
-export const SCORES_WAIT_MS = 1500;
+/** Per Sheets request, so a hung call always settles and frees the queue. */
+export const SCORES_REQUEST_TIMEOUT_MS = 15_000;
+/** Least time between the starts of two runs (Sheets read quota). */
+export const SCORES_MIN_INTERVAL_MS = 5000;
 
 let lastLoggedError: string | null = null;
 let queue: Promise<unknown> = Promise.resolve();
 /** A run queued but not started yet; later calls share it. */
 let pending: Promise<MirrorResult> | null = null;
+/** When the last run started (ms since epoch); 0 = never. */
+let lastRunAt = 0;
 
 /**
- * Mirror scores to the tab. Runs one at a time; while one is queued, more
- * calls share it (it reads the DB when it starts, so it has every save).
- * Never rejects: a failure is logged once until it changes or a run
- * succeeds. With sheet writes off nothing is written and it returns
+ * Mirror scores to the tab. Runs one at a time, each starting at least
+ * SCORES_MIN_INTERVAL_MS after the last. While one is waiting, more calls
+ * share it (it reads the DB when it starts, so it has every save), so at
+ * most one run is ever pending. A run whose result timed out still holds
+ * the queue until its write settles, so two runs never plan against the
+ * same sheet state (and pick the same "first free row"). Never rejects: a
+ * failure is logged once until it changes or a run succeeds. With sheet
+ * writes off nothing is written and it returns
  * `{ ok: false, error: "disabled" }`.
  */
 export function mirrorJudgingScores(
   deps: {
     sheet?: () => Promise<ScoresSheet>;
     load?: () => Promise<ScoresInput>;
+    /** Tests: 0 skips the wait between runs. */
+    minIntervalMs?: number;
   } = {},
 ): Promise<MirrorResult> {
   if (pending) return pending;
+  // This run's sheet write, settled or not; the queue waits on it.
+  let settled: Promise<unknown> = Promise.resolve();
   const run = async (): Promise<MirrorResult> => {
-    pending = null;
     let timer: ReturnType<typeof setTimeout> | undefined;
     // Everything inside the try: a score save must never fail on this.
     try {
+      // Wait out the interval while still pending, so calls made in the
+      // meantime share this run instead of queueing another.
+      const wait =
+        lastRunAt + (deps.minIntervalMs ?? SCORES_MIN_INTERVAL_MS) - Date.now();
+      if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+      pending = null;
       if (!sheetWritesEnabled()) {
         if (lastLoggedError !== SHEET_WRITES_DISABLED) {
           lastLoggedError = SHEET_WRITES_DISABLED;
@@ -539,6 +602,7 @@ export function mirrorJudgingScores(
         }
         return { ok: false, error: SHEET_WRITES_DISABLED };
       }
+      lastRunAt = Date.now();
       const write = (async () => {
         const blocks = scoreBlocks(await (deps.load ?? loadScoresInput)());
         const sheet = await (deps.sheet ?? googleScoresSheet)();
@@ -550,7 +614,8 @@ export function mirrorJudgingScores(
           SCORES_TIMEOUT_MS,
         );
       });
-      void write.catch(() => undefined); // a late failure after the timeout
+      // Also swallows a late failure after the timeout.
+      settled = write.catch(() => undefined);
       const rows = await Promise.race([write, timeout]);
       lastLoggedError = null;
       return { ok: true, rows };
@@ -568,24 +633,16 @@ export function mirrorJudgingScores(
   };
   const next = queue.then(run);
   pending = next;
-  queue = next;
+  queue = next.then(() => settled);
   return next;
 }
 
 /**
- * Mirror after a score save or scheduling: waits at most SCORES_WAIT_MS
- * (work after the response can be frozen on Vercel), then lets the write
- * finish in the background. A run cut short is caught up by the next one,
- * since each writes every score. Never rejects.
+ * After a score save or scheduling commits: start the mirror without
+ * making the request wait on the sheet (waitUntil keeps a Vercel function
+ * alive until it finishes). Each run writes every score, so one that is
+ * coalesced or cut short is caught up by the next. Never throws.
  */
-export async function mirrorJudgingScoresSoon(): Promise<MirrorResult | null> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const result = await Promise.race([
-    mirrorJudgingScores(),
-    new Promise<null>((resolve) => {
-      timer = setTimeout(() => resolve(null), SCORES_WAIT_MS);
-    }),
-  ]);
-  clearTimeout(timer);
-  return result;
+export function mirrorJudgingScoresLater(): void {
+  waitUntil(mirrorJudgingScores());
 }

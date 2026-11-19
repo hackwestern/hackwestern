@@ -46,7 +46,7 @@ import {
 } from "~/server/api/utils/sponsor-judging-teams";
 import { assertPortalJudge } from "~/server/api/utils/sponsor-judging-guard";
 import { round2OpenedAt } from "~/server/api/utils/sponsor-judging-settings";
-import { mirrorJudgingScoresSoon } from "~/server/api/utils/sponsor-judging-scores-mirror";
+import { mirrorJudgingScoresLater } from "~/server/api/utils/sponsor-judging-scores-mirror";
 import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
 import { db, type Transaction } from "~/server/db";
 import {
@@ -515,8 +515,9 @@ export const sponsorScoringRouter = createTRPCRouter({
         }
         await syncReviewScore(tx, sponsor.id, input.teamId);
       });
-      // The Judging Scores tab (production only; never blocks the save).
-      await mirrorJudgingScoresSoon();
+      // The Judging Scores tab, after the commit and in the background
+      // (production only; the response never waits on the sheet).
+      mirrorJudgingScoresLater();
       return {
         teamId: input.teamId,
         judge,

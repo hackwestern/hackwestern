@@ -6,6 +6,7 @@ import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
 import { env } from "~/env";
 import {
   PRESENTATION_SLOTS_PER_ROOM,
+  SHORTLIST_MAX,
   gapViolations,
   normalizeRoom,
   schedulePresentations,
@@ -23,7 +24,7 @@ import { runAllTeamChecks } from "~/server/api/utils/cheat-check-runners";
 import { sendPresentationEmail } from "~/server/api/utils/presentation-email";
 import { SHEET_WRITES_DISABLED } from "~/server/api/utils/coffee-chat-sheet-mirror";
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
-import { mirrorJudgingScoresSoon } from "~/server/api/utils/sponsor-judging-scores-mirror";
+import { mirrorJudgingScoresLater } from "~/server/api/utils/sponsor-judging-scores-mirror";
 import {
   mirrorSponsorJudging,
   mirrorSponsorJudgingSoon,
@@ -306,6 +307,18 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         ? new Date(Math.max(...rows.map((r) => r.scheduledAt.getTime())))
         : null;
     const placed = rows.filter((r) => r.startMinute !== null);
+    // Teams past the first SHORTLIST_MAX of their sponsor's send, counting
+    // only teams in the schedule (as schedule does): never placed.
+    const overCap = new Set<string>();
+    for (const send of sends) {
+      const inSchedule = new Set(
+        rows.filter((r) => r.sponsorId === send.sponsorId).map((r) => r.teamId),
+      );
+      [...new Set(send.teamIds)]
+        .filter((id) => inSchedule.has(id))
+        .slice(SHORTLIST_MAX)
+        .forEach((id) => overCap.add(`${send.sponsorId}:${id}`));
+    }
     const named = (r: (typeof rows)[number]) => ({
       sponsorId: r.sponsorId,
       sponsorName: sponsorName.get(r.sponsorId) ?? "",
@@ -435,7 +448,11 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         .filter((r) => r.startMinute === null)
         .map((r) => ({
           ...named(r),
-          reason: r.room ? ("full" as const) : ("no-room" as const),
+          reason: overCap.has(`${r.sponsorId}:${r.teamId}`)
+            ? ("over-cap" as const)
+            : r.room
+              ? ("full" as const)
+              : ("no-room" as const),
         }))
         .sort(
           (a, b) =>
@@ -542,6 +559,16 @@ export const sponsorPresentationsRouter = createTRPCRouter({
               scheduledAt,
             })),
           ),
+          // Past SHORTLIST_MAX on an old send: kept, flagged, never placed.
+          ...result.overCap.flatMap((o) =>
+            o.teamIds.map((teamId) => ({
+              sponsorId: o.sponsorId,
+              teamId,
+              room: roomOf.get(o.sponsorId) ?? null,
+              startMinute: null,
+              scheduledAt,
+            })),
+          ),
         ];
 
         const changedTimes = await countChangedTimes(tx, keysByTeam(values));
@@ -555,16 +582,15 @@ export const sponsorPresentationsRouter = createTRPCRouter({
           placed: result.slots.length,
           unplaced:
             result.unplaced.length +
-            result.noRoom.reduce((n, r) => n + r.teamIds.length, 0),
+            result.noRoom.reduce((n, r) => n + r.teamIds.length, 0) +
+            result.overCap.reduce((n, r) => n + r.teamIds.length, 0),
           changedTimes,
         };
       });
       // Both tabs; the Judging Scores tab gets each sponsor's new team rows.
       if (!dryRun) {
-        await Promise.all([
-          mirrorSponsorJudgingSoon(),
-          mirrorJudgingScoresSoon(),
-        ]);
+        mirrorJudgingScoresLater();
+        await mirrorSponsorJudgingSoon();
       }
       return result;
     }),
