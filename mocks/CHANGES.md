@@ -41,7 +41,7 @@ Hacker-v3 finished 2026-11-19 (41/41 browser checks). Its choices to confirm: lu
 ## Organizer coffee chats: `organizer-coffee-autofill-v6a/b/c`
 | # | Change | Status |
 |---|---|---|
-| 1 | Build on autofill-v5's styling (Jazz's favourite) | v6a done; v6b, v6c building |
+| 1 | Build on autofill-v5's styling (Jazz's favourite) | v6a, v6c done; v6b building |
 | 2 | Coffee chats start at 10:00 AM; nothing before 10 | Building |
 | 3 | No "Nudge on Slack". "Contact" button: the sponsor's reps + main contact + HW lead, each with phone, Copy, Message (drafted, editable text) and Call | Building |
 | 4 | Rooms first, sponsor info on the SAME page. No side drawer/popup | Building |
