@@ -1,7 +1,7 @@
 # NEXT: sponsor dashboard (worktree `hackwestern-coffee-prefs`, branch `coffee-prefs`)
 
 ## Now
-Build the approved organizer Home from mock `hackwestern-sponsor-dash/mocks/organizer-sponsors-home-v3` into /internal/sponsors (see docs/decisions.md, last entry). Jazz's notes: (1) after going into Coffee chats the page drops back to the old view — undo that, Home stays the new view; (2) contacts sit under Up next and Key rooms. Mock first was the rule; this one is approved. Then push and re-check PR #1165's preview.
+Organizer Home (v3 day view) is built and pushed (fcc1209e, bbb15965); screenshots in docs/screens/organizer-home/. Waiting on Jazz: what "contacts sit under Up next and Key rooms" means on the organizer Home (no Key rooms card there), and whether to add the left-out columns (docs/decisions.md, last entry). Re-check PR #1165's Vercel preview once its new deploy finishes.
 
 ## Where things stand (2026-11-19, end of day)
 - Built, reviewed, merged and pushed (PR #1165, sponsor-dashboard ← coffee-prefs): sponsor setup, invites (instant re-send on decline, round 1 expires Sat 10 AM, no open seats), organizer coffee board, My sponsors + Needs attention, sheet merge, judging (6-min slots, up to 15 teams, ranked top 5, Judging Scores tab), portal v6 restyle, Jazz has Noah's view, Agentation (dev only), phone dev login.
