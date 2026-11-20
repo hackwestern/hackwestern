@@ -1,0 +1,14 @@
+import { chromium } from "playwright";
+const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
+p.on("console", m => console.log("console", m.text()));
+await p.goto("file:///C:/Users/Jasmine%20Gu/hackwestern-sponsor-dash/mocks/sponsor-judging-redesign-d-v1/index.html#r1");
+await p.evaluate(() => { localStorage.setItem("hw13-sj-d-me", "Dana W."); localStorage.setItem("hw13-sj-d-mode", "five"); }); await p.reload(); await p.waitForTimeout(500);
+const s = p.locator("[data-strip]").first(); const sb = await s.boundingBox(); console.log(sb);
+await p.evaluate(() => { const s = document.querySelector("[data-strip]"); s.addEventListener("scroll", () => console.log("scroll", s.scrollLeft, md && 1)); document.addEventListener("pointerdown", e => console.log("pd", e.pointerType, e.target.className)); });
+console.log("sl0", await s.evaluate(e => e.scrollLeft));
+await p.mouse.move(sb.x + sb.width / 2, sb.y + sb.height / 2); await p.mouse.down();
+for (let i = 1; i <= 8; i++) await p.mouse.move(sb.x + sb.width / 2 - i * 11, sb.y + sb.height / 2);
+console.log("sl", await s.evaluate(e => e.scrollLeft));
+await p.mouse.up(); await p.waitForTimeout(700);
+console.log(await s.getAttribute("aria-valuenow"));
+await b.close();

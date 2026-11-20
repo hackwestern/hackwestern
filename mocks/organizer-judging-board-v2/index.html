@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#dbe7f5">
+<title>Judging · Organizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* tokens from organizer-judging-board-v1 / organizer-coffee-v12 (src/lib/tokens.ts dashboardColors) */
+  --t-heavy:#0b2b4a;--t-medium:#1c3550;--t-light:#516476;--t-ph:rgba(81,100,118,.7);--t-active:#08559c;--t-warn:#8a4300;--t-link:#0b6bc4;
+  --bg-page:#f3f7fc;--bg-surface:#fff;--bg-nav:#dbe7f5;--bg-navSel:#b9d3f0;--bg-inset:#edf3fa;--bg-hl:#e1effb;--bg-current:#e4eefb;
+  --bg-task:#ffefb8;--b-task:#c78a00;
+  --primary:#0b6bc4;
+  --b-default:#cdddeb;--b-subtle:#e0eaf3;--b-control:#b9cbe0;
+  --live:#16803c;--live-bg:#e3f4e8;--badge:#a34a00;--warn-bg:#fff4e5;
+  --r-sm:4px;--r-md:6px;--r-lg:8px;--r-2xl:12px;
+  --sh-card:0 1px 2px 0 rgba(11,43,74,.06),0 1px 4px 0 rgba(11,43,74,.05);
+  --sh-btn:0 2px 4px 0 rgba(11,43,74,.2);
+  --one-bg:#bfdbfe;--one-b:#93c5fd;--one-t:#1e3a8a;
+  --now-bg:#fdf0d5;--now-b:#e9c27a;--now-t:#7a4b00;
+  --hatch:repeating-linear-gradient(135deg,#dfe7f0 0 3px,#f5f8fb 3px 8px);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg-page);color:var(--t-heavy);font-family:Figtree,system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+h1,h2,h3,p{margin:0}
+ul,ol{list-style:none;margin:0;padding:0}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.muted{color:var(--t-light)}
+.num{font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* page */
+.wrap{max-width:1440px;margin:0 auto;padding:20px 16px 96px;display:flex;flex-direction:column;gap:16px}
+.hd{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px}
+.hd h1{font-size:28px;font-weight:700;line-height:1.2}
+.hd p{font-size:14px;color:var(--t-light)}
+.layout{display:flex;flex-direction:column;gap:16px}
+.col-l{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (min-width:1100px){
+  .wrap{padding:32px 48px 96px;gap:24px}
+  .hd h1{font-size:32px}
+  .layout{display:grid;grid-template-columns:420px minmax(0,1fr);gap:24px;align-items:start}
+  .col-l{gap:24px}
+}
+
+/* cards */
+.card{background:#fff;border-radius:var(--r-lg);box-shadow:var(--sh-card);padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (min-width:768px){.card{padding:24px}}
+@media (min-width:480px){.sp-row{grid-template-columns:minmax(0,1fr) 150px}}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.card-h h2{font-size:20px;font-weight:700}
+.card-h>span{font-size:14px;color:var(--t-light)}
+.sub-h{font-size:15px;font-weight:700}
+.lbl{font-size:14px;font-weight:600;color:var(--t-medium)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:var(--r-lg);border:1px solid transparent;font-weight:500;font-size:16px;text-decoration:none;white-space:nowrap;cursor:pointer;background:none;transition:background .15s}
+.btn-p{background:var(--primary);color:#fff;box-shadow:var(--sh-btn);font-weight:600}
+.btn-p:hover{background:var(--t-active)}
+.btn-o{background:#fff;border-color:var(--b-control);color:var(--t-heavy)}
+.btn-o:hover{background:var(--bg-hl)}
+.btn-l{color:var(--t-link);font-weight:600;padding:0 10px;font-size:14px}
+.btn-l:hover{background:var(--bg-hl)}
+.btn-s{min-height:36px;padding:0 12px;font-size:14px}
+@media (pointer:coarse){.btn-s{min-height:44px}}
+.btn[aria-pressed=true]{background:var(--bg-navSel);border-color:var(--primary);color:var(--t-active);font-weight:600}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:4px;min-height:26px;padding:0 9px;border-radius:var(--r-lg);background:var(--bg-nav);color:var(--t-heavy);font-size:13px;font-weight:500;white-space:nowrap}
+.chip svg.i{width:14px;height:14px;stroke-width:2.4}
+.chip.ok{background:var(--live-bg);color:var(--live);font-weight:600}
+.chip.no{background:var(--bg-inset);color:var(--t-light);font-weight:600}
+
+/* logo placeholder + name */
+.spn{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.spn b{font-weight:600;overflow-wrap:anywhere;min-width:0}
+.lgp{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:22px;padding:0 4px;border-radius:var(--r-sm);background:var(--bg-inset);border:1px dashed var(--b-control);color:var(--t-light);font-size:10px;font-weight:800;letter-spacing:.04em;line-height:1;flex:none}
+
+/* to do */
+.todo{display:flex;flex-direction:column;gap:8px}
+.td{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:var(--r-lg);background:var(--bg-task);border-left:4px solid var(--b-task)}
+.td.task{background:var(--bg-current);border-left-color:var(--primary)}
+.td.done{background:var(--live-bg);border-left-color:var(--live)}
+.td-p{display:flex;align-items:flex-start;gap:8px;font-size:15px;line-height:1.4;min-width:0}
+.td-p .lgp{margin-top:1px;background:#fff}
+.td-p b{font-weight:700;min-width:0}
+.td.warn .td-p b{color:var(--t-warn)}
+.td.done .td-p{color:var(--live);font-weight:700;align-items:center}
+.td-p .ph{white-space:nowrap}
+.td-n{font-size:14px;color:var(--t-medium)}
+.td .soft{font-size:13px;color:var(--t-light)}
+
+/* room select */
+.rsel{min-height:40px;width:100%;padding:0 32px 0 10px;border:1px solid var(--b-control);border-radius:var(--r-md);background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23516476' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center/16px;-webkit-appearance:none;appearance:none;font-size:16px;cursor:pointer;color:var(--t-heavy)}
+@media (pointer:coarse){.rsel{min-height:44px}}
+.rsel.need{border:1.5px solid var(--b-task);background-color:#fffaf0;color:var(--t-warn);font-weight:600}
+.oth{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:var(--r-md);background:var(--bg-inset)}
+.oth label{font-size:14px;font-weight:600}
+.oth .row{flex-wrap:nowrap}
+.in{width:100%;min-height:44px;padding:8px 12px;border:1px solid var(--b-default);border-radius:var(--r-md);background:#fff;font-size:16px;min-width:0}
+.in::placeholder{color:var(--t-ph)}
+.in:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 2px rgba(11,107,196,.2)}
+.err{font-size:14px;color:var(--t-warn);font-weight:500}
+
+/* sponsors */
+.sp>li{border-top:1px solid var(--b-subtle)}
+.sp>li:first-child{border-top:0}
+.sp-row{display:grid;grid-template-columns:minmax(0,1fr) 128px;align-items:center;gap:10px;min-height:60px;padding:8px 0}
+.sp-name{min-width:0;display:grid;grid-template-columns:16px minmax(0,1fr);align-items:start;column-gap:8px;min-height:44px;padding:0;border:0;background:none;text-align:left;cursor:pointer}
+.sp-name>svg.i{width:16px;height:16px;color:var(--t-light);transition:transform .15s;margin-top:4px}
+.sp-name[aria-expanded=true]>svg.i{transform:rotate(90deg)}
+.sp-id{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sp-meta{font-size:14px;color:var(--t-light);line-height:1.4}
+.sp-meta.warnm{color:var(--t-warn);font-weight:600}
+.sp-meta.good{color:var(--live);font-weight:600}
+.sp-rm{font-size:14px;color:var(--t-medium);text-align:right;line-height:1.3}
+.inl{padding:0 0 16px 24px;display:flex;flex-direction:column;gap:10px}
+.inl .oth{margin-left:-24px}
+.dig{border-top:1px solid var(--b-subtle);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.dig-row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;min-height:44px}
+.dig-row .sp-meta{display:block}
+.t5f{display:flex;flex-direction:column;gap:8px}
+.t5f li{display:grid;grid-template-columns:28px minmax(0,1fr);gap:6px;align-items:start}
+.t5f li>span{font-weight:700;color:var(--t-medium);padding-top:10px;font-size:14px}
+.t5f .mt{font-size:13px;color:var(--t-light);padding:2px 2px 0}
+.t5f .mt.okm{color:var(--live);font-weight:600}
+.t5f .mt.bad{color:var(--t-warn);font-weight:600}
+
+/* phones (expanded rows only) */
+.ph-l{display:flex;flex-direction:column}
+.ph-l li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:4px 0}
+.ph-l .who b{font-weight:600;font-size:15px}
+.ph-l .who span{display:block;font-size:13px;color:var(--t-light)}
+.acts{display:flex;gap:2px;flex-wrap:nowrap}
+.acts .btn{padding:0 8px}
+.acts [data-copy]{min-width:66px}
+
+/* team lists */
+.tl li{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:8px;align-items:center;padding:4px 0;border-top:1px solid var(--b-subtle);font-size:14px}
+.tl li:first-child{border-top:0}
+.tl .t{font-weight:600;color:var(--t-medium)}
+.tb{display:inline-flex;flex-direction:column;align-items:flex-start;min-height:40px;justify-content:center;padding:2px 0;border:0;background:none;text-align:left;cursor:pointer;min-width:0}
+.tb b{font-weight:600;color:var(--t-link);overflow-wrap:anywhere;line-height:1.3}
+.tb:hover b{text-decoration:underline}
+.tb small{font-size:12px;color:var(--t-light);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.top5{counter-reset:t;display:flex;flex-direction:column;font-size:14px}
+.top5 li{counter-increment:t;display:flex;align-items:center;gap:6px}
+.top5 li::before{content:counter(t) ".";font-weight:700;color:var(--live);width:18px}
+
+/* pills + the 2-sponsors marker */
+.pill{display:inline-flex;align-items:center;min-height:22px;padding:1px 7px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;line-height:1.3}
+.p-untold{background:#fff;color:var(--t-light);border:1px dashed var(--b-control)}
+.p-told{background:var(--bg-nav);color:var(--t-active)}
+.p-now{background:var(--now-bg);color:var(--now-t)}
+.p-pres{background:var(--bg-inset);color:var(--t-light)}
+.p-sc{background:#fff;color:var(--t-medium);border:1px solid var(--b-default)}
+.p-sc.full{color:var(--live);border-color:#9fd3ae}
+.mk{display:inline-flex;align-items:center;padding:0 6px;border-radius:999px;background:var(--one-bg);color:var(--one-t);font-size:11px;font-weight:700;line-height:18px;white-space:nowrap}
+
+/* view switch (Calendar | Schedule): the only one on the page */
+.seg{display:inline-flex;padding:3px;border-radius:var(--r-lg);background:var(--bg-inset);gap:2px}
+.seg button{min-height:38px;padding:0 14px;border:0;border-radius:var(--r-md);background:none;font-weight:600;font-size:14px;color:var(--t-medium);cursor:pointer}
+@media (pointer:coarse){.seg button{min-height:44px}}
+.seg button[aria-selected=true]{background:#fff;color:var(--t-heavy);box-shadow:var(--sh-card)}
+
+/* legend */
+.lgd{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--t-medium)}
+.lgd li{display:inline-flex;align-items:center;gap:6px}
+.sw{width:22px;height:16px;border-radius:4px;border:1px solid var(--one-b);background:#fff;flex:none}
+.sw.untold{border:1px dashed var(--b-control)}
+.sw.now{background:var(--now-bg);border-color:var(--now-b)}
+.sw.done{background:var(--bg-inset);border-color:var(--b-subtle)}
+.sw.rem{background:var(--hatch);border-color:var(--b-default)}
+
+/* calendar: times down the side, rooms across */
+.gwrap{overflow-x:auto;margin:0 -20px;padding:0 20px;-webkit-overflow-scrolling:touch}
+@media (min-width:768px){.gwrap{margin:0 -24px;padding:0 24px}}
+table.cal{width:100%;border-collapse:separate;border-spacing:4px;table-layout:fixed}
+.cal th.tm{width:52px;font-size:13px;font-weight:600;color:var(--t-light);text-align:right;padding:0 4px 0 0;vertical-align:middle;white-space:nowrap;position:sticky;left:0;background:#fff;z-index:1}
+.cal thead th.tm{z-index:2}
+.cal tr.now th.tm{color:var(--badge)}
+.cal tr.now th.tm::after{content:"Now";display:block;font-size:11px;font-weight:700;line-height:1}
+.cal td{padding:0;height:56px}
+.colh{width:100%;min-height:52px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:4px 8px;border:1px solid var(--b-default);border-radius:var(--r-md);background:var(--bg-inset);text-align:left;cursor:pointer;line-height:1.2}
+.colh:hover{background:var(--bg-hl)}
+.colh>b{font-size:14px;font-weight:700}
+.colh .spn{gap:4px;font-size:13px}
+.colh .lgp{min-width:24px;height:18px;font-size:9px;background:#fff}
+.colh.rem{background:var(--hatch);cursor:default}
+.colh.need{background:var(--warn-bg);border-color:var(--b-task)}
+.colh.need>b{color:var(--t-warn)}
+.cell{width:100%;height:100%;min-height:56px;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:2px;padding:4px 8px;border:1px solid var(--one-b);border-radius:var(--r-md);background:#fff;text-align:left;cursor:pointer;line-height:1.2;min-width:0}
+.cell:hover{background:var(--bg-hl)}
+.cell .nm{font-size:13px;font-weight:600;color:var(--t-heavy);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;max-width:100%}
+.cell .cd{font-size:11px;color:var(--t-light);display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.cell.untold{border:1px dashed var(--b-control)}
+.cell.now{background:var(--now-bg);border:1.5px solid var(--now-b)}
+.cell.now .nm{color:var(--now-t)}
+.cell.done{background:var(--bg-inset);border-color:var(--b-subtle)}
+.cell.done .nm{color:var(--t-light);font-weight:500}
+.cell.rem{background:var(--hatch);border-color:var(--b-default)}
+.cell.rem.now{background:var(--now-bg)}
+
+/* schedule view */
+.sch{display:flex;flex-direction:column;gap:12px}
+.sch-room{border:1px solid var(--b-default);border-radius:var(--r-lg);overflow:hidden}
+.sch-h{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--bg-inset)}
+.sch-h>div{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.sch-h h3{font-size:16px;font-weight:700}
+.sch-h .muted{font-size:13px}
+.sch-room.rem .sch-h{background:var(--hatch)}
+.sch-room.need .sch-h{background:var(--warn-bg)}
+.sch ol li{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:4px 14px;border-top:1px solid var(--b-subtle)}
+.sch ol li:first-child{border-top:0}
+.sch ol li.live{background:#fffaf0}
+.sch .t{font-weight:700;font-size:15px}
+.sch .pills{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+@media (max-width:600px){.sch ol li{grid-template-columns:44px minmax(0,1fr)}.sch .pills{grid-column:2;justify-content:flex-start;padding-bottom:4px}}
+
+/* modals: centred dialog from 640, bottom sheet on phones (as coffee v12) */
+.mbg{position:fixed;inset:0;z-index:57;background:rgba(11,43,74,.3)}
+.mod{position:fixed;z-index:58;left:0;right:0;bottom:0;max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain;background:#fff;border-radius:var(--r-2xl) var(--r-2xl) 0 0;box-shadow:0 -4px 24px rgba(11,43,74,.18);padding-bottom:env(safe-area-inset-bottom)}
+@media (min-width:640px){.mod{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);width:min(600px,calc(100% - 32px));max-height:calc(100dvh - 64px);border-radius:var(--r-lg);box-shadow:0 10px 40px rgba(11,43,74,.25)}.mod.sm{width:min(440px,calc(100% - 32px))}}
+.mbg[hidden],.mod[hidden]{display:none}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--b-default);margin:8px auto 0}
+@media (min-width:640px){.grab{display:none}}
+.mb{display:flex;flex-direction:column;gap:16px;padding:16px 20px 24px}
+@media (min-width:640px){.mb{padding:24px}}
+.mh{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.mh>div{min-width:0}
+.mh h2{font-size:24px;font-weight:700;line-height:1.2;overflow-wrap:anywhere}
+.mh .sub{font-size:13px;color:var(--t-light);font-weight:600;letter-spacing:.02em}
+.x{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;margin:-8px -10px 0 0;border:0;border-radius:var(--r-lg);background:none;cursor:pointer;color:var(--t-light);flex:none}
+.x:hover{background:var(--bg-hl)}
+.ib{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:var(--r-lg);border:1px solid var(--b-control);background:#fff;color:var(--t-heavy);flex:none}
+.ib:hover{background:var(--bg-hl)}
+.ib svg{width:22px;height:22px}
+.ib.sm{width:36px;height:36px;border-color:var(--b-default)}
+.ib.sm svg{width:18px;height:18px}
+@media (pointer:coarse){.ib.sm{width:44px;height:44px}}
+.att{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:var(--r-lg);font-size:15px;font-weight:600}
+.att.ok{background:var(--live-bg);color:var(--live)}
+.att.none{background:var(--bg-task);color:var(--t-warn)}
+.att svg.i{width:18px;height:18px;stroke-width:2.2}
+.msec{display:flex;flex-direction:column;gap:6px}
+.msec h3{font-size:14px;font-weight:700;color:var(--t-medium);text-transform:uppercase;letter-spacing:.05em}
+.pres li,.scs li{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--b-subtle);font-size:15px}
+.pres li:first-child,.scs li:first-child{border-top:0}
+.pres .gap,.msec .note{font-size:13px;color:var(--t-light)}
+.scs b{font-weight:700}
+.mem{display:grid;gap:8px}
+@media (min-width:640px){.mem{grid-template-columns:1fr 1fr}}
+.mem li{border:1px solid var(--b-default);border-radius:var(--r-lg);padding:10px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.mem .top{display:flex;justify-content:space-between;align-items:flex-start;gap:6px}
+.mem b{font-weight:700;font-size:15px;overflow-wrap:anywhere}
+.mem .meta{font-size:13px;color:var(--t-medium);line-height:1.4}
+.mem .role{font-size:13px;color:var(--t-light)}
+.mem .links{display:flex;gap:6px;margin-top:2px}
+
+/* toast */
+.toast{pointer-events:none;position:fixed;left:50%;bottom:76px;transform:translateX(-50%);z-index:70;max-width:calc(100% - 32px);background:var(--t-heavy);color:#fff;padding:10px 16px;border-radius:var(--r-lg);font-size:15px;font-weight:500;box-shadow:var(--sh-btn)}
+.toast[hidden]{display:none}
+
+/* help sheet */
+.sheet{position:fixed;z-index:58;background:#fff;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(11,43,74,.25);top:0;right:0;bottom:0;width:min(460px,100%)}
+@media (max-width:600px){.sheet{top:auto;left:0;width:100%;height:calc(100dvh - 24px);border-radius:var(--r-2xl) var(--r-2xl) 0 0}}
+.sheet[hidden]{display:none}
+.sheet-h{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:16px 20px 12px 24px;border-bottom:1px solid var(--b-subtle)}
+.sheet-h h2{font-size:20px;font-weight:700}
+.sheet-h .x{margin:0 -10px 0 0}
+.sheet-b{overflow-y:auto;padding:16px 24px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px;font-size:15px;color:var(--t-medium)}
+.sheet-b b{color:var(--t-heavy);font-weight:700}
+.ck{display:flex;flex-direction:column;gap:6px}
+.ck li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:6px;align-items:start}
+.ck li svg.i{width:18px;height:18px;color:var(--live);margin-top:2px}
+
+/* mock-only controls: a small fixed panel so the to-dos are the first thing on the page */
+.mock{position:fixed;right:12px;bottom:12px;z-index:40;max-width:calc(100% - 24px);display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.mock-p{border:1.5px dashed var(--b-control);border-radius:var(--r-lg);padding:12px 14px;background:#fbfdff;box-shadow:var(--sh-card);display:flex;flex-direction:column;gap:8px;font-size:14px}
+.mock-p[hidden]{display:none}
+.mock-tag{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--badge);background:var(--warn-bg);border-radius:var(--r-sm);padding:2px 8px}
+.mock-btn{border:1.5px dashed var(--badge);background:var(--warn-bg);color:var(--badge);font-weight:700;font-size:14px;border-radius:999px;min-height:40px;padding:0 14px;cursor:pointer;box-shadow:var(--sh-card)}
+.mock-g{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mock-g>span{color:var(--t-light);font-weight:500}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hd">
+    <div><h1 id="pgT"></h1><p id="pgS"></p></div>
+    <button class="btn btn-o" id="helpBtn" type="button" aria-haspopup="dialog"></button>
+  </header>
+
+  <div class="layout">
+    <div class="col-l">
+      <section class="card" aria-labelledby="h-td" id="todoCard">
+        <div class="card-h"><h2 id="h-td"></h2><span id="tdCount"></span></div>
+        <div class="todo" id="todo"></div>
+      </section>
+      <section class="card" aria-labelledby="h-sp" id="spCard">
+        <div class="card-h"><h2 id="h-sp"></h2><span id="spCount"></span></div>
+        <ul class="sp" id="spList"></ul>
+        <div class="dig" id="dig"></div>
+      </section>
+    </div>
+
+    <section class="card" id="roomsCard" aria-labelledby="h-rm">
+      <div class="card-h"><h2 id="h-rm"></h2><div class="seg" role="tablist" id="seg"></div></div>
+      <ul class="lgd" id="legend" aria-label="Legend"></ul>
+      <div id="view"></div>
+    </section>
+  </div>
+</div>
+
+<div class="mock" id="mock"></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="mbg" id="mbg" hidden></div>
+<div class="mod" id="md" role="dialog" aria-modal="true" aria-labelledby="mdT" hidden></div>
+<div class="sheet" id="help" role="dialog" aria-modal="true" aria-labelledby="helpT" hidden></div>
+
+<script>
+/* ---------- copy (all user-facing strings) ---------- */
+const T = {
+  title: "Judging", sub: "Sunday, Nov 22 · Round 1 presentations 10:00–11:30",
+  mock: { tag: "Mock only", open: (t) => `Mock · Sun ${t}`, time: "Time", sunSend: "Sun Life sends its shortlist", reset: "Reset", hide: "Hide",
+    autoNotified: "Mock: teams were notified at 9:25 AM so the day can run." },
+  todo: "To do", todoCount: (n) => (n ? `${n} open` : "All done"),
+  warn: {
+    shortlist: (sp) => `${sp}'s shortlist isn't in`, noScores: (sp) => `${sp} has no scores yet`, top5: (sp) => `${sp}'s top 5 isn't in`,
+    textLead: (first) => `Text ${first} (lead)`, texted: (t) => `Texted ${t}`,
+  },
+  needRoom: (sp) => `${sp} needs a room`,
+  notify: (n) => `${n} team${n === 1 ? " hasn't" : "s haven't"} been told ${n === 1 ? "its" : "their"} times`,
+  notifyNote: "Each team gets a text with its times and rooms.", notifyBtn: "Notify teams",
+  notified: (t) => `All teams notified · ${t}`,
+  pcbTodo: "PCBWay's top 5 isn't entered", pcbBtn: "Enter top 5",
+  sponsors: "Sponsors", sentCount: (n, t) => `${n} of ${t} shortlists in`,
+  sp: {
+    teams: (n) => `${n} team${n === 1 ? "" : "s"}`, reps: (n) => `${n} rep${n === 1 ? "" : "s"} judging`,
+    noList: "Shortlist isn't in", missed: "No shortlist: missed round 1", noScores: "No scores yet", top5Late: "Top 5 late", top5In: "Top 5 in",
+    scored: (a, b) => `${a} of ${b} scored`, remote: "Remote (judges online)",
+    people: "Reps", lead: "lead", teamsH: "Teams and times", top5H: "Top 5 (ranked)", noTeams: "No teams yet. The shortlist was due 9:30 AM.",
+  },
+  room: { label: (sp) => `Room for ${sp}`, set: "Set a room", other: "Other…", taken: (sp) => `${sp}`,
+    otherL: "Room name", otherPh: "e.g. Rm 3100", save: "Set room", cancel: "Cancel",
+    errEmpty: "Type a room name.", errTaken: (r, sp) => `${r} is ${sp}'s. Pick another.` },
+  digital: "Digital", pcbNote: "Judges on Devpost. Organizers enter its top 5.", pcbDue: "Top 5 due 12:00 PM",
+  pcbSaved: "Top 5 entered", pcbEdit: "Edit", place: ["1st", "2nd", "3rd", "4th", "5th"], pcbPh: "Paste a Devpost link",
+  pcbMatch: (n, id) => `${n} · ${id}`, pcbNoMatch: "No team with that link", pcbSave: "Save top 5", pcbNeed: "Fill all 5 places with team links.",
+  rooms: "Rooms", views: { cal: "Calendar", sch: "Schedule" },
+  legend: { told: "Told their time", untold: "Not told yet", now: "Presenting now", done: "Presented", rem: "Remote (judges online)", mk: "2 sponsors", mkL: "On 2 shortlists, always 10+ min apart" },
+  time: "Time", remoteCol: "Remote", noRoomCol: "No room yet", emptyRoom: "Empty",
+  teamsWindow: (n, a, b) => `${n} team${n === 1 ? "" : "s"} · ${a}–${b}`,
+  two: (n) => `${n} sponsors`,
+  pill: { untold: "Not told yet", told: "Told", now: "Presenting now", pres: "Presented", sc: (n, m) => `Scored by ${n} of ${m}` },
+  rd: { moveTo: "Move to", swap: (sp) => `swaps with ${sp}`, free: "free", putHere: "Put a sponsor here", nobody: "Every sponsor has a room.", setRoom: "Room", close: "Close" },
+  tm: {
+    devpost: (p) => `${p} on Devpost`, github: (p) => `${p} on GitHub`,
+    conf: (n, m) => `Confirmed: ${n} of ${m} members checked in`, none: "No one from this team has confirmed",
+    presents: "Presents to", gap: (m) => `${m} min apart`, noRoom: "no room yet", remote: "Remote",
+    scores: "Scores so far", notYet: (t) => `Presents at ${t}`, notScored: "Not scored yet", avg: (n, m) => `avg · ${n} of ${m} reps`,
+    members: "Members", in: "Checked in", out: "Not checked in", year: (y) => y,
+    links: { li: (n) => `${n} on LinkedIn`, gh: (n) => `${n} on GitHub`, cv: (n) => `${n}'s résumé`, web: (n) => `${n}'s website` },
+  },
+  copy: "Copy", copied: "Copied", text: "Text",
+  toast: { copied: (n, p) => `Copied ${n}'s number, ${p}.`, room: (sp, r) => `${sp} is in ${r}.`, swapped: (a, ra, b, rb) => `${a} is in ${ra}. ${b} is in ${rb}.`,
+    notified: (n) => `Told ${n} teams their times.`, sunSent: "Sun Life sent 7 teams. They're scheduled at least 10 min from their other talks.", pcb: "PCBWay's top 5 is saved." },
+  draft: {
+    shortlist: (f, sp) => `Hi ${f}, this is Hack Western. We don't have ${sp}'s judging shortlist yet. It was due at 9:30 so we can schedule your teams. Pick up to 15.`,
+    noScores: (f, sp) => `Hi ${f}, this is Hack Western. ${sp}'s teams are presenting, but we don't see any scores yet. Can your reps score in the portal as they go?`,
+    top5: (f, sp) => `Hi ${f}, this is Hack Western. ${sp}'s ranked top 5 was due at 12:00. Could you send it in the portal?`,
+    any: (f, sp) => `Hi ${f}, this is Hack Western about ${sp}'s judging today.`,
+  },
+  help: {
+    btn: "Help", title: "How judging rooms work", close: "Close",
+    p1: "Every round 1 presentation is <b>10:00–11:30</b> on Sunday, in 6-minute slots (3 min pitch, 2 min Q&amp;A, 1 min switch). Each room holds 15 slots. Sponsors shortlist up to 15 teams by <b>9:30 AM</b>, then send a ranked top 5 by <b>12:00 PM</b>.",
+    checksTitle: "The schedule is automatic:",
+    checks: [
+      "Each in-person sponsor has one room for the whole window. Rooms start from the run of show; change one with the room picker.",
+      "When a shortlist comes in, its teams get times right away.",
+      "A team on 2 shortlists always gets 10 or more minutes between its talks, so there are no clashes to fix.",
+      "Times that are already set never move. A late shortlist fits around them.",
+      "TinyFish judges online, so it takes no room. PCBWay judges on Devpost, and you enter its top 5.",
+    ],
+    p2: "<b>Notify teams</b> texts each team its times and rooms. If you change a room after that, the to-do comes back for that sponsor's teams.",
+    p3: "The only warnings are for things a sponsor's lead has to fix. Each one shows the lead's number so you can text them.",
+  },
+};
+
+/* ---------- fake data (555 numbers, made-up people) ---------- */
+const START = 600, SLOT = 6, NSLOTS = 15, MIN_GAP = 10; // minutes after midnight
+const END = START + NSLOTS * SLOT; // 11:30
+const ROOMS = ["Rm 2230", "Rm 2235", "Rm 2110"];
+const SPONSORS = [
+  { id: "scotia", name: "Scotiabank", ab: "SB", mode: "person", room: "Rm 2110", top5At: 715,
+    lead: { name: "Marcus O.", phone: "555-0108" }, reps: [{ name: "Marcus O.", phone: "555-0108" }, { name: "Aisha K.", phone: "555-0131" }, { name: "Ben C.", phone: "555-0132" }],
+    list: ["T-030", "T-009", "T-013", "T-019", "T-024", "T-029", "T-033", "T-042", "T-046"] },
+  { id: "canadalife", name: "Canada Life", ab: "CL", mode: "person", room: "Rm 2230", top5At: null,
+    lead: { name: "Priya S.", phone: "555-0104" }, reps: [{ name: "Priya S.", phone: "555-0104" }, { name: "Omar H.", phone: "555-0133" }],
+    list: ["T-005", "T-011", "T-029", "T-017", "T-036", "T-044", "T-052"] },
+  { id: "qnx", name: "QNX", ab: "QNX", mode: "person", room: "Rm 2235", top5At: 700,
+    lead: { name: "Sam R.", phone: "555-0111" }, reps: [{ name: "Sam R.", phone: "555-0111" }],
+    list: ["T-003", "T-008", "T-017", "T-021", "T-026", "T-030", "T-034", "T-042", "T-047", "T-051"] },
+  { id: "sunlife", name: "Sun Life", ab: "SL", mode: "person", room: null, top5At: null, late: true,
+    lead: { name: "Daniel W.", phone: "555-0101" }, reps: [{ name: "Daniel W.", phone: "555-0101" }, { name: "Hana L.", phone: "555-0134" }],
+    list: null, later: ["T-047", "T-006", "T-015", "T-022", "T-031", "T-040", "T-053"] },
+  { id: "tinyfish", name: "TinyFish", ab: "TF", mode: "remote", room: null, top5At: 690,
+    lead: { name: "Lee A.", phone: "555-0120" }, reps: [{ name: "Lee A.", phone: "555-0120" }, { name: "Mo K.", phone: "555-0135" }],
+    list: ["T-012", "T-023", "T-035", "T-048", "T-062", "T-070"] },
+];
+const SP = Object.fromEntries(SPONSORS.map((s) => [s.id, s]));
+const PROJECTS = {
+  "T-003": "Pocket Physio", "T-005": "Budget Buddy", "T-006": "ShiftSwap", "T-008": "Lidar Lane Assist", "T-009": "CoinCompass",
+  "T-011": "ClaimSnap", "T-012": "AgentDesk", "T-013": "Rent Ready", "T-015": "MediMinder", "T-017": "PillPal",
+  "T-019": "FraudFence", "T-021": "Robo Sorter", "T-022": "Retire Right", "T-023": "Scrape Sense", "T-024": "Tap to Save",
+  "T-026": "Edge Vision Kit", "T-029": "Wellness Wallet", "T-030": "SafeRoute", "T-031": "Care Circle", "T-033": "Credit Coach",
+  "T-034": "Drive Diag", "T-035": "Form Filler", "T-036": "Policy Pal", "T-040": "Sleep Score",
+  "T-042": "Accessible Transit Route Planner for Low-Vision Riders", "T-044": "Rx Reminder", "T-046": "Split It", "T-047": "Habit Hero",
+  "T-048": "Browser Butler", "T-051": "Smart Shelf", "T-052": "Life Ledger", "T-053": "Step Streak", "T-062": "Price Watch", "T-070": "Job Hunt Bot",
+};
+const FIRST = ["Aiden", "Bea", "Chidi", "Dev", "Elena", "Farah", "Gabe", "Hiro", "Imani", "Jonah", "Kira", "Liam", "Maya", "Nikhil", "Olivia", "Parker", "Quinn", "Rosa", "Sami", "Tariq", "Uma", "Victor", "Wen", "Yusuf", "Zoe", "Arjun", "Bianca", "Caleb", "Dalia"];
+const LAST = ["Chen", "Okafor", "Patel", "Nguyen", "Rossi", "Kim", "Haddad", "Silva", "Murphy", "Tremblay", "Singh", "Garcia", "Ali", "Wong", "Kowalski", "Mensah", "Fraser"];
+const SCHOOLS = ["Western University", "University of Waterloo", "University of Toronto", "McMaster University", "Queen's University", "York University", "Fanshawe College"];
+const PROGRAMS = ["Computer Science", "Software Engineering", "Mechatronics Engineering", "Business (HBA)", "Medical Sciences", "Electrical Engineering", "Mathematics", "Media and Design"];
+const YEARS = ["1st year", "2nd year", "3rd year", "4th year", "Master's"];
+const ROLES = ["Frontend", "Backend", "Design", "Hardware", "ML", "Pitch and product"];
+const CHECKIN = { "T-017": 1, "T-021": 0, "T-044": 0, "T-062": 0, "T-029": 3 };
+const nOf = (id) => parseInt(id.slice(2), 10);
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const TEAMS = Object.fromEntries(Object.entries(PROJECTS).map(([id, name]) => {
+  const n = nOf(id), checked = id in CHECKIN ? CHECKIN[id] : 2 + (n % 3);
+  const members = [0, 1, 2, 3].map((k) => {
+    const fn = FIRST[(n * 4 + k * 7) % FIRST.length], ln = LAST[(n * 3 + k * 5) % LAST.length], full = `${fn} ${ln}`, h = (n * 7 + k * 13) % 16;
+    const handle = `hw13-${slug(fn)}${slug(ln)}`;
+    return { name: full, school: SCHOOLS[(n + k * 3) % SCHOOLS.length], program: PROGRAMS[(n * 2 + k) % PROGRAMS.length], year: YEARS[(n + k * 2) % YEARS.length],
+      role: ROLES[(n + k) % ROLES.length], in: k < checked,
+      links: { li: h % 4 !== 3 ? `https://www.linkedin.com/in/${handle}` : null, gh: h % 3 !== 2 ? `https://github.com/${handle}` : null,
+        cv: h % 2 === 0 ? `https://example.com/hw13/resumes/${handle}.pdf` : null, web: h % 5 === 1 ? `https://${handle}.example.com` : null } };
+  });
+  return [id, { id, name, members, checked, devpost: `https://devpost.com/software/hw13-${slug(name)}`, github: `https://github.com/hw13-teams/${id.toLowerCase().replace("-", "")}-${slug(name)}` }];
+}));
+
+/* ---------- helpers ---------- */
+const hm = (m) => { const h = Math.floor(m / 60) % 12 || 12; return `${h}:${String(m % 60).padStart(2, "0")}`; };
+const hmap = (m) => `${hm(m)} ${m >= 720 ? "PM" : "AM"}`;
+const slotT = (i) => START + i * SLOT;
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const first = (n) => n.split(" ")[0];
+const smsNum = (p) => `+1519${p.replace(/\D/g, "")}`;
+
+/* =====================================================================================
+   SCHEDULER (pure). Gives each sponsor's teams slots in its room so that every team's
+   talks are at least MIN_GAP minutes apart across rooms. Slots in `fixed` never move
+   (teams may already have been told them); new lists fit around them. Teams on other
+   lists go first, then the rest fill the earliest open slots, so rooms stay packed from 10:00.
+   ===================================================================================== */
+function schedule(lists, fixed = {}) {
+  const out = {}, busy = {};
+  const mark = (t, i) => (busy[t] ||= []).push(i);
+  for (const [sp, arr] of Object.entries(fixed)) { out[sp] = [...arr]; arr.forEach((t, i) => t && mark(t, i)); }
+  const count = {};
+  for (const l of Object.values(lists)) for (const t of l) count[t] = (count[t] || 0) + 1;
+  const todo = Object.keys(lists).filter((sp) => !out[sp]).sort((a, b) => lists[b].length - lists[a].length);
+  for (const sp of todo) {
+    const arr = Array(NSLOTS).fill(null);
+    const teams = lists[sp].map((t, k) => ({ t, k })).sort((a, b) => (count[b.t] > 1) - (count[a.t] > 1) || a.k - b.k);
+    for (const { t } of teams) {
+      const i = arr.findIndex((x, j) => x === null && (busy[t] || []).every((o) => Math.abs(o - j) * SLOT >= MIN_GAP));
+      if (i < 0) throw new Error(`No slot for ${t} in ${sp}`);
+      arr[i] = t; mark(t, i);
+    }
+    out[sp] = arr;
+  }
+  return out;
+}
+// Smallest gap in minutes between two talks of the same team (Infinity if no team has two).
+function minGap(slots) {
+  const at = {};
+  for (const arr of Object.values(slots)) arr.forEach((t, i) => t && (at[t] ||= []).push(slotT(i)));
+  let g = Infinity;
+  for (const l of Object.values(at)) for (let a = 0; a < l.length; a++) for (let b = a + 1; b < l.length; b++) g = Math.min(g, Math.abs(l[a] - l[b]));
+  return g;
+}
+/* =========================== end of pure logic =========================== */
+
+/* ---------- state ---------- */
+const lists0 = () => Object.fromEntries(SPONSORS.filter((s) => s.list).map((s) => [s.id, s.list]));
+const state = {
+  now: 560, // Sun 9:20 AM
+  view: "cal",
+  assign: Object.fromEntries(SPONSORS.filter((s) => s.room).map((s) => [s.id, s.room])), // run of show defaults
+  lists: lists0(),
+  slots: schedule(lists0()),
+  notified: {}, notifiedAt: null, // spId -> { at, room } when its teams were told
+  texted: {}, copied: null,
+  openSp: null, other: null, otherErr: "", // other: { sp, where } while "Other…" is open
+  pcb: { open: false, vals: ["", "", "", "", ""], saved: null, err: "" },
+  modal: null, mockOpen: false,
+};
+const holder = (room) => Object.keys(state.assign).find((s) => state.assign[s] === room);
+const roomKey = (sp) => (sp.mode === "remote" ? "remote" : state.assign[sp.id] || null);
+const hasList = (sp) => !!state.lists[sp.id];
+const ready = (sp) => hasList(sp) && !!roomKey(sp);
+const told = (sp) => !!state.notified[sp.id] && state.notified[sp.id].room === roomKey(sp);
+const slotsOf = (sp) => state.slots[sp.id] || [];
+const teamCount = (sp) => slotsOf(sp).filter(Boolean).length;
+const lastSlot = (sp) => { const a = slotsOf(sp); let l = -1; a.forEach((t, i) => t && (l = i)); return l; };
+function untoldTeams() {
+  const s = new Set();
+  for (const sp of SPONSORS) if (ready(sp) && !told(sp)) slotsOf(sp).forEach((t) => t && s.add(t));
+  return [...s];
+}
+function talksOf(team) {
+  const out = [];
+  for (const sp of SPONSORS) slotsOf(sp).forEach((t, i) => t === team && out.push({ sp, i, t: slotT(i) }));
+  return out.sort((a, b) => a.t - b.t);
+}
+const nSponsors = (team) => talksOf(team).length;
+
+/* ---------- day-of progress (fake, driven by the mock clock) ---------- */
+const presented = (i) => slotT(i) + SLOT <= state.now;
+const presenting = (i) => slotT(i) <= state.now && state.now < slotT(i) + SLOT;
+const topIn = (sp) => sp.top5At != null && state.now >= sp.top5At && told(sp);
+function scoredBy(sp, i) {
+  if (!presented(i) || !told(sp)) return 0;
+  const R = sp.reps.length;
+  if (sp.id === "canadalife") return state.now >= 720 ? 1 : 0;
+  if (topIn(sp)) return R;
+  return Math.max(1, R - (i % 3 === 1 && R > 1 ? 1 : 0));
+}
+const score = (team, sp, r) => (6 + ((nOf(team) * 3 + r * 5 + SPONSORS.indexOf(sp) * 2) % 8) * 0.5);
+const presentedCount = (sp) => slotsOf(sp).filter((t, i) => t && presented(i)).length;
+const scoredCount = (sp) => slotsOf(sp).filter((t, i) => t && scoredBy(sp, i) > 0).length;
+const top5 = (sp) => { const ts = slotsOf(sp).filter(Boolean); return [3, 0, 6, 1, 5].map((k) => ts[k]).filter(Boolean); };
+
+/* ---------- to-dos: lead warnings first, then the organizer's own tasks ---------- */
+function leadWarnings() {
+  const w = [];
+  for (const sp of SPONSORS) {
+    if (!hasList(sp) && state.now < END) w.push({ key: `list:${sp.id}`, sp, text: T.warn.shortlist(sp.name), draft: "shortlist" });
+    if (hasList(sp) && told(sp) && presentedCount(sp) > 0 && scoredCount(sp) === 0) w.push({ key: `scores:${sp.id}`, sp, text: T.warn.noScores(sp.name), draft: "noScores" });
+    if (hasList(sp) && told(sp) && state.now >= 720 && !topIn(sp)) w.push({ key: `top:${sp.id}`, sp, text: T.warn.top5(sp.name), draft: "top5" });
+  }
+  return w;
+}
+const roomless = () => SPONSORS.filter((s) => s.mode === "person" && !state.assign[s.id] && state.now < END);
+
+/* ---------- actions ---------- */
+function setRoom(spId, room) {
+  const h = holder(room);
+  if (h && h !== spId) return false;
+  state.assign[spId] = room; return true;
+}
+function moveTo(spId, room) { // the room picker in the calendar: a taken room swaps the two sponsors
+  const h = holder(room), from = state.assign[spId];
+  if (h && h !== spId) { if (from) state.assign[h] = from; else delete state.assign[h]; }
+  state.assign[spId] = room;
+  return h && h !== spId ? h : null;
+}
+function notifyTeams(at = state.now) {
+  const n = untoldTeams().length;
+  for (const sp of SPONSORS) if (ready(sp) && !told(sp)) state.notified[sp.id] = { at, room: roomKey(sp) };
+  state.notifiedAt = at;
+  return n;
+}
+function sunLifeSends() {
+  const s = SP.sunlife;
+  state.lists.sunlife = [...s.later];
+  state.slots = schedule(state.lists, Object.fromEntries(Object.entries(state.slots))); // existing times stay put
+}
+
+/* ---------- icons ---------- */
+const ic = {
+  chev: '<svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+  check: '<svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  x: '<svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  warn: '<svg class="i" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.2"/></svg>',
+  help: '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4"/><path d="M12 16.8v.2"/></svg>',
+  devpost: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.2 2.5h9.6L21.6 12l-4.8 9.5H7.2L2.4 12z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 7.5h2.9c2.6 0 4.1 1.7 4.1 4.5s-1.5 4.5-4.1 4.5H9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+  github: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85V21c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>',
+  li: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 10.5V16M8 7.8v.1M11.5 16v-5.5M11.5 13c0-1.6 1-2.6 2.3-2.6s2.2.9 2.2 2.6V16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+  cv: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h8l4 4v14H6z M14 3v4h4 M9 12h6M9 15.5h6M9 9h2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>',
+  web: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 12h18M12 3c2.5 2.6 3.7 5.6 3.7 9s-1.2 6.4-3.7 9c-2.5-2.6-3.7-5.6-3.7-9S9.5 5.6 12 3z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>',
+};
+const lgp = (sp) => `<span class="lgp" aria-hidden="true">${esc(sp.ab)}</span>`;
+const spName = (sp) => `<span class="spn">${lgp(sp)}<b>${esc(sp.name)}</b></span>`;
+const mk = (team) => { const n = nSponsors(team); return n > 1 ? `<span class="mk">${T.two(n)}</span>` : ""; };
+const teamBtn = (t) => `<button class="tb" type="button" data-team="${t}"><b>${esc(TEAMS[t].name)}</b><small><span class="num">${t}</span>${mk(t)}</small></button>`;
+
+function copyBtns(name, phone, draft, sp) {
+  const body = encodeURIComponent(T.draft[draft](first(name), sp.name)), ck = `${sp.id}:${phone}:${draft}`;
+  return `<button class="btn btn-o btn-s" type="button" data-copy="${phone}" data-ck="${ck}" data-who="${esc(first(name))}">${state.copied === ck ? T.copied : T.copy}</button>
+    <a class="btn btn-p btn-s" href="sms:${smsNum(phone)}?&body=${body}" data-texted="${ck}">${T.text}</a>`;
+}
+
+/* ---------- room select (Rm 2230 / Rm 2235 / Rm 2110 / Other…) ---------- */
+function roomSelect(sp, where) {
+  const cur = state.assign[sp.id] || "", custom = cur && !ROOMS.includes(cur);
+  const otherOpen = state.other && state.other.sp === sp.id && state.other.where === where;
+  const opts = [];
+  if (!cur) opts.push(`<option value="" ${otherOpen ? "" : "selected"} disabled>${T.room.set}</option>`);
+  for (const r of ROOMS) { const h = holder(r), taken = h && h !== sp.id;
+    opts.push(`<option value="${r}" ${cur === r && !otherOpen ? "selected" : ""} ${taken ? "disabled" : ""}>${r}${taken ? ` · ${esc(SP[h].name)}` : ""}</option>`); }
+  if (custom) opts.push(`<option value="${esc(cur)}" ${otherOpen ? "" : "selected"}>${esc(cur)}</option>`);
+  opts.push(`<option value="__other" ${otherOpen ? "selected" : ""}>${T.room.other}</option>`);
+  return `<select class="rsel${cur || state.now >= END ? "" : " need"}" data-roomsel="${sp.id}" data-where="${where}" aria-label="${esc(T.room.label(sp.name))}">${opts.join("")}</select>`;
+}
+function otherForm(sp, where) {
+  if (!(state.other && state.other.sp === sp.id && state.other.where === where)) return "";
+  const id = `oth-${sp.id}-${where}`;
+  return `<form class="oth" data-otherform="${sp.id}" data-where="${where}"><label for="${id}">${T.room.otherL}</label>
+    <div class="row"><input class="in" id="${id}" placeholder="${T.room.otherPh}" autocomplete="off"><button class="btn btn-p btn-s" type="submit">${T.room.save}</button><button class="btn btn-l btn-s" type="button" data-othercancel>${T.room.cancel}</button></div>
+    ${state.otherErr ? `<p class="err" role="alert">${esc(state.otherErr)}</p>` : ""}</form>`;
+}
+
+/* ---------- to do ---------- */
+function renderTodo() {
+  document.getElementById("h-td").textContent = T.todo;
+  const items = [];
+  for (const w of leadWarnings()) {
+    const tx = state.texted[w.key];
+    items.push(`<div class="td warn" data-td="${w.key}"><p class="td-p">${lgp(w.sp)}<span><b>${esc(w.text)}</b> · ${esc(T.warn.textLead(first(w.sp.lead.name)))} · <span class="ph num">${w.sp.lead.phone}</span></span></p>
+      <div class="row">${copyBtns(w.sp.lead.name, w.sp.lead.phone, w.draft, w.sp).replace(`data-texted="`, `data-tkey="${w.key}" data-texted="`)}${tx ? `<span class="soft">${T.warn.texted(hmap(tx))}</span>` : ""}</div></div>`);
+  }
+  for (const sp of roomless()) items.push(`<div class="td task" data-td="room:${sp.id}"><p class="td-p">${lgp(sp)}<b>${esc(T.needRoom(sp.name))}</b></p>${roomSelect(sp, "todo")}${otherForm(sp, "todo")}</div>`);
+  const n = untoldTeams().length;
+  if (n) items.push(`<div class="td task" data-td="notify"><p class="td-p"><b id="notifyMsg">${T.notify(n)}</b></p><p class="td-n">${T.notifyNote}</p><div class="row"><button class="btn btn-p" type="button" id="notifyBtn">${T.notifyBtn}</button></div></div>`);
+  if (state.now >= 720 && !state.pcb.saved) items.push(`<div class="td task" data-td="pcb"><p class="td-p">${lgp({ ab: "PCB" })}<b>${T.pcbTodo}</b></p><div class="row"><button class="btn btn-o btn-s" type="button" id="pcbTodo">${T.pcbBtn}</button></div></div>`);
+  const open = items.length;
+  if (!n && state.notifiedAt != null) items.push(`<div class="td done" data-td="notified"><p class="td-p" id="notifiedMsg">${ic.check}${T.notified(hmap(state.notifiedAt))}</p></div>`);
+  document.getElementById("tdCount").textContent = T.todoCount(open);
+  document.getElementById("todo").innerHTML = items.join("");
+}
+
+/* ---------- sponsors ---------- */
+function spMeta(sp) {
+  if (!hasList(sp)) return { c: "warnm", t: state.now < END ? T.sp.noList : T.sp.missed };
+  if (told(sp) && presentedCount(sp) > 0 && scoredCount(sp) === 0) return { c: "warnm", t: T.sp.noScores };
+  if (told(sp) && state.now >= 720 && !topIn(sp)) return { c: "warnm", t: T.sp.top5Late };
+  if (topIn(sp)) return { c: "good", t: T.sp.top5In };
+  if (told(sp) && presentedCount(sp) > 0) return { c: "", t: `${T.sp.teams(teamCount(sp))} · ${T.sp.scored(scoredCount(sp), teamCount(sp))}` };
+  return { c: "", t: `${T.sp.teams(teamCount(sp))} · ${T.sp.reps(sp.reps.length)}` };
+}
+function renderSponsors() {
+  document.getElementById("h-sp").textContent = T.sponsors;
+  document.getElementById("spCount").textContent = T.sentCount(SPONSORS.filter(hasList).length, SPONSORS.length);
+  document.getElementById("spList").innerHTML = SPONSORS.map((sp) => {
+    const open = state.openSp === sp.id, m = spMeta(sp);
+    const right = sp.mode === "remote" ? `<span class="sp-rm">${T.sp.remote}</span>` : roomSelect(sp, "row");
+    return `<li data-sp="${sp.id}">
+      <div class="sp-row">
+        <button class="sp-name" type="button" aria-expanded="${open}" data-open="${sp.id}">${ic.chev}<span class="sp-id">${spName(sp)}<span class="sp-meta ${m.c}">${esc(m.t)}</span></span></button>
+        ${right}
+      </div>
+      ${otherForm(sp, "row")}
+      ${open ? `<div class="inl">${spDetail(sp)}</div>` : ""}
+    </li>`;
+  }).join("");
+  renderDigital();
+}
+function spDetail(sp) {
+  const people = `<p class="lbl">${T.sp.people}</p><ul class="ph-l">${sp.reps.map((r) => `<li><div class="who"><b>${esc(r.name)}</b><span class="num">${r.phone}${r.name === sp.lead.name ? ` · ${T.sp.lead}` : ""}</span></div><div class="acts">${copyBtns(r.name, r.phone, "any", sp)}</div></li>`).join("")}</ul>`;
+  if (!hasList(sp)) return `<p class="sp-meta">${T.sp.noTeams}</p>${people}`;
+  const top = topIn(sp) ? `<p class="lbl">${T.sp.top5H}</p><ol class="top5">${top5(sp).map((t) => `<li>${teamBtn(t)}</li>`).join("")}</ol>` : "";
+  const teams = `<p class="lbl">${T.sp.teamsH}</p><ol class="tl">${slotsOf(sp).map((t, i) => t ? `<li><span class="t num">${hm(slotT(i))}</span>${teamBtn(t)}<span class="row" style="gap:4px;justify-content:flex-end">${statusPills(sp, i)}</span></li>` : "").join("")}</ol>`;
+  return `${top}${teams}${people}`;
+}
+function renderDigital() {
+  const p = state.pcb, d = document.getElementById("dig");
+  let body = "";
+  if (p.saved) body = `<ol class="top5">${p.saved.map((t) => `<li>${teamBtn(t)}</li>`).join("")}</ol>`;
+  else if (p.open) body = `<form class="t5f" id="pcbForm"><ol class="t5f">${T.place.map((pl, k) => {
+      const v = p.vals[k], m = matchTeam(v);
+      return `<li><span>${pl}</span><div><input class="in" id="pcb${k}" data-pcb="${k}" value="${esc(v)}" placeholder="${T.pcbPh}" aria-label="${pl} place, Devpost link" autocomplete="off" inputmode="url">
+        ${v ? `<p class="mt ${m ? "okm" : "bad"}">${m ? esc(T.pcbMatch(TEAMS[m].name, m)) : T.pcbNoMatch}</p>` : ""}</div></li>`; }).join("")}</ol>
+      ${p.err ? `<p class="err" role="alert">${p.err}</p>` : ""}<div class="row"><button class="btn btn-p btn-s" type="submit">${T.pcbSave}</button><button class="btn btn-l btn-s" type="button" id="pcbCancel">${T.room.cancel}</button></div></form>`;
+  const pcb = { ab: "PCB", name: "PCBWay" };
+  d.innerHTML = `<p class="sub-h">${T.digital}</p>
+    <div class="dig-row" data-sp="pcbway"><div>${spName(pcb)}<span class="sp-meta ${p.saved ? "good" : state.now >= 720 ? "warnm" : ""}">${p.saved ? T.pcbSaved : state.now >= 720 ? T.pcbTodo : `${T.pcbNote} ${T.pcbDue}.`}</span></div>
+      ${p.open ? "" : `<button class="btn btn-o btn-s" type="button" id="pcbOpen">${p.saved ? T.pcbEdit : T.pcbBtn}</button>`}</div>${body}`;
+}
+function matchTeam(v) { const m = /devpost\.com\/software\/hw13-([a-z0-9-]+)/i.exec(v || ""); if (!m) return null; return Object.values(TEAMS).find((t) => t.devpost.endsWith(`hw13-${m[1].toLowerCase()}`))?.id || null; }
+
+function statusPills(sp, i) {
+  const out = [];
+  if (!ready(sp) || !told(sp)) out.push(`<span class="pill p-untold">${T.pill.untold}</span>`);
+  else if (presented(i)) { const n = scoredBy(sp, i), m = sp.reps.length; out.push(`<span class="pill p-sc${n === m ? " full" : ""}">${T.pill.sc(n, m)}</span>`); }
+  else if (presenting(i)) out.push(`<span class="pill p-now">${T.pill.now}</span>`);
+  else out.push(`<span class="pill p-told">${T.pill.told}</span>`);
+  return out.join("");
+}
+
+/* ---------- rooms card ---------- */
+function columns() {
+  const cols = ROOMS.map((r) => ({ key: r, room: r, sp: holder(r) ? SP[holder(r)] : null }));
+  for (const sp of SPONSORS) if (sp.mode === "person" && state.assign[sp.id] && !ROOMS.includes(state.assign[sp.id])) cols.push({ key: state.assign[sp.id], room: state.assign[sp.id], sp, custom: true });
+  for (const sp of SPONSORS) if (sp.mode === "remote" && hasList(sp)) cols.push({ key: `remote:${sp.id}`, room: T.remoteCol, sp, remote: true });
+  for (const sp of SPONSORS) if (sp.mode === "person" && !state.assign[sp.id] && hasList(sp)) cols.push({ key: `none:${sp.id}`, room: T.noRoomCol, sp, need: true });
+  return cols;
+}
+function renderRooms() {
+  document.getElementById("h-rm").textContent = T.rooms;
+  document.getElementById("seg").innerHTML = ["cal", "sch"].map((v) => `<button type="button" role="tab" aria-selected="${state.view === v}" data-view="${v}">${T.views[v]}</button>`).join("");
+  const L = T.legend;
+  document.getElementById("legend").innerHTML = `<li><span class="sw"></span>${L.told}</li><li><span class="sw untold"></span>${L.untold}</li><li><span class="sw now"></span>${L.now}</li><li><span class="sw done"></span>${L.done}</li><li><span class="sw rem"></span>${L.rem}</li><li><span class="mk">${L.mk}</span>${L.mkL}</li>`;
+  document.getElementById("view").innerHTML = state.view === "cal" ? calendarHtml() : scheduleHtml();
+}
+function cellClass(sp, i) {
+  const c = [];
+  if (sp.mode === "remote") c.push("rem");
+  if (!told(sp)) c.push("untold");
+  else if (presented(i)) c.push("done");
+  else if (presenting(i)) c.push("now");
+  return c.join(" ");
+}
+function colHead(c) {
+  if (c.remote) return `<div class="colh rem"><b>${esc(c.room)}</b>${spName(c.sp)}</div>`;
+  if (c.need) return `<button class="colh need" type="button" data-roomdlg="${c.sp.id}"><b>${esc(c.room)}</b>${spName(c.sp)}</button>`;
+  if (!c.sp) return `<button class="colh" type="button" data-emptyroom="${esc(c.room)}"><b>${esc(c.room)}</b><span class="muted" style="font-size:13px">${T.emptyRoom}</span></button>`;
+  return `<button class="colh" type="button" data-roomdlg="${c.sp.id}" aria-label="${esc(c.room)}, ${esc(c.sp.name)}"><b>${esc(c.room)}</b>${spName(c.sp)}</button>`;
+}
+function calendarHtml() {
+  const cols = columns(), nowI = state.now >= START && state.now < END ? Math.floor((state.now - START) / SLOT) : -1;
+  const used = Math.max(0, ...cols.map((c) => (c.sp ? lastSlot(c.sp) : -1))) + 1;
+  const rowsN = Math.max(used, 1);
+  const head = `<thead><tr><th class="tm" scope="col"><span class="sr">${T.time}</span></th>${cols.map((c) => `<th scope="col">${colHead(c)}</th>`).join("")}</tr></thead>`;
+  const body = Array.from({ length: rowsN }, (_, i) => `<tr class="${i === nowI ? "now" : ""}"><th class="tm num" scope="row">${hm(slotT(i))}</th>${cols.map((c) => {
+    const t = c.sp && slotsOf(c.sp)[i];
+    if (!t) return "<td></td>";
+    return `<td><button class="cell ${cellClass(c.sp, i)}" type="button" data-team="${t}" title="${t} · ${esc(TEAMS[t].name)}" aria-label="${esc(TEAMS[t].name)}, ${t}, ${esc(c.sp.name)} ${hm(slotT(i))}"><span class="nm">${esc(TEAMS[t].name)}</span><span class="cd"><span class="num">${t}</span>${mk(t)}</span></button></td>`;
+  }).join("")}</tr>`).join("");
+  return `<div class="gwrap"><table class="cal" id="grid" style="min-width:${52 + cols.length * 116}px">${head}<tbody>${body}</tbody></table></div>`;
+}
+function scheduleHtml() {
+  return `<div class="sch">${columns().map((c) => {
+    const cls = c.remote ? "rem" : c.need ? "need" : "";
+    if (!c.sp) return `<section class="sch-room"><div class="sch-h"><div><h3>${esc(c.room)}</h3><span class="muted">${T.emptyRoom}</span></div></div></section>`;
+    const n = teamCount(c.sp), l = lastSlot(c.sp);
+    return `<section class="sch-room ${cls}"><div class="sch-h"><div><h3>${esc(c.room)}</h3>${spName(c.sp)}</div><span class="muted num">${n ? T.teamsWindow(n, hm(START), hm(slotT(l) + SLOT)) : ""}</span></div>
+      <ol>${slotsOf(c.sp).map((t, i) => t ? `<li class="${presenting(i) && told(c.sp) ? "live" : ""}"><span class="t num">${hm(slotT(i))}</span>${teamBtn(t)}<span class="pills">${statusPills(c.sp, i)}</span></li>` : "").join("")}</ol></section>`;
+  }).join("")}</div>`;
+}
+
+/* ---------- modals ---------- */
+function teamModal(id) {
+  const tm = TEAMS[id], L = T.tm, talks = talksOf(id);
+  const att = tm.checked > 0 ? `<p class="att ok" id="att">${ic.check}${L.conf(tm.checked, tm.members.length)}</p>` : `<p class="att none" id="att">${ic.warn}${L.none}</p>`;
+  const where = (sp) => (sp.mode === "remote" ? L.remote : state.assign[sp.id] || L.noRoom);
+  const pres = `<section class="msec"><h3>${L.presents}</h3><ul class="pres" id="mdTimes">${talks.map((k, j) => `<li><span><b>${esc(k.sp.name)}</b> <span class="num">${hm(k.t)}</span> · ${esc(where(k.sp))}</span><span class="row" style="gap:6px">${j > 0 ? `<span class="gap">${L.gap(k.t - talks[j - 1].t)}</span>` : ""}${statusPills(k.sp, k.i)}</span></li>`).join("")}</ul></section>`;
+  const scs = `<section class="msec"><h3>${L.scores}</h3><ul class="scs" id="mdScores">${talks.map((k) => {
+    const n = scoredBy(k.sp, k.i), m = k.sp.reps.length;
+    let v;
+    if (!presented(k.i)) v = `<span class="muted">${L.notYet(hm(k.t))}</span>`;
+    else if (!n) v = `<span class="muted">${L.notScored}</span>`;
+    else { const a = Array.from({ length: n }, (_, r) => score(id, k.sp, r)); v = `<span><b class="num">${(a.reduce((x, y) => x + y, 0) / n).toFixed(1)}</b> <span class="muted">${L.avg(n, m)}</span></span>`; }
+    return `<li><span>${esc(k.sp.name)}</span>${v}</li>`; }).join("")}</ul></section>`;
+  const LK = { li: ic.li, gh: ic.github, cv: ic.cv, web: ic.web };
+  const lk = (u, key, name) => (u ? `<a class="ib sm" href="${u}" target="_blank" rel="noopener" aria-label="${esc(L.links[key](name))}">${LK[key]}</a>` : "");
+  const mem = `<section class="msec"><h3>${L.members}</h3><ul class="mem" id="mdMembers">${tm.members.map((p) => `<li>
+      <div class="top"><b>${esc(p.name)}</b>${p.in ? `<span class="chip ok">${ic.check}${L.in}</span>` : `<span class="chip no">${L.out}</span>`}</div>
+      <span class="meta">${esc(p.school)} · ${esc(p.program)} · ${esc(p.year)}</span><span class="role">${esc(p.role)}</span>
+      <div class="links">${lk(p.links.li, "li", p.name)}${lk(p.links.gh, "gh", p.name)}${lk(p.links.cv, "cv", p.name)}${lk(p.links.web, "web", p.name)}</div></li>`).join("")}</ul></section>`;
+  return `<div class="grab" aria-hidden="true"></div><div class="mb">
+    <div class="mh"><div><h2 id="mdT">${esc(tm.name)}</h2><span class="sub num" id="mdId">${id}</span></div><button class="x" type="button" data-mclose aria-label="${T.rd.close}">${ic.x}</button></div>
+    <div class="row"><a class="ib" href="${tm.devpost}" target="_blank" rel="noopener" aria-label="${esc(L.devpost(tm.name))}">${ic.devpost}</a><a class="ib" href="${tm.github}" target="_blank" rel="noopener" aria-label="${esc(L.github(tm.name))}">${ic.github}</a></div>
+    ${att}${pres}${scs}${mem}</div>`;
+}
+function roomModal(spId) {
+  const sp = SP[spId], cur = state.assign[spId], n = teamCount(sp), l = lastSlot(sp);
+  const opts = ROOMS.filter((r) => r !== cur).map((r) => { const h = holder(r);
+    return `<button class="btn btn-o btn-s" type="button" data-moveto="${r}">${r}<span class="muted" style="font-weight:400">· ${h ? esc(T.rd.swap(SP[h].name)) : T.rd.free}</span></button>`; }).join("");
+  return `<div class="grab" aria-hidden="true"></div><div class="mb">
+    <div class="mh"><div><h2 id="mdT">${spName(sp)}</h2><span class="sub">${esc(cur || T.noRoomCol)}${n ? ` · ${T.teamsWindow(n, hm(START), hm(slotT(l) + SLOT))}` : ""}</span></div><button class="x" type="button" data-mclose aria-label="${T.rd.close}">${ic.x}</button></div>
+    <p class="lbl">${T.rd.moveTo}</p><div class="row" id="moveOpts">${opts}</div></div>`;
+}
+function emptyModal(room) {
+  const cands = SPONSORS.filter((s) => s.mode === "person" && !ROOMS.includes(state.assign[s.id] || ""));
+  return `<div class="grab" aria-hidden="true"></div><div class="mb">
+    <div class="mh"><div><h2 id="mdT">${esc(room)}</h2><span class="sub">${T.emptyRoom}</span></div><button class="x" type="button" data-mclose aria-label="${T.rd.close}">${ic.x}</button></div>
+    <p class="lbl">${T.rd.putHere}</p><div class="row">${cands.length ? cands.map((s) => `<button class="btn btn-o btn-s" type="button" data-puthere="${s.id}" data-room="${esc(room)}">${esc(s.name)}</button>`).join("") : `<span class="muted">${T.rd.nobody}</span>`}</div></div>`;
+}
+let modalReturn = null;
+function renderModal() {
+  const md = document.getElementById("md"), bg = document.getElementById("mbg"), m = state.modal;
+  if (!m) { if (!md.hidden) { md.hidden = true; bg.hidden = true; modalReturn?.focus?.(); } return; }
+  const wasHidden = md.hidden;
+  md.className = `mod${m.kind === "team" ? "" : " sm"}`;
+  md.innerHTML = m.kind === "team" ? teamModal(m.id) : m.kind === "room" ? roomModal(m.id) : emptyModal(m.id);
+  md.hidden = false; bg.hidden = false;
+  if (wasHidden) { md.scrollTop = 0; md.querySelector("[data-mclose]").focus(); }
+}
+function openModal(m) { modalReturn = document.activeElement; state.modal = m; render(); }
+function closeModal() { state.modal = null; render(); }
+
+/* ---------- mock panel ---------- */
+function renderMock() {
+  const tb = (m) => `<button class="btn btn-o btn-s" type="button" data-time="${m}" aria-pressed="${state.now === m}">Sun ${hmap(m)}</button>`;
+  document.getElementById("mock").innerHTML = `<div class="mock-p" id="mockP" ${state.mockOpen ? "" : "hidden"}><span class="mock-tag" style="align-self:flex-start">${T.mock.tag}</span>
+      <div class="mock-g"><span>${T.mock.time}</span>${[560, 630, 725].map(tb).join("")}</div>
+      <div class="mock-g">${hasList(SP.sunlife) ? "" : `<button class="btn btn-l btn-s" type="button" id="sunSend">${T.mock.sunSend}</button>`}<button class="btn btn-l btn-s" type="button" id="reset">${T.mock.reset}</button></div></div>
+    <button class="mock-btn" type="button" id="mockBtn" aria-expanded="${state.mockOpen}">${state.mockOpen ? T.mock.hide : T.mock.open(hmap(state.now))}</button>`;
+}
+
+/* ---------- help ---------- */
+let helpReturn = null;
+function openHelp() {
+  const h = T.help, sh = document.getElementById("help");
+  sh.innerHTML = `<div class="sheet-h"><h2 id="helpT">${h.title}</h2><button class="x" type="button" data-helpclose aria-label="${h.close}">${ic.x}</button></div>
+    <div class="sheet-b"><p>${h.p1}</p><p><b>${h.checksTitle}</b></p><ul class="ck">${h.checks.map((c) => `<li>${ic.check}<span>${esc(c)}</span></li>`).join("")}</ul><p>${h.p2}</p><p>${h.p3}</p></div>`;
+  sh.hidden = false; document.getElementById("mbg").hidden = false;
+  helpReturn = document.activeElement; sh.querySelector("[data-helpclose]").focus();
+}
+function closeHelp() { document.getElementById("help").hidden = true; if (!state.modal) document.getElementById("mbg").hidden = true; (helpReturn || document.getElementById("helpBtn")).focus(); }
+const helpOpen = () => !document.getElementById("help").hidden;
+
+let toastT;
+function toast(msg) { const el = document.getElementById("toast"); el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (el.hidden = true), 2800); }
+
+function render() { renderMock(); renderTodo(); renderSponsors(); renderRooms(); renderModal(); }
+
+/* ---------- events ---------- */
+function trapTab(e, box) {
+  const f = [...box.querySelectorAll("a[href],button:not([disabled]),input,select")].filter((x) => x.offsetParent !== null);
+  if (!f.length) return;
+  const a = f[0], z = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); }
+  else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+}
+document.addEventListener("click", (e) => {
+  if (e.target.id === "mbg") { if (helpOpen()) closeHelp(); else closeModal(); return; }
+  const a = e.target.closest("a[data-texted]");
+  if (a) { if (a.dataset.tkey) { state.texted[a.dataset.tkey] = state.now; setTimeout(render, 0); } return; }
+  const t = e.target.closest("button");
+  if (!t) return;
+  const d = t.dataset;
+  if (t.id === "helpBtn") { openHelp(); return; }
+  if ("helpclose" in d) { closeHelp(); return; }
+  if ("mclose" in d) { closeModal(); return; }
+  if (t.id === "mockBtn") { state.mockOpen = !state.mockOpen; render(); return; }
+  if (d.time) {
+    state.now = +d.time;
+    if (state.now >= START && state.notifiedAt == null) { notifyTeams(565); toast(T.mock.autoNotified); }
+    render(); return;
+  }
+  if (t.id === "sunSend") { sunLifeSends(); toast(T.toast.sunSent); render(); return; }
+  if (t.id === "reset") { location.reload(); return; }
+  if (t.id === "notifyBtn") { toast(T.toast.notified(notifyTeams())); render(); return; }
+  if (d.view) { state.view = d.view; render(); return; }
+  if (d.open) { state.openSp = state.openSp === d.open ? null : d.open; render(); return; }
+  if (d.team) { openModal({ kind: "team", id: d.team }); return; }
+  if (d.roomdlg) { openModal({ kind: "room", id: d.roomdlg }); return; }
+  if (d.emptyroom) { openModal({ kind: "empty", id: d.emptyroom }); return; }
+  if (d.moveto) {
+    const spId = state.modal.id, other = moveTo(spId, d.moveto);
+    toast(other ? T.toast.swapped(SP[spId].name, state.assign[spId], SP[other].name, state.assign[other] || T.noRoomCol) : T.toast.room(SP[spId].name, d.moveto));
+    closeModal(); return;
+  }
+  if (d.puthere) { setRoom(d.puthere, d.room); toast(T.toast.room(SP[d.puthere].name, d.room)); closeModal(); return; }
+  if ("othercancel" in d) { state.other = null; state.otherErr = ""; render(); return; }
+  if (d.copy) {
+    toast(T.toast.copied(d.who, d.copy));
+    const done = () => { state.copied = d.ck; render(); setTimeout(() => { state.copied = null; render(); }, 1500); };
+    try { navigator.clipboard.writeText(d.copy).then(done, done); } catch { done(); }
+    return;
+  }
+  if (t.id === "pcbOpen" || t.id === "pcbTodo") {
+    state.pcb.open = true; if (state.pcb.saved) state.pcb.vals = state.pcb.saved.map((x) => TEAMS[x].devpost);
+    render(); const f = document.getElementById("pcb0"); f.scrollIntoView({ block: "center" }); f.focus(); return;
+  }
+  if (t.id === "pcbCancel") { state.pcb.open = false; state.pcb.err = ""; render(); return; }
+});
+document.addEventListener("change", (e) => {
+  const s = e.target.closest("[data-roomsel]");
+  if (!s) return;
+  const spId = s.dataset.roomsel, where = s.dataset.where;
+  if (s.value === "__other") { state.other = { sp: spId, where }; state.otherErr = ""; render(); document.getElementById(`oth-${spId}-${where}`)?.focus(); return; }
+  state.other = null; state.otherErr = "";
+  if (setRoom(spId, s.value)) toast(T.toast.room(SP[spId].name, s.value));
+  render();
+});
+document.addEventListener("input", (e) => {
+  const k = e.target.dataset.pcb;
+  if (k == null) return;
+  state.pcb.vals[+k] = e.target.value;
+  const m = matchTeam(e.target.value), box = e.target.parentElement;
+  let p = box.querySelector(".mt");
+  if (!e.target.value) { p?.remove(); return; }
+  if (!p) { p = document.createElement("p"); box.appendChild(p); }
+  p.className = `mt ${m ? "okm" : "bad"}`; p.textContent = m ? T.pcbMatch(TEAMS[m].name, m) : T.pcbNoMatch;
+});
+document.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.dataset.otherform) {
+    const spId = f.dataset.otherform, where = f.dataset.where, v = f.querySelector("input").value.trim().replace(/\s+/g, " ");
+    if (!v) { state.otherErr = T.room.errEmpty; render(); document.getElementById(`oth-${spId}-${where}`).focus(); return; }
+    const std = ROOMS.find((r) => r.toLowerCase() === v.toLowerCase()), name = std || v, h = Object.keys(state.assign).find((s) => (state.assign[s] || "").toLowerCase() === name.toLowerCase());
+    if (h && h !== spId) { state.otherErr = T.room.errTaken(name, SP[h].name); render(); const i = document.getElementById(`oth-${spId}-${where}`); i.value = v; i.focus(); return; }
+    state.assign[spId] = name; state.other = null; state.otherErr = ""; toast(T.toast.room(SP[spId].name, name)); render(); return;
+  }
+  if (f.id === "pcbForm") {
+    const ids = state.pcb.vals.map(matchTeam);
+    if (ids.some((x) => !x) || new Set(ids).size !== 5) { state.pcb.err = T.pcbNeed; render(); return; }
+    state.pcb.saved = ids; state.pcb.open = false; state.pcb.err = ""; toast(T.toast.pcb); render();
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (helpOpen()) { if (e.key === "Escape") { e.preventDefault(); closeHelp(); } else if (e.key === "Tab") trapTab(e, document.getElementById("help")); return; }
+  if (state.modal) { if (e.key === "Escape") { e.preventDefault(); closeModal(); } else if (e.key === "Tab") trapTab(e, document.getElementById("md")); }
+});
+
+window.__board = { state, SPONSORS, TEAMS, ROOMS, schedule, minGap, untoldTeams, talksOf, leadWarnings };
+document.getElementById("pgT").textContent = T.title;
+document.getElementById("pgS").textContent = T.sub;
+document.getElementById("helpBtn").innerHTML = `${ic.help}<span>${T.help.btn}</span>`;
+render();
+</script>
+</body>
+</html>

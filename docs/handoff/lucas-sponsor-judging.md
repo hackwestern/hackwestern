@@ -46,4 +46,14 @@ Tests: `SKIP_ENV_VALIDATION=1 npx vitest run`. One test fails before you change 
 - Sun Life has no judging room on the sheet yet, so its presentations and round 2 can't open. Round 2 hasn't been tested end to end because of this.
 - Manulife's and Commure's judging rooms on the sheet read "RM 555" and "RM 44". They may be test values.
 
-Jazz is holding the mocks back for now, so build from the current app and this doc. Ask her before changing what a screen looks like.
+## Mocks
+
+They're in `mocks/` on this branch. Open any `index.html` straight from your file explorer (double-click), no server needed.
+
+- `sponsor-judging-redesign-d-v1`: the newest sponsor judging design (scroll score 1 to 10 in halves, several reps on one login, "Who's judging?").
+- `sponsor-judging-redesign-a-v1`, `-b-v1`, `-c-v1`: earlier versions (A swipe cards, B scorecard list with rubric, C demo-fair route).
+- `organizer-judging-board-v1`, `-v2`: the organizer's judging room board. v2 is the newest.
+- `sponsor-chats-v3`: the approved design for the whole sponsor portal. Jazz wants the finished portal to follow it exactly.
+- `sponsor-portal-flow-hacker-v1`: only there so the judging mocks' nav links work.
+
+The app is the source of truth where it already differs from a mock (for example the top 5, not top 3). Ask Jazz before changing what a screen looks like.

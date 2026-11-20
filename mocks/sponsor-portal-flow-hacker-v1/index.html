@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#dbe7f5">
+<title>Sponsor portal · Hack Western 13</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Pix32";src:url("assets/Pix32.woff2") format("woff2");font-display:swap}
+:root{
+  /* src/lib/tokens.ts:242-294 dashboardColors */
+  --t-heavy:#0b2b4a;--t-medium:#1c3550;--t-light:#516476;--t-ph:rgba(81,100,118,.7);--t-active:#08559c;--t-warn:#8a4300;--t-link:#0b6bc4;
+  --bg-page:#f3f7fc;--bg-surface:#fff;--bg-nav:#dbe7f5;--bg-navSel:#b9d3f0;--bg-inset:#edf3fa;--bg-hl:#e1effb;--bg-current:#e4eefb;
+  --primary:#0b6bc4;
+  --b-default:#cdddeb;--b-subtle:#e0eaf3;--b-card:#d6e3ef;--b-control:#b9cbe0;--b-faint:rgba(81,100,118,.1);--b-muted:rgba(81,100,118,.2);
+  --live:#16803c;--badge:#a34a00;
+  /* src/lib/tokens.ts:466-494 radius + shadows */
+  --r-sm:4px;--r-md:6px;--r-lg:8px;--r-2xl:12px;
+  --sh-card:0 1px 2px 0 rgba(11,43,74,.06),0 1px 4px 0 rgba(11,43,74,.05);
+  --sh-btn:0 2px 4px 0 rgba(11,43,74,.2);
+  /* schedule blocks, src/components/live/day-schedule.tsx:23-42 */
+  --one-bg:#bfdbfe;--one-b:#93c5fd;--one-t:#1e3a8a;
+  --grp-bg:#c4c0de;--grp-b:#a8a2cf;--grp-t:#3b2a85;
+  --ws-bg:#fef08a;--ws-b:#fde047;--ws-t:#713f12;
+  --pk-bg:#fbcfe8;--pk-b:#f9a8d4;--pk-t:#831843;
+  --nav-h:64px;--tab-h:64px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg-page);color:var(--t-heavy);font-family:Figtree,system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+@media (pointer:fine){body{cursor:url("assets/cursor-default.webp"),auto}a,button,select,label,[role=button]{cursor:url("assets/hover-hand.webp"),pointer}}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3,p{margin:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- shell: topbar (topbar.tsx:24), sidebar (sidebar.tsx:105), bottom tabs (sponsor addition) ---------- */
+.app{display:flex;min-height:100dvh}
+.side{display:none}
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;height:calc(var(--nav-h) + env(safe-area-inset-top));padding:env(safe-area-inset-top) 16px 0;background:var(--bg-nav);border-bottom:1px solid var(--b-default)}
+.top-logo{display:flex;align-items:center;min-width:44px;min-height:44px;padding:0 4px}
+.top-logo img{width:26px;height:38px}
+.top-title{position:absolute;left:50%;transform:translateX(-50%);bottom:calc((var(--nav-h) - 24px)/2);font-weight:600;font-size:16px;white-space:nowrap}
+.helpbtn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid var(--b-default);border-radius:var(--r-lg);background:#fff;text-decoration:none;font-weight:600;font-size:14px;color:var(--t-heavy)}
+.helpbtn svg.i{width:18px;height:18px;color:var(--t-active)}
+.helpbtn[aria-current=page]{background:var(--bg-navSel);border-color:var(--bg-navSel);color:var(--t-active)}
+.bell{position:relative;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:0;background:none;border-radius:var(--r-lg)}
+.bell svg.i{width:24px;height:24px}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--badge);color:#fff;font-size:11px;font-weight:700;line-height:1}
+.bell .badge{position:absolute;top:4px;right:4px}
+.pop{position:absolute;right:12px;top:calc(100% + 6px);width:min(320px,calc(100vw - 32px));background:#fff;border:1px solid var(--b-subtle);border-radius:var(--r-lg);box-shadow:0 8px 24px rgba(11,43,74,.14);padding:14px 16px;display:none;z-index:40}
+.pop.on{display:block}
+.pop h3{font-size:14px;font-weight:600;margin-bottom:6px}
+.pop p{font-size:14px;color:var(--t-medium)}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.pane{flex:1;padding:20px 16px calc(var(--tab-h) + 28px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:24px}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(4,1fr);gap:2px;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:var(--bg-nav);border-top:1px solid var(--b-default)}
+.tabs a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:52px;border-radius:var(--r-lg);text-decoration:none;font-size:12px;font-weight:500;color:var(--t-medium)}
+.tabs a svg.i{color:var(--t-light)}
+.tabs a[aria-current=page]{background:var(--bg-navSel);color:var(--t-active);font-weight:600}
+.tabs a[aria-current=page] svg.i{color:var(--t-active)}
+.desk-h{display:none}
+
+@media (min-width:768px){
+  .top,.tabs{display:none}
+  .side{display:flex;flex-direction:column;justify-content:space-between;position:sticky;top:0;height:100dvh;width:300px;flex:none;overflow-y:auto;background:var(--bg-nav);border-right:1px solid var(--b-default);border-radius:0 var(--r-lg) var(--r-lg) 0;padding:48px 24px}
+  .brand{display:flex;align-items:center;gap:12px;font-size:20px;text-decoration:none}
+  .brand img{width:34px;height:50px;margin:-2.5px 7px}
+  .spon{display:flex;align-items:center;gap:10px;margin-top:28px;padding:10px 12px;background:#fff;border-radius:var(--r-lg);box-shadow:var(--sh-card)}
+  .spon img{height:22px;width:auto}
+  .spon span{font-size:13px;color:var(--t-light)}
+  .snav{display:flex;flex-direction:column;gap:6px;margin-top:36px}
+  .snav a,.snav hr{margin:0}
+  .snav hr{border:0;border-top:1px solid var(--b-subtle);margin:14px 0}
+  .navl{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--r-sm);text-decoration:none;color:var(--t-medium)}
+  .navl svg.i{color:var(--t-light)}
+  .navl:hover{background:var(--bg-surface);color:var(--t-heavy)}
+  .navl[aria-current=page]{background:var(--bg-navSel);color:var(--t-active)}
+  .navl[aria-current=page] svg.i{color:var(--t-active)}
+  .navl .when{margin-left:auto;font-size:12px;color:var(--t-light)}
+  .side-ft{font-size:13px;color:var(--t-light)}
+  .pane{padding:48px;gap:32px}
+  .desk-h{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;position:relative}
+  .desk-h .helpbtn{margin-top:6px}
+}
+/* typography, globals.css:161-169 */
+.display{font-size:32px;font-weight:700;line-height:1.2}
+.h1{font-size:28px;font-weight:700;line-height:1.2}
+@media (min-width:768px){.display{font-size:48px}.h1{font-size:32px}}
+.lead{display:none;color:var(--t-medium);max-width:62ch}
+@media (min-width:768px){.lead{display:block}}
+
+/* ---------- cards, DashboardPanel (dashboard-panel.tsx:17) ---------- */
+.card{background:#fff;border-radius:var(--r-lg);box-shadow:var(--sh-card);padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (min-width:768px){.card{padding:24px}}
+.card-t{display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px}
+.card-t svg.i{color:var(--primary)}
+.muted{color:var(--t-light)}
+.small{font-size:14px}
+.grid2{display:grid;gap:24px}
+@media (min-width:1024px){.grid2{grid-template-columns:1fr 1fr;gap:32px}}
+
+/* buttons, dashboard-button.tsx:16-40 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:var(--r-lg);border:1px solid transparent;font-weight:500;font-size:16px;text-decoration:none;white-space:nowrap;transition:background .15s}
+.btn-p{background:var(--primary);color:#fff;box-shadow:var(--sh-btn)}
+.btn-p:hover{background:var(--t-active)}
+.btn-p[aria-disabled=true]{opacity:.45;pointer-events:none}
+.btn-o{background:#fff;border-color:var(--b-control);color:var(--t-heavy)}
+.btn-o:hover{background:var(--bg-hl)}
+.btn-l{background:none;color:var(--t-link);font-weight:600;padding:0 8px;font-size:14px}
+.btn-l:hover{background:var(--bg-hl)}
+.btn-w{width:100%}
+@media (min-width:768px){.btn-w{width:auto}}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row>.btn{flex:1 1 0}
+@media (min-width:768px){.row>.btn{flex:0 0 auto}}
+
+/* chips, dashboard-chip.tsx:27-36 */
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:0;border-radius:var(--r-lg);background:var(--bg-nav);color:var(--t-heavy);font-size:14px;font-weight:500;white-space:nowrap}
+.chip:hover{background:var(--bg-navSel)}
+.chip[aria-pressed=true]{background:var(--primary);color:#fff}
+.chip-add{background:#fff;border:1px dashed var(--b-control)}
+
+/* checklist pattern, hacker-checklist.tsx:73-190 */
+.ck-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-weight:600}
+.ck-h h2{font-size:22px}
+@media (min-width:768px){.ck-h h2{font-size:24px}}
+.ck-h p{font-size:15px;white-space:nowrap}
+.seg{display:flex;gap:6px}
+.seg i{flex:1;height:6px;border-radius:999px;background:var(--bg-nav)}
+.seg i.on{background:var(--primary)}
+.ck{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.ck li{display:flex;gap:12px;align-items:flex-start;padding:12px 8px}
+.box{width:18px;height:18px;margin-top:3px;flex:none;border:1.5px solid var(--b-control);border-radius:3px;display:flex;align-items:center;justify-content:center}
+.box.on{background:var(--primary);border-color:var(--primary)}
+.box.on svg{width:12px;height:12px;stroke:#fff;stroke-width:3;fill:none}
+.ck li.done{color:var(--t-light)}
+.ck li.cur{background:var(--bg-current);border-radius:var(--r-lg);padding:18px 16px}
+.ck li.later{color:var(--t-light);opacity:.75}
+.ck .t{font-weight:600;font-size:18px;color:var(--t-heavy)}
+.ck li.later .t,.ck li.done .t{font-weight:400;font-size:16px;color:inherit}
+.due{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:var(--t-warn)}
+.due svg.i{width:15px;height:15px}
+
+/* contact */
+.who{display:flex;align-items:center;gap:12px}
+.av{width:44px;height:44px;flex:none;border-radius:999px;background:var(--bg-nav);color:var(--t-active);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px}
+.av.sm{width:32px;height:32px;font-size:12px}
+.who b{display:block;font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+
+/* messages */
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--r-lg);background:var(--bg-inset);font-size:14px;color:var(--t-medium)}
+.note svg.i{width:18px;height:18px;margin-top:1px;color:var(--t-light)}
+.note.warn{background:#fff4e5;color:var(--t-warn)}
+.note.warn svg.i{color:var(--t-warn)}
+.err{color:#b42318;font-size:14px;font-weight:500}
+
+/* forms */
+.f{display:flex;flex-direction:column;gap:6px}
+.f label{font-weight:600;font-size:14px}
+.f .hint{font-size:13px;color:var(--t-light)}
+.in{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--b-default);border-radius:var(--r-md);background:#fff;font-size:16px}
+.in::placeholder{color:var(--t-ph)}
+.in:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 2px rgba(11,107,196,.2)}
+textarea.in{min-height:96px;resize:vertical}
+.in[aria-invalid=true]{border-color:#b42318}
+
+/* coffee chats stepper */
+.stepper{display:flex;flex-direction:column;gap:10px}
+.stepper .lbls{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stepper .lbls a{display:flex;align-items:center;gap:6px;min-height:44px;font-size:14px;font-weight:500;color:var(--t-light);text-decoration:none}
+.stepper .lbls a[aria-current=step]{color:var(--t-active);font-weight:600}
+.stepper .lbls a.done{color:var(--t-heavy)}
+.dot{width:22px;height:22px;flex:none;border-radius:999px;border:1.5px solid var(--b-control);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600}
+a[aria-current=step] .dot{border-color:var(--primary);background:var(--primary);color:#fff}
+a.done .dot{border-color:var(--primary);background:var(--primary)}
+a.done .dot svg{width:12px;height:12px;stroke:#fff;stroke-width:3;fill:none}
+.step-k{font-size:14px;color:var(--t-light);font-weight:500}
+.foot{display:flex;flex-direction:column-reverse;gap:10px;padding-top:16px;border-top:1px solid var(--b-subtle)}
+@media (min-width:768px){.foot{flex-direction:row;justify-content:space-between;align-items:center}}
+
+/* calendar */
+.meter{display:flex;flex-direction:column;gap:8px}
+.meter .v{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.meter .v b{font-size:20px}
+.bar{height:6px;border-radius:999px;background:var(--bg-nav);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--primary);border-radius:999px}
+.bar.over i{background:#c26a00}
+.tots{display:flex;flex-wrap:wrap;gap:8px 24px;align-items:flex-end}
+.tot b{display:block;font-size:20px;line-height:1.2}
+.tot span{font-size:13px;color:var(--t-light)}
+.legend{display:flex;gap:14px;margin-left:auto;font-size:13px;font-weight:500}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:14px;border-radius:3px;border:2px solid}
+.sw.one{background:var(--one-bg);border-color:var(--one-b)}
+.sw.grp{background:var(--grp-bg);border-color:var(--grp-b)}
+.repsw{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin:0 -16px;padding:0 16px 4px}
+.repsw::-webkit-scrollbar{display:none}
+@media (min-width:600px){.repsw{display:none}}
+.day-k{font-family:Pix32,monospace;font-size:18px;font-weight:700;letter-spacing:.02em}
+.cal{border:1px solid var(--b-subtle);border-radius:var(--r-lg);background:#fff;overflow:hidden}
+.cal-h{display:grid;border-bottom:1px solid var(--b-subtle);background:var(--bg-inset)}
+.cal-h div{padding:10px 8px;font-weight:600;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-h .addc{color:var(--t-link)}
+.cal-b{display:grid;position:relative}
+.tcol{position:relative}
+.tl{position:absolute;right:6px;transform:translateY(-1px);font-family:Pix32,monospace;font-size:11px;color:var(--t-medium);white-space:nowrap}
+.strip{position:relative;background:var(--bg-inset)}
+.strip i{position:absolute;left:2px;right:2px;background:var(--primary);border-radius:2px}
+.col{position:relative;border-left:1px solid var(--b-subtle)}
+.cell{position:absolute;left:0;right:0;border:0;background:none;padding:0;border-top:1px solid #eef3f8}
+.cell.half{border-top-color:var(--b-subtle)}
+.cell:hover{background:var(--bg-hl)}
+@media (hover:hover){.cell:hover::after{content:"+";position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--t-light);font-size:14px}}
+.blk{position:absolute;left:4px;right:4px;border:2px solid;border-radius:var(--r-lg);padding:6px 8px;text-align:left;overflow:hidden;box-shadow:0 1px 2px rgba(11,43,74,.08);display:block;font-size:12px;line-height:1.35;z-index:2}
+.blk.one{background:var(--one-bg);border-color:var(--one-b);color:var(--one-t)}
+.blk.grp{background:var(--grp-bg);border-color:var(--grp-b);color:var(--grp-t)}
+.blk b{display:block;font-size:13px}
+.blk .sl{position:absolute;left:0;right:0;border-top:1px dashed currentColor;opacity:.35}
+.blk span{position:relative;display:block}
+.addcol{border-left:1px solid var(--b-subtle);background:repeating-linear-gradient(135deg,#fff 0 8px,#f7fafd 8px 16px)}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(11,43,74,.35);z-index:50;display:none}
+.scrim.on{display:block}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;background:#fff;border-radius:16px 16px 0 0;padding:8px 20px calc(20px + env(safe-area-inset-bottom));max-height:88dvh;overflow-y:auto;transform:translateY(105%);transition:transform .25s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;gap:16px}
+.sheet.on{transform:none}
+.grab{width:40px;height:4px;border-radius:999px;background:var(--b-default);margin:4px auto 0}
+@media (min-width:768px){.sheet{left:50%;width:460px;margin-left:-230px;bottom:24px;border-radius:12px}}
+.seg2{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;background:var(--bg-nav);border-radius:var(--r-lg)}
+.seg2 button{min-height:40px;border:0;border-radius:var(--r-md);background:none;font-weight:600;font-size:15px;color:var(--t-medium)}
+.seg2 button[aria-pressed=true]{background:#fff;color:var(--t-heavy);box-shadow:var(--sh-card)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+select.in{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--t-light) 50%),linear-gradient(135deg,var(--t-light) 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
+
+/* lists */
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--b-subtle);min-width:0}
+.li:first-child{border-top:0}
+.li .tx{flex:1;min-width:0}
+.li .tx b{display:block;font-weight:600}
+.li .tx span{display:block;font-size:13px;color:var(--t-light);overflow-wrap:anywhere}
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:var(--r-sm);background:var(--bg-nav);font-size:12px;font-weight:500;color:var(--t-medium)}
+.tog{min-width:110px}
+.tog[aria-pressed=true]{background:var(--bg-hl);border-color:var(--primary);color:var(--t-active)}
+
+/* recap */
+.rc{display:flex;flex-direction:column}
+.rc>div{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:14px 0;border-top:1px solid var(--b-subtle)}
+.rc>div:first-child{border-top:0;padding-top:0}
+.rc h3{font-size:14px;font-weight:600;color:var(--t-light)}
+.rc .v{grid-column:1/-1;font-size:15px}
+.rc .v p+p{margin-top:4px}
+.stack{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+
+/* done state, hacker-checklist.tsx:98-110 */
+.done-h{display:flex;align-items:center;gap:16px}
+.big-ck{width:48px;height:48px;flex:none;border-radius:999px;background:var(--primary);display:flex;align-items:center;justify-content:center}
+.big-ck svg{width:24px;height:24px;stroke:#fff;stroke-width:2.5;fill:none}
+.done-h h2{font-size:20px;font-weight:600}
+ol.next{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;color:var(--t-medium)}
+
+/* judging, picks.tsx:174-211 */
+.jt{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;background:var(--bg-nav);border-radius:var(--r-lg)}
+.jt a{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:var(--r-md);text-decoration:none;font-weight:600;color:var(--t-medium)}
+.jt a[aria-current=page]{background:#fff;color:var(--t-heavy);box-shadow:var(--sh-card)}
+.cnt{padding:0 8px;border-radius:999px;background:#fff;font-size:12px;line-height:20px}
+.jt a[aria-current=page] .cnt{background:var(--bg-hl)}
+.search{position:relative}
+.search svg.i{position:absolute;left:12px;top:12px;color:var(--t-light)}
+.search .in{padding-left:40px}
+.proj h3{font-size:18px;font-weight:600}
+.score{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.score button{min-height:44px;border:1px solid var(--b-control);border-radius:var(--r-md);background:#fff;font-weight:600;font-variant-numeric:tabular-nums}
+.score button.lo{background:var(--bg-hl);border-color:var(--bg-hl);color:var(--t-active)}
+.score button[aria-pressed=true]{background:var(--primary);border-color:var(--primary);color:#fff}
+.rank{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--b-subtle)}
+.rank:first-child{border-top:0}
+.rk{width:36px;height:36px;flex:none;border-radius:999px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.rank.below .rk{background:var(--bg-nav);color:var(--t-light)}
+.rank .tx{flex:1;min-width:0}
+.rank .tx b{display:block;font-weight:600;overflow-wrap:anywhere}
+.ibtns{display:flex;gap:4px}
+.ib{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--b-control);border-radius:var(--r-md);background:#fff}
+.ib:disabled{opacity:.35}
+.lockcard{align-items:flex-start}
+.lockic{width:48px;height:48px;border-radius:999px;background:var(--bg-nav);display:flex;align-items:center;justify-content:center;color:var(--t-active)}
+.lockic svg.i{width:24px;height:24px}
+.mock{font-size:13px;color:var(--t-light);border:1px dashed var(--b-control);border-radius:var(--r-lg);padding:10px 12px}
+.mock a{color:var(--t-link);font-weight:600}
+
+/* schedule, day-schedule.tsx:47-58 + :278 */
+.sch{display:flex;flex-direction:column;gap:10px}
+.ev{display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:stretch}
+.ev .tm{font-family:Pix32,monospace;font-size:12px;color:var(--t-medium);padding-top:12px;white-space:nowrap}
+.evb{border:2px solid;border-radius:var(--r-lg);padding:10px 12px;box-shadow:0 1px 2px rgba(11,43,74,.06);min-width:0}
+.evb b{display:block;font-family:Pix32,monospace;font-size:14px;letter-spacing:.02em}
+.evb span{display:block;font-size:13px;opacity:.85;overflow-wrap:anywhere}
+.evb.you-one{background:var(--one-bg);border-color:var(--one-b);color:var(--one-t)}
+.evb.you-grp{background:var(--grp-bg);border-color:var(--grp-b);color:var(--grp-t)}
+.evb.ws{background:var(--ws-bg);border-color:var(--ws-b);color:var(--ws-t)}
+.evb.pk{background:var(--pk-bg);border-color:var(--pk-b);color:var(--pk-t)}
+.evb.hk{background:#fff;border-color:var(--b-subtle);color:var(--t-light)}
+.you{display:inline-block;margin-left:6px;padding:0 6px;border-radius:var(--r-sm);background:rgba(255,255,255,.7);font-family:Figtree,sans-serif;font-size:11px;font-weight:700;letter-spacing:0;vertical-align:2px}
+.toggle{display:flex;align-items:center;gap:10px;min-height:44px;font-size:14px;font-weight:500}
+.toggle input{width:20px;height:20px;accent-color:var(--primary)}
+
+.fab{position:fixed;right:16px;bottom:calc(var(--tab-h) + 20px + env(safe-area-inset-bottom));z-index:29;width:56px;height:56px;border-radius:999px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(11,43,74,.3)}
+.fab svg.i{width:24px;height:24px}
+@media (min-width:768px){.fab{display:none}}
+.cam{position:relative;aspect-ratio:1/1;max-height:340px;width:100%;border-radius:var(--r-lg);background:#16324f;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.cam i{position:absolute;inset:18%;border:3px solid rgba(255,255,255,.85);border-radius:16px}
+.cam span{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#fff;font-size:14px}
+.qr{width:160px;height:160px;align-self:center;image-rendering:pixelated}
+.bay{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.bay div{min-height:52px;border-radius:var(--r-md);border:1.5px solid var(--b-default);background:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px 2px;color:var(--t-light);overflow-wrap:normal;hyphens:manual}
+.bay .scr{grid-column:2/5;background:var(--bg-inset);border-style:dashed;font-family:Pix32,monospace;font-size:12px}
+.bay .me{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 0 0 4px rgba(11,107,196,.2)}
+.bay .gap{border:0;background:none}
+.toast{position:fixed;left:50%;bottom:calc(var(--tab-h) + 24px + env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;background:var(--t-heavy);color:#fff;padding:10px 16px;border-radius:var(--r-lg);font-size:14px;z-index:60;transition:all .2s;pointer-events:none;width:max-content;max-width:calc(100vw - 32px)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+@media (min-width:768px){.toast{bottom:32px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="side" aria-label="Sponsor portal">
+    <div>
+      <a class="brand" href="#home"><img src="assets/horse.svg" alt="">Hack Western 13</a>
+      <div class="spon"><img src="assets/sunlife.png" alt="Sun Life"><span>Sponsor portal</span></div>
+      <div class="snav" id="snav"></div>
+    </div>
+    <p class="side-ft">Times are Eastern · Nov 20 to 22, 2026</p>
+  </nav>
+  <div class="main">
+    <header class="top">
+      <a class="top-logo" href="#home" aria-label="Sponsor portal home"><img src="assets/horse.svg" alt=""></a>
+      <span class="top-title" id="topTitle">Home</span>
+      <a class="helpbtn" href="#help" id="topHelp"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg>Help</a>
+    </header>
+    <main class="pane" id="pane"></main>
+    <nav class="tabs" id="tabs" aria-label="Sponsor portal"></nav>
+  </div>
+</div>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetH"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ===== icons (lucide paths, same set as src/components/live/icons.tsx) ===== */
+const P={
+home:'<path d="M3 10l9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+coffee:'<path d="M10 2v2M14 2v2M6 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/>',
+trophy:'<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.7V17c0 .6-.5 1-1 1.2C7.8 18.8 7 20.2 7 22M14 14.7V17c0 .6.5 1 1 1.2 1.2.6 2 2 2 3.8"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>',
+cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+help:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><path d="m4.9 4.9 4.3 4.3M14.8 14.8l4.3 4.3M14.8 9.2l4.3-4.3M4.9 19.1l4.3-4.3"/>',
+phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
+msg:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+up:'<path d="m18 15-6-6-6 6"/>',down:'<path d="m6 9 6 6 6-6"/>',x:'<path d="M18 6 6 18M6 6l12 12"/>',
+ext:'<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+send:'<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
+pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+scan:'<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/>',
+trash:'<path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'
+};
+const ic=(n,c="")=>`<svg class="i ${c}" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
+const CK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const plural=(n,w,p)=>`${n} ${n===1?w:(p||w+"s")}`;
+
+/* ===== mock data (fake) ===== */
+const DEADLINE="Fri Nov 20, 11:59 PM";
+const LEAD={name:"Daniel Wang",first:"Daniel",phone:"555-0101",tel:"5550101"};
+const PKG=180, DAY0=600, DAY1=1020, ROOM_MAX=6, SHORT_MAX=40;
+const REPS=[{id:"dana",name:"Dana W."},{id:"marcus",name:"Marcus O."},{id:"priya",name:"Priya S."},{id:"leo",name:"Leo T."}];
+/* the spec's worked example */
+let BLOCKS=[
+  {id:1,reps:["dana"],start:600,end:660,len:15,hpc:1},
+  {id:2,reps:["marcus"],start:600,end:660,len:30,hpc:1},
+  {id:3,reps:["priya","leo"],start:780,end:840,len:30,hpc:3}];
+let nextId=4, lastSettings={len:15,hpc:1};
+const HACKERS=[["Avery","K","Western University","Computer Science",3],["Noor","H","University of Waterloo","Statistics",2],["Mateo","R","McMaster University","Software Engineering",4],["Priya","S","University of Toronto","Math & Economics",3],["Jonah","W","Queen's University","Commerce",2],["Lin","Z","Western University","Software Engineering",1],["Kofi","A","York University","Information Technology",3],["Sofia","M","Toronto Metropolitan University","Computer Engineering",4],["Ravi","P","University of Ottawa","Computer Science",2],["Elodie","B","McGill University","Cognitive Science",3],["Theo","N","Western University","Ivey HBA",4],["Amara","O","University of Waterloo","Computer Science",3],["Haruto","T","University of Guelph","Bioinformatics",2],["Isla","F","Carleton University","Cybersecurity",3],["Diego","L","Western University","Electrical Engineering",2],["Mei","C","University of Toronto","Data Science",4],["Yusuf","E","Wilfrid Laurier University","Business Technology",3],["Clara","V","Queen's University","Computing",1],["Arjun","D","McMaster University","Computer Science",3],["Zoe","G","Western University","Media & Information",2]].map((r,i)=>({id:i,first:r[0],last:r[1],school:r[2],prog:r[3],year:r[4]}));
+const UI={judging:true,scanned:null,noCam:false,rep:"dana",short:new Set([0,1,3,6,9,11,15,18]),q:"",onlyShort:false,phone:"",phoneErr:false,sent:false,sentAt:"",
+  helpMsg:"",helpWhere:"",helpErr:false,helpSent:null,
+  proj:null,jq:"",jf:"all",jSent:false,r2:null,r2Sent:false,day:"sat",showHk:true};
+const PROJ=[
+  {id:"a",name:"Signbridge: real-time ASL captions for lecture halls and meetups",who:"Mira Patel, Owen Li",track:"Accessibility",score:9,short:true},
+  {id:"b",name:"Pocket Pharmacist",who:"Jae Kim, Sara Ortiz",track:"Health",score:8,short:true},
+  {id:"c",name:"Compost Cam",who:"Hana Sato",track:"General",score:6,short:false},
+  {id:"d",name:"Ledgerly",who:"Ade Okafor, Tom Rhee",track:"Finance",score:8,short:true},
+  {id:"e",name:"PolicyPal: plain-language insurance explainer",who:"Lea Moreau, Sunny Park, Ian Ross",track:"Finance",score:9,short:true},
+  {id:"f",name:"RentSplit",who:"Nadia Haddad",track:"General",score:null,short:false},
+  {id:"g",name:"Shift Swap",who:"Kai Ito, Ruth Bello",track:"General",score:7,short:true}];
+
+/* ===== counting (spec: Counting) ===== */
+const fmt=m=>{const h=Math.floor(m/60),mm=m%60;return `${h>12?h-12:h}:${String(mm).padStart(2,"0")}`};
+const fmtA=m=>{const h=Math.floor(m/60),mm=m%60,ap=h>=12?"PM":"AM";const hh=h>12?h-12:h;return mm?`${hh}:${String(mm).padStart(2,"0")} ${ap}`:`${hh} ${ap}`};
+const chats=b=>(b.end-b.start)/b.len, seats=b=>chats(b)*b.hpc;
+const fmtName=b=>b.hpc===1?`1-on-1 · ${b.len} min`:`Group of ${b.hpc} · ${b.len} min`;
+const repName=id=>REPS.find(r=>r.id===id)?.name||id;
+function hoursUsed(){const iv=BLOCKS.map(b=>[b.start,b.end]).sort((a,b)=>a[0]-b[0]);let t=0,cs=-1,ce=-1;for(const[s,e]of iv){if(s>ce){if(ce>cs)t+=ce-cs;cs=s;ce=e}else ce=Math.max(ce,e)}if(ce>cs)t+=ce-cs;return t}
+function unionRanges(){const iv=BLOCKS.map(b=>[b.start,b.end]).sort((a,b)=>a[0]-b[0]);const out=[];for(const[s,e]of iv){const l=out[out.length-1];if(l&&s<=l[1])l[1]=Math.max(l[1],e);else out.push([s,e])}return out}
+const totals=()=>({chats:BLOCKS.reduce((a,b)=>a+chats(b),0),seats:BLOCKS.reduce((a,b)=>a+seats(b),0),used:hoursUsed()});
+const hrs=m=>{const h=m/60;return Number.isInteger(h)?String(h):h.toFixed(1).replace(/\.0$/,"")};
+const overlaps=(rep,s,e,skip)=>BLOCKS.some(b=>b.id!==skip&&b.reps.includes(rep)&&s<b.end&&e>b.start);
+
+/* ===== shell ===== */
+const NAV=[["today","Today","home","#today"],["chats","Chats","coffee","#chats-1"],["schedule","Schedule","cal","#schedule"],["map","Map","pin","#map"]];
+let curSec="today";
+function shell(sec,title){
+  curSec=sec;
+  $("#topTitle").textContent=title;
+  const th=$("#topHelp");if(sec==="help")th.setAttribute("aria-current","page");else th.removeAttribute("aria-current");
+  $("#tabs").innerHTML=NAV.map(([k,l,i,h])=>`<a href="${h}"${k===sec?' aria-current="page"':""}>${ic(i)}${l}</a>`).join("");
+  $("#snav").innerHTML=NAV.map(([k,l,i,h])=>`<a class="navl" href="${h}"${k===sec?' aria-current="page"':""}>${ic(i)}${l}${k==="chats"&&!UI.sent?'<span class="badge" style="margin-left:auto" aria-label="plan due Friday">1</span>':""}</a>`).join("");
+}
+/* Help lives in one place: the top-right button on every page. */
+const helpBtn=()=>`<a class="helpbtn" href="#help"${curSec==="help"?' aria-current="page"':""}>${ic("help").replace(P.help,'<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>')}Help</a>`;
+const deskH=(t,display)=>`<div class="desk-h"><h1 class="${display?"display":"h1"}">${t}</h1>${helpBtn()}</div>`;
+const pageH=(t,lead,display)=>`${deskH(t,display)}${lead?`<p class="lead">${lead}</p>`:""}`;
+
+/* ===== TODAY ===== */
+function vHome(){
+  shell("today","Today");const t=totals(),J=UI.judging;
+  const chatLine=UI.sent?`${plural(t.chats,"chat")} on Saturday · invites go out after organizers assign rooms`:`Plan not submitted · ${plural(t.chats,"chat")} drafted`;
+  return `${pageH("Hi, Sun Life!","",true)}
+  <section class="card" aria-labelledby="nxH">
+    <div class="ck-h"><h2 id="nxH">Up next</h2><p class="small muted" style="font-weight:500">Thu Nov 19</p></div>
+    <ul class="ck">
+      ${UI.sent?`<li class="done"><span class="box on">${CK}</span><div><p class="t">Coffee chat plan submitted</p></div></li>`
+      :`<li class="cur"><span class="box"></span><div style="display:flex;flex-direction:column;gap:6px;min-width:0"><p class="t">Plan your coffee chats</p><p class="due">${ic("clock")}Submit by ${DEADLINE}</p><a class="btn btn-p btn-w" href="#chats-1" style="margin-top:6px">Continue setup</a></div></li>`}
+      <li class="later"><span class="box"></span><div><p class="t">Booth setup</p><p class="small">Fri Nov 20 · 5:00 PM · Rm 1235 (Sponsor Bay)</p></div></li>
+      <li class="later"><span class="box"></span><div><p class="t">Coffee chats</p><p class="small">Sat Nov 21 · 10:00 AM and 1:00 PM</p></div></li>
+      ${J?`<li class="later"><span class="box"></span><div><p class="t">Judging opens</p><p class="small">Sun Nov 22 · 9:00 AM</p></div></li>`:""}
+    </ul>
+  </section>
+  <div class="grid2">
+    <section class="card" aria-labelledby="bH">
+      <h2 class="card-t" id="bH">${ic("pin")}Your booth</h2>
+      <p>You're on the <b>right wall</b>, middle booth, between CSE and Scotiabank.</p>
+      <a class="btn btn-l" href="#map" style="align-self:flex-start;padding:0">Your booth on the map →</a>
+    </section>
+    <section class="card" aria-labelledby="ccH">
+      <h2 class="card-t" id="ccH">${ic("coffee")}Coffee chats</h2>
+      <p class="small">${chatLine}</p>
+      <a class="btn btn-o btn-w" href="${UI.sent?"#chats-done":"#chats-1"}">${UI.sent?"View your chats":"Open chats"}</a>
+    </section>
+    <section class="card" aria-labelledby="krH">
+      <h2 class="card-t" id="krH">${ic("home")}Key rooms</h2>
+      <div class="list small">
+        <div class="li"><div class="tx"><b>Sponsor lounge</b><span>All weekend</span></div><span class="num">Rm 2110</span></div>
+        <div class="li"><div class="tx"><b>Coffee chats</b><span>Organizers assign your room</span></div><span class="num">Rm 2241 to 2243</span></div>
+        <div class="li"><div class="tx"><b>Belongings overnight</b><span>Between days</span></div><span class="num">Rm 2244</span></div>
+      </div>
+    </section>
+    ${J?`<section class="card" aria-labelledby="jgH">
+      <h2 class="card-t" id="jgH">${ic("trophy")}Judging</h2>
+      <p class="small muted">Opens Sun Nov 22, 9:00 AM</p>
+      <a class="btn btn-o btn-w" href="#judging">How judging works</a>
+    </section>`:""}
+  </div>
+  <p class="mock">Mock only: ${J?`<a href="#today" data-nojudge>view as a sponsor without a prize track</a>`:`<a href="#today" data-nojudge>view as Sun Life (has a prize track)</a>`}</p>`;
+}
+
+/* ===== COFFEE CHATS ===== */
+const STEPS=["Calendar","Shortlist","Confirm"];
+function stepper(i){
+  const left=3-i;
+  return `<div class="stepper"><div class="ck-h" style="flex-wrap:wrap;row-gap:2px"><p class="step-k">Step ${i+1} of 3</p><p class="due">${ic("clock")}Submit by ${DEADLINE}</p></div><div class="seg" aria-hidden="true">${[0,1,2].map(k=>`<i class="${k<=i?"on":""}"></i>`).join("")}</div>
+  <nav class="lbls" aria-label="Setup steps">${STEPS.map((s,k)=>`<a href="#chats-${k+1}" class="${k<i?"done":""}"${k===i?' aria-current="step"':""}><span class="dot">${k<i?CK:k+1}</span>${s}</a>`).join("")}</nav></div>`;
+}
+const chatTabs=a=>`<nav class="jt" aria-label="Chats"><a href="${UI.sent?"#chats-done":"#chats-1"}"${a==="c"?' aria-current="page"':""}>Your chats</a><a href="#scan"${a==="s"?' aria-current="page"':""}>${ic("scan")}Scan</a></nav>`;
+const fab=()=>`<a class="fab" href="#scan" aria-label="Scan a hacker">${ic("scan")}</a>`;
+const chatsHead=()=>`${pageH("Coffee chats",`Plan when your reps chat on Saturday, then shortlist hackers. Nothing is sent until you confirm.`)}${chatTabs("c")}`;
+function foot(back,next,label,why){
+  return `<div class="foot">${back?`<a class="btn btn-o" href="${back}">Back</a>`:"<span></span>"}<div style="display:flex;flex-direction:column;gap:6px;align-items:stretch">${why?`<p class="err" role="alert">${why}</p>`:""}<a class="btn btn-p" href="${next}" ${why?'aria-disabled="true"':""} data-next>${label}</a></div></div>`;
+}
+
+function calHeader(){
+  const t=totals(),over=t.used>PKG,pct=Math.min(100,t.used/PKG*100);
+  return `<div class="meter"><div class="v"><b class="num">${hrs(t.used)} of 3 h used</b><span class="muted small">chatting hours</span></div>
+    <div class="bar ${over?"over":""}" role="progressbar" aria-valuemin="0" aria-valuemax="180" aria-valuenow="${t.used}" aria-label="Chatting hours used"><i style="width:${pct}%"></i></div>
+    ${over?`<p class="note warn">${ic("info")}<span>${hrs(t.used)} of 3 h used. You're ${t.used-PKG} min over your package. Trim a block, or organizers will follow up.</span></p>`:""}</div>
+  <div class="tots"><div class="tot"><b class="num">${t.chats}</b><span>chats</span></div><div class="tot"><b class="num">${t.seats}</b><span>hacker seats</span></div>
+  <div class="legend"><span><i class="sw one"></i>1-on-1</span><span><i class="sw grp"></i>Group</span></div></div>`;
+}
+function calGrid(){
+  const wide=window.innerWidth>=600, RH=wide?20:22, rows=(DAY1-DAY0)/15, H=rows*RH;
+  const reps=wide?REPS:REPS.filter(r=>r.id===UI.rep);
+  const cols=`52px 8px ${reps.map(()=>"minmax(0,1fr)").join(" ")}${wide?" 92px":""}`;
+  const y=m=>(m-DAY0)/15*RH;
+  let tl="";for(let m=DAY0;m<=DAY1;m+=30)tl+=`<span class="tl" style="top:${Math.max(0,Math.min(H-14,y(m)-6))}px">${fmtA(m).replace(" PM","p").replace(" AM","a")}</span>`;
+  const strip=unionRanges().map(([s,e])=>`<i style="top:${y(s)}px;height:${y(e)-y(s)}px"></i>`).join("");
+  const col=r=>{let c="";for(let k=0;k<rows;k++){const m=DAY0+k*15;c+=`<button type="button" class="cell${m%30===0?" half":""}" style="top:${k*RH}px;height:${RH}px" data-cell="${r.id}" data-m="${m}" aria-label="${r.name}, ${fmtA(m)}: add a chat"></button>`}
+    BLOCKS.filter(b=>b.reps.includes(r.id)).forEach(b=>{const n=chats(b),others=b.reps.filter(x=>x!==r.id).map(repName);let sl="";for(let j=1;j<n;j++)sl+=`<i class="sl" style="top:${j*b.len/15*RH}px"></i>`;
+      c+=`<button type="button" class="blk ${b.hpc===1?"one":"grp"}" style="top:${y(b.start)+1}px;height:${y(b.end)-y(b.start)-2}px" data-blk="${b.id}" aria-label="Edit block: ${fmtName(b)}, ${fmt(b.start)} to ${fmt(b.end)}">${sl}<span><b>${fmtName(b)}</b>${fmt(b.start)}–${fmt(b.end)} · ${plural(n,"chat")} · ${plural(seats(b),"hacker")}${others.length?`<br>with ${others.join(", ")}`:""}</span></button>`});
+    return `<div class="col" style="height:${H}px">${c}</div>`};
+  return `<div class="cal"><div class="cal-h" style="grid-template-columns:${cols}"><div></div><div></div>${reps.map(r=>`<div>${r.name}</div>`).join("")}${wide?`<div><button type="button" class="btn-l btn" data-addrep style="min-height:28px;padding:0">+ Add rep</button></div>`:""}</div>
+  <div class="cal-b" style="grid-template-columns:${cols}"><div class="tcol" style="height:${H}px">${tl}</div><div class="strip" title="Chatting hours">${strip}</div>${reps.map(col).join("")}${wide?`<div class="addcol"></div>`:""}</div></div>`;
+}
+function vCal(){
+  shell("chats","Coffee chats");
+  const t=totals();
+  return `${chatsHead()}${stepper(0)}
+  <section class="card" aria-labelledby="calH" style="gap:16px">
+    <h2 class="h1" id="calH" style="font-size:22px">When is each rep chatting?</h2>
+    <div id="calHead" style="display:flex;flex-direction:column;gap:14px">${calHeader()}</div>
+    <p class="day-k">Sat Nov 21 <span class="muted small" style="font-family:Figtree;font-weight:500;letter-spacing:0">· 10 AM to 5 PM, Toronto time</span></p>
+    <div class="repsw" role="group" aria-label="Show rep" id="repsw">${REPS.map(r=>`<button type="button" class="chip" aria-pressed="${r.id===UI.rep}" data-rep="${r.id}">${r.name}</button>`).join("")}<button type="button" class="chip chip-add" data-addrep>+ Add rep</button></div>
+    <div id="calGrid">${calGrid()}</div>
+    <p class="small muted" id="calTip">Tap an empty slot to add a chat. Tap a block to change it.</p>
+    <p class="note">${ic("info")}<span>We filled this in from your sponsor info. Change anything that's out of date.</span></p>
+  </section>
+  ${foot(null,"#chats-2","Next: Shortlist",t.chats?"":"Add at least one block to continue.")}`;
+}
+function rerenderCal(){if($("#calHead")){$("#calHead").innerHTML=calHeader();$("#calGrid").innerHTML=calGrid();
+  document.querySelectorAll("[data-rep]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.rep===UI.rep));
+  const n=$("[data-next]"),t=totals();if(n){if(t.chats)n.removeAttribute("aria-disabled");else n.setAttribute("aria-disabled","true")}}}
+
+/* block panel (spec: Block panel) */
+let edit=null;
+function openSheet(html){$("#sheet").innerHTML=`<div class="grab" aria-hidden="true"></div>${html}`;$("#scrim").classList.add("on");$("#sheet").classList.add("on");setTimeout(()=>$("#sheet").querySelector("h2")?.focus(),50)}
+function closeSheet(){$("#scrim").classList.remove("on");$("#sheet").classList.remove("on");edit=null}
+function panel(){
+  const b=edit,maxH=ROOM_MAX-b.reps.length,times=[];for(let m=DAY0;m<=DAY1;m+=15)times.push(m);
+  openSheet(`<h2 id="sheetH" tabindex="-1" style="font-size:20px;font-weight:600">Edit block</h2>
+  <div class="f"><label>Reps</label><div class="chips">${REPS.map(r=>`<button type="button" class="chip" aria-pressed="${b.reps.includes(r.id)}" data-prep="${r.id}">${r.name}</button>`).join("")}</div><span class="hint">Several reps sit together and run the same chats.</span></div>
+  <div class="f"><label>Chat length</label><div class="seg2">${[15,30].map(v=>`<button type="button" aria-pressed="${b.len===v}" data-plen="${v}">${v} min</button>`).join("")}</div></div>
+  <div class="f"><label>Hackers per chat</label><div class="seg2">${[1,2,3,4,5].filter(v=>v<=maxH).map(v=>`<button type="button" aria-pressed="${b.hpc===v}" data-phpc="${v}">${v===1?"1-on-1":v}</button>`).join("")}</div><span class="hint">A room holds ${ROOM_MAX} people, reps and hackers together.</span></div>
+  <div class="two"><div class="f"><label for="pS">Start</label><select class="in" id="pS">${times.slice(0,-1).map(m=>`<option value="${m}"${m===b.start?" selected":""}>${fmtA(m)}</option>`).join("")}</select></div>
+  <div class="f"><label for="pE">End</label><select class="in" id="pE">${times.slice(1).map(m=>`<option value="${m}"${m===b.end?" selected":""}>${fmtA(m)}</option>`).join("")}</select></div></div>
+  <p class="note" style="font-weight:600;color:var(--t-heavy)">${ic("coffee")}<span>${plural(chats(b),"chat")} · ${plural(seats(b),"hacker")}${b.len===30?" · 25 min chat + 5 min break":""}</span></p>
+  <div class="row"><button type="button" class="btn btn-o" data-pdel>${ic("trash")}Delete</button><button type="button" class="btn btn-p" data-pdone>Done</button></div>`);
+}
+function addRepSheet(){openSheet(`<h2 id="sheetH" tabindex="-1" style="font-size:20px;font-weight:600">Add a rep</h2>
+  <div class="f"><label for="rN">Name</label><input class="in" id="rN" placeholder="e.g. Sam R." autocomplete="off"></div>
+  <div class="f"><label for="rE">Email (optional)</label><input class="in" id="rE" type="email" placeholder="name@sunlife.ca"></div>
+  <p class="err" id="rErr" hidden>Add a name to continue.</p>
+  <div class="row"><button type="button" class="btn btn-o" data-close>Cancel</button><button type="button" class="btn btn-p" data-repadd>Add rep</button></div>`)}
+
+/* shortlist */
+function vShort(){
+  shell("chats","Coffee chats");
+  const t=totals(),n=UI.short.size,q=UI.q.toLowerCase();
+  const rows=HACKERS.filter(h=>(!q||`${h.first} ${h.last} ${h.school} ${h.prog}`.toLowerCase().includes(q))&&(!UI.onlyShort||UI.short.has(h.id)));
+  return `${chatsHead()}${stepper(1)}
+  <section class="card" aria-labelledby="slH" style="gap:16px">
+    <h2 class="h1" id="slH" style="font-size:22px">Shortlist</h2>
+    <p class="muted">Shortlist up to ${SHORT_MAX} hackers. Order doesn't matter. Optional: organizers fill open seats from hackers interested in Sun Life.</p>
+    <p><b class="num">${n} / ${SHORT_MAX}</b> shortlisted <span class="muted small">· ${t.seats} hacker seats offered</span></p>
+    ${n>t.seats?`<p class="note warn">${ic("info")}<span>You've shortlisted ${n} hackers but offered ${t.seats} seats. Not everyone will get a chat.</span></p>`:""}
+    <div class="search"><label class="sr" for="hq">Search hackers</label>${ic("search")}<input class="in" id="hq" type="search" placeholder="Search name, school or program" value="${esc(UI.q)}"></div>
+    <div class="chips" role="group" aria-label="Show"><button type="button" class="chip" data-only="0" aria-pressed="${!UI.onlyShort}">All</button><button type="button" class="chip" data-only="1" aria-pressed="${UI.onlyShort}">Shortlisted <span class="num">${n}</span></button></div>
+    <div class="list" id="hl">${rows.length?rows.map(h=>{const on=UI.short.has(h.id);return `<div class="li"><span class="av sm" aria-hidden="true">${h.first[0]}${h.last}</span><div class="tx"><b>${h.first} ${h.last}.</b><span>${h.school} · ${h.prog} · Year ${h.year}</span></div><button type="button" class="btn btn-o tog" aria-pressed="${on}" data-sh="${h.id}" aria-label="${on?"Remove":"Add"} ${h.first} ${h.last}.">${on?"Shortlisted":"+ Add"}</button></div>`}).join(""):`<p class="note">No hackers match. Clear the search.</p>`}</div>
+  </section>
+  ${foot("#chats-1","#chats-3","Next: Confirm",n>SHORT_MAX?`Shortlist is over ${SHORT_MAX}.`:"")}`;
+}
+
+/* confirm */
+function recap(editable){
+  const t=totals(),sh=[...UI.short].map(i=>HACKERS[i]);
+  const e=h=>editable?`<a class="btn btn-l" href="${h}">Edit</a>`:"";
+  return `<div class="rc">
+  <div><h3>Calendar · Sat Nov 21</h3>${e("#chats-1")}<div class="v">${BLOCKS.slice().sort((a,b)=>a.start-b.start).map(b=>`<p><b>${b.reps.map(repName).join(" + ")}</b> · ${fmt(b.start)}–${fmt(b.end)} · ${fmtName(b)}</p>`).join("")}</div></div>
+  <div><h3>Totals</h3><span></span><div class="v"><p class="num">${plural(t.chats,"chat")} · ${t.seats} hacker seats · ${hrs(t.used)} of 3 h used</p></div></div>
+  <div><h3>Shortlist</h3>${e("#chats-2")}<div class="v"><p>${UI.short.size} of ${SHORT_MAX} shortlisted <span class="muted small">· in no particular order</span></p>${sh.length?`<div class="stack">${sh.map(h=>`<span class="tag">${h.first} ${h.last}.</span>`).join("")}</div>`:`<p class="muted small">No one shortlisted. Organizers will fill your seats from interested hackers.</p>`}</div></div>
+  ${editable?"":`<div><h3>Your phone number</h3><span></span><div class="v"><p class="num">${esc(UI.phone)}</p></div></div>`}
+  </div>`;
+}
+function vConfirm(){
+  shell("chats","Coffee chats");
+  return `${chatsHead()}${stepper(2)}
+  <section class="card" aria-labelledby="cfH" style="gap:16px">
+    <h2 class="h1" id="cfH" style="font-size:22px">Review and confirm</h2>
+    ${recap(true)}
+    <div class="f" style="padding-top:14px;border-top:1px solid var(--b-subtle)"><label for="ph">Your phone number</label><span class="hint">So organizers can reach you on Saturday if a chat moves.</span>
+      <input class="in num" id="ph" type="tel" inputmode="tel" autocomplete="tel" placeholder="e.g. 519-555-0123" value="${esc(UI.phone)}" aria-invalid="${UI.phoneErr}" aria-describedby="phErr">
+      <p class="err" id="phErr" ${UI.phoneErr?"":"hidden"}>Enter a phone number with at least 7 digits.</p></div>
+    <p class="note">${ic("lock")}<span>Confirming locks your calendar and shortlist. Organizers then assign rooms and send invites to hackers. After that, changes go through ${LEAD.name}.</span></p>
+  </section>
+  <div class="foot"><a class="btn btn-o" href="#chats-2">Back</a><div style="display:flex;flex-direction:column;gap:6px"><p class="small muted">You can edit until ${DEADLINE}, unless you confirm first.</p><button type="button" class="btn btn-p" data-submit>Confirm and submit</button></div></div>`;
+}
+function vDone(){
+  shell("chats","Coffee chats");
+  return `${pageH("Coffee chats","Your plan is with Hack Western and locked.")}${chatTabs("c")}
+  <section class="card" style="gap:16px">
+    <div class="done-h"><span class="big-ck">${CK}</span><div><h2>Setup submitted</h2><p class="muted small">Sent ${esc(UI.sentAt||"Thu Nov 19, 3:42 PM")} · Locked</p></div></div>
+    <ol class="next"><li>Organizers assign rooms for your chats.</li><li>They send invites to hackers. Hackers never learn who shortlisted them.</li><li>At the event, scan hackers at your booth to offer them an open seat.</li><li>Your chats show up in <a href="#schedule">Schedule</a> once they're set.</li></ol>
+  </section>
+  <section class="card">${recap(false)}</section>
+  <p class="small">An unanswered offer expires 20 minutes before the chat.</p>
+  <p class="note">${ic("lock")}<span>Need a change? Use Help at the top of the page.</span></p>
+  <p class="mock">Mock only: <a href="#chats-1" data-reopen>reopen the draft</a></p>${fab()}`;
+}
+
+/* ===== JUDGING (sponsor-judging.ts copy) ===== */
+const jHead=()=>pageH("Judging","Look through the projects, score each one out of 10 and save the strongest to your shortlist. Then rank your shortlist and submit your top 5.");
+function vJudgeLocked(){
+  shell("today","Judging");
+  return `${jHead()}
+  <section class="card lockcard" style="gap:14px"><span class="lockic">${ic("lock")}</span>
+    <h2 style="font-size:20px;font-weight:600">Judging opens Sun Nov 22, 9:00 AM</h2>
+    <p class="muted">Projects appear here once hacking ends. Nothing to do before then.</p>
+    <ul class="ck" style="align-self:stretch">
+      <li><span class="dot">1</span><div><p class="t" style="font-size:16px">Score and shortlist</p><p class="small muted">Score each project out of 10 and save the strongest.</p></div></li>
+      <li><span class="dot">2</span><div><p class="t" style="font-size:16px">Send your shortlist</p><p class="small muted">We schedule each team to present in your room from 10:00.</p></div></li>
+      <li><span class="dot">3</span><div><p class="t" style="font-size:16px">Round 2: rank your top 5</p><p class="small muted">From the teams that presented. This decides your prize.</p></div></li>
+    </ul>
+  </section>
+  <p class="mock">Mock only: <a href="#judging-browse">preview judging as of Sun 9 AM</a></p>`;
+}
+const jTabs=a=>{const n=PROJ.filter(p=>p.short).length;return `<nav class="jt" aria-label="Judging steps"><a href="#judging-browse"${a==="b"?' aria-current="page"':""}>Browse projects <span class="cnt num">${PROJ.length}</span></a><a href="#judging-shortlist"${a==="s"?' aria-current="page"':""}>Your shortlist <span class="cnt num">${n}</span></a></nav>`};
+function vBrowse(){
+  shell("today","Judging");
+  const q=UI.jq.toLowerCase();
+  const rows=PROJ.filter(p=>(!q||`${p.name} ${p.who} ${p.track}`.toLowerCase().includes(q))&&(UI.jf==="all"||(UI.jf==="scored"&&p.score)||(UI.jf==="short"&&p.short)||(UI.jf==="un"&&!p.score)));
+  return `${jHead()}${jTabs("b")}
+  <div class="search"><label class="sr" for="jq">Search teams</label>${ic("search")}<input class="in" id="jq" type="search" placeholder="Search teams, members or tracks" value="${esc(UI.jq)}"></div>
+  <div class="chips" role="group" aria-label="Show">${[["all","All"],["scored","Scored"],["short","Shortlisted"],["un","Not reviewed"]].map(([k,l])=>`<button type="button" class="chip" data-jf="${k}" aria-pressed="${UI.jf===k}">${l}</button>`).join("")}</div>
+  <p class="small muted">${rows.length===PROJ.length?plural(PROJ.length,"project"):`${rows.length} of ${plural(PROJ.length,"project")}`}</p>
+  ${rows.map(p=>`<section class="card proj"><h3>${esc(p.name)}</h3><p class="small muted">${esc(p.who)}</p><div class="row" style="gap:8px"><span class="tag">${p.track}</span></div>
+    <div class="row"><a class="btn btn-o" href="#judging-browse">Devpost ${ic("ext")}</a><a class="btn btn-o" href="#judging-browse">GitHub ${ic("ext")}</a></div>
+    <div class="ck-h" style="font-weight:600"><span>Score <span class="num">${p.score?p.score+"/10":"–"}</span></span>${p.score?`<button type="button" class="btn btn-l" data-clr="${p.id}">Clear</button>`:""}</div>
+    <div class="score" role="group" aria-label="Score for ${esc(p.name)}">${[1,2,3,4,5,6,7,8,9,10].map(v=>`<button type="button" class="${p.score&&v<p.score?"lo":""}" aria-pressed="${p.score===v}" data-sc="${p.id}" data-v="${v}">${v}</button>`).join("")}</div>
+    <button type="button" class="btn ${p.short?"btn-o tog":"btn-p"} btn-w" aria-pressed="${p.short}" data-jsh="${p.id}">${p.short?"Shortlisted":"Save to shortlist"}</button></section>`).join("")||`<p class="note">No teams match "${esc(UI.jq)}".</p>`}`;
+}
+function vJShort(){
+  shell("today","Judging");
+  const s=PROJ.filter(p=>p.short).sort((a,b)=>(b.score||0)-(a.score||0));
+  return `${jHead()}${jTabs("s")}
+  <section class="card"><h2 style="font-size:20px;font-weight:600">Your shortlist</h2>
+  <p class="muted small">When you're happy with it, send it to us. We'll schedule each team to present in your room from 10:00.</p>
+  <div class="list">${s.map(p=>`<div class="li"><div class="tx"><b>${esc(p.name)}</b><span>${p.score?p.score+"/10":"No score"} · ${p.track}</span></div><button type="button" class="ib" data-jsh="${p.id}" aria-label="Remove ${esc(p.name)}">${ic("x")}</button></div>`).join("")||`<p class="note">Your shortlist is empty. Save projects to it while you browse.</p>`}</div>
+  ${UI.jSent?`<p class="note">${CK.replace("<svg",'<svg class="i" style="stroke:var(--live);stroke-width:2.5"')}<span><b>Sent 9:42 AM · ${plural(s.length,"team")}</b><br>Round 2 opens here after presentations: you'll rank your top teams from the ones that presented.</span></p><p class="mock">Mock only: <a href="#judging-r2">preview round 2</a></p>`
+  :`<button type="button" class="btn btn-p btn-w" data-jsend ${s.length?"":'aria-disabled="true"'}>${ic("send")}Send shortlist</button>`}
+  </section>`;
+}
+function vR2(){
+  shell("today","Judging");
+  if(!UI.r2)UI.r2=PROJ.filter(p=>p.short).sort((a,b)=>(b.score||0)-(a.score||0)).map(p=>p.id);
+  const L=UI.r2.map(id=>PROJ.find(p=>p.id===id));
+  return `${pageH("Judging","Round 2. Rank the teams that presented to you. The first 5 are the teams you submit.")}
+  <section class="card"><div class="ck-h"><h2 style="font-size:20px">Rank your top 5</h2><p class="small">${L.length} presented</p></div>
+  <p class="muted small">Put your favourite first. Use the arrow buttons to reorder.</p>
+  <div>${L.map((p,i)=>`<div class="rank ${i>=5?"below":""}"><span class="rk">#${i+1}</span><div class="tx"><b>${esc(p.name)}</b><span class="small muted">${p.score?p.score+"/10":"No score"}${i>=5?" · Not submitted":""}</span></div><div class="ibtns"><button type="button" class="ib" data-mv="${i}" data-d="-1" ${i===0?"disabled":""} aria-label="Move up">${ic("up")}</button><button type="button" class="ib" data-mv="${i}" data-d="1" ${i===L.length-1?"disabled":""} aria-label="Move down">${ic("down")}</button></div></div>`).join("")}</div>
+  ${UI.r2Sent?`<p class="note">${ic("info")}<span><b>Submitted.</b> Hack Western uses this ranking for your prize. You can change it and resubmit while judging is open.</span></p>`:`<button type="button" class="btn btn-p btn-w" data-r2>Submit top 5</button>`}
+  </section>`;
+}
+
+/* ===== SCAN (inside Chats) ===== */
+function qrSvg(){let r="",seed=7;const n=25,c=6;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
+  const finder=(x,y)=>`<rect x="${x*c}" y="${y*c}" width="${7*c}" height="${7*c}" fill="#0b2b4a"/><rect x="${(x+1)*c}" y="${(y+1)*c}" width="${5*c}" height="${5*c}" fill="#fff"/><rect x="${(x+2)*c}" y="${(y+2)*c}" width="${3*c}" height="${3*c}" fill="#0b2b4a"/>`;
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){const inF=(x<8&&y<8)||(x>n-9&&y<8)||(x<8&&y>n-9);if(!inF&&rnd()>.52)r+=`<rect x="${x*c}" y="${y*c}" width="${c}" height="${c}" fill="#0b2b4a"/>`}
+  return `<svg class="qr" viewBox="0 0 ${n*c} ${n*c}" role="img" aria-label="QR code for the coffee chat link (mock)"><rect width="100%" height="100%" fill="#fff"/>${r}${finder(0,0)}${finder(n-7,0)}${finder(0,n-7)}</svg>`}
+function vScan(){
+  shell("chats","Coffee chats");
+  const s=UI.scanned;
+  return `${pageH("Coffee chats","")}${chatTabs("s")}
+  <p class="small">Scanning offers a hacker an open seat in your planned chats.</p>
+  ${s?`<section class="card" style="gap:14px" aria-live="polite">
+    <div class="done-h"><span class="big-ck">${CK}</span><div><h2>Offer sent to Avery K.</h2><p class="muted small">Western University · Computer Science</p></div></div>
+    <div class="note" style="flex-direction:column;gap:2px;color:var(--t-heavy)"><span class="small muted">What they were offered</span><b>Sat 10:15 AM · 1-on-1 with Dana W. · 15 min</b></div>
+    <p class="small">An unanswered offer expires 20 minutes before the chat.</p>
+    <button type="button" class="btn btn-p btn-w" data-rescan>${ic("scan")}Scan the next hacker</button></section>`
+  :UI.noCam?`<section class="card" style="gap:14px">
+    <h2 style="font-size:18px;font-weight:600">No camera? Let the hacker scan you</h2>
+    <p class="small muted">Show them this code, or have them open the link on their phone.</p>
+    ${qrSvg()}
+    <p style="text-align:center"><b class="num">hackwestern.com/c/sunlife-4821</b></p>
+    <button type="button" class="btn btn-o btn-w" data-cam>Try the camera again</button></section>`
+  :`<section class="card" style="gap:14px">
+    <div class="cam"><i></i><span>Point at a hacker's pass</span></div>
+    <button type="button" class="btn btn-p btn-w" data-doscan>Simulate a scan (mock)</button>
+    <button type="button" class="btn btn-l" data-nocam style="align-self:center">Camera not working?</button></section>`}`;
+}
+
+/* ===== MAP: venue + sponsor bay + room lookup ===== */
+const ROOMS=[["Rm 1235 (Sponsor Bay)","Booths","Floor 1"],["Rm 2110","Sponsor lounge","Floor 2"],["Rm 2244","Belongings overnight","Floor 2"],["Rm 2241 to 2243","Coffee chats","Floor 2"],["Rm 1348 to 1358","Coffee chats","Floor 1"],["Rm 1110 (Grand Hall)","Registration, meals","Floor 1"],["SM Atrium","Opening and closing","Floor 1"]];
+function vMap(){
+  shell("map","Map");
+  const q=(UI.rq||"").toLowerCase(),rows=ROOMS.filter(r=>!q||r.join(" ").toLowerCase().includes(q));
+  const cell=(n,cls="")=>`<div class="${cls}">${n}</div>`;
+  const bay=[cell("","gap"),cell("Projector screen","scr"),cell("","gap"),
+    cell("","gap"),cell("Accen&shy;ture"),cell("Canada Life"),cell("Manulife"),cell("","gap"),
+    cell("QNX"),cell("","gap"),cell("","gap"),cell("","gap"),cell("CSE"),
+    cell("Tiny&shy;Fish"),cell("","gap"),cell("","gap"),cell("","gap"),cell("Sun Life · you","me"),
+    cell("Star&shy;Tech"),cell("","gap"),cell("","gap"),cell("","gap"),cell("Scotia&shy;bank"),
+    cell("","gap"),cell("Com&shy;mure"),cell("","gap"),cell("","gap"),cell("","gap")].join("");
+  return `${pageH("Map","Your booth, the Sponsor Bay and every room you'll use.")}
+  <section class="card" aria-labelledby="sbH" style="gap:14px">
+    <h2 class="card-t" id="sbH">${ic("pin")}Rm 1235 (Sponsor Bay) · Floor 1</h2>
+    <p><b>You're on the right wall, middle booth</b>, between CSE and Scotiabank.</p>
+    <div class="bay" role="img" aria-label="Sponsor Bay layout. Sun Life is on the right wall, middle booth, between CSE and Scotiabank.">${bay}</div>
+  </section>
+  <section class="card" aria-labelledby="rlH" style="gap:12px">
+    <h2 class="card-t" id="rlH">${ic("search")}Find a room</h2>
+    <div class="search"><label class="sr" for="rq">Search rooms</label>${ic("search")}<input class="in" id="rq" type="search" placeholder="Room number or what it's for" value="${esc(UI.rq||"")}"></div>
+    <div class="list">${rows.map(r=>`<div class="li"><div class="tx"><b>${r[0]}</b><span>${r[1]}</span></div><span class="tag">${r[2]}</span></div>`).join("")||`<p class="note">No rooms match.</p>`}</div>
+  </section>`;
+}
+
+/* ===== SCHEDULE: yours first, then the hackathon ===== */
+const DAYS={fri:"Friday, Nov 20",sat:"Saturday, Nov 21",sun:"Sunday, Nov 22"};
+const EV={
+fri:[["5:00 PM","Booth setup","Rm 1235 (Sponsor Bay)","pk",1],["5:00 PM","Sponsor workshop: portal and coffee chats","Rm 2110","ws",1],["5:00 PM","Registration","Rm 1110 (Grand Hall)","hk",0],["7:30 PM","Opening ceremony","SM Atrium","hk",0],["9:00 PM","Hacking begins","","hk",0]],
+sat:[["9:00 AM","Booth hours, until 5:00 PM","Rm 1235 (Sponsor Bay)","pk",1],["10:00 AM","Coffee chats: Dana W.","1-on-1 · 15 min · 4 chats","you-one",1],["10:00 AM","Coffee chats: Marcus O.","1-on-1 · 30 min · 2 chats","you-one",1],["1:00 PM","Coffee chats: Priya S. + Leo T.","Group of 3 · 30 min · 2 chats","you-grp",1],["12:00 PM","Lunch","Rm 1110 (Grand Hall)","hk",0],["6:00 PM","Dinner","Rm 1110 (Grand Hall)","hk",0]],
+sun:[["9:00 AM","Judging opens","Score and shortlist projects","ws",1],["10:00 AM","Shortlist presentations","Your room, assigned by organizers","pk",1],["9:00 AM","Hacking ends","","hk",0],["2:00 PM","Closing ceremony","SM Atrium","hk",0]]};
+function vSched(){
+  shell("schedule","Schedule");
+  const all=EV[UI.day].filter(e=>UI.judging||!/Judging|Shortlist present/.test(e[1]));
+  const list=a=>`<div class="sch">${a.map(e=>`<div class="ev"><span class="tm">${e[0]}</span><div class="evb ${e[3]}"><b>${esc(e[1])}</b>${e[2]?`<span>${esc(e[2])}</span>`:""}</div></div>`).join("")||`<p class="note">Nothing scheduled for you this day.</p>`}</div>`;
+  return `${pageH("Your schedule","Times are Eastern. Coffee chat rooms appear once organizers assign them.")}
+  <div class="chips" role="group" aria-label="Pick a day">${Object.keys(DAYS).map(k=>`<button type="button" class="chip" data-day="${k}" aria-pressed="${UI.day===k}">${DAYS[k].split(",")[0].slice(0,3)} ${DAYS[k].split(" ").pop()}</button>`).join("")}</div>
+  <h2 class="day-k" style="font-size:20px">${DAYS[UI.day]}</h2>
+  <div class="grid2" style="align-items:start">
+    <section class="card" style="gap:12px" aria-labelledby="yH"><h3 id="yH" class="card-t">Sun Life</h3>${list(all.filter(e=>e[4]))}</section>
+    <section class="card" style="gap:12px" aria-labelledby="hH"><h3 id="hH" class="card-t muted">Hackathon</h3>${list(all.filter(e=>!e[4]))}</section>
+  </div>`;
+}
+
+/* ===== HELP ===== */
+function vHelp(){
+  shell("help","Help");
+  if(UI.helpSent)return `${pageH("Help","")}
+  <section class="card" style="gap:16px" aria-live="polite"><div class="done-h"><span class="big-ck">${CK}</span><div><h2>The sponsor team has your message</h2><p class="muted small">Posted to their Slack channel just now</p></div></div>
+  <p>Someone from the sponsor team will call you back shortly. If it's urgent, call ${LEAD.first} directly.</p>
+  <div class="note" style="flex-direction:column;gap:4px"><span><b>You said:</b> ${esc(UI.helpSent.msg)}</span><span><b>Where:</b> ${esc(UI.helpSent.where)}</span></div>
+  <div class="row"><a class="btn btn-p" href="tel:${LEAD.tel}">${ic("phone")}Call ${LEAD.first}</a><button type="button" class="btn btn-o" data-again>Send another</button></div></section>`;
+  return `${pageH("Help","Call your contact, or send a note to the whole sponsor team.")}
+  <section class="card" aria-labelledby="ycH"><h2 class="card-t" id="ycH">${ic("phone")}Your contact: ${LEAD.name}</h2>
+    <div class="who"><span class="av" aria-hidden="true">DW</span><div><b>${LEAD.name}</b><span class="muted small">Hack Western sponsor lead · <span class="num">${LEAD.phone}</span></span></div></div>
+    <div class="row"><a class="btn btn-p" href="tel:${LEAD.tel}">${ic("phone")}Call</a><a class="btn btn-o" href="sms:${LEAD.tel}">${ic("msg")}Text</a></div></section>
+  <section class="card" aria-labelledby="stH" style="gap:16px"><h2 class="card-t" id="stH">${ic("send")}Send to the sponsor team</h2>
+    <p class="small muted">Goes to the sponsor team's Slack. Whoever is free calls you back.</p>
+    <div class="f"><label for="hm">Message</label><textarea class="in" id="hm" placeholder="e.g. We need 2 more chairs at the booth" aria-invalid="${UI.helpErr&&!UI.helpMsg.trim()}">${esc(UI.helpMsg)}</textarea></div>
+    <div class="f"><label for="hw">Where you are</label><input class="in" id="hw" placeholder="e.g. Sponsor Bay, booth 4" value="${esc(UI.helpWhere)}" aria-invalid="${UI.helpErr&&!UI.helpWhere.trim()}"></div>
+    ${UI.helpErr?`<p class="err" role="alert">Add a message and where you are so the team can find you.</p>`:""}
+    <button type="button" class="btn btn-p btn-w" data-help>${ic("send")}Send to the sponsor team</button></section>`;
+}
+
+/* ===== router ===== */
+const ROUTES={today:vHome,home:vHome,scan:vScan,map:vMap,"chats-1":vCal,"chats-2":vShort,"chats-3":vConfirm,"chats-done":vDone,judging:vJudgeLocked,"judging-browse":vBrowse,"judging-shortlist":vJShort,"judging-r2":vR2,schedule:vSched,help:vHelp};
+function render(keepScroll){
+  let r=location.hash.slice(1)||"today";
+  if(UI.sent&&/^chats-[123]$/.test(r)){r="chats-done";history.replaceState(null,"","#chats-done")}
+  const y=window.scrollY;
+  $("#pane").innerHTML=(ROUTES[r]||vHome)();
+  if(keepScroll)window.scrollTo(0,y);
+}
+window.addEventListener("hashchange",()=>{closeSheet();render();window.scrollTo(0,0)});
+let lastW=window.innerWidth;window.addEventListener("resize",()=>{if((lastW<600)!==(window.innerWidth<600)){lastW=window.innerWidth;rerenderCal()}});
+let tt;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),2600)}
+
+document.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.id==="hq"){UI.q=t.value;render(true);const n=$("#hq");n.focus();n.setSelectionRange(n.value.length,n.value.length)}
+  if(t.id==="jq"){UI.jq=t.value;render(true);const n=$("#jq");n.focus();n.setSelectionRange(n.value.length,n.value.length)}
+  if(t.id==="rq"){UI.rq=t.value;render(true);const n=$("#rq");n.focus();n.setSelectionRange(n.value.length,n.value.length)}
+  if(t.id==="ph")UI.phone=t.value;
+  if(t.id==="hm")UI.helpMsg=t.value;
+  if(t.id==="hw")UI.helpWhere=t.value;
+});
+document.addEventListener("change",e=>{
+  const t=e.target;
+  if((t.id==="pS"||t.id==="pE")&&edit){let s=+$("#pS").value,en=+$("#pE").value;if(en<=s)en=s+edit.len;
+    en=s+Math.max(1,Math.round((en-s)/edit.len))*edit.len;if(en>DAY1)en=DAY1-((DAY1-s)%edit.len);
+    if(edit.reps.some(r=>overlaps(r,s,en,edit.id))){toast(`${repName(edit.reps.find(r=>overlaps(r,s,en,edit.id)))} already has chats then.`);panel();return}
+    edit.start=s;edit.end=en;panel();rerenderCal()}
+  if(t.matches("[data-hk]")){UI.showHk=t.checked;render(true)}
+});
+document.addEventListener("click",e=>{
+  const t=e.target.closest("button,a");if(!t)return;const d=t.dataset;
+  if(t.matches("[data-bell]")){const p=t.nextElementSibling||t.parentElement.querySelector("[data-pop]");const on=!p.classList.contains("on");document.querySelectorAll("[data-pop]").forEach(x=>x.classList.remove("on"));p.classList.toggle("on",on);t.setAttribute("aria-expanded",on);return}
+  if(t.getAttribute("aria-disabled")==="true"){e.preventDefault();return}
+  if(d.rep){UI.rep=d.rep;rerenderCal();return}
+  if(d.cell){const m=+d.m,rep=d.cell,len=lastSettings.len,en=Math.min(DAY1,m+len);
+    if(overlaps(rep,m,en)){toast(`${repName(rep)} already has chats then.`);return}
+    const b={id:nextId++,reps:[rep],start:m,end:en,len:en-m===30?30:15,hpc:lastSettings.hpc};BLOCKS.push(b);rerenderCal();toast(`Added ${fmtName(b)} at ${fmt(m)}`);return}
+  if(d.blk){edit=BLOCKS.find(b=>b.id===+d.blk);panel();return}
+  if(d.prep&&edit){const r=d.prep,has=edit.reps.includes(r);
+    if(has&&edit.reps.length===1){toast("A block needs at least one rep.");return}
+    if(!has&&overlaps(r,edit.start,edit.end,edit.id)){toast(`${repName(r)} already has chats then.`);return}
+    edit.reps=has?edit.reps.filter(x=>x!==r):[...edit.reps,r];edit.hpc=Math.min(edit.hpc,ROOM_MAX-edit.reps.length);panel();rerenderCal();return}
+  if(d.plen&&edit){const v=+d.plen;if(v===edit.len)return;
+    if(v===30&&((edit.end-edit.start)/15)%2){const can=edit.end+15<=DAY1&&!edit.reps.some(r=>overlaps(r,edit.end,edit.end+15,edit.id));
+      if(can)edit.end+=15;else{edit.end-=15;if(edit.end-edit.start<30)edit.end=edit.start+30;toast(`Shortened to ${fmt(edit.start)}–${fmt(edit.end)} to fit 30-minute chats.`)}}
+    edit.len=v;lastSettings.len=v;panel();rerenderCal();return}
+  if(d.phpc&&edit){edit.hpc=+d.phpc;lastSettings.hpc=edit.hpc;panel();rerenderCal();return}
+  if(t.matches("[data-pdel]")&&edit){const gone=edit;BLOCKS=BLOCKS.filter(b=>b!==gone);closeSheet();rerenderCal();toast("Block deleted");return}
+  if(t.matches("[data-pdone],[data-close]")){closeSheet();return}
+  if(t.matches("[data-addrep]")){addRepSheet();return}
+  if(t.matches("[data-repadd]")){const n=$("#rN").value.trim();if(!n){$("#rErr").hidden=false;$("#rN").setAttribute("aria-invalid","true");return}
+    const id="r"+Date.now();REPS.push({id,name:n});UI.rep=id;closeSheet();render(true);toast(`${n} added. Tap a slot to plan their chats.`);return}
+  if(d.only!==undefined){UI.onlyShort=d.only==="1";render(true);return}
+  if(d.sh!==undefined){const i=+d.sh;UI.short.has(i)?UI.short.delete(i):UI.short.add(i);render(true);return}
+  if(t.matches("[data-submit]")){if(UI.phone.replace(/\D/g,"").length<7){UI.phoneErr=true;render(true);$("#ph").focus();return}
+    UI.phoneErr=false;UI.sent=true;UI.sentAt="Thu Nov 19, 3:42 PM";location.hash="chats-done";return}
+  if(t.matches("[data-reopen]")){UI.sent=false;return}
+  if(d.jf){UI.jf=d.jf;render(true);return}
+  if(d.sc){PROJ.find(p=>p.id===d.sc).score=+d.v;render(true);return}
+  if(d.clr){PROJ.find(p=>p.id===d.clr).score=null;render(true);return}
+  if(d.jsh){const p=PROJ.find(p=>p.id===d.jsh);p.short=!p.short;UI.r2=null;render(true);return}
+  if(t.matches("[data-jsend]")){UI.jSent=true;render(true);toast("Shortlist sent to Hack Western");return}
+  if(d.mv!==undefined){const i=+d.mv,j=i+ +d.d,a=UI.r2;[a[i],a[j]]=[a[j],a[i]];UI.r2Sent=false;render(true);return}
+  if(t.matches("[data-r2]")){UI.r2Sent=true;render(true);return}
+  if(d.day){UI.day=d.day;render(true);return}
+  if(t.matches("[data-nojudge]")){e.preventDefault();UI.judging=!UI.judging;render(true);return}
+  if(t.matches("[data-doscan]")){UI.scanned=true;render(true);return}
+  if(t.matches("[data-rescan]")){UI.scanned=null;render(true);return}
+  if(t.matches("[data-nocam]")){UI.noCam=true;render(true);return}
+  if(t.matches("[data-cam]")){UI.noCam=false;render(true);return}
+  if(t.matches("[data-help]")){if(!UI.helpMsg.trim()||!UI.helpWhere.trim()){UI.helpErr=true;render(true);return}
+    UI.helpSent={msg:UI.helpMsg,where:UI.helpWhere};UI.helpErr=false;UI.helpMsg="";UI.helpWhere="";render();window.scrollTo(0,0);return}
+  if(t.matches("[data-again]")){UI.helpSent=null;render();return}
+});
+$("#scrim").addEventListener("click",closeSheet);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet()});
+document.addEventListener("click",e=>{if(!e.target.closest("[data-bell],[data-pop]"))document.querySelectorAll("[data-pop]").forEach(x=>x.classList.remove("on"))},true);
+render();
+</script>
+</body>
+</html>

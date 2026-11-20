@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#dbe7f5">
+<title>Judging · Organizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* tokens copied from mocks/organizer-coffee-v8 (hacker-v1 / src/lib/tokens.ts dashboardColors) */
+  --t-heavy:#0b2b4a;--t-medium:#1c3550;--t-light:#516476;--t-ph:rgba(81,100,118,.7);--t-active:#08559c;--t-warn:#8a4300;--t-link:#0b6bc4;
+  --bg-page:#f3f7fc;--bg-surface:#fff;--bg-nav:#dbe7f5;--bg-navSel:#b9d3f0;--bg-inset:#edf3fa;--bg-hl:#e1effb;--bg-current:#e4eefb;
+  --primary:#0b6bc4;
+  --b-default:#cdddeb;--b-subtle:#e0eaf3;--b-card:#d6e3ef;--b-control:#b9cbe0;
+  --live:#16803c;--badge:#a34a00;
+  --r-sm:4px;--r-md:6px;--r-lg:8px;--r-2xl:12px;
+  --sh-card:0 1px 2px 0 rgba(11,43,74,.06),0 1px 4px 0 rgba(11,43,74,.05);
+  --sh-btn:0 2px 4px 0 rgba(11,43,74,.2);
+  --one-bg:#bfdbfe;--one-b:#93c5fd;--one-t:#1e3a8a;
+  --warn-bg:#fff4e5;--live-bg:#e3f4e8;--crown:#b7791f;
+  --hatch:repeating-linear-gradient(135deg,#dfe7f0 0 3px,#f5f8fb 3px 8px);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg-page);color:var(--t-heavy);font-family:Figtree,system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+h1,h2,h3,p{margin:0}
+ul,ol{list-style:none;margin:0;padding:0}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.muted{color:var(--t-light)}
+.num{font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* page */
+.wrap{max-width:1440px;margin:0 auto;padding:20px 16px 140px;display:flex;flex-direction:column;gap:16px}
+.hd{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px}
+.hd h1{font-size:28px;font-weight:700;line-height:1.2}
+.hd p{font-size:14px;color:var(--t-light)}
+.hd-act{display:flex;gap:8px;align-items:center}
+.layout{display:flex;flex-direction:column;gap:16px}
+.col-l{display:flex;flex-direction:column;gap:16px;min-width:0}
+.layout.schfirst #roomsCard{order:-1} /* variant B: on phones the schedule comes first */
+@media (min-width:1100px){
+  .wrap{padding:32px 48px 120px;gap:24px}
+  .hd h1{font-size:32px}
+  .layout{display:grid;grid-template-columns:400px minmax(0,1fr);gap:24px;align-items:start}
+  .layout.schfirst #roomsCard{order:0}
+  .col-l{gap:24px}
+}
+
+/* mock-only controls */
+.mock{border:1.5px dashed var(--b-control);border-radius:var(--r-lg);padding:10px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;background:#fbfdff;font-size:14px}
+.mock-tag{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--badge);background:var(--warn-bg);border-radius:var(--r-sm);padding:2px 8px}
+.mock-g{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mock-g>span{color:var(--t-light);font-weight:500}
+
+/* cards */
+.card{background:#fff;border-radius:var(--r-lg);box-shadow:var(--sh-card);padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+@media (min-width:768px){.card{padding:24px}}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.card-h h2{font-size:20px;font-weight:700}
+.card-h span{font-size:14px;color:var(--t-light)}
+.sub-h{font-size:15px;font-weight:700;margin-top:8px}
+.sub-n{font-size:14px;color:var(--t-light)}
+
+/* buttons, chips */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:var(--r-lg);border:1px solid transparent;font-weight:500;font-size:16px;text-decoration:none;white-space:nowrap;cursor:pointer;background:none;transition:background .15s}
+.btn-p{background:var(--primary);color:#fff;box-shadow:var(--sh-btn)}
+.btn-p:hover{background:var(--t-active)}
+.btn-o{background:#fff;border-color:var(--b-control);color:var(--t-heavy)}
+.btn-o:hover{background:var(--bg-hl)}
+.btn-l{color:var(--t-link);font-weight:600;padding:0 10px;font-size:14px}
+.btn-l:hover{background:var(--bg-hl)}
+.btn-s{min-height:36px;padding:0 12px;font-size:14px}
+@media (pointer:coarse){.btn-s{min-height:44px}}
+.btn[aria-pressed=true]{background:var(--bg-navSel);border-color:var(--primary);color:var(--t-active);font-weight:600}
+.help-btn{padding:0 14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:var(--r-lg);background:var(--bg-nav);color:var(--t-heavy);font-size:14px;font-weight:500;white-space:nowrap}
+
+/* view toggle (Calendar | Schedule) */
+.seg{display:inline-flex;padding:3px;border-radius:var(--r-lg);background:var(--bg-inset);gap:2px}
+.seg button{min-height:38px;padding:0 14px;border:0;border-radius:var(--r-md);background:none;font-weight:600;font-size:14px;color:var(--t-medium);cursor:pointer}
+@media (pointer:coarse){.seg button{min-height:44px}}
+.seg button[aria-selected=true]{background:#fff;color:var(--t-heavy);box-shadow:var(--sh-card)}
+
+/* logo placeholder + name in text */
+.spn{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.spn b{font-weight:600;overflow-wrap:anywhere;min-width:0}
+.lgp{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:22px;padding:0 4px;border-radius:var(--r-sm);background:var(--bg-inset);border:1px dashed var(--b-control);color:var(--t-light);font-size:10px;font-weight:800;letter-spacing:.04em;line-height:1;flex:none}
+
+/* sponsors band: [chevron + name / status / facts] [Contact]. The action column is fixed: it never wraps. */
+.sp>li{border-top:1px solid var(--b-subtle)}
+.sp>li:first-child{border-top:0}
+.sp-row{display:grid;grid-template-columns:minmax(0,1fr) 92px;align-items:center;gap:8px;min-height:64px;padding:8px 0}
+.sp-row .act{display:flex;justify-content:flex-end}
+.sp-row .act .btn{width:92px}
+.sp-name{min-width:0;display:grid;grid-template-columns:16px minmax(0,1fr);align-items:start;column-gap:8px;min-height:44px;padding:0;border:0;background:none;text-align:left;cursor:pointer}
+.sp-name>svg.i{width:16px;height:16px;color:var(--t-light);transition:transform .15s;margin-top:4px}
+.sp-name[aria-expanded=true]>svg.i{transform:rotate(90deg)}
+.sp-id{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
+.sp-meta{font-size:14px;color:var(--t-medium);line-height:1.4}
+.sp-meta .dot{color:var(--b-control);padding:0 2px}
+.sp-meta .mi{white-space:nowrap}
+.st{display:inline-flex;align-items:center;min-height:24px;padding:2px 8px;border-radius:var(--r-md);font-size:13px;font-weight:600;line-height:1.3}
+.st-not{background:var(--warn-bg);color:var(--t-warn)}
+.st-need{background:#fdf0d5;color:#7a4b00}
+.st-room{background:var(--bg-inset);color:var(--t-medium)}
+.st-sch{background:var(--bg-nav);color:var(--t-active)}
+.st-judge{background:var(--one-bg);color:var(--one-t)}
+.st-top{background:var(--live-bg);color:var(--live)}
+.flags{display:flex;flex-wrap:wrap;gap:6px}
+.flag{display:inline-flex;align-items:center;gap:4px;min-height:24px;padding:2px 8px;border-radius:var(--r-md);font-size:13px;font-weight:600;line-height:1.3;color:var(--t-warn);background:#fff;border:1px solid #f0c48e}
+.flag svg.i{width:14px;height:14px}
+.flag.soft{color:var(--t-light);border-color:var(--b-default)}
+.inl{padding:4px 0 16px;display:flex;flex-direction:column;gap:12px}
+.facts{font-size:14px;color:var(--t-medium)}
+.dig li{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:52px;border-top:1px solid var(--b-subtle);font-size:14px;color:var(--t-medium)}
+
+/* sponsor detail: teams with slots and scores */
+.tl{display:flex;flex-direction:column}
+.tl li{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--b-subtle);font-size:14px}
+.tl li:first-child{border-top:0}
+.tl .t{font-weight:600;color:var(--t-medium)}
+.tid{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.tid b{font-weight:700}
+.tid a{color:var(--t-link);font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:2px;min-height:28px}
+.tid a svg.i{width:13px;height:13px}
+.reps{display:flex;flex-wrap:wrap;gap:6px}
+.top5{counter-reset:t;display:flex;flex-direction:column;gap:2px;font-size:14px}
+.top5 li{counter-increment:t}
+.top5 li::before{content:counter(t) ". ";font-weight:700;color:var(--live)}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;min-height:22px;padding:1px 7px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;line-height:1.3}
+.p-draft{background:var(--bg-inset);color:var(--t-light)}
+.p-not{background:var(--bg-nav);color:var(--t-active)}
+.p-now{background:#fdf0d5;color:#7a4b00}
+.p-pres{background:var(--live-bg);color:var(--live)}
+.p-sc{background:#fff;color:var(--t-medium);border:1px solid var(--b-default)}
+.p-sc.full{color:var(--live);border-color:#9fd3ae}
+.p-clash{background:var(--warn-bg);color:var(--t-warn)}
+
+/* phones: [name + crown / phone] [Copy Text Call]. Fixed action column; names wrap. */
+.ph{display:flex;flex-direction:column;gap:2px}
+.ph li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;padding:6px 0}
+.ph .who{min-width:0}
+.ph .who b{font-weight:600;font-size:15px;overflow-wrap:anywhere;display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
+.ph .who>span{display:block;font-size:13px;color:var(--t-light)}
+.ph .acts{display:flex;gap:2px;flex-wrap:nowrap}
+.ph .acts .btn{padding:0 8px}
+.ph .acts [data-copy]{min-width:66px}
+.crown{display:inline-flex;color:var(--crown)}
+.crown svg{width:16px;height:16px;fill:currentColor;stroke:none}
+
+/* suggested fixes */
+.fx>li{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:var(--r-lg);background:var(--warn-bg);color:var(--t-heavy)}
+.fx>li+li{margin-top:8px}
+.fx-p{display:flex;align-items:flex-start;gap:8px;font-size:15px;min-width:0}
+.fx-p .lgp{margin-top:1px}
+.fx-p b{font-weight:700;color:var(--t-warn);min-width:0}
+.fx-why{font-size:14px;color:var(--t-medium)}
+.fx-sug{font-size:15px}
+.fx-sug b{font-weight:700}
+.fx .row{margin-top:4px}
+.fx .ph{background:#fff;border-radius:var(--r-md);padding:4px 10px;color:var(--t-heavy)}
+.ok{font-size:15px;color:var(--t-light)}
+
+/* room calendar */
+.gwrap{overflow-x:auto;margin:0 -20px;padding:0 20px;-webkit-overflow-scrolling:touch}
+@media (min-width:768px){.gwrap{margin:0 -24px;padding:0 24px}}
+table.g{width:100%;min-width:740px;border-collapse:separate;border-spacing:3px;table-layout:fixed}
+.g thead th{font-size:12px;font-weight:600;color:var(--t-light);text-align:left;padding:0 2px 2px;white-space:nowrap}
+.g thead th.now{color:var(--badge)}
+.g thead th.now::after{content:"";display:block;height:2px;border-radius:2px;background:var(--badge);margin-top:2px}
+.g th.rm{position:sticky;left:0;z-index:2;width:112px;background:#fff;text-align:left;font-size:14px;font-weight:600;padding:0 4px 0 0;vertical-align:middle}
+.g thead th.rm{z-index:3}
+.g tr.grp th{text-align:left;padding:12px 0 0;font-size:13px;font-weight:600;color:var(--t-medium)}
+.g tr.grp th span{position:sticky;left:0}
+.g td{padding:0}
+.rmh{width:100%;min-height:52px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:4px 6px;border:1px solid var(--b-default);border-radius:var(--r-md);background:#fff;text-align:left;cursor:pointer;line-height:1.2}
+.rmh:hover{background:var(--bg-hl)}
+.rmh>b{font-size:14px;font-weight:700}
+.rmh>span{font-size:12px;color:var(--t-light);font-weight:500}
+.rmh .spn{gap:4px;font-size:12px;color:var(--one-t)}
+.rmh .spn b{font-weight:700}
+.rmh .lgp{min-width:24px;height:18px;font-size:9px}
+.rmh.held{border-color:var(--one-b);box-shadow:inset 3px 0 0 var(--primary)}
+.rmh.sel{outline:2px solid var(--primary);outline-offset:1px}
+.cell{width:100%;min-height:52px;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:2px;border:1px dashed var(--b-default);border-radius:var(--r-md);background:none;text-align:center;font-size:12px;line-height:1.2;color:var(--t-light);cursor:pointer}
+.cell:hover{background:var(--bg-hl)}
+.cell .plus{width:16px;height:16px;color:var(--b-control)}
+.cell b{font-weight:700;white-space:nowrap;font-size:11.5px;letter-spacing:-.01em}
+.cell.chat{background:#fff;border:1px solid var(--one-b);color:var(--one-t)}
+.cell.chat:hover{background:var(--bg-hl)}
+.cell.done{background:var(--bg-inset);border-color:var(--b-default);color:var(--t-light)}
+.cell.live{background:#fdf0d5;border-color:#e9c27a;color:#7a4b00}
+.cell.clash{border:1.5px solid var(--badge);background:var(--warn-bg);color:var(--t-warn)}
+.cell.opn{border-style:dashed;color:var(--t-ph)}
+.cell.sel{outline:2px solid var(--primary);outline-offset:1px}
+.cell.empty{flex-direction:row;justify-content:flex-start;padding:0 16px;gap:6px;color:var(--t-link);font-weight:600;font-size:14px;border-color:var(--b-control)}
+.cell.rem{background:var(--hatch);border:1px solid var(--b-default);color:var(--t-medium)}
+.cell.add{flex-direction:row;justify-content:flex-start;gap:6px;padding:0 12px;color:var(--t-link);font-weight:600;font-size:14px;min-height:44px}
+.g tr.addr th{padding-top:6px}
+.wait{font-size:14px;color:var(--t-medium);display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+
+/* schedule view */
+.sch{display:flex;flex-direction:column;gap:12px}
+.sch-room{border:1px solid var(--b-default);border-radius:var(--r-lg);overflow:hidden}
+.sch-h{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--bg-inset)}
+.sch-h>div{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.sch-h h3{font-size:16px;font-weight:700}
+.sch-h .muted{font-size:13px}
+.sch ol{display:flex;flex-direction:column}
+.sch ol li{display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 10px;align-items:center;padding:8px 14px;border-top:1px solid var(--b-subtle)}
+.sch ol li:first-child{border-top:0}
+.sch ol li.live{background:#fffaf0}
+.sch .t{font-weight:700;font-size:15px}
+.sch .ln{display:flex;align-items:center;justify-content:space-between;gap:6px 10px;flex-wrap:wrap;min-width:0}
+.sch .pills{display:flex;flex-wrap:wrap;gap:4px}
+.sch-empty{padding:12px 14px;font-size:14px;color:var(--t-light);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.sch-room.rem .sch-h{background:var(--hatch)}
+
+/* inline detail under the grid */
+.det{display:flex;flex-direction:column;gap:10px;padding:16px;border-radius:var(--r-lg);background:var(--bg-current)}
+.det-h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.det-h b{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;flex-wrap:wrap}
+.det-h span{font-size:14px;color:var(--t-medium)}
+.det-h .lgp{background:#fff}
+.x{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;margin:-10px -10px 0 0;border:0;border-radius:var(--r-lg);background:none;cursor:pointer;color:var(--t-light);flex:none}
+.x:hover{background:var(--bg-hl)}
+.det p{font-size:15px}
+.det .lbl{font-size:14px;font-weight:600;color:var(--t-medium)}
+.warn{color:var(--t-warn);font-size:14px;font-weight:500}
+.f{display:flex;flex-direction:column;gap:6px;flex:1 1 160px;min-width:0}
+.f label{font-weight:600;font-size:14px}
+.in{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--b-default);border-radius:var(--r-md);background:#fff;font-size:16px}
+.in::placeholder{color:var(--t-ph)}
+.in:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 2px rgba(11,107,196,.2)}
+.frow{display:flex;gap:10px;flex-wrap:wrap}
+
+/* sticky action bar */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:20;background:#fff;border-top:1px solid var(--b-default);box-shadow:0 -2px 8px rgba(11,43,74,.06);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+.bar-in{max-width:1440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media (min-width:1100px){.bar{padding:14px 48px}}
+.bar-msg{font-size:15px;color:var(--t-medium);display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.bar-msg .warn{font-size:15px}
+.sent{color:var(--live);font-weight:700;font-size:17px;display:inline-flex;align-items:center;gap:6px}
+.sent svg.i{width:20px;height:20px}
+@media (max-width:600px){.bar-in{flex-direction:column;align-items:stretch;gap:6px}.bar-in>.btn{width:100%}.bar-msg{justify-content:center;text-align:center}}
+
+/* toast */
+.toast{pointer-events:none;position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:40;max-width:calc(100% - 32px);background:var(--t-heavy);color:#fff;padding:10px 16px;border-radius:var(--r-lg);font-size:15px;font-weight:500;box-shadow:var(--sh-btn)}
+.toast[hidden]{display:none}
+@media (max-width:600px){.toast{bottom:150px}}
+
+/* help sheet: right panel on desktop, bottom sheet on phones */
+.sheet-bg{position:fixed;inset:0;z-index:49;background:rgba(11,43,74,.32)}
+.sheet{position:fixed;z-index:50;background:#fff;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(11,43,74,.25);top:0;right:0;bottom:0;width:min(460px,100%)}
+@media (max-width:600px){.sheet{top:auto;left:0;width:100%;height:calc(100dvh - 24px);border-radius:var(--r-2xl) var(--r-2xl) 0 0}}
+.sheet[hidden],.sheet-bg[hidden]{display:none}
+.sheet-h{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:16px 20px 12px 24px;border-bottom:1px solid var(--b-subtle)}
+.sheet-h h2{font-size:20px;font-weight:700}
+.sheet-h .x{margin:0 -10px 0 0}
+.sheet-b{overflow-y:auto;padding:16px 24px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px;font-size:15px;color:var(--t-medium)}
+.sheet-b b{color:var(--t-heavy);font-weight:700}
+.ck{display:flex;flex-direction:column;gap:6px}
+.ck li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:6px;align-items:start}
+.ck li svg.i{width:18px;height:18px;color:var(--live);margin-top:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hd">
+    <div>
+      <h1 id="pgT"></h1>
+      <p id="pgS"></p>
+    </div>
+    <div class="hd-act">
+      <button class="btn btn-o help-btn" id="helpBtn" type="button" aria-haspopup="dialog"></button>
+    </div>
+  </header>
+
+  <section class="mock" id="mock" aria-label="Mock controls"></section>
+
+  <div class="layout" id="layout">
+    <div class="col-l">
+      <section class="card" aria-labelledby="h-sp">
+        <div class="card-h"><h2 id="h-sp"></h2><span id="spCount"></span></div>
+        <ul class="sp" id="spList"></ul>
+        <div>
+          <p class="sub-h" id="h-dig"></p>
+          <p class="sub-n" id="digNote"></p>
+          <ul class="dig" id="digList"></ul>
+        </div>
+      </section>
+      <section class="card" aria-labelledby="h-fx">
+        <div class="card-h"><h2 id="h-fx"></h2></div>
+        <div id="fixes"></div>
+      </section>
+    </div>
+
+    <section class="card" id="roomsCard" aria-labelledby="h-rm">
+      <div class="card-h"><h2 id="h-rm"></h2><div class="seg" role="tablist" id="seg"></div></div>
+      <div id="view"></div>
+      <div id="detail" aria-live="polite"></div>
+    </section>
+  </div>
+</div>
+
+<div class="bar"><div class="bar-in" id="bar"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="sheet-bg" id="helpBg" hidden></div>
+<div class="sheet" id="help" role="dialog" aria-modal="true" aria-labelledby="helpT" hidden></div>
+
+<script>
+/* ---------- copy (all user-facing strings) ---------- */
+const T = {
+  title: "Judging", sub: "Sunday, Nov 22 · Round 1 presentations, 10:00–11:30",
+  mock: { tag: "Mock only", time: "Time", layout: "Layout", calFirst: "Calendar first", schFirst: "Schedule first", sunSend: "Sun Life sends its shortlist", reset: "Reset",
+    autoRan: "Mock: auto-assigned and scheduled so the day can run." },
+  sponsors: "Sponsors", sentCount: (n, t) => `${n} of ${t} shortlists sent`,
+  digital: "Digital", digitalNote: "Devpost entry only. No room or slots.", digitalRow: "Judges on Devpost",
+  status: { not: "Shortlist not sent", need: "Needs a room", room: "Room set", sch: "Scheduled", judge: "Judging", top: "Top 5 in" },
+  shortlist: (n) => `Shortlist: ${n} team${n === 1 ? "" : "s"}`, shortlistNone: "Shortlist: not sent",
+  profiles: (n) => `Profiles: ${n} rep${n === 1 ? "" : "s"}`,
+  noRoom: "No room yet", remote: "Remote (judges online)",
+  flags: { due: "Due 9:30 AM", late: "Shortlist late", clash: (t) => `Clash: ${t}`, noScores: "No scores yet", top5Late: "Top 5 late", texted: (t) => `Lead texted ${t}` },
+  fixesTitle: "Suggested fixes", allGood: "Nothing to fix.", applyFix: "Apply fix", suggested: "Suggested:",
+  fix: {
+    count: (n, m) => `${n} sponsors, ${m} rooms`,
+    countWhy: (names, free) => `${names} ${names.includes(" and ") ? "need" : "needs"} a room${free ? `, and only ${free} is free` : ""}. A room holds one sponsor for the whole window.`,
+    addRoom: "Add a room",
+    noRoom: (sp) => `${sp} has no room`, noRoomWhy: (room) => `${room} is free for the whole window.`, put: (room) => `Put in ${room}`,
+    clash: (team, a, ta, b, tb) => `${team} presents to ${a} at ${ta} and ${b} at ${tb} (needs 10 min)`,
+    clashWhy: (d) => `That's ${d} minutes apart. A team needs 10 to get between rooms.`,
+    swap: (team, sp) => `Swap ${team}'s ${sp} slot`, swapDetail: (t, other) => ` (to ${t}, trading with ${other})`,
+    shortlist: (sp) => `${sp} hasn't sent its shortlist`,
+    shortlistWhyBefore: (sp) => `It's due at 9:30 AM. Without it, ${sp} has no presentations.`,
+    shortlistWhyAfter: "It was due at 9:30 AM. Presentations started at 10:00.",
+    noJudge: (sp) => `${sp} has no reps judging yet`, noJudgeWhy: (n) => `${n} teams have presented. No scores are in.`,
+    top5: (sp) => `${sp}'s top 5 isn't in`, top5Why: "It was due at 12:00 PM.",
+    text: "Text their lead (copy phone)",
+  },
+  toast: {
+    added: (r) => `Added ${r}.`, put: (sp, r) => `${sp} is in ${r}.`, moved: (sp, r) => `${sp} moved to ${r}.`, removed: (sp, r) => `${sp} is out of ${r}.`,
+    swapped: (team, sp, t) => `${team} now presents to ${sp} at ${t}.`, copied: (name, p) => `Copied ${name}'s number, ${p}.`,
+    notified: (n) => `${n} teams notified.`, sunSent: "Sun Life sent 7 teams.",
+  },
+  contact: "Contact", copy: "Copy", copied: "Copied", text: "Text", call: "Call", primary: "Sponsor lead", hwLead: "HW lead",
+  rooms: "Rooms", views: { cal: "Calendar", sch: "Schedule" },
+  room: "Room", window: "10:00–11:30", openSlot: "Open", assignSp: "Assign a sponsor", addRoom: "Add a room", online: "Remote",
+  waiting: "Needs a room:", emptyRoom: "Empty",
+  teamsWindow: (n, last) => `${n} team${n === 1 ? "" : "s"} · 10:00–${last}`,
+  det: {
+    assignTo: (r) => `Assign a sponsor to ${r}`, needsRoom: "needs a room", nowIn: (r) => `now in ${r}, moves here`,
+    moveTo: "Move to", noFree: "No free room. Add one first.", remove: "Remove from room", close: "Close",
+    remote: "Judges score online. No room needed.", team: (t, time) => `${t} · ${time}`,
+    seats: (n) => `${n} seats`, name: "Room name", namePh: "e.g. Rm 2240", seatsL: "Seats", seatsPh: "Optional", add: "Add room", cancel: "Cancel",
+    nameTaken: (n) => `${n} is already on the board.`, nameNeeded: "Give the room a name.",
+  },
+  sp: {
+    reps: "Reps", judged: (n) => `judged ${n}`, notJudged: "not judged yet", teams: "Teams and slots", top5: "Top 5 (ranked)",
+    notSent: "No shortlist yet. It's due 9:30 AM.", remoteNote: "Remote: teams present online.",
+  },
+  pill: { draft: "Not notified", not: "Notified", now: "Presenting now", pres: "Presented", sc: (n, m) => `Scored by ${n} of ${m} rep${m === 1 ? "" : "s"}`, clash: "Clash" },
+  devpost: "Devpost",
+  bar: {
+    start: "Round 1 runs 10:00–11:30 in 6-minute slots", auto: "Auto-assign", rerun: "Re-run", schedule: "Schedule presentations",
+    review: "Check the rooms, then schedule", fixOpen: (n) => `${n} fix${n === 1 ? "" : "es"} open`,
+    notified: (t) => `Teams notified ${t}`, changed: (names) => `${names} changed since teams were notified`,
+  },
+  draft: {
+    shortlist: (first, sp) => `Hi ${first}, this is Hack Western. We don't have ${sp}'s judging shortlist yet. It's due at 9:30 so we can put your teams in a room. Pick as many as you like, up to 15.`,
+    judge: (first, sp) => `Hi ${first}, this is Hack Western. ${sp}'s teams are presenting, but we don't see any scores yet. Can your reps score in the portal as they go?`,
+    top5: (first, sp) => `Hi ${first}, this is Hack Western. ${sp}'s ranked top 5 was due at 12:00. Could you send it in the portal?`,
+    any: (first, sp) => `Hi ${first}, this is Hack Western about ${sp}'s judging today.`,
+  },
+  help: {
+    btn: "Help", title: "How judging rooms work", close: "Close",
+    p1: "Sponsors don't pick times. Every round-1 presentation happens <b>10:00–11:30</b>, in 6-minute slots (3 min pitch, 2 min Q&amp;A, 1 min switch). Each sponsor picks up to 15 teams, then submits a ranked top 5 by 12:00 PM.",
+    checksTitle: "Auto-assign rules:",
+    checks: [
+      "One sponsor per room for the whole window, and one room per sponsor.",
+      "Sponsors with the most teams get a room first.",
+      "Your manual moves are pinned: Re-run keeps them.",
+      "Remote sponsors take no room (judges online).",
+      "Digital sponsors (Devpost entry only) aren't on the board.",
+    ],
+    p2: "<b>Schedule presentations</b> slots each sponsor's teams into its room and notifies them. If a room changes after that, schedule again so teams see the new room.",
+    p3: "The sheet's Sponsor Day-Of <b>Judging room</b> column is written by the app.",
+  },
+};
+
+/* ---------- fake data ---------- */
+const START = 600, SLOT = 6, NSLOTS = 15, MIN_GAP = 10; // minutes after midnight; 10:00 start
+const TICKS = Array.from({ length: NSLOTS }, (_, i) => START + i * SLOT);
+const SPONSORS = [
+  { id: "scotia", name: "Scotiabank", ab: "SB", mode: "person", sent: true,
+    lead: { name: "Marcus O.", phone: "5550108" }, hw: { name: "Daniel W.", phone: "5550150" },
+    reps: ["Marcus O.", "Aisha K.", "Ben C."], top5At: 715,
+    teams: ["T-030", "T-009", "T-013", "T-019", "T-024", "T-027", "T-033", "T-038", "T-041", "T-046", "T-050", "T-057", "T-042", "T-066"] },
+  { id: "canadalife", name: "Canada Life", ab: "CL", mode: "person", sent: true,
+    lead: { name: "Priya S.", phone: "5550104" }, hw: { name: "Sofia R.", phone: "5550151" },
+    reps: ["Priya S.", "Omar H."], top5At: null,
+    teams: ["T-005", "T-011", "T-029", "T-017", "T-036", "T-044", "T-052", "T-058", "T-071"] },
+  { id: "qnx", name: "QNX", ab: "QNX", mode: "person", sent: true,
+    lead: { name: "Sam R.", phone: "5550111" }, hw: { name: "Sofia R.", phone: "5550151" },
+    reps: ["Sam R."], top5At: 700,
+    teams: ["T-003", "T-008", "T-017", "T-021", "T-026", "T-030", "T-034", "T-039", "T-042", "T-047", "T-051", "T-055", "T-060", "T-064", "T-068"] },
+  { id: "sunlife", name: "Sun Life", ab: "SL", mode: "person", sent: false,
+    lead: { name: "Dana W.", phone: "5550101" }, hw: { name: "Daniel W.", phone: "5550150" },
+    reps: ["Dana W.", "Jasmine L."], top5At: null,
+    teams: [], later: ["T-047", "T-006", "T-015", "T-022", "T-031", "T-040", "T-053"] },
+  { id: "tinyfish", name: "TinyFish", ab: "TF", mode: "remote", sent: true,
+    lead: { name: "Lee A.", phone: "5550120" }, hw: { name: "Ethan L.", phone: "5550152" },
+    reps: ["Lee A.", "Mo K."], top5At: 690,
+    teams: ["T-012", "T-023", "T-035", "T-048", "T-062", "T-070"] },
+];
+const DIGITAL = [{ id: "pcbway", name: "PCBWay", ab: "PCB" }];
+const SP = Object.fromEntries(SPONSORS.map((s) => [s.id, s]));
+const IN_PERSON = SPONSORS.filter((s) => s.mode === "person");
+const INITIAL = JSON.stringify({ sent: SPONSORS.map((s) => [s.id, s.sent, s.teams]) });
+
+/* ---------- helpers ---------- */
+const hm = (m) => { const h = Math.floor(m / 60) % 12 || 12; return `${h}:${String(m % 60).padStart(2, "0")}`; };
+const hmap = (m) => `${hm(m)} ${m >= 720 ? "PM" : "AM"}`;
+const slotT = (i) => START + i * SLOT;
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const first = (n) => n.split(" ")[0];
+const fmtPhone = (p) => `(519) ${p.slice(0, 3)}-${p.slice(3)}`;
+const telNum = (p) => `+1519${p}`;
+const devpost = (t) => `https://devpost.com/software/hw13-${t.toLowerCase().replace("-", "")}`;
+const joinNames = (a) => (a.length < 2 ? a.join("") : `${a.slice(0, -1).join(", ")} and ${a[a.length - 1]}`);
+
+/* ---------- state ---------- */
+const state = {
+  now: 560, // Sun 9:20 AM
+  layout: "cal", view: "cal",
+  rooms: [{ id: "r2230", name: "Rm 2230" }, { id: "r2235", name: "Rm 2235" }, { id: "r2110", name: "Rm 2110" }],
+  assign: { scotia: "r2230", canadalife: "r2110" }, // seeded from the sheet's Sponsor Day-Of "Judging room" column
+  pinned: new Set(["scotia", "canadalife"]),
+  order: Object.fromEntries(SPONSORS.map((s) => [s.id, [...s.teams]])),
+  autoRun: false, notified: new Map(), // spId -> time teams were notified (cleared when its room or slots change)
+  notifiedAt: null, texted: {}, // fixKey -> time
+  openSp: null, contact: null, sel: null, adding: false, copied: null,
+};
+const roomById = (id) => state.rooms.find((r) => r.id === id);
+const roomName = (id) => roomById(id)?.name;
+const holder = (roomId) => Object.keys(state.assign).find((s) => state.assign[s] === roomId);
+const freeRooms = () => state.rooms.filter((r) => !holder(r.id));
+const eligible = () => SPONSORS.filter((s) => s.sent && state.order[s.id].length && (s.mode === "remote" || state.assign[s.id]));
+
+/* =====================================================================================
+   AUTO-ASSIGN: pure. One sponsor per room for the whole window, most teams first.
+   Pinned assignments (sheet seed + manual moves + applied fixes) are kept exactly.
+   ===================================================================================== */
+function autoAssign(sponsors, rooms, assign, pinned, teamCount) {
+  const out = {};
+  for (const id of pinned) if (assign[id] && rooms.some((r) => r.id === assign[id]) && !Object.values(out).includes(assign[id])) out[id] = assign[id];
+  const taken = new Set(Object.values(out));
+  const need = sponsors.filter((s) => s.mode === "person" && !out[s.id]).map((s, i) => ({ s, i }))
+    .sort((a, b) => teamCount(b.s.id) - teamCount(a.s.id) || a.i - b.i);
+  for (const { s } of need) { const r = rooms.find((x) => !taken.has(x.id)); if (!r) break; out[s.id] = r.id; taken.add(r.id); }
+  return out;
+}
+// Teams on two shortlists whose slot starts are less than MIN_GAP apart.
+function findClashes(order, sponsors) {
+  const at = {};
+  for (const s of sponsors) if (s.sent) order[s.id].forEach((t, i) => (at[t] ||= []).push({ sp: s.id, i, t: slotT(i) }));
+  const out = [];
+  for (const [team, list] of Object.entries(at)) for (let a = 0; a < list.length; a++) for (let b = a + 1; b < list.length; b++) {
+    const [x, y] = [list[a], list[b]].sort((p, q) => p.t - q.t);
+    if (y.t - x.t < MIN_GAP) out.push({ team, a: x, b: y, gap: y.t - x.t });
+  }
+  return out;
+}
+// Swap the team's slot inside one sponsor with the nearest slot that leaves no clash for either team.
+function planSwap(order, sponsors, c) {
+  const pick = [c.a, c.b].sort((p, q) => order[q.sp].length - order[p.sp].length)[0]; // the longer list has more room to move
+  const list = order[pick.sp];
+  const cands = list.map((_, j) => j).filter((j) => j !== pick.i).sort((x, y) => Math.abs(x - pick.i) - Math.abs(y - pick.i) || x - y);
+  for (const j of cands) {
+    const trial = { ...order, [pick.sp]: [...list] };
+    [trial[pick.sp][pick.i], trial[pick.sp][j]] = [trial[pick.sp][j], trial[pick.sp][pick.i]];
+    const bad = findClashes(trial, sponsors).some((k) => k.team === c.team || k.team === list[j]);
+    if (!bad) return { sp: pick.sp, i: pick.i, j, other: list[j] };
+  }
+  return null;
+}
+/* =========================== end of pure logic =========================== */
+
+/* ---------- day-of progress (fake, driven by the mock clock) ---------- */
+const presented = (i) => slotT(i) + SLOT <= state.now;
+const presenting = (i) => slotT(i) <= state.now && state.now < slotT(i) + SLOT;
+function scoredBy(sp, i) {
+  if (!presented(i) || !state.notified.has(sp.id)) return 0;
+  const R = sp.reps.length;
+  if (sp.id === "canadalife") return state.now >= 720 ? 1 : 0;
+  if (topIn(sp)) return R;
+  return Math.max(1, R - (i % 3 === 1 && R > 1 ? 1 : 0));
+}
+const topIn = (sp) => sp.top5At != null && state.now >= sp.top5At && state.notified.has(sp.id);
+const presentedCount = (sp) => state.order[sp.id].filter((_, i) => presented(i)).length;
+const repsJudging = (sp) => Math.max(0, ...state.order[sp.id].map((_, i) => scoredBy(sp, i)));
+const judgedBy = (sp, r) => state.order[sp.id].filter((_, i) => scoredBy(sp, i) > r).length;
+const top5 = (sp) => [3, 0, 7, 1, 5].map((i) => state.order[sp.id][i]).filter(Boolean);
+
+function status(sp) {
+  if (!sp.sent) return { c: "not", t: T.status.not };
+  if (sp.mode === "person" && !state.assign[sp.id]) return { c: "need", t: T.status.need };
+  if (!state.notified.has(sp.id)) return { c: "room", t: T.status.room };
+  if (state.now < START) return { c: "sch", t: T.status.sch };
+  if (topIn(sp)) return { c: "top", t: T.status.top };
+  return { c: "judge", t: T.status.judge };
+}
+
+/* ---------- suggested fixes (recomputed from the board on every render) ---------- */
+function currentFixes() {
+  const fx = [], free = freeRooms();
+  const roomless = IN_PERSON.filter((s) => !state.assign[s.id]);
+  if (IN_PERSON.length > state.rooms.length) {
+    fx.push({ id: "count", kind: "addRoom", problem: T.fix.count(IN_PERSON.length, state.rooms.length),
+      why: T.fix.countWhy(joinNames(roomless.map((s) => s.name)), free.length === 1 ? free[0].name : ""), sug: T.fix.addRoom });
+  }
+  if (free.length) for (const s of roomless) {
+    fx.push({ id: `room:${s.id}`, kind: "put", sp: s.id, room: free[0].id, problem: T.fix.noRoom(s.name), why: T.fix.noRoomWhy(free[0].name), sug: T.fix.put(free[0].name) });
+  }
+  for (const c of findClashes(state.order, SPONSORS)) {
+    const plan = planSwap(state.order, SPONSORS, c);
+    if (!plan) continue;
+    const spN = SP[plan.sp].name;
+    fx.push({ id: `clash:${c.team}`, kind: "swap", sp: plan.sp, plan, team: c.team,
+      problem: T.fix.clash(c.team, SP[c.a.sp].name, hm(c.a.t), SP[c.b.sp].name, hm(c.b.t)), why: T.fix.clashWhy(c.gap),
+      sug: T.fix.swap(c.team, spN), detail: T.fix.swapDetail(hm(slotT(plan.j)), plan.other) });
+  }
+  for (const s of SPONSORS) {
+    if (!s.sent && !state.texted[`list:${s.id}`]) fx.push({ id: `list:${s.id}`, kind: "text", sp: s.id, draft: "shortlist",
+      problem: T.fix.shortlist(s.name), why: state.now < 570 ? T.fix.shortlistWhyBefore(s.name) : T.fix.shortlistWhyAfter, sug: T.fix.text });
+    if (s.sent && state.notified.has(s.id) && presentedCount(s) > 0 && repsJudging(s) === 0 && !state.texted[`judge:${s.id}`])
+      fx.push({ id: `judge:${s.id}`, kind: "text", sp: s.id, draft: "judge", problem: T.fix.noJudge(s.name), why: T.fix.noJudgeWhy(presentedCount(s)), sug: T.fix.text });
+    if (s.sent && state.notified.has(s.id) && state.now >= 720 && !topIn(s) && !state.texted[`top:${s.id}`])
+      fx.push({ id: `top:${s.id}`, kind: "text", sp: s.id, draft: "top5", problem: T.fix.top5(s.name), why: T.fix.top5Why, sug: T.fix.text });
+  }
+  return fx;
+}
+function flagsFor(sp) {
+  const f = [];
+  if (!sp.sent) f.push({ t: state.now < 570 ? T.flags.due : T.flags.late });
+  for (const c of findClashes(state.order, SPONSORS)) if (c.a.sp === sp.id || c.b.sp === sp.id) f.push({ t: T.flags.clash(c.team) });
+  if (sp.sent && state.notified.has(sp.id) && presentedCount(sp) > 0 && repsJudging(sp) === 0) f.push({ t: T.flags.noScores });
+  if (sp.sent && state.notified.has(sp.id) && state.now >= 720 && !topIn(sp)) f.push({ t: T.flags.top5Late });
+  const tx = Object.entries(state.texted).filter(([k]) => k.endsWith(`:${sp.id}`)).map(([, v]) => v);
+  if (tx.length) f.push({ t: T.flags.texted(hmap(Math.max(...tx))), soft: true });
+  return f;
+}
+
+/* ---------- actions on the board ---------- */
+function unnotify(spId) { if (state.notified.delete(spId)) {} }
+function setRoom(spId, roomId) {
+  const prev = holder(roomId);
+  if (prev && prev !== spId) { delete state.assign[prev]; state.pinned.delete(prev); unnotify(prev); }
+  state.assign[spId] = roomId; state.pinned.add(spId); unnotify(spId);
+}
+function runAuto() {
+  state.assign = autoAssign(SPONSORS, state.rooms, state.assign, state.pinned, (id) => state.order[id].length);
+  state.autoRun = true;
+  for (const s of SPONSORS) if (state.notified.has(s.id) && s.mode === "person" && !state.assign[s.id]) unnotify(s.id);
+}
+function nextRoomName() { for (let n = 2240; ; n += 5) if (!state.rooms.some((r) => r.name === `Rm ${n}`)) return `Rm ${n}`; }
+function addRoom(name, seats) {
+  const id = `r${Date.now().toString(36)}${state.rooms.length}`;
+  state.rooms.push({ id, name, seats: seats || null });
+  return id;
+}
+function schedulePresentations() {
+  const list = eligible();
+  for (const s of list) if (!state.notified.has(s.id)) state.notified.set(s.id, state.now);
+  state.notifiedAt = state.now;
+  return list.reduce((n, s) => n + state.order[s.id].length, 0);
+}
+function applyFix(f) {
+  if (f.kind === "addRoom") { const name = nextRoomName(); addRoom(name); toast(T.toast.added(name)); return; }
+  if (f.kind === "put") { setRoom(f.sp, f.room); toast(T.toast.put(SP[f.sp].name, roomName(f.room))); return; }
+  if (f.kind === "swap") {
+    const { sp, i, j } = f.plan, list = state.order[sp];
+    [list[i], list[j]] = [list[j], list[i]]; unnotify(sp);
+    toast(T.toast.swapped(f.team, SP[sp].name, hm(slotT(j)))); return;
+  }
+  if (f.kind === "text") {
+    const sp = SP[f.sp], p = fmtPhone(sp.lead.phone);
+    try { navigator.clipboard.writeText(p).catch(() => {}); } catch {}
+    state.texted[f.id] = state.now; toast(T.toast.copied(sp.lead.name, p));
+  }
+}
+
+/* ---------- rendering helpers ---------- */
+const ic = {
+  chev: '<svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+  check: '<svg class="i" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  plus: '<svg class="i plus" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></svg>',
+  x: '<svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  ext: '<svg class="i" viewBox="0 0 24 24"><path d="M14 5h5v5M19 5l-8 8M18 14v5H5V6h5"/></svg>',
+  warn: '<svg class="i" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.2"/></svg>',
+  help: '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4"/><path d="M12 16.8v.2"/></svg>',
+  crown: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5l4.6 3.8L12 5l4.4 7.3L21 8.5l-1.9 9.5H4.9z"/></svg>',
+};
+const lgp = (sp) => `<span class="lgp" aria-hidden="true">${esc(sp.ab)}</span>`;
+const spName = (sp) => `<span class="spn">${lgp(sp)}<b>${esc(sp.name)}</b></span>`;
+const crown = () => `<span class="crown" role="img" aria-label="${T.primary}">${ic.crown}</span>`;
+const teamLink = (t) => `<span class="tid"><b class="num">${t}</b><a href="${devpost(t)}" target="_blank" rel="noopener" aria-label="${t} on ${T.devpost}">${T.devpost}${ic.ext}</a></span>`;
+const roomText = (sp) => (sp.mode === "remote" ? T.remote : state.assign[sp.id] ? roomName(state.assign[sp.id]) : T.noRoom);
+
+function phonesHtml(sp, draftFn) {
+  const people = [{ name: sp.lead.name, phone: sp.lead.phone, main: true }, ...sp.reps.filter((r) => r !== sp.lead.name).map((r, i) => ({ name: r, phone: `55502${String(SPONSORS.indexOf(sp))}${i}` })), { name: sp.hw.name, phone: sp.hw.phone, role: T.hwLead }];
+  return `<ul class="ph">${people.map((p) => {
+    const body = encodeURIComponent(draftFn(p)), ck = `${sp.id}:${p.phone}`;
+    return `<li><div class="who"><b>${esc(p.name)}${p.main ? crown() : ""}</b><span class="num">${fmtPhone(p.phone)}${p.role ? ` · ${p.role}` : p.main ? ` · ${T.primary}` : ""}</span></div>
+      <div class="acts">
+        <button class="btn btn-l btn-s" type="button" data-copy="${fmtPhone(p.phone)}" data-ck="${ck}">${state.copied === ck ? T.copied : T.copy}</button>
+        <a class="btn btn-l btn-s" href="sms:${telNum(p.phone)}?&body=${body}">${T.text}</a>
+        <a class="btn btn-l btn-s" href="tel:${telNum(p.phone)}">${T.call}</a>
+      </div></li>`;
+  }).join("")}</ul>`;
+}
+const draftFor = (sp, kind = "any") => (p) => T.draft[kind](first(p.name), sp.name);
+
+function teamPills(sp, i) {
+  const out = [], t = state.order[sp.id][i];
+  if (findClashes(state.order, SPONSORS).some((c) => c.team === t && (c.a.sp === sp.id || c.b.sp === sp.id))) out.push(`<span class="pill p-clash">${T.pill.clash}</span>`);
+  if (!state.notified.has(sp.id)) out.push(`<span class="pill p-draft">${T.pill.draft}</span>`);
+  else if (presented(i)) {
+    out.push(`<span class="pill p-pres">${T.pill.pres}</span>`);
+    const n = scoredBy(sp, i), m = sp.reps.length;
+    out.push(`<span class="pill p-sc${n === m ? " full" : ""}">${T.pill.sc(n, m)}</span>`);
+  } else if (presenting(i)) out.push(`<span class="pill p-now">${T.pill.now}</span>`);
+  else out.push(`<span class="pill p-not">${T.pill.not}</span>`);
+  return out.join("");
+}
+
+/* ---------- mock controls ---------- */
+function renderMock() {
+  const tb = (m) => `<button class="btn btn-o btn-s" type="button" data-time="${m}" aria-pressed="${state.now === m}">Sun ${hmap(m)}</button>`;
+  const lb = (v, l) => `<button class="btn btn-o btn-s" type="button" data-layout="${v}" aria-pressed="${state.layout === v}">${l}</button>`;
+  document.getElementById("mock").innerHTML = `<span class="mock-tag">${T.mock.tag}</span>
+    <div class="mock-g"><span>${T.mock.time}</span>${[560, 630, 725].map(tb).join("")}</div>
+    <div class="mock-g"><span>${T.mock.layout}</span>${lb("cal", T.mock.calFirst)}${lb("sch", T.mock.schFirst)}</div>
+    <div class="mock-g">${SP.sunlife.sent ? "" : `<button class="btn btn-l btn-s" type="button" id="sunSend">${T.mock.sunSend}</button>`}<button class="btn btn-l btn-s" type="button" id="reset">${T.mock.reset}</button></div>`;
+}
+
+/* ---------- sponsors band ---------- */
+function renderSponsors() {
+  document.getElementById("h-sp").textContent = T.sponsors;
+  document.getElementById("spCount").textContent = T.sentCount(SPONSORS.filter((s) => s.sent).length, SPONSORS.length);
+  document.getElementById("spList").innerHTML = SPONSORS.map((sp) => {
+    const st = status(sp), open = state.openSp === sp.id, contact = state.contact === `sp:${sp.id}`, fl = flagsFor(sp);
+    const meta = [sp.sent ? T.shortlist(state.order[sp.id].length) : T.shortlistNone, T.profiles(sp.reps.length), roomText(sp)];
+    return `<li data-sp="${sp.id}">
+      <div class="sp-row">
+        <button class="sp-name" type="button" aria-expanded="${open}" aria-label="${esc(sp.name)}, ${esc(st.t)}" data-open="${sp.id}">${ic.chev}<span class="sp-id">
+          ${spName(sp)}
+          <span class="row" style="gap:6px"><span class="st st-${st.c}">${esc(st.t)}</span>${fl.length ? `<span class="flags">${fl.map((f) => `<span class="flag${f.soft ? " soft" : ""}">${f.soft ? "" : ic.warn}${esc(f.t)}</span>`).join("")}</span>` : ""}</span>
+          <span class="sp-meta">${meta.map((m) => `<span class="mi">${esc(m)}</span>`).join('<span class="dot"> · </span>')}</span>
+        </span></button>
+        <div class="act"><button class="btn btn-o btn-s" type="button" aria-expanded="${contact}" aria-label="${T.contact} ${esc(sp.name)}" data-contact="sp:${sp.id}">${T.contact}</button></div>
+      </div>
+      ${contact && !open ? `<div class="inl">${phonesHtml(sp, draftFor(sp))}</div>` : ""}
+      ${open ? `<div class="inl">${spDetail(sp)}</div>` : ""}
+    </li>`;
+  }).join("");
+  document.getElementById("h-dig").textContent = T.digital;
+  document.getElementById("digNote").textContent = T.digitalNote;
+  document.getElementById("digList").innerHTML = DIGITAL.map((d) => `<li>${spName(d)}<span>${T.digitalRow}</span></li>`).join("");
+}
+function spDetail(sp) {
+  if (!sp.sent) return `<p class="facts">${T.sp.notSent}</p>${phonesHtml(sp, draftFor(sp, "shortlist"))}`;
+  const reps = `<p class="lbl">${T.sp.reps}</p><div class="reps">${sp.reps.map((r, k) => { const n = judgedBy(sp, k); return `<span class="chip">${esc(r)} · ${n ? T.sp.judged(n) : T.sp.notJudged}</span>`; }).join("")}</div>`;
+  const teams = `<p class="lbl">${T.sp.teams}${sp.mode === "remote" ? ` · ${T.remote}` : state.assign[sp.id] ? ` · ${esc(roomName(state.assign[sp.id]))}` : ""}</p>
+    <ol class="tl">${state.order[sp.id].map((t, i) => `<li><span class="t num">${hm(slotT(i))}</span>${teamLink(t)}<span class="pills row" style="gap:4px;justify-content:flex-end">${teamPills(sp, i)}</span></li>`).join("")}</ol>`;
+  const top = topIn(sp) ? `<p class="lbl">${T.sp.top5}</p><ol class="top5">${top5(sp).map((t) => `<li>${teamLink(t)}</li>`).join("")}</ol>` : "";
+  return `${reps}${top}${teams}`;
+}
+
+/* ---------- suggested fixes band ---------- */
+function renderFixes() {
+  document.getElementById("h-fx").textContent = T.fixesTitle;
+  const fx = currentFixes(), el = document.getElementById("fixes");
+  if (!fx.length) { el.innerHTML = `<p class="ok">${T.allGood}</p>`; return; }
+  el.innerHTML = `<ul class="fx">${fx.map((f) => {
+    const sp = f.sp && SP[f.sp], cid = `fix:${f.id}`;
+    return `<li data-fix="${f.id}">
+      <p class="fx-p">${sp ? lgp(sp) : ""}<b>${esc(f.problem)}</b></p>
+      <p class="fx-why">${esc(f.why)}</p>
+      <p class="fx-sug"><b>${T.suggested}</b> ${esc(f.sug)}${f.detail ? esc(f.detail) : ""}</p>
+      <div class="row">
+        <button class="btn btn-p btn-s" type="button" data-fixact="${esc(f.id)}">${T.applyFix}</button>
+        ${sp ? `<button class="btn btn-o btn-s" type="button" aria-expanded="${state.contact === cid}" data-contact="${esc(cid)}">${T.contact}</button>` : ""}
+      </div>
+      ${sp && state.contact === cid ? phonesHtml(sp, draftFor(sp, f.draft || "any")) : ""}
+    </li>`;
+  }).join("")}</ul>`;
+}
+
+/* ---------- rooms card: view toggle ---------- */
+function renderSeg() {
+  document.getElementById("h-rm").textContent = T.rooms;
+  const order = state.layout === "cal" ? ["cal", "sch"] : ["sch", "cal"];
+  document.getElementById("seg").innerHTML = order.map((v) => `<button type="button" role="tab" aria-selected="${state.view === v}" data-view="${v}">${T.views[v]}</button>`).join("");
+  document.getElementById("layout").classList.toggle("schfirst", state.layout === "sch");
+}
+function renderView() {
+  document.getElementById("view").innerHTML = state.view === "cal" ? calendarHtml() : scheduleHtml();
+}
+
+/* calendar: rooms down the side, 10:00–11:30 across in 6-minute ticks */
+function calendarHtml() {
+  const nowI = TICKS.findIndex((t) => t <= state.now && state.now < t + SLOT);
+  const head = `<thead><tr><th class="rm" scope="col"><span class="sr">${T.room}</span></th>${TICKS.map((t, i) => `<th scope="col" class="num${i === nowI ? " now" : ""}">${hm(t)}</th>`).join("")}</tr></thead>`;
+  const clashes = findClashes(state.order, SPONSORS);
+  const slotCells = (sp, key) => TICKS.map((_, i) => {
+    const t = state.order[sp.id][i], selC = state.sel?.k === key && state.sel.team === t && t ? " sel" : "";
+    if (!t) return `<td><button class="cell opn" type="button" data-room="${key}" aria-label="${T.openSlot} ${hm(slotT(i))}">${T.openSlot}</button></td>`;
+    const clash = clashes.some((c) => c.team === t && (c.a.sp === sp.id || c.b.sp === sp.id));
+    const cls = clash ? "clash" : sp.mode === "remote" ? "rem" : state.notified.has(sp.id) && presented(i) ? "done" : presenting(i) && state.notified.has(sp.id) ? "live" : "chat";
+    return `<td><button class="cell ${cls}${selC}" type="button" data-room="${key}" data-team="${t}" aria-label="${t}, ${esc(sp.name)}, ${hm(slotT(i))}"><b class="num">${t}</b></button></td>`;
+  }).join("");
+  const rows = state.rooms.map((r) => {
+    const spId = holder(r.id), sp = spId && SP[spId], selR = state.sel?.k === r.id && !state.sel.team ? " sel" : "";
+    const seats = r.seats ? ` · ${T.det.seats(r.seats)}` : "";
+    if (!sp) return `<tr><th class="rm" scope="row"><button class="rmh${selR}" type="button" data-room="${r.id}"><b>${esc(r.name)}</b><span>${T.emptyRoom}${seats}</span></button></th>
+      <td colspan="${NSLOTS}"><button class="cell empty${selR}" type="button" data-room="${r.id}">${ic.plus}${T.assignSp}</button></td></tr>`;
+    return `<tr><th class="rm" scope="row"><button class="rmh held${selR}" type="button" data-room="${r.id}" aria-label="${esc(r.name)}, ${esc(sp.name)}"><b>${esc(r.name)}</b>${spName(sp)}${seats ? `<span>${T.det.seats(r.seats)}</span>` : ""}</button></th>${slotCells(sp, r.id)}</tr>`;
+  }).join("");
+  const remote = SPONSORS.filter((s) => s.mode === "remote" && s.sent).map((sp) => {
+    const selR = state.sel?.k === `remote:${sp.id}` && !state.sel.team ? " sel" : "";
+    return `<tr><th class="rm" scope="row"><button class="rmh${selR}" type="button" data-room="remote:${sp.id}"><b>${T.online}</b>${spName(sp)}</button></th>${slotCells(sp, `remote:${sp.id}`)}</tr>`;
+  }).join("");
+  const add = `<tr class="addr"><th colspan="${NSLOTS + 1}" scope="row" style="text-align:left"><span style="position:sticky;left:0;display:inline-block;width:min(100%,240px)"><button class="cell add" type="button" id="addRoomBtn" style="width:100%">${ic.plus}${T.addRoom}</button></span></th></tr>`;
+  const waiting = IN_PERSON.filter((s) => !state.assign[s.id]);
+  const wait = waiting.length ? `<p class="wait"><span>${T.waiting}</span>${waiting.map((s) => `<span class="chip">${esc(s.name)}</span>`).join("")}</p>` : "";
+  return `<div class="gwrap"><table class="g" id="grid">${head}<tbody>${rows}${remote ? `<tr class="grp"><th colspan="${NSLOTS + 1}" scope="colgroup"><span>${T.remote}</span></th></tr>${remote}` : ""}${add}</tbody></table></div>${wait}`;
+}
+
+/* schedule: per room, teams in order with time, team ID + Devpost, status */
+function scheduleHtml() {
+  const block = (title, sp, key, cls = "") => {
+    const n = state.order[sp.id].length;
+    return `<section class="sch-room ${cls}"><div class="sch-h"><div><h3>${esc(title)}</h3>${spName(sp)}</div><span class="muted num">${T.teamsWindow(n, hm(slotT(n - 1) + SLOT))}</span></div>
+      <ol>${state.order[sp.id].map((t, i) => `<li class="${presenting(i) && state.notified.has(sp.id) ? "live" : ""}"><span class="t num">${hm(slotT(i))}</span><div class="ln">${teamLink(t)}<span class="pills">${teamPills(sp, i)}</span></div></li>`).join("")}</ol></section>`;
+  };
+  const rooms = state.rooms.map((r) => {
+    const spId = holder(r.id);
+    if (!spId) return `<section class="sch-room"><div class="sch-h"><div><h3>${esc(r.name)}</h3></div></div><div class="sch-empty"><span>${T.emptyRoom}</span><button class="btn btn-o btn-s" type="button" data-room="${r.id}">${T.assignSp}</button></div></section>`;
+    const sp = SP[spId];
+    if (!state.order[sp.id].length) return `<section class="sch-room"><div class="sch-h"><div><h3>${esc(r.name)}</h3>${spName(sp)}</div></div><div class="sch-empty"><span>${T.status.not}</span></div></section>`;
+    return block(r.name, sp, r.id);
+  }).join("");
+  const remote = SPONSORS.filter((s) => s.mode === "remote" && s.sent).map((sp) => block(T.remote, sp, `remote:${sp.id}`, "rem")).join("");
+  const noRoom = IN_PERSON.filter((s) => !state.assign[s.id] && s.sent && state.order[s.id].length).map((sp) => block(T.noRoom, sp, "")).join("");
+  return `<div class="sch">${rooms}${remote}${noRoom}<button class="btn btn-o btn-s" type="button" id="addRoomBtn" style="align-self:flex-start">${ic.plus}${T.addRoom}</button></div>`;
+}
+
+/* ---------- inline detail ---------- */
+function renderDetail() {
+  const el = document.getElementById("detail");
+  const close = `<button class="x" type="button" data-close aria-label="${T.det.close}">${ic.x}</button>`;
+  if (state.adding) {
+    el.innerHTML = `<form class="det" id="addForm"><div class="det-h"><div><b>${T.addRoom}</b></div>${close}</div>
+      <div class="frow">
+        <div class="f"><label for="arName">${T.det.name}</label><input class="in" id="arName" required placeholder="${T.det.namePh}" autocomplete="off"></div>
+        <div class="f" style="flex:0 1 120px"><label for="arSeats">${T.det.seatsL}</label><input class="in" id="arSeats" inputmode="numeric" placeholder="${T.det.seatsPh}" autocomplete="off"></div>
+      </div>
+      <p class="warn" id="arErr" hidden></p>
+      <div class="row"><button class="btn btn-p btn-s" type="submit">${T.det.add}</button><button class="btn btn-o btn-s" type="button" data-close>${T.det.cancel}</button></div></form>`;
+    return;
+  }
+  if (!state.sel) { el.innerHTML = ""; return; }
+  const { k, team } = state.sel;
+  if (k.startsWith("remote:")) {
+    const sp = SP[k.slice(7)];
+    el.innerHTML = `<div class="det"><div class="det-h"><div><b>${spName(sp)}</b><span>${T.remote}</span></div>${close}</div>${teamLine(sp, team)}<p>${T.det.remote}</p></div>`;
+    return;
+  }
+  const r = roomById(k), spId = holder(k);
+  if (!r) { el.innerHTML = ""; return; }
+  if (!spId) {
+    const opts = IN_PERSON.slice().sort((a, b) => !!state.assign[a.id] - !!state.assign[b.id]).map((s) =>
+      `<button class="btn btn-o btn-s" type="button" data-assign="${s.id}">${esc(s.name)}<span class="muted" style="font-weight:400">· ${state.assign[s.id] ? esc(T.det.nowIn(roomName(state.assign[s.id]))) : T.det.needsRoom}</span></button>`).join("");
+    el.innerHTML = `<div class="det"><div class="det-h"><div><b>${esc(T.det.assignTo(r.name))}</b><span>${T.window}${r.seats ? ` · ${T.det.seats(r.seats)}` : ""}</span></div>${close}</div><div class="row">${opts}</div></div>`;
+    return;
+  }
+  const sp = SP[spId], n = state.order[sp.id].length, free = freeRooms();
+  el.innerHTML = `<div class="det" data-detail="${k}"><div class="det-h"><div><b>${spName(sp)}</b><span>${esc(r.name)} · ${n ? T.teamsWindow(n, hm(slotT(n - 1) + SLOT)) : T.status.not}</span></div>${close}</div>
+    ${teamLine(sp, team)}
+    <p class="lbl">${T.det.moveTo}</p>
+    <div class="row">${free.length ? free.map((x) => `<button class="btn btn-o btn-s" type="button" data-moveto="${x.id}">${esc(x.name)}</button>`).join("") : `<span class="facts">${T.det.noFree}</span>`}
+      <button class="btn btn-l btn-s" type="button" data-unassign="${sp.id}">${T.det.remove}</button></div></div>`;
+}
+function teamLine(sp, team) {
+  if (!team) return "";
+  const i = state.order[sp.id].indexOf(team);
+  return `<div class="row">${teamLink(team)}<span class="num" style="font-size:14px">${hm(slotT(i))}</span>${teamPills(sp, i)}</div>`;
+}
+
+/* ---------- sticky bar ---------- */
+function renderBar() {
+  const el = document.getElementById("bar"), nf = currentFixes().length;
+  const fixMsg = nf ? `<span class="warn">${T.bar.fixOpen(nf)}</span>` : "";
+  if (!state.autoRun) { el.innerHTML = `<span class="bar-msg">${T.bar.start}</span><button class="btn btn-p" type="button" id="auto">${T.bar.auto}</button>`; return; }
+  const rerun = `<button class="btn btn-l btn-s" type="button" id="rerun">${T.bar.rerun}</button>`;
+  const pending = eligible().filter((s) => !state.notified.has(s.id));
+  if (!state.notified.size) { el.innerHTML = `<span class="bar-msg">${fixMsg || T.bar.review}${rerun}</span><button class="btn btn-p" type="button" id="schedule">${T.bar.schedule}</button>`; return; }
+  if (pending.length) { el.innerHTML = `<span class="bar-msg"><span class="warn">${esc(T.bar.changed(joinNames(pending.map((s) => s.name))))}</span>${rerun}</span><button class="btn btn-p" type="button" id="schedule">${T.bar.schedule}</button>`; return; }
+  el.innerHTML = `<span class="sent" id="notifiedMsg">${ic.check}${T.bar.notified(hmap(state.notifiedAt))}</span><span class="bar-msg">${fixMsg}${rerun}</span>`;
+}
+
+/* ---------- help ---------- */
+function renderHead() {
+  document.getElementById("pgT").textContent = T.title; document.getElementById("pgS").textContent = T.sub;
+  document.getElementById("helpBtn").innerHTML = `${ic.help}<span>${T.help.btn}</span>`;
+}
+let helpReturn = null;
+function openHelp() {
+  const h = T.help, sh = document.getElementById("help");
+  sh.innerHTML = `<div class="sheet-h"><h2 id="helpT">${h.title}</h2><button class="x" type="button" data-helpclose aria-label="${h.close}">${ic.x}</button></div>
+    <div class="sheet-b"><p>${h.p1}</p><p><b>${h.checksTitle}</b></p><ul class="ck">${h.checks.map((c) => `<li>${ic.check}<span>${esc(c)}</span></li>`).join("")}</ul><p>${h.p2}</p><p>${h.p3}</p></div>`;
+  sh.hidden = false; document.getElementById("helpBg").hidden = false;
+  helpReturn = document.activeElement; sh.querySelector("[data-helpclose]").focus();
+}
+function closeHelp() { document.getElementById("help").hidden = true; document.getElementById("helpBg").hidden = true; (helpReturn || document.getElementById("helpBtn")).focus(); }
+const helpOpen = () => !document.getElementById("help").hidden;
+
+let toastT;
+function toast(msg) { const el = document.getElementById("toast"); el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (el.hidden = true), 2600); }
+
+function render() { renderMock(); renderSponsors(); renderFixes(); renderSeg(); renderView(); renderDetail(); renderBar(); }
+
+/* ---------- events ---------- */
+function scrollDetail() {
+  const d = document.getElementById("detail");
+  if (d.firstElementChild && d.getBoundingClientRect().bottom > innerHeight - 90) d.scrollIntoView({ block: "center", behavior: "smooth" });
+}
+document.addEventListener("click", (e) => {
+  if (e.target.id === "helpBg") { closeHelp(); return; }
+  const t = e.target.closest("button");
+  if (!t) return;
+  const d = t.dataset;
+  if (t.id === "helpBtn") { openHelp(); return; }
+  if ("helpclose" in d) { closeHelp(); return; }
+  if (d.time) {
+    state.now = +d.time;
+    if (state.now >= START && !state.notified.size) { if (!state.autoRun) runAuto(); schedulePresentations(); toast(T.mock.autoRan); }
+    render(); return;
+  }
+  if (d.layout) { state.layout = d.layout; state.view = d.layout; render(); return; }
+  if (t.id === "sunSend") { const s = SP.sunlife; s.sent = true; s.teams = [...s.later]; state.order.sunlife = [...s.later]; toast(T.toast.sunSent); render(); return; }
+  if (t.id === "reset") { location.reload(); return; }
+  if (t.id === "auto" || t.id === "rerun") { runAuto(); render(); return; }
+  if (t.id === "schedule") { toast(T.toast.notified(schedulePresentations())); render(); return; }
+  if (d.view) { state.view = d.view; render(); return; }
+  if (d.open) { state.openSp = state.openSp === d.open ? null : d.open; state.contact = null; render(); return; }
+  if (d.contact) { state.contact = state.contact === d.contact ? null : d.contact; if (state.contact?.startsWith("sp:")) state.openSp = null; render(); return; }
+  if (d.fixact) { const f = currentFixes().find((x) => x.id === d.fixact); if (f) applyFix(f); state.contact = null; render(); return; }
+  if (d.copy) {
+    const done = () => { state.copied = d.ck; render(); setTimeout(() => { state.copied = null; render(); }, 1500); };
+    try { navigator.clipboard.writeText(d.copy).then(done, done); } catch { done(); }
+    return;
+  }
+  if (t.id === "addRoomBtn") { state.adding = true; state.sel = null; render(); document.getElementById("arName").focus(); scrollDetail(); return; }
+  if (d.room) {
+    state.adding = false;
+    const same = state.sel && state.sel.k === d.room && state.sel.team === (d.team || null);
+    state.sel = same ? null : { k: d.room, team: d.team || null };
+    render(); scrollDetail(); return;
+  }
+  if (d.assign) { const r = state.sel.k; const from = state.assign[d.assign]; setRoom(d.assign, r); state.sel = { k: r, team: null }; toast(from ? T.toast.moved(SP[d.assign].name, roomName(r)) : T.toast.put(SP[d.assign].name, roomName(r))); render(); return; }
+  if (d.moveto) { const spId = holder(state.sel.k); setRoom(spId, d.moveto); state.sel = { k: d.moveto, team: state.sel.team }; toast(T.toast.moved(SP[spId].name, roomName(d.moveto))); render(); return; }
+  if (d.unassign) { const r = state.assign[d.unassign]; delete state.assign[d.unassign]; state.pinned.delete(d.unassign); unnotify(d.unassign); toast(T.toast.removed(SP[d.unassign].name, roomName(r))); render(); return; }
+  if ("close" in d) { state.sel = null; state.adding = false; render(); return; }
+});
+document.addEventListener("submit", (e) => {
+  if (e.target.id !== "addForm") return;
+  e.preventDefault();
+  const name = document.getElementById("arName").value.trim(), seats = parseInt(document.getElementById("arSeats").value, 10) || null;
+  const err = document.getElementById("arErr");
+  if (!name) { err.hidden = false; err.textContent = T.det.nameNeeded; return; }
+  if (state.rooms.some((r) => r.name.toLowerCase() === name.toLowerCase())) { err.hidden = false; err.textContent = T.det.nameTaken(name); return; }
+  const id = addRoom(name, seats);
+  state.adding = false; state.sel = { k: id, team: null }; toast(T.toast.added(name)); render();
+});
+document.addEventListener("keydown", (e) => {
+  if (helpOpen()) {
+    if (e.key === "Escape") { e.preventDefault(); closeHelp(); return; }
+    if (e.key === "Tab") { e.preventDefault(); document.querySelector("#help [data-helpclose]").focus(); }
+    return;
+  }
+  if (e.key === "Escape" && (state.sel || state.adding)) { state.sel = null; state.adding = false; render(); }
+});
+
+window.__board = { state, SPONSORS, autoAssign, findClashes, currentFixes, status };
+renderHead();
+render();
+</script>
+</body>
+</html>

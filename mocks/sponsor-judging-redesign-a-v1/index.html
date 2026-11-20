@@ -1,0 +1,981 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#dbe7f5">
+<title>Sponsor Judging A</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:"Pix32";src:url("assets/Pix32.woff2") format("woff2");font-display:swap}
+:root{
+  /* copied from sponsor-portal-flow-hacker-v1 (src/lib/tokens.ts:242-294, 466-494) */
+  --t-heavy:#0b2b4a;--t-medium:#1c3550;--t-light:#516476;--t-active:#08559c;--t-warn:#8a4300;--t-link:#0b6bc4;
+  --bg-page:#f3f7fc;--bg-surface:#fff;--bg-nav:#dbe7f5;--bg-navSel:#b9d3f0;--bg-inset:#edf3fa;--bg-hl:#e1effb;--bg-current:#e4eefb;
+  --primary:#0b6bc4;
+  --b-default:#cdddeb;--b-subtle:#e0eaf3;--b-card:#d6e3ef;--b-control:#b9cbe0;
+  --live:#16803c;--err:#b42318;
+  --r-sm:4px;--r-md:6px;--r-lg:8px;
+  --sh-card:0 1px 2px 0 rgba(11,43,74,.06),0 1px 4px 0 rgba(11,43,74,.05);
+  --sh-btn:0 2px 4px 0 rgba(11,43,74,.2);
+  --one-bg:#bfdbfe;--one-b:#93c5fd;--one-t:#1e3a8a;
+  --ws-bg:#fef08a;--ws-b:#fde047;--ws-t:#713f12;
+  --nav-h:64px;--bar-h:80px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg-page);color:var(--t-heavy);font-family:Figtree,system-ui,sans-serif;font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+@media (pointer:fine){body{cursor:url("assets/cursor-default.webp"),auto}a,button,[role=button]{cursor:url("assets/hover-hand.webp"),pointer}}
+a{color:inherit}
+button{font:inherit;color:inherit}
+h1,h2,h3,p{margin:0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* shell: top bar + sidebar, as hacker-v1 */
+.app{display:flex;min-height:100dvh}
+.side{display:none}
+.top{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;height:calc(var(--nav-h) + env(safe-area-inset-top));padding:env(safe-area-inset-top) 16px 0;background:var(--bg-nav);border-bottom:1px solid var(--b-default)}
+.top-logo{display:flex;align-items:center;min-width:44px;min-height:44px;padding:0 4px}
+.top-logo img{width:26px;height:38px}
+.top-title{position:absolute;left:50%;transform:translateX(-50%);bottom:calc((var(--nav-h) - 24px)/2);font-weight:600;font-size:16px;white-space:nowrap}
+.helpbtn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid var(--b-default);border-radius:var(--r-lg);background:#fff;text-decoration:none;font-weight:600;font-size:14px;color:var(--t-heavy)}
+.helpbtn svg.i{width:18px;height:18px;color:var(--t-active)}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.pane{flex:1;padding:16px 16px calc(var(--bar-h) + 32px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:20px;min-width:0}
+.desk-h,.lead{display:none}
+@media (min-width:768px){
+  .top{display:none}
+  .side{display:flex;flex-direction:column;justify-content:space-between;position:sticky;top:0;height:100dvh;width:300px;flex:none;overflow-y:auto;background:var(--bg-nav);border-right:1px solid var(--b-default);border-radius:0 var(--r-lg) var(--r-lg) 0;padding:48px 24px}
+  .brand{display:flex;align-items:center;gap:12px;font-size:20px;text-decoration:none}
+  .brand img{width:34px;height:50px;margin:-2.5px 7px}
+  .spon{display:flex;align-items:center;gap:10px;margin-top:28px;padding:10px 12px;background:#fff;border-radius:var(--r-lg);box-shadow:var(--sh-card)}
+  .spon img{height:22px;width:auto}
+  .spon span{font-size:13px;color:var(--t-light)}
+  .snav{display:flex;flex-direction:column;gap:6px;margin-top:36px}
+  .snav hr{border:0;border-top:1px solid var(--b-subtle);margin:14px 0}
+  .navl{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--r-sm);text-decoration:none;color:var(--t-medium)}
+  .navl svg.i{color:var(--t-light)}
+  .navl:hover{background:var(--bg-surface);color:var(--t-heavy)}
+  .navl[aria-current=page]{background:var(--bg-navSel);color:var(--t-active)}
+  .navl[aria-current=page] svg.i{color:var(--t-active)}
+  .side-ft{font-size:13px;color:var(--t-light)}
+  .pane{padding:48px;gap:28px}
+  .desk-h{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+  .desk-h .helpbtn{margin-top:6px}
+  .lead{display:block;color:var(--t-medium);max-width:62ch}
+}
+.h1{font-size:28px;font-weight:700;line-height:1.2}
+@media (min-width:768px){.h1{font-size:32px}}
+
+/* cards, buttons, chips (hacker-v1) */
+.card{background:#fff;border-radius:var(--r-lg);box-shadow:var(--sh-card);padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+@media (min-width:768px){.card{padding:24px}}
+.muted{color:var(--t-light)}
+.small{font-size:14px}
+.num{font-variant-numeric:tabular-nums}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:var(--r-lg);border:1px solid transparent;font-weight:500;font-size:16px;text-decoration:none;white-space:nowrap;transition:background .15s,transform .1s;background:none}
+.btn:active{transform:scale(.97)}
+.btn-p{background:var(--primary);color:#fff;box-shadow:var(--sh-btn)}
+.btn-p:hover{background:var(--t-active)}
+.btn-o{background:#fff;border-color:var(--b-control);color:var(--t-heavy)}
+.btn-o:hover{background:var(--bg-hl)}
+.btn-l{color:var(--t-link);font-weight:600;padding:0 8px;font-size:14px}
+.btn-l:hover{background:var(--bg-hl)}
+.btn[aria-disabled=true]{opacity:.5;box-shadow:none}
+.btn-o[aria-disabled=true]{background:var(--bg-inset);border-color:var(--b-subtle);color:var(--t-light);opacity:1}
+.btn-w{width:100%}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row>.btn{flex:1 1 0}
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:var(--r-sm);background:var(--bg-nav);font-size:13px;font-weight:500;color:var(--t-medium)}
+.stack{display:flex;flex-wrap:wrap;gap:6px}
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--r-lg);background:var(--bg-inset);font-size:14px;color:var(--t-medium)}
+.note svg.i{width:18px;height:18px;margin-top:1px;color:var(--t-light)}
+.note.ok svg.i{color:var(--live)}
+.ck-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-weight:600}
+.mock{font-size:13px;color:var(--t-light);border:1px dashed var(--b-control);border-radius:var(--r-lg);padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.mock .jumps{display:flex;flex-wrap:wrap;gap:4px}
+.mock a{display:inline-flex;align-items:center;min-height:44px;padding:0 10px;border-radius:var(--r-md);color:var(--t-link);font-weight:600;text-decoration:none}
+.mock a:hover{background:var(--bg-hl)}
+.mock a[aria-current=true]{background:var(--bg-nav);color:var(--t-heavy)}
+
+/* phase: which part of judging you're in */
+.phase{display:flex;flex-direction:column;gap:6px}
+.phase .pk{font-family:Pix32,monospace;font-size:14px;color:var(--t-active);letter-spacing:.02em}
+.seg{display:flex;gap:6px}
+.seg i{flex:1;height:6px;border-radius:999px;background:var(--bg-nav)}
+.seg i.on{background:var(--primary)}
+
+/* round 1: counter, last action, deck */
+.r1top{display:flex;flex-direction:column;gap:8px}
+.r1bar{display:flex;align-items:center;gap:12px}
+.cnt1{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.cnt1 p{font-size:15px}
+.m10{display:flex;gap:3px}
+.m10 i{flex:1;height:8px;border-radius:999px;background:var(--bg-nav)}
+.m10 i.on{background:var(--primary)}
+.m10 i:nth-child(5){margin-right:6px}
+.lastline{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;font-size:14px;color:var(--t-medium)}
+.lastline b{font-weight:600}
+.deck{position:relative;margin-bottom:12px}
+.deck.more::before,.deck.more::after{content:"";position:absolute;background:#fff;border-radius:var(--r-lg);box-shadow:var(--sh-card);height:48px}
+.deck.more::before{left:10px;right:10px;bottom:-7px;opacity:.85}
+.deck.more::after{left:22px;right:22px;bottom:-13px;opacity:.55;z-index:-1}
+.pc{position:relative;z-index:1;touch-action:pan-y;-webkit-user-select:none;user-select:none;animation:pcin .22s ease-out}
+@keyframes pcin{from{transform:scale(.97);opacity:.6}}
+.pc.anim{transition:transform .22s cubic-bezier(.2,.8,.2,1),opacity .2s}
+.stamp{position:absolute;top:18px;padding:4px 12px;border:3px solid;border-radius:var(--r-md);font-family:Pix32,monospace;font-size:20px;background:#fff;opacity:0;pointer-events:none;z-index:2}
+.stamp.s{right:18px;color:var(--live);transform:rotate(6deg)}
+.stamp.k{left:18px;color:var(--err);transform:rotate(-6deg)}
+.pc-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tbl{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:var(--r-lg);background:var(--bg-hl);color:var(--t-active);font-weight:600;font-size:15px}
+.tbl b{font-family:Pix32,monospace;font-size:22px;line-height:1;font-weight:400}
+.pc-name{font-size:26px;font-weight:700;line-height:1.2;overflow-wrap:anywhere}
+.pc-tag{font-size:17px;color:var(--t-medium)}
+.kv{display:flex;flex-direction:column;gap:4px}
+.k{font-size:13px;font-weight:600;color:var(--t-light)}
+.links3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.links3 .btn{padding:0 6px;font-size:15px;gap:6px}
+.score5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.score5 button{min-height:48px;border:1px solid var(--b-control);border-radius:var(--r-md);background:#fff;font-weight:600;font-size:17px;font-variant-numeric:tabular-nums}
+.score5 button.lo{background:var(--bg-hl);border-color:var(--bg-hl);color:var(--t-active)}
+.score5 button[aria-pressed=true]{background:var(--primary);border-color:var(--primary);color:#fff}
+.decided{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;padding:2px 8px;border-radius:var(--r-sm);background:var(--bg-nav);color:var(--t-medium)}
+.decided.short{background:#dcf2e3;color:var(--live)}
+
+/* bottom bars: fixed on phones, inline on desktop */
+.bbar{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--bg-nav);border-top:1px solid var(--b-default);display:flex;flex-direction:column;gap:6px}
+.bbar .hint{font-size:13px;color:var(--t-medium);text-align:center}
+.acts{display:grid;grid-template-columns:1fr 1fr 1.35fr;gap:8px}
+.acts .btn{min-height:56px;font-weight:600;padding:0 8px}
+@media (min-width:768px){.bbar{position:static;padding:0;background:none;border:0}}
+
+/* desktop round 1: card + live shortlist */
+.r1grid{display:grid;gap:24px}
+.r1side{display:none}
+@media (min-width:1024px){.r1grid{grid-template-columns:minmax(0,600px) minmax(260px,1fr);align-items:start;gap:32px}.r1side{display:flex;position:sticky;top:48px}}
+
+/* lists */
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--b-subtle);min-width:0}
+.li:first-child{border-top:0}
+.li .tx{flex:1;min-width:0}
+.li .tx b{display:block;font-weight:600;overflow-wrap:anywhere}
+.li .tx span{display:block;font-size:13px;color:var(--t-light)}
+.grp-h{font-size:16px;font-weight:600;display:flex;gap:8px;align-items:baseline}
+.rv{display:flex;flex-direction:column;gap:8px;padding:12px 0;border-top:1px solid var(--b-subtle)}
+.rv:first-of-type{border-top:0}
+.rv-n{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;width:100%;border:0;background:none;padding:0;text-align:left}
+.rv-n b{font-weight:600;font-size:16px;overflow-wrap:anywhere}
+.rv-n span{font-size:13px;color:var(--t-light);white-space:nowrap}
+.seg3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;background:var(--bg-nav);border-radius:var(--r-lg)}
+.seg3 button{min-height:44px;border:0;border-radius:var(--r-md);background:none;font-weight:600;font-size:15px;color:var(--t-medium)}
+.seg3 button[aria-pressed=true]{background:#fff;color:var(--t-heavy);box-shadow:var(--sh-card)}
+.seg3 button[aria-pressed=true][data-to=short]{color:var(--live)}
+.seg3 button[aria-disabled=true]{opacity:.45}
+@media (min-width:768px){.rv{flex-direction:row;align-items:center}.rv-n{flex:1}.seg3{width:340px;flex:none}}
+
+/* waiting: presentation schedule (day-schedule.tsx blocks) */
+.done-h{display:flex;align-items:center;gap:16px}
+.big-ck{width:48px;height:48px;flex:none;border-radius:999px;background:var(--primary);display:flex;align-items:center;justify-content:center}
+.big-ck svg{width:24px;height:24px;stroke:#fff;stroke-width:2.5;fill:none}
+.done-h h2{font-size:20px;font-weight:600}
+.sch{display:flex;flex-direction:column;gap:10px}
+.ev{display:grid;grid-template-columns:64px 1fr;gap:10px}
+.ev .tm{font-family:Pix32,monospace;font-size:14px;color:var(--t-medium);padding-top:12px;white-space:nowrap}
+.evb{border:2px solid var(--one-b);background:var(--one-bg);color:var(--one-t);border-radius:var(--r-lg);padding:10px 12px;min-width:0}
+.evb b{display:block;font-family:Pix32,monospace;font-size:15px;font-weight:400;letter-spacing:.02em;overflow-wrap:anywhere}
+.evb span{display:block;font-size:13px}
+.lockic{width:48px;height:48px;border-radius:999px;background:var(--bg-nav);display:flex;align-items:center;justify-content:center;color:var(--t-active)}
+.lockic svg.i{width:24px;height:24px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.steps li{display:flex;gap:12px;align-items:flex-start;padding:12px 8px}
+.steps .tm{font-family:Pix32,monospace;font-size:14px;color:var(--t-active);width:56px;flex:none;padding-top:2px}
+.steps b{display:block;font-weight:600}
+
+/* round 2: slots + pool */
+.r2grid{display:grid;gap:20px}
+@media (min-width:1024px){.r2grid{grid-template-columns:1fr 1fr;align-items:start;gap:32px}}
+.slots{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.slot{display:flex;align-items:center;gap:8px;height:68px;padding:0 4px 0 12px;border-radius:var(--r-lg);border:2px dashed var(--b-control);background:var(--bg-inset);position:relative}
+.slot .pl{width:46px;flex:none;font-family:Pix32,monospace;font-size:18px;color:var(--t-light)}
+.slot .tx{flex:1;min-width:0}
+.slot .tx b{display:block;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
+.slot .tx span{display:block;font-size:13px;color:var(--t-light)}
+.slot.next{border-color:var(--primary);background:var(--bg-hl)}
+.slot.next .pl{color:var(--t-active)}
+.slot.filled{border:2px solid var(--one-b);background:#fff;box-shadow:var(--sh-card)}
+.slot.filled .pl{color:var(--t-active)}
+.slot.first.filled{border-color:var(--ws-b);background:#fffce6}
+.slot.first.filled .pl{color:var(--ws-t)}
+.slot.shift{transition:transform .15s}
+.slot.drag{z-index:5;box-shadow:0 10px 24px rgba(11,43,74,.22);transition:none}
+.ib{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:var(--r-md);background:none;color:var(--t-light);flex:none}
+.ib:hover{background:var(--bg-hl)}
+.handle{touch-action:none;color:var(--t-medium)}
+.pool{display:flex;flex-direction:column;gap:8px}
+.pt{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:10px 12px;border:1px solid var(--b-card);border-radius:var(--r-lg);background:#fff;text-align:left;box-shadow:var(--sh-card);transition:background .15s}
+.pt .rb{width:44px;height:44px;flex:none;border-radius:999px;border:2px dashed var(--b-control);display:flex;align-items:center;justify-content:center;font-family:Pix32,monospace;font-size:14px;color:var(--t-light)}
+.pt .tx{flex:1;min-width:0}
+.pt .tx b{display:block;font-weight:600;overflow-wrap:anywhere}
+.pt .tx span{display:block;font-size:13px;color:var(--t-light)}
+.pt[aria-pressed=true]{background:var(--bg-hl);border-color:var(--one-b)}
+.pt[aria-pressed=true] .rb{background:var(--primary);border:0;color:#fff}
+
+/* review & sent */
+.sendlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.sendlist li{padding:12px 0;border-top:1px solid var(--b-subtle);font-size:16px;overflow-wrap:anywhere}
+.sendlist li:first-child{border-top:0;padding-top:0}
+.sendlist li b{font-weight:700}
+.sendlist .id{font-variant-numeric:tabular-nums;color:var(--t-light)}
+
+/* sheet + toast (hacker-v1) */
+.scrim{position:fixed;inset:0;background:rgba(11,43,74,.35);z-index:50;display:none}
+.scrim.on{display:block}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;background:#fff;border-radius:16px 16px 0 0;padding:8px 20px calc(20px + env(safe-area-inset-bottom));max-height:88dvh;overflow-y:auto;transform:translateY(105%);transition:transform .25s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;gap:14px;visibility:hidden}
+.sheet.on{transform:none;visibility:visible}
+.grab{width:40px;height:4px;border-radius:999px;background:var(--b-default);margin:4px auto 0;flex:none}
+@media (min-width:768px){.sheet{left:50%;width:480px;margin-left:-240px;bottom:24px;border-radius:12px}}
+.toast{position:fixed;left:50%;bottom:calc(var(--bar-h) + 40px + env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;background:var(--t-heavy);color:#fff;padding:10px 16px;border-radius:var(--r-lg);font-size:14px;z-index:60;transition:all .2s;pointer-events:none;width:max-content;max-width:calc(100vw - 32px)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+@media (min-width:768px){.toast{bottom:32px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="side" aria-label="Sponsor portal">
+    <div>
+      <a class="brand" href="../sponsor-portal-flow-hacker-v1/index.html#today"><img src="assets/horse.svg" alt="">Hack Western 13</a>
+      <div class="spon"><img src="assets/sunlife.png" alt="Sun Life"><span>Sponsor portal</span></div>
+      <div class="snav" id="snav"></div>
+    </div>
+    <p class="side-ft">Times are Eastern · Nov 20 to 22, 2026</p>
+  </nav>
+  <div class="main">
+    <header class="top">
+      <a class="top-logo" href="../sponsor-portal-flow-hacker-v1/index.html#today" aria-label="Sponsor portal home"><img src="assets/horse.svg" alt=""></a>
+      <span class="top-title">Judging</span>
+      <a class="helpbtn" href="../sponsor-portal-flow-hacker-v1/index.html#help"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg>Help</a>
+    </header>
+    <main class="pane" id="pane"></main>
+  </div>
+</div>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetH"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* Dummy Devpost submissions, inlined from mocks/_data/devpost-projects.json */
+const DATA={
+ "_note": "Dummy Devpost-style submissions for judging mocks. Fictional teams and people. IDs are 12-hex like the app's team IDs.",
+ "sponsor": {
+  "name": "Sun Life",
+  "track": "Best Use of AI for Financial Wellness",
+  "judgingRoom": "Rm 2240",
+  "presentationsRoom": "Rm 2240"
+ },
+ "rules": {
+  "round1": "Score and shortlist 5 to 10 teams from your track, then send the shortlist. Opens Sun 9:00 AM.",
+  "round2": "Rank your top 5 from the teams that presented to you. 1st to 5th place.",
+  "lockedUntil": "Sun Nov 22, 9:00 AM"
+ },
+ "projects": [
+  {
+   "id": "a1c3e5f70912",
+   "name": "Pocket Planner",
+   "tagline": "A budgeting buddy that turns your bank feed into weekly goals you can actually keep.",
+   "members": [
+    "Maya Chen",
+    "Arjun Patel",
+    "Sofia Rossi"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness",
+    "Best Beginner Hack"
+   ],
+   "builtWith": [
+    "React Native",
+    "Plaid",
+    "OpenAI"
+   ],
+   "table": "B12",
+   "video": true,
+   "github": true
+  },
+  {
+   "id": "b2d4f6a81023",
+   "name": "NestEgg",
+   "tagline": "Retirement saving explained in plain language, with nudges timed to your paydays.",
+   "members": [
+    "Liam O'Brien",
+    "Hana Kim"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness"
+   ],
+   "builtWith": [
+    "Next.js",
+    "Python",
+    "Claude"
+   ],
+   "table": "A04",
+   "video": true,
+   "github": true
+  },
+  {
+   "id": "c3e5a7b92134",
+   "name": "SplitSense",
+   "tagline": "Roommates log shared costs by photo; it settles up fairly and flags who's carrying the load.",
+   "members": [
+    "Noor Haddad",
+    "Ethan Wu",
+    "Priyanka Rao",
+    "Tom Becker"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness",
+    "Best Use of Cohere"
+   ],
+   "builtWith": [
+    "Flutter",
+    "Firebase",
+    "Cohere"
+   ],
+   "table": "C08",
+   "video": false,
+   "github": true
+  },
+  {
+   "id": "d4f6b8c03245",
+   "name": "Benefits Buddy",
+   "tagline": "Reads your employer benefits PDF and tells you what you're leaving on the table.",
+   "members": [
+    "Grace Liu",
+    "Mateo Garcia"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness"
+   ],
+   "builtWith": [
+    "SvelteKit",
+    "LangChain",
+    "pgvector"
+   ],
+   "table": "A11",
+   "video": true,
+   "github": true
+  },
+  {
+   "id": "e5a7c9d14356",
+   "name": "Debt Dash",
+   "tagline": "Gamified debt payoff: pick avalanche or snowball and race a friend to zero.",
+   "members": [
+    "Jordan Blake",
+    "Aisha Mohammed",
+    "Kenji Sato"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness",
+    "Best Game"
+   ],
+   "builtWith": [
+    "Unity",
+    "Node.js"
+   ],
+   "table": "D02",
+   "video": true,
+   "github": false
+  },
+  {
+   "id": "f6b8d0e25467",
+   "name": "Rent Radar",
+   "tagline": "Students compare true monthly cost of housing, including transit and utilities.",
+   "members": [
+    "Olivia Martin",
+    "Dev Sharma"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness",
+    "Best Use of Maps"
+   ],
+   "builtWith": [
+    "Vue",
+    "Mapbox",
+    "FastAPI"
+   ],
+   "table": "B03",
+   "video": true,
+   "github": true
+  },
+  {
+   "id": "a7c9e1f36578",
+   "name": "Coverage Check",
+   "tagline": "Answer five questions and see if your insurance actually covers what you think it does.",
+   "members": [
+    "Chloe Nguyen",
+    "Samuel Osei",
+    "Lucia Fernandez"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness"
+   ],
+   "builtWith": [
+    "React",
+    "Express",
+    "Claude"
+   ],
+   "table": "C15",
+   "video": false,
+   "github": true
+  },
+  {
+   "id": "b8d0f2a47689",
+   "name": "Allowance AI",
+   "tagline": "A kid-friendly allowance app that teaches saving with visual jars and parent controls.",
+   "members": [
+    "Emma Wilson",
+    "Ravi Gupta"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness",
+    "Best Beginner Hack"
+   ],
+   "builtWith": [
+    "Swift",
+    "SwiftUI"
+   ],
+   "table": "A07",
+   "video": true,
+   "github": true
+  },
+  {
+   "id": "c9e1a3b5879a",
+   "name": "TaxTime",
+   "tagline": "Walks first-time filers through Canadian student tax credits step by step.",
+   "members": [
+    "Zoe Tremblay",
+    "Ahmed Ali",
+    "Jun Park"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness"
+   ],
+   "builtWith": [
+    "Next.js",
+    "Gemini"
+   ],
+   "table": "D09",
+   "video": true,
+   "github": true
+  },
+  {
+   "id": "d0f2b4c6980b",
+   "name": "Wellth",
+   "tagline": "Links mood check-ins to spending patterns so you can spot stress spending early.",
+   "members": [
+    "Isabella Costa",
+    "Marcus Lee"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness",
+    "Best Health Hack"
+   ],
+   "builtWith": [
+    "React Native",
+    "Supabase",
+    "OpenAI"
+   ],
+   "table": "B19",
+   "video": true,
+   "github": false
+  },
+  {
+   "id": "e1a3c5d7a91c",
+   "name": "GigLedger",
+   "tagline": "Bookkeeping for gig workers: auto-sorts income from rideshare, delivery and tutoring.",
+   "members": [
+    "Carlos Mendes",
+    "Fatima Zahra",
+    "Ben Cohen"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness"
+   ],
+   "builtWith": [
+    "Django",
+    "Stripe API"
+   ],
+   "table": "C02",
+   "video": false,
+   "github": true
+  },
+  {
+   "id": "f2b4d6e8b02d",
+   "name": "Emergency Fund Coach",
+   "tagline": "Builds a rainy-day fund from round-ups and tells you when you're ready for a big buy.",
+   "members": [
+    "Hannah Schultz",
+    "Kwame Asante"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness"
+   ],
+   "builtWith": [
+    "Kotlin",
+    "Room",
+    "Claude"
+   ],
+   "table": "A15",
+   "video": true,
+   "github": true
+  },
+  {
+   "id": "a3c5e7f9c13e",
+   "name": "ScholarScout",
+   "tagline": "Matches students with scholarships and drafts the first version of each essay.",
+   "members": [
+    "Mia Johansson",
+    "Diego Alvarez",
+    "Leah Goldberg",
+    "Yusuf Demir"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness",
+    "Best Education Hack"
+   ],
+   "builtWith": [
+    "Remix",
+    "Postgres",
+    "OpenAI"
+   ],
+   "table": "D14",
+   "video": true,
+   "github": true
+  },
+  {
+   "id": "b4d6f8a0d24f",
+   "name": "Subscribed",
+   "tagline": "Finds forgotten subscriptions in your statements and cancels them in one tap.",
+   "members": [
+    "Noah Fischer",
+    "Amara Okafor"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness"
+   ],
+   "builtWith": [
+    "Next.js",
+    "Plaid"
+   ],
+   "table": "B07",
+   "video": false,
+   "github": true
+  },
+  {
+   "id": "c5e7a9b1e350",
+   "name": "FirstPaycheque",
+   "tagline": "Explains your first pay stub line by line and sets up your first TFSA.",
+   "members": [
+    "Ella Brooks",
+    "Sanjay Iyer"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness",
+    "Best Beginner Hack"
+   ],
+   "builtWith": [
+    "Astro",
+    "Tailwind",
+    "Claude"
+   ],
+   "table": "C11",
+   "video": true,
+   "github": true
+  },
+  {
+   "id": "d6f8b0c2f461",
+   "name": "CareCost",
+   "tagline": "Estimates out-of-pocket costs for care before you book, using your plan.",
+   "members": [
+    "Victoria Chan",
+    "Omar Haddad",
+    "Lena Novak"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness",
+    "Best Health Hack"
+   ],
+   "builtWith": [
+    "React",
+    "Flask",
+    "Cohere"
+   ],
+   "table": "A02",
+   "video": true,
+   "github": true
+  },
+  {
+   "id": "e7a9c1d30572",
+   "name": "Goalpost",
+   "tagline": "Shared savings goals for couples and friends, with gentle check-ins instead of nagging.",
+   "members": [
+    "Ryan Murphy",
+    "Sara Lindqvist"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness"
+   ],
+   "builtWith": [
+    "Expo",
+    "Firebase"
+   ],
+   "table": "D06",
+   "video": false,
+   "github": false
+  },
+  {
+   "id": "f8b0d2e41683",
+   "name": "Credit Climb",
+   "tagline": "Shows newcomers to Canada how to build credit from zero, month by month.",
+   "members": [
+    "Wei Zhang",
+    "Ana Silva",
+    "Kofi Mensah"
+   ],
+   "tracks": [
+    "Best Use of AI for Financial Wellness"
+   ],
+   "builtWith": [
+    "Next.js",
+    "Prisma",
+    "OpenAI"
+   ],
+   "table": "B21",
+   "video": true,
+   "github": true
+  }
+ ]
+};
+
+/* ===== icons (lucide paths, same set as hacker-v1) ===== */
+const P={
+home:'<path d="M3 10l9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+coffee:'<path d="M10 2v2M14 2v2M6 2v2"/><path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/>',
+trophy:'<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.7V17c0 .6-.5 1-1 1.2C7.8 18.8 7 20.2 7 22M14 14.7V17c0 .6.5 1 1 1.2 1.2.6 2 2 2 3.8"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>',
+cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+x:'<path d="M18 6 6 18M6 6l12 12"/>',
+check:'<path d="M20 6 9 17l-5-5"/>',
+maybe:'<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>',
+ext:'<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+play:'<circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4z"/>',
+code:'<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+send:'<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
+undo:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+grip:'<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>',
+back:'<path d="m15 18-6-6 6-6"/>',
+list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>'
+};
+const ic=(n,c="")=>`<svg class="i ${c}" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
+const CK='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const plural=(n,w,p)=>`${n} ${n===1?w:(p||w+"s")}`;
+const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ===== rules ===== */
+const S=DATA.sponsor, PROJ=DATA.projects, byId=id=>PROJ.find(p=>p.id===id);
+const MIN=5, MAX=10, TOP=5, SCORE_MAX=5;
+const PLACE=["1st","2nd","3rd","4th","5th"];
+const START=600, SLOT=10; /* presentations from 10:00, 10 min each */
+const hm=m=>`${Math.floor(m/60)>12?Math.floor(m/60)-12:Math.floor(m/60)}:${String(m%60).padStart(2,"0")}`;
+
+const UI={dec:{},score:{},queue:PROJ.map(p=>p.id),qi:0,pass:"all",hist:[],last:null,
+  sent1:null,ranks:[],rhist:[],sent2:null};
+const shortIds=()=>PROJ.filter(p=>UI.dec[p.id]==="short").map(p=>p.id);
+const countOf=d=>PROJ.filter(p=>d?UI.dec[p.id]===d:!UI.dec[p.id]).length;
+const presented=()=>(UI.sent1?.ids||[]).map((id,i)=>({p:byId(id),at:START+i*SLOT}));
+const slotOf=id=>presented().find(x=>x.p.id===id);
+const scoreTxt=id=>UI.score[id]?`${UI.score[id]}/${SCORE_MAX}`:"No score";
+
+/* ===== shell ===== */
+const NAV=[["Today","home","#today"],["Chats","coffee","#chats-1"],["Schedule","cal","#schedule"],["Map","pin","#map"]];
+document.getElementById("snav").innerHTML=NAV.map(([l,i,h])=>`<a class="navl" href="../sponsor-portal-flow-hacker-v1/index.html${h}">${ic(i)}${l}</a>`).join("")+`<hr><a class="navl" href="#r1" aria-current="page">${ic("trophy")}Judging</a>`;
+const helpBtn=`<a class="helpbtn" href="../sponsor-portal-flow-hacker-v1/index.html#help">${ic("maybe")}Help</a>`;
+const head=(lead)=>`<div class="desk-h"><h1 class="h1">Judging</h1>${helpBtn}</div>${lead?`<p class="lead">${lead}</p>`:""}`;
+const PHASES=["Round 1 · Shortlist","Presentations","Round 2 · Top 5","Sent"];
+const phase=k=>`<div class="phase"><span class="pk">${PHASES[k]}</span><div class="seg" aria-hidden="true">${PHASES.map((_,i)=>`<i class="${i<=k?"on":""}"></i>`).join("")}</div></div>`;
+const JUMPS=[["locked","Sat · locked"],["r1","Sun 9:00 · round 1"],["waiting","Presentations"],["r2","Round 2 open"],["sent","Top 5 sent"]];
+const mockBar=cur=>`<nav class="mock" aria-label="Mock time states"><span>Mock only: jump to a time</span><div class="jumps">${JUMPS.map(([k,l])=>`<a href="#${k}" data-jump="${k}"${k===cur?' aria-current="true"':""}>${l}</a>`).join("")}</div></nav>`;
+
+/* ===== project card (Devpost style) ===== */
+function cardBody(p,pos){
+  const sc=UI.score[p.id]||0, other=p.tracks.filter(t=>t!==S.track);
+  const link=(has,label,icon,miss)=>has?`<button type="button" class="btn btn-o" data-link="${label}" data-team="${esc(p.name)}">${ic(icon)}${label}</button>`:`<button type="button" class="btn btn-o" aria-disabled="true" data-nolink="${miss}">${miss}</button>`;
+  return `<div class="pc-top"><span class="tbl">${ic("pin")}Table <b>${p.table}</b></span>${pos?`<span class="small muted num">${pos}</span>`:""}</div>
+    <h2 class="pc-name" id="pcH">${esc(p.name)}</h2>
+    <p class="pc-tag">${esc(p.tagline)}</p>
+    <div class="kv"><h3 class="k">Team</h3><p>${p.members.map(esc).join(", ")}</p></div>
+    <div class="kv"><h3 class="k">Built with</h3><div class="stack">${p.builtWith.map(b=>`<span class="tag">${esc(b)}</span>`).join("")}</div></div>
+    ${other.length?`<p class="small muted">Also entered: ${other.map(esc).join(", ")}</p>`:""}
+    <div class="links3">${link(true,"Devpost","ext")}${link(p.video,"Video","play","No video")}${link(p.github,"GitHub","code","No GitHub")}</div>
+    <div class="kv"><div class="ck-h"><h3 class="k">Your score <span style="font-weight:400">(optional)</span></h3><span class="small num">${sc?`${sc}/${SCORE_MAX}`:""}</span></div>
+    <div class="score5" role="group" aria-label="Score for ${esc(p.name)}, out of ${SCORE_MAX}">${[1,2,3,4,5].map(v=>`<button type="button" class="${sc&&v<sc?"lo":""}" aria-pressed="${sc===v}" data-sc="${p.id}" data-v="${v}">${v}</button>`).join("")}</div></div>`;
+}
+
+/* ===== 1 Locked ===== */
+function vLocked(){
+  return `${head("Sun Life judges the "+esc(S.track)+" track.")}
+  <section class="card" style="align-items:flex-start"><span class="lockic">${ic("lock")}</span>
+    <h2 style="font-size:22px;font-weight:600">Judging opens ${DATA.rules.lockedUntil}</h2>
+    <p class="muted">Your track is <b style="color:var(--t-heavy)">${esc(S.track)}</b>. Teams appear here once hacking ends. Come to the 8:30 AM judging debrief first.</p>
+    <ol class="steps" style="align-self:stretch">
+      <li><span class="tm">9:00</span><div><b>Round 1: walk the demo fair</b><span class="small muted">Swipe through the teams in your track, one card at a time, and shortlist 5 to 10. Each card shows the team's table.</span></div></li>
+      <li><span class="tm">10:00</span><div><b>Presentations in ${S.presentationsRoom}</b><span class="small muted">Send your shortlist and we schedule each team to present to you. Their times show here.</span></div></li>
+      <li><span class="tm">After</span><div><b>Round 2: rank your top 5</b><span class="small muted">Hack Western opens round 2 once presentations end. Rank 1st to 5th place from the teams that presented. This decides your prize.</span></div></li>
+    </ol>
+  </section>
+  ${mockBar("locked")}`;
+}
+
+/* ===== 2 Round 1: the deck ===== */
+const VERB={short:"Shortlisted",maybe:"Maybe:",skip:"Skipped"};
+function counter(){
+  const n=shortIds().length;
+  return `<div class="cnt1"><p><b class="num">${n} of ${MAX}</b> shortlisted · min ${MIN}</p><div class="m10" aria-hidden="true">${Array.from({length:MAX},(_,i)=>`<i class="${i<n?"on":""}"></i>`).join("")}</div></div>`;
+}
+function vR1(){
+  const n=shortIds().length, id=UI.queue[UI.qi], p=id&&byId(id), full=n>=MAX;
+  const pos=p?(UI.pass==="maybe"?`Maybe ${UI.qi+1} of ${UI.queue.length}`:`${UI.qi+1} of ${UI.queue.length}`):"";
+  const top=`<div class="r1top">${phase(0)}
+    <div class="r1bar">${counter()}<a class="btn ${n>=MIN?"btn-p":"btn-o"}" href="#r1-review">${ic("list")}${n>=MIN?"Review & send":"Review"}</a></div>
+    <div class="lastline" aria-live="polite">${UI.last?`<span>${VERB[UI.last.d]} <b>${esc(byId(UI.last.id).name)}</b></span><button type="button" class="btn btn-l" data-undo>${ic("undo")}Undo</button>`:`<span class="muted">${p?"Swipe right to shortlist, left to skip.":""}</span>`}</div></div>`;
+  let main;
+  if(p){
+    main=`<div class="deck${UI.qi<UI.queue.length-1?" more":""}"><article class="card pc" data-id="${p.id}" aria-labelledby="pcH">
+      <span class="stamp s" aria-hidden="true">SHORTLIST</span><span class="stamp k" aria-hidden="true">SKIP</span>${cardBody(p,pos)}</article></div>
+    <div class="bbar">${full&&UI.dec[p.id]!=="short"?`<p class="hint">Shortlist is full (${MAX}). Swap a team out in Review.</p>`:""}
+      <div class="acts" role="group" aria-label="Decide on ${esc(p.name)}">
+      <button type="button" class="btn btn-o" data-d="skip">${ic("x")}Skip</button>
+      <button type="button" class="btn btn-o" data-d="maybe">${ic("maybe")}Maybe</button>
+      <button type="button" class="btn btn-p" data-d="short"${full&&UI.dec[p.id]!=="short"?' aria-disabled="true"':""}>${ic("check")}Shortlist</button></div></div>`;
+  }else{
+    const m=countOf("maybe");
+    main=`<section class="card"><h2 style="font-size:22px;font-weight:600">${UI.pass==="maybe"?"Maybes done.":`That's all ${PROJ.length} teams.`}</h2>
+      <p class="muted">${plural(n,"shortlisted","shortlisted")} · ${m} maybe · ${countOf("skip")} skipped</p>
+      ${n<MIN?`<p class="note">${ic("info")}<span>Shortlist ${plural(MIN-n,"more team")} to send. Your maybes and skipped teams are in Review.</span></p>`:""}
+      <div class="row">${m?`<button type="button" class="btn btn-o" data-maybes>Decide your ${plural(m,"maybe")}</button>`:""}<a class="btn btn-p" href="#r1-review">${ic("list")}${n>=MIN?"Review & send":"Review"}</a></div></section>`;
+  }
+  const side=`<aside class="card r1side"><div class="ck-h"><h2 style="font-size:18px">Your shortlist</h2><span class="small num">${n} of ${MAX}</span></div>
+    <div class="list">${shortIds().map(i=>{const q=byId(i);return `<div class="li"><div class="tx"><b>${esc(q.name)}</b><span>Table ${q.table} · ${scoreTxt(i)}</span></div></div>`}).join("")||`<p class="small muted">Shortlisted teams show here. Send 5 to 10.</p>`}</div>
+    <a class="btn ${n>=MIN?"btn-p":"btn-o"} btn-w" href="#r1-review">${n>=MIN?"Review & send":"Review all teams"}</a></aside>`;
+  return `${head(esc(DATA.rules.round1))}${top}<div class="r1grid"><div style="display:flex;flex-direction:column;gap:20px;min-width:0">${main}</div>${side}</div>${mockBar("r1")}`;
+}
+
+/* ===== 2b Round 1: review list (change your mind) + send ===== */
+function vR1Review(){
+  const n=shortIds().length, full=n>=MAX;
+  const groups=[["short","Shortlisted"],["maybe","Maybe"],["skip","Skipped"],[null,"Not seen yet"]];
+  const row=p=>{const d=UI.dec[p.id]||null;return `<div class="rv"><button type="button" class="rv-n" data-open="${p.id}"><b>${esc(p.name)}</b><span>Table ${p.table} · ${scoreTxt(p.id)}</span></button>
+    <div class="seg3" role="group" aria-label="${esc(p.name)}">${[["short","Shortlist"],["maybe","Maybe"],["skip","Skip"]].map(([k,l])=>`<button type="button" data-set="${p.id}" data-to="${k}" aria-pressed="${d===k}"${k==="short"&&full&&d!=="short"?' aria-disabled="true"':""}>${l}</button>`).join("")}</div></div>`};
+  return `${head("Change your mind on any team. Tap a name to see its card again.")}
+  <div class="r1top">${phase(0)}<div class="r1bar">${counter()}<a class="btn btn-o" href="#r1">${ic("back")}Cards</a></div></div>
+  ${groups.map(([k,l])=>{const ps=PROJ.filter(p=>(UI.dec[p.id]||null)===k);return ps.length?`<section class="card" style="gap:4px"><h2 class="grp-h">${l} <span class="small muted num">${ps.length}</span></h2>${ps.map(row).join("")}</section>`:""}).join("")}
+  <div class="bbar">${n<MIN?`<p class="hint">Shortlist ${plural(MIN-n,"more team")} to send (${MIN} to ${MAX}).</p>`:""}
+    <button type="button" class="btn btn-p btn-w" style="min-height:52px" data-send1${n<MIN?' aria-disabled="true"':""}>${ic("send")}Send shortlist (${n})</button></div>
+  ${mockBar("r1")}`;
+}
+function confirmSend1(){
+  const ids=shortIds();
+  openSheet(`<div class="grab"></div><h2 id="sheetH" style="font-size:20px;font-weight:600">Send ${plural(ids.length,"team")}?</h2>
+  <p class="muted small">We schedule each team to present to you in ${S.presentationsRoom} from 10:00, and tell them their time. Changes after you send don't move presentations.</p>
+  <div class="list">${ids.map(i=>{const p=byId(i);return `<div class="li"><div class="tx"><b>${esc(p.name)}</b><span>Table ${p.table} · ${scoreTxt(i)}</span></div></div>`}).join("")}</div>
+  <button type="button" class="btn btn-p btn-w" data-confirm1>${ic("send")}Send shortlist</button>
+  <button type="button" class="btn btn-o btn-w" data-close>Go back</button>`);
+}
+function openCard(id){
+  const p=byId(id),d=UI.dec[id]||null,full=shortIds().length>=MAX;
+  openSheet(`<div class="grab"></div><span class="sr" id="sheetH">${esc(p.name)}</span>${cardBody(p)}
+  <div class="seg3" role="group" aria-label="Decision">${[["short","Shortlist"],["maybe","Maybe"],["skip","Skip"]].map(([k,l])=>`<button type="button" data-set="${id}" data-to="${k}" aria-pressed="${d===k}"${k==="short"&&full&&d!=="short"?' aria-disabled="true"':""}>${l}</button>`).join("")}</div>
+  <button type="button" class="btn btn-o btn-w" data-close>Done</button>`,id);
+}
+
+/* ===== 3 Waiting: presentations scheduled ===== */
+function vWaiting(){
+  const L=presented();
+  return `${head("Presentations are scheduled. Round 2 opens here after the last one.")}${phase(1)}
+  <section class="card"><div class="done-h"><span class="big-ck">${CK}</span><div><h2>Shortlist sent ${UI.sent1.at}</h2><p class="small muted">${plural(L.length,"team")} · teams were told their time on Slack or by email</p></div></div></section>
+  <section class="card"><div class="ck-h"><h2 style="font-size:20px">Your presentations</h2><span class="small">${S.presentationsRoom}</span></div>
+    <div class="sch">${L.map(x=>`<div class="ev"><span class="tm">${hm(x.at)}</span><div class="evb"><b>${esc(x.p.name)}</b><span>${hm(x.at)}–${hm(x.at+SLOT)} · ${S.presentationsRoom} · from Table ${x.p.table}</span></div></div>`).join("")}</div>
+    <p class="note">${ic("info")}<span>Round 2 opens here after presentations. Hack Western opens it by hand once the last team has presented, then you rank your top ${TOP} from these teams.</span></p>
+    <p class="small muted">Need to add a team? Tell your Hack Western contact.</p></section>
+  <p class="mock">Mock only: <a href="#r2" data-jump="r2">Hack Western opens round 2</a></p>
+  ${mockBar("waiting")}`;
+}
+
+/* ===== 4 Round 2: tap to rank ===== */
+function vR2(){
+  const L=presented(), R=UI.ranks, left=TOP-R.length;
+  const slots=PLACE.map((pl,i)=>{const id=R[i];if(!id)return `<li class="slot${i===R.length?" next":""}${i===0?" first":""}"><span class="pl">${pl}</span><div class="tx"><span>${i===R.length?"Tap a team below":"Empty"}</span></div></li>`;
+    const p=byId(id);return `<li class="slot filled${i===0?" first":""}" data-i="${i}"><span class="pl">${pl}</span><div class="tx"><b>${esc(p.name)}</b><span>${hm(slotOf(id).at)} · ${scoreTxt(id)}</span></div>
+      <button type="button" class="ib" data-unrank="${id}" aria-label="Remove ${esc(p.name)} from ${pl} place">${ic("x")}</button>
+      <button type="button" class="ib handle" data-handle="${i}" aria-label="Move ${esc(p.name)}, ${pl} place. Drag, or use arrow keys">${ic("grip")}</button></li>`}).join("");
+  const pool=L.map(x=>{const r=R.indexOf(x.p.id);return `<button type="button" class="pt" data-pick="${x.p.id}" aria-pressed="${r>=0}"><span class="rb">${r>=0?PLACE[r]:""}</span><span class="tx"><b>${esc(x.p.name)}</b><span>Presented ${hm(x.at)} · Table ${x.p.table} · ${scoreTxt(x.p.id)}</span></span></button>`}).join("");
+  return `${head(esc(DATA.rules.round2))}${phase(2)}
+  <div class="r2grid">
+  <section class="card"><div class="ck-h"><h2 style="font-size:20px">Your top ${TOP}</h2><button type="button" class="btn btn-l" data-runo${R.length?"":' aria-disabled="true"'}>${ic("undo")}Undo</button></div>
+    <ol class="slots" id="slots" aria-label="Your ranking">${slots}</ol>
+    <p class="small muted">Drag ${ic("grip").replace('class="i "','class="i" style="width:16px;height:16px;vertical-align:-3px"')} to reorder.</p></section>
+  <section class="card"><div class="ck-h"><h2 style="font-size:20px">Teams that presented</h2><span class="small num">${L.length}</span></div>
+    <p class="small muted">Tap teams in the order you'd rank them. First tap is 1st place. Tap again to take it out.</p>
+    <div class="pool">${pool}</div></section></div>
+  <div class="bbar">${left?`<p class="hint">Pick ${plural(left,"more team")} for your top ${TOP}.</p>`:""}
+    <a class="btn btn-p btn-w" style="min-height:52px" href="#review" data-toreview${left?' aria-disabled="true"':""}>Review & send</a></div>
+  ${mockBar("r2")}`;
+}
+
+/* ===== 5 Review & send / 6 Sent ===== */
+const sendLines=()=>UI.ranks.map((id,i)=>`<li data-line><b>${PLACE[i]} place</b> · ${esc(byId(id).name)} <span class="id">(${id})</span></li>`).join("");
+function vReview(){
+  return `${head("Check your ranking. This is exactly what Hack Western gets.")}${phase(2)}
+  <section class="card"><h2 style="font-size:22px;font-weight:600">Review & send</h2>
+    <p class="small muted">This is exactly what we send:</p>
+    <ol class="sendlist" id="sendlist">${sendLines()}</ol>
+    <p class="note">${ic("info")}<span>Sent to the Hack Western team and saved to the Sponsor Judging sheet.</span></p>
+    <div class="row"><a class="btn btn-o" href="#r2">${ic("back")}Change ranking</a><button type="button" class="btn btn-p" data-send2>${ic("send")}Send top ${TOP}</button></div></section>
+  ${mockBar("r2")}`;
+}
+function vSent(){
+  return `${head()}${phase(3)}
+  <section class="card"><div class="done-h"><span class="big-ck">${CK}</span><div><h2>Top ${TOP} sent ${UI.sent2.at}</h2><p class="small muted">Thanks for judging, Sun Life.</p></div></div>
+    <ol class="sendlist" id="sendlist">${sendLines()}</ol>
+    <p class="note ok">${ic("check")}<span>Sent to the Hack Western team and saved to the Sponsor Judging sheet.</span></p>
+    <p class="small muted">Hack Western uses this ranking for your prize. To change it, ask your Hack Western contact.</p></section>
+  <section class="card" style="gap:6px"><h2 style="font-size:16px">Round 1</h2><p class="small muted">Shortlist of ${plural(UI.sent1.ids.length,"team")} sent ${UI.sent1.at} · presented in ${S.presentationsRoom}</p></section>
+  ${mockBar("sent")}`;
+}
+
+/* ===== actions ===== */
+let busy=false;
+function decide(d){
+  const el=$(".pc"); if(!el||busy)return; const id=el.dataset.id;
+  if(d==="short"&&UI.dec[id]!=="short"&&shortIds().length>=MAX){toast(`Shortlist is full (${MAX}). Swap a team out in Review.`);el.classList.add("anim");el.style.transform="";return}
+  const commit=()=>{busy=false;UI.hist.push({id,prev:UI.dec[id],qi:UI.qi,queue:UI.queue,pass:UI.pass});UI.dec[id]=d;UI.last={id,d};UI.qi++;render();scrollTo(0,0)};
+  if(reduced){commit();return}
+  busy=true;el.classList.add("anim");const X=d==="short"?1:d==="skip"?-1:0;
+  el.style.transform=X?`translateX(${X*130}%) rotate(${X*10}deg)`:"translateY(-48px) scale(.95)";el.style.opacity="0";
+  setTimeout(commit,200);
+}
+function undo(){const h=UI.hist.pop();if(!h)return;if(h.prev===undefined)delete UI.dec[h.id];else UI.dec[h.id]=h.prev;
+  UI.qi=h.qi;UI.queue=h.queue;UI.pass=h.pass;const q=UI.hist[UI.hist.length-1];UI.last=q?{id:q.id,d:UI.dec[q.id]}:null;render();scrollTo(0,0);toast(`Back to ${byId(h.id).name}`)}
+function setDec(id,to){
+  if(to==="short"&&UI.dec[id]!=="short"&&shortIds().length>=MAX){toast(`Shortlist is full (${MAX}). Move a team to Maybe or Skip first.`);return}
+  UI.dec[id]=to;UI.hist=[];UI.last=null;
+  if(UI.queue[UI.qi]===id)UI.qi++;
+  render(true);if(sheetFor===id)openCard(id);
+}
+/* mock seeding for time jumps */
+function seedR1(){if(shortIds().length<MIN){PROJ.forEach((p,i)=>{UI.dec[p.id]=[0,1,3,5,8,12].includes(i)?"short":"skip"});[4,5,3,4,3,5].forEach((s,i)=>UI.score[PROJ[[0,1,3,5,8,12][i]].id]=s)}
+  UI.qi=UI.queue.length;UI.hist=[];UI.last=null;UI.sent1={at:"9:42 AM",ids:shortIds()}}
+function seedR2(){if(UI.ranks.length<TOP)UI.ranks=UI.sent1.ids.slice(0,TOP);UI.sent2={at:"11:52 AM"}}
+function jump(k){
+  if(k==="locked"||k==="r1"){UI.sent1=null;UI.sent2=null;UI.ranks=[];UI.rhist=[]}
+  if(k==="locked"){UI.dec={};UI.score={};UI.queue=PROJ.map(p=>p.id);UI.qi=0;UI.pass="all";UI.hist=[];UI.last=null}
+  if(k==="waiting"||k==="r2"){if(!UI.sent1)seedR1();UI.sent2=null;if(k==="waiting"){UI.ranks=[];UI.rhist=[]}}
+  if(k==="sent"){if(!UI.sent1)seedR1();seedR2()}
+  if(location.hash==="#"+k)render();else location.hash=k;
+}
+
+/* ===== router ===== */
+const ROUTES={locked:vLocked,r1:vR1,"r1-review":vR1Review,waiting:vWaiting,r2:vR2,review:vReview,sent:vSent};
+function render(keep){
+  let r=location.hash.slice(1)||"locked";if(!ROUTES[r])r="locked";
+  if(UI.sent1&&(r==="r1"||r==="r1-review"))r="waiting";
+  if(!UI.sent1&&["waiting","r2","review","sent"].includes(r))seedR1();
+  if(UI.sent2&&(r==="r2"||r==="review"))r="sent";
+  if(r==="sent"&&!UI.sent2)seedR2();
+  if(r==="review"&&UI.ranks.length<TOP)r="r2";
+  if("#"+r!==location.hash)history.replaceState(null,"","#"+r);
+  const y=scrollY;$("#pane").innerHTML=ROUTES[r]();document.body.dataset.route=r;
+  if(keep)scrollTo(0,y);
+}
+addEventListener("hashchange",()=>{closeSheet();$("#toast").classList.remove("on");render();scrollTo(0,0)});
+let tt;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("on"),2400)}
+let sheetFor=null;
+function openSheet(html,forId){sheetFor=forId||null;const s=$("#sheet");s.innerHTML=html;s.classList.add("on");$("#scrim").classList.add("on");setTimeout(()=>s.querySelector("button")?.focus({preventScroll:true}),50)}
+function closeSheet(){sheetFor=null;$("#sheet").classList.remove("on");$("#scrim").classList.remove("on")}
+$("#scrim").addEventListener("click",closeSheet);
+addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet()});
+
+let swallowClick=false;
+document.addEventListener("click",e=>{
+  if(swallowClick){swallowClick=false;e.preventDefault();return}
+  const t=e.target.closest("button,a");if(!t)return;const d=t.dataset;
+  if(d.jump){e.preventDefault();jump(d.jump);return}
+  if(t.getAttribute("aria-disabled")==="true"){e.preventDefault();
+    if(d.d==="short")toast(`Shortlist is full (${MAX}). Swap a team out in Review.`);
+    else if(d.send1!==undefined)toast(`Shortlist ${MIN} to ${MAX} teams to send.`);
+    else if(d.toreview!==undefined)toast(`Pick all ${TOP} places first.`);
+    else if(d.nolink)toast(`This team didn't add a ${d.nolink==="No video"?"video":"GitHub link"}.`);
+    else if(d.to==="short")toast(`Shortlist is full (${MAX}).`);
+    return}
+  if(d.d){decide(d.d);return}
+  if(d.undo!==undefined){undo();return}
+  if(d.link){toast(`Opens ${d.team} on ${d.link} (mock)`);return}
+  if(d.sc){const v=+d.v;UI.score[d.sc]=UI.score[d.sc]===v?0:v;if(!UI.score[d.sc])delete UI.score[d.sc];render(true);if(sheetFor===d.sc)openCard(d.sc);return}
+  if(d.maybes!==undefined){UI.queue=PROJ.filter(p=>UI.dec[p.id]==="maybe").map(p=>p.id);UI.qi=0;UI.pass="maybe";render();scrollTo(0,0);return}
+  if(d.set){setDec(d.set,d.to);return}
+  if(d.open){openCard(d.open);return}
+  if(d.close!==undefined){closeSheet();return}
+  if(d.send1!==undefined){confirmSend1();return}
+  if(d.confirm1!==undefined){UI.sent1={at:"9:42 AM",ids:shortIds()};closeSheet();location.hash="waiting";return}
+  if(d.pick){const id=d.pick,i=UI.ranks.indexOf(id);
+    if(i>=0){UI.rhist.push(UI.ranks.slice());UI.ranks.splice(i,1);render(true);return}
+    if(UI.ranks.length>=TOP){toast(`Your top ${TOP} is full. Tap a ranked team to take it out.`);return}
+    UI.rhist.push(UI.ranks.slice());UI.ranks.push(id);render(true);return}
+  if(d.unrank){UI.rhist.push(UI.ranks.slice());UI.ranks=UI.ranks.filter(x=>x!==d.unrank);render(true);return}
+  if(d.runo!==undefined){const h=UI.rhist.pop();if(h){UI.ranks=h;render(true)}return}
+  if(d.send2!==undefined){UI.sent2={at:"11:52 AM"};location.hash="sent";return}
+});
+
+/* swipe the card: right = shortlist, left = skip */
+let sw=null;
+document.addEventListener("pointerdown",e=>{
+  const h=e.target.closest("[data-handle]");if(h){startDrag(e,h);return}
+  const el=e.target.closest(".pc");if(!el||busy||e.target.closest("button,a")||e.button>0)return;
+  sw={el,x0:e.clientX,y0:e.clientY,dx:0,on:false,id:e.pointerId};
+});
+document.addEventListener("pointermove",e=>{
+  if(drag){moveDrag(e);return}
+  if(!sw||e.pointerId!==sw.id)return;const dx=e.clientX-sw.x0,dy=e.clientY-sw.y0;
+  if(!sw.on){if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)){sw=null;return}if(Math.abs(dx)<8)return;sw.on=true;sw.el.classList.remove("anim");try{sw.el.setPointerCapture(e.pointerId)}catch{}}
+  sw.dx=dx;sw.el.style.transform=`translateX(${dx}px) rotate(${dx/24}deg)`;
+  const a=Math.min(1,Math.abs(dx)/90);sw.el.querySelector(".stamp.s").style.opacity=dx>0?a:0;sw.el.querySelector(".stamp.k").style.opacity=dx<0?a:0;
+});
+function endSwipe(){if(drag){endDrag();return}if(!sw)return;const {el,dx,on}=sw;sw=null;if(!on)return;swallowClick=true;setTimeout(()=>swallowClick=false,0);
+  if(dx>90)decide("short");else if(dx<-90)decide("skip");else{el.classList.add("anim");el.style.transform="";el.querySelectorAll(".stamp").forEach(s=>s.style.opacity=0)}}
+document.addEventListener("pointerup",endSwipe);document.addEventListener("pointercancel",()=>{if(drag){endDrag();return}if(sw?.on){sw.el.classList.add("anim");sw.el.style.transform=""}sw=null});
+
+/* drag to reorder ranked slots */
+let drag=null;
+function startDrag(e,h){e.preventDefault();const rows=[...document.querySelectorAll(".slot.filled")];const i=+h.dataset.handle;
+  const r0=rows[0].getBoundingClientRect(),step=rows[1]?rows[1].getBoundingClientRect().top-r0.top:r0.height+8;
+  drag={i,to:i,y0:e.clientY,rows,step};rows[i].classList.add("drag");rows.forEach((r,j)=>{if(j!==i)r.classList.add("shift")});try{h.setPointerCapture(e.pointerId)}catch{}}
+function moveDrag(e){const d=drag,dy=e.clientY-d.y0;d.rows[d.i].style.transform=`translateY(${dy}px)`;
+  d.to=Math.max(0,Math.min(d.rows.length-1,Math.round(d.i+dy/d.step)));
+  d.rows.forEach((r,j)=>{if(j===d.i)return;let s=0;if(d.i<d.to&&j>d.i&&j<=d.to)s=-d.step;if(d.i>d.to&&j<d.i&&j>=d.to)s=d.step;r.style.transform=s?`translateY(${s}px)`:""})}
+function endDrag(){const d=drag;drag=null;swallowClick=true;setTimeout(()=>swallowClick=false,0);moveRank(d.i,d.to)}
+function moveRank(i,to){if(i===to){render(true);return}UI.rhist.push(UI.ranks.slice());const [x]=UI.ranks.splice(i,1);UI.ranks.splice(to,0,x);render(true);
+  toast(`${byId(x).name} is now ${PLACE[to]} place`);document.querySelector(`[data-handle="${to}"]`)?.focus({preventScroll:true})}
+document.addEventListener("keydown",e=>{const h=e.target.closest?.("[data-handle]");if(!h)return;const i=+h.dataset.handle;
+  if(e.key==="ArrowUp"&&i>0){e.preventDefault();moveRank(i,i-1)}if(e.key==="ArrowDown"&&i<UI.ranks.length-1){e.preventDefault();moveRank(i,i+1)}});
+
+render();
+</script>
+</body>
+</html>
