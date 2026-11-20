@@ -68,7 +68,14 @@ export function queueFromProgress(p: Progress): QueueState {
       assignedAt: current?.startedAt ?? null,
     });
   }
-  const seated = p.tables.filter((t) => t.team && t.isActive);
+  // A seat reported absent is out: its other stops were cancelled, so it would
+  // never reach the round's judge count.
+  const seated = p.tables.filter(
+    (t) =>
+      t.team &&
+      t.isActive &&
+      !t.judges.some((j) => j.status === "team_absent"),
+  );
   const total = p.settings.judgesPerTable;
   const finished = seated.length
     ? Math.min(...seated.map((t) => t.judgesDone))

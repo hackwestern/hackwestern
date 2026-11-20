@@ -15,7 +15,7 @@ import {
   teams,
 } from "~/server/db/schema";
 import { type SetupTablesInput } from "~/schemas/judging";
-import { tablesPerRow, tablesToSplit } from "~/server/judging/layout";
+import { seatName, tablesPerRow, tablesToSplit } from "~/server/judging/layout";
 import {
   ELIGIBLE_SUBMISSIONS,
   type Tx,
@@ -129,11 +129,11 @@ export async function setupTables(input: SetupTablesInput) {
 export async function setTableActive(tableId: number, isActive: boolean) {
   return db.transaction(async (tx) => {
     await lockPlanExclusive(tx);
-    const table = await tx.query.judgingTables.findFirst({
+    const found = await tx.query.judgingTables.findFirst({
       where: eq(judgingTables.id, tableId),
-      columns: { seat: false },
     });
-    if (!table) throw notFound("Table");
+    if (!found) throw notFound("Table");
+    const { seat, ...table } = found;
     if (table.isActive === isActive) return { ...table, planCleared: 0 };
 
     if (!isActive) {
@@ -144,7 +144,7 @@ export async function setTableActive(tableId: number, isActive: boolean) {
       if (seated) {
         throw new TRPCError({
           code: "CONFLICT",
-          message: `"${seated.name}" is seated at table ${table.number}. Move them first.`,
+          message: `"${seated.name}" is seated at table ${seatName({ ...table, seat })}. Move them first.`,
         });
       }
     }
@@ -162,7 +162,7 @@ export async function setTableActive(tableId: number, isActive: boolean) {
         if (live) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: `Table ${table.number} still has judges assigned. Cancel those stops first.`,
+            message: `Table ${seatName({ ...table, seat })} still has judges assigned. Cancel those stops first.`,
           });
         }
       }
@@ -451,7 +451,7 @@ async function moveTeamTx(teamId: string, tableId: number) {
     if (!table.isActive) {
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
-        message: `Table ${table.number} is switched off.`,
+        message: `Table ${seatName(table)} is switched off.`,
       });
     }
     const occupant = await tx.query.teams.findFirst({
@@ -461,7 +461,7 @@ async function moveTeamTx(teamId: string, tableId: number) {
     if (occupant) {
       throw new TRPCError({
         code: "CONFLICT",
-        message: `Table ${table.number} already has "${occupant.name}". Swap them instead.`,
+        message: `Table ${seatName(table)} already has "${occupant.name}". Swap them instead.`,
       });
     }
     // Stops first, then the team row (see lockTablesForReseat).

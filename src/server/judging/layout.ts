@@ -38,6 +38,13 @@ export function snakePosition(number: number, perRow: number) {
   return { row, col };
 }
 
+/** A seat's name in messages: "4" for seat 1, "4 (seat 2)" for seat 2. */
+export function seatName(table: { number: number; seat: number }) {
+  return table.seat === 1
+    ? `${table.number}`
+    : `${table.number} (seat ${table.seat})`;
+}
+
 /**
  * Pick which of `tables` (in snake order) get a second seat so `teams` teams
  * fit at most 2 per table. Nothing is split until there are more teams than

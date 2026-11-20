@@ -18,7 +18,7 @@ import {
   teamMarks,
   teams,
 } from "~/server/db/schema";
-import { LayoutError, buildSections } from "~/server/judging/layout";
+import { LayoutError, buildSections, seatName } from "~/server/judging/layout";
 import {
   OPEN_STATUSES,
   type StopStatus,
@@ -177,7 +177,7 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
         const tableIds = open.map((s) => s.tableId);
 
         const clash = await tx
-          .select({ number: judgingTables.number })
+          .select({ number: judgingTables.number, seat: judgingTables.seat })
           .from(judgingAssignments)
           .innerJoin(
             judgingTables,
@@ -194,8 +194,8 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
           throw new TRPCError({
             code: "CONFLICT",
             message: `That judge already has table${clash.length === 1 ? "" : "s"} ${clash
-              .map((c) => c.number)
-              .sort((x, y) => x - y)
+              .sort((x, y) => x.number - y.number || x.seat - y.seat)
+              .map(seatName)
               .join(", ")}. Pick someone else, like a floater.`,
           });
         }
@@ -278,7 +278,7 @@ export async function addJudgeToTable(
         if (!table.isActive) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
-            message: `Table ${table.number} is switched off.`,
+            message: `Table ${seatName(table)} is switched off.`,
           });
         }
         const absent = await tx.query.judgingAssignments.findFirst({
@@ -291,7 +291,7 @@ export async function addJudgeToTable(
         if (absent) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: `The team at table ${table.number} was reported absent, so it can't be judged.`,
+            message: `The team at table ${seatName(table)} was reported absent, so it can't be judged.`,
           });
         }
         const existing = await tx.query.judgingAssignments.findFirst({
@@ -305,7 +305,7 @@ export async function addJudgeToTable(
         if (existing) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: `That judge already has table ${table.number}.`,
+            message: `That judge already has table ${seatName(table)}.`,
           });
         }
         const seated = await tx.query.teams.findFirst({
@@ -490,11 +490,11 @@ async function seatedTeamAt(tx: Tx, tableId: number, expectedTeamId: string) {
   if (!team) {
     const table = await tx.query.judgingTables.findFirst({
       where: eq(judgingTables.id, tableId),
-      columns: { number: true },
+      columns: { number: true, seat: true },
     });
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: `No team is seated at table ${table?.number ?? "?"}. Report it as absent instead.`,
+      message: `No team is seated at table ${table ? seatName(table) : "?"}. Report it as absent instead.`,
     });
   }
   if (team.id !== expectedTeamId) {

@@ -70,8 +70,11 @@ export function JudgeRoster({
       t.currentJudgeId ? [[t.currentJudgeId, t] as const] : [],
     ),
   );
-  const teamAtTable = new Map(
-    (progress?.tables ?? []).map((t) => [t.number, t.team?.name ?? null]),
+  // Keyed by stop, not table number: a split table's two seats share a number.
+  const teamAtStop = new Map(
+    (progress?.tables ?? []).flatMap((t) =>
+      t.judges.map((s) => [s.assignmentId, t.team?.name ?? null] as const),
+    ),
   );
   const stopsByJudge = new Map(
     (progress?.judges ?? []).map((j) => [j.id, j.stops]),
@@ -237,7 +240,7 @@ export function JudgeRoster({
                               key={st.assignmentId}
                               className={`rounded-full px-2 py-1 text-xs font-semibold ${STOP_STYLE[st.status] ?? ""}`}
                             >
-                              {teamAtTable.get(st.tableNumber) ?? "Empty"} · T
+                              {teamAtStop.get(st.assignmentId) ?? "Empty"} · T
                               {st.tableNumber} ·{" "}
                               {STOP_LABEL[st.status] ?? st.status}
                             </li>
