@@ -607,6 +607,7 @@ const VenueMap = ({
               {marked.size > 0 && (
                 <g
                   pointerEvents="none"
+                  clipPath={`url(#venue-clip-${floor})`}
                   className="text-dashboard-action-primary"
                 >
                   {plan.rooms
@@ -617,7 +618,7 @@ const VenueMap = ({
                         points={points(r.poly)}
                         fill="none"
                         stroke="currentColor"
-                        strokeWidth="3"
+                        strokeWidth="4"
                         strokeLinejoin="round"
                         vectorEffect="non-scaling-stroke"
                       />
@@ -930,7 +931,14 @@ const VenueMap = ({
                 <button
                   type="button"
                   aria-pressed={on}
-                  onClick={() => select(id)}
+                  onClick={() => {
+                    select(id);
+                    // The list sits under the map; bring the map back into view
+                    stageRef.current?.scrollIntoView({
+                      block: "nearest",
+                      behavior: reduceMotion() ? "auto" : "smooth",
+                    });
+                  }}
                   className={`flex min-h-11 items-center gap-2 rounded-dashboard-lg border px-3 py-1.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary ${on ? "border-dashboard-action-primary bg-dashboard-bg-highlight" : "border-dashboard-border-default bg-dashboard-bg-surface hover:bg-dashboard-bg-highlight"}`}
                 >
                   <span
