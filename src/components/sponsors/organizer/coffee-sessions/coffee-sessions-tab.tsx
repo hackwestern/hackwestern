@@ -1,46 +1,83 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
-import { CircleCheck } from "lucide-react";
+import { CircleCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import {
-  COFFEE_ROOMS,
-  COFFEE_SESSIONS,
-  chatsInWindow,
-  type CoffeeRoomId,
-  type CoffeeSessionId,
-} from "~/lib/coffee-chat-sessions";
+  cellAt,
+  chatsInCell,
+  dropCheck,
+  hourCounts,
+  keyOf,
+  litCells,
+  splitKey,
+} from "~/lib/coffee-chat-board-view";
+import { chatsInWindow, type CoffeeRoomId, type CoffeeSessionId } from "~/lib/coffee-chat-sessions";
+import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { BoardSummary, timeOf } from "./board-summary";
+import { ConfirmDialog, FrontDialog, MoveCheckDialog, RemoveHackerDialog } from "./board-dialogs";
+import { ALL_KEYS, ChatModal, type InviteChat, type ModalView } from "./chat-modal";
 import { FixesBand } from "./fixes-band";
 import { HelpSheet } from "./help-sheet";
-import { type SessionBoardData } from "./parts";
-import { BookingForm, CellDetail, RoomsGrid, cellAt, keyOf, moveCheck, splitKey } from "./rooms-grid";
+import { BoardTips, sessionLabel, type SessionBoardData } from "./parts";
+import { RoomsGrid } from "./rooms-grid";
 import { SponsorsBand, sponsorRowId } from "./sponsors-band";
+import { useBoardDrag } from "./use-board-drag";
 
 const copy = coffeeSessionsCopy;
+const rc = copy.rooms;
+const wc = copy.warn;
+
+/** A question before a move or remove goes through. */
+type Ask =
+  | { kind: "sentMove"; src: string; target: string }
+  | { kind: "sentRemove"; src: string }
+  | { kind: "notFree"; src: string; target: string };
+
+const BAR = "[data-coffee-bar]";
+/** The Undo toast stays a little longer than the others (mock: 5 s). */
+const UNDO_MS = 5_000;
 
 /**
- * Organizer coffee chat board (session model), built from
- * mocks/organizer-coffee-v8: Sponsors and Suggested fixes on the left, the
+ * Organizer coffee chat board (session model), built from mocks
+ * organizer-coffee-v8 to v12: Sponsors and Suggested fixes on the left, the
  * Rooms grid (8 rooms x 6 sessions, plus each sponsor's workshop) on the
- * right, and a sticky bar: Auto-schedule -> Re-run -> Send. Everything is
- * saved on the server (coffeeChatSessions router); the page only holds
- * what's open and selected.
+ * right, and a sticky bar: Auto-schedule -> Re-run -> Send. Chats and
+ * bookings are dragged to move (or onto the Remove zone); a click opens the
+ * chat's modal. Everything is saved on the server (coffeeChatSessions and
+ * coffeeChatInvites routers); the page only holds what's open.
  */
 export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   const utils = api.useUtils();
+  const [dragging, setDragging] = useState(false);
   const board = api.coffeeChatSessions.getBoard.useQuery(undefined, {
-    refetchInterval: 15_000,
-    refetchOnWindowFocus: true,
+    // Never mid-drag: a refetch would re-render the cells under the finger.
+    refetchInterval: dragging ? false : 15_000,
+    refetchOnWindowFocus: !dragging,
+  });
+  const hasSent = !!board.data?.placements.some((p) => p.status === "sent");
+  const invites = api.coffeeChatInvites.status.useQuery(undefined, {
+    enabled: hasSent,
+    refetchInterval: dragging ? false : 15_000,
   });
   const [open, setOpen] = useState<string | null>(null);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [moving, setMoving] = useState<string | null>(null);
-  const [booking, setBooking] = useState<{ room: string; session: string } | null>(null);
+  const [view, setView] = useState<ModalView>(null);
+  const [ask, setAsk] = useState<Ask | null>(null);
+  const [hackerRm, setHackerRm] = useState<{ sponsorId: string; chatId: string; name: string } | null>(null);
+  const [front, setFront] = useState<string | null>(null);
   const [applying, setApplying] = useState<string | null>(null);
   const [confirmSend, setConfirmSend] = useState(false);
+  // Where focus goes when the modal closes: that cell (after a move, its new
+  // place; after a remove, the empty cell), or "Book a room".
+  const focusBack = useRef<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // While a drag runs, the board shown is the one it started on.
+  const frozen = useRef<SessionBoardData | undefined>(undefined);
+  if (!dragging) frozen.current = board.data;
+  const data = frozen.current;
 
   // ?sponsor= (an id or name) opens that sponsor's row once, scrolls it into
   // view and moves focus there ("Open coffee chats" from Needs attention or
@@ -61,22 +98,11 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     });
   }, [sponsor, board.data]);
 
-  // Esc leaves move mode or closes the detail.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      setMoving(null);
-      setSelected(null);
-      setBooking(null);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   const refresh = () => utils.coffeeChatSessions.getBoard.invalidate();
+  const refreshAll = () => Promise.all([refresh(), utils.coffeeChatInvites.invalidate()]);
   const onError = (e: { message: string }) => toast.error(e.message);
   const auto = api.coffeeChatSessions.autoSchedule.useMutation({
-    onSuccess: (r) => toast.success(copy.toast.scheduled(r.placed)),
+    onSuccess: (r) => toast.success(copy.toast.scheduled(r.chats)),
     onError,
     onSettled: refresh,
   });
@@ -85,15 +111,19 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     onError,
     onSettled: () => {
       setApplying(null);
-      return refresh();
+      return refreshAll();
     },
   });
   const movePlacement = api.coffeeChatSessions.movePlacement.useMutation({
     onSuccess: (r) => toast.success(r.sent ? copy.toast.movedSent : copy.toast.moved),
     onError,
+    onSettled: refreshAll,
+  });
+  const moveBooking = api.coffeeChatSessions.moveBooking.useMutation({
+    onSuccess: () => toast.success(copy.toast.moved),
+    onError,
     onSettled: refresh,
   });
-  const moveBooking = api.coffeeChatSessions.moveBooking.useMutation({ onError, onSettled: refresh });
   const placeChat = api.coffeeChatSessions.placeChat.useMutation({
     onSuccess: () => toast.success(copy.toast.restored),
     onError,
@@ -108,6 +138,7 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
         copy.toast.removed,
         p && p.status === "draft"
           ? {
+              duration: UNDO_MS,
               action: {
                 label: copy.toast.undo,
                 onClick: () =>
@@ -115,12 +146,18 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
                     repId: p.repId,
                     room: p.room as CoffeeRoomId,
                     sessionId: p.sessionId as CoffeeSessionId,
+                    force: p.forced,
                   }),
               },
             }
           : undefined,
       );
     },
+    onError,
+    onSettled: refreshAll,
+  });
+  const bookRoom = api.coffeeChatSessions.bookRoom.useMutation({
+    onSuccess: () => toast.success(copy.toast.booked),
     onError,
     onSettled: refresh,
   });
@@ -131,6 +168,7 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
         copy.toast.removed,
         b
           ? {
+              duration: UNDO_MS,
               action: {
                 label: copy.toast.undo,
                 onClick: () =>
@@ -149,17 +187,12 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     onError,
     onSettled: refresh,
   });
-  const bookRoom = api.coffeeChatSessions.bookRoom.useMutation({
-    onSuccess: () => toast.success(copy.toast.booked),
-    onError,
-    onSettled: refresh,
-  });
   const send = api.coffeeChatSessions.send.useMutation({
     onSuccess: (r) => {
       const dry = r.invites.dryRun && r.invites.created > 0 ? copy.toast.dryRun : "";
       toast.success(
         r.sent || r.invites.created
-          ? copy.toast.sent(r.sent, r.invites.created) +
+          ? copy.toast.sent(r.chats, r.invites.created) +
               dry +
               (r.reconfirmed ? ` ${copy.toast.reconfirmed(r.reconfirmed)}` : "")
           : r.reconfirmed
@@ -171,16 +204,100 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
       if (r.sheet === "failed") toast.error(copy.toast.sheetFailed);
     },
     onError,
-    onSettled: refresh,
+    onSettled: refreshAll,
   });
   const busy =
     auto.isPending || applyFix.isPending || movePlacement.isPending || moveBooking.isPending ||
-    removePlacement.isPending || removeBooking.isPending || bookRoom.isPending || send.isPending;
+    removePlacement.isPending || removeBooking.isPending || bookRoom.isPending || send.isPending ||
+    placeChat.isPending;
+  // No run of show = no workshop windows: the server refuses every write
+  // that places or moves something, so those buttons are off too.
+  const locked = !!data && !data.workshopsAvailable;
+
+  /** A sponsor's sent chats with their invites, or null before they load. */
+  const chatsOf = (sponsorId: string): InviteChat[] | null =>
+    invites.data ? (invites.data.sponsors.find((s) => s.sponsorId === sponsorId)?.chats ?? []) : null;
+  /** The hour's invites: hackers (accepted + waiting) in chats. */
+  const countsOf = (src: string) => {
+    const c = data ? cellAt(data, src) : null;
+    if (c?.kind !== "chat") return null;
+    const h = hourCounts(chatsOf(c.sponsor.id) ?? [], c.placement.id);
+    return { ...h, chats: h.chats || chatsInCell(data!, c.placement), hackers: h.accepted + h.waiting };
+  };
+
+  /** After a move, the modal (and focus) follow the cell to its new place, once the board has it. */
+  const followTo = (src: string, target: string) =>
+    void refresh().then(() => {
+      if (focusBack.current === src) focusBack.current = target;
+      setView((v) => (v?.kind === "cell" && v.key === src ? { kind: "cell", key: target } : v));
+    });
+
+  const doMove = (src: string, target: string, force: boolean) => {
+    const c = data ? cellAt(data, src) : null;
+    if (c?.kind !== "chat") return;
+    const { room, session } = splitKey(target);
+    movePlacement.mutate(
+      { placementId: c.placement.id, room: room as CoffeeRoomId, sessionId: session as CoffeeSessionId, force },
+      {
+        onSuccess: () => followTo(src, target),
+      },
+    );
+  };
+
+  /** Drop or Move to…: refuse, ask, or move. */
+  const requestMove = (src: string, target: string) => {
+    if (!data) return;
+    const from = cellAt(data, src);
+    const { room, session } = splitKey(target);
+    const s = sessionLabel(session);
+    const check = dropCheck(data, src, target);
+    if (check === "same" || check === "gone" || !from) return;
+    if (check === "taken") return void toast.error(copy.errors.roomTaken(rc.rm(room), s));
+    if (from.kind === "booking") {
+      return moveBooking.mutate(
+        { bookingId: from.booking.id, room: room as CoffeeRoomId, sessionId: session as CoffeeSessionId },
+        {
+          onSuccess: () => followTo(src, target),
+        },
+      );
+    }
+    if (check === "workshop") return void toast.error(copy.errors.duringWorkshop(from.sponsor.name));
+    if (check === "busy") return void toast.error(copy.errors.repBusy(from.rep.name, s));
+    if (check === "notFree") return setAsk({ kind: "notFree", src, target });
+    if (from.placement.status === "sent") return setAsk({ kind: "sentMove", src, target });
+    doMove(src, target, false);
+  };
+
+  const doRemove = (src: string) => {
+    const c = data ? cellAt(data, src) : null;
+    if (!c) return;
+    // Removing from the modal closes it and puts focus on the now-empty cell.
+    setView((v) => (v?.kind === "cell" && v.key === src ? null : v));
+    if (c.kind === "chat") removePlacement.mutate({ placementId: c.placement.id });
+    else removeBooking.mutate({ bookingId: c.booking.id });
+  };
+  const requestRemove = (src: string) => {
+    const c = data ? cellAt(data, src) : null;
+    if (c?.kind === "chat" && c.placement.status === "sent") return setAsk({ kind: "sentRemove", src });
+    doRemove(src);
+  };
+
+  const drag = useBoardDrag({
+    scrollRef,
+    barSelector: BAR,
+    enabled: !!data && !locked && !busy && !view && !ask,
+    onDrop: (src, target) => (target === "remove" ? requestRemove(src) : requestMove(src, target)),
+  });
+  useEffect(() => setDragging(!!drag), [drag]);
+  const lit = useMemo(
+    () => (drag && data ? litCells(data, drag.src, ALL_KEYS) : new Set<string>()),
+    [drag, data],
+  );
 
   if (board.isLoading) {
     return <p className="m-0 text-dashboard-text-medium">{copy.loading}</p>;
   }
-  if (!board.data) {
+  if (!data) {
     return (
       <div className="flex flex-wrap items-center gap-3 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card">
         <p role="alert" className="m-0 text-sm text-dashboard-text-warning">{copy.loadError}</p>
@@ -188,75 +305,19 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
       </div>
     );
   }
-  const data = board.data;
-  // No run of show = no workshop windows: the server refuses every write
-  // that places or moves something, so those buttons are off too.
-  const locked = !data.workshopsAvailable;
 
   const onCell = (k: string) => {
-    if (moving) {
-      const check = moveCheck(data, moving, k);
-      if (typeof check === "object") return void toast.error(copy.errors.duringWorkshop(check.workshop));
-      if (check === "ok") {
-        const from = cellAt(data, moving);
-        const { room, session } = splitKey(k);
-        const input = { room: room as CoffeeRoomId, sessionId: session as CoffeeSessionId };
-        if (from?.kind === "chat") movePlacement.mutate({ placementId: from.placement.id, ...input });
-        if (from?.kind === "booking") moveBooking.mutate({ bookingId: from.booking.id, ...input });
-        setSelected(k);
-      }
-      setMoving(null);
-      return;
-    }
-    if (!cellAt(data, k)) {
-      setBooking(splitKey(k));
-      setSelected(k);
-      return;
-    }
-    setBooking(null);
-    setSelected((s) => (s === k ? null : k));
+    focusBack.current = k;
+    const { room, session } = splitKey(k);
+    setView(cellAt(data, k) ? { kind: "cell", key: k } : { kind: "book", room, session });
   };
 
-  const detailKey = moving ?? selected;
-  const detail = booking ? (
-    <BookingForm
-      board={data}
-      initial={booking}
-      busy={bookRoom.isPending || locked}
-      onClose={() => {
-        setBooking(null);
-        setSelected(null);
-      }}
-      onBook={(v) => {
-        bookRoom.mutate(
-          { room: v.room as CoffeeRoomId, sessionId: v.session as CoffeeSessionId, label: v.label, note: v.note || null, forSponsorId: v.forSponsorId },
-          {
-            onSuccess: () => {
-              setBooking(null);
-              setSelected(keyOf(v.room, v.session));
-            },
-          },
-        );
-      }}
-    />
-  ) : detailKey && cellAt(data, detailKey) ? (
-    <CellDetail
-      board={data}
-      k={detailKey}
-      moving={!!moving}
-      busy={busy}
-      locked={locked}
-      onClose={() => setSelected(null)}
-      onCancelMove={() => setMoving(null)}
-      onMove={() => setMoving(detailKey)}
-      onRemove={() => {
-        const c = cellAt(data, detailKey);
-        if (c?.kind === "chat") removePlacement.mutate({ placementId: c.placement.id });
-        if (c?.kind === "booking") removeBooking.mutate({ bookingId: c.booking.id });
-        setSelected(null);
-      }}
-    />
-  ) : null;
+  // The open question's pieces.
+  const askCell = ask ? cellAt(data, ask.src) : null;
+  const askChat = askCell?.kind === "chat" ? askCell : null;
+  const askCounts = ask ? countsOf(ask.src) : null;
+  const invitedLine = askCounts ? wc.invited(askCounts.hackers, askCounts.chats, askCounts.accepted, askCounts.waiting) : "";
+  const modalCell = view?.kind === "cell" ? cellAt(data, view.key) : null;
 
   return (
     <div className="flex min-w-0 flex-col gap-4 lg:gap-6">
@@ -267,15 +328,15 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
         </div>
         <div className="contents sm:flex sm:items-center sm:gap-2">
           <DashboardButton
+            id="coffee-book-room"
             variant="small"
             className="col-span-2 row-start-2 min-h-11 px-4 text-base sm:col-auto sm:row-auto md:min-h-11"
             disabled={locked}
             onClick={() => {
-              const free = COFFEE_ROOMS.flatMap((r) => COFFEE_SESSIONS.map((s) => keyOf(r.id, s.id))).find((k) => !cellAt(data, k));
+              const free = ALL_KEYS.find((k) => !cellAt(data, k));
               if (!free) return;
-              setMoving(null);
-              setSelected(null);
-              setBooking(splitKey(free));
+              focusBack.current = null;
+              setView({ kind: "book", ...splitKey(free) });
             }}
           >
             {copy.bookRoom}
@@ -294,10 +355,7 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
             <DashboardButton
               variant="primary"
               disabled={busy || locked}
-              onClick={() => {
-                setSelected(null);
-                auto.mutate();
-              }}
+              onClick={() => auto.mutate()}
               className="shrink-0 sm:w-auto"
             >
               {busy ? copy.bar.working : copy.bar.autoSchedule}
@@ -329,7 +387,14 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
             }}
           />
         </div>
-        <RoomsGrid board={data} selected={selected} moving={moving} onCell={onCell} detail={detail} />
+        <RoomsGrid
+          board={data}
+          selected={view?.kind === "cell" ? view.key : null}
+          drag={drag}
+          lit={lit}
+          onCell={onCell}
+          scrollRef={scrollRef}
+        />
       </div>
 
       {/* Room for the sticky bar. */}
@@ -338,12 +403,87 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
         board={data}
         busy={busy}
         locked={locked}
-        onAuto={() => {
-          setSelected(null);
-          auto.mutate();
-        }}
+        onAuto={() => auto.mutate()}
         onSend={() => setConfirmSend(true)}
       />
+      {drag && (
+        // Covers the whole bottom bar while dragging.
+        <div
+          data-remove-zone=""
+          style={{ minHeight: drag.zoneHeight }}
+          className={cn(
+            "fixed inset-x-0 bottom-0 z-30 flex items-center justify-center gap-2 border-t-2 px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 text-base font-semibold",
+            drag.over === "remove"
+              ? "border-solid border-dashboard-notice-danger bg-dashboard-notice-danger text-dashboard-text-inverse"
+              : "border-dashed border-dashboard-notice-danger bg-destructive/10 text-dashboard-notice-danger",
+          )}
+        >
+          <Trash2 aria-hidden className="size-[22px]" />
+          {rc.dropRemove}
+        </div>
+      )}
+      <BoardTips off={!!drag} />
+
+      <ChatModal
+        board={data}
+        view={view}
+        chats={modalCell?.kind === "chat" ? chatsOf(modalCell.sponsor.id) : null}
+        busy={busy}
+        locked={locked}
+        onClose={() => setView(null)}
+        onMoveTo={requestMove}
+        onRemove={requestRemove}
+        onBook={(v) => {
+          bookRoom.mutate(
+            { room: v.room as CoffeeRoomId, sessionId: v.session as CoffeeSessionId, label: v.label, note: v.note || null, forSponsorId: v.forSponsorId },
+            {
+              // The modal shows the new booking.
+              onSuccess: () =>
+                void refresh().then(() => {
+                  const k = keyOf(v.room, v.session);
+                  focusBack.current = k;
+                  setView({ kind: "cell", key: k });
+                }),
+            },
+          );
+        }}
+        onRemoveHacker={setHackerRm}
+        onFront={setFront}
+        onCloseFocus={() =>
+          requestAnimationFrame(() => {
+            const k = focusBack.current;
+            const el = k ? document.querySelector<HTMLElement>(`[data-cell="${k}"]`) : document.getElementById("coffee-book-room");
+            el?.focus({ preventScroll: true });
+          })
+        }
+      />
+
+      <ConfirmDialog
+        open={ask?.kind === "sentMove" || ask?.kind === "sentRemove"}
+        heading={wc.confirmedTitle}
+        paras={[invitedLine, ask?.kind === "sentRemove" ? wc.removeAsk : wc.moveAsk]}
+        ok={ask?.kind === "sentRemove" ? wc.removeTell : wc.moveTell}
+        onOk={() => {
+          if (ask?.kind === "sentMove") doMove(ask.src, ask.target, false);
+          if (ask?.kind === "sentRemove") doRemove(ask.src);
+          setAsk(null);
+        }}
+        onClose={() => setAsk(null)}
+      />
+      <MoveCheckDialog
+        open={ask?.kind === "notFree" && !!askChat}
+        rep={{ name: askChat?.rep.name ?? "", phone: askChat?.rep.phone ?? "" }}
+        session={ask?.kind === "notFree" ? sessionLabel(splitKey(ask.target).session) : ""}
+        sentLine={askChat?.placement.status === "sent" && askCounts ? wc.check.sentLine(askCounts.hackers, askCounts.chats) : null}
+        onYes={() => {
+          if (ask?.kind === "notFree") doMove(ask.src, ask.target, true);
+          setAsk(null);
+        }}
+        onClose={() => setAsk(null)}
+      />
+      <RemoveHackerDialog target={hackerRm} onClose={() => setHackerRm(null)} />
+      <FrontDialog sponsorId={front} onClose={() => setFront(null)} />
+
       <SendConfirm
         board={data}
         open={confirmSend}
@@ -440,7 +580,7 @@ function ActionBar({
       ? b.onlyNoah
       : copy.errors.sender[sender.reason];
   return (
-    <div data-tour="coffee-send" className="fixed inset-x-0 bottom-0 z-20 border-t border-dashboard-border-default bg-dashboard-bg-surface px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 shadow-dashboard-card lg:px-12">
+    <div data-tour="coffee-send" data-coffee-bar="" className="fixed inset-x-0 bottom-0 z-20 border-t border-dashboard-border-default bg-dashboard-bg-surface px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 shadow-dashboard-card lg:px-12">
       <div className="mx-auto flex max-w-[1440px] flex-col items-stretch gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
         {allSent ? (
           <span className="inline-flex items-center justify-center gap-1.5 text-[17px] font-bold text-dashboard-status-live">

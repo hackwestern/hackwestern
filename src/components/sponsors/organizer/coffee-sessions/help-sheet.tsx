@@ -41,6 +41,7 @@ export function HelpSheet() {
           </div>
           <div className="flex flex-col gap-3 overflow-y-auto px-6 pb-[calc(24px+env(safe-area-inset-bottom))] pt-4 text-[15px] text-dashboard-text-medium [&_b]:font-bold [&_b]:text-dashboard-text-heavy">
             <p className="m-0"><b>{h.give.lead}</b>{h.give.rest}</p>
+            <p className="m-0">{h.cellNote}</p>
             <p className="m-0"><b>{h.checksTitle}</b></p>
             <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
               {h.checks.map((c) => (

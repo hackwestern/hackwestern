@@ -255,7 +255,7 @@ function SponsorDetail({ sponsor: sp, board }: { sponsor: BoardSponsor; board: S
 }
 
 /**
- * One line once a sponsor is sent: "6 accepted · 3 waiting"
+ * One line once a sponsor is sent: "Invites: 9 seats · 6 accepted · 3 waiting"
  * (coffeeChatInvites.status, every chat of theirs together). Empty seats
  * show as a problem flag on the row, not here.
  */
@@ -269,7 +269,7 @@ function InviteSummary({ sponsorId }: { sponsorId: string }) {
   const t = sponsor.totals;
   return (
     <p className="m-0 text-sm font-semibold text-dashboard-text-heavy">
-      {sc.invites(t.accepted, t.pending)}
+      {sc.invites(t.seats, t.accepted, t.pending)}
       {!status.data.enabled && (
         <span className="block font-normal text-dashboard-text-light">{sc.invitesOff}</span>
       )}
