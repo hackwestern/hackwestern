@@ -925,3 +925,14 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Decision:** The sponsor portal Map tab, and the organizer rooms section under the coffee chat room table, use Luka's venue map from /live (`src/components/live/venue-map.tsx`, data in `src/lib/venue-map.ts`, cherry-picked from main #1186): SEI levels 1 and 2 and the Ivey building, search, room cards with the live schedule. The component gained two optional props that /live doesn't pass, so /live looks the same: `highlights` (rooms outlined in the action blue, labelled on the plan once the room is big enough, and listed under the map as buttons that focus the room) and `initialFloor`. On the Map tab a sponsor sees their booth (the Sponsor Bay, with the Sponsor Bay booth layout still above the map for their exact spot), their workshop rooms, their coffee chat rooms once organizers confirm them (SEI and Ivey), the sponsor lounge (2110) and the belongings room (2244). The organizer map opens on SEI level 2 with no sponsor pins, as Jazz asked on 2026-11-18. The old image floor plans, pin positions and the unused "Where is everyone" occupancy code moved to `_to_delete/`.
 **Why:** one map everywhere, with the Ivey building, real room shapes and the same behaviour hackers see, instead of static images with pins placed by eye.
 **Alternatives:** keep the static images and add an Ivey image (no search, pins drift); a separate sponsor copy of the map component (two maps to keep in sync).
+
+## 2026-11-20: Sponsors sync automatically; sheet changes (Jazz)
+
+**Decision:**
+- **Auto-sync:** a sponsor added to Sponsor Day-Of gets its portal link the next time the organizer dashboard loads its sponsor list; nobody has to press "Sync from sponsor sheet" (Accenture had no link because it was never synced).
+- **Sheet (Spon Team RUN OF SHOW, edited directly):**
+  - Sponsor Day-Of has Tier (dropdown) and Chatting hours (formula from the new Tiers tab: Gold 4, Silver 3, Bronze 2).
+  - Locked (only Jazz, Caroline and the app can edit): Coffee Chat Room Grid, Coffee Chat Invites, Sponsor Judging, Judging Scores, Coffee Chat Setup except column A, Chatting hours, the two (old) tabs.
+  - The tab name "Sponsor Day-Of" must not change; the app finds it by name (it was renamed "EDIT HERE" once and broke the app).
+  - Run of show tasks for the whole team: Fri 10 PM coffee chat notifications, Sat 9:30 AM check in with reps, Sun 9:45 AM shortlists due, set rooms and Notify teams.
+**Why:** fewer manual steps, and nobody types over what the app writes.
