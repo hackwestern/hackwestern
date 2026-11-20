@@ -1,9 +1,17 @@
 # NEXT: organizer coffee chat board v12 (worktree `hackwestern-coffee-v12`, branch `coffee-board-v12`, off `coffee-prefs` at 75149112)
 
 ## Now
-Build the organizer coffee chat board to match mock `hackwestern-sponsor-dash/mocks/organizer-coffee-v12` (http://127.0.0.1:3040/mocks/organizer-coffee-v12/index.html) in full: behaviour, not just the look (Jazz, 2026-11-19: "follow everything"). v12 = v11 + real sponsor data, and v11 builds on v10 and v9, so all of v9–v12 is in scope (read each README). Gap list: `docs/plans/coffee-board-v12-gap.md`. Existing code: `src/components/sponsors/organizer/coffee-sessions/`, `src/server/api/routers/coffee-chat-sessions.ts`.
+Build the organizer coffee chat board to match mock `hackwestern-sponsor-dash/mocks/organizer-coffee-v12` in full (gap list: `docs/plans/coffee-board-v12-gap.md`).
 
-Check before done: `SKIP_ENV_VALIDATION=1 npx vitest run`, `npx tsc --noEmit`, lint, screenshots at 1280 and 390 (no sideways scroll). Commit to `coffee-board-v12`; merge into `coffee-prefs` from the main folder after it passes.
+**Done (2026-11-19):** server (4dfeb183), pure board view + tests (175e0cb8), the UI (3b1352f7): mouse drag and 250 ms touch-hold drag with "Drop here" cells, amber outline on non-lit cells, Remove zone over the bar, edge scroll, Esc cancels, board frozen (no refetch) during a drag; fixed 66px cells, rep first, Sent/Draft dot + legend, "N chats · N each", "Not free" pill, booking lines, workshop start–end; the grid hint; chat modal (bottom sheet on phones) with hackers grouped by chat, summary line, draft note, Move to… list; sent-chat move/remove warnings (red); the two-step "isn't free" dialog (contact, then confirm); workshop and two-places drops refused with toasts; Edit hackers (red Remove per row), remove a hacker with next in line / someone else by ID (camera or typed), Put someone first in line, next-in-line preview; toasts count chats; Undo toast 5 s. Demo seed: `scripts/seed-coffee-board-v12-demo.sql` (rerunnable, local only).
+
+**Left:**
+- Browser check: not done (Jazz skipped screenshots). `mocks/coffee-board-v12-build/verify.mjs` drives every flow against the seed but has never been run. The dev server needs the worktree's own `.env` (none here: R2 and run-of-show sheet vars are missing, so the page 500s and the board is locked without the sheet).
+- Gap item 59 (only the 6 coffee sponsors) is a live-data check.
+
+**Questions for Jazz:**
+- OK that drops into the workshop window or onto a rep's other chat just show an error toast (no dialog)? That's how I read "never".
+- The "Someone else" line says "goes to the front of the line" (mock wording) though they take the seat at once. Keep?
 
 ## Notes
 - Mock-only data (made-up reps, phones, free times) is not built; the board uses real data.

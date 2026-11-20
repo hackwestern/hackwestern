@@ -854,3 +854,15 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 - Partial sessions keep their real time ("1:00–1:30") on the format line, and the count is the real one. Walk notes stay in the modal. The "Sent. … Your chats" line is dropped, as in the mock.
 - Red buttons use the existing Tailwind `destructive` colours. A red variant on DashboardButton is a shared-component change, made in the main folder first.
 - Sponsor order: by name, as now (the mock order is only its data order). "Placed N chats." counts chats added. The Undo toast lasts 5 s.
+
+## 2026-11-19: Coffee board v12 UI build choices
+
+**Decision:**
+- A drop the rules never allow (the sponsor's workshop window, or a rep already chatting elsewhere then) is refused with an error toast, like a taken room. Only "didn't tick it" opens the two-step contact dialog.
+- Undo after removing a forced draft puts it back forced (placeChat with force), so it keeps its "Not free" mark.
+- Red buttons: `destructive-dark` fill with the existing `dashboard.notice.danger` (#b42318) as hover, set by className; the Remove zone uses `notice.danger` and `destructive/10`. No token or DashboardButton change.
+- The hacker ID placeholder uses the real format ("brave-otter-kite"); the camera button opens the real scanner (useQrScanner).
+- While a drag runs, the board shows the data it started with and stops refetching, so touch targets never leave the DOM.
+**Why:** each follows Jazz's "never" answers or keeps the build inside this worktree's rules (no shared files).
+**Alternatives:** a dialog for every unlit drop (mock v9); a red DashboardButton variant (shared component, main folder first).
+
