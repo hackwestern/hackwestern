@@ -86,6 +86,8 @@ export const sponsorHackersCopy = {
   errors: {
     unknownSponsor: "Unknown sponsor id",
     notCandidate: "That hacker isn't on your candidate list",
+    notShared:
+      "This hacker hasn't agreed to share their details with sponsors, so they can't be invited",
     shortlistFull: (max: number) => `Your shortlist is full (${max})`,
   },
   loadError:

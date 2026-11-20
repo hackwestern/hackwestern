@@ -4,16 +4,13 @@ import SEO from "~/components/seo";
 import { InternalNavbar } from "~/components/internals/navbar";
 import { CoffeeSessionsTab } from "~/components/sponsors/organizer/coffee-sessions/coffee-sessions-tab";
 import { JudgingTab } from "~/components/sponsors/organizer/judging-tab";
+import { OrganizerHome } from "~/components/sponsors/organizer/organizer-home";
+import { OrganizerNav } from "~/components/sponsors/organizer/organizer-nav";
 import {
-  OrganizerTabList,
-  panelId,
   SponsorFocusBar,
-  tabId,
   useOrganizerLocation,
 } from "~/components/sponsors/organizer/organizer-tabs";
 import { RunOfShowTab } from "~/components/sponsors/organizer/run-of-show-tab";
-import { SponsorsTab } from "~/components/sponsors/organizer/sponsors-tab";
-import { NowAndNextPanel } from "~/components/sponsors/organizer/now-and-next";
 import { OrganizerTour } from "~/components/sponsors/tour/organizer-tour";
 import {
   LoadError,
@@ -22,16 +19,8 @@ import {
 } from "~/components/sponsors/schedule-states";
 import { useNow } from "~/components/sponsors/use-now";
 import { sponsorOrganizerCopy } from "~/content/sponsor-organizer";
-import { TASK_MINUTES } from "~/lib/happening-now";
 import { organizerTourIdFor } from "~/lib/organizer-tours";
-import { runOfShowInstant } from "~/lib/run-of-show-time";
-import {
-  contactRowsNamed,
-  leadsSponsor,
-  needsAttention,
-  type SponsorSummary,
-} from "~/lib/sponsor-organizer";
-import { cn } from "~/lib/utils";
+import { leadsSponsor, type SponsorSummary } from "~/lib/sponsor-organizer";
 import { api } from "~/utils/api";
 import { authRedirectOrganizer } from "~/utils/redirect";
 
@@ -39,12 +28,14 @@ const copy = sponsorOrganizerCopy;
 /** Chats on the sponsor rows. */
 const SUMMARY_REFRESH_MS = 15_000;
 
-// The organizer sponsor home: "Needs attention now" and "Now and next" on
-// top, then the tabs in the URL (?tab=, ?sponsor=): Sponsors (My sponsors,
-// or Lucas's All sponsors board with ?list=all), the run of show, coffee
-// chats and sponsor judging. Task pings is switched off (decisions
-// 2026-11-19); its tab code stays in the repo. Each sponsor row links into
-// the other tabs focused on that sponsor (docs/flows/sponsor-organizer.md).
+// The organizer sponsor dashboard. Home (no ?tab=) is the day view (mock
+// organizer-sponsors-home-v3, decisions 2026-11-19): Fri · Sat · Sun, Up
+// next, your day and that day's sponsor table, Your sponsors or All sponsors
+// (?list=all). The Tools menu opens the coffee chat board (?tab=coffee),
+// the judging board (?tab=judging) and the full run of show
+// (?tab=schedule), each with ?sponsor= focus and a way back to Home. The
+// old Sponsors board, Needs attention and Task pings code stays in the repo
+// unrendered.
 export default function SponsorOrganizerHome() {
   const now = useNow();
   const router = useRouter();
@@ -72,22 +63,6 @@ export default function SponsorOrganizerHome() {
     () => mine.data?.contactNames ?? [],
     [mine.data?.contactNames],
   );
-  // The sponsor ids this organizer leads (Sponsor Day-Of's HW lead names
-  // their HW Contacts row); null until both reads are in.
-  const myIds = useMemo(
-    () =>
-      me && sheetSponsors.data
-        ? new Set(
-            sheetSponsors.data
-              .filter(
-                (s) =>
-                  s.sponsorId && leadsSponsor(s.hwContact, me, contactNames),
-              )
-              .map((s) => s.sponsorId!),
-          )
-        : null,
-    [me, sheetSponsors.data, contactNames],
-  );
   // My sponsors unless ?list=all, or no HW Contacts match, or they lead no
   // sponsor (then All sponsors, with My sponsors one tap away).
   const leadsAny =
@@ -111,28 +86,6 @@ export default function SponsorOrganizerHome() {
       scroll: false,
     });
   };
-  // Every sponsor's items, the organizer's own first (decisions 2026-11-19,
-  // "Needs attention scope"). With a match, wait for Sponsor Day-Of so the
-  // list doesn't flash in the wrong order while it loads.
-  const attention = useMemo(() => {
-    if (!mine.data || !summary.data) return null;
-    if (me && !myIds) return null;
-    return needsAttention({
-      sponsors: summary.data.sponsors.flatMap((s) => {
-        const d = mine.data.sponsors[s.sponsorId];
-        return d
-          ? [{ sponsorId: s.sponsorId, name: s.name, chats: d.chats }]
-          : [];
-      }),
-      tasks: schedule.data?.tasks ?? [],
-      now,
-      taskStart: (t) => runOfShowInstant(t.day, t.start),
-      taskMinutes: TASK_MINUTES,
-      isMine: (id) => !!myIds?.has(id),
-      isMyTask: (owner) =>
-        !!me && contactRowsNamed(owner, contactNames).has(me.row),
-    });
-  }, [mine.data, summary.data, myIds, me, contactNames, schedule.data, now]);
   const summaries = useMemo(
     () =>
       new Map<string, SponsorSummary>(
@@ -160,79 +113,59 @@ export default function SponsorOrganizerHome() {
       <SEO title={copy.seoTitle} noindex />
       <InternalNavbar />
       <div className="min-h-screen bg-dashboard-bg-page px-4 pb-12 pt-6 font-figtree font-medium leading-default text-dashboard-text-heavy sm:px-5">
-        <div
-          className={cn(
-            "mx-auto flex w-full flex-col gap-5",
-            // The day grid and the coffee chat tables get room for their
-            // columns; My sponsors' two-column tables stay readable.
-            tab === "sponsors" && view === "mine"
-              ? "max-w-[960px]"
-              : "max-w-[1440px]",
-          )}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
+        <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <OrganizerNav tab={tab} sponsor={focusId} />
+            {/* Tours the open tool; Home's day view has no tour yet. */}
+            {tab !== "sponsors" && (
+              <OrganizerTour tab={organizerTourIdFor(tab, false)} />
+            )}
+          </div>
+          {tab === "sponsors" ? (
+            <OrganizerHome
+              now={now}
+              me={me}
+              contactNames={contactNames}
+              contactsError={mine.data?.contactsError ?? false}
+              sheet={sheetSponsors.data}
+              sheetFailed={!sheetSponsors.data && sheetSponsors.isError}
+              summaries={summaries}
+              mine={mine.data?.sponsors}
+              schedule={schedule.data}
+              scheduleFailed={!schedule.data && schedule.isError}
+              round2Open={summary.data?.round2Open ?? false}
+              view={view}
+              onView={setView}
+            />
+          ) : (
+            <main className="flex min-w-0 flex-col gap-5">
               <PageIntro
                 eyebrow={copy.eyebrow}
-                title={copy.title}
-                intro={copy.intro}
+                title={copy.home.nav[tab]}
+                intro={copy.home.toolIntro}
               />
-            </div>
-            {/* Tours the open tab; offers it once per tab. */}
-            <OrganizerTour tab={organizerTourIdFor(tab, view === "mine")} />
-          </div>
-          {/* On every tab: Needs attention now, then Now and next. */}
-          <NowAndNextPanel
-            items={schedule.data?.items ?? null}
-            tasks={schedule.data?.tasks ?? null}
-            now={now}
-            attention={attention}
-            scheduleFailed={!schedule.data && schedule.isError}
-          />
-          <OrganizerTabList tab={tab} onSelect={loc.selectTab} />
-          <div
-            role="tabpanel"
-            id={panelId(tab)}
-            aria-labelledby={tabId(tab)}
-            className="flex min-w-0 flex-col gap-5"
-          >
-            {tab !== "sponsors" && focusId && (
-              <SponsorFocusBar tab={tab} sponsorId={focusId} name={focusName} />
-            )}
-            {tab === "sponsors" ? (
-              <SponsorsTab
-                summaries={summaries}
-                summaryLoading={summary.isLoading}
-                summaryFailed={!summary.data && summary.isError}
-                round2Open={summary.data?.round2Open ?? false}
-                items={schedule.data?.items ?? null}
-                workshops={schedule.data?.workshops ?? null}
-                now={now}
-                me={me}
-                contactNames={contactNames}
-                contactsError={mine.data?.contactsError ?? false}
-                mine={mine.data?.sponsors}
-                view={view}
-                onView={setView}
-              />
-            ) : tab === "coffee" ? (
-              <CoffeeSessionsTab sponsor={loc.sponsor} />
-            ) : tab === "judging" ? (
-              <JudgingTab sponsor={focusId} />
-            ) : schedule.isLoading ? (
-              <ScheduleSkeleton />
-            ) : !schedule.data ? (
-              <LoadError onRetry={() => void schedule.refetch()} />
-            ) : (
-              <RunOfShowTab
-                data={schedule.data}
-                now={now}
-                jumpToRooms={loc.jumpToRooms}
-                onJumped={loc.onJumped}
-                sponsor={loc.sponsor}
-              />
-            )}
-          </div>
+              {focusId && (
+                <SponsorFocusBar tab={tab} sponsorId={focusId} name={focusName} />
+              )}
+              {tab === "coffee" ? (
+                <CoffeeSessionsTab sponsor={loc.sponsor} />
+              ) : tab === "judging" ? (
+                <JudgingTab sponsor={focusId} />
+              ) : schedule.isLoading ? (
+                <ScheduleSkeleton />
+              ) : !schedule.data ? (
+                <LoadError onRetry={() => void schedule.refetch()} />
+              ) : (
+                <RunOfShowTab
+                  data={schedule.data}
+                  now={now}
+                  jumpToRooms={loc.jumpToRooms}
+                  onJumped={loc.onJumped}
+                  sponsor={loc.sponsor}
+                />
+              )}
+            </main>
+          )}
         </div>
       </div>
     </>

@@ -50,6 +50,7 @@ async function hackerRanking(
   sponsorId: string | null,
   share: boolean,
   status: "CONFIRMED" | "DECLINED" = "CONFIRMED",
+  name: { first: string; last: string } | null = null,
 ) {
   const session = await mockSession(db);
   await db.insert(applications).values({
@@ -57,8 +58,8 @@ async function hackerRanking(
     userId: session.user.id,
     status,
     agreeShareWithSponsors: share,
-    firstName: share ? "Shared" : "Private",
-    lastName: "Hacker",
+    firstName: name?.first ?? (share ? "Shared" : "Private"),
+    lastName: name?.last ?? "Hacker",
   });
   if (sponsorId) {
     await db
@@ -128,19 +129,34 @@ describe("sponsorShortlist.add / remove", () => {
     expect(res.hackers[0]!.shortlisted).toBe(false);
   });
 
-  test("can't shortlist a hacker who didn't consent, didn't rank you, or isn't admitted", async () => {
+  test("can't shortlist a hacker who didn't consent or isn't admitted", async () => {
+    const mine = await sponsor();
+    await withSeats(mine.id, 3);
+    const notSharing = await hackerRanking(mine.id, false);
+    const declined = await hackerRanking(mine.id, true, "DECLINED");
+    // Invites only go to hackers who share, so a pick of theirs is refused.
+    await expect(
+      anon.sponsorShortlist.add({ sponsor: mine.id, userId: notSharing }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      anon.sponsorShortlist.add({ sponsor: mine.id, userId: declined }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  test("a sharing hacker found by search can be shortlisted, is listed and takes a seat", async () => {
     const mine = await sponsor();
     const other = await sponsor();
-    const notSharing = await hackerRanking(mine.id, false);
+    await withSeats(mine.id, 1);
     const rankedOther = await hackerRanking(other.id, true);
     const rankedNobody = await hackerRanking(null, true);
-    const declined = await hackerRanking(mine.id, true, "DECLINED");
-
-    for (const userId of [notSharing, rankedOther, rankedNobody, declined]) {
-      await expect(
-        anon.sponsorShortlist.add({ sponsor: mine.id, userId }),
-      ).rejects.toMatchObject({ code: "NOT_FOUND" });
-    }
+    await anon.sponsorShortlist.add({ sponsor: mine.id, userId: rankedOther });
+    const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
+    expect(res.hackers.find((h) => h.userId === rankedOther)?.shortlisted).toBe(true);
+    expect(res.picked).toBe(1);
+    // The one seat is taken.
+    await expect(
+      anon.sponsorShortlist.add({ sponsor: mine.id, userId: rankedNobody }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
   test("unknown sponsor is NOT_FOUND", async () => {
@@ -322,5 +338,46 @@ describe("sponsorShortlist.forSponsor (organizers)", () => {
       sponsorId: mine.id,
     });
     expect(res.hackers.map((h) => h.userId)).toEqual([keep]);
+  });
+});
+
+describe("sponsorShortlist.search", () => {
+  test("finds admitted hackers by name; private hackers by first name only", async () => {
+    const mine = await sponsor();
+    const tag = faker.string.alpha({ length: 8, casing: "lower" });
+    const shared = await hackerRanking(null, true, "CONFIRMED", {
+      first: `Ada${tag}`,
+      last: `Lovelace${tag}`,
+    });
+    const hidden = await hackerRanking(null, false, "CONFIRMED", {
+      first: `Grace${tag}`,
+      last: `Hopper${tag}`,
+    });
+    await hackerRanking(null, true, "DECLINED", {
+      first: `Alan${tag}`,
+      last: `Turing${tag}`,
+    });
+
+    const byLast = await anon.sponsorShortlist.search({ sponsor: mine.id, q: `lovelace${tag}` });
+    expect(byLast.map((h) => [h.userId, h.name, h.shared])).toEqual([
+      [shared, `Ada${tag} Lovelace${tag}`, true],
+    ]);
+    // A private hacker's last name never matches, and never shows.
+    expect(await anon.sponsorShortlist.search({ sponsor: mine.id, q: `hopper${tag}` })).toEqual([]);
+    const byFirst = await anon.sponsorShortlist.search({ sponsor: mine.id, q: `grace${tag}` });
+    expect(byFirst.map((h) => [h.userId, h.name, h.shared, h.team, h.github])).toEqual([
+      [hidden, `Grace${tag}`, false, null, null],
+    ]);
+    // Not admitted: not found.
+    expect(await anon.sponsorShortlist.search({ sponsor: mine.id, q: `turing${tag}` })).toEqual([]);
+    expect(await anon.sponsorShortlist.search({ sponsor: mine.id, q: `alan${tag}` })).toEqual([]);
+  });
+
+  test("needs at least 2 characters, and % matches literally", async () => {
+    const mine = await sponsor();
+    await expect(
+      anon.sponsorShortlist.search({ sponsor: mine.id, q: "a" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(await anon.sponsorShortlist.search({ sponsor: mine.id, q: "%%" })).toEqual([]);
   });
 });

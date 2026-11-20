@@ -112,7 +112,7 @@ describe("candidates from the interest form", () => {
     expect(json).not.toContain(second.email);
   });
 
-  test("only form candidates can be shortlisted", async () => {
+  test("form candidates and sharing hackers found by search can be shortlisted", async () => {
     const mine = await sponsor();
     await withSeats(mine.id);
     const candidate = await hacker(false);
@@ -120,15 +120,15 @@ describe("candidates from the interest form", () => {
     const inAppOnly = await hacker(true, mine.id);
     formRanking.mockResolvedValue([formRow(candidate.email)]);
 
+    // A form candidate can be shortlisted even without app consent (the
+    // form is their consent); anyone else needs to share with sponsors.
     await anon.sponsorShortlist.add({ sponsor: mine.id, userId: candidate.id });
-    await expect(
-      anon.sponsorShortlist.add({ sponsor: mine.id, userId: inAppOnly.id }),
-    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await anon.sponsorShortlist.add({ sponsor: mine.id, userId: inAppOnly.id });
 
     const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
     expect(
       res.hackers.filter((h) => h.shortlisted).map((h) => h.userId),
-    ).toEqual([candidate.id]);
+    ).toEqual([candidate.id, inAppOnly.id]);
 
     const organizer = createCaller(
       createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
@@ -136,7 +136,10 @@ describe("candidates from the interest form", () => {
     const forSponsor = await organizer.sponsorShortlist.forSponsor({
       sponsorId: mine.id,
     });
-    expect(forSponsor.hackers.map((h) => h.userId)).toEqual([candidate.id]);
+    expect(forSponsor.hackers.map((h) => h.userId)).toEqual([
+      candidate.id,
+      inAppOnly.id,
+    ]);
   });
 
   test("drops hackers who aren't admitted, then cuts to 40", async () => {

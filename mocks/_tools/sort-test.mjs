@@ -1,0 +1,15 @@
+import { chromium } from "playwright";
+const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 390, height: 844 } });
+const errs = []; p.on("pageerror", (e) => errs.push(e.message));
+await p.goto("http://127.0.0.1:3040/mocks/");
+await p.click("#sortRecent");
+const first3 = await p.$$eval("#byRecent .card .name", (n) => n.slice(0, 3).map((x) => x.textContent));
+console.log("recent visible:", await p.isVisible("#byRecent"), "| topic hidden:", !(await p.isVisible("#byTopic")));
+console.log("newest 3:", first3.join(", "));
+await p.reload();
+console.log("remembered after reload:", await p.isVisible("#byRecent"));
+await p.locator("#byRecent .like").first().click();
+console.log("like works in recent view:", await p.textContent("#likedCount"));
+await p.locator("#byRecent .like").first().click();
+console.log("page errors:", errs.length ? errs : "none");
+await b.close();

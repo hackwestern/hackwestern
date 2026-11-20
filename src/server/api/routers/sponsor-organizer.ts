@@ -12,6 +12,7 @@ import {
   type SponsorRep,
   type SponsorSummaries,
 } from "~/lib/sponsor-organizer";
+import { repBlocks, type RepBlock } from "~/lib/organizer-home";
 import { fetchHwContacts } from "~/server/api/utils/sponsor-hw-contacts";
 import {
   createTRPCRouter,
@@ -286,7 +287,10 @@ export const sponsorOrganizerRouter = createTRPCRouter({
           .from(coffeeChatReps),
         db
           .select({
+            id: coffeeChatPlacements.id,
             repId: coffeeChatPlacements.repId,
+            sessionId: coffeeChatPlacements.sessionId,
+            room: coffeeChatPlacements.room,
             status: coffeeChatPlacements.status,
             sentAt: coffeeChatPlacements.sentAt,
           })
@@ -295,17 +299,30 @@ export const sponsorOrganizerRouter = createTRPCRouter({
         db
           .select({
             sponsorId: coffeeChats.sponsorId,
+            placementId: coffeeChats.placementId,
             status: coffeeChats.status,
           })
           .from(coffeeChats)
           .where(isNotNull(coffeeChats.placementId)),
       ]);
     const sponsorOfRep = new Map(reps.map((r) => [r.id, r.sponsorId]));
-    const out: Record<string, { reps: SponsorRep[]; chats: MySponsorChats }> =
-      {};
+    const out: Record<
+      string,
+      { reps: SponsorRep[]; chats: MySponsorChats; blocks: RepBlock[] }
+    > = {};
     for (const { id } of sponsors) {
       const mine = reps.filter((r) => r.sponsorId === id);
+      const theirPlacements = placements.filter(
+        (p) => sponsorOfRep.get(p.repId) === id,
+      );
+      const theirInvites = invites.filter((i) => i.sponsorId === id);
       out[id] = {
+        // The Home's "Chats by rep": each rep's sent sessions and seats.
+        blocks: repBlocks({
+          reps: mine,
+          placements: theirPlacements,
+          invites: theirInvites,
+        }),
         reps: orderReps(mine).map(
           ({ id: repId, name, phone, isPrimary, position }) => ({
             id: repId,
@@ -318,10 +335,8 @@ export const sponsorOrganizerRouter = createTRPCRouter({
         chats: mySponsorChats({
           pref: prefs.find((p) => p.sponsorId === id) ?? null,
           reps: mine,
-          placements: placements.filter(
-            (p) => sponsorOfRep.get(p.repId) === id,
-          ),
-          invites: invites.filter((i) => i.sponsorId === id),
+          placements: theirPlacements,
+          invites: theirInvites,
         }),
       };
     }

@@ -816,3 +816,20 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 - **Round 2, sheet sync and the cheat check** stay in an "After presentations" card under the board (not in the mock, but still needed). The old Presentations panel's schedule, notify and by-hacker views are covered by the board and moved to `_to_delete/`.
 **Why:** each keeps a time a team was told from changing under them, or keeps a sponsor from being locked out.
 **Alternatives:** a Schedule button organizers press (the old flow; the mock dropped it); per-member confirms (Jazz chose one reply per team).
+## 2026-11-19: Organizer Home built from v3: what's in, what waits for data (build)
+
+**Decision:** /internal/sponsors opens on the v3 day view. Columns built from data the app has: Fri (Arrived, Booth, Coffee chat briefing as tap pills that write Sponsor Day-Of; Availability; Chat shortlist; Chats + invites), Sat (Chats by rep from sent placements with ✓/⏳ seats; Workshop with setup at −30; Booth status), Sun (Judging shortlist, Judging room, Top 5). Left out until there's a data source: Opening speaker check-in, Met at booth count, Tonight (staying/leaving), Judging workshop attendance, Closing role, Gifts · departed. Empty sent chats on Saturday show as one flag per sponsor ("5 chats have no hackers yet, first …"), not one per chat. The chat shortlist is never flagged (it's optional since seats fill from interested hackers). Home has no guided tour yet; the tools keep theirs. The old Sponsors board, Needs attention and Task pings code stays in the repo, not rendered; Sync from sheet and search went with the board.
+**Why:** every flag must come from real data; inventing columns would show permanent "not yet" cells. One flag per problem keeps "N things need you" honest.
+**Alternatives:** add the missing fields to Sponsor Day-Of now (sheet work during event week); flag the shortlist from 9 PM as the mock says (conflicts with the no-open-seats decision).
+
+## 2026-11-19: Sponsors can search every hacker by name and shortlist them (Jazz)
+
+**Decision:** The coffee chat shortlist has a name search over every admitted hacker, not just the sponsor's top 40 candidates. Hackers who share with sponsors match on first, last or full name and show their full profile. Hackers who don't share show, and match on, their first name only, and get no Shortlist button ("Can't be invited: they didn't agree to share with sponsors"), because invite rounds only invite sharers. A hacker already scanned at the booth shows "Met at your booth". A pick found by search is listed after the candidates, counts toward the seat cap, and shows in the organizer forSponsor view. Top-40 candidates from the interest form keep their old rule (they can be shortlisted without the app share box). Up to 20 results, 2+ letters, % and _ match literally.
+**Why:** sponsors meet people at the event who never ranked them, and want to shortlist them by name.
+**Alternatives:** search only the top 40 (no rule change, but can't find people off the list); include non-sharers as shortlistable (dead picks that use a seat and never get invited).
+
+## 2026-11-19: Sponsor portal = mock sponsor-chats-v3, exactly (Jazz)
+
+**Decision:** The finished sponsor portal follows `hackwestern-sponsor-dash/mocks/sponsor-chats-v3` (its flow, screens and information, with v1/v2's READMEs for what v3 didn't change), replacing what the portal shows today. Approves sponsor-chats-v3 for build. Real data replaces the mock's fake data (contacts from HW Contacts and Noah, tier from the sponsor sheet, hackers from the candidate list).
+**Why:** Jazz: "EVERYTHING should look like this, the finished spon portal for sponsors should follow this exact flow."
+**Alternatives:** keep the current portal (v6 restyle) and patch pieces in.

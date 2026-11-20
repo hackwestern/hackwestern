@@ -16,6 +16,7 @@ import {
 } from "~/lib/sponsor-organizer";
 import { hasPrizeTrack, isDigitalJudging } from "~/lib/sponsor-prize-tracks";
 import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
+import type { RepBlock } from "~/lib/organizer-home";
 import { cn } from "~/lib/utils";
 
 const copy = sponsorOrganizerCopy.mine;
@@ -33,7 +34,12 @@ export type MySponsor = {
   fromSheet: boolean;
 };
 
-export type MySponsorData = { reps: SponsorRep[]; chats: MySponsorChats };
+export type MySponsorData = {
+  reps: SponsorRep[];
+  chats: MySponsorChats;
+  /** Each rep's sent Saturday sessions (the Home's "Chats by rep"). */
+  blocks: RepBlock[];
+};
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1";
@@ -253,7 +259,7 @@ function Muted({ children }: { children: React.ReactNode }) {
  * undoes it. Disabled while its save is in flight, or when there's no store
  * (`disabled` with a note).
  */
-function Pill({
+export function Pill({
   label,
   sponsor,
   states,
