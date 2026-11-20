@@ -8,14 +8,15 @@ import { createInnerTRPCContext } from "~/server/api/trpc";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
 import { db } from "~/server/db";
 import {
+  sponsorJudgingRooms,
   sponsorJudgingSponsors,
+  sponsorPresentationConfirms,
   sponsorPresentationNotices,
   sponsorPresentations,
   sponsorShortlistSends,
   teams,
   users,
 } from "~/server/db/schema";
-import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
 import {
   round2OpenedAt,
   setRound2Open,
@@ -54,10 +55,40 @@ vi.mock("~/server/api/utils/sponsor-judging-sheet-mirror", () => ({
   mirrorSponsorJudgingSoon: vi.fn(async () => undefined),
 }));
 
-// Rooms come from the sheets; Slack is the network.
-vi.mock("~/server/api/utils/sponsor-judging-board", () => ({
-  judgingRoomsById: vi.fn(),
-}));
+// Rooms come from the sheets (faked by sheetRooms), with the Judging
+// board's picks (sponsor_judging_room) on top, as in production; Slack is
+// the network.
+const sheetRooms = vi.hoisted(() =>
+  vi.fn<
+    (s: readonly { id: string; name: string }[]) => Promise<Map<string, string>>
+  >(),
+);
+vi.mock("~/server/api/utils/sponsor-judging-board", async () => {
+  const { db } = await import("~/server/db");
+  const { sponsorJudgingRooms } = await import("~/server/db/schema");
+  const { remoteJudgingRoom } = await import("~/lib/sponsor-prize-tracks");
+  const withSource = async (
+    sponsors: readonly { id: string; name: string }[],
+  ) => {
+    const out = new Map<string, { room: string; source: string }>();
+    for (const [id, room] of (await sheetRooms(sponsors)) ?? new Map()) {
+      out.set(id, { room, source: "sheet" });
+    }
+    for (const p of await db.select().from(sponsorJudgingRooms)) {
+      out.set(p.sponsorId, { room: p.room, source: "board" });
+    }
+    for (const sp of sponsors) {
+      const remote = remoteJudgingRoom(sp.name);
+      if (remote) out.set(sp.id, { room: remote, source: "remote" });
+    }
+    return out;
+  };
+  return {
+    judgingRoomsWithSource: withSource,
+    judgingRoomsById: async (sponsors: readonly { id: string; name: string }[]) =>
+      new Map([...(await withSource(sponsors))].map(([k, v]) => [k, v.room])),
+  };
+});
 vi.mock("~/server/slack/presentation-dm", async (importOriginal) => ({
   ...(await importOriginal<typeof import("~/server/slack/presentation-dm")>()),
   sendPresentationDm: vi.fn(),
@@ -69,7 +100,7 @@ const mailOk = {
   data: { delivered: [], queued: [], bounced: [] },
   error: null,
 };
-const rooms = vi.mocked(judgingRoomsById);
+const rooms = sheetRooms;
 const dm = vi.mocked(sendPresentationDm);
 
 const anon = createCaller(createInnerTRPCContext({ session: null }));
@@ -87,6 +118,10 @@ beforeEach(async () => {
   await db.delete(sponsorPresentations);
   // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
   await db.delete(sponsorShortlistSends);
+  // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
+  await db.delete(sponsorJudgingRooms);
+  // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
+  await db.delete(sponsorPresentationConfirms);
   organizer = createCaller(
     createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
   );
@@ -337,6 +372,9 @@ describe("sponsorPresentations.notify", () => {
       expect.objectContaining({ email: hackerSession.user.email }),
       expect.any(String),
       [{ sponsorName: s.name, room: "Rm 2235", start: 600 }],
+      undefined,
+      // The Confirm button carries the team and the times it was sent.
+      { teamId: expect.any(String), key: expect.stringContaining("600|") },
     );
     expect(await hacker.sponsorPresentations.mine()).toEqual([
       { sponsorName: s.name, room: "Rm 2235", start: 600 },
@@ -348,6 +386,31 @@ describe("sponsorPresentations.notify", () => {
       notReached: [],
     });
     expect(view.notices.lastSentAt).not.toBeNull();
+  });
+
+  test("one member confirming accepts for the team, until the times change", async () => {
+    slackToken = "xoxb-test";
+    const { s, t } = await scheduledTeam("Rm 2110");
+    const a = await member(t);
+    const b = await member(t);
+
+    // Nothing to confirm before the team was told its times.
+    await expect(a.caller.sponsorPresentations.confirm()).rejects.toMatchObject(
+      { code: "CONFLICT" },
+    );
+    await organizer.sponsorPresentations.notify();
+    await a.caller.sponsorPresentations.confirm();
+    // Covers the whole team.
+    expect(
+      (await b.caller.sponsorPresentations.myConfirmation()).confirmedAt,
+    ).not.toBeNull();
+
+    // A room change gives new times: the team has to confirm again.
+    rooms.mockResolvedValue(new Map([[s.id, "Rm 2230"]]));
+    await organizer.sponsorPresentations.schedule();
+    expect(
+      (await b.caller.sponsorPresentations.myConfirmation()).confirmedAt,
+    ).toBeNull();
   });
 
   test("emails members not on Slack, once, and counts them reached", async () => {
@@ -667,5 +730,108 @@ describe("presentationDmMessage", () => {
     expect(text).toContain("A&lt;b&gt;");
     expect(text.indexOf("10:00 AM")).toBeLessThan(text.indexOf("10:20 AM"));
     expect(text).toContain("Scotia &amp; Co, Rm 2110");
+  });
+});
+
+describe("sponsorPresentations judging board", () => {
+  async function named(name: string) {
+    const [row] = await db
+      .insert(sponsorJudgingSponsors)
+      .values({ name: `${name} ${faker.string.alphanumeric(8)}` })
+      .returning();
+    return row!;
+  }
+
+  test("organizers only", async () => {
+    await expect(anon.sponsorPresentations.board()).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
+    });
+  });
+
+  test("sets a room, keeps the team's time and asks to tell them again", async () => {
+    slackToken = "xoxb-test";
+    const { s, t } = await scheduledTeam("Rm 2110");
+    await member(t);
+    await organizer.sponsorPresentations.notify();
+    let board = await organizer.sponsorPresentations.board();
+    expect(board.slots).toMatchObject([
+      { teamId: t, room: "Rm 2110", start: 600, status: "waiting" },
+    ]);
+    expect(board.teamsNotTold).toBe(0);
+
+    await organizer.sponsorPresentations.setRoom({
+      sponsorId: s.id,
+      room: "Rm 2230",
+    });
+    board = await organizer.sponsorPresentations.board();
+    expect(board.sponsors.find((x) => x.sponsorId === s.id)).toMatchObject({
+      room: "Rm 2230",
+      roomSource: "board",
+    });
+    expect(board.slots).toMatchObject([
+      { teamId: t, room: "Rm 2230", start: 600, status: "not-sent" },
+    ]);
+    expect(board.teamsNotTold).toBe(1);
+  });
+
+  test("refuses a taken room unless swapping", async () => {
+    const a = await named("QNX");
+    const b = await named("Scotiabank");
+    rooms.mockResolvedValue(
+      new Map([
+        [a.id, "Rm 2235"],
+        [b.id, "Rm 2110"],
+      ]),
+    );
+    await expect(
+      organizer.sponsorPresentations.setRoom({ sponsorId: a.id, room: "rm 2110" }),
+    ).rejects.toMatchObject({
+      code: "CONFLICT",
+      message: `Rm 2110 is ${b.name}'s. Pick another.`,
+    });
+    await organizer.sponsorPresentations.setRoom({
+      sponsorId: a.id,
+      room: "Rm 2110",
+      swap: true,
+    });
+    const board = await organizer.sponsorPresentations.board();
+    const roomOf = (id: string) =>
+      board.sponsors.find((x) => x.sponsorId === id)?.room;
+    expect(roomOf(a.id)).toBe("Rm 2110");
+    expect(roomOf(b.id)).toBe("Rm 2235");
+  });
+
+  test("remote sponsors never present: no slots, no room", async () => {
+    const remote = await named("TinyFish");
+    const t = await team();
+    await send(remote.id, [t]);
+    await expect(organizer.sponsorPresentations.schedule()).rejects.toMatchObject(
+      { code: "BAD_REQUEST" },
+    );
+    const board = await organizer.sponsorPresentations.board();
+    expect(board.slots).toEqual([]);
+    expect(board.sponsors.find((x) => x.sponsorId === remote.id)).toMatchObject(
+      { mode: "remote", teams: 1 },
+    );
+    await expect(
+      organizer.sponsorPresentations.setRoom({
+        sponsorId: remote.id,
+        room: "Rm 2110",
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  test("the team modal shows check-in, times and status", async () => {
+    const { t } = await scheduledTeam("Rm 2110");
+    await member(t);
+    const view = await organizer.sponsorPresentations.boardTeam({ teamId: t });
+    expect(view).toMatchObject({
+      teamId: t,
+      status: "not-sent",
+      presentsTo: [{ room: "Rm 2110", start: 600 }],
+      scores: [{ average: null, reps: 0 }],
+    });
+    expect(view.members).toHaveLength(1);
+    expect(view.members[0]!.checkedIn).toBe(false);
   });
 });

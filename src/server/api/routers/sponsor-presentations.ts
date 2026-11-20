@@ -5,6 +5,7 @@ import { z } from "zod";
 import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
 import { env } from "~/env";
 import {
+  PRESENTATION_ROOM_MAX,
   PRESENTATION_SLOTS_PER_ROOM,
   SHORTLIST_MAX,
   gapViolations,
@@ -50,6 +51,15 @@ import {
   keysByTeam,
   rebuildPresentationSchedule,
 } from "~/server/api/utils/presentation-schedule";
+import {
+  confirmTeamTimes,
+  teamConfirmedAt,
+} from "~/server/api/utils/presentation-confirm";
+import {
+  loadBoardTeam,
+  loadJudgingBoard,
+  setJudgingRoom,
+} from "~/server/api/utils/judging-board-data";
 
 const errors = sponsorPresentationsCopy.errors;
 
@@ -121,8 +131,10 @@ export async function teamPresentationsFor(userId: string): Promise<{
   }[];
   sentAt: Date | null;
   channel: PresentationChannel | null;
+  /** When the team confirmed these times (any member); null = not yet. */
+  confirmedAt: Date | null;
 }> {
-  const none = { slots: [], sentAt: null, channel: null };
+  const none = { slots: [], sentAt: null, channel: null, confirmedAt: null };
   const me = await db.query.users.findFirst({
     where: eq(users.id, userId),
     columns: { teamId: true },
@@ -180,6 +192,7 @@ export async function teamPresentationsFor(userId: string): Promise<{
         ? "email"
         : null;
   return {
+    confirmedAt: await teamConfirmedAt(me.teamId, keys.get(me.teamId) ?? null),
     slots: rows
       .map((r) => ({
         sponsorId: r.sponsorId,
@@ -541,6 +554,8 @@ export const sponsorPresentationsRouter = createTRPCRouter({
           m,
           team.name,
           team.slots,
+          undefined,
+          { teamId: m.teamId!, key: keys.get(m.teamId!)! },
         );
         const result =
           dmResult === "not-found"
@@ -582,6 +597,28 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         skipped: members.length - targets.length,
       };
     }),
+
+  /** Organizers: the Judging board (loadJudgingBoard). */
+  board: protectedOrganizerProcedure.query(() => loadJudgingBoard()),
+
+  /** Organizers: one team for the board's modal. */
+  boardTeam: protectedOrganizerProcedure
+    .input(z.object({ teamId: z.string().min(1).max(12) }))
+    .query(({ input }) => loadBoardTeam(input.teamId)),
+
+  /**
+   * Organizers: set a sponsor's judging room (or swap with the sponsor in
+   * it), then rebuild the schedule keeping every time (setJudgingRoom).
+   */
+  setRoom: protectedOrganizerProcedure
+    .input(
+      z.object({
+        sponsorId: z.string().uuid(),
+        room: z.string().trim().min(1).max(PRESENTATION_ROOM_MAX),
+        swap: z.boolean().default(false),
+      }),
+    )
+    .mutation(({ input }) => setJudgingRoom(input)),
 
   /**
    * Open or close round 2 for every sponsor. While open, a sponsor with a
@@ -635,6 +672,21 @@ export const sponsorPresentationsRouter = createTRPCRouter({
    * team was sent these exact times (Slack or email) (so /live and Slack agree; a
    * reschedule that changes them hides them until notified again).
    */
+  /**
+   * The signed-in hacker confirms their team's times on /live; one member
+   * confirming covers the team (Jazz, 2026-11-19).
+   */
+  confirm: protectedProcedure.mutation(async ({ ctx }) => {
+    const { confirmedAt } = await confirmTeamTimes(ctx.session.user.id, "live");
+    return { confirmedAt };
+  }),
+
+  /** When the signed-in hacker's team confirmed its current times. */
+  myConfirmation: protectedProcedure.query(async ({ ctx }) => {
+    const { confirmedAt } = await teamPresentationsFor(ctx.session.user.id);
+    return { confirmedAt };
+  }),
+
   mine: protectedProcedure.query(async ({ ctx }) => {
     const { slots } = await teamPresentationsFor(ctx.session.user.id);
     return slots.map(({ sponsorName, room, start }) => ({

@@ -46,6 +46,7 @@ import {
   membersByTeam,
 } from "~/server/api/utils/sponsor-judging-teams";
 import { assertPortalJudge } from "~/server/api/utils/sponsor-judging-guard";
+import { rebuildPresentationScheduleQuietly } from "~/server/api/utils/presentation-schedule";
 import { round2OpenedAt } from "~/server/api/utils/sponsor-judging-settings";
 import { mirrorJudgingScoresLater } from "~/server/api/utils/sponsor-judging-scores-mirror";
 import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
@@ -626,6 +627,9 @@ export const sponsorScoringRouter = createTRPCRouter({
           target: sponsorShortlistSends.sponsorId,
           set: { teamIds, sentAt },
         });
+      // The Judging board schedules each shortlist as it arrives; times
+      // already given never move (judging board v2).
+      await rebuildPresentationScheduleQuietly();
       await mirrorSponsorJudgingSoon();
       return { sentAt, teamIds };
     }),

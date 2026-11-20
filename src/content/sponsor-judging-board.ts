@@ -1,0 +1,167 @@
+// Copy for the organizer Judging board (mock organizer-judging-board-v2,
+// approved with changes by Jazz on 2026-11-19; docs/decisions.md).
+
+/**
+ * The three Sunday judging rooms (run of show). "Other…" covers a 4th
+ * sponsor with a typed room.
+ */
+export const JUDGING_ROOMS = ["Rm 2230", "Rm 2235", "Rm 2110"] as const;
+
+export const sponsorJudgingBoardCopy = {
+  intro: (start: string, end: string) =>
+    `Sunday · Round 1 presentations ${start}–${end}`,
+  loadFailed: "Couldn't load the judging board.",
+  retry: "Try again",
+
+  todo: {
+    heading: "To do",
+    open: (n: number) => `${n} open`,
+    none: "Nothing to do right now.",
+    allNotified: (time: string) => `All teams notified · ${time}`,
+    /** "Sun Life's shortlist isn't in" */
+    problem: {
+      shortlist: (sponsor: string) => `${sponsor}'s shortlist isn't in`,
+      noScores: (sponsor: string) => `${sponsor} has no scores yet`,
+      top5: (sponsor: string, top: number) =>
+        `${sponsor}'s top ${top} isn't in`,
+    },
+    textLead: (name: string) => `Text ${name} (lead)`,
+    noLead: "No lead's phone on file",
+    text: "Text",
+    texted: (time: string) => `Texted ${time}`,
+    /** The drafted text message (sms: link). */
+    sms: {
+      shortlist: (sponsor: string, due: string) =>
+        `Hi from Hack Western! ${sponsor}'s judging shortlist isn't in yet. Please send it in the sponsor portal by ${due}.`,
+      noScores: (sponsor: string) =>
+        `Hi from Hack Western! We don't see any scores from ${sponsor} yet. Please score teams in the sponsor portal as they present.`,
+      top5: (sponsor: string, top: number, due: string) =>
+        `Hi from Hack Western! ${sponsor}'s top ${top} was due at ${due}. Please submit it in the sponsor portal.`,
+    },
+    needsRoom: (sponsor: string) => `${sponsor} needs a room`,
+    notify: (n: number) =>
+      `${n} ${n === 1 ? "team hasn't" : "teams haven't"} been told their times`,
+    notifyHint: "Each team gets a Slack message with its times and rooms.",
+    notifyButton: "Notify teams",
+    notifying: "Notifying…",
+    notifyResult: (sent: number, emailed: number) =>
+      emailed > 0
+        ? `Sent ${sent} on Slack, emailed ${emailed}.`
+        : `Sent ${sent} on Slack.`,
+    notifyFailed: "Couldn't notify teams. Try again.",
+    digitalTop5: (sponsor: string, top: number) =>
+      `Enter ${sponsor}'s top ${top}`,
+  },
+
+  sponsors: {
+    heading: "Sponsors",
+    shortlistsIn: (n: number, of: number) => `${n} of ${of} shortlists in`,
+    expand: (sponsor: string) => `Show ${sponsor}'s details`,
+    collapse: (sponsor: string) => `Hide ${sponsor}'s details`,
+    line: {
+      teams: (teams: number, reps: number) =>
+        `${teams} ${teams === 1 ? "team" : "teams"} · ${reps} ${reps === 1 ? "rep" : "reps"} judging`,
+      scored: (scored: number, teams: number) =>
+        `${scored} of ${teams} scored`,
+      topIn: (top: number) => `Top ${top} in`,
+      shortlistMissing: "Shortlist isn't in",
+      missedRound1: "No shortlist: missed round 1",
+      noScores: "No scores yet",
+      topLate: (top: number) => `Top ${top} late`,
+    },
+    headRep: "Lead",
+    reps: "Reps",
+    noReps: "No reps listed yet.",
+    remote: "Remote (judges online)",
+    digitalHeading: "Digital",
+    digitalIntro: (top: number, due: string) =>
+      `Judges on Devpost. Organizers enter its top ${top}. Top ${top} due ${due}.`,
+    enterTop: (top: number) => `Enter top ${top}`,
+    hideTop: "Close",
+    topEntered: (top: number, time: string) => `Top ${top} entered ${time}`,
+  },
+
+  room: {
+    label: (sponsor: string) => `${sponsor}'s judging room`,
+    unset: "Set a room",
+    taken: (room: string, sponsor: string) => `${room} · ${sponsor}`,
+    other: "Other…",
+    otherLabel: (sponsor: string) => `Room for ${sponsor}`,
+    otherPlaceholder: "e.g. Rm 3100",
+    save: "Save",
+    cancel: "Cancel",
+    saving: "Saving…",
+    takenError: (room: string, sponsor: string) =>
+      `${room} is ${sponsor}'s. Pick another.`,
+    failed: "Couldn't change the room. Try again.",
+    moveTo: "Move to",
+    moveLabel: (sponsor: string) => `Move ${sponsor} to another room`,
+    swapWith: (room: string, sponsor: string) =>
+      `${room} (swap with ${sponsor})`,
+  },
+
+  phone: {
+    copy: (name: string) => `Copy ${name}'s phone number`,
+    copied: "Copied",
+  },
+
+  rooms: {
+    heading: "Rooms",
+    views: { calendar: "Calendar", schedule: "Schedule" },
+    viewsLabel: "Rooms view",
+    noRoomColumn: "No room yet",
+    empty: "No presentations yet. Teams show here as shortlists come in.",
+    tableLabel: "Presentations by time and room",
+    time: "Time",
+    twoSponsors: (n: number) => `${n} sponsors`,
+    legend: {
+      notSent: "Invite not sent",
+      waiting: "Waiting",
+      accepted: "Accepted",
+      twoSponsors: "On 2+ shortlists, always 10+ min apart",
+    },
+    roomTeams: (n: number) => `${n} ${n === 1 ? "team" : "teams"}`,
+    unplaced: (n: number) =>
+      `${n} ${n === 1 ? "team doesn't" : "teams don't"} fit in the window.`,
+  },
+
+  status: {
+    "not-sent": "Invite not sent",
+    waiting: "Waiting",
+    accepted: "Accepted",
+  },
+
+  team: {
+    close: "Close",
+    devpost: (team: string) => `${team} on Devpost`,
+    github: (team: string) => `${team} on GitHub`,
+    confirmed: (n: number, of: number) =>
+      `Confirmed: ${n} of ${of} ${of === 1 ? "member" : "members"} checked in`,
+    noneConfirmed: "No one from this team has checked in",
+    presentsTo: "Presents to",
+    slot: (time: string, room: string) => `${time} · ${room}`,
+    apart: (minutes: number) => `${minutes} min apart`,
+    scores: "Scores so far",
+    scoreOf: (avg: string, reps: number) =>
+      `${avg} avg · ${reps} ${reps === 1 ? "rep" : "reps"}`,
+    presentsAt: (time: string) => `Presents at ${time}`,
+    notScored: "Not scored yet",
+    members: "Members",
+    noMembers: "No members on this team.",
+    checkedIn: "Checked in",
+    notCheckedIn: "Not checked in",
+    year: (year: string) => `${year} year`,
+    links: {
+      linkedin: (name: string) => `${name} on LinkedIn`,
+      github: (name: string) => `${name} on GitHub`,
+      resume: (name: string) => `${name}'s résumé`,
+      website: (name: string) => `${name}'s website`,
+    },
+    loading: "Loading team…",
+    failed: "Couldn't load this team.",
+  },
+
+  after: {
+    heading: "After presentations",
+  },
+} as const;

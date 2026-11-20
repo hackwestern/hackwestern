@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Bell, Coffee, Presentation } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { ConfirmTimesButton } from "~/components/live/confirm-times-button";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import {
   Sheet,
@@ -201,6 +202,16 @@ function NoticeRow({
         </p>
         <div className="flex flex-wrap gap-1.5 pt-0.5">
           <span className={cn(pill, statusClass)}>{status}</span>
+          {notice.kind === "presentation" && notice.confirmed && (
+            <span
+              className={cn(
+                pill,
+                "bg-dashboard-status-live text-dashboard-text-inverse",
+              )}
+            >
+              {copy.presentation.confirmed}
+            </span>
+          )}
           {channel && (
             <span
               className={cn(
@@ -228,7 +239,20 @@ function NoticeRow({
       : "border-dashboard-border-subtle bg-dashboard-bg-surface",
   );
 
-  if (!isChat) return <div className={rowClass}>{body}</div>;
+  if (!isChat) {
+    return (
+      <div className={cn(rowClass, "flex-col")}>
+        <div className="flex w-full items-start gap-3">{body}</div>
+        {!notice.confirmed && (
+          <ConfirmTimesButton
+            confirmed={false}
+            variant="small"
+            className="pl-8"
+          />
+        )}
+      </div>
+    );
+  }
   return (
     <Link
       href={`/live?tab=coffee-chats&chat=${encodeURIComponent(notice.chatId)}`}

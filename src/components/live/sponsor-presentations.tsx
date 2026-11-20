@@ -1,6 +1,7 @@
 import { useSession } from "next-auth/react";
 import { Presentation } from "lucide-react";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
+import { ConfirmTimesButton } from "~/components/live/confirm-times-button";
 import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
 import { formatPresentationTime } from "~/lib/sponsor-presentations";
 import { api } from "~/utils/api";
@@ -16,6 +17,10 @@ export default function SponsorPresentations() {
     enabled: !!session?.user?.id,
     refetchInterval: 60_000,
   });
+  const confirmation = api.sponsorPresentations.myConfirmation.useQuery(
+    undefined,
+    { enabled: !!session?.user?.id, refetchInterval: 60_000 },
+  );
   if (!q.data || q.data.length === 0) return null;
 
   return (
@@ -40,6 +45,11 @@ export default function SponsorPresentations() {
           </li>
         ))}
       </ol>
+      {confirmation.data && (
+        <ConfirmTimesButton
+          confirmed={confirmation.data.confirmedAt !== null}
+        />
+      )}
     </DashboardPanel>
   );
 }
