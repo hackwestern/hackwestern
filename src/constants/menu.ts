@@ -1,480 +1,310 @@
-export interface AllergenInfo {
-  Halal: boolean | null;
-  Meat: boolean | null;
-  Eggs: boolean | null;
-  Nuts: boolean | null | "May Contain";
-  Pork: boolean | null;
-  Beef: boolean | null;
-  Gluten: boolean | null;
-}
+// Dietary tags, matching the food-table menu screens ("HW13 Menu Screens" in
+// Figma). A tag only appears when the source confirms it.
+export const DIET_TAGS = [
+  "Halal",
+  "Vegetarian",
+  "Vegan",
+  "Gluten-free",
+  "Nut-free",
+  "Sesame-free",
+] as const;
 
-export interface MealData {
+export type DietTag = (typeof DIET_TAGS)[number];
+
+export interface Dish {
   name: string;
-  vendor: string;
-  allergens: AllergenInfo;
-  // Short dietary note from the vendor, shown under the vendor name.
+  // What's in it, shown under the tags
+  items?: string;
+  tags?: DietTag[];
+  // Small print: allergens, limited quantity, etc.
   note?: string;
 }
 
-export interface DailyMeals {
-  breakfast: MealData[];
-  lunch: MealData[];
-  dinner: MealData[];
-  "midnight snack": MealData[];
+export interface Meal {
+  // "Dinner", "Late-night snack", ...
+  label: string;
+  // Headline from the menu screen; the vendor is used when there isn't one
+  title?: string;
+  vendor: string;
+  dishes: Dish[];
+  // Footer from the menu screen
+  footnote?: string;
 }
 
-export interface AllMealData {
-  friday: DailyMeals;
-  saturday: DailyMeals;
-  sunday: DailyMeals;
-}
+export type MenuDay = "friday" | "saturday" | "sunday";
 
-// From Events' "Catering FINAL Details" doc and the HW13 hacker package
-// (Nov 2026). null = not confirmed by the vendor yet, shown as TBD. Ask
-// Events before changing a value.
-export const allMeals: AllMealData = {
-  friday: {
-    breakfast: [],
-    lunch: [],
-    dinner: [
-      {
-        name: "Pork Belly Rice Bowl",
-        vendor: "Mr. & Mrs. Bao",
-        allergens: {
-          Halal: false,
-          Meat: true,
-          Eggs: null,
-          Nuts: null,
-          Pork: true,
-          Beef: false,
-          Gluten: null,
+// Friday dinner and Saturday breakfast, lunch and dinner come from the Figma
+// menu screens; the snacks and Sunday from the HW13 hacker package (Notion).
+// Ask Events before changing anything.
+export const menu: Record<MenuDay, Meal[]> = {
+  friday: [
+    {
+      label: "Dinner",
+      title: "Rice Bowls",
+      vendor: "Mr. & Mrs. Bao",
+      dishes: [
+        {
+          name: "Pork Belly",
+          items: "Teriyaki · corn · lettuce · crispy onion · sesame seeds",
         },
-        note: "Shared kitchen, so cross-contact is possible.",
-      },
-      {
-        name: "Bibimbap Rice Bowl",
-        vendor: "Mr. & Mrs. Bao",
-        allergens: {
-          Halal: false,
-          Meat: true,
-          Eggs: true,
-          Nuts: null,
-          Pork: null,
-          Beef: null,
-          Gluten: null,
+        {
+          name: "Bibimbap",
+          items:
+            "Gochujang · marinated egg · kimchi · crispy onion · sesame seeds",
         },
-        note: "Shared kitchen, so cross-contact is possible.",
-      },
-      {
-        name: "Chicken Rice Bowls (Sweet Spicy, Honey Garlic, Jerk)",
-        vendor: "Mr. & Mrs. Bao",
-        allergens: {
-          Halal: true,
-          Meat: true,
-          Eggs: null,
-          Nuts: null,
-          Pork: false,
-          Beef: false,
-          Gluten: null,
+        {
+          name: "Sweet & Spicy Chicken",
+          tags: ["Halal"],
+          items: "Sweet & spicy sauce · japanese pickle · lettuce · parsley",
         },
-        note: "Halal. Honey garlic is sesame-free. Shared kitchen, so cross-contact is possible.",
-      },
-      {
-        name: "Soy Rice Bowls (Honey Garlic, Sweet Spicy)",
-        vendor: "Mr. & Mrs. Bao",
-        allergens: {
-          Halal: false,
-          Meat: false,
-          Eggs: false,
-          Nuts: null,
-          Pork: false,
-          Beef: false,
-          Gluten: null,
+        {
+          name: "Honey Garlic Chicken",
+          tags: ["Halal", "Sesame-free"],
+          items: "Honey garlic sauce · jalapeño · lettuce · crispy onion",
         },
-        note: "Vegan. Shared kitchen, so cross-contact is possible.",
-      },
-      {
-        name: "Chicken Salad Bowl",
-        vendor: "Mr. & Mrs. Bao",
-        allergens: {
-          Halal: false,
-          Meat: true,
-          Eggs: null,
-          Nuts: null,
-          Pork: null,
-          Beef: null,
-          Gluten: false,
+        {
+          name: "Jerk Chicken",
+          tags: ["Halal"],
+          items: "Ginger miso · carrot slaw · lettuce · crispy onion",
         },
-        note: "Gluten-free. Shared kitchen, so cross-contact is possible.",
-      },
-    ],
-    "midnight snack": [
-      {
-        name: "Mango Green Tea with Coconut Jelly",
-        vendor: "Chatime",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
+        {
+          name: "Sweet & Spicy Soy",
+          tags: ["Vegan"],
+          items: "Jalapeño · carrot slaw · parsley",
         },
-      },
-      {
-        name: "Pearl Milk Tea",
-        vendor: "Chatime",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: null,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
+        {
+          name: "Honey Garlic Soy",
+          tags: ["Vegan"],
+          items: "Jalapeño · lettuce · crispy onion",
         },
-      },
-    ],
-  },
-  saturday: {
-    breakfast: [
-      {
-        name: "Baked Goods (Scones, Muffins, Mini Croissants)",
-        vendor: "Black Walnut Bakery Cafe",
-        allergens: {
-          Halal: false,
-          Meat: false,
-          Eggs: null,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: true,
+        {
+          name: "Chicken Bowl",
+          tags: ["Gluten-free"],
+          items: "Lettuce · carrot slaw",
         },
-        note: "Nut-free and sesame-free. No meat, but halal prep isn't guaranteed. No vegan or gluten-free baked goods.",
-      },
-      {
-        name: "Fruit Platter",
-        vendor: "Black Walnut Bakery Cafe",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
+      ],
+      footnote:
+        "Bowls are labelled by type. Made in a shared kitchen, so cross-contact is possible.",
+    },
+    {
+      label: "Late-night snack",
+      title: "Bubble Tea",
+      vendor: "Chatime",
+      dishes: [
+        {
+          name: "Pearl Milk Tea",
+          tags: [
+            "Halal",
+            "Vegetarian",
+            "Gluten-free",
+            "Nut-free",
+            "Sesame-free",
+          ],
+          items: "Signature milk tea · chewy tapioca",
         },
-        note: "For vegan and gluten-free guests.",
-      },
-    ],
-    lunch: [
-      {
-        name: "Hot Dogs",
-        vendor: "Frank & Furter's",
-        allergens: {
-          Halal: false,
-          Meat: true,
-          Eggs: null,
-          Nuts: "May Contain",
-          Pork: null,
-          Beef: null,
-          Gluten: true,
+        {
+          name: "QQ Mango",
+          tags: ["Halal", "Vegan", "Gluten-free", "Nut-free", "Sesame-free"],
+          items:
+            "Mango purée · jasmine green tea · tapioca pearls · coconut jelly",
         },
-        note: "Build your own. No vegan or gluten-free option. No nuts or sesame as ingredients, but cross-contact is possible.",
-      },
-      {
-        name: "Halal Hot Dogs",
-        vendor: "Frank & Furter's",
-        allergens: {
-          Halal: true,
-          Meat: true,
-          Eggs: null,
-          Nuts: "May Contain",
-          Pork: false,
-          Beef: null,
-          Gluten: true,
+      ],
+    },
+  ],
+  saturday: [
+    {
+      label: "Breakfast",
+      title: "Bakery Spread",
+      vendor: "Black Walnut Bakery Cafe",
+      dishes: [
+        {
+          name: "Scones",
+          tags: ["Vegetarian", "Nut-free", "Sesame-free"],
+          items: "Oatmeal date · cranberry white cheddar",
+          note: "Baked fresh in house. Not vegan or gluten-free.",
         },
-        note: "Kept separate from the regular hot dogs. No nuts or sesame as ingredients, but cross-contact is possible.",
-      },
-      {
-        name: "Vegetarian Hot Dogs",
-        vendor: "Frank & Furter's",
-        allergens: {
-          Halal: false,
-          Meat: false,
-          Eggs: null,
-          Nuts: "May Contain",
-          Pork: false,
-          Beef: false,
-          Gluten: true,
+        {
+          name: "Muffins & Croissants",
+          tags: ["Vegetarian", "Nut-free", "Sesame-free"],
+          items:
+            "Assorted muffins · plain mini croissants · chocolate mini croissants",
+          note: "Not vegan or gluten-free.",
         },
-        note: "Vegetarian, not vegan. Kept separate from the regular hot dogs.",
-      },
-      {
-        name: "Dill Pickle Potato Salad",
-        vendor: "Summerfresh",
-        allergens: {
-          Halal: false,
-          Meat: false,
-          Eggs: true,
-          Nuts: null,
-          Pork: false,
-          Beef: false,
-          Gluten: null,
+        {
+          name: "Fruit Platter",
+          tags: ["Vegan", "Gluten-free"],
+          items: "Watermelon · cantaloupe · berries · grapes · oranges",
+          note: "The pick for vegan and gluten-free hackers.",
         },
-        note: "Vegetarian.",
-      },
-      {
-        name: "Super Crunch Salad",
-        vendor: "Summerfresh",
-        allergens: {
-          Halal: false,
-          Meat: false,
-          Eggs: false,
-          Nuts: null,
-          Pork: false,
-          Beef: false,
-          Gluten: null,
+        {
+          name: "Coffee",
+          items:
+            "Medium roast, hand-roasted in house. Cream · milk · sugar on the side",
         },
-        note: "Vegan.",
-      },
-    ],
-    dinner: [
-      {
-        name: "Beef & Pork Tacos",
-        vendor: "The Mule",
-        allergens: {
-          Halal: false,
-          Meat: true,
-          Eggs: null,
-          Nuts: false,
-          Pork: true,
-          Beef: true,
-          Gluten: false,
+      ],
+      footnote:
+        "Everything here is nut-free and sesame-free. No meat in the baked goods, but halal prep isn't guaranteed.",
+    },
+    {
+      label: "Lunch",
+      title: "Hot Dog Bar",
+      vendor: "Frank & Furter's Hotdog Dive Bar",
+      dishes: [
+        {
+          name: "The Dogs",
+          tags: ["Halal", "Vegetarian"],
+          items: "Regular · halal · vegetarian (not vegan) · served on buns",
+          note: "Dogs and buns contain gluten. Veggie dogs may contain soy.",
         },
-        note: "Corn tortillas. The whole kitchen is gluten-free and nut-free. Toppings include cheese and lime crema.",
-      },
-      {
-        name: "Bean Tacos",
-        vendor: "The Mule",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
+        {
+          name: "Sauces",
+          items:
+            "Ketchup · mustard · mayo · chipotle · Dillhole · Firehole · Garlichole · Furter sauce",
+          note: "Mayo and aioli sauces may contain egg. Mustard sauces contain mustard. Some creamy sauces have dairy.",
         },
-        note: "Vegan. The cheese and lime crema toppings aren't vegan.",
-      },
-      {
-        name: "Mexican Bean Salad",
-        vendor: "Summerfresh",
-        allergens: {
-          Halal: false,
-          Meat: false,
-          Eggs: false,
-          Nuts: null,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
+        {
+          name: "Toppings",
+          items:
+            "Relish · lettuce · tomatoes · white, red & green onions · black & green olives · sauerkraut · banana peppers · jalapeños · dill pickles",
         },
-        note: "Vegan and gluten-free.",
-      },
-      {
-        name: "Chickpea & Edamame Salad",
-        vendor: "Summerfresh",
-        allergens: {
-          Halal: false,
-          Meat: false,
-          Eggs: false,
-          Nuts: null,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
+        {
+          name: "Summer Fresh Salads",
+          tags: ["Vegetarian"],
+          items:
+            "Dill Pickle Potato (vegetarian, contains egg) · Super Crunch (vegan)",
         },
-        note: "Vegan and gluten-free.",
-      },
-    ],
-    "midnight snack": [
-      {
-        name: "Fritters",
-        vendor: "The Fritter Shop",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: null,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: true,
+      ],
+      footnote:
+        "Halal and vegetarian dogs are kept separate, but the topping bar is shared. No gluten-free or vegan dogs. Not guaranteed free of nuts or sesame.",
+    },
+    {
+      label: "Dinner",
+      title: "Taco Bar",
+      vendor: "The Mule",
+      dishes: [
+        {
+          name: "Cease and Desist",
+          tags: ["Gluten-free"],
+          items: "Beef & pork · 6″ corn tortillas",
+          note: "Not halal.",
         },
-        note: "Made in a nut-free facility, no sesame. Not vegan.",
-      },
-      {
-        name: "Vegan Fritters",
-        vendor: "The Fritter Shop",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: true,
+        {
+          name: "Vegan Cease",
+          tags: ["Vegan", "Halal", "Gluten-free"],
+          items: "Beans · 6″ corn tortillas",
         },
-        note: "Apple deluxe, blueberry, cherry, lemon and raspberry. Nut-free facility, no sesame.",
-      },
-      {
-        name: "Gluten-Free Stroopwafels",
-        vendor: "The Fritter Shop",
-        allergens: {
-          Halal: false,
-          Meat: false,
-          Eggs: null,
-          Nuts: null,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
+        {
+          name: "Toppings",
+          items: "Cabbage · cheese · hot sauce · lime crema · salsa · cilantro",
+          note: "Cheese and lime crema contain dairy.",
         },
-        note: "Prepackaged.",
-      },
-    ],
-  },
-  sunday: {
-    breakfast: [
-      {
-        name: "Sesame Shaobing",
-        vendor: "Daniel's Bake Bar",
-        allergens: {
-          Halal: true,
-          Meat: true,
-          Eggs: null,
-          Nuts: false,
-          Pork: false,
-          Beef: null,
-          Gluten: true,
+        {
+          name: "Summer Fresh Salads",
+          tags: ["Vegan", "Gluten-free"],
+          items: "Mexican Bean · Chickpea & Edamame",
         },
-        note: "Contains sesame.",
-      },
-      {
-        name: "Ube Brownies",
-        vendor: "Daniel's Bake Bar",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: null,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: true,
+      ],
+      footnote:
+        "Two tacos each. The Mule is a 100% gluten-free and nut-free kitchen.",
+    },
+    {
+      label: "Late-night snack",
+      title: "Fritters",
+      vendor: "The Fritter Shop",
+      dishes: [
+        {
+          name: "Sweet Fritters",
+          tags: ["Halal", "Nut-free"],
+          note: "Popular flavour mix.",
         },
-        note: "Vegetarian. Sesame-free.",
-      },
-      {
-        name: "Black Sesame Banana Muffin",
-        vendor: "Daniel's Bake Bar",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: true,
+        {
+          name: "Vegan Fritters",
+          tags: ["Vegan", "Halal", "Nut-free"],
+          items: "Apple deluxe · blueberry · cherry · lemon · raspberry",
+          note: "Packed separately.",
         },
-        note: "Vegan. Contains sesame.",
-      },
-      {
-        name: "Pandan Coconut Muffin",
-        vendor: "Daniel's Bake Bar",
-        allergens: {
-          Halal: true,
-          Meat: false,
-          Eggs: false,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
+        {
+          name: "Gluten-Free Stroopwafels",
+          tags: ["Gluten-free"],
+          note: "Prepackaged.",
         },
-        note: "Vegan and gluten-free. Sesame-free.",
-      },
-    ],
-    lunch: [
-      {
-        name: "Banh Mi (Pork & Chicken)",
-        vendor: "Thy's Banh Mi",
-        allergens: {
-          Halal: false,
-          Meat: true,
-          Eggs: null,
-          Nuts: null,
-          Pork: true,
-          Beef: null,
-          Gluten: true,
+      ],
+      footnote: "Made in a nut-free facility, with no sesame.",
+    },
+  ],
+  sunday: [
+    {
+      label: "Breakfast",
+      vendor: "Daniel's Bake Bar",
+      dishes: [
+        {
+          name: "Sesame Shaobing",
+          tags: ["Halal", "Nut-free"],
         },
-        note: "Each sandwich is labelled with its ingredients.",
-      },
-      {
-        name: "Halal Grilled Chicken Banh Mi",
-        vendor: "Thy's Banh Mi",
-        allergens: {
-          Halal: true,
-          Meat: true,
-          Eggs: true,
-          Nuts: null,
-          Pork: false,
-          Beef: false,
-          Gluten: true,
+        {
+          name: "Ube Brownies",
+          tags: ["Halal", "Vegetarian", "Nut-free", "Sesame-free"],
         },
-        note: "Vietnamese mayo contains egg.",
-      },
-      {
-        name: "Tofu Banh Mi",
-        vendor: "Thy's Banh Mi",
-        allergens: {
-          Halal: false,
-          Meat: false,
-          Eggs: null,
-          Nuts: null,
-          Pork: false,
-          Beef: false,
-          Gluten: true,
+        {
+          name: "Black Sesame Banana Muffin",
+          tags: ["Halal", "Vegan", "Nut-free"],
         },
-        note: "Vegetarian. A vegan version with mushroom pâté is also available.",
-      },
-      {
-        name: "Gluten-Free Grilled Chicken Banh Mi",
-        vendor: "Thy's Banh Mi",
-        allergens: {
-          Halal: false,
-          Meat: true,
-          Eggs: true,
-          Nuts: null,
-          Pork: false,
-          Beef: false,
-          Gluten: false,
+        {
+          name: "Pandan Coconut Muffin",
+          tags: ["Halal", "Vegan", "Gluten-free", "Nut-free", "Sesame-free"],
         },
-        note: "Vietnamese mayo contains egg.",
-      },
-      {
-        name: "Butter Garlic Chicken Banh Mi",
-        vendor: "Thy's Banh Mi",
-        allergens: {
-          Halal: false,
-          Meat: true,
-          Eggs: true,
-          Nuts: false,
-          Pork: false,
-          Beef: false,
-          Gluten: true,
+        {
+          name: "Coffee",
+          tags: [
+            "Halal",
+            "Vegetarian",
+            "Gluten-free",
+            "Nut-free",
+            "Sesame-free",
+          ],
+          items: "Cream · milk · sugar",
+          note: "Cream and milk aren't vegan.",
         },
-        note: "Sesame-free and nut-free. Vietnamese mayo contains egg.",
-      },
-    ],
-    dinner: [],
-    "midnight snack": [],
-  },
+      ],
+    },
+    {
+      label: "Lunch",
+      title: "Banh Mi",
+      vendor: "Thy's Banh Mi",
+      dishes: [
+        {
+          name: "Grilled Chicken",
+          tags: ["Halal"],
+          note: "Mayo contains egg.",
+        },
+        {
+          name: "Tofu (vegetarian)",
+          tags: ["Vegetarian"],
+          note: "Vegan mushroom pâté.",
+        },
+        {
+          name: "Tofu (vegan)",
+          tags: ["Vegan"],
+          note: "Limited quantity.",
+        },
+        {
+          name: "Grilled Chicken (gluten-free)",
+          tags: ["Gluten-free"],
+          note: "Limited quantity. Contains egg.",
+        },
+        {
+          name: "Butter Garlic Chicken",
+          tags: ["Nut-free", "Sesame-free"],
+          note: "Limited quantity. Contains egg.",
+        },
+        {
+          name: "Regular",
+          items: "Cold cut · BBQ pork · sweet pork · sweet chicken",
+          note: "Contains pork.",
+        },
+      ],
+      footnote:
+        "Sandwiches are individually wrapped and labelled with ingredients. House-made hot sauce on the side, made without nut or wheat ingredients.",
+    },
+  ],
 };

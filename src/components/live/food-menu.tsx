@@ -4,11 +4,8 @@ import {
   AccordionBorderlessItem,
   AccordionTrigger,
 } from "~/components/ui/accordion";
-import { useState } from "react";
-import { allMeals } from "~/constants/menu";
-import type { AllergenInfo, DailyMeals, MealData } from "~/constants/menu";
-import { Info } from "lucide-react";
-import { DashboardTag } from "~/components/internals/dashboard-tag";
+import { menu } from "~/constants/menu";
+import type { DietTag, MenuDay } from "~/constants/menu";
 
 function isOpenUntil(deadline: Date) {
   const now = new Date();
@@ -21,17 +18,20 @@ const FRIDAY_ENDS = new Date("2026-11-21T05:30:00-05:00");
 const SATURDAY_ENDS = new Date("2026-11-22T01:00:00-05:00");
 const SUNDAY_ENDS = new Date("2026-11-22T18:00:00-05:00");
 
-const DAY_DATES: Record<keyof typeof allMeals, string> = {
+const DAY_DATES: Record<MenuDay, string> = {
   friday: "Nov 20",
   saturday: "Nov 21",
   sunday: "Nov 22",
 };
 
-const allergenValue = (value: AllergenInfo[keyof AllergenInfo] | undefined) => {
-  if (value === true) return "Yes";
-  if (value === false) return "No";
-  if (value === "May Contain") return "May contain";
-  return "—"; // not confirmed with the vendor
+// Same colours as the tags on the food-table menu screens
+const TAG_STYLES: Record<DietTag, string> = {
+  Halal: "bg-[#EEE7FA] text-[#5B3A99]",
+  Vegetarian: "bg-[#EDF0DA] text-[#56601E]",
+  Vegan: "bg-[#DFEFE3] text-[#1E6537]",
+  "Gluten-free": "bg-[#FBEED3] text-[#86560A]",
+  "Nut-free": "bg-[#F1E5DA] text-[#764628]",
+  "Sesame-free": "bg-[#E3E9F2] text-[#3B5474]",
 };
 
 const FoodMenu = () => {
@@ -39,30 +39,18 @@ const FoodMenu = () => {
   const saturdayOpen = isOpenUntil(SATURDAY_ENDS);
   const sundayOpen = isOpenUntil(SUNDAY_ENDS);
 
-  const [expandedAllergens, setExpandedAllergens] = useState<
-    Record<string, boolean>
-  >({});
-
-  const toggleAllergens = (key: string) => {
-    setExpandedAllergens((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
-
   const defaultValues = [
     fridayOpen ? "friday" : null,
     saturdayOpen ? "saturday" : null,
     sundayOpen ? "sunday" : null,
   ].filter((v): v is string => v !== null);
 
-  const days = Object.keys(allMeals) as (keyof typeof allMeals)[];
+  const days = Object.keys(menu) as MenuDay[];
 
   return (
     <div className="pb-48 font-figtree">
       <p className="mb-4 max-w-[720px] text-sm font-medium text-dashboard-text-medium">
-        &ldquo;&mdash;&rdquo; means the vendor hasn&apos;t confirmed it. Allergy
-        questions? Ask an organizer.
+        Allergy questions? Ask an organizer.
       </p>
       <Accordion
         type="multiple"
@@ -73,7 +61,7 @@ const FoodMenu = () => {
           <AccordionBorderlessItem
             key={day}
             value={day}
-            className="rounded-dashboard-lg bg-dashboard-bg-surface px-6 shadow-dashboard-card"
+            className="rounded-dashboard-lg bg-dashboard-bg-surface px-4 shadow-dashboard-card sm:px-6"
           >
             <AccordionTrigger className="py-5 hover:no-underline [&>svg]:size-5 [&>svg]:text-dashboard-text-light">
               <h2 className="flex items-baseline gap-3 text-2xl font-semibold leading-default text-dashboard-text-heavy">
@@ -83,80 +71,61 @@ const FoodMenu = () => {
                 </span>
               </h2>
             </AccordionTrigger>
-            <AccordionContent className="flex flex-col gap-6 pb-6 text-base">
-              {(Object.keys(allMeals[day]) as (keyof DailyMeals)[]).map(
-                (meal) => {
-                  const options = allMeals[day][meal];
-                  if (options.length === 0) return null;
-                  return (
-                    <div key={meal} className="flex w-full flex-col gap-3">
-                      <h3 className="text-sm font-semibold uppercase tracking-wide text-dashboard-text-light">
-                        {meal}
-                      </h3>
-                      {options.map((option: MealData) => {
-                        const allergenKey = `${day}-${meal}-${option.name}`;
-                        const isExpanded =
-                          expandedAllergens[allergenKey] ?? false;
-                        const hasAllergens =
-                          option.allergens &&
-                          Object.keys(option.allergens).length > 0;
-
-                        return (
-                          <div
-                            key={option.name}
-                            className="flex w-full flex-col gap-3 rounded-dashboard-lg border border-dashboard-border-subtle bg-dashboard-bg-page p-4"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex flex-col gap-0.5">
-                                <p className="text-base font-semibold text-dashboard-text-heavy">
-                                  {option.name}
-                                </p>
-                                <p className="text-sm font-medium text-dashboard-text-light">
-                                  {option.vendor}
-                                </p>
-                                {option.note && (
-                                  <p className="mt-1 text-sm text-dashboard-text-medium">
-                                    {option.note}
-                                  </p>
-                                )}
-                              </div>
-                              {hasAllergens && (
-                                <DashboardTag
-                                  selected={isExpanded}
-                                  onClick={() => toggleAllergens(allergenKey)}
-                                  className="gap-1.5 py-1.5 text-sm"
-                                >
-                                  <Info aria-hidden="true" className="size-4" />
-                                  Allergens
-                                </DashboardTag>
-                              )}
-                            </div>
-                            {hasAllergens && isExpanded && (
-                              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-dashboard-border-subtle pt-3 sm:grid-cols-4">
-                                {(
-                                  Object.entries(option.allergens) as [
-                                    keyof AllergenInfo,
-                                    AllergenInfo[keyof AllergenInfo],
-                                  ][]
-                                ).map(([allergen, value]) => (
-                                  <div key={allergen} className="flex flex-col">
-                                    <dt className="text-xs font-medium text-dashboard-text-light">
-                                      {allergen}
-                                    </dt>
-                                    <dd className="text-sm font-semibold text-dashboard-text-heavy">
-                                      {allergenValue(value)}
-                                    </dd>
-                                  </div>
-                                ))}
-                              </dl>
-                            )}
+            <AccordionContent className="flex flex-col gap-8 pb-6 text-base">
+              {menu[day].map((meal) => (
+                <section key={meal.label} className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-0.5">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-dashboard-text-light">
+                      {meal.label}
+                    </h3>
+                    <p className="text-lg font-semibold text-dashboard-text-heavy">
+                      {meal.title ?? meal.vendor}
+                      {meal.title && (
+                        <span className="font-medium text-dashboard-text-light">
+                          {" "}
+                          · {meal.vendor}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <ul className="flex flex-col divide-y divide-dashboard-border-subtle rounded-dashboard-lg border border-dashboard-border-subtle bg-dashboard-bg-page">
+                    {meal.dishes.map((dish) => (
+                      <li key={dish.name} className="flex flex-col gap-1.5 p-4">
+                        <p className="font-semibold text-dashboard-text-heavy">
+                          {dish.name}
+                        </p>
+                        {dish.tags && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {dish.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${TAG_STYLES[tag]}`}
+                              >
+                                {tag}
+                              </span>
+                            ))}
                           </div>
-                        );
-                      })}
-                    </div>
-                  );
-                },
-              )}
+                        )}
+                        {dish.items && (
+                          <p className="text-sm text-dashboard-text-medium">
+                            {dish.items}
+                          </p>
+                        )}
+                        {dish.note && (
+                          <p className="text-sm italic text-dashboard-text-light">
+                            {dish.note}
+                          </p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  {meal.footnote && (
+                    <p className="text-sm text-dashboard-text-medium">
+                      {meal.footnote}
+                    </p>
+                  )}
+                </section>
+              ))}
             </AccordionContent>
           </AccordionBorderlessItem>
         ))}
