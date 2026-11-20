@@ -8,7 +8,6 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/router";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { LogisticsSidebar } from "./logistics-sidebar";
-import LogisticsTopbar from "./logistics-topbar";
 
 // Markdown styling from the Figma event logistics pages: 24px Medium section
 // headings, 16px body, 36px between sections and 12px under each heading.
@@ -176,7 +175,6 @@ const EventLogistics = () => {
           <div className="flex items-center gap-[18px]">
             <div className="flex min-w-0 flex-1 flex-col gap-[7px]">
               <div className="flex items-center gap-2">
-                <LogisticsTopbar />
                 <p className="text-sm font-medium leading-default text-dashboard-text-light">
                   Page {step} of {lastStep}
                 </p>
