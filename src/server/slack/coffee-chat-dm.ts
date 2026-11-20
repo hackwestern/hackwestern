@@ -1,5 +1,5 @@
 import { coffeeChatInvitesCopy as invitesCopy } from "~/content/coffee-chat-invites";
-import { LIVE_URL, coffeeChatNotifyCopy } from "~/content/coffee-chat-notify";
+import { coffeeChatNotifyCopy } from "~/content/coffee-chat-notify";
 import { env } from "~/env";
 import { formatCoffeeChatTime } from "~/lib/coffee-chats";
 import {
@@ -107,12 +107,6 @@ export function coffeeChatDmMessage(chat: ChatDetails) {
             text: { type: "plain_text", text: copy.decline },
             value: chat.chatId,
           },
-        ],
-      },
-      {
-        type: "context",
-        elements: [
-          { type: "mrkdwn", text: `${copy.footer} <${LIVE_URL}|${LIVE_URL}>` },
         ],
       },
     ],

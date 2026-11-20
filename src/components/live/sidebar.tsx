@@ -5,33 +5,7 @@ import { useRouter } from "next/router";
 import { SearchAutocomplete } from "../internals/search-autocomplete";
 import { Button } from "../ui/button";
 import { SectionLink, IconlessLink } from "./navlinks";
-import { useNow } from "~/components/sponsors/use-now";
-import { coffeeChatCopy } from "~/content/coffee-chat";
-import { pendingCount, showCoffeeChatsTab } from "~/lib/coffee-chat-view";
 import * as tokens from "~/lib/tokens";
-import { api } from "~/utils/api";
-
-// Hackers' Coffee chats link, badged with requests waiting for an answer.
-// Hidden until a sponsor offers the hacker a chat; the 30 s refetch (shared
-// with the toast) makes it appear when a new offer arrives.
-const CoffeeChatsLink = () => {
-  const { data: session } = useSession();
-  const { data } = api.coffeeChatRequests.mine.useQuery(undefined, {
-    enabled: !!session?.user?.id,
-    refetchInterval: 30_000,
-  });
-  const now = useNow(30_000);
-  const count = pendingCount(data ?? [], now);
-  if (!showCoffeeChatsTab(data)) return null;
-  return (
-    <SectionLink
-      tab="coffee-chats"
-      name={coffeeChatCopy.page.navName}
-      badge={count}
-      badgeLabel={coffeeChatCopy.page.navBadge(count)}
-    />
-  );
-};
 
 export const SidebarNav = ({
   isOrganizer = false,
@@ -48,7 +22,6 @@ export const SidebarNav = ({
         <SectionLink tab="menu" name="Food Menu" />
         <SectionLink tab="mentors" name="Mentors" />
         <SectionLink tab="sponsors" name="Sponsors" />
-        {!isOrganizer && <CoffeeChatsLink />}
         {isOrganizer && (
           // Mobile-only scan page
           <div className="md:hidden">

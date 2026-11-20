@@ -48,7 +48,6 @@ export const coffeeChatNotifyCopy = {
       `*${sponsor}* wants to have a coffee chat with you.\n*When:* ${when}\n*Where:* ${room}`,
     accept: "Accept",
     decline: "Decline",
-    footer: "You can also answer on your Live page:",
     result: {
       accepted: "You accepted this coffee chat. See you there!",
       declined: "You declined this coffee chat.",
