@@ -1,10 +1,9 @@
 import { Fragment, useState } from "react";
-import { ChevronDown, MoreHorizontal, Search } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { api, type RouterOutputs } from "~/utils/api";
 import { cn } from "~/lib/utils";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardChip } from "~/components/internals/dashboard-chip";
-import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { DashboardCheckbox } from "~/components/internals/dashboard-checkbox";
 import {
   Table,
@@ -20,19 +19,18 @@ import {
   DialogTitle,
   DialogDescription,
 } from "~/components/ui/dialog";
-import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogTitle,
-} from "~/components/ui/alert-dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "~/components/ui/popover";
 import { formatEventTime } from "~/lib/date";
+import {
+  CELL,
+  DISABLED,
+  DeleteDialog,
+  FIELD,
+  LABEL,
+  RowMenu,
+  SearchBox,
+  StatusName,
+  errorText,
+} from "~/components/live/manage-table";
 type Activity = RouterOutputs["scavengerHunt"]["getScavengerHuntItems"][number];
 type ActivityType = Activity["type"];
 
@@ -52,23 +50,6 @@ const ACTIVITY_TYPES: {
   { value: "bonus", label: "Bonus", filterLabel: "Bonus" },
 ];
 
-// Plain-language text for a failed tRPC call
-const errorText = (error: {
-  message: string;
-  data?: { zodError?: unknown } | null;
-}) =>
-  error.data?.zodError
-    ? "Check what you entered and try again."
-    : error.message;
-
-const FIELD =
-  "h-10 w-full rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-sm text-dashboard-text-heavy focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary disabled:opacity-dashboard-disabled";
-const LABEL = "text-sm font-medium text-dashboard-text-medium";
-const DISABLED =
-  "disabled:cursor-not-allowed disabled:opacity-dashboard-disabled";
-const MENU_ITEM =
-  "w-full cursor-pixel-hover rounded-dashboard-xs px-3 py-2 text-left text-sm font-medium text-dashboard-text-heavy hover:bg-dashboard-bg-highlight";
-
 // Phones show only Name and Date/Time; the rest opens in a row below
 const COLUMNS = [
   { header: "Name", mobile: true },
@@ -78,7 +59,6 @@ const COLUMNS = [
   { header: "Points", mobile: false },
   { header: "Scans", mobile: false },
 ];
-const CELL = "px-2 py-3 text-sm font-medium md:px-3";
 
 const typeLabel = (a: Activity) => {
   const label =
@@ -181,20 +161,11 @@ const Activities = () => {
             </span>
             Show for wins
           </button>
-          <div className="relative w-full md:w-[276px]">
-            <Search
-              aria-hidden="true"
-              className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-dashboard-text-disabled md:size-3.5"
-            />
-            <input
-              type="search"
-              aria-label="Search activities"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name"
-              className="w-full rounded-dashboard-sm bg-dashboard-bg-surface py-3 pl-[38px] pr-1 text-base font-medium leading-default text-dashboard-text-heavy backdrop-blur-dashboard-input placeholder:text-dashboard-text-placeholder focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary md:py-2 md:pl-[34px] md:text-sm"
-            />
-          </div>
+          <SearchBox
+            label="Search activities"
+            value={search}
+            onChange={setSearch}
+          />
           <DashboardButton onClick={() => setEditing("new")}>
             New activity
           </DashboardButton>
@@ -262,21 +233,7 @@ const Activities = () => {
                       <TableCell
                         className={cn(CELL, "text-dashboard-text-heavy", blue)}
                       >
-                        <span className="flex flex-wrap items-center gap-2">
-                          <span
-                            className={cn(
-                              a.status === "disabled" &&
-                                "text-dashboard-text-disabled line-through",
-                            )}
-                          >
-                            {a.name}
-                          </span>
-                          {a.status !== "active" && (
-                            <DashboardTag>
-                              {a.status === "draft" ? "Draft" : "Disabled"}
-                            </DashboardTag>
-                          )}
-                        </span>
+                        <StatusName row={a} />
                       </TableCell>
                       <TableCell
                         className={cn(
@@ -335,7 +292,7 @@ const Activities = () => {
                       </TableCell>
                       <TableCell className="w-0 px-2 py-3 md:px-3">
                         <RowMenu
-                          activity={a}
+                          row={a}
                           onEdit={() => setEditing(a)}
                           onDelete={() => setDeleting(a)}
                           onToggleDisabled={() =>
@@ -391,101 +348,18 @@ const Activities = () => {
         />
       )}
 
-      <AlertDialog
-        open={deleting !== null}
-        onOpenChange={(open) => {
-          if (open) return;
+      <DeleteDialog
+        name={deleting?.name}
+        description="Existing scans and points for this activity will not be deleted."
+        error={remove.error}
+        isPending={remove.isPending}
+        onConfirm={() => deleting && remove.mutate({ itemId: deleting.id })}
+        onClose={() => {
           setDeleting(null);
           remove.reset();
         }}
-      >
-        <AlertDialogContent className="max-w-md rounded-dashboard-lg border-dashboard-border-default bg-dashboard-bg-surface font-figtree">
-          <div className="flex flex-col gap-2">
-            <AlertDialogTitle className="text-lg font-semibold text-dashboard-text-heavy">
-              Delete {deleting?.name}?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm text-dashboard-text-light">
-              Existing scans and points for this activity will not be deleted.
-            </AlertDialogDescription>
-          </div>
-          {remove.error && (
-            <p role="alert" className="text-sm text-dashboard-text-warning">
-              {errorText(remove.error)}
-            </p>
-          )}
-          <div className="flex flex-col-reverse gap-3 pt-2 md:flex-row md:justify-end">
-            <AlertDialogPrimitive.Cancel asChild>
-              <DashboardButton variant="neutral">Cancel</DashboardButton>
-            </AlertDialogPrimitive.Cancel>
-            <AlertDialogPrimitive.Action asChild>
-              <DashboardButton
-                variant="destructive"
-                disabled={remove.isPending}
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (deleting) remove.mutate({ itemId: deleting.id });
-                }}
-              >
-                {remove.isPending ? "Deleting…" : "Delete"}
-              </DashboardButton>
-            </AlertDialogPrimitive.Action>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+      />
     </div>
-  );
-};
-
-const RowMenu = ({
-  activity,
-  onEdit,
-  onDelete,
-  onToggleDisabled,
-}: {
-  activity: Activity;
-  onEdit: () => void;
-  onDelete: () => void;
-  onToggleDisabled: () => void;
-}) => {
-  const [open, setOpen] = useState(false);
-  const run = (fn: () => void) => () => {
-    setOpen(false);
-    fn();
-  };
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        aria-label={`Actions for ${activity.name}`}
-        className="flex cursor-pixel-hover rounded-dashboard-xs p-1 text-dashboard-text-light hover:bg-dashboard-bg-nav hover:text-dashboard-text-heavy"
-      >
-        <MoreHorizontal className="size-4" />
-      </PopoverTrigger>
-      <PopoverContent
-        align="end"
-        className="flex w-36 flex-col p-1 font-figtree"
-      >
-        <button type="button" className={MENU_ITEM} onClick={run(onEdit)}>
-          Edit
-        </button>
-        {activity.status !== "draft" && (
-          <button
-            type="button"
-            className={MENU_ITEM}
-            onClick={run(onToggleDisabled)}
-          >
-            {activity.status === "disabled" ? "Enable" : "Disable"}
-          </button>
-        )}
-        <button
-          type="button"
-          className={cn(MENU_ITEM, "text-dashboard-text-warning")}
-          onClick={run(onDelete)}
-        >
-          Delete
-        </button>
-      </PopoverContent>
-    </Popover>
   );
 };
 

@@ -378,6 +378,7 @@ const RedeemScanPage = () => {
         const result = await redeemMutation.mutateAsync({
           userId,
           rewardId: rewardData!.id,
+          expectedCost: rewardData!.costPoints,
         });
 
         // Success - use user info from mutation response (no extra API call needed!)
@@ -396,6 +397,7 @@ const RedeemScanPage = () => {
           query: {
             reward: formatTitle(rewardData?.name ?? "Reward"),
             user: userName,
+            points: result.pointsUsed,
           },
         });
         return;
@@ -447,6 +449,11 @@ const RedeemScanPage = () => {
           console.error("Error fetching user info:", userError);
           // Fallback to userId if query fails - user info is nice-to-have for errors
         }
+
+        // The price or stock may have changed, so show the latest when back
+        void utils.scavengerHunt.getRewardById.invalidate({
+          id: rewardData!.id,
+        });
 
         // Navigate to error page with appropriate message
         void router.push({
