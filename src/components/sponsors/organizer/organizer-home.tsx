@@ -708,7 +708,7 @@ function SponsorTable({
           )}
         />
         <span className="flex min-w-0 flex-col gap-1">
-          <span className="flex min-w-0 items-center gap-2">
+          <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <SponsorLogo name={r.name} />
             <span className="min-w-0 break-words font-semibold text-dashboard-text-heavy">
               {r.name}
@@ -727,8 +727,12 @@ function SponsorTable({
 
   return (
     <>
-      {/* Phones: one card per sponsor, the day's fields as label / value. */}
-      <ul className="m-0 flex list-none flex-col gap-3 p-0 sm:hidden">
+      {/*
+       * Under 1024px: one compact row per sponsor, the day's fields as
+       * label | value lines, so nothing scrolls sideways (Jazz, 2026-11-20).
+       * Two per row from 640px.
+       */}
+      <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 lg:hidden">
         {rows.map((r) => {
           const panel = `home-details-m-${keyOf(r)}`;
           const flagged = sponsorFlags(r, day, now).length > 0;
@@ -737,15 +741,18 @@ function SponsorTable({
               key={keyOf(r)}
               data-sponsor={r.name}
               className={cn(
-                "flex flex-col gap-3 rounded-dashboard-lg border border-dashboard-border-subtle p-3",
+                "flex min-w-0 flex-col gap-2 rounded-dashboard-lg border border-dashboard-border-subtle p-3",
                 flagged && "border-l-4 border-l-dashboard-status-warning",
               )}
             >
               {nameWithLink(r, panel)}
-              <dl className="m-0 flex flex-col gap-2.5 text-sm">
+              <dl className="m-0 flex flex-col divide-y divide-dashboard-border-subtle text-sm">
                 {columns.map((col) => (
-                  <div key={col} className="flex flex-col gap-0.5">
-                    <dt className="text-xs text-dashboard-text-light">
+                  <div
+                    key={col}
+                    className="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)] items-start gap-x-3 py-1.5"
+                  >
+                    <dt className="pt-0.5 text-xs text-dashboard-text-light">
                       {copy.columns[col]}
                     </dt>
                     <dd className="m-0 min-w-0">{cell(col, r)}</dd>
@@ -762,15 +769,18 @@ function SponsorTable({
         })}
       </ul>
 
-      {/* 640px and up: the table scrolls inside its card, sponsor pinned. */}
-      <div className="hidden overflow-x-auto rounded-dashboard-lg border border-dashboard-border-subtle sm:block">
-        <table className="w-full min-w-max border-separate border-spacing-0 text-left text-sm">
+      {/*
+       * 1024px and up: a fixed-layout table that fits the card (no sideways
+       * scroll at 1280px); long values wrap inside their column.
+       */}
+      <div className="hidden overflow-hidden rounded-dashboard-lg border border-dashboard-border-subtle lg:block">
+        <table className="w-full table-fixed border-separate border-spacing-0 text-left text-sm">
           <caption className="sr-only">{copy.tableLabel(day)}</caption>
           <thead>
             <tr className="bg-dashboard-bg-inset text-xs font-semibold text-dashboard-text-heavy">
               <th
                 scope="col"
-                className="sticky left-0 z-10 min-w-52 border-b border-dashboard-border-subtle bg-dashboard-bg-inset px-3 py-2.5"
+                className="w-40 border-b border-dashboard-border-subtle bg-dashboard-bg-inset px-2 py-2.5 xl:w-52 xl:px-2.5"
               >
                 {copy.sponsor}
               </th>
@@ -778,7 +788,7 @@ function SponsorTable({
                 <th
                   key={col}
                   scope="col"
-                  className="border-b border-dashboard-border-subtle px-3 py-2.5 align-bottom"
+                  className="border-b border-dashboard-border-subtle px-2 py-2.5 align-bottom xl:px-2.5"
                 >
                   {copy.columns[col]}
                   {copy.columnSub[col] && (
@@ -796,7 +806,7 @@ function SponsorTable({
               const isOpen = open.has(keyOf(r));
               const flagged = sponsorFlags(r, day, now).length > 0;
               const td = cn(
-                "border-b border-dashboard-border-subtle px-3 py-3 align-top",
+                "border-b border-dashboard-border-subtle px-2 py-3 align-top xl:px-2.5",
                 isOpen && "border-b-0",
               );
               return (
@@ -806,14 +816,14 @@ function SponsorTable({
                       scope="row"
                       className={cn(
                         td,
-                        "sticky left-0 z-10 bg-dashboard-bg-surface font-normal",
+                        "bg-dashboard-bg-surface font-normal",
                         flagged && "border-l-4 border-l-dashboard-status-warning",
                       )}
                     >
                       {nameWithLink(r, panel)}
                     </th>
                     {columns.map((col) => (
-                      <td key={col} className={cn(td, "max-w-72")}>
+                      <td key={col} className={td}>
                         {cell(col, r)}
                       </td>
                     ))}
@@ -1011,7 +1021,7 @@ function Cell({
         ) : (
           <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-xs">
             {r.blocks.map((b) => (
-              <li key={`${b.repName}-${b.sessionId}`} className="whitespace-nowrap">
+              <li key={`${b.repName}-${b.sessionId}`}>
                 <span className="font-semibold text-dashboard-text-heavy">
                   {b.repName}
                 </span>{" "}
@@ -1107,7 +1117,8 @@ function Details({
       <h3 className="m-0 text-sm font-semibold text-dashboard-text-heavy">
         {d.heading}
       </h3>
-      <dl className="m-0 grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+      {/* One fact per row, label | value (Jazz, 2026-11-20). */}
+      <dl className="m-0 flex max-w-3xl flex-col divide-y divide-dashboard-border-subtle border-y border-dashboard-border-subtle text-sm">
         <Item label={d.hwLead}>
           {r.hwContact ? (mineLead ? `${r.hwContact} (${d.you})` : r.hwContact) : <Muted>{d.noLead}</Muted>}
         </Item>
@@ -1162,12 +1173,12 @@ function Details({
             showUrl
           />
         </Item>
+        {r.notes && (
+          <Item label={d.notes}>
+            <span className="whitespace-pre-line text-dashboard-text-medium">{r.notes}</span>
+          </Item>
+        )}
       </dl>
-      {r.notes && (
-        <p className="m-0 break-words rounded-dashboard-md bg-dashboard-bg-inset px-3 py-2 text-sm text-dashboard-text-medium">
-          {r.notes}
-        </p>
-      )}
       {r.sponsorId && (
         <div className="flex flex-wrap gap-1.5">
           {!r.digital && day !== "Sunday" && (
@@ -1204,8 +1215,8 @@ function Details({
 
 function Item({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <dt className="text-xs text-dashboard-text-light">{label}</dt>
+    <div className="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)] items-start gap-x-3 py-2 sm:grid-cols-[9rem_minmax(0,1fr)]">
+      <dt className="pt-0.5 text-xs font-semibold text-dashboard-text-light">{label}</dt>
       <dd className="m-0 min-w-0 break-words">{children}</dd>
     </div>
   );

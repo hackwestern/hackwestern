@@ -14,12 +14,10 @@ import { DigitalSponsor } from "~/components/sponsors/organizer/digital-judging"
 import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
 import { sponsorJudgingBoardCopy } from "~/content/sponsor-judging-board";
 import {
-  SHORTLIST_DUE,
   TOP_DUE,
   boardTodos,
   judgingDayMinutes,
   leadOf,
-  smsHref,
   sponsorLine,
   type BoardSponsor,
   type BoardTodo,
@@ -34,7 +32,8 @@ import {
 import { formatSubmittedTime } from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
 import { api, type RouterOutputs } from "~/utils/api";
-import { RoomSelect, type RoomHolder } from "./room-select";
+import { ConfirmDialog } from "./confirm-dialog";
+import { RoomInput } from "./room-select";
 import { RoomsCard } from "./rooms";
 import { TeamModal } from "./team-modal";
 
@@ -43,7 +42,6 @@ type Board = RouterOutputs["sponsorPresentations"]["board"];
 type Sponsor = Board["sponsors"][number];
 
 const REFRESH_MS = 30_000;
-const TEXTED_KEY = "judging-board:texted";
 
 /** "9:20 AM" for a Date, Eastern. */
 const clock = (d: Date) =>
@@ -70,29 +68,6 @@ function useJudgingMinutes() {
     if (Number.isFinite(h) && Number.isFinite(m)) return h! * 60 + m!;
   }
   return judgingDayMinutes(now);
-}
-
-/** "Texted 9:20 AM" per to-do, kept in this browser only. */
-function useTexted() {
-  const [texted, setTexted] = useState<Record<string, string>>({});
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(TEXTED_KEY);
-      if (raw) setTexted(JSON.parse(raw) as Record<string, string>);
-    } catch {
-      // Storage blocked: the note just won't survive a reload.
-    }
-  }, []);
-  const mark = (key: string) => {
-    const next = { ...texted, [key]: clock(new Date()) };
-    setTexted(next);
-    try {
-      localStorage.setItem(TEXTED_KEY, JSON.stringify(next));
-    } catch {
-      // As above.
-    }
-  };
-  return [texted, mark] as const;
 }
 
 const toBoardSponsor = (s: Sponsor): BoardSponsor => ({
@@ -165,13 +140,12 @@ export function JudgingBoard() {
     );
   }
 
-  const holders: RoomHolder[] = board.sponsors
-    .filter((s) => s.mode === "room")
-    .map((s) => ({ sponsorId: s.sponsorId, name: s.name, room: s.room }));
+  // A typed room everywhere, never a select (Jazz, 2026-11-20). Keyed by
+  // the saved room, so a save elsewhere resets the box.
   const room = (s: Sponsor) => (
-    <RoomSelect
+    <RoomInput
+      key={s.room ?? ""}
       sponsor={s}
-      holders={holders}
       pending={setRoom.isPending && setRoom.variables?.sponsorId === s.sponsorId}
       error={roomError?.sponsorId === s.sponsorId ? roomError.message : null}
       onSet={(r) => setRoom.mutate({ sponsorId: s.sponsorId, room: r })}
@@ -206,10 +180,13 @@ export function JudgingBoard() {
           board={board}
           colors={colors}
           onOpenTeam={setTeamId}
-          onMove={(sponsorId, r) =>
-            setRoom.mutate({ sponsorId, room: r, swap: true })
-          }
-          movePending={setRoom.isPending}
+          roomEdit={{
+            pendingFor: setRoom.isPending
+              ? (setRoom.variables?.sponsorId ?? null)
+              : null,
+            error: roomError,
+            onSet: (sponsorId, r) => setRoom.mutate({ sponsorId, room: r }),
+          }}
         />
       </div>
       <TeamModal teamId={teamId} onClose={() => setTeamId(null)} />
@@ -230,7 +207,6 @@ function TodoCard({
   room: (s: Sponsor) => React.ReactNode;
   onNotified: () => void;
 }) {
-  const [texted, markTexted] = useTexted();
   const notify = api.sponsorPresentations.notify.useMutation({
     onSuccess: onNotified,
   });
@@ -245,6 +221,9 @@ function TodoCard({
   });
   const byId = new Map(board.sponsors.map((s) => [s.sponsorId, s]));
   const t = copy.todo;
+  // Every team is told at once, and only once every sponsor has a room
+  // (Jazz, 2026-11-20); the server refuses earlier too.
+  const roomsLeft = board.sponsors.filter((s) => !s.room).length;
   const allNotified =
     board.teamsNotTold === 0 &&
     board.slots.length > 0 &&
@@ -275,11 +254,10 @@ function TodoCard({
                 sponsor={"sponsorId" in todo ? byId.get(todo.sponsorId) : undefined}
                 colors={colors}
                 room={room}
-                texted={texted[todoKey(todo)] ?? null}
-                onTexted={() => markTexted(todoKey(todo))}
                 notify={{
                   run: () => notify.mutate(),
                   pending: notify.isPending,
+                  roomsLeft,
                   error: notify.error
                     ? notify.error.data?.code === "PRECONDITION_FAILED" ||
                       notify.error.data?.code === "BAD_REQUEST"
@@ -319,8 +297,6 @@ function Todo({
   sponsor,
   colors,
   room,
-  texted,
-  onTexted,
   notify,
   finalTop,
 }: {
@@ -328,29 +304,54 @@ function Todo({
   sponsor: Sponsor | undefined;
   colors: ReadonlyMap<string, number>;
   room: (s: Sponsor) => React.ReactNode;
-  texted: string | null;
-  onTexted: () => void;
   notify: {
     run: () => void;
     pending: boolean;
+    /** Sponsors still without a room: Notify teams waits for them. */
+    roomsLeft: number;
     error: string | null;
     result: string | null;
   };
   finalTop: number;
 }) {
+  const [confirming, setConfirming] = useState(false);
   const t = copy.todo;
   if (todo.kind === "notify") {
     return (
       <div className={TODO_INFO}>
-        <p className="m-0 text-base font-bold">{t.notify(todo.teams)}</p>
-        <p className="m-0 text-sm text-dashboard-text-medium">{t.notifyHint}</p>
-        <DashboardButton
-          onClick={notify.run}
-          disabled={notify.pending}
-          className="md:w-fit"
-        >
-          {notify.pending ? t.notifying : t.notifyButton}
-        </DashboardButton>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <DashboardButton
+            onClick={() => setConfirming(true)}
+            disabled={notify.pending || notify.roomsLeft > 0}
+            aria-describedby={
+              notify.roomsLeft > 0 ? "judging-notify-rooms" : undefined
+            }
+            className="md:w-fit"
+          >
+            {notify.pending ? t.notifying : t.notifyButton}
+          </DashboardButton>
+          {notify.roomsLeft > 0 && (
+            <span
+              id="judging-notify-rooms"
+              className="text-sm font-medium text-dashboard-text-medium"
+            >
+              {t.roomsFirst(notify.roomsLeft)}
+            </span>
+          )}
+        </div>
+        {/* Messages can't be unsent (Jazz, 2026-11-20). */}
+        <ConfirmDialog
+          open={confirming}
+          heading={t.notifyConfirm.heading}
+          body={t.notifyConfirm.body}
+          ok={t.notifyConfirm.ok}
+          cancel={t.notifyConfirm.cancel}
+          onOk={() => {
+            setConfirming(false);
+            notify.run();
+          }}
+          onClose={() => setConfirming(false)}
+        />
         {notify.error && (
           <p role="alert" className="m-0 text-sm font-semibold text-dashboard-text-warning">
             {notify.error}
@@ -391,12 +392,6 @@ function Todo({
   }
   const lead = leadOf(sponsor.reps);
   const problem = t.problem[todo.problem];
-  const sms =
-    todo.problem === "shortlist"
-      ? t.sms.shortlist(sponsor.name, formatPresentationTime(SHORTLIST_DUE))
-      : todo.problem === "noScores"
-        ? t.sms.noScores(sponsor.name)
-        : t.sms.top5(sponsor.name, finalTop, formatPresentationTime(TOP_DUE));
   return (
     <div className={TODO_WARN}>
       <div className="text-dashboard-text-task">
@@ -414,21 +409,6 @@ function Todo({
           <span className="whitespace-nowrap">
             <PhoneCopy name={lead.name} phone={lead.phone} />
           </span>
-          <a
-            href={smsHref(lead.phone, sms)}
-            onClick={onTexted}
-            className={cn(
-              "inline-flex min-h-11 items-center rounded-dashboard-md bg-dashboard-action-primary px-4 text-base font-semibold text-dashboard-text-inverse md:min-h-9",
-              focusRing,
-            )}
-          >
-            {t.text}
-          </a>
-          {texted && (
-            <span className="text-sm font-medium text-dashboard-text-medium">
-              {t.texted(texted)}
-            </span>
-          )}
         </div>
       ) : (
         <p className="m-0 text-sm text-dashboard-text-task">{t.noLead}</p>

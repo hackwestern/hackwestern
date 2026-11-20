@@ -101,7 +101,7 @@ export type InviteStatus = {
 };
 
 // Hacker invites from the confirmed coffee chat schedule (track B of the
-// 8-hour build): one invite per seat, round 1 Fri 10 PM, then automatic
+// 8-hour build): one invite per seat, round 1 Fri 10:00 PM, then automatic
 // 30-minute rounds on Saturday from 10 AM. A declined seat is re-offered at
 // once. Organizers only. The server code and its
 // contract: src/server/api/utils/coffee-chat-invites.ts and

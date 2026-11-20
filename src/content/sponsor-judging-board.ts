@@ -27,23 +27,19 @@ export const sponsorJudgingBoardCopy = {
     },
     textLead: (name: string) => `Text ${name} (lead)`,
     noLead: "No lead's phone on file",
-    text: "Text",
-    texted: (time: string) => `Texted ${time}`,
-    /** The drafted text message (sms: link). */
-    sms: {
-      shortlist: (sponsor: string, due: string) =>
-        `Hi from Hack Western! ${sponsor}'s judging shortlist isn't in yet. Please send it in the sponsor portal by ${due}.`,
-      noScores: (sponsor: string) =>
-        `Hi from Hack Western! We don't see any scores from ${sponsor} yet. Please score teams in the sponsor portal as they present.`,
-      top5: (sponsor: string, top: number, due: string) =>
-        `Hi from Hack Western! ${sponsor}'s top ${top} was due at ${due}. Please submit it in the sponsor portal.`,
-    },
     needsRoom: (sponsor: string) => `${sponsor} needs a room`,
-    notify: (n: number) =>
-      `${n} ${n === 1 ? "team hasn't" : "teams haven't"} been told their times`,
-    notifyHint: "Each team gets a Slack message with its times and rooms.",
     notifyButton: "Notify teams",
+    /** Next to the disabled button until every sponsor has a room. */
+    roomsFirst: (n: number) =>
+      `Give every sponsor a room first (${n} to go).`,
     notifying: "Notifying…",
+    /** Asked before notifying (Jazz, 2026-11-20). */
+    notifyConfirm: {
+      heading: "Notify teams?",
+      body: "This action can't be undone. Every single team will be notified.",
+      ok: "Notify teams",
+      cancel: "Cancel",
+    },
     notifyResult: (sent: number, emailed: number) =>
       emailed > 0
         ? `Sent ${sent} on Slack, emailed ${emailed}.`
@@ -83,21 +79,10 @@ export const sponsorJudgingBoardCopy = {
 
   room: {
     label: (sponsor: string) => `${sponsor}'s judging room`,
-    unset: "Set a room",
-    taken: (room: string, sponsor: string) => `${room} · ${sponsor}`,
-    other: "Other…",
-    otherLabel: (sponsor: string) => `Room for ${sponsor}`,
-    otherPlaceholder: "e.g. Rm 3100",
-    save: "Save",
-    cancel: "Cancel",
-    saving: "Saving…",
+    /** Two sponsors can't share a room: the second is refused. */
     takenError: (room: string, sponsor: string) =>
       `${room} is ${sponsor}'s. Pick another.`,
     failed: "Couldn't change the room. Try again.",
-    moveTo: "Move to",
-    moveLabel: (sponsor: string) => `Move ${sponsor} to another room`,
-    swapWith: (room: string, sponsor: string) =>
-      `${room} (swap with ${sponsor})`,
   },
 
   phone: {
@@ -109,7 +94,6 @@ export const sponsorJudgingBoardCopy = {
     heading: "Rooms",
     views: { calendar: "Calendar", schedule: "Schedule" },
     viewsLabel: "Rooms view",
-    noRoomColumn: "No room yet",
     empty: "No presentations yet. Teams show here as shortlists come in.",
     tableLabel: "Presentations by time and room",
     time: "Time",
@@ -118,12 +102,23 @@ export const sponsorJudgingBoardCopy = {
       twoSponsors: "On 2+ shortlists, always 10+ min apart",
     },
     roomTeams: (n: number) => `${n} ${n === 1 ? "team" : "teams"}`,
-    unplaced: (n: number) =>
-      `${n} ${n === 1 ? "team doesn't" : "teams don't"} fit in the window.`,
+    /** A sponsor's column header: type its room right there. */
+    roomPlaceholder: "Rm ____",
+    /**
+     * Slots after the window's end still show (Jazz, 2026-11-20: "I want
+     * to be able to see everything").
+     */
+    pastEnd: (end: string) => `Runs past ${end}`,
+    overBy: (n: number, end: string, last: string, minutes: number) =>
+      `${n} ${n === 1 ? "presentation runs" : "presentations run"} past ${end}. The last ends at ${last}, ${minutes} min over.`,
+    /** Only if even the overflow slots can't fit a team (very rare). */
+    unplaced: (names: readonly string[]) =>
+      `No time yet for ${names.length === 1 ? "this team" : "these teams"}: ${names.join(", ")}.`,
   },
 
   status: {
-    "not-sent": "Invite not sent",
+    /** Before Notify teams: shown as a plain cell, no chip (2026-11-20). */
+    "not-sent": "Not notified yet",
     waiting: "Waiting",
     accepted: "Accepted",
   },
@@ -132,18 +127,15 @@ export const sponsorJudgingBoardCopy = {
     close: "Close",
     devpost: (team: string) => `${team} on Devpost`,
     github: (team: string) => `${team} on GitHub`,
-    /** Check-in, not the team accepting its times (that's the status pill). */
-    confirmed: (n: number, of: number) =>
-      `Checked in: ${n} of ${of} ${of === 1 ? "member" : "members"}`,
+    /**
+     * Check-in, not the team accepting its times (that's the status pill).
+     * One member checked in is enough (Jazz, 2026-11-20).
+     */
+    teamCheckedIn: "Checked in",
     noneConfirmed: "No one from this team has checked in",
     presentsTo: "Presents to",
     slot: (time: string, room: string) => `${time} · ${room}`,
     apart: (minutes: number) => `${minutes} min apart`,
-    scores: "Scores so far",
-    scoreOf: (avg: string, reps: number) =>
-      `${avg} avg · ${reps} ${reps === 1 ? "rep" : "reps"}`,
-    presentsAt: (time: string) => `Presents at ${time}`,
-    notScored: "Not scored yet",
     members: "Members",
     noMembers: "No members on this team.",
     checkedIn: "Checked in",

@@ -16,7 +16,10 @@ import {
 const copy = coffeeSessionsCopy;
 const fc = copy.fixes;
 
-/** Problem → why → Suggested → [Apply fix], as text. */
+/**
+ * Problem → why → Suggested → [Apply fix], as text. `locked`: the fix would
+ * move a sent chat, which is locked (no Apply; call the rep).
+ */
 export function fixView(fix: BoardFix, sp: BoardSponsor, board: Pick<SessionBoardData, "placements">) {
   // Sent first: a sent chat is kept whether or not it was moved by hand.
   const howAt = (key: string): ChatHow => {
@@ -58,9 +61,15 @@ export function fixView(fix: BoardFix, sp: BoardSponsor, board: Pick<SessionBoar
     const items = g.caps.map((c) => ({ rep: name(c.rep), got: chats(c.rep, c.sessions), want: chats(c.rep, c.want) }));
     suggestion = fc.fewer(items);
   }
-  return { problem, why, suggestion };
+  const locked = g.kind === "move" && howAt(g.from) === "sent";
+  return { problem, why, suggestion, locked };
 }
 
+/**
+ * What Auto-schedule left for the organizer: it applies every other fix
+ * itself (autoApplyFixes). "Fewer chats" keeps its Apply button; a fix on a
+ * sent (locked) chat has none.
+ */
 export function FixesBand({
   board,
   onApply,
@@ -81,47 +90,56 @@ export function FixesBand({
           {board.scheduled ? fc.allScheduled : fc.beforeAuto}
         </p>
       ) : (
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
-          {board.fixes.map((fix) => {
-            const sp = board.sponsors.find((s) => s.id === fix.sponsor);
-            if (!sp) return null;
-            const v = fixView(fix, sp, board);
-            // Who to call about it: the primary contact, number with a copy icon.
-            const primary = sp.reps.find((r) => r.isPrimary) ?? sp.reps[0];
-            return (
-              <li
-                key={fix.id}
-                className="flex flex-col gap-1.5 rounded-dashboard-lg bg-dashboard-bg-task/40 px-3.5 py-3 text-dashboard-text-heavy"
-              >
-                <p className="m-0 flex min-w-0 items-center gap-2 text-[15px]">
-                  <Logo name={sp.name} />
-                  <b className="min-w-0 font-bold text-dashboard-text-warning">{v.problem}</b>
-                </p>
-                <p className="m-0 text-sm text-dashboard-text-medium">{v.why}</p>
-                <p className="m-0 text-[15px]">
-                  <b className="font-bold">{fc.suggested}</b> {v.suggestion}
-                </p>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <DashboardButton
-                    variant="primary"
-                    className="h-auto min-h-11 w-auto px-3 py-0 text-sm md:min-h-9"
-                    disabled={applying !== null || locked}
-                    onClick={() => onApply(fix.id)}
-                  >
-                    {applying === fix.id ? fc.applying : fc.apply}
-                  </DashboardButton>
-                  {primary && (
-                    <span className="inline-flex min-w-0 flex-wrap items-center gap-x-1.5 text-sm">
-                      <PrimaryCrown />
-                      <b className="font-semibold">{primary.name}</b>
-                      <PhoneCopy name={primary.name} phone={primary.phone} />
-                    </span>
+        <>
+          <p className="m-0 text-[15px] text-dashboard-text-medium">{fc.left}</p>
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            {board.fixes.map((fix) => {
+              const sp = board.sponsors.find((s) => s.id === fix.sponsor);
+              if (!sp) return null;
+              const v = fixView(fix, sp, board);
+              // Who to call about it: the primary contact, number with a copy icon.
+              const primary = sp.reps.find((r) => r.isPrimary) ?? sp.reps[0];
+              return (
+                <li
+                  key={fix.id}
+                  className="flex flex-col gap-1.5 rounded-dashboard-lg bg-dashboard-bg-task/40 px-3.5 py-3 text-dashboard-text-heavy"
+                >
+                  <p className="m-0 flex min-w-0 items-center gap-2 text-[15px]">
+                    <Logo name={sp.name} />
+                    <b className="min-w-0 font-bold text-dashboard-text-warning">{v.problem}</b>
+                  </p>
+                  <p className="m-0 text-sm text-dashboard-text-medium">{v.why}</p>
+                  {v.locked ? (
+                    <p className="m-0 text-sm font-medium text-dashboard-text-medium">{fc.locked}</p>
+                  ) : (
+                    <p className="m-0 text-[15px]">
+                      <b className="font-bold">{fc.suggested}</b> {v.suggestion}
+                    </p>
                   )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    {!v.locked && (
+                      <DashboardButton
+                        variant="primary"
+                        className="h-auto min-h-11 w-auto px-3 py-0 text-sm md:min-h-9"
+                        disabled={applying !== null || locked}
+                        onClick={() => onApply(fix.id)}
+                      >
+                        {applying === fix.id ? fc.applying : fc.apply}
+                      </DashboardButton>
+                    )}
+                    {primary && (
+                      <span className="inline-flex min-w-0 flex-wrap items-center gap-x-1.5 text-sm">
+                        <PrimaryCrown />
+                        <b className="font-semibold">{primary.name}</b>
+                        <PhoneCopy name={primary.name} phone={primary.phone} />
+                      </span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </>
       )}
     </Card>
   );

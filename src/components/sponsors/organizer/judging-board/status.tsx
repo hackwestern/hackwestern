@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, Send } from "lucide-react";
+import { CheckCircle2, Clock } from "lucide-react";
 import { sponsorJudgingBoardCopy } from "~/content/sponsor-judging-board";
 import type { TeamStatus } from "~/lib/judging-board";
 import { cn } from "~/lib/utils";
@@ -6,27 +6,30 @@ import { cn } from "~/lib/utils";
 const copy = sponsorJudgingBoardCopy;
 
 /**
- * The three team states (Jazz, 2026-11-19), as cell styles: Invite not
- * sent is dashed, Waiting is solid, Accepted is green with a check. Each
- * also has an icon and text, never colour alone.
+ * The team states as cell styles. Every team is told at once by Notify
+ * teams, so before that a team is a plain cell with no chip (Jazz,
+ * 2026-11-20: no per-team "Invite not sent"). After it, Waiting is solid
+ * with a clock and Accepted is green with a check: an icon and text,
+ * never colour alone.
  */
 export const STATUS_CELL: Record<TeamStatus, string> = {
   "not-sent":
-    "border border-dashed border-dashboard-border-medium bg-dashboard-bg-surface",
+    "border border-solid border-dashboard-border-subtle bg-dashboard-bg-surface",
   waiting: "border border-solid border-dashboard-border-control bg-dashboard-bg-surface",
   accepted:
     "border border-solid border-dashboard-status-live bg-dashboard-schedule-green",
 };
 
-export const STATUS_ICON = {
-  "not-sent": Send,
+/** Only the states after Notify teams show a status. */
+export type ShownStatus = Exclude<TeamStatus, "not-sent">;
+export const SHOWN_STATUSES = ["waiting", "accepted"] as const;
+
+export const STATUS_ICON: Record<ShownStatus, typeof Clock> = {
   waiting: Clock,
   accepted: CheckCircle2,
-} as const;
+};
 
-const PILL: Record<TeamStatus, string> = {
-  "not-sent":
-    "border border-dashed border-dashboard-border-medium text-dashboard-text-medium",
+const PILL: Record<ShownStatus, string> = {
   waiting: "bg-dashboard-bg-nav text-dashboard-text-active",
   accepted: "bg-dashboard-schedule-green text-dashboard-status-live",
 };
@@ -38,6 +41,7 @@ export function StatusPill({
   status: TeamStatus;
   className?: string;
 }) {
+  if (status === "not-sent") return null;
   const Icon = STATUS_ICON[status];
   return (
     <span

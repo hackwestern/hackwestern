@@ -1,7 +1,6 @@
 import { Check, ChevronRight } from "lucide-react";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import { COFFEE_SESSIONS, chatsInWindow } from "~/lib/coffee-chat-sessions";
-import { sponsorLogo } from "~/lib/sponsor-logos";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import {
@@ -96,13 +95,8 @@ export function SponsorsBand({
                     )}
                   />
                   <span className="flex min-w-0 flex-col items-start gap-1.5">
-                    {/* Small logos are hard to read: the name is always in text too. */}
-                    <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                      <Logo name={sp.name} />
-                      {sponsorLogo(sp.name) && (
-                        <span className="text-[15px] font-semibold text-dashboard-text-heavy">{sp.name}</span>
-                      )}
-                    </span>
+                    {/* Logo only (Jazz, 2026-11-20): its alt and the board tooltip carry the name; no logo shows the name. */}
+                    <Logo name={sp.name} />
                     <span className="flex flex-wrap items-center gap-1.5">
                       <StatusChip status={sp.status} />
                       {flags.map((f) => (

@@ -283,9 +283,10 @@ export function ProjectCard({
         <button
           type="button"
           aria-pressed={shortlisted}
-          aria-label={
-            shortlisted ? undefined : copy.shortlistToggle.label(team.name)
-          }
+          // One name for both states; aria-pressed says which (finalist or
+          // not), and the visible text is part of it.
+          aria-label={copy.shortlistToggle.label(team.name)}
+          title={shortlisted ? copy.shortlistToggle.remove : undefined}
           onClick={() => onSave({ shortlisted: !shortlisted })}
           className={cn(
             "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-dashboard-lg border px-4 text-base font-semibold sm:flex-none",

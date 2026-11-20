@@ -110,8 +110,8 @@ async function countChangedTimes(tx: Tx, next: ReadonlyMap<string, string>) {
 
 /**
  * The in-person prize track sponsors that present in a room: not digital
- * (PCBWay, Devpost only) and not remote (TinyFish judges online, so its
- * teams don't present; Jazz, 2026-11-19).
+ * (PCBWay, Devpost only) and not remote (a remote sponsor judges online,
+ * so its teams don't present; Jazz, 2026-11-19).
  */
 export async function presentingSponsors() {
   const prizeTracks = await prizeTrackSponsors();
@@ -242,15 +242,6 @@ export async function rebuildPresentationSchedule({
         startMinute: null,
         scheduledAt,
       })),
-      ...result.noRoom.flatMap((n) =>
-        n.teamIds.map((teamId) => ({
-          sponsorId: n.sponsorId,
-          teamId,
-          room: null,
-          startMinute: null,
-          scheduledAt,
-        })),
-      ),
       // Past SHORTLIST_MAX on an old send: kept, flagged, never placed.
       ...result.overCap.flatMap((o) =>
         o.teamIds.map((teamId) => ({
@@ -274,7 +265,6 @@ export async function rebuildPresentationSchedule({
       placed: result.slots.length,
       unplaced:
         result.unplaced.length +
-        result.noRoom.reduce((n, r) => n + r.teamIds.length, 0) +
         result.overCap.reduce((n, r) => n + r.teamIds.length, 0),
       changedTimes,
     };

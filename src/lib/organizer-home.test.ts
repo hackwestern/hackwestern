@@ -83,9 +83,9 @@ describe("flagsFor", () => {
     ]);
   });
 
-  it("flags the top 5 from 11:30 Sunday, and never for a sponsor without a track", () => {
-    expect(flagsFor("top5", sponsor(), "Sunday", at("Sunday", "11:29"))).toEqual([]);
-    expect(flagsFor("top5", sponsor(), "Sunday", at("Sunday", "11:30"))).toEqual([
+  it("flags the top 5 once presentations end (11:48 Sunday), and never for a sponsor without a track", () => {
+    expect(flagsFor("top5", sponsor(), "Sunday", at("Sunday", "11:47"))).toEqual([]);
+    expect(flagsFor("top5", sponsor(), "Sunday", at("Sunday", "11:48"))).toEqual([
       { kind: "topLate" },
     ]);
     expect(

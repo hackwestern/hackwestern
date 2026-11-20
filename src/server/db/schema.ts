@@ -429,7 +429,7 @@ export const coffeeChats = pgTable(
       () => coffeeChatPlacements.id,
       { onDelete: "cascade" },
     ),
-    // Invite round: 1 = Fri 10 PM batch, 2+ = Saturday 30-minute rounds.
+    // Invite round: 1 = Fri 10:00 PM batch, 2+ = Saturday 30-minute rounds.
     round: smallint("round"),
     // Pending invites expire at this time and the seat passes on.
     expiresAt: timestamp("expires_at", { mode: "date", precision: 3 }),
@@ -530,7 +530,7 @@ export const coffeeChatPrefs = pgTable(
     longerOneOnOne: boolean("longer_one_on_one").default(false).notNull(),
     submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 }),
     // The separate Shortlist flow's Review & submit; null = not submitted
-    // (at 9:30 PM Friday interested hackers fill their seats instead).
+    // (at 10:00 PM Friday interested hackers fill their seats instead).
     shortlistSubmittedAt: timestamp("shortlist_submitted_at", {
       mode: "date",
       precision: 3,

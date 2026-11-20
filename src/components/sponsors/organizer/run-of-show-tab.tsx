@@ -188,7 +188,6 @@ export function RunOfShowTab({
         <JudgingPanel
           board={judging}
           failed={summary.isError}
-          sheetUrl={data.sheetUrl}
         />
       )}
       {/* Only the picked day's ceremony and workshops (Jazz, 2026-11-18). */}
@@ -234,7 +233,6 @@ export function RunOfShowExtras({
         <JudgingPanel
           board={judging}
           failed={summary.isError}
-          sheetUrl={data.sheetUrl}
         />
       )}
       <CeremonyOrder

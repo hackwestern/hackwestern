@@ -71,7 +71,7 @@ export const organizerTourCopy = {
       },
       send: {
         title: "Auto-schedule, then send",
-        body: "Auto-schedule places everyone. Only Noah can press Send, by 10 PM Friday.",
+        body: "Auto-schedule places everyone. Any organizer can press Notify hackers, at 10:00 PM Friday.",
       },
     },
     judging: {

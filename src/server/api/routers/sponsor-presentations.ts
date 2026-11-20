@@ -19,11 +19,7 @@ import {
 } from "~/server/api/trpc";
 import { runAllTeamChecks } from "~/server/api/utils/cheat-check-runners";
 import { sendPresentationEmail } from "~/server/api/utils/presentation-email";
-import { SHEET_WRITES_DISABLED } from "~/server/api/utils/coffee-chat-sheet-mirror";
-import {
-  mirrorSponsorJudging,
-  mirrorSponsorJudgingSoon,
-} from "~/server/api/utils/sponsor-judging-sheet-mirror";
+import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
 import { membersByTeam } from "~/server/api/utils/sponsor-judging-teams";
 import {
   round2OpenedAt,
@@ -53,6 +49,7 @@ import {
   loadBoardTeam,
   loadJudgingBoard,
   setJudgingRoom,
+  sponsorsWithoutRoom,
 } from "~/server/api/utils/judging-board-data";
 
 const errors = sponsorPresentationsCopy.errors;
@@ -565,11 +562,11 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         .filter((r) => r.startMinute === null)
         .map((r) => ({
           ...named(r),
+          // A sponsor without a room still gets times, so "no room" is
+          // never why a team has none (2026-11-20).
           reason: overCap.has(`${r.sponsorId}:${r.teamId}`)
             ? ("over-cap" as const)
-            : r.room
-              ? ("full" as const)
-              : ("no-room" as const),
+            : ("full" as const),
         }))
         .sort(
           (a, b) =>
@@ -604,13 +601,22 @@ export const sponsorPresentationsRouter = createTRPCRouter({
    * only members who don't have their current times yet (never sent, not
    * reached, failed, or times changed) are sent. `resend` sends everyone again. Once any member of a team has
    * the current times, they show on /live. Without SLACK_BOT_TOKEN nothing
-   * is sent and it says so.
+   * is sent and it says so. Refused until every board sponsor has a
+   * room, so no team is told times that a room change would move (Jazz,
+   * 2026-11-20).
    */
   notify: protectedOrganizerProcedure
     .input(z.object({ resend: z.boolean().default(false) }).optional())
-    .mutation(({ input }) =>
-      notifyPresentationTimes({ resend: input?.resend ?? false }),
-    ),
+    .mutation(async ({ input }) => {
+      const missing = await sponsorsWithoutRoom();
+      if (missing.length > 0) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: errors.roomsFirst(missing),
+        });
+      }
+      return notifyPresentationTimes({ resend: input?.resend ?? false });
+    }),
 
   /** Organizers: the Judging board (loadJudgingBoard). */
   board: protectedOrganizerProcedure.query(() => loadJudgingBoard()),
@@ -644,27 +650,13 @@ export const sponsorPresentationsRouter = createTRPCRouter({
     .input(z.object({ open: z.boolean() }))
     .mutation(async ({ input }) => {
       // Opening with nothing scheduled is refused inside setRound2Open.
-      return { round2OpenedAt: await setRound2Open(input.open) };
+      const openedAt = await setRound2Open(input.open);
+      // The tab's round 2 column says whether ranking is open. (The
+      // manual "Sync to sheet" button is gone: every judging change
+      // rewrites the tab; Jazz, 2026-11-20.)
+      await mirrorSponsorJudgingSoon();
+      return { round2OpenedAt: openedAt };
     }),
-
-  /**
-   * Rewrite the "Sponsor Judging" tab of the run-of-show sheet from the DB
-   * now (it is also rewritten after every judging change). Never throws:
-   * `ok` is false with the Sheets error message when the write failed (for
-   * example, the service account isn't Editor on the sheet yet), and
-   * `disabled` is true when this server doesn't write to sheets at all
-   * (outside production without SHEET_WRITES=1).
-   */
-  syncSheet: protectedOrganizerProcedure.mutation(async () => {
-    const result = await mirrorSponsorJudging();
-    return result.ok
-      ? { ok: true as const, syncedAt: new Date() }
-      : {
-          ok: false as const,
-          disabled: result.error === SHEET_WRITES_DISABLED,
-          error: result.error,
-        };
-  }),
 
   /**
    * Run the existing team cheat checks on every team in a sponsor's top

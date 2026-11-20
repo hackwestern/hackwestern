@@ -69,7 +69,7 @@ Go through each line, tick it when it works, and write what broke next to it. Ea
 - [ ] Home: greeting, welcome card with tier, contacts, Up next, key rooms.
 - [ ] Chats step 1: Send availability (all hours start ticked).
 - [ ] Chats step 2: optional shortlist of hackers, met-at-booth first.
-- [ ] After 10 PM Friday: Your chats calendar with Accepted / Waiting hackers.
+- [ ] After at 10:00 PM Friday (once an organizer presses Notify hackers): Your chats calendar with Accepted / Waiting hackers.
 - [ ] Scan a hacker: camera, or type a code.
 - [ ] Schedule: the rep's chats as blocks, rep filter.
 - [ ] Map: booth spot and floor plans.

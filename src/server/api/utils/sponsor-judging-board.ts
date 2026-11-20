@@ -97,7 +97,7 @@ export type JudgingRoomSource = "board" | "sheet" | "remote";
  * sponsor id. An organizer's pick on the Judging board (sponsor_judging_room)
  * wins; otherwise the same sources as the organizer "Sponsor track
  * judging" panel (sponsor sheet first, then the run-of-show list). A
- * sponsor that judges remotely (TinyFish) always gets REMOTE_JUDGING_ROOM,
+ * sponsor that judges remotely (REMOTE_JUDGING_SPONSORS) always gets REMOTE_JUDGING_ROOM,
  * whatever the sheets say (Jazz, 2026-11-19). No room = absent.
  */
 export async function judgingRoomsWithSource(

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import {
   Card,
   CardHead,
@@ -11,62 +11,69 @@ import { sponsorJudgingBoardCopy } from "~/content/sponsor-judging-board";
 import { sponsorCountByTeam } from "~/lib/judging-board";
 import {
   PRESENTATION_SLOT_MINUTES,
+  PRESENTATION_WINDOW_END,
   PRESENTATION_WINDOW_START,
+  formatPresentationTime,
+  runsPastEnd,
 } from "~/lib/sponsor-presentations";
 import { cn } from "~/lib/utils";
 import type { RouterOutputs } from "~/utils/api";
-import { roomOptions, type RoomHolder } from "./room-select";
-import { SponsorsTag, STATUS_CELL, STATUS_ICON, StatusPill } from "./status";
+import { RoomInput } from "./room-select";
+import {
+  SHOWN_STATUSES,
+  SponsorsTag,
+  STATUS_CELL,
+  STATUS_ICON,
+  StatusPill,
+} from "./status";
 
 const copy = sponsorJudgingBoardCopy.rooms;
-const roomCopy = sponsorJudgingBoardCopy.room;
 type Board = RouterOutputs["sponsorPresentations"]["board"];
 type Slot = Board["slots"][number];
 const VIEWS = ["calendar", "schedule"] as const;
 type View = (typeof VIEWS)[number];
 
-/** A room column: the room and the sponsor in it (if any). */
-type Column = { room: string; sponsor: Board["sponsors"][number] | null };
+type Sponsor = Board["sponsors"][number];
 
 /**
- * The calendar's columns: times run down the side and rooms across, so
- * team names have room (mock v2). The three standard rooms always show, then
- * any typed room in use. Remote sponsors have no column: their teams don't
- * present (Jazz, 2026-11-19).
+ * The calendar's columns: one per sponsor that presents in a room, there
+ * from the start, each with its room typed in the header (Jazz,
+ * 2026-11-20: "columns and rooms are created already for each sponsor").
+ * Times run down the side. Remote sponsors have no column: their teams
+ * don't present (Jazz, 2026-11-19).
  */
-function columnsOf(board: Board): Column[] {
-  const inRooms = board.sponsors.filter((s) => s.mode === "room");
-  return roomOptions(inRooms).map((room) => ({
-    room,
-    sponsor:
-      inRooms.find((s) => s.room?.toLowerCase() === room.toLowerCase()) ??
-      null,
-  }));
+function columnsOf(board: Board): Sponsor[] {
+  return board.sponsors.filter((s) => s.mode === "room");
 }
+
+/** The room-change state the header inputs share. */
+export type RoomEdit = {
+  pendingFor: string | null;
+  error: { sponsorId: string; message: string } | null;
+  onSet: (sponsorId: string, room: string) => void;
+};
 
 export function RoomsCard({
   board,
   colors,
   onOpenTeam,
-  onMove,
-  movePending,
+  roomEdit,
 }: {
   board: Board;
   colors: ReadonlyMap<string, number>;
   onOpenTeam: (teamId: string) => void;
-  onMove: (sponsorId: string, room: string) => void;
-  movePending: boolean;
+  roomEdit: RoomEdit;
 }) {
   const [view, setView] = useState<View>("calendar");
   const refs = useRef(new Map<View, HTMLButtonElement>());
   const columns = columnsOf(board);
   const counts = sponsorCountByTeam(board.slots);
-  const holders: RoomHolder[] = board.sponsors
-    .filter((s) => s.mode === "room")
-    .map((s) => ({ sponsorId: s.sponsorId, name: s.name, room: s.room }));
-  const noRoom = board.waiting.filter((w) => w.reason === "no-room");
-  const full = board.waiting.filter((w) => w.reason === "full");
-  const sponsorName = new Map(board.sponsors.map((s) => [s.sponsorId, s.name]));
+  // Never hidden: slots after the window show, marked (Jazz, 2026-11-20).
+  const pastEnd = board.slots.filter((s) => runsPastEnd(s.start));
+  const lastEnd =
+    pastEnd.length > 0
+      ? Math.max(...pastEnd.map((s) => s.start)) + PRESENTATION_SLOT_MINUTES
+      : null;
 
   return (
     <Card labelledBy="judging-rooms-heading" className="min-w-0" tour="judging-rooms">
@@ -121,22 +128,16 @@ export function RoomsCard({
         aria-labelledby={`judging-rooms-${view}`}
         className="min-w-0"
       >
-        {board.slots.length === 0 ? (
-          <p className="m-0 rounded-dashboard-md bg-dashboard-bg-inset p-5 text-center text-sm font-medium text-dashboard-text-medium">
-            {copy.empty}
-          </p>
-        ) : view === "calendar" ? (
+        {view === "calendar" && columns.length > 0 ? (
           <Calendar
             columns={columns}
             slots={board.slots}
             counts={counts}
             colors={colors}
-            holders={holders}
             onOpenTeam={onOpenTeam}
-            onMove={onMove}
-            movePending={movePending}
+            roomEdit={roomEdit}
           />
-        ) : (
+        ) : board.slots.length === 0 ? null : (
           <Schedule
             columns={columns}
             slots={board.slots}
@@ -145,40 +146,32 @@ export function RoomsCard({
             onOpenTeam={onOpenTeam}
           />
         )}
+        {board.slots.length === 0 && (
+          <p className="m-0 rounded-dashboard-md bg-dashboard-bg-inset p-5 text-center text-sm font-medium text-dashboard-text-medium">
+            {copy.empty}
+          </p>
+        )}
       </div>
 
-      {noRoom.length > 0 && (
-        <section
-          aria-labelledby="judging-no-room"
-          className="flex flex-col gap-2 rounded-dashboard-md border border-dashed border-dashboard-border-task p-3"
-        >
-          <h3
-            id="judging-no-room"
-            className="m-0 text-sm font-bold text-dashboard-text-warning"
-          >
-            {copy.noRoomColumn}
-          </h3>
-          <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
-            {noRoom.map((w) => (
-              <li key={`${w.sponsorId}:${w.teamId}`}>
-                <TeamButton
-                  teamId={w.teamId}
-                  name={w.teamName}
-                  detail={sponsorName.get(w.sponsorId) ?? ""}
-                  onOpen={onOpenTeam}
-                  className="border border-dashed border-dashboard-border-medium"
-                />
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {full.length > 0 && (
+      {lastEnd !== null && (
         <p
           role="status"
           className="m-0 text-sm font-semibold text-dashboard-text-warning"
         >
-          {copy.unplaced(full.length)}
+          {copy.overBy(
+            pastEnd.length,
+            formatPresentationTime(PRESENTATION_WINDOW_END),
+            formatPresentationTime(lastEnd),
+            lastEnd - PRESENTATION_WINDOW_END,
+          )}
+        </p>
+      )}
+      {board.waiting.length > 0 && (
+        <p
+          role="status"
+          className="m-0 text-sm font-semibold text-dashboard-text-warning"
+        >
+          {copy.unplaced(board.waiting.map((w) => w.teamName))}
         </p>
       )}
     </Card>
@@ -189,7 +182,7 @@ function Legend() {
   const swatch = "inline-block h-4 w-6 shrink-0 rounded-dashboard-xs";
   return (
     <ul className="m-0 flex list-none flex-wrap items-center gap-x-4 gap-y-1.5 p-0 text-sm text-dashboard-text-medium">
-      {(["not-sent", "waiting", "accepted"] as const).map((s) => {
+      {SHOWN_STATUSES.map((s) => {
         const Icon = STATUS_ICON[s];
         return (
           <li key={s} className="inline-flex items-center gap-1.5">
@@ -257,7 +250,7 @@ function SlotCell({
   count: number;
   onOpen: (teamId: string) => void;
 }) {
-  const Icon = STATUS_ICON[slot.status];
+  const Icon = slot.status === "not-sent" ? null : STATUS_ICON[slot.status];
   return (
     <TeamButton
       teamId={slot.teamId}
@@ -266,18 +259,22 @@ function SlotCell({
       className={cn("h-full", STATUS_CELL[slot.status])}
     >
       <SponsorsTag count={count} />
-      <Icon
-        aria-hidden
-        className={cn(
-          "size-3.5",
-          slot.status === "accepted"
-            ? "text-dashboard-status-live"
-            : "text-dashboard-text-light",
-        )}
-      />
-      <span className="sr-only">
-        {sponsorJudgingBoardCopy.status[slot.status]}
-      </span>
+      {Icon && (
+        <>
+          <Icon
+            aria-hidden
+            className={cn(
+              "size-3.5",
+              slot.status === "accepted"
+                ? "text-dashboard-status-live"
+                : "text-dashboard-text-light",
+            )}
+          />
+          <span className="sr-only">
+            {sponsorJudgingBoardCopy.status[slot.status]}
+          </span>
+        </>
+      )}
     </TeamButton>
   );
 }
@@ -287,30 +284,27 @@ function Calendar({
   slots,
   counts,
   colors,
-  holders,
   onOpenTeam,
-  onMove,
-  movePending,
+  roomEdit,
 }: {
-  columns: Column[];
+  columns: Sponsor[];
   slots: Slot[];
   counts: ReadonlyMap<string, number>;
   colors: ReadonlyMap<string, number>;
-  holders: RoomHolder[];
   onOpenTeam: (teamId: string) => void;
-  onMove: (sponsorId: string, room: string) => void;
-  movePending: boolean;
+  roomEdit: RoomEdit;
 }) {
-  // Stops at the last used slot.
-  const last = Math.max(...slots.map((s) => s.start));
+  // Stops at the last used slot (no rows before any slot exists).
+  const last =
+    slots.length > 0
+      ? Math.max(...slots.map((s) => s.start))
+      : PRESENTATION_WINDOW_START - 1;
   const times: number[] = [];
   for (let t = PRESENTATION_WINDOW_START; t <= last; t += PRESENTATION_SLOT_MINUTES) {
     times.push(t);
   }
-  const at = (room: string, start: number) =>
-    slots.find(
-      (s) => s.start === start && s.room.toLowerCase() === room.toLowerCase(),
-    );
+  const at = (sponsorId: string, start: number) =>
+    slots.find((s) => s.start === start && s.sponsorId === sponsorId);
 
   return (
     // Scrolls sideways inside the card on phones; the page never does.
@@ -324,36 +318,49 @@ function Calendar({
             <th scope="col" className="w-14">
               <span className="sr-only">{copy.time}</span>
             </th>
-            {columns.map((c) => (
-              <th
-                key={c.room}
-                scope="col"
-                className="rounded-dashboard-md bg-dashboard-bg-highlight px-2.5 py-2 text-left align-top font-normal"
-              >
-                <span className="block text-sm font-bold text-dashboard-text-heavy">
-                  {c.room}
-                </span>
-                {c.sponsor && (
-                  <>
-                    <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-sm text-dashboard-text-medium">
-                      <SponsorBadge name={c.sponsor.name} colors={colors} />
-                      <span className="truncate">{c.sponsor.name}</span>
-                    </span>
-                    <MoveTo
-                      sponsor={c.sponsor}
-                      holders={holders}
-                      disabled={movePending}
-                      onMove={onMove}
-                    />
-                  </>
-                )}
-              </th>
-            ))}
+            {columns.map((c) => {
+              return (
+                <th
+                  key={c.sponsorId}
+                  scope="col"
+                  className="rounded-dashboard-md bg-dashboard-bg-highlight px-2.5 py-2 text-left align-top font-normal"
+                >
+                  <span className="flex min-w-0 items-center gap-1.5 text-sm font-bold text-dashboard-text-heavy">
+                    <SponsorBadge name={c.name} colors={colors} />
+                    <span className="truncate">{c.name}</span>
+                  </span>
+                  {/* Keyed by the saved room, so a save elsewhere resets it. */}
+                  <RoomInput
+                    key={c.room ?? ""}
+                    sponsor={c}
+                    pending={roomEdit.pendingFor === c.sponsorId}
+                    error={
+                      roomEdit.error?.sponsorId === c.sponsorId
+                        ? roomEdit.error.message
+                        : null
+                    }
+                    onSet={(room) => roomEdit.onSet(c.sponsorId, room)}
+                  />
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
-          {times.map((t) => (
-            <tr key={t}>
+          {times.map((t, i) => (
+            <Fragment key={t}>
+              {/* One marker row where the window ends. */}
+              {runsPastEnd(t) && (i === 0 || !runsPastEnd(times[i - 1]!)) && (
+                <tr>
+                  <td
+                    colSpan={columns.length + 1}
+                    className="border-t-2 border-dashed border-dashboard-border-task pt-1 text-xs font-bold uppercase tracking-wider text-dashboard-text-task"
+                  >
+                    {copy.pastEnd(formatPresentationTime(PRESENTATION_WINDOW_END))}
+                  </td>
+                </tr>
+              )}
+            <tr>
               <th
                 scope="row"
                 className="pr-1 text-right align-middle text-sm font-medium tabular-nums text-dashboard-text-medium"
@@ -361,9 +368,9 @@ function Calendar({
                 {clockOf(t)}
               </th>
               {columns.map((c) => {
-                const slot = at(c.room, t);
+                const slot = at(c.sponsorId, t);
                 return (
-                  <td key={c.room} className="h-px p-0 align-top">
+                  <td key={c.sponsorId} className="h-px p-0 align-top">
                     {slot && (
                       <SlotCell
                         slot={slot}
@@ -375,60 +382,11 @@ function Calendar({
                 );
               })}
             </tr>
+            </Fragment>
           ))}
         </tbody>
       </table>
     </div>
-  );
-}
-
-/**
- * Move a sponsor to another room: only the other rooms, and a room another
- * sponsor has swaps the two.
- */
-function MoveTo({
-  sponsor,
-  holders,
-  disabled,
-  onMove,
-}: {
-  sponsor: Board["sponsors"][number];
-  holders: RoomHolder[];
-  disabled: boolean;
-  onMove: (sponsorId: string, room: string) => void;
-}) {
-  const others = roomOptions(holders).filter(
-    (r) => r.toLowerCase() !== sponsor.room?.toLowerCase(),
-  );
-  return (
-    <select
-      aria-label={roomCopy.moveLabel(sponsor.name)}
-      value=""
-      disabled={disabled}
-      onChange={(e) => {
-        if (e.target.value) onMove(sponsor.sponsorId, e.target.value);
-      }}
-      className={cn(
-        "mt-1 min-h-9 w-full cursor-pixel-hover rounded-dashboard-sm border border-dashboard-border-control bg-dashboard-bg-surface px-1.5 text-xs font-semibold text-dashboard-text-link disabled:opacity-dashboard-disabled",
-        focusRing,
-      )}
-    >
-      <option value="" disabled>
-        {roomCopy.moveTo}
-      </option>
-      {others.map((room) => {
-        const holder = holders.find(
-          (h) =>
-            h.sponsorId !== sponsor.sponsorId &&
-            h.room?.toLowerCase() === room.toLowerCase(),
-        );
-        return (
-          <option key={room} value={room}>
-            {holder ? roomCopy.swapWith(room, holder.name) : room}
-          </option>
-        );
-      })}
-    </select>
   );
 }
 
@@ -439,7 +397,7 @@ function Schedule({
   colors,
   onOpenTeam,
 }: {
-  columns: Column[];
+  columns: Sponsor[];
   slots: Slot[];
   counts: ReadonlyMap<string, number>;
   colors: ReadonlyMap<string, number>;
@@ -448,27 +406,21 @@ function Schedule({
   return (
     <div className="flex flex-col gap-3">
       {columns.map((c) => {
-        const mine = slots.filter(
-          (s) => s.room.toLowerCase() === c.room.toLowerCase(),
-        );
+        const mine = slots.filter((s) => s.sponsorId === c.sponsorId);
         if (mine.length === 0) return null;
         const first = mine[0]!.start;
         const end = mine[mine.length - 1]!.start + PRESENTATION_SLOT_MINUTES;
         return (
           <section
-            key={c.room}
-            aria-label={c.room}
+            key={c.sponsorId}
+            aria-label={c.room ?? c.name}
             className="overflow-hidden rounded-dashboard-md border border-dashboard-border-subtle"
           >
             <div className="flex flex-wrap items-center justify-between gap-2 bg-dashboard-bg-highlight px-4 py-2.5">
               <span className="flex min-w-0 items-center gap-2 text-base">
                 <b className="font-bold">{c.room}</b>
-                {c.sponsor && (
-                  <>
-                    <SponsorBadge name={c.sponsor.name} colors={colors} />
-                    <span className="truncate">{c.sponsor.name}</span>
-                  </>
-                )}
+                <SponsorBadge name={c.name} colors={colors} />
+                <span className="truncate">{c.name}</span>
               </span>
               <span className="text-sm tabular-nums text-dashboard-text-light">
                 {copy.roomTeams(mine.length)} · {clockOf(first)}–{clockOf(end)}
@@ -499,6 +451,11 @@ function Schedule({
                       <SponsorsTag count={counts.get(s.teamId) ?? 1} />
                     </span>
                   </button>
+                  {runsPastEnd(s.start) && (
+                    <span className="shrink-0 text-xs font-semibold text-dashboard-text-task">
+                      {copy.pastEnd(formatPresentationTime(PRESENTATION_WINDOW_END))}
+                    </span>
+                  )}
                   <StatusPill status={s.status} />
                 </li>
               ))}

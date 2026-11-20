@@ -27,12 +27,13 @@ const sponsor = (over: Partial<BoardSponsor>): BoardSponsor => ({
 });
 
 // The mock's day: Scotiabank, Canada Life, QNX in rooms, Sun Life late
-// with no room, TinyFish remote.
+// with no room, and a remote sponsor (none are remote right now, but the
+// mode stays).
 const day = [
   sponsor({ sponsorId: "sb", name: "Scotiabank" }),
   sponsor({ sponsorId: "cl", name: "Canada Life", room: "Rm 2230" }),
   sponsor({ sponsorId: "sl", name: "Sun Life", room: null, shortlistSent: false, teams: 0, firstStart: null }),
-  sponsor({ sponsorId: "tf", name: "TinyFish", mode: "remote", room: "Remote (judges online)", firstStart: null }),
+  sponsor({ sponsorId: "tf", name: "Remote Co", mode: "remote", room: "Remote (judges online)", firstStart: null }),
 ];
 
 describe("teamStatus", () => {
@@ -103,7 +104,7 @@ describe("boardTodos", () => {
       sponsors: day,
       teamsNotTold: 0,
       digital: [],
-      minutes: at(11, 30),
+      minutes: at(11, 48),
     });
     expect(todos.some((t) => t.kind === "room")).toBe(false);
     expect(
@@ -134,7 +135,7 @@ describe("sponsorLine", () => {
       tone: "warn",
       kind: "shortlistMissing",
     });
-    expect(sponsorLine(day[2]!, at(11, 45))).toEqual({
+    expect(sponsorLine(day[2]!, at(11, 50))).toEqual({
       tone: "warn",
       kind: "missedRound1",
     });

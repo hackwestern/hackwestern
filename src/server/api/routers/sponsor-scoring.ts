@@ -5,6 +5,7 @@ import { z } from "zod";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { env } from "~/env";
 import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
+import { safeProfileUrl } from "~/server/api/utils/sponsor-shortlist";
 import { SPONSOR_PRIZE_TRACKS } from "~/content/sponsor-prize-tracks";
 import {
   hasPrizeTrack,
@@ -49,7 +50,10 @@ import { assertPortalJudge } from "~/server/api/utils/sponsor-judging-guard";
 import { rebuildPresentationScheduleQuietly } from "~/server/api/utils/presentation-schedule";
 import { round2OpenedAt } from "~/server/api/utils/sponsor-judging-settings";
 import { mirrorJudgingScoresLater } from "~/server/api/utils/sponsor-judging-scores-mirror";
-import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
+import {
+  mirrorSponsorJudgingLater,
+  mirrorSponsorJudgingSoon,
+} from "~/server/api/utils/sponsor-judging-sheet-mirror";
 import { db, type Transaction } from "~/server/db";
 import {
   coffeeChatReps,
@@ -534,8 +538,10 @@ export const sponsorScoringRouter = createTRPCRouter({
         await syncReviewScore(tx, sponsor.id, input.teamId);
       });
       // The Judging Scores tab, after the commit and in the background
-      // (production only; the response never waits on the sheet).
+      // (production only; the response never waits on the sheet). The
+      // Sponsor Judging tab too: a first score turns a sponsor "Scoring".
       mirrorJudgingScoresLater();
+      mirrorSponsorJudgingLater();
       return {
         teamId: input.teamId,
         judge,
@@ -696,7 +702,7 @@ export const sponsorScoringRouter = createTRPCRouter({
         });
       }
       // Same rule as submit: teams that presented, or for a remote sponsor
-      // (TinyFish, no presentations) its sent shortlist.
+      // (no presentations) its sent shortlist.
       const rankable = round.remote
         ? (round.shortlistSent?.teamIds ?? [])
         : round.slots.map((slot) => slot.teamId);
@@ -937,6 +943,7 @@ export const sponsorScoringRouter = createTRPCRouter({
               id: teams.id,
               name: teams.name,
               devpostUrl: teams.devpostUrl,
+              githubUrl: teams.githubUrl,
               submissionStatus: teams.submissionStatus,
               tracks: teams.tracks,
             })
@@ -950,7 +957,12 @@ export const sponsorScoringRouter = createTRPCRouter({
     const teamById = new Map(
       teamRows.map((t) => [
         t.id,
-        { ...t, devpostUrl: blankToNull(t.devpostUrl) },
+        {
+          ...t,
+          devpostUrl: blankToNull(t.devpostUrl),
+          // Typed by hackers: http(s) only, never a javascript: href.
+          githubUrl: safeProfileUrl(t.githubUrl),
+        },
       ]),
     );
 
@@ -1020,6 +1032,7 @@ export const sponsorScoringRouter = createTRPCRouter({
                 teamId,
                 name: teamById.get(teamId)?.name ?? teamId,
                 devpostUrl: teamById.get(teamId)?.devpostUrl ?? null,
+                githubUrl: teamById.get(teamId)?.githubUrl ?? null,
                 score: s.scoreOf.get(teamId) ?? null,
                 byJudge: s.agg.get(teamId)?.byJudge ?? [],
                 eligible: s.canJudge(teamId),
@@ -1032,6 +1045,7 @@ export const sponsorScoringRouter = createTRPCRouter({
         ...t,
         name: teamById.get(t.teamId)?.name ?? t.teamId,
         devpostUrl: teamById.get(t.teamId)?.devpostUrl ?? null,
+        githubUrl: teamById.get(t.teamId)?.githubUrl ?? null,
       })),
     };
   }),

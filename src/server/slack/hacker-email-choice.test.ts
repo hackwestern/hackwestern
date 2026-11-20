@@ -57,10 +57,19 @@ vi.mock("~/server/api/utils/sponsor-judging-scores-mirror", () => ({
 }));
 vi.mock("~/server/api/utils/sponsor-judging-sheet-mirror", () => ({
   mirrorSponsorJudging: vi.fn(async () => ({ ok: true, rows: 0 })),
+  mirrorSponsorJudgingLater: vi.fn(),
   mirrorSponsorJudgingSoon: vi.fn(async () => undefined),
 }));
 vi.mock("~/server/api/utils/sponsor-judging-board", () => ({
   judgingRoomsById: vi.fn(),
+}));
+// Notify waits for every sponsor's room; sponsors from other tests stay in
+// the database without one, and this file is about the email choice.
+vi.mock("~/server/api/utils/judging-board-data", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("~/server/api/utils/judging-board-data")
+  >()),
+  sponsorsWithoutRoom: vi.fn(async () => []),
 }));
 
 const mail = vi.mocked(sendViaMailjet);

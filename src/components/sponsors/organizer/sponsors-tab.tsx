@@ -205,15 +205,15 @@ export function CopyLinkButton({
         variant="small"
         onClick={() => void copyUrl()}
         aria-label={copied ? copy.copiedLabel(name) : copy.copyLabel(name)}
-        // Fixed width so "Copied" doesn't nudge the row.
-        className="min-w-28"
+        title={copied ? copy.copiedLabel(name) : copy.copyLabel(name)}
+        // Icon only (Jazz, 2026-11-20): the check swaps in once copied.
+        className={iconButton}
       >
         {copied ? (
           <Check aria-hidden className="size-4 text-dashboard-status-live" />
         ) : (
           <Copy aria-hidden className="size-4 text-dashboard-text-light" />
         )}
-        <span aria-hidden>{copied ? copy.copied : copy.copyLink}</span>
       </DashboardButton>
       <DashboardButton
         variant="small"

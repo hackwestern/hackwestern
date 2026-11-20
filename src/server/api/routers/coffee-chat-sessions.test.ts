@@ -17,6 +17,8 @@ import {
   coffeeChatRoomBookings,
   coffeeChats,
   sponsorJudgingSponsors,
+  sponsorScans,
+  users,
 } from "~/server/db/schema";
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { roomGridRows } from "~/server/api/utils/coffee-chat-room-grid-mirror";
@@ -248,7 +250,7 @@ describe("guards", () => {
 
   test("bookRoom refuses a taken cell; removing a chat makes a fix", async () => {
     expect(await code(organizer.coffeeChatSessions.bookRoom({ room: "1358", sessionId: "10", label: "Mentors" }))).toBe("CONFLICT");
-    const { id } = await organizer.coffeeChatSessions.bookRoom({ room: "2241", sessionId: "16", label: "Mentors", note: "Resumes" });
+    const { id } = await organizer.coffeeChatSessions.bookRoom({ room: "2241", sessionId: "16", label: "Mentors" });
     expect(await code(organizer.coffeeChatSessions.bookRoom({ room: "2241", sessionId: "16", label: "Again" }))).toBe("CONFLICT");
     // Chat into a booked cell, booking onto a chat: both refused.
     const [wes] = await placementOf("Wes");
@@ -325,27 +327,61 @@ describe("send", () => {
     expect(await organizer.coffeeChatSessions.send()).toMatchObject({ sent: 0, reconfirmed: 0 });
   });
 
-  test("moving a sent chat keeps it sent and asks its invited hacker to confirm the new room", async () => {
+  test("a sent chat is locked: moving or removing it is refused and nothing changes", async () => {
     const [wes] = await placementOf("Wes");
+    expect(wes!.status).toBe("sent");
     const chat = await invite(wes!, ids[names.work]!, "Wes", "10:00");
     deliver.mockClear();
-    await friday(() =>
-      organizer.coffeeChatSessions.movePlacement({ placementId: wes!.id, room: "1356", sessionId: "10" }),
-    );
-    expect((await placementOf("Wes"))[0]).toMatchObject({ status: "sent", sentAt: wes!.sentAt, room: "1356" });
-    expect(await chatRow(chat.id)).toMatchObject({
-      placementId: wes!.id,
-      slotTime: "10:00",
-      room: "Rm 1356",
-      status: "pending",
-      notifiedAt: null,
-      expiresAt: new Date("2026-11-21T09:25:00-05:00"), // Ivey: 35 min before
-    });
-    expect(events()).toEqual(["reconfirm"]);
-    // The sponsor isn't flagged as changed and there's nothing new to send.
-    const board = await organizer.coffeeChatSessions.getBoard();
-    expect(board.sponsors.find((s) => s.name === names.work)!.status.kind).toBe("sent");
-    expect(board.draftCount).toBe(0);
+    const failed = (p: Promise<unknown>) =>
+      p.then(() => "ok", (e: { code?: string; message?: string }) => `${e.code}: ${e.message}`);
+    const want = "PRECONDITION_FAILED: Hackers were notified about this chat, so it's locked. It can't be moved or removed.";
+    expect(await failed(organizer.coffeeChatSessions.movePlacement({ placementId: wes!.id, room: "1356", sessionId: "10" }))).toBe(want);
+    expect(
+      await failed(organizer.coffeeChatSessions.movePlacement({ placementId: wes!.id, room: "1356", sessionId: "16", force: true })),
+    ).toBe(want);
+    expect(await failed(organizer.coffeeChatSessions.removePlacement({ placementId: wes!.id }))).toBe(want);
+    expect((await placementOf("Wes"))[0]).toEqual(wes);
+    expect(await chatRow(chat.id)).toMatchObject({ placementId: wes!.id, room: "Rm 1358", status: "accepted" });
+    expect(events()).toEqual([]);
+    // Re-running Auto-schedule never moves it either.
+    await organizer.coffeeChatSessions.autoSchedule();
+    expect((await placementOf("Wes"))[0]).toEqual(wes);
+  });
+
+  test("a chat added after Send stays movable until the next Send, which sends only it", async () => {
+    // BusyCo gets a new rep with a free 4-5 (a new time slot).
+    const [nia] = await db
+      .insert(coffeeChatReps)
+      .values({ sponsorId: ids[names.busy]!, name: "Nia", phone: "5195550197", chatsWanted: 4, position: 1 })
+      .returning();
+    await db.insert(coffeeChatRepSessions).values({ repId: nia!.id, sessionId: "16" });
+    try {
+      // Everything is notified: no Notify hackers (nothing to send).
+      let board = await organizer.coffeeChatSessions.getBoard();
+      expect(board.draftCount).toBe(0);
+      expect(board.sentAt).not.toBeNull();
+      const sentBefore = (await db.select().from(coffeeChatPlacements)).filter((p) => p.status === "sent");
+      await organizer.coffeeChatSessions.placeChat({ repId: nia!.id, room: "2242", sessionId: "16" });
+      // A new chat brings Notify hackers back, for 1 chat.
+      board = await organizer.coffeeChatSessions.getBoard();
+      expect(board.draftCount).toBe(1);
+      const [draft] = await db.select().from(coffeeChatPlacements).where(eq(coffeeChatPlacements.repId, nia!.id));
+      expect(draft!.status).toBe("draft");
+      await organizer.coffeeChatSessions.movePlacement({ placementId: draft!.id, room: "2243", sessionId: "16" });
+      const res = await organizer.coffeeChatSessions.send();
+      expect(res.sent).toBe(1);
+      expect((await organizer.coffeeChatSessions.getBoard()).draftCount).toBe(0);
+      const [sent] = await db.select().from(coffeeChatPlacements).where(eq(coffeeChatPlacements.repId, nia!.id));
+      expect(sent).toMatchObject({ status: "sent", room: "2243" });
+      // The chats sent before keep their sent time: only the new one was sent.
+      const again = await db.select().from(coffeeChatPlacements);
+      for (const p of sentBefore) expect(again.find((x) => x.id === p.id)!.sentAt).toEqual(p.sentAt);
+      expect(await code(organizer.coffeeChatSessions.movePlacement({ placementId: draft!.id, room: "2242", sessionId: "16" }))).toBe(
+        "PRECONDITION_FAILED",
+      );
+    } finally {
+      await db.delete(coffeeChatReps).where(eq(coffeeChatReps.id, nia!.id));
+    }
   });
 
   test("room grid rows: header, 15-min rows, chat text in the session's first row", async () => {
@@ -353,8 +389,8 @@ describe("send", () => {
     expect(rows[3]).toEqual(["Time", "Rm 2241", "Rm 2242", "Rm 2243", "Rm 1348", "Rm 1352", "Rm 1354", "Rm 1356", "Rm 1358"]);
     expect(rows[4]![0]).toBe("10:00 AM");
     expect(rows.at(-1)![0]).toBe("4:45 PM");
-    expect(rows[4]![7]).toBe(`${names.work} · Wes · 1-on-1 · 15 min · 4 chats`);
-    expect(rows[5]![7]).toBe("");
+    expect(rows[4]![8]).toBe(`${names.work} · Wes · 1-on-1 · 15 min · 4 chats`);
+    expect(rows[5]![8]).toBe("");
   });
 });
 
@@ -374,7 +410,7 @@ describe("determinism", () => {
 });
 
 describe("pins are re-checked", () => {
-  test("a sent chat the rep is no longer free for becomes a fix and stops counting", async () => {
+  test("a sent chat the rep is no longer free for becomes a fix, but it's locked: no re-run or fix moves it", async () => {
     const tia = await placementOf("Tia");
     expect(tia.map((p) => p.sessionId).sort()).toEqual(["10", "11"]);
     await db
@@ -387,18 +423,17 @@ describe("pins are re-checked", () => {
     const fix = board.fixes.find((f) => f.sponsor === ids[names.team]);
     expect(fix).toMatchObject({ problem: "invalid", reason: "notFree", session: "11" });
     expect(fix!.suggestion).toMatchObject({ kind: "move", to: { rep: ids.Tia, session: "15" } });
-    // Re-running keeps the pin (and the fix); applying the fix moves it.
-    await organizer.coffeeChatSessions.autoSchedule();
+    // Auto-schedule applies fixes itself, but never this one (the chat is sent).
+    const res = await organizer.coffeeChatSessions.autoSchedule();
+    expect(res.fixed).toBe(0);
     expect((await organizer.coffeeChatSessions.getBoard()).fixes.map((f) => f.id)).toContain(fix!.id);
-    const at11 = tia.find((p) => p.sessionId === "11")!;
-    const chat = await invite(at11, ids[names.team]!, "Tia", "11:00");
-    deliver.mockClear();
-    await friday(() => organizer.coffeeChatSessions.applyFix({ fixId: fix!.id }));
-    expect((await placementOf("Tia")).map((p) => p.sessionId).sort()).toEqual(["10", "15"]);
-    // Still sent; the invite follows the chat to 3:00 and must be confirmed again.
-    expect((await placementOf("Tia")).find((p) => p.id === at11.id)).toMatchObject({ status: "sent", sentAt: at11.sentAt });
-    expect(await chatRow(chat.id)).toMatchObject({ placementId: at11.id, slotTime: "15:00", status: "pending" });
-    expect(events()).toEqual(["reconfirm"]);
+    // Applying it by hand is refused too.
+    expect(await code(organizer.coffeeChatSessions.applyFix({ fixId: fix!.id }))).toBe("PRECONDITION_FAILED");
+    expect((await placementOf("Tia")).map((p) => [p.sessionId, p.status, p.sentAt])).toEqual(
+      tia.map((p) => [p.sessionId, p.status, p.sentAt]),
+    );
+    // The rep ticks 11 again (they called): the fix goes away.
+    await db.insert(coffeeChatRepSessions).values({ repId: ids.Tia!, sessionId: "11" });
     board = await organizer.coffeeChatSessions.getBoard();
     expect(board.fixes.filter((f) => f.sponsor === ids[names.team])).toEqual([]);
     expect(team().status).toEqual({ kind: "sent", done: 2, total: 2, broken: 0 });
@@ -408,17 +443,18 @@ describe("pins are re-checked", () => {
 describe("run of show unreadable", () => {
   test("board says so and every write is refused with PRECONDITION_FAILED", async () => {
     const { id: bookingId } = await organizer.coffeeChatSessions.bookRoom({ room: "2243", sessionId: "16", label: "Mentors" });
+    // A draft to move (sent chats are locked whatever the run of show says).
+    const [draft] = await db.insert(coffeeChatPlacements).values({ repId: ids.Bo!, room: "2241", sessionId: "16" }).returning();
     ros.fail = true;
     try {
       expect((await organizer.coffeeChatSessions.getBoard()).workshopsAvailable).toBe(false);
-      const [wes] = await placementOf("Wes");
       const failed = (p: Promise<unknown>) =>
         p.then(() => "ok", (e: { code?: string; message?: string }) => `${e.code}: ${e.message}`);
       const want = "PRECONDITION_FAILED: Can't read the run of show, so workshop times are unknown. Try again in a minute.";
       const before = await db.select().from(coffeeChatPlacements);
       expect(await failed(organizer.coffeeChatSessions.autoSchedule())).toBe(want);
       expect(await failed(organizer.coffeeChatSessions.applyFix({ fixId: "x" }))).toBe(want);
-      expect(await failed(organizer.coffeeChatSessions.movePlacement({ placementId: wes!.id, room: "2241", sessionId: "13" }))).toBe(want);
+      expect(await failed(organizer.coffeeChatSessions.movePlacement({ placementId: draft!.id, room: "2242", sessionId: "16" }))).toBe(want);
       expect(await failed(organizer.coffeeChatSessions.bookRoom({ room: "2242", sessionId: "16", label: "Mentors" }))).toBe(want);
       expect(await failed(organizer.coffeeChatSessions.moveBooking({ bookingId, room: "2242", sessionId: "16" }))).toBe(want);
       expect(await failed(organizer.coffeeChatSessions.send())).toBe(want);
@@ -428,11 +464,12 @@ describe("run of show unreadable", () => {
       ros.fail = false;
     }
     await organizer.coffeeChatSessions.removeBooking({ bookingId });
+    await organizer.coffeeChatSessions.removePlacement({ placementId: draft!.id });
   });
 });
 
 describe("sent changes re-mirror the Room Grid tab", () => {
-  test("removing a sent chat or moving a booking after Send re-runs it, only with sheet writes on", async () => {
+  test("moving a booking after Send re-runs it, only with sheet writes on; a sent chat can't be removed", async () => {
     // A draft nobody was invited to (moves and fixes keep chats sent now).
     const [draft] = await db
       .insert(coffeeChatPlacements)
@@ -446,14 +483,14 @@ describe("sent changes re-mirror the Room Grid tab", () => {
       mirror.mockClear();
       await organizer.coffeeChatSessions.removePlacement({ placementId: draft!.id });
       expect(mirror).not.toHaveBeenCalled();
-      await organizer.coffeeChatSessions.removePlacement({ placementId: sent[0]!.id });
-      expect(mirror).toHaveBeenCalledTimes(1);
+      expect(await code(organizer.coffeeChatSessions.removePlacement({ placementId: sent[0]!.id }))).toBe("PRECONDITION_FAILED");
+      expect(mirror).not.toHaveBeenCalled();
       const { id } = await organizer.coffeeChatSessions.bookRoom({ room: "2243", sessionId: "16", label: "Mentors" });
       await organizer.coffeeChatSessions.moveBooking({ bookingId: id, room: "2242", sessionId: "16" });
-      expect(mirror).toHaveBeenCalledTimes(2);
+      expect(mirror).toHaveBeenCalledTimes(1);
       ros.writes = false;
       await organizer.coffeeChatSessions.removeBooking({ bookingId: id });
-      expect(mirror).toHaveBeenCalledTimes(2);
+      expect(mirror).toHaveBeenCalledTimes(1);
     } finally {
       ros.writes = false;
     }
@@ -484,21 +521,16 @@ describe("0 chats and what changed", () => {
     const board = await organizer.coffeeChatSessions.getBoard();
     const sent = board.sponsors.filter((s) => s.status.kind === "sent");
     expect(sent.length).toBeGreaterThan(0);
-    for (const sp of sent) {
-      expect(sp.changedAfterSend, sp.name).toBe(false);
-      expect(sp.change, sp.name).toBeNull();
-    }
+    for (const sp of sent) expect(sp.changedAfterSend, sp.name).toBe(false);
   });
 
-  test("a sponsor that edits after Send is flagged, with when", async () => {
+  test("a sponsor that edits after Send is flagged", async () => {
     let board = await organizer.coffeeChatSessions.getBoard();
     const team = () => board.sponsors.find((s) => s.name === names.team)!;
     const later = new Date(Date.now() + 60_000);
     await db.update(coffeeChatPrefs).set({ updatedAt: later }).where(eq(coffeeChatPrefs.sponsorId, ids[names.team]!));
     board = await organizer.coffeeChatSessions.getBoard();
     expect(team().changedAfterSend).toBe(true);
-    expect(team().change).toEqual({ kind: "editedAfterSend", at: later });
-    expect(board.lastScheduledAt).not.toBeNull();
   });
 
   test("Send re-confirms a sponsor who changed after invites, and the flag clears", async () => {
@@ -515,7 +547,6 @@ describe("0 chats and what changed", () => {
       const board = await organizer.coffeeChatSessions.getBoard();
       const team = board.sponsors.find((s) => s.name === names.team)!;
       expect(team.changedAfterSend).toBe(false);
-      expect(team.change).toBeNull();
       // Nothing left: a second Send confirms nothing.
       expect(await organizer.coffeeChatSessions.send()).toMatchObject({ sent: 0, reconfirmed: 0 });
     } finally {
@@ -525,7 +556,7 @@ describe("0 chats and what changed", () => {
 });
 
 describe("partial session shortfall", () => {
-  test("a rep in a cut session gets an add-a-session fix; applying it places them and sets the cap", async () => {
+  test("a rep in a cut session gets an add-a-session fix; re-running Auto-schedule applies it (places them, sets the cap)", async () => {
     // WorkCo's 2-3 is usable 2:15-3:00: 3 one-on-ones. Wren wants 4.
     const [rep] = await db
       .insert(coffeeChatReps)
@@ -543,8 +574,11 @@ describe("partial session shortfall", () => {
     expect(board.placements.find((p) => p.repId === rep!.id)!.window).toEqual({ start: 855, end: 900 });
     const fix = board.fixes.find((f) => f.reason === "partial" && f.items[0]!.rep === rep!.id)!;
     expect(fix).toMatchObject({ items: [{ chats: { got: 3, want: 4 } }], suggestion: { kind: "extra", place: { session: "16" } } });
-    await organizer.coffeeChatSessions.applyFix({ fixId: fix.id });
+    const res = await organizer.coffeeChatSessions.autoSchedule();
+    expect(res.fixed).toBeGreaterThanOrEqual(1);
     expect((await mine()).map((p) => p.sessionId).sort()).toEqual(["14", "16"]);
+    // The hand-placed chat stays where it was put.
+    expect((await mine()).find((p) => p.id === placed!.id)).toMatchObject({ sessionId: "14", pinned: true });
     const [row] = await db.select().from(coffeeChatReps).where(eq(coffeeChatReps.id, rep!.id));
     expect(row!.maxSessions).toBe(2);
     const after = await organizer.coffeeChatSessions.getBoard();
@@ -552,24 +586,18 @@ describe("partial session shortfall", () => {
   });
 });
 
-describe("invites follow sent chats", () => {
-  test("removing a sent chat moves its hacker to another open seat of the sponsor", async () => {
-    // TeamCo: Tia at 10 (4 chats) and 15 (2 chats), Tom at 11, all sent.
+describe("sent chats keep their invites", () => {
+  test("removing a sent chat is refused, so its hacker keeps the seat", async () => {
     const tia = await placementOf("Tia");
-    const at15 = tia.find((p) => p.sessionId === "15")!;
     const at10 = tia.find((p) => p.sessionId === "10")!;
-    expect([at15.status, at10.status]).toEqual(["sent", "sent"]);
-    const chat = await invite(at15, ids[names.team]!, "Tia", "15:00");
+    expect(at10.status).toBe("sent");
+    const chat = await invite(at10, ids[names.team]!, "Tia", "10:15");
     deliver.mockClear();
-    await friday(() => organizer.coffeeChatSessions.removePlacement({ placementId: at15.id }));
-    expect(await chatRow(chat.id)).toMatchObject({
-      placementId: at10.id,
-      slotTime: "10:00",
-      status: "pending",
-      notifiedAt: null,
-    });
-    // Both hackers on that chat (one from the fix above) move to Tia's 10-11 seats.
-    expect(events()).toEqual(["reconfirm", "reconfirm"]);
+    expect(await code(friday(() => organizer.coffeeChatSessions.removePlacement({ placementId: at10.id })))).toBe(
+      "PRECONDITION_FAILED",
+    );
+    expect(await chatRow(chat.id)).toMatchObject({ placementId: at10.id, slotTime: "10:15", status: "accepted" });
+    expect(events()).toEqual([]);
   });
 });
 
@@ -607,10 +635,10 @@ describe("forced moves (coffee board v12)", () => {
         organizer.coffeeChatSessions.movePlacement({ placementId: at10.id, room: await roomAt("11"), sessionId: "11", force: true }),
       ),
     ).toBe("Fay already has a chat at 11–12.");
-    // The workshop window: refused even with force.
-    const [wes] = await placementOf("Wes");
+    // The workshop window: refused even with force (a WorkCo draft: sent chats are locked).
+    const work = (await loadBoardState()).placements.find((p) => p.sponsorId === ids[names.work] && p.status === "draft")!;
     expect(
-      await msg(organizer.coffeeChatSessions.movePlacement({ placementId: wes!.id, room: await roomAt("13"), sessionId: "13", force: true })),
+      await msg(organizer.coffeeChatSessions.movePlacement({ placementId: work.id, room: await roomAt("13"), sessionId: "13", force: true })),
     ).toBe(`That's during ${names.work}'s workshop.`);
 
     // Never a fix for it, it counts as placed, and Auto-schedule keeps it.
@@ -629,5 +657,137 @@ describe("forced moves (coffee board v12)", () => {
     await organizer.coffeeChatSessions.removePlacement({ placementId: (await placementOf("Fay")).find((p) => p.sessionId === "11")!.id });
     await organizer.coffeeChatSessions.movePlacement({ placementId: back.id, room: await roomAt("11"), sessionId: "11" });
     expect((await placementOf("Fay")).find((p) => p.id === back.id)).toMatchObject({ sessionId: "11", forced: false });
+  });
+});
+
+describe("Book an event (rep + hacker on an empty cell)", () => {
+  /** An admitted hacker; `share` = agreed to share with sponsors. */
+  async function hackerUser(first: string, share = true, hackerId?: string) {
+    const session = await mockSession(db);
+    await db.insert(applications).values({
+      ...ApplicationSeeder.createRandomWithoutUser(),
+      userId: session.user.id,
+      firstName: first,
+      lastName: "Booker",
+      status: "CONFIRMED",
+      agreeShareWithSponsors: share,
+    });
+    if (hackerId) await db.update(users).set({ hackerId }).where(eq(users.id, session.user.id));
+    return session.user.id;
+  }
+  const roomAt = async (s: string) => {
+    const used = new Set([
+      ...(await db.select().from(coffeeChatPlacements)).filter((p) => p.sessionId === s).map((p) => p.room),
+      ...(await db.select().from(coffeeChatRoomBookings)).filter((b) => b.sessionId === s).map((b) => b.room),
+    ]);
+    return (["2241", "2242", "2243", "1348", "1352", "1354", "1356", "1358"] as const).find((r) => !used.has(r))!;
+  };
+  const failed = (p: Promise<unknown>) =>
+    p.then(() => "ok", (e: { code?: string; message?: string }) => `${e.code}: ${e.message}`);
+  const stamp = Date.now();
+  const name = `BookCo${stamp}`;
+  // Letters only: hacker IDs and names are matched as words.
+  const tag = String(stamp).slice(-6).replace(/\d/g, (d) => "abcdefghij"[Number(d)]!);
+  let ada = "";
+  let bob = "";
+  let shy = "";
+
+  beforeAll(async () => {
+    // 1-on-1s: 4 chats = one session. Bea is free 3-4; Ben 3-4 and 4-5 (8 chats).
+    await addSponsor(name, true, [
+      { name: "Bea", chats: 4, free: ["15"] },
+      { name: "Ben", chats: 8, free: ["15", "16"] },
+    ]);
+    ada = await hackerUser(`Ada${tag}`, true, `brave-otter-${tag}`);
+    bob = await hackerUser(`Bob${tag}`);
+    shy = await hackerUser(`Shy${tag}`, false);
+    // Ada scanned first, then Bob, then Shy (who doesn't share).
+    const t = Date.now();
+    await db.insert(sponsorScans).values([
+      { sponsorId: ids[name]!, userId: ada, scannedAt: new Date(t - 3000) },
+      { sponsorId: ids[name]!, userId: bob, scannedAt: new Date(t - 2000) },
+      { sponsorId: ids[name]!, userId: shy, scannedAt: new Date(t - 1000) },
+    ]);
+  });
+
+  test("step 3: scanned hackers newest first (only those who share), then search by name or hacker ID", async () => {
+    const r = await organizer.coffeeChatSessions.bookingHackers({ sponsorId: ids[name]! });
+    expect(r.scanned.map((h) => h.userId)).toEqual([bob, ada]);
+    expect(r.scanned[0]!.name).toBe(`Bob${tag} B.`);
+    expect(r.found).toEqual([]);
+    const byName = await organizer.coffeeChatSessions.bookingHackers({ sponsorId: ids[name]!, q: `ada${tag}` });
+    expect(byName.found.map((h) => h.userId)).toEqual([ada]);
+    const byId = await organizer.coffeeChatSessions.bookingHackers({ sponsorId: ids[name]!, q: `Brave Otter ${tag}` });
+    expect(byId.found.map((h) => h.userId)).toEqual([ada]);
+    // Shy didn't agree to share: never listed, never found.
+    expect((await organizer.coffeeChatSessions.bookingHackers({ sponsorId: ids[name]!, q: `shy${tag}` })).found).toEqual([]);
+    expect(await code(hacker.coffeeChatSessions.bookingHackers({ sponsorId: ids[name]! }))).toBe("FORBIDDEN");
+  });
+
+  test("booking makes a sent, locked chat and the hacker's accepted chat; Notify doesn't come back", async () => {
+    const before = await organizer.coffeeChatSessions.getBoard();
+    const room = await roomAt("15");
+    const res = await organizer.coffeeChatSessions.bookEvent({ room, sessionId: "15", sponsorId: ids[name]!, repId: ids.Bea!, userId: ada });
+    expect(res).toMatchObject({ name: `Ada${tag} B.`, slotTime: "15:00" });
+    const [p] = await placementOf("Bea");
+    expect(p).toMatchObject({ room, sessionId: "15", status: "sent", pinned: true });
+    expect(p!.sentAt).not.toBeNull();
+    expect(await chatRow(res.chatId)).toMatchObject({
+      userId: ada,
+      sponsorId: ids[name],
+      placementId: p!.id,
+      slotTime: "15:00",
+      status: "accepted",
+      source: "organizer",
+      room: `Rm ${room}`,
+      repName: "Bea",
+    });
+    // Already notified: nothing new to Notify, and it's locked like any sent chat.
+    const after = await organizer.coffeeChatSessions.getBoard();
+    expect(after.draftCount).toBe(before.draftCount);
+    expect(await code(organizer.coffeeChatSessions.removePlacement({ placementId: p!.id }))).toBe("PRECONDITION_FAILED");
+    // The Invites status shows the hacker in that chat.
+    const status = await organizer.coffeeChatInvites.status({ sponsorId: ids[name]! });
+    expect(status.sponsors[0]!.chats.find((c) => c.slotTime === "15:00")).toMatchObject({ filled: 1, accepted: 1 });
+    // The cell is taken now.
+    expect(
+      await code(organizer.coffeeChatSessions.bookEvent({ room, sessionId: "15", sponsorId: ids[name]!, repId: ids.Ben!, userId: bob })),
+    ).toBe("CONFLICT");
+  });
+
+  test("refused: same sponsor twice, 2 live chats, a chat then, a hacker who doesn't share, a rep not free", async () => {
+    const book = async (userId: string, repName = "Ben") =>
+      failed(
+        organizer.coffeeChatSessions.bookEvent({ room: await roomAt("16"), sessionId: "16", sponsorId: ids[name]!, repId: ids[repName]!, userId }),
+      );
+    expect(await book(ada)).toBe(`CONFLICT: Ada${tag} B. already has a chat with ${name}.`);
+    // Bob: a 60-minute chat with another sponsor at 4:00 covers all of Ben's 4-5.
+    await db.insert(coffeeChats).values({ sponsorId: ids[names.team]!, userId: bob, slotTime: "16:00", durationMinutes: 60, status: "accepted" });
+    expect(await book(bob)).toBe(`CONFLICT: Bob${tag} B. already has a chat then.`);
+    // Cleo holds 2 live chats already.
+    const cleo = await hackerUser(`Cleo${tag}`);
+    await db.insert(coffeeChats).values([
+      { sponsorId: ids[names.team]!, userId: cleo, slotTime: "10:00", status: "accepted" },
+      { sponsorId: ids[names.work]!, userId: cleo, slotTime: "11:00", status: "pending" },
+    ]);
+    expect(await book(cleo)).toBe(`CONFLICT: Cleo${tag} B. already has 2 chats.`);
+    expect(await book(shy)).toMatch(/^BAD_REQUEST: That hacker can't be booked/);
+    // Bea isn't free at 4-5.
+    expect(await book(bob, "Bea")).toBe("BAD_REQUEST: Bea isn't free at 4–5.");
+    // Nothing was written by any refused booking.
+    expect(await placementOf("Ben")).toEqual([]);
+  });
+
+  test("a hacker busy at the start of the hour gets the next chat in it", async () => {
+    const dee = await hackerUser(`Dee${tag}`);
+    await db.insert(coffeeChats).values({ sponsorId: ids[names.team]!, userId: dee, slotTime: "16:00", status: "accepted" });
+    const res = await organizer.coffeeChatSessions.bookEvent({
+      room: await roomAt("16"),
+      sessionId: "16",
+      sponsorId: ids[name]!,
+      repId: ids.Ben!,
+      userId: dee,
+    });
+    expect(res.slotTime).toBe("16:15");
   });
 });

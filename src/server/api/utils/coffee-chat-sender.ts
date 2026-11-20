@@ -19,7 +19,10 @@ import {
   getSpreadsheetId,
 } from "~/server/api/utils/sponsor-sheets";
 
-/** The one person who sends the confirmed schedule (HW Contacts "Name"). */
+/** Any signed-in organizer may press Notify hackers (Jazz, 2026-11-20). */
+export const ANY_ORGANIZER_SENDS = true;
+
+/** The one person who used to send the confirmed schedule (HW Contacts "Name"). */
 export const COFFEE_SENDER_NAME = "Noah Medland";
 
 /**
@@ -111,6 +114,10 @@ export async function checkCoffeeSender(
   userEmail: string | null | undefined,
   opts: { fresh?: boolean } = {},
 ): Promise<SenderCheck> {
+  // Any organizer may notify hackers now (Jazz, 2026-11-20); the board's
+  // procedures are organizer-only already. The Noah-only check below is
+  // kept for the record but no longer gates anything.
+  if (ANY_ORGANIZER_SENDS) return { canSend: true, reason: null };
   const now = Date.now();
   const ttl = cached?.value === "unreadable" ? FAIL_CACHE_MS : CACHE_MS;
   if (opts.fresh === true || !cached || now - cached.at > ttl) {

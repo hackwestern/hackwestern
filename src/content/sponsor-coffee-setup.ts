@@ -73,7 +73,7 @@ export const sponsorSetupCopy = {
     stageNew: {
       kick: "Step 1 · Required",
       title: "Send availability",
-      body: "Tell us who on your team is chatting and when they're free, and we'll send back your chat times by 10 PM Friday.",
+      body: "Tell us who on your team is chatting and when they're free, and we'll send back your chat times at 10:00 PM Friday.",
       start: "Start",
       continue: "Continue",
     },
@@ -90,13 +90,13 @@ export const sponsorSetupCopy = {
       seatsWord: (n: number) => (n === 1 ? "seat" : "seats"),
       picked: (n: number, cap: number) => `${n} of ${cap}`,
       pickedSuffix: "seats picked",
-      due: "submit by 9:30 PM",
+      due: "submit by 10:00 PM",
       start: "Start shortlist",
       continue: "Continue shortlist",
       skip: "Skip it and we'll invite hackers who asked to chat with you.",
     },
     stageShort: {
-      title: "We'll confirm your chat times by 10 PM tonight.",
+      title: "We'll confirm your chat times at 10:00 PM tonight.",
       body: "Then every chat shows here: who, when and which room.",
     },
     summary: {
@@ -107,7 +107,7 @@ export const sponsorSetupCopy = {
     },
     changeAsk: "Change your team or times",
     /** After Send availability, back on the Chats page. */
-    sentToast: "Availability sent. We'll confirm your chat times by 10 PM Friday.",
+    sentToast: "Availability sent. We'll confirm your chat times at 10:00 PM Friday.",
     shortlistToast: "Shortlist sent.",
   },
 
@@ -238,7 +238,7 @@ export const sponsorSetupCopy = {
     /** Changing availability that was already sent. */
     changing: "Changing the availability you sent",
     editNote:
-      "You're changing availability you already sent. Invites go out by 10 PM Friday, so nobody is affected yet.",
+      "You're changing availability you already sent. Invites go out at 10:00 PM Friday, so nobody is affected yet.",
   },
 
   team: {
@@ -364,7 +364,7 @@ export const sponsorSetupCopy = {
     fixChats: (name: string) => `Change ${firstName(name)}'s chats`,
     fixTeam: "Edit your team",
     fixFree: "Change times",
-    submitNote: "This is when your team is free. We'll send back your chat times by 10 PM Friday.",
+    submitNote: "This is when your team is free. We'll send back your chat times at 10:00 PM Friday.",
     submit: "Send availability",
     savedToast: "Changes saved",
     submitting: "Submitting…",
@@ -385,7 +385,7 @@ export const sponsorSetupCopy = {
     how: [
       "Shortlist hackers here",
       "Scan hackers at your booth on Friday night. They're invited first.",
-      "Submit your shortlist by 9:30 PM. If you don't, we'll invite hackers who asked to chat with you.",
+      "Submit your shortlist by 10:00 PM. If you don't, we'll invite hackers who asked to chat with you.",
     ],
     howLabel: "How the shortlist works",
     pickHeading: "Shortlist hackers",
@@ -474,7 +474,7 @@ export const sponsorSetupCopy = {
     reviewNext: "Next: Review & submit",
     year: (y: string) => `${y} year`,
     reviewHeading: "Review & submit shortlist",
-    reviewEmpty: "No one shortlisted. At 9:30 PM we'll invite hackers who asked to chat with you.",
+    reviewEmpty: "No one shortlisted. At 10:00 PM we'll invite hackers who asked to chat with you.",
     submit: "Submit shortlist",
     submitting: "Submitting…",
     submitted: "Shortlist submitted",

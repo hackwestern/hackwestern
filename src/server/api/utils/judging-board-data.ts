@@ -221,14 +221,17 @@ export async function loadJudgingBoard() {
         status: status.get(r.teamId) ?? ("not-sent" as const),
       }))
       .sort((a, b) => a.start - b.start || a.room.localeCompare(b.room)),
-    /** On a sent shortlist but no slot: the sponsor has no room, or full. */
+    /**
+     * On a sent shortlist but no slot: no time left that keeps its gaps
+     * (or past the cap). A sponsor without a room still gets times.
+     */
     waiting: rows
       .filter((r) => r.startMinute === null)
       .map((r) => ({
         sponsorId: r.sponsorId,
         teamId: r.teamId,
         teamName: names.get(r.teamId) ?? r.teamId,
-        reason: r.room ? ("full" as const) : ("no-room" as const),
+        reason: "full" as const,
       })),
     /** Scheduled teams with no member sent their current times. */
     teamsNotTold: [...status.values()].filter((v) => v === "not-sent").length,
@@ -258,7 +261,7 @@ export async function loadBoardTeam(teamId: string) {
     columns: { id: true, name: true, devpostUrl: true, githubUrl: true },
   });
   if (!team) throw new TRPCError({ code: "NOT_FOUND" });
-  const [members, rows, scores] = await Promise.all([
+  const [members, rows] = await Promise.all([
     db
       .select({
         userId: users.id,
@@ -293,13 +296,6 @@ export async function loadBoardTeam(teamId: string) {
         eq(sponsorJudgingSponsors.id, sponsorPresentations.sponsorId),
       )
       .where(eq(sponsorPresentations.teamId, teamId)),
-    db
-      .select({
-        sponsorId: sponsorTeamScores.sponsorId,
-        scoreHalves: sponsorTeamScores.scoreHalves,
-      })
-      .from(sponsorTeamScores)
-      .where(eq(sponsorTeamScores.teamId, teamId)),
   ]);
   const status = (await statusByTeam(rows)).get(teamId) ?? "not-sent";
   const placed = rows
@@ -312,6 +308,8 @@ export async function loadBoardTeam(teamId: string) {
     devpostUrl: safeProfileUrl(team.devpostUrl),
     githubUrl: safeProfileUrl(team.githubUrl),
     status,
+    /** One member checked in is enough (Jazz, 2026-11-20). */
+    checkedIn: members.some((m) => m.signedInAt !== null),
     members: members
       .map((m) => {
         const name =
@@ -345,25 +343,21 @@ export async function loadBoardTeam(teamId: string) {
       room: r.room ?? "",
       start: r.startMinute!,
     })),
-    scores: placed.map((r) => {
-      const mine = scores.filter((s) => s.sponsorId === r.sponsorId);
-      return {
-        sponsorId: r.sponsorId,
-        sponsorName: r.sponsorName,
-        start: r.startMinute!,
-        /** 1-10 in half points; null = no score yet. */
-        average:
-          mine.length > 0
-            ? mine.reduce((n, s) => n + s.scoreHalves, 0) / mine.length / 2
-            : null,
-        reps: mine.length,
-      };
-    }),
   };
 }
 
 /**
- * Set a sponsor's judging room from the board (select, Other… or Move to).
+ * Board sponsors with no judging room yet (remote ones always have one).
+ * Notify teams waits until this is empty (Jazz, 2026-11-20).
+ */
+export async function sponsorsWithoutRoom() {
+  const { sponsors } = await boardSponsors();
+  const rooms = await judgingRoomsWithSource(sponsors);
+  return sponsors.filter((s) => !rooms.has(s.id)).map((s) => s.name);
+}
+
+/**
+ * Set a sponsor's judging room from the board's typed room box.
  * A room holds one sponsor: a room another sponsor has is refused
  * (CONFLICT, "Rm 2230 is Canada Life's. Pick another.") unless `swap`,
  * which gives that sponsor this one's old room. Remote sponsors take no

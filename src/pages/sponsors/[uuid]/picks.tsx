@@ -255,7 +255,7 @@ export default function SponsorJudgingPage() {
         </div>
         <h1 className="dashboard-h1 m-0">{copy.title}</h1>
         <p className="m-0 text-base leading-relaxed text-dashboard-text-medium">
-          {copy.intro(data.finalTop)}
+          {copy.intro}
         </p>
         {portalInfo.data?.roomNumber &&
           portalInfo.data.roomNumber !== "TBD" && (

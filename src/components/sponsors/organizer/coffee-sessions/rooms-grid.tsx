@@ -220,7 +220,7 @@ function Cell({
   const dragged = drag?.src === k && "opacity-40";
   if (c.kind === "booking") {
     const b = c.booking;
-    const title = rc.cellTitle([b.label, rc.adhoc, b.note]);
+    const title = rc.cellTitle([b.label, rc.adhoc]);
     return (
       <button
         type="button"
@@ -233,7 +233,6 @@ function Cell({
       >
         <span className={cn(line, "text-sm font-bold text-dashboard-text-heavy")}>{b.label}</span>
         <span className={cn(line, "font-semibold text-dashboard-text-medium")}>{rc.adhoc}</span>
-        {b.note && <span className={cn(line, "text-[11.5px] font-medium text-dashboard-text-light")}>{b.note}</span>}
       </button>
     );
   }
@@ -245,13 +244,14 @@ function Cell({
     <button
       type="button"
       data-cell={k}
-      data-drag=""
+      // Sent chats are locked: hackers were notified, so they can't be dragged.
+      data-drag={sent ? undefined : ""}
       onClick={() => onCell(k)}
       title={rc.cellTitle([c.rep.name, c.sponsor.name, fmt, tag, forced && rc.tagForced])}
       aria-label={rc.chatLabel(c.sponsor.name, c.rep.name, where, fmt, tag, forced)}
       className={cn(
         cellBase,
-        draggable,
+        !sent && draggable,
         "border border-dashboard-border-outline bg-dashboard-bg-surface text-dashboard-text-active shadow-[inset_3px_0_0_theme(colors.dashboard.action.primary)] [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
         sel,
         nohit,

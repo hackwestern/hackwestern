@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { CheckCircle2, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
+import { DevpostLogo, GitHubLogo } from "~/components/sponsors/brand-icons";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import {
@@ -24,6 +25,13 @@ import { type JudgingData, type ReviewPatch } from "./use-sponsor-judging";
 
 const copy = sponsorJudgingCopy;
 
+/** A small square link in the confirm list (Devpost, GitHub). */
+const linkIcon = cn(
+  "inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-md md:size-9",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+  "[@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
+);
+
 const iconButton = cn(
   "inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-heavy md:size-9",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
@@ -32,9 +40,11 @@ const iconButton = cn(
 );
 
 /**
- * Round 1's shortlist step: the shortlisted teams (remove with X) and
- * "Send shortlist", which hands the list to organizers for scheduling (at
- * most SHORTLIST_MAX, one per presentation slot). Once scheduled, each
+ * Round 1's final shortlist step: the finalists (remove with X) and
+ * "Submit final shortlist", which hands the list to organizers for
+ * scheduling (at most SHORTLIST_MAX, one per presentation slot). It can be
+ * submitted once, so a confirm lists every finalist first, with Go back
+ * focused (Jazz, 2026-11-20). Once scheduled, each
  * team shows its presentation time, in time order. Sending again replaces
  * the sent list. Round 2 (ranking) opens on this tab once organizers open
  * it after presentations.
@@ -80,6 +90,7 @@ export function ShortlistSend({
   const tooMany = shortlist.length > SHORTLIST_MAX;
   const sent = data.round.shortlistSent;
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
   const changed =
     sent !== null &&
     shortlist
@@ -182,6 +193,11 @@ export function ShortlistSend({
         ) : (
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div aria-live="polite" className="flex min-w-0 flex-col gap-0.5">
+              {!sent && shortlist.length > 0 && !tooMany && (
+                <span className="text-sm font-medium text-dashboard-text-medium">
+                  {copy.round.onceOnly}
+                </span>
+              )}
               {sent && (
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-dashboard-status-live">
                   <CheckCircle2 aria-hidden className="size-4" />
@@ -229,22 +245,63 @@ export function ShortlistSend({
       <Dialog.Root open={confirmOpen} onOpenChange={setConfirmOpen}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-          <Dialog.Content className="fixed z-50 inset-x-0 bottom-0 flex max-h-[92dvh] flex-col gap-4 overflow-y-auto rounded-t-dashboard-2xl bg-dashboard-bg-surface p-5 shadow-dashboard-card focus:outline-none sm:inset-0 sm:m-auto sm:h-fit sm:max-w-[560px] sm:rounded-dashboard-2xl sm:p-6">
+          <Dialog.Content
+            onOpenAutoFocus={(e) => {
+              e.preventDefault();
+              cancelRef.current?.focus();
+            }}
+            className="fixed z-50 inset-x-0 bottom-0 flex max-h-[92dvh] flex-col gap-4 overflow-y-auto rounded-t-dashboard-2xl bg-dashboard-bg-surface p-5 shadow-dashboard-card focus:outline-none sm:inset-0 sm:m-auto sm:h-fit sm:max-w-[560px] sm:rounded-dashboard-2xl sm:p-6">
             <Dialog.Title className="m-0 text-xl font-semibold text-dashboard-text-heavy">
               {copy.shortlistSubmitConfirm.title}
             </Dialog.Title>
             <Dialog.Description className="m-0 text-sm leading-relaxed text-dashboard-text-medium">
               {copy.shortlistSubmitConfirm.body(shortlist.length)}
             </Dialog.Description>
-            <ol className="m-0 max-h-60 list-decimal overflow-y-auto pl-5 text-sm font-medium text-dashboard-text-heavy">
+            <ul
+              aria-label={copy.shortlistSubmitConfirm.listLabel}
+              className="m-0 flex max-h-72 list-none flex-col divide-y divide-dashboard-border-subtle overflow-y-auto rounded-dashboard-lg border border-dashboard-border-subtle p-0"
+            >
               {shortlist.map((team) => (
-                <li key={team.id} className="py-1">{team.name}</li>
+                <li
+                  key={team.id}
+                  className="flex items-center gap-2 py-0.5 pl-3 pr-1 text-sm font-medium text-dashboard-text-heavy"
+                >
+                  <span className="min-w-0 flex-1 break-words py-2">
+                    {team.name}
+                  </span>
+                  {team.devpostUrl && (
+                    <a
+                      href={team.devpostUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={copy.browse.openOn(team.name, copy.browse.devpost)}
+                      className={cn(linkIcon, "text-dashboard-brand-devpost")}
+                    >
+                      <DevpostLogo className="size-4" />
+                    </a>
+                  )}
+                  {team.githubUrl && (
+                    <a
+                      href={team.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={copy.browse.openOn(team.name, copy.browse.github)}
+                      className={cn(linkIcon, "text-dashboard-brand-github")}
+                    >
+                      <GitHubLogo className="size-4" />
+                    </a>
+                  )}
+                </li>
               ))}
-            </ol>
+            </ul>
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <Dialog.Close asChild>
-                <DashboardButton variant="small" disabled={send.isPending}>
-                  Go back
+                <DashboardButton
+                  ref={cancelRef}
+                  variant="small"
+                  disabled={send.isPending}
+                >
+                  {copy.shortlistSubmitConfirm.cancel}
                 </DashboardButton>
               </Dialog.Close>
               <DashboardButton

@@ -46,6 +46,7 @@ vi.mock("~/env", async (importOriginal) => {
 // The Sponsor Judging tab mirror writes to Google Sheets; never here.
 vi.mock("~/server/api/utils/sponsor-judging-sheet-mirror", () => ({
   mirrorSponsorJudging: vi.fn(async () => ({ ok: true, rows: 0 })),
+  mirrorSponsorJudgingLater: vi.fn(),
   mirrorSponsorJudgingSoon: vi.fn(async () => ({ ok: true, rows: 0 })),
 }));
 
@@ -706,13 +707,18 @@ describe("sponsorScoring round 2", () => {
       "Round 2 is locked: no teams presented to you, so you can't rank a top 5.",
   };
 
-  test("a sponsor who sent late (no rows) can't rank in round 2", async () => {
+  test("a sponsor with no slot (sent late, none fit) can't rank in round 2", async () => {
     const other = await sponsor();
     const s = await sponsor();
     const ids = await shortlistTeams(s.id, { present: false });
     try {
       await scheduleFor(other.id, await team());
       await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
+      // A sponsor without a room gets times now (2026-11-20), so take its
+      // rows away to stand for teams that couldn't be placed.
+      await db
+        .delete(sponsorPresentations)
+        .where(eq(sponsorPresentations.sponsorId, s.id));
       mirrorSoon.mockClear();
       const res = await anon.sponsorScoring.get({ sponsor: s.id });
       expect(res.round.scheduledAt).not.toBeNull();
@@ -784,9 +790,10 @@ describe("sponsorScoring round 2", () => {
           startMinute: 600 + i * 6,
         })),
       );
-      // A new team joins the shortlist and is re-sent after presentations
-      // (Sunday 11:40): the rebuild keeps every time and has no slot left
-      // for it, so it hasn't presented.
+      // A new team joins the shortlist and is re-sent well after
+      // presentations (Sunday 1:40 PM, past even the overflow slots that
+      // run after 11:48): the rebuild keeps every time and has no slot
+      // left for it, so it hasn't presented.
       const added = await team();
       await anon.sponsorScoring.review({
         sponsor: s.id,
@@ -794,7 +801,7 @@ describe("sponsorScoring round 2", () => {
         shortlisted: true,
       });
       vi.useFakeTimers({ toFake: ["Date"] });
-      vi.setSystemTime(new Date("2026-11-22T11:40:00-05:00"));
+      vi.setSystemTime(new Date("2026-11-22T13:40:00-05:00"));
       try {
         await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
       } finally {

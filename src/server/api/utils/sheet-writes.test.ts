@@ -65,4 +65,14 @@ describe("sheet writes under Vitest", () => {
     // No Google client was even created.
     expect(google.scopes.length).toBe(before);
   });
+
+  test("Sponsor Judging calls made while one is queued share it", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const first = mirrorSponsorJudging();
+    const second = mirrorSponsorJudging();
+    expect(second).toBe(first);
+    await first;
+    // Once it has run, the next call queues a fresh one.
+    expect(mirrorSponsorJudging()).not.toBe(first);
+  });
 });

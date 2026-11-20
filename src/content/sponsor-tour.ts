@@ -146,15 +146,15 @@ export const sponsorTourCopy = {
         },
         score: {
           title: "Score each project",
-          body: "Give each project a score out of 10, and tap Save to shortlist for the strongest.",
+          body: "Give each project a score out of 10, and tap Save as finalist for the teams you want to hear present.",
         },
         shortlist: {
-          title: "Open your shortlist",
-          body: "Tap Your shortlist to see the teams you saved.",
+          title: "Open your final shortlist",
+          body: "Tap Submit final shortlist to see your finalists.",
         },
         send: {
-          title: "Send your shortlist",
-          body: "When you're happy with it, tap Send shortlist. We schedule each team to present in your room from 10:00.",
+          title: "Submit your final shortlist",
+          body: "When you're happy with it, tap Submit final shortlist. You can only submit it once. We schedule each team to present in your room from 10:00.",
         },
         presentations: {
           title: "Presentations",

@@ -92,22 +92,11 @@ export type BoardSponsorStatus =
    */
   | { kind: "need" | "scheduled" | "sent"; done: number; total: number; broken: number };
 
-/**
- * The sponsor's latest change the board hasn't caught up with: their
- * submit, or an edit after the board was last scheduled or sent.
- */
-export type BoardSponsorChange = {
-  kind: "submitted" | "editedAfterSchedule" | "editedAfterSend";
-  at: Date;
-};
-
 export type BoardSessionSponsor = {
   id: string;
   name: string;
   submitted: boolean;
   submittedAt: Date | null;
-  /** Null when nothing changed since the board was last scheduled or sent. */
-  change: BoardSponsorChange | null;
   /** Their chats were sent, and they changed preferences or reps after. */
   changedAfterSend: boolean;
   hackersPerChat: number;
@@ -173,18 +162,11 @@ export type SessionBoard = {
   walks: { repId: string; sessionId: string; toIvey: boolean }[];
   /** Latest Send, or null. */
   sentAt: Date | null;
-  /**
-   * When the newest chat on the board was placed (Auto-schedule, a fix, a
-   * move keeps its time), or null. A re-run that places nothing new doesn't
-   * change it, so the page says "last new chat", not "last scheduled".
-   */
-  lastScheduledAt: Date | null;
 };
 
 /** Everything the board and the writes need, in one read. */
 export type BoardState = {
   workshopsAvailable: boolean;
-  lastScheduledAt: Date | null;
   sponsors: BoardSessionSponsor[];
   sched: SchedSponsor[];
   placements: BoardPlacement[];
@@ -317,8 +299,6 @@ export async function loadBoardState(
     const t = ds.filter((d): d is Date => !!d).map((d) => d.getTime());
     return t.length ? new Date(Math.max(...t)) : null;
   };
-  const lastScheduledAt = latest(placementRows.map((p) => p.createdAt));
-  const lastSentAt = latest(placementRows.map((p) => p.sentAt));
 
   const sched: SchedSponsor[] = [];
   const sponsors: BoardSessionSponsor[] = doing.map((s) => {
@@ -386,30 +366,15 @@ export async function loadBoardState(
             broken: mine.filter((p) => bad.includes(cellKey(p.room, p.sessionId))).length,
           };
     // Sponsors are the only ones who write their preferences, so an update
-    // after the board was scheduled or sent is the sponsor's change.
+    // after their chats were sent is the sponsor's change.
     // (Track A bumps coffee_chat_pref.updated_at on every reps/times edit.)
     const theirSent = latest(mine.map((p) => p.sentAt));
     const changedAt = latest([pref?.submittedAt, pref?.updatedAt]);
-    const since = theirSent ?? lastSentAt ?? lastScheduledAt;
-    const justSubmitted =
-      !!pref?.submittedAt && pref.updatedAt.getTime() - pref.submittedAt.getTime() <= 1000;
-    const change: BoardSponsorChange | null =
-      !submitted || !changedAt || (since && changedAt <= since)
-        ? null
-        : {
-            kind: justSubmitted || !since
-              ? "submitted"
-              : (theirSent ?? lastSentAt)
-                ? "editedAfterSend"
-                : "editedAfterSchedule",
-            at: changedAt,
-          };
     return {
       id: s.id,
       name: s.name,
       submitted,
       submittedAt: pref?.submittedAt ?? null,
-      change,
       changedAfterSend: !!theirSent && !!changedAt && changedAt > theirSent,
       hackersPerChat: format.hackersPerChat,
       longerOneOnOne: format.longerOneOnOne,
@@ -425,7 +390,6 @@ export async function loadBoardState(
 
   return {
     workshopsAvailable: ros !== null,
-    lastScheduledAt,
     sponsors,
     sched,
     placements,
@@ -463,7 +427,6 @@ export function sessionBoardOf(state: BoardState): SessionBoard {
         }),
     ),
     sentAt: sent.length ? new Date(Math.max(...sent.map((d) => d.getTime()))) : null,
-    lastScheduledAt: state.lastScheduledAt,
   };
 }
 

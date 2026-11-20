@@ -3,6 +3,8 @@
 // panel on /live, and the Slack DM to each team member. Keep wording here,
 // not in components.
 
+import { SHORTLIST_MAX } from "~/lib/sponsor-presentations";
+
 const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
 
@@ -133,23 +135,14 @@ export const sponsorPresentationsCopy = {
     reasons: {
       full: (sponsor: string) =>
         `No slot left in ${sponsor}'s room that keeps this team's gaps`,
-      "no-room": (sponsor: string) =>
-        `${sponsor} has no judging room on Sponsor Day-Of`,
-      /** An old send with more teams than the cap: only the first 15 go. */
+      /** An old send with more teams than the cap: only the first SHORTLIST_MAX go. */
       "over-cap": (sponsor: string) =>
-        `Not scheduled: over 15 on ${sponsor}'s shortlist (only the first 15 present)`,
+        `Not scheduled: over ${SHORTLIST_MAX} on ${sponsor}'s shortlist (only the first ${SHORTLIST_MAX} present)`,
     },
     roomOf: (sponsor: string, room: string) => `${sponsor} · ${room}`,
     slotCount: (n: number, max: number) => `${n}/${max}`,
     teamSlots: (n: number) => plural(n, "presentation", "presentations"),
-    /** Rewrite the "Sponsor Judging" tab of the run-of-show sheet now. */
-    syncSheet: "Sync to sheet",
-    syncing: "Syncing…",
-    synced: (time: string) => `Sponsor Judging tab updated ${time}.`,
-    syncDisabled:
-      "Sheet writes are off on this server (they only run in production, or with SHEET_WRITES=1), so the Sponsor Judging tab wasn't touched.",
-    syncFailed: (error: string) =>
-      `Couldn't write the Sponsor Judging tab (${error}). The run-of-show service account needs Editor on the sheet. Judging still works.`,
+    /** Cheat check section: hidden from the Judging tab for now (2026-11-20). */
     cheatHeading: "Cheat check",
     cheatIntro: (top: number, n: number) =>
       `${plural(n, "team is", "teams are")} in a sponsor's top ${top}.`,
@@ -225,6 +218,9 @@ export const sponsorPresentationsCopy = {
     slackOff:
       "Slack isn't set up on this server (SLACK_BOT_TOKEN is missing), so no messages were sent.",
     noSchedule: "Schedule presentations first.",
+    /** Notify teams waits until every sponsor has a room. */
+    roomsFirst: (sponsors: readonly string[]) =>
+      `Give every sponsor a room before notifying teams. No room yet: ${sponsors.join(", ")}.`,
     round2NoSchedule:
       "Schedule presentations before opening round 2. No team has a presentation slot yet.",
     nothingToConfirm:

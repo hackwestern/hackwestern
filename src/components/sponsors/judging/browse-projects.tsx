@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardChip } from "~/components/internals/dashboard-chip";
@@ -29,6 +29,12 @@ const VIEWS = ["one", "list"] as const;
 type View = (typeof VIEWS)[number];
 type Scope = "mine" | "all";
 const VIEW_KEY = "hw13-sponsor-judging-view";
+/**
+ * How long after a rep's last score change One at a time moves on. The
+ * score is a slider (drag, scroll, arrow keys), so each step is a save:
+ * this waits until they've settled.
+ */
+const AUTO_NEXT_MS = 1500;
 
 function readView(): View {
   try {
@@ -47,8 +53,10 @@ function saveView(view: View) {
 }
 
 /**
- * Round 1 browsing, like hacker judging: one project at a time (Previous,
- * Next, Next unscored) or the whole list (search, filter, sort). No other
+ * Round 1 browsing, like hacker judging: one project at a time (‹ ›, and
+ * scoring moves on to the next unscored project by itself; Jazz,
+ * 2026-11-20) or the whole list (search, filter, sort). No ←/→ shortcut:
+ * the score slider and the step tabs already use those keys. No other
  * modes (Jazz, 2026-11-19). Several reps share the login: "Who's judging?"
  * first, then each score is that rep's. With two or more reps the list is
  * split evenly between them ("Your 6" / "Everyone's 18"); anyone can still
@@ -131,14 +139,28 @@ export function BrowseProjects({
     setView(v);
     saveView(v);
   };
+  // The next unscored project after this one, in queue order (wrapping);
+  // none when every project here is scored: stay put and say so.
   const nextUnscored = () => {
-    for (let step = 1; step <= scoped.length; step++) {
+    for (let step = 1; step < scoped.length; step++) {
       const i = (index + step) % scoped.length;
       if (myScore(scoped[i]!.id) === null) {
         setAt(i);
         return;
       }
     }
+  };
+  // The timer runs the latest render's version (fresh scores, index).
+  const advance = useRef(nextUnscored);
+  advance.current = nextUnscored;
+  const autoNext = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  const cancelAutoNext = () => clearTimeout(autoNext.current);
+  useEffect(() => cancelAutoNext, []);
+  const go = (i: number) => {
+    cancelAutoNext();
+    setAt(i);
   };
 
   const card = (team: (typeof data.teams)[number]) => (
@@ -151,7 +173,16 @@ export function BrowseProjects({
       myScore={myScore(team.id)}
       scores={scoresByTeam.get(team.id)}
       owner={split ? (owners.get(team.id) ?? null) : null}
-      onScore={(score) => onScore(team.id, me, score)}
+      onScore={(score) => {
+        onScore(team.id, me, score);
+        // One at a time: a saved score moves on once the rep settles. A
+        // cleared score doesn't.
+        if (view !== "one") return;
+        cancelAutoNext();
+        if (score !== null) {
+          autoNext.current = setTimeout(() => advance.current(), AUTO_NEXT_MS);
+        }
+      }}
     />
   );
 
@@ -193,7 +224,7 @@ export function BrowseProjects({
                 selected={scope === "mine"}
                 onClick={() => {
                   setScope("mine");
-                  setAt(0);
+                  go(0);
                 }}
                 className="min-h-11 md:min-h-9"
               >
@@ -203,7 +234,7 @@ export function BrowseProjects({
                 selected={scope === "all"}
                 onClick={() => {
                   setScope("all");
-                  setAt(0);
+                  go(0);
                 }}
                 className="min-h-11 md:min-h-9"
               >
@@ -235,34 +266,31 @@ export function BrowseProjects({
               </span>
             </div>
             <div data-tour="judging-first-project">{card(current)}</div>
-            <div className="sticky bottom-[var(--sponsor-tabbar,0px)] z-10 -mx-4 grid grid-cols-[auto_1fr_auto] gap-2 border-t border-dashboard-border-subtle bg-dashboard-bg-page/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm sm:-mx-5 sm:px-5">
+            <div className="sticky bottom-[var(--sponsor-tabbar,0px)] z-10 -mx-4 grid grid-cols-[auto_1fr_auto] items-center gap-2 border-t border-dashboard-border-subtle bg-dashboard-bg-page/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm sm:-mx-5 sm:px-5">
               <DashboardButton
                 type="button"
                 variant="small"
+                aria-label={copy.one.previous}
                 disabled={index === 0}
-                onClick={() => setAt(index - 1)}
-                className="min-h-11 disabled:cursor-not-allowed disabled:opacity-dashboard-disabled"
+                onClick={() => go(index - 1)}
+                className="min-h-11 min-w-11 px-0 disabled:cursor-not-allowed disabled:opacity-dashboard-disabled"
               >
-                <ChevronLeft aria-hidden className="size-4" />
-                {copy.one.previous}
+                <ChevronLeft aria-hidden className="size-5" />
               </DashboardButton>
-              <DashboardButton
-                type="button"
-                disabled={scoredByMe === scoped.length}
-                onClick={nextUnscored}
-                className="min-h-11 disabled:cursor-not-allowed disabled:opacity-dashboard-disabled"
-              >
-                {copy.one.nextUnscored}
-              </DashboardButton>
+              <p className="m-0 text-center text-sm font-medium text-dashboard-text-medium">
+                {scoredByMe === scoped.length
+                  ? copy.one.done(scoped.length)
+                  : copy.one.autoNext}
+              </p>
               <DashboardButton
                 type="button"
                 variant="small"
+                aria-label={copy.one.next}
                 disabled={index >= scoped.length - 1}
-                onClick={() => setAt(index + 1)}
-                className="min-h-11 disabled:cursor-not-allowed disabled:opacity-dashboard-disabled"
+                onClick={() => go(index + 1)}
+                className="min-h-11 min-w-11 px-0 disabled:cursor-not-allowed disabled:opacity-dashboard-disabled"
               >
-                {copy.one.next}
-                <ChevronRight aria-hidden className="size-4" />
+                <ChevronRight aria-hidden className="size-5" />
               </DashboardButton>
             </div>
           </div>

@@ -4,7 +4,6 @@ import { HackerLinks } from "~/components/sponsors/hacker-links";
 import { focusRing } from "~/components/sponsors/organizer/coffee-sessions/parts";
 import { sponsorJudgingBoardCopy } from "~/content/sponsor-judging-board";
 import { formatPresentationTime } from "~/lib/sponsor-presentations";
-import { formatAverage } from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { StatusPill } from "./status";
@@ -21,8 +20,8 @@ const sectionHead =
 
 /**
  * One team, from a calendar or schedule cell: name and ID, Devpost and
- * GitHub, check-in, where and when it presents (and its status), scores so
- * far, and its members. A centered dialog on desktop, a bottom sheet on
+ * GitHub, check-in (one member is enough), where and when it presents (and
+ * its status), and its members. A centered dialog on desktop, a bottom sheet on
  * phones.
  */
 export function TeamModal({
@@ -83,8 +82,6 @@ function TeamBody({ teamId }: { teamId: string }) {
       </>
     );
   }
-  const checkedIn = t.members.filter((m) => m.checkedIn).length;
-
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-0.5 pr-12">
@@ -125,19 +122,17 @@ function TeamBody({ teamId }: { teamId: string }) {
       <p
         className={cn(
           "m-0 flex items-center gap-2 rounded-dashboard-md px-4 py-3 text-base font-semibold",
-          checkedIn > 0
+          t.checkedIn
             ? "bg-dashboard-schedule-green text-dashboard-status-live"
             : "bg-dashboard-bg-task text-dashboard-text-task",
         )}
       >
-        {checkedIn > 0 ? (
+        {t.checkedIn ? (
           <CheckCircle2 aria-hidden className="size-5 shrink-0" />
         ) : (
           <TriangleAlert aria-hidden className="size-5 shrink-0" />
         )}
-        {checkedIn > 0
-          ? copy.confirmed(checkedIn, t.members.length)
-          : copy.noneConfirmed}
+        {t.checkedIn ? copy.teamCheckedIn : copy.noneConfirmed}
       </p>
 
       {t.presentsTo.length > 0 && (
@@ -163,27 +158,6 @@ function TeamBody({ teamId }: { teamId: string }) {
                 </li>
               );
             })}
-          </ul>
-        </section>
-      )}
-
-      {t.scores.length > 0 && (
-        <section className="flex flex-col gap-1">
-          <h3 className={sectionHead}>{copy.scores}</h3>
-          <ul className="m-0 flex list-none flex-col divide-y divide-dashboard-border-subtle p-0">
-            {t.scores.map((s) => (
-              <li
-                key={s.sponsorId}
-                className="flex flex-wrap justify-between gap-x-3 py-2.5 text-base tabular-nums"
-              >
-                <span>{s.sponsorName}</span>
-                <span className="text-dashboard-text-medium">
-                  {s.average !== null
-                    ? copy.scoreOf(formatAverage(s.average)!, s.reps)
-                    : copy.presentsAt(formatPresentationTime(s.start))}
-                </span>
-              </li>
-            ))}
           </ul>
         </section>
       )}

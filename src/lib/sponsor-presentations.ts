@@ -11,11 +11,14 @@
 
 /** First slot starts at 10:00. */
 export const PRESENTATION_WINDOW_START = 10 * 60;
-/** Last slot ends by 11:30. */
-export const PRESENTATION_WINDOW_END = 11 * 60 + 30;
+/**
+ * Last slot ends by 11:48: 18 slots per room (Jazz, 2026-11-20: "Can we
+ * do 18 presentations"), so the last one starts at 11:42.
+ */
+export const PRESENTATION_WINDOW_END = 11 * 60 + 48;
 /**
  * One slot: 3 min pitch, 2 min Q&A, 1 min to switch teams (Jazz,
- * 2026-11-19: 15 slots exactly fill 10:00-11:30).
+ * 2026-11-19); 18 slots fill 10:00-11:48.
  */
 export const PRESENTATION_SLOT_MINUTES = 6;
 export const PRESENTATION_PITCH_MINUTES = 3;
@@ -40,7 +43,7 @@ export const PRESENTATION_WINDOW: PresentationWindow = {
   minGapMinutes: PRESENTATION_MIN_GAP_MINUTES,
 };
 
-/** Slots one room has in the window (15 for 10:00-11:30 at 6 minutes). */
+/** Slots one room has in the window (18 for 10:00-11:48 at 6 minutes). */
 export function slotsPerRoom(window: PresentationWindow = PRESENTATION_WINDOW) {
   return Math.max(
     0,
@@ -52,9 +55,23 @@ export const PRESENTATION_SLOTS_PER_ROOM = slotsPerRoom();
 
 /**
  * Most teams a sponsor can send for round 1: one per slot in their room
- * (15). sponsorScoring.sendShortlist refuses more.
+ * (18). sponsorScoring.sendShortlist refuses more.
  */
 export const SHORTLIST_MAX = PRESENTATION_SLOTS_PER_ROOM;
+
+/**
+ * Slots a room may run past the window's end, so every shortlisted team
+ * gets a time even when gaps don't fit them by 11:48 (Jazz, 2026-11-20:
+ * "I want to be able to see everything"). In-window slots always fill
+ * first; the board marks the rest as running past the end.
+ */
+export const PRESENTATION_OVERFLOW_SLOTS = SHORTLIST_MAX;
+
+/** A slot that ends after the window: shown as running past the end. */
+export const runsPastEnd = (
+  start: number,
+  window: PresentationWindow = PRESENTATION_WINDOW,
+) => start + window.slotMinutes > window.end;
 
 export type PresentationRequest = {
   sponsorId: string;
@@ -67,7 +84,11 @@ export type PresentationRequest = {
 export type PresentationSlot = {
   sponsorId: string;
   teamId: string;
-  room: string;
+  /**
+   * The sponsor's room; null until organizers type one. Times don't need
+   * it: each sponsor has its own column of slots (Jazz, 2026-11-20).
+   */
+  room: string | null;
   /** Minutes after midnight. */
   start: number;
 };
@@ -77,8 +98,6 @@ export type PresentationSchedule = {
   slots: PresentationSlot[];
   /** Shortlisted teams that couldn't get a slot with that sponsor. */
   unplaced: { sponsorId: string; teamId: string }[];
-  /** Sponsors with a shortlist but no room; none of their teams placed. */
-  noRoom: { sponsorId: string; teamIds: string[] }[];
   /**
    * Teams past the first SHORTLIST_MAX of a sponsor's shortlist (in
    * shortlist order): never scheduled. Only an old send can have them.
@@ -110,8 +129,10 @@ const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
  * (augmenting paths). A sponsor gets at most `maxPerSponsor`
  * (SHORTLIST_MAX) teams: the first ones in shortlist order; the rest are
  * returned in `overCap`. Anything that can't fit is returned in
- * `unplaced`, and sponsors without a room in `noRoom`; nothing is
- * dropped. The same input always gives the same schedule.
+ * `unplaced`; nothing is dropped. A sponsor without a room still gets its
+ * times (room null): each sponsor has one room, so its slots are a column
+ * of its own, and typing the room later just labels them (Jazz,
+ * 2026-11-20). The same input always gives the same schedule.
  *
  * `keep` is the schedule teams were already given: each (sponsor, team)
  * still wanted keeps its start time (in the sponsor's current room), and is
@@ -126,16 +147,20 @@ export function schedulePresentations(
   {
     searchLimit = SEARCH_LIMIT,
     maxPerSponsor = SHORTLIST_MAX,
+    overflowSlots = PRESENTATION_OVERFLOW_SLOTS,
     keep = [],
     notBefore = -Infinity,
   }: {
     searchLimit?: number;
+    /** Extra slots after the window's end, used only when needed. */
+    overflowSlots?: number;
     maxPerSponsor?: number;
     keep?: readonly { sponsorId: string; teamId: string; start: number }[];
     notBefore?: number;
   } = {},
 ): PresentationSchedule {
-  const slotCount = slotsPerRoom(window);
+  // Earliest slots are tried first, so overflow is used only when needed.
+  const slotCount = slotsPerRoom(window) + Math.max(0, overflowSlots);
   const startOf = (i: number) => window.start + i * window.slotMinutes;
 
   // Normalise: one entry per sponsor, unique sorted team ids.
@@ -152,7 +177,6 @@ export function schedulePresentations(
   }
   const sponsorIds = [...sponsors.keys()].sort(byText);
 
-  const noRoom: PresentationSchedule["noRoom"] = [];
   const overCap: PresentationSchedule["overCap"] = [];
   const grids = new Map<string, (string | null)[]>();
   const demand = new Map<string, number>();
@@ -165,10 +189,6 @@ export function schedulePresentations(
       overCap.push({ sponsorId, teamIds: inOrder.slice(maxPerSponsor) });
     }
     const teams = inOrder.slice(0, maxPerSponsor).sort(byText);
-    if (!s.room) {
-      noRoom.push({ sponsorId, teamIds: teams });
-      continue;
-    }
     grids.set(sponsorId, Array<string | null>(slotCount).fill(null));
     demand.set(sponsorId, teams.length);
     for (const teamId of teams) {
@@ -335,7 +355,7 @@ export function schedulePresentations(
 
   const slots: PresentationSlot[] = [];
   for (const [sponsorId, grid] of grids) {
-    const room = sponsors.get(sponsorId)!.room!;
+    const room = sponsors.get(sponsorId)!.room;
     grid.forEach((teamId, i) => {
       if (teamId !== null)
         slots.push({ sponsorId, teamId, room, start: startOf(i) });
@@ -343,7 +363,7 @@ export function schedulePresentations(
   }
   slots.sort((a, b) => a.start - b.start || byText(a.sponsorId, b.sponsorId));
 
-  return { slots, unplaced, noRoom, overCap };
+  return { slots, unplaced, overCap };
 }
 
 /**
@@ -416,8 +436,9 @@ export function judgingRound(round: {
   slots: readonly unknown[];
   round2Open: boolean;
   /**
-   * The sponsor judges online (TinyFish): their teams don't present, so
-   * they rank their sent shortlist in round 2 (Jazz, 2026-11-19).
+   * The sponsor judges online (a remote sponsor, REMOTE_JUDGING_SPONSORS):
+   * their teams don't present, so they rank their sent shortlist in round
+   * 2 (Jazz, 2026-11-19).
    */
   remote?: boolean;
 }): JudgingRound {
@@ -435,10 +456,10 @@ export function judgingRound(round: {
  * for this key has the team's current times.
  */
 export function slotsKey(
-  slots: readonly { sponsorId: string; room: string; start: number }[],
+  slots: readonly { sponsorId: string; room: string | null; start: number }[],
 ) {
   return slots
-    .map((s) => `${s.start}|${s.sponsorId}|${s.room}`)
+    .map((s) => `${s.start}|${s.sponsorId}|${s.room ?? ""}`)
     .sort()
     .join(";");
 }

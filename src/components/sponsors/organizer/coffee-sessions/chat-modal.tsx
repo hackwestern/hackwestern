@@ -34,6 +34,9 @@ export const ALL_KEYS = COFFEE_ROOMS.flatMap((r) => COFFEE_SESSIONS.map((s) => k
 
 const roomLabel = (room: string) => (buildingOf(room) === "ivey" ? rc.iveyRm(room) : rc.rm(room));
 
+/** Book an event: a rep of a sponsor and a hacker, in this cell. */
+export type BookEvent = { room: string; session: string; sponsorId: string; repId: string; userId: string };
+
 /** What the modal shows: a cell's detail, or the booking form. */
 export type ModalView =
   | { kind: "cell"; key: string }
@@ -68,10 +71,10 @@ export function ChatModal({
   onClose: () => void;
   onMoveTo: (src: string, target: string) => void;
   onRemove: (src: string) => void;
-  onBook: (v: { room: string; session: string; label: string; note: string; forSponsorId: string | null }) => void;
+  onBook: (v: BookEvent) => void;
   onRemoveHacker: (t: { sponsorId: string; chatId: string; name: string }) => void;
   onFront: (sponsorId: string) => void;
-  /** Where focus goes when the modal closes (the card, or Book a room). */
+  /** Where focus goes when the modal closes (the cell). */
   onCloseFocus: () => void;
 }) {
   const c = view?.kind === "cell" ? cellAt(board, view.key) : null;
@@ -83,10 +86,10 @@ export function ChatModal({
         <Dialog.Content
           aria-describedby={undefined}
           onOpenAutoFocus={(e) => {
-            // The booking form starts in "Who it's for"; a detail on ×.
+            // The booking form starts on Sponsor; a detail on ×.
             if (view?.kind !== "book") return;
             e.preventDefault();
-            document.getElementById("bk-who")?.focus();
+            document.getElementById("bk-sponsor")?.focus();
           }}
           onCloseAutoFocus={(e) => {
             e.preventDefault();
@@ -196,7 +199,6 @@ function CellDetail({
     return (
       <div className={pad}>
         <Head sub={`${where} · ${rc.adhoc}`}>{c.booking.label}</Head>
-        {c.booking.note && <p className="m-0 text-[15px]">{c.booking.note}</p>}
         {actions}
       </div>
     );
@@ -245,7 +247,8 @@ function CellDetail({
           </p>
         ))}
       {c.placement.pinned && !sent && !forced && <p className="m-0 text-sm text-dashboard-text-medium">{dc.pinned}</p>}
-      {actions}
+      {/* Hackers were notified: the chat is locked (the server refuses a move or remove too). */}
+      {sent ? <p className="m-0 text-sm font-medium text-dashboard-text-medium">{dc.locked}</p> : actions}
     </div>
   );
 }
@@ -438,8 +441,13 @@ function HackerList({
   );
 }
 
-/** Ad hoc booking on an empty cell (or from "Book a room"); focus starts in "Who it's for". */
-function BookingForm({
+/**
+ * Book an event on an empty cell (room and session fixed, from the cell):
+ * Sponsor, then one of its reps free then, then a hacker. Hackers the
+ * sponsor scanned come first; a search by name or hacker ID is second.
+ * Focus starts on Sponsor.
+ */
+export function BookingForm({
   board,
   initial,
   busy,
@@ -448,42 +456,86 @@ function BookingForm({
   board: SessionBoardData;
   initial: { room: string; session: string };
   busy: boolean;
-  onBook: (v: { room: string; session: string; label: string; note: string; forSponsorId: string | null }) => void;
+  onBook: (v: BookEvent) => void;
 }) {
   const bc = copy.booking;
-  const [room, setRoom] = useState(initial.room);
-  const [session, setSession] = useState(initial.session);
-  const [who, setWho] = useState("");
-  const [note, setNote] = useState("");
+  const { room, session } = initial;
+  const [sponsorId, setSponsorId] = useState("");
+  const [repId, setRepId] = useState("");
+  const [userId, setUserId] = useState("");
+  const [q, setQ] = useState("");
+  const [query, setQuery] = useState("");
   const [err, setErr] = useState<string | null>(null);
-  const whoRef = useRef<HTMLInputElement>(null);
+  // Search once typing pauses.
   useEffect(() => {
-    setRoom(initial.room);
-    setSession(initial.session);
-    whoRef.current?.focus();
-  }, [initial.room, initial.session]);
-  const field = "flex min-w-0 flex-[1_1_180px] flex-col gap-1.5";
+    const t = setTimeout(() => setQuery(q.trim()), 250);
+    return () => clearTimeout(t);
+  }, [q]);
+  const sponsors = board.sponsors.filter((sp) => sp.submitted && sp.reps.length > 0);
+  const sponsor = sponsors.find((sp) => sp.id === sponsorId);
+  // Reps who can chat then: ticked free, not their workshop, not placed elsewhere.
+  const reps = (sponsor?.reps ?? []).filter(
+    (r) =>
+      r.chatsWanted > 0 &&
+      r.free.includes(session) &&
+      !sponsor!.blocked.includes(session) &&
+      !board.placements.some((p) => p.repId === r.id && p.sessionId === session),
+  );
+  const hackers = api.coffeeChatSessions.bookingHackers.useQuery(
+    { sponsorId, q: query.length >= 2 ? query : "" },
+    { enabled: !!sponsorId, placeholderData: (prev) => prev },
+  );
+  const scanned = hackers.data?.scanned ?? [];
+  const found = (hackers.data?.found ?? []).filter((h) => !scanned.some((x) => x.userId === h.userId));
+  const field = "flex min-w-0 flex-col gap-1.5";
   const input = cn(
     "min-h-11 w-full rounded-dashboard-md border border-dashboard-border-default bg-dashboard-bg-surface px-3 py-2.5 text-base text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder",
     focusRing,
+  );
+  const option = (on: boolean) =>
+    cn(
+      "flex min-h-11 cursor-pixel-hover items-center gap-2.5 rounded-dashboard-md border px-3 py-2 text-[15px] text-dashboard-text-heavy",
+      on ? "border-dashboard-action-primary bg-dashboard-bg-highlight" : "border-dashboard-border-default",
+    );
+  const hackerList = (list: typeof scanned, label: string) => (
+    <ul aria-label={label} className="m-0 flex list-none flex-col gap-1.5 p-0">
+      {list.map((h) => (
+        <li key={h.userId}>
+          <label className={option(userId === h.userId)}>
+            <input
+              type="radio"
+              name="bk-hacker"
+              value={h.userId}
+              checked={userId === h.userId}
+              onChange={() => setUserId(h.userId)}
+              className="size-[18px] flex-none accent-dashboard-action-primary"
+            />
+            <span className="min-w-0 [overflow-wrap:anywhere]">{bc.hackerLine(h.name, h.hackerId)}</span>
+          </label>
+        </li>
+      ))}
+    </ul>
   );
   return (
     <form
       className={pad}
       onSubmit={(e) => {
         e.preventDefault();
-        const label = who.trim();
-        if (!label) return setErr(bc.needWho);
+        if (!sponsorId) return setErr(bc.needSponsor);
+        if (!repId) return setErr(bc.needRep);
+        if (!userId) return setErr(bc.needHacker);
         if (cellAt(board, keyOf(room, session))) {
           return setErr(copy.errors.roomTaken(rc.rm(room), sessionLabel(session)));
         }
-        const sponsor = board.sponsors.find((s) => s.name.toLowerCase() === label.toLowerCase());
         setErr(null);
-        onBook({ room, session, label, note: note.trim(), forSponsorId: sponsor?.id ?? null });
+        onBook({ room, session, sponsorId, repId, userId });
       }}
     >
       <div className="flex items-start justify-between gap-2">
-        <Dialog.Title className="m-0 text-xl font-bold leading-snug">{bc.title}</Dialog.Title>
+        <div className="min-w-0">
+          <Dialog.Title className="m-0 text-xl font-bold leading-snug">{bc.title}</Dialog.Title>
+          <span className="block text-sm font-semibold text-dashboard-text-medium">{bc.where(roomLabel(room), sessionLabel(session))}</span>
+        </div>
         <Dialog.Close
           aria-label={dc.close}
           className={cn("-mr-2.5 -mt-2.5 inline-flex size-11 cursor-pixel-hover items-center justify-center rounded-dashboard-lg text-dashboard-text-light [@media(hover:hover)]:hover:bg-dashboard-bg-highlight", focusRing)}
@@ -491,35 +543,72 @@ function BookingForm({
           <X aria-hidden className="size-[18px]" />
         </Dialog.Close>
       </div>
-      <div className="flex flex-wrap gap-2.5">
-        <div className={field}>
-          <label htmlFor="bk-room" className="text-sm font-semibold">{bc.room}</label>
-          <select id="bk-room" className={input} value={room} onChange={(e) => setRoom(e.target.value)}>
-            {COFFEE_ROOMS.map((r) => (
-              <option key={r.id} value={r.id}>{bc.roomOption(r.id, r.building === "ivey")}</option>
-            ))}
-          </select>
-        </div>
-        <div className={field}>
-          <label htmlFor="bk-session" className="text-sm font-semibold">{bc.session}</label>
-          <select id="bk-session" className={input} value={session} onChange={(e) => setSession(e.target.value)}>
-            {COFFEE_SESSIONS.map((s) => (
-              <option key={s.id} value={s.id}>{sessionLabel(s.id)}</option>
-            ))}
-          </select>
-        </div>
+      <div className={field}>
+        <label htmlFor="bk-sponsor" className="text-sm font-semibold">{bc.sponsor}</label>
+        <select
+          id="bk-sponsor"
+          className={input}
+          value={sponsorId}
+          onChange={(e) => {
+            setSponsorId(e.target.value);
+            setRepId("");
+            setUserId("");
+          }}
+        >
+          <option value="">{sponsors.length ? bc.sponsorPick : bc.noSponsors}</option>
+          {sponsors.map((sp) => (
+            <option key={sp.id} value={sp.id}>{sp.name}</option>
+          ))}
+        </select>
       </div>
-      <div className="flex flex-wrap gap-2.5">
+      {sponsor && (
         <div className={field}>
-          <label htmlFor="bk-who" className="text-sm font-semibold">{bc.forWho}</label>
-          <input id="bk-who" ref={whoRef} className={input} value={who} onChange={(e) => setWho(e.target.value)} placeholder={bc.forWhoPlaceholder} autoComplete="off" />
+          <label htmlFor="bk-rep" className="text-sm font-semibold">{bc.rep}</label>
+          {reps.length ? (
+            <select id="bk-rep" className={input} value={repId} onChange={(e) => setRepId(e.target.value)}>
+              <option value="">{bc.repPick}</option>
+              {reps.map((r) => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </select>
+          ) : (
+            <p id="bk-rep" className="m-0 text-[15px] text-dashboard-text-warning">{bc.noReps(sessionLabel(session))}</p>
+          )}
         </div>
-        <div className={field}>
-          <label htmlFor="bk-note" className="text-sm font-semibold">{bc.note}</label>
-          <input id="bk-note" className={input} value={note} onChange={(e) => setNote(e.target.value)} placeholder={bc.notePlaceholder} autoComplete="off" />
-        </div>
-      </div>
+      )}
+      {sponsor && repId && (
+        <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
+          <legend className="mb-1 p-0 text-sm font-semibold">{bc.hacker}</legend>
+          <h3 className="m-0 text-[15px] font-bold">{bc.scannedTitle}</h3>
+          {hackers.isLoading ? (
+            <p className="m-0 text-[15px] text-dashboard-text-medium">{bc.loading}</p>
+          ) : scanned.length ? (
+            hackerList(scanned, bc.scannedTitle)
+          ) : (
+            <p className="m-0 text-[15px] text-dashboard-text-medium">{bc.scannedNone}</p>
+          )}
+          <label htmlFor="bk-search" className="mt-1 text-sm font-semibold">{bc.searchLabel}</label>
+          <input
+            id="bk-search"
+            type="search"
+            className={input}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={bc.searchPlaceholder}
+            autoComplete="off"
+            spellCheck={false}
+          />
+          {query.length < 2 ? (
+            <p className="m-0 text-sm text-dashboard-text-light">{bc.searchHint}</p>
+          ) : found.length ? (
+            hackerList(found, bc.searchLabel)
+          ) : (
+            !hackers.isFetching && <p className="m-0 text-sm text-dashboard-text-medium">{bc.searchNone}</p>
+          )}
+        </fieldset>
+      )}
       {err && <p role="alert" className="m-0 text-sm font-medium text-dashboard-text-warning">{err}</p>}
+      <p className="m-0 text-sm text-dashboard-text-medium">{bc.lockedNote}</p>
       <div className="flex flex-wrap gap-2">
         <DashboardButton type="submit" variant="primary" disabled={busy} className="h-auto min-h-11 w-auto px-4 py-0 text-sm md:min-h-9">{bc.book}</DashboardButton>
         <Dialog.Close asChild>

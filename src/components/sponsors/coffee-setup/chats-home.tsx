@@ -25,7 +25,7 @@ export function stageOf(data: SetupData): ChatsStage {
 /**
  * The Chats page (mock sponsor-chats-v3), one stage at a time under a
  * 2-step line: A. Not started (one card, Start), B. Availability sent (the
- * optional shortlist card), C. Shortlist sent (we'll confirm by 10 PM), D.
+ * optional shortlist card), C. Shortlist sent (we'll confirm at 10:00 PM), D.
  * Confirmed (Your chats, with "Change your team or times" at the bottom).
  * Finished steps shrink to one line with Change / Edit.
  */

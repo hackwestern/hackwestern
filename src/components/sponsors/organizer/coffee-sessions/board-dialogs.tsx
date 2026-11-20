@@ -28,8 +28,8 @@ const actBtn = "min-h-11 sm:w-auto sm:px-5";
 const outlineBtn = "h-11 sm:w-auto sm:px-5";
 
 /**
- * A warning before a change that tells hackers ("This chat is confirmed."):
- * a red primary button, and Cancel has focus.
+ * A warning before a change that can't be undone (Notify hackers): a red
+ * primary button, and Cancel has focus.
  */
 export function ConfirmDialog({
   open,
@@ -100,7 +100,6 @@ export function MoveCheckDialog({
   open,
   rep,
   session,
-  sentLine,
   onYes,
   onClose,
 }: {
@@ -108,8 +107,6 @@ export function MoveCheckDialog({
   rep: { name: string; phone: string };
   /** "2–3" */
   session: string;
-  /** For a sent chat: "4 hackers in 4 chats will be asked to confirm …". */
-  sentLine: string | null;
   onYes: () => void;
   onClose: () => void;
 }) {
@@ -203,13 +200,12 @@ export function MoveCheckDialog({
               <AlertDialog.Description asChild>
                 <div className="flex flex-col gap-1.5">
                   <p className={lead}>{c.ask(who, session)}</p>
-                  {sentLine && <p className={para}>{sentLine}</p>}
                 </div>
               </AlertDialog.Description>
               <div className="flex flex-col gap-2">
                 <AlertDialog.Action asChild>
                   <DashboardButton variant="primary" className={cn("min-h-11 md:w-full", dangerButton)} onClick={onYes}>
-                    {sentLine ? c.yesTell : c.yes}
+                    {c.yes}
                   </DashboardButton>
                 </AlertDialog.Action>
                 <AlertDialog.Cancel asChild>

@@ -1,7 +1,9 @@
 // Copy for sponsor judging: the sponsor's Judging page
 // (/sponsors/[uuid]/picks: browse and score projects, shortlist, submit a
 // ranked top list) and the organizer "Sponsor judging" tab. Keep wording
-// here, not in components.
+// here, not in components. Sponsors see one wording (Jazz, 2026-11-20):
+// the teams they pick are "finalists", the list they submit once is the
+// "final shortlist".
 
 const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
@@ -18,8 +20,8 @@ export const sponsorJudgingCopy = {
   brand: "Hack Western 13",
   back: "Back to sponsor hub",
   title: "Judging",
-  intro: (top: number) =>
-    `Each of you scores projects out of 10, in half points. Shortlist up to 15 teams, send it to us, then rank your top ${top}: 1st to ${ordinal(top)} place after presentations.`,
+  /** Jazz's exact line (2026-11-20). */
+  intro: "Select the teams that you want to hear present!",
   trackTag: (track: string) => `Showing teams in ${track}`,
   invalid: {
     title: "Link not recognised",
@@ -36,7 +38,7 @@ export const sponsorJudgingCopy = {
   steps: {
     label: "Judging steps",
     browse: "Browse",
-    shortlist: "Shortlist",
+    shortlist: "Submit final shortlist",
     presentations: "Presentations",
     top: "Top 5",
     round1: "Round 1",
@@ -44,7 +46,7 @@ export const sponsorJudgingCopy = {
     lockedRound1: "Available during Round 1",
     lockedRound2: "Available after Round 2 opens",
     round1Complete: "Round 1 complete",
-    round1Stage: "Round 1 · Shortlist",
+    round1Stage: "Round 1 · Final shortlist",
     round2Stage: "Round 2 · Live judging",
   },
 
@@ -56,7 +58,7 @@ export const sponsorJudgingCopy = {
     filters: {
       all: "All",
       scored: "Scored",
-      shortlisted: "Shortlisted",
+      shortlisted: "Finalists",
       unreviewed: "Not reviewed",
     },
     sortLabel: "Sort by",
@@ -176,9 +178,10 @@ export const sponsorJudgingCopy = {
     position: (at: number, total: number) => `${at} of ${total}`,
     progress: (scored: number, total: number) =>
       `${scored} of ${total} scored by you`,
-    previous: "Previous",
-    next: "Next",
-    nextUnscored: "Next unscored",
+    previous: "Previous project",
+    next: "Next project",
+    /** Saving a score moves on by itself (Jazz, 2026-11-20). */
+    autoNext: "Score a project and the next unscored one opens.",
     done: (total: number) =>
       `You've scored all ${plural(total, "project", "projects")} here.`,
   },
@@ -193,9 +196,11 @@ export const sponsorJudgingCopy = {
   },
 
   shortlistToggle: {
-    add: "Save to shortlist",
-    added: "Shortlisted",
-    label: (team: string) => `Save ${team} to your shortlist`,
+    add: "Save as finalist",
+    /** Pressed: tap again to remove. */
+    added: "Finalist",
+    remove: "Remove finalist",
+    label: (team: string) => `Save ${team} as a finalist`,
   },
 
   note: {
@@ -211,13 +216,13 @@ export const sponsorJudgingCopy = {
   saveFailed: "Couldn't save. Check your connection and try again.",
 
   shortlist: {
-    heading: "Rank your shortlist",
+    heading: "Rank your finalists",
     intro: (top: number) =>
       `Put your favourite first. The first ${top} are the teams you submit.`,
-    empty: "Your shortlist is empty. Save projects to it while you browse.",
+    empty: "No finalists yet. Tap Save as finalist on the projects you want to hear present.",
     browse: "Browse projects",
     needMore: (top: number, have: number) =>
-      `Shortlist ${plural(top - have, "more team", "more teams")} to submit your top ${top}.`,
+      `Save ${plural(top - have, "more finalist", "more finalists")} to submit your top ${top}.`,
     cutLine: (top: number) => `Your top ${top}`,
     place: (n: number) => `${ordinal(n)} place`,
     placeShort: ordinal,
@@ -227,7 +232,7 @@ export const sponsorJudgingCopy = {
     rank: (n: number) => `#${n}`,
     noScore: "No score",
     scoreOf: (avg: string) => `avg ${avg}/10`,
-    remove: (team: string) => `Remove ${team} from your shortlist`,
+    remove: (team: string) => `Remove ${team} from your finalists`,
     keyboardHint: "Use the arrow buttons to reorder.",
     moved: (team: string, rank: number) => `${team} moved to number ${rank}.`,
     selected: (team: string, rank: number) => `${team} selected for place ${rank}.`,
@@ -244,10 +249,12 @@ export const sponsorJudgingCopy = {
   },
 
   shortlistSubmitConfirm: {
-    title: "Submit your shortlist?",
+    title: "Submit your final shortlist?",
     body: (count: number) =>
-      `You are submitting ${count} teams. This action is final and cannot be changed.`,
-    confirm: "Confirm shortlist",
+      `You're submitting ${plural(count, "finalist", "finalists")}. You can only submit your final shortlist once, so check it first.`,
+    listLabel: "Your finalists",
+    confirm: "Submit final shortlist",
+    cancel: "Go back",
   },
 
   submit: {
@@ -270,30 +277,32 @@ export const sponsorJudgingCopy = {
     closed: "Judging has closed. Your last submission stands.",
   },
 
-  /** Round 1 ends with Send shortlist; round 2 ranks teams that presented. */
+  /** Round 1 ends with Submit final shortlist; round 2 ranks teams that presented. */
   round: {
-    sendHeading: "Your shortlist",
+    sendHeading: "Your final shortlist",
     sendIntro: (max: number) =>
-      `When you're happy with it, send it to us: up to ${max} teams, one per presentation slot. We'll schedule each team to present in your room from 10:00.`,
+      `When you're happy with it, submit it to us: up to ${max} finalists, one per presentation slot. We'll schedule each team to present in your room from 10:00.`,
     tooMany: (max: number, have: number) =>
-      `Your room has ${max} presentation slots. Remove ${plural(have - max, "team", "teams")} before you send.`,
+      `Your room has ${max} presentation slots. Remove ${plural(have - max, "finalist", "finalists")} before you submit.`,
+    /** Next to the button: it can't be undone. */
+    onceOnly: "You can only submit this once.",
     /** Shown with the schedule: what one presentation slot holds. */
     format: (pitch: number, qa: number) =>
       `Each presentation: ${pitch} min pitch · ${qa} min Q&A`,
-    send: "Send shortlist",
+    send: "Submit final shortlist",
     resend: "Send again",
-    sending: "Sending…",
+    sending: "Submitting…",
     sentAt: (time: string, n: number) =>
-      `Sent ${time} · ${plural(n, "team", "teams")}`,
-    changed: "Your shortlist has changed since you sent it.",
+      `Submitted ${time} · ${plural(n, "finalist", "finalists")}`,
+    changed: "Your finalists have changed since you submitted.",
     changedAfterSchedule:
-      "Your shortlist has changed since presentations were scheduled. Tell your Hack Western contact if a team should be added.",
-    sendFailed: "Couldn't send. Check your connection and try again.",
+      "Your finalists have changed since presentations were scheduled. Tell your Hack Western contact if a team should be added.",
+    sendFailed: "Couldn't submit. Check your connection and try again.",
     waiting:
       "Round 2 opens here after presentations: you'll rank your top teams from the ones that presented.",
     /** Round 2 is open but this sponsor has no presentation slot. */
     locked:
-      "Round 2 is locked for you: no teams presented to you, so there's nobody to rank. Send your shortlist if you haven't, then ask your Hack Western contact to schedule presentations again.",
+      "Round 2 is locked for you: no teams presented to you, so there's nobody to rank. Submit your final shortlist if you haven't, then ask your Hack Western contact to schedule presentations again.",
     presentedHeading: "Rank the teams that presented",
     presentedIntro: (top: number) =>
       `Put your favourite first. The first ${top} are the teams you submit.`,
@@ -305,7 +314,7 @@ export const sponsorJudgingCopy = {
 
   errors: {
     unknownSponsor: "Unknown sponsor link",
-    emptyShortlist: "Shortlist at least one team before sending.",
+    emptyShortlist: "Save at least one finalist before submitting.",
     tooMany: (max: number) =>
       `Send at most ${max} teams: your room has ${max} presentation slots.`,
     notEligible: "That team isn't one you can judge.",
@@ -323,13 +332,13 @@ export const sponsorJudgingCopy = {
     digitalAmbiguous: (place: number, link: string) =>
       `${ordinal(place)} place: "${link}" matches more than one team in this sponsor's track. Paste the team ID instead.`,
     noJudge: "Enter the name of who's judging.",
-    shortlistAlreadySent: "Your shortlist has already been submitted.",
+    shortlistAlreadySent: "Your final shortlist has already been submitted.",
     topAlreadySubmitted: (top: number) =>
       `Your top ${top} has already been submitted.`,
     ranking: {
       wrongCount: (top: number) => `Submit exactly ${top} teams.`,
       duplicate: () => "Each team can appear only once.",
-      notShortlisted: () => "Only teams on your shortlist can be submitted.",
+      notShortlisted: () => "Only your finalists can be submitted.",
       notPresented: () => "Only teams that presented to you can be submitted.",
       closed: () => "Judging has closed.",
     },
@@ -437,6 +446,7 @@ export const sponsorJudgingCopy = {
     judges: (n: number) => plural(n, "rep scoring", "reps scoring"),
     devpost: "Devpost",
     openDevpost: (team: string) => `Open ${team} on Devpost`,
+    openGithub: (team: string) => `Open ${team} on GitHub`,
     noSponsors: "No sponsors have a private link yet.",
     noTeams: "No sponsor has scored or submitted a team yet.",
     loadFailed: "Couldn't load sponsor judging.",
@@ -448,6 +458,10 @@ export const sponsorJudgingCopy = {
       sponsors: "Sponsors",
       average: "Avg score",
       links: "Links",
+      /** Final results table: each sponsor's ranked teams. */
+      place: "Place",
+      repScores: "Rep scores",
+      hackers: "Hackers",
     },
     inTopCount: (n: number) => plural(n, "sponsor", "sponsors"),
     averageOf: (avg: string, n: number) =>

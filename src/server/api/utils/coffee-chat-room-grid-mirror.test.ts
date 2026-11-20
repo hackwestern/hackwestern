@@ -40,7 +40,6 @@ const sponsor = (over: Partial<BoardSessionSponsor>): BoardSessionSponsor => ({
   name: "Sun Life",
   submitted: true,
   submittedAt: null,
-  change: null,
   changedAfterSend: false,
   hackersPerChat: 3,
   longerOneOnOne: false,
@@ -72,7 +71,7 @@ const placement = (sessionId: string, room: string, window: { start: number; end
 const state: Pick<BoardState, "sponsors" | "placements" | "bookings"> = {
   sponsors: [sponsor({})],
   placements: [placement("10", "2241", { start: 600, end: 660 }), placement("13", "1348", { start: 780, end: 810 })],
-  bookings: [{ id: "b1", sessionId: "11", room: "2242", forSponsorId: null, label: "Mentors", note: "Resumes" }],
+  bookings: [{ id: "b1", sessionId: "11", room: "2242", forSponsorId: null, label: "Mentors", note: "Resumes" }], // an older booking: its note is kept but not shown
 };
 
 // Rows: 0 note, 1 blank, 2 groups, 3 header, then 10:00 at row 4 (one per 15 min).
@@ -84,7 +83,7 @@ describe("roomGridBlocks", () => {
       { kind: "chat", col: 1, startRow: row(10), endRow: row(11), text: "Sun Life · Dana · Group of 3 · 2 chats" },
       // 1:00-1:30 holds one 30-min chat: Dana gets 3 chats, 2 + 1.
       { kind: "chat", col: 4, startRow: row(13), endRow: row(13, 30), text: "Sun Life · Dana · Group of 3 · 1 chat" },
-      { kind: "booking", col: 2, startRow: row(11), endRow: row(12), text: "Mentors · Resumes" },
+      { kind: "booking", col: 2, startRow: row(11), endRow: row(12), text: "Mentors" },
     ]);
   });
 

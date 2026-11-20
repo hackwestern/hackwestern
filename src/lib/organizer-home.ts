@@ -6,6 +6,7 @@
  * src/content/sponsor-organizer.ts (`home`).
  */
 import { COFFEE_SESSIONS } from "~/lib/coffee-chat-sessions";
+import { ROUND1_OVER } from "~/lib/judging-board";
 import { RUN_OF_SHOW_DAYS, type RunOfShowDay } from "~/lib/run-of-show";
 import { runOfShowInstant } from "~/lib/run-of-show-time";
 import { round1State, type SundayJudging } from "~/lib/sponsor-day-board";
@@ -171,6 +172,9 @@ export function applies(col: HomeColumnKey, s: HomeSponsor): boolean {
   }
 }
 
+/** "11:48": presentations end, when a missing top 5 is flagged. */
+const PRESENTATIONS_OVER = `${Math.floor(ROUND1_OVER / 60)}:${String(ROUND1_OVER % 60).padStart(2, "0")}`;
+
 /** The cell's problems now. Empty before the day starts. */
 export function flagsFor(
   col: HomeColumnKey,
@@ -221,7 +225,7 @@ export function flagsFor(
     case "judgingRoom":
       return s.missingRoom ? [{ kind: "noRoom" }] : [];
     case "top5":
-      return s.sunday && !s.sunday.finalSubmittedAt && after("11:30")
+      return s.sunday && !s.sunday.finalSubmittedAt && after(PRESENTATIONS_OVER)
         ? [{ kind: "topLate" }]
         : [];
     default:

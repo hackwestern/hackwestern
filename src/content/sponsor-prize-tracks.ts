@@ -23,8 +23,9 @@ export const SPONSOR_PRIZE_TRACKS = [
 // Matched loosely, like the list above.
 export const DIGITAL_JUDGING_SPONSORS = ["PCBWay"] as const;
 
-// In-person sponsors that judge remotely through the portal (Jazz,
-// 2026-11-19). Their judging room, on the presentation schedule, the
-// Sponsor Judging tab and hackers' notices, is REMOTE_JUDGING_ROOM.
-export const REMOTE_JUDGING_SPONSORS = ["TinyFish"] as const;
+// In-person sponsors that judge remotely through the portal. Their judging
+// room, on the presentation schedule, the Sponsor Judging tab and hackers'
+// notices, is REMOTE_JUDGING_ROOM. Empty: TinyFish judges in person now
+// (Jazz, 2026-11-20); it was remote from 2026-11-19.
+export const REMOTE_JUDGING_SPONSORS: readonly string[] = [];
 export const REMOTE_JUDGING_ROOM = "Remote (judges online)";

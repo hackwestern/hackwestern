@@ -3,7 +3,7 @@
  * build). Reads only its arguments, so the server and the tests share it.
  *
  * Rules (docs/decisions.md 2026-11-19, "One coffee chat deadline…",
- * "Coffee chat deadline 9:30 PM Friday…", "Jazz's answers… (Q1–Q11)"):
+ * "Coffee chat deadline 10:00 PM Friday…", "Jazz's answers… (Q1–Q11)"):
  * - Each sent placement (one rep in one room for one session) runs a number
  *   of chats at fixed start times inside the session (4 x 15 min for
  *   1-on-1s, 2 x 30 min for groups), up to the rep's wanted chats. A session
@@ -20,7 +20,7 @@
  *   overlapping times, or two
  *   seats with the same sponsor, and isn't asked again by a sponsor they
  *   declined or let expire.
- * - Round 1 (the Friday ~10 PM Send): answer by Sat 10:00 AM. Round 2 opens
+ * - Round 1 (the Friday 10:00 PM Send): answer by Sat 10:00 AM. Round 2 opens
  *   Sat 10:00 AM, as round 1 closes, then a round every 30 minutes. A round's invite is
  *   answered by the round's close or 30 minutes from when it actually ran,
  *   whichever is later, capped at the chat's last call (the old flow's lead:

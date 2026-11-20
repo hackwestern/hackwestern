@@ -413,7 +413,7 @@ export function DayGrid({
       </div>
       <div id={bodyId} hidden={collapsed}>
         <div className="-mt-1 mb-3 flex flex-wrap items-center justify-end gap-2 empty:hidden">
-          {focused ? (
+          {focused && (
             <DashboardButton
               variant="outline"
               className="h-11 motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-out motion-safe:active:scale-[0.97]"
@@ -421,12 +421,6 @@ export function DayGrid({
             >
               {copy.focus.showAll}
             </DashboardButton>
-          ) : (
-            entries.length > 0 && (
-              <p className="m-0 text-sm text-dashboard-text-light">
-                {copy.focus.hint}
-              </p>
-            )
           )}
         </div>
         <p aria-live="polite" className="sr-only">

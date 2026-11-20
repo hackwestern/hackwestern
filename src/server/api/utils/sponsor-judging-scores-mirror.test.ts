@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 
 import {
+  SCORES_BLOCK_ROWS,
   SCORES_TAB,
   SCORES_TIMEOUT_MS,
   SCORES_WIDTH,
@@ -88,10 +89,11 @@ describe("scoreBlocks (the row builder)", () => {
           },
         ],
       },
-      // No slots yet: an empty block; TinyFish judges remotely.
+      // No slots yet: an empty block, no room yet (TinyFish judges in
+      // person since 2026-11-20, like any other sponsor).
       {
         sponsor: "TinyFish",
-        room: "Remote (judges online)",
+        room: null,
         judges: [],
         teams: [],
       },
@@ -149,10 +151,10 @@ describe("planScoreWrites", () => {
     ]);
     // No Devpost link: that cell is left alone, not blanked.
     expect(grid[5]!.slice(0, 4)).toEqual(["10:06 AM", "t2", "", 8]);
-    // Next block after 15 team rows and a gap.
-    expect(grid[2 + 17 + 1]!.slice(0, 2)).toEqual([
+    // Next block after one row per slot and a gap; no room yet, so only
+    // the title is written.
+    expect(grid[2 + SCORES_BLOCK_ROWS + 1]!.slice(0, 2)).toEqual([
       "TinyFish",
-      "Remote (judges online)",
     ]);
     expect(averageFormula(4)).toBe('=IFERROR(ROUND(AVERAGE(D5:I5),1),"")');
     expect(w.filter((c) => c.formula).map((c) => c.row)).toEqual([4, 5]);

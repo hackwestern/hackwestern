@@ -107,7 +107,7 @@ export function roomGridBlocks(state: GridState): GridBlock[] {
   for (const b of state.bookings) {
     const s = sessionOf(b.sessionId);
     if (!s || colOf(b.room) < 1) continue;
-    blocks.push({ kind: "booking", col: colOf(b.room), ...span(s), text: sheetCopy.booking(b.label, b.note) });
+    blocks.push({ kind: "booking", col: colOf(b.room), ...span(s), text: sheetCopy.booking(b.label) });
   }
   return blocks;
 }

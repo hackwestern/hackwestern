@@ -98,8 +98,8 @@ const fixture: JudgingSheetInput = {
   rooms: new Map([
     ["s-scotia", "Rm 2110"],
     ["s-qnx", "Rm 2235"],
-    // The sheet's old "Digital" room; remote judging wins.
-    ["s-tiny", "Digital"],
+    // In person since 2026-11-20: its room comes from the sheets.
+    ["s-tiny", "Rm 2230"],
   ]),
   sends: [
     {
@@ -210,7 +210,7 @@ describe("judgingSheetRows", () => {
         [
           "TinyFish",
           "In person",
-          "Remote (judges online)",
+          "Rm 2230",
           "Scoring",
           "",
           "",
@@ -221,7 +221,7 @@ describe("judgingSheetRows", () => {
           "",
           "",
           "",
-          "Judges remotely; presentations are online.",
+          "",
         ],
         [
           "PCBWay",

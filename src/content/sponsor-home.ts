@@ -7,6 +7,11 @@
 // minutes after midnight, Eastern. The sponsor's own workshop, judging room
 // and coffee chats come from their data, not from here.
 
+import {
+  PRESENTATION_WINDOW_END,
+  SHORTLIST_MAX,
+} from "~/lib/sponsor-presentations";
+
 const plural = (n: number, one: string, many = `${one}s`) =>
   `${n} ${n === 1 ? one : many}`;
 
@@ -26,9 +31,9 @@ export type AgendaStep = {
   where?: string;
   sub?: string;
   action?: AgendaAction;
-  /** "By 9:30 PM" instead of a start time. */
+  /** "By 10:00 PM" instead of a start time. */
   by?: boolean;
-  /** Shows "to 11:30 AM" under the start time. */
+  /** Shows "to 11:48 AM" under the start time. */
   range?: boolean;
   /** Shows "due 9:30 AM" under the start time. */
   due?: number;
@@ -50,22 +55,22 @@ export const AGENDA: AgendaStep[] = [
   { id: "f3", day: 0, start: 1050, end: 1140, title: "Open your booth", where: "Sponsor Bay (SM Atrium)", sub: "Scan hackers you meet. They're invited first.", action: "scan" },
   { id: "f5", day: 0, start: 1170, end: 1230, title: "Opening ceremony", where: "Ivey BMO Auditorium" },
   { id: "f6", day: 0, start: 1230, end: 1380, title: "Back to your booth", where: "Sponsor Bay (SM Atrium)", action: "scan" },
-  { id: "f7", day: 0, start: 1230, end: 1290, by: true, title: "Submit your shortlist", action: "chats", doneWhen: "shortlist" },
-  { id: "f8", day: 0, start: 1320, end: 1320, title: "We confirm your chat times and invite hackers", sub: "Nothing to do." },
+  { id: "f7", day: 0, start: 1230, end: 1320, by: true, title: "Submit your shortlist", action: "chats", doneWhen: "shortlist" },
+  { id: "f8", day: 0, start: 1325, end: 1325, title: "We confirm your chat times and invite hackers", sub: "Nothing to do." },
   { id: "f9", day: 0, start: 1380, end: 1380, title: "Sponsor Bay closes", where: "SM Atrium" },
   // Saturday
   { id: "s0", day: 1, start: 0, end: 0, note: true, title: "Sponsor Bay is open 10:00 AM–11:00 PM", sub: "Staff your booth as long as you like." },
   { id: "s1", day: 1, start: 480, end: 570, title: "Breakfast", where: "Rm 1230" },
-  { id: "sp", day: 1, start: 600, end: 1020, title: "Coffee chats", sub: "We confirm your reps' times and rooms by Fri 10 PM.", action: "chats", chatsPlaceholder: true },
+  { id: "sp", day: 1, start: 600, end: 1020, title: "Coffee chats", sub: "We confirm your reps' times and rooms at 10:00 PM Friday.", action: "chats", chatsPlaceholder: true },
   { id: "s4", day: 1, start: 720, end: 810, title: "Lunch", where: "Rm 1230" },
   { id: "s6", day: 1, start: 930, end: 990, title: "Snack wagon", where: "Whole building" },
   { id: "s8", day: 1, start: 1140, end: 1200, title: "Dinner", where: "Rm 1230" },
   // Sunday
   { id: "u1", day: 2, start: 480, end: 570, title: "Breakfast", where: "Rm 1230" },
   { id: "u2", day: 2, start: 510, end: 540, title: "Judging workshop", where: "SM 2235", prizeOnly: true },
-  { id: "u3", day: 2, start: 540, end: 585, due: 585, title: "Pick the teams you want to see, up to 15", action: "judging", prizeOnly: true },
-  { id: "u4", day: 2, start: 600, end: 690, range: true, title: "Hear presentations", prizeOnly: true },
-  { id: "u5", day: 2, start: 690, end: 720, by: true, title: "Submit your top 5", action: "judging", prizeOnly: true },
+  { id: "u3", day: 2, start: 540, end: 585, due: 585, title: `Pick your finalists, up to ${SHORTLIST_MAX}`, action: "judging", prizeOnly: true },
+  { id: "u4", day: 2, start: 600, end: PRESENTATION_WINDOW_END, range: true, title: "Hear presentations", prizeOnly: true },
+  { id: "u5", day: 2, start: PRESENTATION_WINDOW_END, end: 720, by: true, title: "Submit your top 5", action: "judging", prizeOnly: true },
   { id: "u6", day: 2, start: 720, end: 780, title: "Demo fair", where: "Grand Hall" },
   { id: "u7", day: 2, start: 750, end: 840, title: "Lunch", where: "Rm 1230" },
   { id: "u8", day: 2, start: 840, end: 960, title: "Closing ceremony", where: "Ivey BMO Auditorium" },
@@ -148,7 +153,7 @@ export const sponsorHomeCopy = {
     lounge: { label: "Sponsor lounge", hint: "All weekend", room: "Rm 2110" },
     belongings: { label: "Belongings overnight", hint: "Between days", room: "Rm 2244" },
     chats: "Coffee chats",
-    chatsPending: "Rooms assigned Fri 10 PM",
+    chatsPending: "Rooms assigned Fri 10:00 PM",
     room: (room: string) => `Rm ${room}`,
     iveyRoom: (room: string) => `Ivey Rm ${room}`,
     /** "Ivey Rm 1352, Rm 1354 (15 min walk)" */

@@ -1,3 +1,4 @@
+import { waitUntil } from "@vercel/functions";
 import { eq, inArray } from "drizzle-orm";
 
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
@@ -440,6 +441,12 @@ export type { MirrorResult };
 
 let lastLoggedError: string | null = null;
 let queue: Promise<unknown> = Promise.resolve();
+/**
+ * A queued run that hasn't started (calls without test deps only). It
+ * reads the DB when it starts, so later calls share it instead of queueing
+ * another: a burst of changes (reps scoring) costs at most one extra write.
+ */
+let waiting: Promise<MirrorResult> | null = null;
 /** Bumped as each run starts; an older run stops writing once it changes. */
 let generation = 0;
 
@@ -447,7 +454,7 @@ let generation = 0;
  * Mirror judging to the sheet. Writes run one at a time (each reads the DB
  * fresh, so the last one wins with the latest state). Never rejects: a
  * failure is logged, once until it changes or a write succeeds, and
- * returned for the organizer "Sync to sheet" button. With sheet writes off
+ * returned. Calls made while a run is still queued share it. With sheet writes off
  * (sheetWritesEnabled) nothing is written and it returns
  * `{ ok: false, error: "disabled" }`, logged once.
  */
@@ -457,7 +464,11 @@ export function mirrorSponsorJudging(
     load?: () => Promise<JudgingSheetInput>;
   } = {},
 ): Promise<MirrorResult> {
+  const shared = !deps.sheet && !deps.load;
+  if (shared && waiting) return waiting;
+  let next: Promise<MirrorResult> | null = null;
   const run = async (): Promise<MirrorResult> => {
+    if (waiting === next) waiting = null;
     if (!sheetWritesEnabled()) {
       if (lastLoggedError !== SHEET_WRITES_DISABLED) {
         lastLoggedError = SHEET_WRITES_DISABLED;
@@ -503,9 +514,11 @@ export function mirrorSponsorJudging(
       clearTimeout(timer);
     }
   };
-  const next = queue.then(run);
-  queue = next;
-  return next;
+  const queued = queue.then(run);
+  next = queued;
+  queue = queued;
+  if (shared) waiting = queued;
+  return queued;
 }
 
 /**
@@ -524,4 +537,13 @@ export async function mirrorSponsorJudgingSoon(): Promise<MirrorResult | null> {
   ]);
   clearTimeout(timer);
   return result;
+}
+
+/**
+ * Mirror after a frequent change (a rep's score) without making the
+ * response wait: waitUntil keeps a Vercel function alive until the write
+ * finishes. Calls in a burst share one queued run. Never throws.
+ */
+export function mirrorSponsorJudgingLater(): void {
+  waitUntil(mirrorSponsorJudging());
 }

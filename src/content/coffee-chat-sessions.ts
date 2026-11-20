@@ -25,7 +25,6 @@ const workshopsUnknown =
 export const coffeeSessionsCopy = {
   title: "Coffee chats",
   day: "Saturday, Nov 21",
-  bookRoom: "Book a room",
   loading: "Loading coffee chats…",
   loadError: "Couldn't load the coffee chat board.",
   retry: "Try again",
@@ -64,8 +63,12 @@ export const coffeeSessionsCopy = {
     flags: {
       notPlaced: (n: number) => `${plural(n, "rep")} short of chats`,
       broken: (n: number) => `${plural(n, "chat")} ${n === 1 ? "needs" : "need"} a fix`,
-      /** Seats are re-offered at once; one left empty means no eligible hacker is free. */
-      unfilled: (n: number) => `${plural(n, "seat")} couldn't be filled (no one free)`,
+      /**
+       * Seats are re-offered at once; one left empty means nobody left in the
+       * sponsor's line can take it (already invited, busy then, at the 2-chat
+       * cap, or declined).
+       */
+      unfilled: (n: number) => `${plural(n, "seat")} couldn't be filled: no hacker left in line is free then`,
     },
     /** Flag on a sponsor that edited after the schedule was sent. */
     changedAfterSend: "Changed after invites",
@@ -127,6 +130,10 @@ export const coffeeSessionsCopy = {
   fixes: {
     heading: "Suggested fixes",
     allScheduled: "Everything is scheduled.",
+    /** Above the list: Auto-schedule applies fixes itself, except these two kinds. */
+    left: "Auto-schedule applies these for you, except fewer chats and chats hackers were notified about.",
+    /** A sent chat that breaks a rule now: it's locked, so no Apply. */
+    locked: "Hackers were notified about this chat, so it's locked. Call the rep.",
     beforeAuto: "Fixes show up after Auto-schedule.",
     apply: "Apply fix",
     applying: "Applying…",
@@ -184,7 +191,7 @@ export const coffeeSessionsCopy = {
     workshops: "Workshops",
     rm: (id: string) => `Rm ${id}`,
     iveyRm: (id: string) => `Ivey, Rm ${id}`,
-    cellBook: (where: string) => `Book a room: ${where}`,
+    cellBook: (where: string) => `Book an event: ${where}`,
     cellMoveHere: (where: string) => `Drop here: ${where}`,
     /** A lit cell while dragging: the rep can take it with no question. */
     dropHere: "Drop here",
@@ -232,7 +239,9 @@ export const coffeeSessionsCopy = {
     draft: "Draft",
     pinned: "Placed by hand: Auto-schedule keeps it here.",
     forcedNote: (rep: string) => `Moved by hand to a time ${rep} isn't free.`,
-    notSentYet: "Not sent yet. Hackers are invited when Noah sends.",
+    notSentYet: "Not sent yet. Hackers are invited when an organizer presses Notify hackers.",
+    /** A sent chat in the modal: no Move to or Remove. */
+    locked: "Hackers were notified, so this chat is locked. It can't be moved or removed.",
     /** "Sun Life · Rm 2241 · 10–11" under the rep's name. */
     sub: (sponsor: string, where: string) => `${sponsor} · ${where}`,
     /** A draft: "6 seats in 2 chats". */
@@ -281,21 +290,8 @@ export const coffeeSessionsCopy = {
     loadError: "Couldn't load this chat's hackers.",
   },
 
-  /** Warnings before a change that tells hackers, or a move to a time the rep isn't free. */
+  /** Warnings before a move to a time the rep isn't free, and before Notify hackers. */
   warn: {
-    confirmedTitle: "This chat is confirmed.",
-    /** "This hour has 4 hackers in 4 chats (3 accepted, 1 waiting)." */
-    invited: (hackers: number, chats: number, accepted: number, waiting: number) =>
-      `This hour has ${plural(hackers, "hacker")} in ${plural(chats, "chat")} (${[
-        accepted ? `${accepted} accepted` : "",
-        waiting ? `${waiting} waiting` : "",
-      ]
-        .filter(Boolean)
-        .join(", ")}).`,
-    moveAsk: "Moving it asks them to confirm the new time or room.",
-    removeAsk: "Removing it cancels the chat and tells them.",
-    moveTell: "Move and tell them",
-    removeTell: "Remove and tell them",
     cancel: "Cancel",
     /** Two steps: contact the rep, then confirm they can do it. */
     check: {
@@ -306,10 +302,7 @@ export const coffeeSessionsCopy = {
       callLabel: (name: string, phone: string) => `Call ${name}, ${phone}`,
       contacted: (who: string) => `I've contacted ${who}`,
       ask: (who: string, s: string) => `Did ${who} confirm they can do ${s}?`,
-      sentLine: (hackers: number, chats: number) =>
-        `${plural(hackers, "hacker")} in ${plural(chats, "chat")} will be asked to confirm the new time or room.`,
       yes: "Yes, move the chat",
-      yesTell: "Yes, move and tell them",
       no: "No, keep it where it is",
     },
   },
@@ -350,93 +343,99 @@ export const coffeeSessionsCopy = {
     toastFront: (name: string) => `${name} is first in line.`,
   },
 
+  /** Book an event on an empty cell: sponsor, then rep, then hacker. */
   booking: {
-    title: "Book a room",
-    room: "Room",
-    session: "Session",
-    forWho: "Who it's for",
-    forWhoPlaceholder: "e.g. Commure, or Mentors",
-    note: "Note",
-    notePlaceholder: "Optional",
+    title: "Book an event",
+    /** The cell it's for, as fixed text: "Rm 2241 · 10–11". */
+    where: (room: string, s: string) => `For ${room} · ${s}`,
+    sponsor: "Sponsor",
+    sponsorPick: "Pick a sponsor",
+    noSponsors: "No sponsor has submitted yet.",
+    rep: "Rep",
+    repPick: "Pick a rep",
+    /** None of the sponsor's reps can chat in this session. */
+    noReps: (s: string) => `None of their reps is free at ${s}.`,
+    hacker: "Hacker",
+    scannedTitle: "Scanned at their booth",
+    scannedNone: "They haven't scanned anyone yet.",
+    searchLabel: "Or search by name or hacker ID",
+    searchPlaceholder: "e.g. Ada, or brave-otter-kite",
+    searchHint: "Type 2 or more letters.",
+    searchNone: "No hacker matches.",
+    loading: "Loading hackers…",
+    /** One hacker in the list: "Ada L. · brave-otter-kite". */
+    hackerLine: (name: string, hackerId: string | null) => (hackerId ? `${name} · ${hackerId}` : name),
+    /** Under the Book button: booked chats skip Notify hackers. */
+    lockedNote: "Booked chats are confirmed and locked right away: no Notify needed.",
     book: "Book",
     cancel: "Cancel",
-    needWho: "Who it's for?",
-    roomOption: (id: string, ivey: boolean) => (ivey ? `Ivey ${id}` : id),
+    needSponsor: "Pick a sponsor.",
+    needRep: "Pick a rep.",
+    needHacker: "Pick a hacker.",
   },
 
   bar: {
-    start: "Invites go out by 10 PM",
-    review: "Review the rooms, then send",
+    start: "Invites go out at 10:00 PM",
+    review: "Please review the rooms, then notify hackers and their reps.",
+    /** After a Notify: new chats since then, waiting for the next Notify. */
+    newSince: (n: number) => `${plural(n, "new chat")} since the last notify.`,
     fixesOpen: (n: number) => `${n} fix${n === 1 ? "" : "es"} open`,
     autoSchedule: "Auto-schedule",
     rerun: "Re-run auto-schedule",
-    send: "Send confirmed schedules & invites",
+    send: "Notify hackers",
     working: "Working…",
-    sentAt: (time: string) => `Sent ${time}`,
-    nothingToSend: "Nothing new to send.",
-    /** Beside the disabled Send button for anyone but Noah (or someone with his HW Contacts "Same view as"). */
-    onlyNoah: "Only Noah (or someone with Noah's view) sends",
+    sentAt: (time: string) => `Hackers notified ${time}`,
+    nothingToSend: "Nothing new to notify.",
+    /** Beside the disabled Notify button for anyone but Noah (or someone with his HW Contacts "Same view as"). */
+    onlyNoah: "Only Noah (or someone with Noah's view) notifies hackers",
   },
 
-  /** The one pause before Send: it messages hackers and can't be undone. */
+  /** The one pause before Notify hackers: it messages hackers and locks their chats. */
   sendConfirm: {
-    title: "Send schedules and invites?",
+    title: "Notify hackers?",
     body: (sponsors: number, hackers: number) => {
       const who = sponsors === 1 ? "1 sponsor's" : `${sponsors} sponsors'`;
       return hackers > 0
-        ? `Send ${who} schedules and invite hackers to ${plural(hackers, "seat")}? Invited hackers get a Slack message now.`
-        : `Send ${who} schedules? No new hackers are invited.`;
+        ? `Confirm ${who} rooms and invite hackers to ${plural(hackers, "seat")}. Invited hackers get a Slack message now.`
+        : `Confirm ${who} rooms. No new hackers are invited.`;
     },
-    send: "Send now",
-    cancel: "Cancel",
-  },
-
-  /**
-   * What changed since the board was last scheduled or sent, for an
-   * organizer arriving hours after sponsors acted. Only sponsors write
-   * their preferences, so "who" is the sponsor.
-   */
-  changes: {
-    heading: "Since last time",
-    none: "No sponsor changes since the last new chat.",
-    submitted: (sponsor: string, time: string) => `${sponsor} submitted · ${time}`,
-    editedAfterSend: (sponsor: string, time: string) =>
-      `${sponsor} edited reps or times after Send · ${time}`,
-    editedAfterSchedule: (sponsor: string, time: string) =>
-      `${sponsor} edited reps or times since the last new chat · ${time}`,
-    /** Time of the newest chat placed (Auto-schedule, a fix or a move adds one). */
-    lastScheduled: (time: string) => `Last new chat ${time}`,
-    lastSent: (time: string) => `Last sent ${time}`,
+    undoable:
+      "This can't be undone. Notified chats are locked: they can't be moved or removed. Chats you add later are notified the next time.",
+    send: "Notify hackers",
   },
 
   /** One line at the top: what needs doing now, then what happens next. */
   summary: {
+    label: "Board summary",
     nothingYet:
       "No sponsor has submitted yet. They give their chatting preferences at the Friday workshop.",
     notScheduled: (n: number) =>
-      `${plural(n, "sponsor")} submitted. Run Auto-schedule, then Noah sends schedules and invites by 10 PM.`,
+      `${plural(n, "sponsor")} submitted. Run Auto-schedule, then an organizer notifies hackers at 10:00 PM.`,
     need: (n: number) =>
-      `${plural(n, "sponsor")} ${n === 1 ? "needs" : "need"} scheduling. Then Noah sends schedules and invites by 10 PM.`,
+      `${plural(n, "sponsor")} ${n === 1 ? "needs" : "need"} scheduling. Then an organizer notifies hackers at 10:00 PM.`,
     fixes: (n: number) =>
-      `${plural(n, "suggested fix", "suggested fixes")} open. Then Noah sends schedules and invites by 10 PM.`,
-    ready: "Everything is scheduled. Next: Noah sends schedules and invites by 10 PM.",
+      `${plural(n, "suggested fix", "suggested fixes")} open. Then an organizer notifies hackers at 10:00 PM.`,
+    ready: "Everything is scheduled. Next: an organizer notifies hackers at 10:00 PM.",
     changedAfterSend: (n: number) =>
-      `${plural(n, "sponsor")} changed after invites. Check their chats, then Noah sends again.`,
-    sent: (time: string) => `Schedules sent ${time}. Nothing to do now.`,
+      `${plural(n, "sponsor")} changed after invites. Check their chats, then notify again.`,
+    sent: (time: string) => `Hackers notified ${time}. Nothing to do now.`,
     notSubmittedTail: (n: number) =>
       ` ${plural(n, "sponsor")} still ${n === 1 ? "hasn't" : "haven't"} submitted.`,
   },
 
   toast: {
-    scheduled: (n: number) => `Placed ${plural(n, "chat")}.`,
+    /** After Auto-schedule: chats it added, and the fixes it applied itself. */
+    scheduled: (n: number, fixed: number) =>
+      `Placed ${plural(n, "chat")}.${fixed ? ` Applied ${plural(fixed, "fix", "fixes")}.` : ""}`,
     fixApplied: "Fix applied.",
     moved: "Moved.",
-    movedSent: "Moved. Hackers invited to this chat were asked to confirm the new time or room.",
     removed: "Removed.",
     /** On the "Removed." toast for a draft chat or a booking. */
     undo: "Undo",
     restored: "Put back.",
     booked: "Room booked.",
+    /** After Book an event: "Booked Ada L. at 10:15." */
+    eventBooked: (name: string, time: string) => `Booked ${name} at ${time}.`,
     sent: (chats: number, invited: number) =>
       `Sent ${plural(chats, "chat")}. Invited ${plural(invited, "hacker")}.`,
     /** Sponsors who changed after invites; Send confirmed their schedule again. */
@@ -461,11 +460,16 @@ export const coffeeSessionsCopy = {
     notSubmitted: (sponsor: string) => `${sponsor} hasn't submitted yet.`,
     unknownFix: "That fix no longer applies. The board changed.",
     unknownPlacement: "That chat is gone. The board changed.",
+    /** A sent chat is locked: hackers were notified about it. */
+    sentLocked: "Hackers were notified about this chat, so it's locked. It can't be moved or removed.",
     unknownBooking: "That booking is gone. The board changed.",
     badCell: "Unknown room or session.",
     boardChanged: "Someone else just changed the board. Refresh and try again.",
     badReference: "That sponsor or rep is gone. Refresh and try again.",
     unknownSponsor: "That sponsor isn't registered. Refresh and try again.",
+    /** Book an event: the hacker isn't admitted or didn't agree to share with sponsors. */
+    bookNoHacker: "That hacker can't be booked: they aren't admitted or didn't agree to share with sponsors.",
+    bookSameSponsor: (name: string, sponsor: string) => `${name} already has a chat with ${sponsor}.`,
     workshopsUnknown,
     /** Why Send is refused (only Noah Medland sends). */
     sender: {
@@ -497,17 +501,17 @@ export const coffeeSessionsCopy = {
       "A sponsor's reps in the same session stay in one building.",
       "A rep's back-to-back chats stay in one building when a room is free there. When not, the rep gets a \"Walk to Ivey between chats\" note; it's never blocked.",
       "Sponsors with the fewest free sessions are placed first.",
-      "Chats you place by hand (moves and applied fixes) stay put: re-running Auto-schedule keeps them.",
+      "Chats you place by hand stay put: re-running Auto-schedule keeps them. Chats hackers were notified about never move.",
     ],
     fixes: {
       before: "Anything that can't be placed becomes a ",
       bold: "suggested fix",
       after:
-        " (another free session, Ivey together, or fewer chats). Apply it or contact the sponsor.",
+        ". Auto-schedule applies them itself (another free session, Ivey together, or moving a chat that breaks a rule). It leaves two kinds for you: fewer chats than a rep asked for (apply it or contact the sponsor), and a notified chat that breaks a rule (it's locked: call the rep).",
     },
     send: {
-      lead: "Send (Noah only, by 10 PM Friday):",
-      before: " marks every draft chat confirmed, re-confirms sponsors who changed after invites (their hackers were already asked again when they saved), and updates the locked ",
+      lead: "Notify hackers (any organizer, at 10:00 PM Friday; it can't be undone):",
+      before: " marks every draft chat confirmed and locks it, re-confirms sponsors who changed after invites (their hackers were already asked again when they saved), and updates the locked ",
       bold: "Coffee Chat Room Grid",
       after:
         " tab (on the live site only). Each sponsor sees their confirmed chats under Your chats in their portal. Hackers get one invite per seat on Slack (email if Slack can't reach them): people the sponsor met at their booth first, then their shortlist, then hackers interested in them. They answer by Sat 10 AM. When someone declines, their seat goes to the next hacker right away; from 10 AM Saturday, new invites go out every 30 minutes.",
@@ -515,8 +519,8 @@ export const coffeeSessionsCopy = {
     /** Sponsors and organizers name the same state differently. */
     sameWord: `A sponsor's "Confirmed" (in their portal) means the same as your "Sent" here.`,
     after: {
-      lead: "After Send:",
-      rest: " a confirmed chat you move or fix stays confirmed, and its invited hackers are asked right away to confirm the new room or time. Removing one moves its hackers to another open seat of that sponsor, or cancels their invite and tells them. Sponsor edits (fewer chats, a removed rep, a new group size) update invites the same way. Moves, removals and booking changes update the Room Grid tab right away.",
+      lead: "After Notify hackers:",
+      rest: " notified chats are locked. Nobody can drag, move or remove them, and Auto-schedule never touches them. A chat you add later (a new time slot) stays a draft you can move until the next Notify hackers, which notifies only the new ones. Sponsor edits (fewer chats, a removed rep, a new group size) still update invites: hackers move to another open seat or are told. Booking changes update the Room Grid tab right away. To book an event, click an empty cell: pick the sponsor, the rep and the hacker (someone they scanned, or search). It's confirmed and locked right away.",
     },
     dataTitle: "Where data lives",
     data: "Spon Team RUN OF SHOW sheet: RUN OF SHOW, Sponsor Day-Of, Workshops, Opening + Closing Ceremonies, Coffee Chat Setup, Coffee Chat Room Grid (app-written, locked), HW Contacts, Sponsor Judging (app-written). Edits to grey tabs are overwritten by the app.",
@@ -533,7 +537,6 @@ export const coffeeSessionsCopy = {
     rm: (id: string) => `Rm ${id}`,
     chat: (sponsor: string, rep: string, format: string, chats: number) =>
       `${sponsor} · ${rep} · ${format} · ${plural(chats, "chat")}`,
-    booking: (label: string, note: string | null) =>
-      note ? `${label} · ${note}` : label,
+    booking: (label: string) => label,
   },
 };

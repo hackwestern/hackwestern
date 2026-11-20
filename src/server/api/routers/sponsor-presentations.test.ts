@@ -22,10 +22,7 @@ import {
   round2OpenedAt,
   setRound2Open,
 } from "~/server/api/utils/sponsor-judging-settings";
-import {
-  mirrorSponsorJudging,
-  mirrorSponsorJudgingSoon,
-} from "~/server/api/utils/sponsor-judging-sheet-mirror";
+import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
 import { sendPresentationDm } from "~/server/slack/presentation-dm";
 import { presentationDmMessage } from "~/server/slack/presentation-dm";
 import { sendViaMailjet } from "~/server/mail-mailjet";
@@ -50,9 +47,31 @@ vi.mock("~/env", async (importOriginal) => {
   };
 });
 
+// Notify teams waits until every board sponsor has a room. Sponsors from
+// earlier tests stay in the database without one, so the check is faked
+// here (empty = all set) and tested on its own below.
+const roomless = vi.hoisted(() => vi.fn(async (): Promise<string[]> => []));
+vi.mock("~/server/api/utils/judging-board-data", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("~/server/api/utils/judging-board-data")
+  >()),
+  sponsorsWithoutRoom: roomless,
+}));
+
+// No sponsor judges remotely right now (TinyFish is in person since
+// 2026-11-20), but the mechanism stays: a test-only list keeps it covered.
+const TEST_REMOTE_SPONSOR = "TinyFish";
+vi.mock("~/content/sponsor-prize-tracks", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("~/content/sponsor-prize-tracks")
+  >()),
+  REMOTE_JUDGING_SPONSORS: ["TinyFish"],
+}));
+
 // The Sponsor Judging tab mirror writes to Google Sheets; never here.
 vi.mock("~/server/api/utils/sponsor-judging-sheet-mirror", () => ({
   mirrorSponsorJudging: vi.fn(async () => ({ ok: true, rows: 0 })),
+  mirrorSponsorJudgingLater: vi.fn(),
   mirrorSponsorJudgingSoon: vi.fn(async () => undefined),
 }));
 
@@ -112,6 +131,7 @@ beforeEach(async () => {
   mailjet.configured = true;
   mail.mockReset().mockResolvedValue(mailOk);
   rooms.mockReset().mockResolvedValue(new Map());
+  roomless.mockReset().mockResolvedValue([]);
   dm.mockReset().mockResolvedValue("sent");
   // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
   await db.delete(sponsorPresentationNotices);
@@ -191,7 +211,7 @@ describe("sponsorPresentations.schedule", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
-  test("an old send over the cap: the first 15 in shortlist order are scheduled, the rest flagged over-cap", async () => {
+  test("an old send over the cap: the first SHORTLIST_MAX in shortlist order are scheduled, the rest flagged over-cap", async () => {
     const s = await sponsor();
     const ids: string[] = [];
     for (let i = 0; i < SHORTLIST_MAX + 2; i++) ids.push(await team());
@@ -216,7 +236,7 @@ describe("sponsorPresentations.schedule", () => {
     expect(view.unplaced).toHaveLength(2);
   });
 
-  test("schedules every sent team, flags no-room sponsors, and replaces on rerun", async () => {
+  test("schedules every sent team, even for a sponsor with no room yet, and replaces on rerun", async () => {
     const a = await sponsor();
     const b = await sponsor();
     const shared = await team();
@@ -225,24 +245,22 @@ describe("sponsorPresentations.schedule", () => {
     await send(b.id, [shared]);
     rooms.mockResolvedValue(new Map([[a.id, "Rm 2110"]]));
 
+    // B has no room: its team still gets a time, with no room on it.
     const res = await organizer.sponsorPresentations.schedule();
-    expect(res).toMatchObject({ placed: 2, unplaced: 1 });
+    expect(res).toMatchObject({ placed: 3, unplaced: 0 });
 
     const view = await organizer.sponsorPresentations.overview();
-    expect(view.slots.map((s) => s.room)).toEqual(["Rm 2110", "Rm 2110"]);
-    expect(view.unplaced).toEqual([
-      expect.objectContaining({
-        sponsorId: b.id,
-        teamId: shared,
-        reason: "no-room",
-      }),
-    ]);
+    expect(
+      view.slots.filter((s) => s.sponsorId === b.id).map((s) => s.room),
+    ).toEqual([""]);
+    expect(view.unplaced).toEqual([]);
+    const bTime = view.slots.find((s) => s.sponsorId === b.id)!.start;
     expect(view.sponsors.find((s) => s.sponsorId === a.id)).toMatchObject({
       sentCount: 2,
       sentAfterSchedule: false,
     });
 
-    // B gets a room: the rerun places the shared team in both, 10+ apart.
+    // B gets a room: the rerun keeps B's time and fills in the room.
     rooms.mockResolvedValue(
       new Map([
         [a.id, "Rm 2110"],
@@ -252,6 +270,10 @@ describe("sponsorPresentations.schedule", () => {
     await organizer.sponsorPresentations.schedule();
     const again = await organizer.sponsorPresentations.overview();
     expect(again.unplaced).toEqual([]);
+    expect(again.slots.find((s) => s.sponsorId === b.id)).toMatchObject({
+      room: "Rm 2230",
+      start: bTime,
+    });
     const starts = again.slots
       .filter((s) => s.teamId === shared)
       .map((s) => s.start)
@@ -299,29 +321,7 @@ describe("sponsorPresentations prize track gate", () => {
   });
 });
 
-describe("sponsorPresentations.syncSheet", () => {
-  test("organizers only; reports the mirror's result", async () => {
-    await expect(anon.sponsorPresentations.syncSheet()).rejects.toMatchObject({
-      code: "UNAUTHORIZED",
-    });
-    const mirror = vi.mocked(mirrorSponsorJudging);
-    mirror.mockResolvedValueOnce({ ok: true, rows: 12 });
-    await expect(
-      organizer.sponsorPresentations.syncSheet(),
-    ).resolves.toMatchObject({ ok: true });
-    mirror.mockResolvedValueOnce({ ok: false, error: "no permission" });
-    await expect(organizer.sponsorPresentations.syncSheet()).resolves.toEqual({
-      ok: false,
-      disabled: false,
-      error: "no permission",
-    });
-    // Writes off (dev, tests): the button says so instead of an error.
-    mirror.mockResolvedValueOnce({ ok: false, error: "disabled" });
-    await expect(
-      organizer.sponsorPresentations.syncSheet(),
-    ).resolves.toMatchObject({ ok: false, disabled: true });
-  });
-
+describe("the Sponsor Judging tab", () => {
   test("scheduling and notifying rewrite the tab; a dry run doesn't", async () => {
     const soon = vi.mocked(mirrorSponsorJudgingSoon);
     soon.mockClear();
@@ -334,9 +334,42 @@ describe("sponsorPresentations.syncSheet", () => {
     await organizer.sponsorPresentations.notify();
     expect(soon).toHaveBeenCalledTimes(2);
   });
+
+  test("opening and closing round 2 rewrite the tab (no manual sync)", async () => {
+    await scheduledTeam();
+    const soon = vi.mocked(mirrorSponsorJudgingSoon);
+    soon.mockClear();
+    await organizer.sponsorPresentations.setRound2({ open: true });
+    expect(soon).toHaveBeenCalledTimes(1);
+    await organizer.sponsorPresentations.setRound2({ open: false });
+    expect(soon).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("sponsorPresentations.notify", () => {
+  test("is refused until every sponsor has a room", async () => {
+    slackToken = "xoxb-test";
+    await scheduledTeam();
+    roomless.mockResolvedValueOnce(["Scotiabank"]);
+    await expect(organizer.sponsorPresentations.notify()).rejects.toMatchObject(
+      {
+        code: "PRECONDITION_FAILED",
+        message: expect.stringContaining("Scotiabank") as string,
+      },
+    );
+    expect(dm).not.toHaveBeenCalled();
+  });
+
+  test("sponsorsWithoutRoom lists a board sponsor until it has a room", async () => {
+    const { sponsorsWithoutRoom } = await vi.importActual<
+      typeof import("~/server/api/utils/judging-board-data")
+    >("~/server/api/utils/judging-board-data");
+    const s = await sponsor();
+    expect(await sponsorsWithoutRoom()).toContain(s.name);
+    rooms.mockResolvedValue(new Map([[s.id, "Rm 2110"]]));
+    expect(await sponsorsWithoutRoom()).not.toContain(s.name);
+  });
+
   test("fails clearly when Slack isn't configured", async () => {
     await expect(organizer.sponsorPresentations.notify()).rejects.toMatchObject(
       {
@@ -828,7 +861,7 @@ describe("sponsorPresentations judging board", () => {
   });
 
   test("remote sponsors never present: no slots, no room", async () => {
-    const remote = await named("TinyFish");
+    const remote = await named(TEST_REMOTE_SPONSOR);
     const t = await team();
     await send(remote.id, [t]);
     await expect(organizer.sponsorPresentations.schedule()).rejects.toMatchObject(
@@ -855,8 +888,9 @@ describe("sponsorPresentations judging board", () => {
       teamId: t,
       status: "not-sent",
       presentsTo: [{ room: "Rm 2110", start: 600 }],
-      scores: [{ average: null, reps: 0 }],
+      checkedIn: false,
     });
+    expect(view).not.toHaveProperty("scores");
     expect(view.members).toHaveLength(1);
     expect(view.members[0]!.checkedIn).toBe(false);
   });

@@ -741,6 +741,62 @@ export function applySuggestion(
 }
 
 /**
+ * Whether Auto-schedule may apply a fix on its own. Not "fewer" (it lowers
+ * what the sponsor asked for: a call for the organizer and the sponsor), and
+ * never one that moves, removes or displaces a locked cell (a chat hackers
+ * were already notified about).
+ */
+export function autoFixable(fix: Fix, locked: ReadonlySet<string>): boolean {
+  const g = fix.suggestion;
+  if (g.kind === "fewer") return false;
+  if (g.kind === "move") return !locked.has(g.from);
+  if (g.kind === "ivey") return g.remove.every((k) => !locked.has(k));
+  return true;
+}
+
+/**
+ * Apply every fix Auto-schedule may apply (autoFixable), one at a time,
+ * recomputing the fixes after each so two never compete for one cell.
+ * Returns the new board, the rep caps the fixes set, the fixes applied, and
+ * the fixes left for the organizer. Cells in `locked` never change.
+ */
+export function autoApplyFixes(
+  sponsors: readonly SchedSponsor[],
+  rooms: readonly SchedRoom[],
+  sessions: readonly SchedSession[],
+  board: Board,
+  locked: ReadonlySet<string>,
+): { board: Board; maxSessions: Record<string, number>; applied: Fix[]; left: Fix[] } {
+  let out: Board = { ...board };
+  let caps: Record<string, number> = {};
+  let sps: SchedSponsor[] = [...sponsors];
+  const applied: Fix[] = [];
+  // A fix whose suggestion didn't apply (or came back) is never tried twice.
+  const tried = new Set<string>();
+  for (;;) {
+    const fix = boardFixes(sps, rooms, sessions, out).find(
+      (f) => !tried.has(f.id) && autoFixable(f, locked),
+    );
+    if (!fix) break;
+    tried.add(fix.id);
+    try {
+      const r = applySuggestion(sps, sessions, out, caps, fix.suggestion);
+      out = r.board;
+      caps = r.maxSessions;
+    } catch {
+      continue;
+    }
+    // A cap a fix set counts for the next round of fixes.
+    sps = sps.map((sp) => ({
+      ...sp,
+      reps: sp.reps.map((r) => (r.id in caps ? { ...r, maxSessions: caps[r.id] } : r)),
+    }));
+    applied.push(fix);
+  }
+  return { board: out, maxSessions: caps, applied, left: boardFixes(sps, rooms, sessions, out) };
+}
+
+/**
  * The invariants as a list of problems (empty = valid): known rooms and
  * sessions, only submitted sponsors, only free and unblocked sessions, one
  * place per rep per session, within each rep's cap, and one building per

@@ -122,7 +122,7 @@ export type BoardTodo =
  * The to-dos in the order to do them: missing shortlists (text the lead),
  * sponsors without a room, then telling teams their times; later in the
  * day, sponsors with no scores, late top 5s and digital top 5s not entered.
- * Shortlist and room to-dos go away once round 1 is over (11:30).
+ * Shortlist and room to-dos go away once round 1 is over (11:48).
  */
 export function boardTodos(input: {
   sponsors: readonly BoardSponsor[];

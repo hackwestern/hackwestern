@@ -232,8 +232,6 @@ export const sponsorOrganizerCopy = {
       Left: null,
     } as Record<string, string | null>,
     advanceLabel: (name: string, next: string) => `Move ${name} to ${next}`,
-    copyLink: "Copy link",
-    copied: "Copied",
     copyLabel: (name: string) => `Copy ${name}'s private sponsor page link`,
     copiedLabel: (name: string) => `Copied ${name}'s link`,
     openPage: (name: string) => `Open ${name}'s sponsor page in a new tab`,
@@ -404,6 +402,7 @@ export const sponsorOrganizerCopy = {
     summary: (withRoom: number, sponsors: number, enoughPicks: number) =>
       `${withRoom} of ${sponsors} ${sponsors === 1 ? "sponsor has" : "sponsors have"} a room · ${enoughPicks} ${enoughPicks === 1 ? "has" : "have"} enough picks`,
     tableLabel: "Judging rooms and picks by sponsor",
+    setRooms: "Set judging rooms on the Judging board",
     columns: {
       sponsor: "Sponsor",
       room: "Judging room",
@@ -539,9 +538,9 @@ export const sponsorOrganizerCopy = {
     },
     columnSub: {
       briefing: "5:00 PM · Rm 2110",
-      availability: "",
-      shortlist: "due 9:30 PM",
-      invites: "invites go out 10 PM",
+      availability: "due 10:00 PM",
+      shortlist: "due 10:00 PM",
+      invites: "invites out 10:00 PM",
       chats: "✓ confirmed · ⏳ waiting",
       workshop: "setup at −30 min",
       judgingShortlist: "due 9:45 AM",

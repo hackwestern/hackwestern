@@ -7,6 +7,8 @@ import {
 } from "~/lib/coffee-chat-sessions";
 import {
   applySuggestion,
+  autoApplyFixes,
+  autoFixable,
   blockedSessions,
   boardFixes,
   buildingSwitches,
@@ -394,5 +396,60 @@ describe("forced chats (moved by hand after contacting the rep)", () => {
     const r = schedule(DEMO, ROOMS, SESS, [pin]);
     expect(r.board["2241|10"]).toEqual({ type: "chat", rep: "startech:0", pinned: true, forced: true });
     expect(invalidChats(DEMO, SESS, r.board)).toEqual([]);
+  });
+});
+
+describe("autoApplyFixes (Auto-schedule applies the fixes itself)", () => {
+  // One sponsor, one rep: 1 session wanted, free 10 and 11 only.
+  const SOLO = [sp("solo", 1, [["10", "11"]])];
+  const at13: Board = { "2241|13": { type: "chat", rep: "solo:0", pinned: true } };
+
+  test("a draft chat that breaks a rule is moved, and no fix is left", () => {
+    const r = autoApplyFixes(SOLO, ROOMS, SESS, at13, new Set());
+    expect(r.applied.map((f) => f.suggestion.kind)).toEqual(["move"]);
+    expect(r.board["2241|13"]).toBeUndefined();
+    expect(repKeyAt(r.board, "solo:0", "10")).not.toBeNull();
+    expect(r.left).toEqual([]);
+  });
+
+  test("a locked (sent) chat is never moved: its fix is left for the organizer", () => {
+    const locked = new Set(["2241|13"]);
+    const r = autoApplyFixes(SOLO, ROOMS, SESS, at13, locked);
+    expect(r.applied).toEqual([]);
+    expect(r.board).toEqual(at13);
+    expect(r.left).toMatchObject([{ reason: "notFree", suggestion: { kind: "move", from: "2241|13" } }]);
+    expect(autoFixable(r.left[0]!, locked)).toBe(false);
+  });
+
+  test("a short rep with a free room is placed (another session)", () => {
+    const r = autoApplyFixes(SOLO, ROOMS, SESS, {}, new Set());
+    expect(r.applied.map((f) => f.suggestion.kind)).toEqual(["session"]);
+    expect(repCount(r.board, "solo:0")).toBe(1);
+    expect(r.left).toEqual([]);
+  });
+
+  test("'fewer chats' is never applied; a clean board needs no fixes", () => {
+    // Every room at 10 is booked, and 10 is the rep's only free session.
+    const booked: Board = Object.fromEntries(
+      ROOMS.map((r) => [cellKey(r.id, "10"), { type: "booking" as const, ref: r.id, pinned: true as const }]),
+    );
+    const one = autoApplyFixes([sp("solo", 1, [["10"]])], ROOMS, SESS, booked, new Set());
+    expect(one.applied).toEqual([]);
+    expect(one.left.map((f) => f.suggestion.kind)).toEqual(["fewer"]);
+    expect(one.maxSessions).toEqual({});
+    const r = schedule(SOLO, ROOMS, SESS, []);
+    expect(autoApplyFixes(SOLO, ROOMS, SESS, r.board, new Set()).applied).toEqual([]);
+  });
+
+  test("never two fixes in one cell, never a locked cell overwritten", () => {
+    const sps = [sp("a", 1, [["10"], ["10"]]), sp("b", 1, [["10"]])];
+    // Everything at 10 is booked but one Ivey room, which is sent (locked).
+    const board: Board = Object.fromEntries(
+      ROOMS.filter((r) => r.id !== "1358").map((r) => [cellKey(r.id, "10"), { type: "booking" as const, ref: r.id, pinned: true as const }]),
+    );
+    board["1358|10"] = { type: "chat", rep: "a:0", pinned: true };
+    const r = autoApplyFixes(sps, ROOMS, SESS, board, new Set(["1358|10"]));
+    expect(r.board["1358|10"]).toEqual({ type: "chat", rep: "a:0", pinned: true });
+    expect(checkBoard(sps, ROOMS, SESS, r.board).filter((p) => p.includes("two"))).toEqual([]);
   });
 });

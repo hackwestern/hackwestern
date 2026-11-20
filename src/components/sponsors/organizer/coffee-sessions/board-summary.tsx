@@ -32,11 +32,7 @@ export function summaryLine(board: SessionBoardData): string {
   return head + tail;
 }
 
-/**
- * The summary line, then what sponsors changed since the board was last
- * scheduled or sent ("Sun Life edited reps or times after Send · 9:58 PM"),
- * newest first, with when the board was last scheduled and sent.
- */
+/** The summary line, with a button beside it when it names the next step. */
 export function BoardSummary({
   board,
   action,
@@ -45,34 +41,12 @@ export function BoardSummary({
   /** A button beside the line when it names the next step (Auto-schedule). */
   action?: React.ReactNode;
 }) {
-  const c = copy.changes;
-  const changes = board.sponsors
-    .flatMap((sp) => (sp.change ? [{ sp, change: sp.change }] : []))
-    .sort((a, b) => new Date(b.change.at).getTime() - new Date(a.change.at).getTime());
-  const stamps = [
-    board.lastScheduledAt ? c.lastScheduled(timeOf(board.lastScheduledAt)) : null,
-    board.sentAt ? c.lastSent(timeOf(board.sentAt)) : null,
-  ].filter(Boolean);
   return (
-    <section aria-label={c.heading} className="flex flex-col gap-2 rounded-dashboard-lg bg-dashboard-bg-surface px-4 py-3 shadow-dashboard-card md:px-5">
+    <section aria-label={copy.summary.label} className="flex flex-col gap-2 rounded-dashboard-lg bg-dashboard-bg-surface px-4 py-3 shadow-dashboard-card md:px-5">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <p className="m-0 text-[17px] font-semibold text-dashboard-text-heavy">{summaryLine(board)}</p>
         {action}
       </div>
-      {(changes.length > 0 || stamps.length > 0) && (
-        <div className="flex flex-col gap-1 text-sm text-dashboard-text-medium">
-          {changes.length > 0 && (
-            <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
-              {changes.map(({ sp, change }) => (
-                <li key={sp.id} className={change.kind === "editedAfterSend" ? "font-medium text-dashboard-text-warning" : undefined}>
-                  {c[change.kind](sp.name, timeOf(change.at))}
-                </li>
-              ))}
-            </ul>
-          )}
-          {stamps.length > 0 && <p className="m-0 text-[13px] text-dashboard-text-light">{stamps.join(" · ")}</p>}
-        </div>
-      )}
     </section>
   );
 }

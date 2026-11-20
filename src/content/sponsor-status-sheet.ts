@@ -11,5 +11,8 @@ export const sponsorStatusSheetCopy = {
       `Sponsor not found on the Sponsor Day-Of tab: ${name}`,
     writeFailed: "Failed to update sponsor status in spreadsheet",
   },
-  notWritten: "Not written (sheet writes off)",
+  // Only the live site writes to the Google Sheet; a local or test server
+  // saves the change in the dashboard only.
+  notWritten:
+    "Saved here, but this test server doesn't write to the Google Sheet. The live site does.",
 } as const;

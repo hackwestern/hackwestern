@@ -56,7 +56,7 @@ export const scheduleCopy = {
     chatTitle: (rep: string) => `Coffee chats · ${rep}`,
     chatRoom: (room: string, ivey: boolean) => (ivey ? `Ivey, Rm ${room}` : `Rm ${room}`),
     /** Saturday before chats are confirmed. */
-    chatsPlaceholder: "Coffee chats: times confirmed Fri 10 PM",
+    chatsPlaceholder: "Coffee chats: times confirmed Fri 10:00 PM",
     eyebrow: "Schedule",
     title: (sponsor: string) => `${sponsor} at Hack Western`,
     intro:
@@ -126,7 +126,6 @@ export const scheduleCopy = {
     focus: {
       focusColumn: (column: string) => `Focus on ${column}`,
       showAll: "Show all columns",
-      hint: "Tap a column heading to focus on it.",
       focused: (column: string) =>
         `Showing ${column}. Press Escape to show all columns.`,
     },

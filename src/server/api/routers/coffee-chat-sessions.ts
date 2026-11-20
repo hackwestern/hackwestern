@@ -6,7 +6,9 @@ import { z } from "zod";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import {
   applySuggestion,
+  autoApplyFixes,
   boardFixes,
+  cellKey,
   parseKey,
   schedule,
 } from "~/lib/coffee-chat-schedule";
@@ -31,6 +33,9 @@ import {
   type InviteTx,
 } from "~/server/api/utils/coffee-chat-invites";
 import { sheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
+import { bookEvent, bookingHackers } from "~/server/api/utils/coffee-chat-book";
+import { notifyCoffeeChat } from "~/server/api/utils/coffee-chat-notify";
+import { db } from "~/server/db";
 import {
   assertCellFree,
   assertRepCanChat,
@@ -101,6 +106,17 @@ function chatCount(state: BoardState, placements: BoardState["placements"]): num
   return layoutOf({ ...state, placements }, () => true).length;
 }
 
+/**
+ * Once hackers were notified (Notify hackers marked the chat sent), the
+ * chat is locked: nobody can move or remove it from the board, and
+ * Auto-schedule and fixes never touch it (Jazz, 2026-11-20).
+ */
+function assertNotSent(p: { status: string }): void {
+  if (p.status === "sent") {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: errors.sentLocked });
+  }
+}
+
 const room = z.enum(COFFEE_ROOM_IDS);
 const sessionId = z.enum(COFFEE_SESSION_IDS);
 
@@ -123,24 +139,45 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
     },
   ),
 
-  /** Run the scheduler: keeps pinned, sent and booked cells; replaces drafts. */
+  /**
+   * Run the scheduler, then apply every suggested fix it safely can
+   * (autoApplyFixes): keeps sent and booked cells, and pinned chats unless
+   * a fix moves them; replaces the other drafts. Sent chats never change.
+   * What's left needs the organizer ("fewer chats", or a sent chat that
+   * breaks a rule now).
+   */
   autoSchedule: protectedOrganizerProcedure.mutation(async () => {
     return boardWrite(async (tx, state) => {
       assertWorkshopsKnown(state);
       const result = schedule(state.sched, COFFEE_ROOMS, COFFEE_SESSIONS, pinsOf(state));
+      const keyOf = (p: { room: string; sessionId: string }) => cellKey(p.room, p.sessionId);
+      const locked = new Set(state.placements.filter((p) => p.status === "sent").map(keyOf));
+      const fixed = autoApplyFixes(state.sched, COFFEE_ROOMS, COFFEE_SESSIONS, result.board, locked);
+      // Sent chats always stay; a pinned draft stays unless a fix moved or removed it.
       const kept = new Set(
-        state.placements.filter((p) => p.pinned || p.status === "sent").map((p) => p.id),
+        state.placements
+          .filter((p) => {
+            if (p.status === "sent") return true;
+            const cell = fixed.board[keyOf(p)];
+            return p.pinned && cell?.type === "chat" && cell.rep === p.repId;
+          })
+          .map((p) => p.id),
       );
+      const keptKeys = new Set(state.placements.filter((p) => kept.has(p.id)).map(keyOf));
       const drop = state.placements.filter((p) => !kept.has(p.id)).map((p) => p.id);
       if (drop.length) {
         await tx.delete(coffeeChatPlacements).where(inArray(coffeeChatPlacements.id, drop));
       }
-      const fresh = Object.entries(result.board).flatMap(([key, cell]) => {
-        if (cell.type !== "chat" || cell.pinned) return [];
+      // Everything else on the board is new: a draft the scheduler owns (re-run replaces it).
+      const fresh = Object.entries(fixed.board).flatMap(([key, cell]) => {
+        if (cell.type !== "chat" || keptKeys.has(key)) return [];
         const at = parseKey(key);
         return [{ repId: cell.rep, room: at.room, sessionId: at.session }];
       });
       if (fresh.length) await tx.insert(coffeeChatPlacements).values(fresh);
+      for (const [repId, maxSessions] of Object.entries(fixed.maxSessions)) {
+        await tx.update(coffeeChatReps).set({ maxSessions }).where(eq(coffeeChatReps.id, repId));
+      }
       // "Placed N chats." counts the chats this run added (after minus before).
       const sponsorOfRep = new Map(state.sponsors.flatMap((sp) => sp.reps.map((r) => [r.id, sp.id])));
       const after = [
@@ -159,14 +196,14 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         })),
       ];
       const chats = Math.max(0, chatCount(state, after) - chatCount(state, state.placements));
-      return { placed: fresh.length, chats, fixes: result.fixes.length };
+      return { placed: fresh.length, chats, fixed: fixed.applied.length, fixes: fixed.left.length };
     });
   }),
 
   /**
-   * Apply a suggested fix by id (recomputed from the board now). A moved
-   * chat keeps its status: a sent chat stays sent and its invited hackers
-   * are asked to reconfirm (docs/ship/decisions-log.md, Integration 1).
+   * Apply a suggested fix by id (recomputed from the board now). A fix
+   * that would move, remove or replace a sent chat is refused: sent chats
+   * are locked (assertNotSent).
    */
   applyFix: protectedOrganizerProcedure
     .input(z.object({ fixId: z.string().min(1).max(200) }))
@@ -214,6 +251,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
           const from = parseKey(sug.from);
           const p = state.placements.find((x) => x.room === from.room && x.sessionId === from.session);
           if (!p) throw new TRPCError({ code: "CONFLICT", message: errors.unknownFix });
+          assertNotSent(p);
           if (sug.to) {
             await tx
               .update(coffeeChatPlacements)
@@ -229,12 +267,12 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         if (sug.kind === "ivey") {
           // Only unpinned chats move to Ivey, and a sent chat counts as
           // pinned on the board, so these are drafts: no invites to follow.
-          const ids = sug.remove.flatMap((key) => {
+          const moving = sug.remove.flatMap((key) => {
             const { room: r, session } = parseKey(key);
-            return state.placements
-              .filter((p) => p.room === r && p.sessionId === session)
-              .map((p) => p.id);
+            return state.placements.filter((p) => p.room === r && p.sessionId === session);
           });
+          moving.forEach(assertNotSent);
+          const ids = moving.map((p) => p.id);
           if (ids.length) {
             await tx.delete(coffeeChatPlacements).where(inArray(coffeeChatPlacements.id, ids));
           }
@@ -249,9 +287,8 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
     }),
 
   /**
-   * Move a chat by hand. Pins it and keeps its status: a sent chat stays
-   * sent, and its invited hackers are asked to reconfirm the new room or
-   * time (docs/ship/decisions-log.md, Integration 1). `force` (after the
+   * Move a draft chat by hand. Pins it. A sent chat is locked and can't be
+   * moved (assertNotSent). `force` (after the
    * organizer contacted the rep): a session the rep didn't tick is allowed
    * and the chat is marked forced; never their workshop window or two places
    * at once. A move to a ticked session clears the mark.
@@ -262,6 +299,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       const after = await boardWrite(async (tx, state) => {
         const p = state.placements.find((x) => x.id === input.placementId);
         if (!p) throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownPlacement });
+        assertNotSent(p);
         const forced = assertRepCanChat(state, p.repId, input.sessionId, p.id, { allowNotFree: input.force });
         assertCellFree(state, input.room, input.sessionId, { placementId: p.id });
         await tx
@@ -271,19 +309,19 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         return { jobs: await reconcileSent(tx, state, p.sponsorId), sent: p.status === "sent" };
       });
       await afterSentChange(after);
-      return { ok: true, sent: after.sent };
+      return { ok: true };
     }),
 
   /**
-   * Remove a chat. It shows up as a suggested fix until it's placed again.
-   * A sent chat's hackers move to another open seat of the sponsor or have
-   * their invite cancelled (and are told); the Room Grid tab is re-mirrored.
+   * Remove a draft chat. It shows up as a suggested fix until it's placed
+   * again. A sent chat is locked and can't be removed (assertNotSent).
    */
   removePlacement: protectedOrganizerProcedure
     .input(z.object({ placementId: z.string().uuid() }))
     .mutation(async ({ input }) => {
       const after = await boardWrite(async (tx, state) => {
         const p = state.placements.find((x) => x.id === input.placementId);
+        if (p) assertNotSent(p);
         // Before the delete: it cascades the invites.
         const jobs = p ? await reconcileSent(tx, state, p.sponsorId, [p.id]) : [];
         const gone = await tx
@@ -328,7 +366,45 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       });
     }),
 
-  /** Ad hoc room booking on an empty cell (a sponsor, mentors, organizers). */
+  /**
+   * Book an event, step 3: the hackers this sponsor scanned (newest first),
+   * and with `q` the hackers whose name or hacker ID matches. Admitted
+   * hackers who share with sponsors only.
+   */
+  bookingHackers: protectedOrganizerProcedure
+    .input(z.object({ sponsorId: z.string().uuid(), q: z.string().max(100).default("") }))
+    .query(({ input }) => bookingHackers(db, input.sponsorId, input.q)),
+
+  /**
+   * Book an event on an empty cell: a rep of a sponsor and a hacker. Makes
+   * a sent (locked) placement and the hacker's accepted chat at the first
+   * time in that hour they can take (coffee-chat-book.ts). After the
+   * commit: the confirmed-chat notice path (bookings tab), the Invites tab
+   * and the Room Grid tab follow.
+   */
+  bookEvent: protectedOrganizerProcedure
+    .input(
+      z.object({
+        room,
+        sessionId,
+        sponsorId: z.string().uuid(),
+        repId: z.string().uuid(),
+        userId: z.string().min(1).max(255),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const out = await boardWrite((tx, state) => bookEvent(tx, state, input));
+      await notifyCoffeeChat("accepted", { id: out.chatId });
+      mirrorCoffeeInvitesLater();
+      await remirrorIf(true);
+      return out;
+    }),
+
+  /**
+   * An organizer room booking (who it's for) on an empty cell. The board
+   * books events now (bookEvent); this stays for Undo after removing an
+   * older booking.
+   */
   bookRoom: protectedOrganizerProcedure
     .input(
       z.object({
@@ -336,7 +412,6 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         sessionId,
         forSponsorId: z.string().uuid().nullable().default(null),
         label: z.string().trim().min(1).max(255),
-        note: z.string().trim().max(255).nullable().default(null),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -357,7 +432,6 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
             sessionId: input.sessionId,
             forSponsorId: input.forSponsorId,
             label: input.label,
-            note: input.note === "" ? null : input.note,
             createdBy: ctx.session.user.id,
           })
           .returning({ id: coffeeChatRoomBookings.id });
@@ -401,11 +475,13 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
     }),
 
   /**
-   * Send: only Noah Medland or a "Same view as" Noah row (login email on HW Contacts, read
+   * Send ("Notify hackers" on the board; it can't be undone): only Noah Medland or a "Same view as" Noah row (login email on HW Contacts, read
    * fresh). Every draft chat becomes sent (sentAt now), sponsors who changed
    * after invites get their sent chats re-confirmed (sentAt now), then the Room Grid
    * tab is mirrored (only when sheetWritesEnabled(); locally nothing is
-   * written). If HW Contacts can't be read, nobody can send.
+   * written). If HW Contacts can't be read, nobody can send. Sent chats
+   * are locked from then on; a chat placed later stays a draft (movable)
+   * until the next Send, which marks and invites only the new ones.
    */
   send: protectedOrganizerProcedure.mutation(async ({ ctx }) => {
     const sender = await checkCoffeeSender(ctx.session.user.email, { fresh: true });

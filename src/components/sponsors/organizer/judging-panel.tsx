@@ -1,6 +1,6 @@
 import { CircleCheck, Gavel, TriangleAlert } from "lucide-react";
 import { useMemo } from "react";
-import { SheetEditButton } from "~/components/sponsors/sheet-edit-button";
+import Link from "next/link";
 import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
 import { sponsorOrganizerCopy } from "~/content/sponsor-organizer";
 import { formatClock } from "~/lib/run-of-show";
@@ -32,12 +32,10 @@ const NOTICE =
 export function JudgingPanel({
   board,
   failed,
-  sheetUrl,
 }: {
   board: JudgingBoard | null | undefined;
   /** The summary query failed (no board to show). */
   failed: boolean;
-  sheetUrl: string | null;
 }) {
   // Colours over registered sponsors only, the set the other tabs use.
   const colors = useMemo(
@@ -138,7 +136,13 @@ export function JudgingPanel({
         </div>
       )}
 
-      <SheetEditButton href={sheetUrl} />
+      {/* Rooms are typed on the Judging board now, not in the sheet. */}
+      <Link
+        href="/internal/sponsors?tab=judging"
+        className="self-start text-sm font-medium text-dashboard-action-primary underline-offset-2 hover:underline"
+      >
+        {copy.setRooms}
+      </Link>
     </section>
   );
 }

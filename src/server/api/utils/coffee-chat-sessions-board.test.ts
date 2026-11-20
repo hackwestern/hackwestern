@@ -30,7 +30,6 @@ const booking: BoardBooking = {
 };
 const state = {
   workshopsAvailable: true,
-  lastScheduledAt: null,
   sponsors: [],
   sched: [],
   placements: [chat],

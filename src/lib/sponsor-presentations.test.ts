@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   PRESENTATION_MIN_GAP_MINUTES,
+  PRESENTATION_OVERFLOW_SLOTS,
   PRESENTATION_SLOTS_PER_ROOM,
   PRESENTATION_WINDOW_END,
   PRESENTATION_WINDOW_START,
   SHORTLIST_MAX,
+  runsPastEnd,
   formatPresentationTime,
   gapViolations,
   groupSlots,
@@ -25,20 +27,22 @@ function expectValid(
   const rooms = new Map(requests.map((r) => [r.sponsorId, r.room]));
   const taken = new Set<string>();
   for (const s of result.slots) {
-    expect(s.room).toBe(rooms.get(s.sponsorId));
+    // No room (or a blank one) is null: times don't wait for it.
+    const want = rooms.get(s.sponsorId)?.trim();
+    expect(s.room).toBe(want ? want : null);
     expect(s.start).toBeGreaterThanOrEqual(PRESENTATION_WINDOW_START);
-    expect(s.start + 5).toBeLessThanOrEqual(PRESENTATION_WINDOW_END);
+    // In the window, or in the overflow after it (shown as running past).
+    expect(s.start + 5).toBeLessThanOrEqual(
+      PRESENTATION_WINDOW_END + PRESENTATION_OVERFLOW_SLOTS * 6,
+    );
     const key = `${s.sponsorId}@${s.start}`;
     expect(taken.has(key)).toBe(false);
     taken.add(key);
   }
-  // Nothing dropped: each requested pair is placed, unplaced or no-room.
+  // Nothing dropped: each requested pair is placed, unplaced or over cap.
   const accounted = new Set([
     ...result.slots.map((s) => `${s.sponsorId}:${s.teamId}`),
     ...result.unplaced.map((u) => `${u.sponsorId}:${u.teamId}`),
-    ...result.noRoom.flatMap((n) =>
-      n.teamIds.map((t) => `${n.sponsorId}:${t}`),
-    ),
     ...result.overCap.flatMap((o) =>
       o.teamIds.map((t) => `${o.sponsorId}:${t}`),
     ),
@@ -50,8 +54,8 @@ function expectValid(
 }
 
 describe("schedulePresentations", () => {
-  it("has 15 six-minute slots per room from 10:00 to 11:30", () => {
-    expect(PRESENTATION_SLOTS_PER_ROOM).toBe(15);
+  it("has 18 six-minute slots per room from 10:00 to 11:48", () => {
+    expect(PRESENTATION_SLOTS_PER_ROOM).toBe(18);
     expect(PRESENTATION_MIN_GAP_MINUTES).toBe(10);
   });
 
@@ -93,16 +97,16 @@ describe("schedulePresentations", () => {
 
   it("fits many teams on every shortlist by rearranging", () => {
     // 7 teams in all 3 rooms: each team needs 3 starts 10 minutes apart,
-    // and every room (15 slots) is full.
+    // and every room (18 slots) is full.
     const shared = ids("s", 7);
     const requests = [
-      { sponsorId: "a", room: "A", teamIds: [...shared, ...ids("a", 8)] },
-      { sponsorId: "b", room: "B", teamIds: [...shared, ...ids("b", 8)] },
-      { sponsorId: "c", room: "C", teamIds: [...shared, ...ids("c", 8)] },
+      { sponsorId: "a", room: "A", teamIds: [...shared, ...ids("a", 11)] },
+      { sponsorId: "b", room: "B", teamIds: [...shared, ...ids("b", 11)] },
+      { sponsorId: "c", room: "C", teamIds: [...shared, ...ids("c", 11)] },
     ];
     const result = schedulePresentations(requests);
     expect(result.unplaced).toEqual([]);
-    expect(result.slots).toHaveLength(45);
+    expect(result.slots).toHaveLength(54);
     expectValid(requests, result);
   });
 
@@ -123,26 +127,35 @@ describe("schedulePresentations", () => {
     expect(gapViolations(result.slots)).toEqual([]);
   });
 
-  it("flags teams that don't fit instead of dropping them", () => {
+  it("runs past the end instead of hiding teams; flags them only with no overflow", () => {
     const requests = [
-      { sponsorId: "scotia", room: "Rm 2110", teamIds: ids("t", 18) },
+      { sponsorId: "scotia", room: "Rm 2110", teamIds: ids("t", 21) },
     ];
-    // Cap lifted so the room itself runs out.
-    const result = schedulePresentations(requests, undefined, {
-      maxPerSponsor: 18,
+    // Cap lifted so the window itself runs out: 18 in it, 3 run past.
+    const shown = schedulePresentations(requests, undefined, {
+      maxPerSponsor: 21,
     });
-    expect(result.slots).toHaveLength(15);
+    expect(shown.unplaced).toEqual([]);
+    expect(shown.slots.filter((s) => runsPastEnd(s.start))).toHaveLength(3);
+    expect(shown.slots.at(-1)!.start).toBe(PRESENTATION_WINDOW_END + 2 * 6);
+    expectValid(requests, shown);
+    // With no overflow, the room runs out and the rest are flagged.
+    const result = schedulePresentations(requests, undefined, {
+      maxPerSponsor: 21,
+      overflowSlots: 0,
+    });
+    expect(result.slots).toHaveLength(18);
     expect(result.unplaced).toHaveLength(3);
     expect(result.unplaced.every((u) => u.sponsorId === "scotia")).toBe(true);
     expectValid(requests, result);
   });
 
   it("never schedules more than SHORTLIST_MAX per sponsor: the first ones in shortlist order", () => {
-    // An old send of 18, in an order that isn't sorted.
-    const teamIds = ids("t", 18).reverse();
+    // An old send of 21, in an order that isn't sorted.
+    const teamIds = ids("t", 21).reverse();
     const requests = [{ sponsorId: "scotia", room: "Rm 2110", teamIds }];
     const result = schedulePresentations(requests);
-    expect(SHORTLIST_MAX).toBe(15);
+    expect(SHORTLIST_MAX).toBe(18);
     expect(result.slots).toHaveLength(SHORTLIST_MAX);
     expect(new Set(result.slots.map((s) => s.teamId))).toEqual(
       new Set(teamIds.slice(0, SHORTLIST_MAX)),
@@ -154,19 +167,37 @@ describe("schedulePresentations", () => {
     expectValid(requests, result);
   });
 
-  it("flags a sponsor with no room and still schedules the others", () => {
+  it("gives a sponsor with no room its times anyway (room null), with the usual gaps", () => {
     const requests = [
       { sponsorId: "qnx", room: "Rm 2235", teamIds: ["a"] },
       { sponsorId: "roomless", room: null, teamIds: ["b", "a"] },
       { sponsorId: "blank", room: "  ", teamIds: ["c"] },
     ];
     const result = schedulePresentations(requests);
-    expect(result.noRoom).toEqual([
-      { sponsorId: "blank", teamIds: ["c"] },
-      { sponsorId: "roomless", teamIds: ["a", "b"] },
+    expect(result.unplaced).toEqual([]);
+    expect(
+      result.slots.map((s) => [s.sponsorId, s.teamId, s.room]).sort(),
+    ).toEqual([
+      ["blank", "c", null],
+      ["qnx", "a", "Rm 2235"],
+      ["roomless", "a", null],
+      ["roomless", "b", null],
     ]);
-    expect(result.slots.map((s) => s.teamId)).toEqual(["a"]);
     expectValid(requests, result);
+  });
+
+  it("typing a room later keeps every time and just labels the slots", () => {
+    const before = schedulePresentations([
+      { sponsorId: "qnx", room: null, teamIds: ["a", "b"] },
+    ]);
+    const after = schedulePresentations(
+      [{ sponsorId: "qnx", room: "Rm 2235", teamIds: ["a", "b"] }],
+      undefined,
+      { keep: before.slots },
+    );
+    expect(after.slots).toEqual(
+      before.slots.map((s) => ({ ...s, room: "Rm 2235" })),
+    );
   });
 
   it("is deterministic, whatever order the input comes in", () => {
@@ -388,6 +419,7 @@ describe("search limit", () => {
     for (const searchLimit of [1, 5, 200]) {
       const result = schedulePresentations(requests, undefined, {
         searchLimit,
+        overflowSlots: 0,
       });
       expectValid(requests, result);
       expect(result.unplaced.length).toBeGreaterThan(0);
@@ -398,18 +430,24 @@ describe("search limit", () => {
     const { SEARCH_LIMIT } = await import("./sponsor-presentations");
     expect(SEARCH_LIMIT).toBe(50_000);
     // One team on 12 shortlists needs 12 slots 10 minutes apart: with
-    // 6-minute slots that's every other slot, so 8 fit.
+    // 6-minute slots that's every other slot, so 9 of the 18 fit.
     const requests = ids("s", 12).map((sponsorId, i) => ({
       sponsorId,
       room: `Rm ${i}`,
       teamIds: ["star"],
     }));
     const started = Date.now();
-    const result = schedulePresentations(requests);
+    const result = schedulePresentations(requests, undefined, {
+      overflowSlots: 0,
+    });
     expect(Date.now() - started).toBeLessThan(2000);
     expectValid(requests, result);
-    expect(result.slots).toHaveLength(8);
-    expect(result.unplaced).toHaveLength(4);
+    expect(result.slots).toHaveLength(9);
+    expect(result.unplaced).toHaveLength(3);
+    // With the overflow (the default), all 12 get a time.
+    const all = schedulePresentations(requests);
+    expect(all.unplaced).toEqual([]);
+    expect(all.slots).toHaveLength(12);
   });
 });
 
