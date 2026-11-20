@@ -89,7 +89,7 @@ export function ShortlistRanking({
       const available = new Set(shortlistKey ? shortlistKey.split(",") : []);
       return Array.from(
         { length: top },
-        (_, i) => (current[i] && available.has(current[i]!) ? current[i] : null),
+        (_, i) => (current[i] && available.has(current[i]) ? current[i] : null),
       );
     });
   }, [shortlistKey, top]);
@@ -323,7 +323,7 @@ export function ShortlistRanking({
               onDrop={(event) => {
                 event.preventDefault();
                 const sourceId =
-                  draggedId ||
+                  draggedId ??
                   event.dataTransfer.getData("text/plain");
                 const from = topIds.indexOf(sourceId);
                 if (from >= 0) reorder(from, index);
