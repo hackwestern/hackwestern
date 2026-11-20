@@ -690,3 +690,51 @@ describe("phone callout placement", () => {
     ).toBe("center");
   });
 });
+
+describe("tours without coffee chats", () => {
+  const chatTargets = [
+    "nav-chats",
+    "chats-steps",
+    "scan-camera",
+    "scan-manual",
+  ];
+
+  it("drops every Chats and Scan step, and their page tours", () => {
+    for (const judging of [true, false]) {
+      const tours = toursFor(judging, false);
+      const targets = tours.welcome.steps.flatMap((st) => stepTargets(st));
+      for (const t of chatTargets) expect(targets).not.toContain(t);
+      expect(targets).not.toContain("chats-start");
+      expect(tours[pageTourId("coffeeChats")]).toBeUndefined();
+      expect(tours[pageTourId("scan")]).toBeUndefined();
+    }
+  });
+
+  it("is Home, Schedule, Map, then Judging and Help for a prize track sponsor", () => {
+    const steps = toursFor(true, false).welcome.steps;
+    const visits = steps
+      .map((st) => st.page)
+      .filter((page, i, all) => page !== all[i - 1]);
+    expect(visits).toEqual(["home", "schedule", "map", "home"]);
+    expect(steps.map((st) => st.id).slice(-2)).toEqual(["judging", "help"]);
+    expect(toursFor(true, false)[pageTourId("picks")]).toBeDefined();
+  });
+
+  it("has no Judging either without a prize track: booth, schedule, map", () => {
+    const ids = toursFor(false, false).welcome.steps.map((st) => st.id);
+    expect(ids).not.toContain("judging");
+    expect(ids.at(-1)).toBe("help");
+  });
+
+  it("Key rooms doesn't mention coffee chats", () => {
+    const keyRooms = toursFor(true, false).welcome.steps.find(
+      (st) => st.id === "key-rooms",
+    );
+    expect(keyRooms?.body).not.toMatch(/coffee chat/i);
+  });
+
+  it("keeps the full tours for sponsors with chats (and while loading)", () => {
+    expect(toursFor(true, true)).toBe(SPONSOR_TOURS);
+    expect(toursFor(undefined)).toBe(SPONSOR_TOURS);
+  });
+});

@@ -9,6 +9,7 @@ import {
 
 const ctx = (over: Partial<HomeContext> = {}): HomeContext => ({
   hasPrizeTrack: true,
+  hasCoffeeChats: true,
   availabilitySent: false,
   shortlistSent: false,
   confirmed: false,
