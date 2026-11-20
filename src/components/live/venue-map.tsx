@@ -446,28 +446,94 @@ const VenueMap = () => {
 
   return (
     <div className="flex flex-col gap-3">
-      <div
-        className="flex gap-6 border-b border-dashboard-border-subtle font-figtree"
-        role="group"
-        aria-label="Building"
-      >
-        {[
-          { label: "SEI building", ivey: false },
-          { label: "Ivey building", ivey: true },
-        ].map((b) => {
-          const on = b.ivey === (floor === IVEY);
-          return (
-            <button
-              key={b.label}
-              type="button"
-              aria-pressed={on}
-              onClick={() => showBuilding(b.ivey)}
-              className={`-mb-px border-b-2 pb-2 text-base transition-colors ${on ? "border-dashboard-action-primary font-bold text-dashboard-text-heavy" : "border-transparent font-medium text-dashboard-text-light hover:text-dashboard-text-heavy"}`}
-            >
-              {b.label}
-            </button>
-          );
-        })}
+      {/* Building tabs on the left, search on the right */}
+      <div className="flex items-end gap-3 border-b border-dashboard-border-subtle font-figtree">
+        <div
+          className="flex shrink-0 gap-4 md:gap-6"
+          role="group"
+          aria-label="Building"
+        >
+          {[
+            { label: "SEI building", ivey: false },
+            { label: "Ivey building", ivey: true },
+          ].map((b) => {
+            const on = b.ivey === (floor === IVEY);
+            return (
+              <button
+                key={b.label}
+                type="button"
+                aria-pressed={on}
+                onClick={() => showBuilding(b.ivey)}
+                className={`-mb-px border-b-2 pb-2 text-base transition-colors ${on ? "border-dashboard-action-primary font-bold text-dashboard-text-heavy" : "border-transparent font-medium text-dashboard-text-light hover:text-dashboard-text-heavy"}`}
+              >
+                {b.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="relative z-40 mb-1.5 ml-auto min-w-0 flex-1 md:w-[280px] md:flex-none">
+          <input
+            type="search"
+            value={query}
+            placeholder={narrow ? "Search" : "Search rooms and events"}
+            aria-label="Search rooms and events"
+            autoComplete="off"
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setActive(0);
+              setSearchOpen(true);
+            }}
+            onFocus={() => setSearchOpen(true)}
+            onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
+            onKeyDown={(e) => {
+              if (!hits.length) return;
+              if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                e.preventDefault();
+                const step = e.key === "ArrowDown" ? 1 : hits.length - 1;
+                setActive((a) => (a + step) % hits.length);
+              } else if (e.key === "Enter" && hits[active]) {
+                e.preventDefault();
+                pick(hits[active]);
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            className="h-9 w-full rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface px-3 text-base font-medium text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary md:text-sm"
+          />
+          {searchOpen && query.trim() && (
+            <div className="absolute right-0 top-11 max-h-72 w-[min(320px,calc(100vw-64px))] overflow-y-auto rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface shadow-dashboard-card">
+              {hits.length ? (
+                hits.map((h, i) => (
+                  <button
+                    key={`${h.room.id}-${h.event?.title ?? ""}-${h.event?.start ?? ""}-${i}`}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => pick(h)}
+                    className={`flex w-full items-center gap-2.5 border-b border-dashboard-border-subtle px-3 py-2 text-left last:border-b-0 hover:bg-dashboard-bg-highlight ${i === active ? "bg-dashboard-bg-highlight" : ""}`}
+                  >
+                    <span
+                      className="size-2.5 shrink-0 rounded-[3px]"
+                      style={{ background: ZONES[h.room.zone].color }}
+                    />
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold text-dashboard-text-heavy">
+                        {h.event ? h.event.title : h.room.name}
+                      </span>
+                      <span className="block text-xs text-dashboard-text-light">
+                        {h.event
+                          ? `${DAYS[h.event.day].slice(0, 3)} ${formatTime(h.event.start)} · ${h.room.name}${h.room.floor === IVEY ? " (Ivey)" : ""}`
+                          : `${h.room.place ?? `Room ${h.room.id}`} · ${where(h.room.floor)}`}
+                      </span>
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <p className="px-3 py-2.5 text-sm text-dashboard-text-light">
+                  Nothing matches.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
       <div
         ref={stageRef}
@@ -616,7 +682,7 @@ const VenueMap = () => {
           )}
         </svg>
 
-        {/* Level switch and search */}
+        {/* Level switch */}
         <div className="pointer-events-none absolute inset-x-3 top-3 z-20 flex gap-2">
           {floor !== IVEY && (
             <div className="pointer-events-auto flex shrink-0 gap-1">
@@ -635,69 +701,6 @@ const VenueMap = () => {
               ))}
             </div>
           )}
-          <div className="pointer-events-auto relative min-w-0 flex-1 md:max-w-[280px]">
-            <input
-              type="search"
-              value={query}
-              placeholder={narrow ? "Search" : "Search rooms and events"}
-              aria-label="Search rooms and events"
-              autoComplete="off"
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setActive(0);
-                setSearchOpen(true);
-              }}
-              onFocus={() => setSearchOpen(true)}
-              onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
-              onKeyDown={(e) => {
-                if (!hits.length) return;
-                if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-                  e.preventDefault();
-                  const step = e.key === "ArrowDown" ? 1 : hits.length - 1;
-                  setActive((a) => (a + step) % hits.length);
-                } else if (e.key === "Enter" && hits[active]) {
-                  e.preventDefault();
-                  pick(hits[active]);
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-              className="h-9 w-full rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface px-3 text-base font-medium text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary md:text-sm"
-            />
-            {searchOpen && query.trim() && (
-              <div className="absolute right-0 top-11 max-h-72 w-[min(320px,calc(100vw-64px))] overflow-y-auto rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface shadow-dashboard-card">
-                {hits.length ? (
-                  hits.map((h, i) => (
-                    <button
-                      key={`${h.room.id}-${h.event?.title ?? ""}-${h.event?.start ?? ""}-${i}`}
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => pick(h)}
-                      className={`flex w-full items-center gap-2.5 border-b border-dashboard-border-subtle px-3 py-2 text-left last:border-b-0 hover:bg-dashboard-bg-highlight ${i === active ? "bg-dashboard-bg-highlight" : ""}`}
-                    >
-                      <span
-                        className="size-2.5 shrink-0 rounded-[3px]"
-                        style={{ background: ZONES[h.room.zone].color }}
-                      />
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-dashboard-text-heavy">
-                          {h.event ? h.event.title : h.room.name}
-                        </span>
-                        <span className="block text-xs text-dashboard-text-light">
-                          {h.event
-                            ? `${DAYS[h.event.day].slice(0, 3)} ${formatTime(h.event.start)} · ${h.room.name}${h.room.floor === IVEY ? " (Ivey)" : ""}`
-                            : `${h.room.place ?? `Room ${h.room.id}`} · ${where(h.room.floor)}`}
-                        </span>
-                      </span>
-                    </button>
-                  ))
-                ) : (
-                  <p className="px-3 py-2.5 text-sm text-dashboard-text-light">
-                    Nothing matches.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Colour key */}
