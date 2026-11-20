@@ -55,6 +55,7 @@ npm run auto-ping -- "--preview=Ezra Ng"      # one person's messages, ticked or
 npm run auto-ping -- --plan                      # writes Planned messages and People D/I/J only, no Slack
 npm run auto-ping -- "--send-test=Ezra Ng"    # that person's messages, now, to Jasmine, labelled [TEST for ...]
 npm run auto-ping -- --sync                      # one sync (what Actions runs)
+npm run auto-ping -- --dry-run                   # what one sync would change, changing nothing (sheet and Slack)
 npm run auto-ping -- --send-final                # the final thank you, now, to everyone ticked
 ```
 
@@ -75,3 +76,5 @@ npm run auto-ping -- --send-final                # the final thank you, now, to 
 Edits to the sheet reach Slack at the next sync (every 5 minutes, sometimes later). A DM within 2 minutes of sending is never touched, because Slack can't cancel it.
 
 Actions logs are public, so CI logs counts only (`AUTO_PING_QUIET=1`): no names, emails or phone numbers.
+
+Running from Vercel instead of a laptop: see `docs/vercel-pings.md`.

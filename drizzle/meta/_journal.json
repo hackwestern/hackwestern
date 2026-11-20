@@ -344,6 +344,13 @@
       "when": 1795165834220,
       "tag": "0048_sponsor_dashboard",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1795202955886,
+      "tag": "0049_bot_state",
+      "breakpoints": true
     }
   ]
 }

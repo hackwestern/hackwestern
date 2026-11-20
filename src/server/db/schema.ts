@@ -2175,3 +2175,14 @@ export const marketingNotificationReminders = pgTable(
     index("marketing_notification_status_idx").on(t.status),
   ],
 );
+
+// Small text values the Slack bots keep between Vercel cron runs: the last
+// sheet-check DM, pending heartbeat DMs, cached Slack ids
+// (src/server/slack/bot-state-db.ts).
+export const botState = pgTable("bot_state", {
+  key: varchar("key", { length: 64 }).primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
