@@ -150,6 +150,27 @@ describe("planReminder", () => {
     });
   });
 
+  test("an unfinished send-now claim over a minute old is retried", () => {
+    const claim = stored({
+      kind: "sent",
+      messageId: "",
+      postAt: at("08:58"),
+      createdAt: at("08:58"),
+    });
+    expect(planReminder(claim, want, now)).toMatchObject({
+      action: "change",
+      cancel: { messageId: "" },
+      create: want,
+    });
+    const fresh = stored({
+      kind: "sent",
+      messageId: "",
+      postAt: now,
+      createdAt: new Date(now.getTime() - 10_000),
+    });
+    expect(planReminder(fresh, want, now)).toEqual({ action: "keep" });
+  });
+
   test("already delivered: never re-sent, only replaced by a later one", () => {
     const sent = stored({ kind: "sent", postAt: at("08:55") });
     expect(planReminder(sent, null, now)).toEqual({ action: "keep" });
@@ -453,6 +474,97 @@ describe("hooked into chat changes", () => {
       vi.unstubAllGlobals();
       vi.unstubAllEnvs();
     }
+  });
+});
+
+describe("review fixes: unfinished claims and late cancels", () => {
+  const claim = (chatId: string, createdAt: Date) =>
+    db.insert(coffeeChatReminders).values({
+      chatId,
+      slackChannel: "D1",
+      messageId: "",
+      kind: "sent",
+      postAt: createdAt,
+      contentKey: "x",
+      createdAt,
+    });
+
+  test("a claim cut off before the post counts as unsent after a minute", async () => {
+    const { chat } = await makeChat();
+    await claim(chat.id, at("10:48"));
+    const slack = mockSlack();
+    // Still fresh: someone may be posting it right now.
+    expect(
+      await syncCoffeeChatReminder(
+        chat.id,
+        deps(slack, new Date(at("10:48").getTime() + 30_000)),
+      ),
+    ).toBe("kept");
+    expect(slack.of("chat.postMessage")).toHaveLength(0);
+    // Over a minute old: it never went out. Sent now, once.
+    expect(
+      await syncCoffeeChatReminder(chat.id, deps(slack, at("10:50"))),
+    ).toBe("sent");
+    expect(slack.of("chat.postMessage")).toHaveLength(1);
+    expect((await reminderOf(chat.id))!.messageId).toBe("1.2");
+  });
+
+  test("the sweep drops a stale claim on a chat that was cancelled", async () => {
+    const { chat } = await makeChat({ status: "cancelled" });
+    await claim(chat.id, at("10:40"));
+    const sweep = await syncAllCoffeeChatReminders(
+      deps(mockSlack(), at("10:50")),
+    );
+    expect(sweep.cancelled).toBeGreaterThanOrEqual(1);
+    expect(await reminderOf(chat.id)).toBeUndefined();
+  });
+
+  test("posted but the save failed: the claim stays, nothing is sent twice", async () => {
+    const { chat } = await makeChat();
+    const slack = mockSlack();
+    const update = vi.spyOn(db, "update").mockImplementation(() => {
+      throw new Error("db down");
+    });
+    try {
+      expect(
+        await syncCoffeeChatReminder(chat.id, deps(slack, at("10:50"))),
+      ).toBe("sent");
+    } finally {
+      update.mockRestore();
+    }
+    expect(await reminderOf(chat.id)).toMatchObject({
+      kind: "sent",
+      messageId: "",
+    });
+    expect(
+      await syncCoffeeChatReminder(
+        chat.id,
+        deps(slack, new Date(at("10:50").getTime() + 30_000)),
+      ),
+    ).toBe("kept");
+    expect(slack.of("chat.postMessage")).toHaveLength(1);
+  });
+
+  test("a failed delete close to the post time: the row goes, the cancel succeeds", async () => {
+    const { chat } = await makeChat();
+    await syncCoffeeChatReminder(chat.id, deps(mockSlack(), at("09:00")));
+    await db
+      .update(coffeeChats)
+      .set({ status: "declined" })
+      .where(eq(coffeeChats.id, chat.id));
+    const failing = mockSlack({
+      "chat.deleteScheduledMessage": { ok: false, error: "internal_error" },
+    });
+    // Ten minutes out: a real failure, kept for the next sync to retry.
+    expect(
+      await syncCoffeeChatReminder(chat.id, deps(failing, at("10:35"))),
+    ).toBe("failed");
+    expect(await reminderOf(chat.id)).toBeDefined();
+    // A minute before the post: can't recall it; let it go.
+    expect(
+      await syncCoffeeChatReminder(chat.id, deps(failing, at("10:44"))),
+    ).toBe("cancelled");
+    expect(await reminderOf(chat.id)).toBeUndefined();
   });
 });
 

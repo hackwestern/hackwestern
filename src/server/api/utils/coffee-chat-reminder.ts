@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { waitUntil } from "@vercel/functions";
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, or } from "drizzle-orm";
 
 import {
   coffeeChatInvitesCopy,
@@ -158,6 +158,23 @@ export function desiredReminder(
 
 export type StoredReminder = typeof coffeeChatReminders.$inferSelect;
 
+/** A send-now claim older than this without a message id was never sent. */
+export const STALE_CLAIM_MS = 60_000;
+/**
+ * Closer than this to its post time, a scheduled reminder may already be
+ * going out: a failed delete there means it can't be recalled.
+ */
+export const RECALL_MARGIN_MS = 90_000;
+
+/** A send-now claim (no message id yet) left over from a cut-off sync. */
+export function isStaleClaim(stored: StoredReminder, now: Date): boolean {
+  return (
+    stored.kind === "sent" &&
+    stored.messageId === "" &&
+    now.getTime() - stored.createdAt.getTime() > STALE_CLAIM_MS
+  );
+}
+
 export type ReminderPlan =
   | { action: "keep" }
   | { action: "none" }
@@ -182,6 +199,11 @@ export function planReminder(
     return desired
       ? { action: "change", cancel: null, create: desired }
       : { action: "none" };
+  }
+  // A send-now claim nobody finished (the function was cut off before the
+  // post): nothing went out, so drop the claim and try again.
+  if (isStaleClaim(stored, now)) {
+    return { action: "change", cancel: stored, create: desired };
   }
   const delivered = stored.kind === "sent" || stored.postAt <= now;
   if (delivered) {
@@ -255,12 +277,20 @@ async function cancelReminder(
         fetchImpl,
       );
     } catch (error) {
-      // Already posted or already deleted: nothing left in Slack.
-      if (
-        !(error instanceof SlackApiError) ||
-        error.code !== "invalid_scheduled_message_id"
-      ) {
-        throw error;
+      // Already posted or already deleted: nothing left in Slack. Any other
+      // failure this close to the post time: it can't be recalled now, so
+      // let it go and drop our row (never left on a cancelled chat).
+      const gone =
+        error instanceof SlackApiError &&
+        error.code === "invalid_scheduled_message_id";
+      const tooLate =
+        stored.postAt.getTime() - now.getTime() < RECALL_MARGIN_MS;
+      if (!gone && !tooLate) throw error;
+      if (!gone) {
+        console.warn(
+          "coffee chat reminder: too close to recall, letting it post:",
+          errorMessage(error),
+        );
       }
     }
   }
@@ -281,6 +311,7 @@ async function createReminder(
   notice: CoffeeChatNotice,
   desired: DesiredReminder,
   fetchImpl: typeof fetch,
+  now: Date,
 ): Promise<"scheduled" | "sent" | "not-found" | "kept"> {
   const channel = await openDmByEmails(
     token,
@@ -300,6 +331,8 @@ async function createReminder(
     slackChannel: channel,
     postAt: desired.postAt,
     contentKey: desired.contentKey,
+    // The claim's age tells a cut-off send-now apart (isStaleClaim).
+    createdAt: now,
   };
 
   if (desired.mode === "now") {
@@ -310,18 +343,14 @@ async function createReminder(
       .onConflictDoNothing()
       .returning({ chatId: coffeeChatReminders.chatId });
     if (!claimed.length) return "kept";
+    let posted: PostResponse;
     try {
-      const posted = await slackApi<PostResponse>(
+      posted = await slackApi<PostResponse>(
         token,
         "chat.postMessage",
         { channel, text: desired.text },
         fetchImpl,
       );
-      await db
-        .update(coffeeChatReminders)
-        .set({ messageId: posted.ts ?? "" })
-        .where(eq(coffeeChatReminders.chatId, chatId));
-      return "sent";
     } catch (error) {
       // Nothing went out: unclaim, so the next sync retries.
       await db
@@ -334,6 +363,25 @@ async function createReminder(
         );
       throw error;
     }
+    // It went out: keep the claim whatever happens to this write, so it is
+    // never sent twice. Tried twice; if both fail the claim still reads as
+    // sent until it is a minute old (STALE_CLAIM_MS), logged here.
+    const messageId = posted.ts ?? "sent";
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        await db
+          .update(coffeeChatReminders)
+          .set({ messageId })
+          .where(eq(coffeeChatReminders.chatId, chatId));
+        break;
+      } catch (error) {
+        console.error(
+          `coffee chat reminder: sent, but saving it failed (try ${attempt}):`,
+          errorMessage(error),
+        );
+      }
+    }
+    return "sent";
   }
 
   const scheduled = await slackApi<ScheduleResponse>(
@@ -399,6 +447,7 @@ export async function syncCoffeeChatReminder(
       want.notice,
       plan.create,
       fetchImpl,
+      now,
     );
   } catch (error) {
     console.error("coffee chat reminder sync failed:", errorMessage(error));
@@ -453,13 +502,20 @@ export async function syncAllCoffeeChatReminders(
     .select({ id: coffeeChats.id, slotTime: coffeeChats.slotTime })
     .from(coffeeChats)
     .where(eq(coffeeChats.status, "accepted"));
+  // Reminders still waiting in Slack, and send-now claims left unfinished.
   const waiting = await db
     .select({ id: coffeeChatReminders.chatId })
     .from(coffeeChatReminders)
     .where(
-      and(
-        eq(coffeeChatReminders.kind, "scheduled"),
-        gt(coffeeChatReminders.postAt, now),
+      or(
+        and(
+          eq(coffeeChatReminders.kind, "scheduled"),
+          gt(coffeeChatReminders.postAt, now),
+        ),
+        and(
+          eq(coffeeChatReminders.kind, "sent"),
+          eq(coffeeChatReminders.messageId, ""),
+        ),
       ),
     );
   const startOf = (slotTime: string) => {
