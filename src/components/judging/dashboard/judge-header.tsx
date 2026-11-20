@@ -4,7 +4,7 @@ import { DashboardTag } from "~/components/internals/dashboard-tag";
 
 interface JudgeHeaderProps {
   name: string;
-  /** "Organizer" or "Sponsor · <track>"; null while loading or for non-judges. */
+  /** "Organizer"; null while loading or for non-judges. */
   role: string | null;
   showControlRoom: boolean;
 }

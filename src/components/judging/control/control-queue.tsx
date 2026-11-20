@@ -80,8 +80,6 @@ export function ControlQueue({ queue }: { queue: QueueState | undefined }) {
         <span className={`text-sm font-semibold ${MUTED}`}>{pill}</span>
       </div>
       <div className="flex flex-wrap items-end gap-3">
-        {num("Tables", tableCount, setTableCount)}
-        {num("Rows", rows, setRows)}
         {num("Judges per table", judgesPerTable, setJudgesPerTable)}
         <button
           type="button"

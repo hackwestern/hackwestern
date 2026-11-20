@@ -10,6 +10,12 @@ export interface TeamInfo {
   table: number | null;
   github: string | null;
   devpost: string | null;
+  /** From the judging_team_scores view; absent until the team has marks. */
+  superLikes?: number;
+  /** Normalized score (0-10), null until the normalization has run. */
+  normalized?: number | null;
+  /** Adventure score (0-10), null until normalized. */
+  adventure?: number | null;
 }
 
 /** One judge's mark on one team, as read from team_mark. */
