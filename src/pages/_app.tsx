@@ -2,7 +2,7 @@ import { type Session } from "next-auth";
 import { SessionProvider } from "next-auth/react";
 import { type AppType } from "next/app";
 import Head from "next/head";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Figtree } from "next/font/google";
 import localFont from "next/font/local";
 import { api } from "~/utils/api";
@@ -19,6 +19,22 @@ const Agentation =
   AGENTATION_DEV || process.env.NEXT_PUBLIC_AGENTATION === "1"
     ? dynamic(() => import("agentation").then((m) => m.Agentation), { ssr: false })
     : null;
+
+// Agentation is desktop only (its README: mobile not supported), and on a
+// phone it sits over the sponsor portal's bottom tab bar. Show it only on a
+// laptop-sized screen with a mouse.
+const DESKTOP_QUERY = "(min-width: 1024px) and (pointer: fine)";
+function useDesktop() {
+  const [desktop, setDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(DESKTOP_QUERY);
+    const update = () => setDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return desktop;
+}
 
 import "~/styles/globals.css";
 import { Toaster } from "~/components/ui/sonner";
@@ -63,6 +79,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
   Component,
   pageProps: { session, ...pageProps },
 }) => {
+  const desktop = useDesktop();
   // Dialogs and other portals render into <body>, outside <main>, so give
   // <body> the font variables too or they fall back to the system font.
   useEffect(() => {
@@ -98,6 +115,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
       <Toaster style={{ zIndex: 90 }} />
       <CustomToaster />
       {Agentation &&
+        desktop &&
         (AGENTATION_DEV ? (
           <Agentation endpoint="http://localhost:4747" />
         ) : (
