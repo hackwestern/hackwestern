@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { sponsorStatusSheetCopy as statusCopy } from "~/content/sponsor-status-sheet";
@@ -99,6 +99,24 @@ export const sponsorDashboardRouter = createTRPCRouter({
         fetchAllSponsorInfo(sheets, spreadsheetId),
       ]);
 
+      // Sponsors added to Sponsor Day-Of get their portal link on their own
+      // (Jazz, 2026-11-20): register any the app doesn't have yet, so
+      // nobody has to press "Sync from sponsor sheet".
+      const known = new Set(registered.map((row) => row.name));
+      const missing = [...new Set(master.map((s) => s.name))].filter(
+        (name) => !known.has(name),
+      );
+      if (missing.length > 0) {
+        await db
+          .insert(sponsorJudgingSponsors)
+          .values(missing.map((name) => ({ name })))
+          .onConflictDoNothing({ target: sponsorJudgingSponsors.name });
+        registered.push(
+          ...(await db.query.sponsorJudgingSponsors.findMany({
+            where: inArray(sponsorJudgingSponsors.name, missing),
+          })),
+        );
+      }
       const registeredByName = new Map(
         registered.map((row) => [row.name, row]),
       );
