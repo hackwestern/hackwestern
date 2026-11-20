@@ -187,9 +187,8 @@ describe("judgingSheetRows", () => {
           "t2, t1, t3",
           "Top 5 sent",
           ts("2026-11-22T12:05:00-05:00"),
-          // Team ID + Devpost link, then GitHub on a second line; a
-          // missing link is left out, never invented.
-          "t1 · devpost.com/software/alpha\nGitHub: github.com/hw/alpha",
+          // Team ID + Devpost link; no link = ID only; never invented.
+          "t1 · devpost.com/software/alpha",
           "t3",
           "t5",
           "t2 · devpost.com/software/bravo",
@@ -245,6 +244,30 @@ describe("judgingSheetRows", () => {
           "Digital sponsor: top 5 entered by the spon team from Devpost links.",
         ],
         [],
+        // Top 5 by sponsor: one row per place, full links in their own
+        // columns; a missing or blank link stays empty.
+        ["Top 5 by sponsor"],
+        ["Sponsor", "Place", "Team ID", "Team", "Devpost", "GitHub"],
+        [
+          "Scotiabank",
+          "1st place",
+          "t1",
+          "Alpha",
+          "https://devpost.com/software/alpha",
+          "https://github.com/hw/alpha/",
+        ],
+        ["Scotiabank", "2nd place", "t3", "Charlie", "", ""],
+        ["Scotiabank", "3rd place", "t5", "t5", "", ""],
+        [
+          "Scotiabank",
+          "4th place",
+          "t2",
+          "Bravo",
+          "https://devpost.com/software/bravo/",
+          "",
+        ],
+        ["Scotiabank", "5th place", "t4", "Delta", "", ""],
+        [],
         ["Presentations"],
         ["Sponsor", "Team ID", "Team", "Members", "Time", "Room", "Notified"],
         // Placed slots in time order, then teams with no slot.
@@ -296,6 +319,10 @@ describe("judgingSheetRows", () => {
       ["TinyFish", "Not started", "Not open"],
       ["PCBWay", "No round 1 (digital)", "Waiting for the spon team"],
     ]);
+    // No top 5 yet: one line says so.
+    expect(rows.find((r) => r[0]?.startsWith("No sponsor"))?.[0]).toBe(
+      "No sponsor has sent their top 5 yet.",
+    );
     // Ends on the presentations header: no rows under it.
     expect(rows.at(-1)!.slice(0, 2)).toEqual(["Sponsor", "Team ID"]);
   });
@@ -316,7 +343,7 @@ describe("judgingSheetRows", () => {
       "Entered by the spon team",
       ts("2026-11-23T09:05:00-05:00"),
       "t2 · devpost.com/software/bravo",
-      "t1 · devpost.com/software/alpha\nGitHub: github.com/hw/alpha",
+      "t1 · devpost.com/software/alpha",
       "t3",
     ]);
   });

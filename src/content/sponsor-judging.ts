@@ -370,8 +370,6 @@ export const sponsorJudgingCopy = {
       ],
       inPerson: "In person",
       digital: "Digital",
-      /** Second line of a 1st to 5th place cell. */
-      github: (link: string) => `GitHub: ${link}`,
       status: {
         notRegistered: "No portal link yet",
         notStarted: "Not started",
@@ -390,6 +388,13 @@ export const sponsorJudgingCopy = {
         digital: (top: number) =>
           `Digital sponsor: top ${top} entered by the spon team from Devpost links.`,
       },
+    },
+    /** Each sponsor's top 5, one row per place, links in their own columns. */
+    winners: {
+      title: "Top 5 by sponsor",
+      headers: ["Sponsor", "Place", "Team ID", "Team", "Devpost", "GitHub"],
+      place: (n: number) => `${ordinal(n)} place`,
+      empty: (top: number) => `No sponsor has sent their top ${top} yet.`,
     },
     schedule: {
       title: "Presentations",

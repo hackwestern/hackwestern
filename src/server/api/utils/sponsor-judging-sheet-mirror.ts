@@ -8,11 +8,7 @@ import {
   prizeTrackOf,
   remoteJudgingRoom,
 } from "~/lib/sponsor-prize-tracks";
-import {
-  bareLink,
-  SPONSOR_FINAL_TOP,
-  teamIdAndLink,
-} from "~/lib/sponsor-scoring";
+import { SPONSOR_FINAL_TOP, teamIdAndLink } from "~/lib/sponsor-scoring";
 import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import {
   googleBookingsSheet,
@@ -138,14 +134,6 @@ export function judgingSheetRows(input: JudgingSheetInput): string[][] {
   const teamName = (id: string) => input.teamNames.get(id) ?? id;
   const teamCell = (id: string) =>
     teamIdAndLink(id, input.teamLinks.get(id) ?? null);
-  // 1st to 5th place: the GitHub link on a second line, so the spon team
-  // can open the code as well as the Devpost page.
-  const placeCell = (id: string) => {
-    const github = bareLink(input.teamGithub.get(id));
-    return github
-      ? `${teamCell(id)}\n${sheetCopy.sponsors.github(github)}`
-      : teamCell(id);
-  };
   const membersOf = (id: string) => (input.members.get(id) ?? []).join(", ");
   const placedFor = (sponsorId: string) =>
     input.presentations.filter(
@@ -189,7 +177,7 @@ export function judgingSheetRows(input: JudgingSheetInput): string[][] {
             : status.locked;
     const places = Array.from({ length: SPONSOR_FINAL_TOP }, (_, i) => {
       const teamId = final?.teamIds[i];
-      return teamId ? placeCell(teamId) : "";
+      return teamId ? teamCell(teamId) : "";
     });
     rows.push([
       t.name,
@@ -210,7 +198,29 @@ export function judgingSheetRows(input: JudgingSheetInput): string[][] {
   }
   rows.push([]);
 
-  // 2. Presentations: the sent shortlist and each team's slot.
+  // 2. Each sponsor's top 5, one row per place, with the Devpost and GitHub
+  // links in their own columns so the spon team can open them.
+  const winners = sheetCopy.winners;
+  rows.push([winners.title], [...winners.headers]);
+  let placedRows = 0;
+  for (const t of input.tracks) {
+    const final = t.sponsorId ? finalOf.get(t.sponsorId) : undefined;
+    final?.teamIds.slice(0, SPONSOR_FINAL_TOP).forEach((teamId, i) => {
+      placedRows++;
+      rows.push([
+        t.name,
+        winners.place(i + 1),
+        teamId,
+        teamName(teamId),
+        (input.teamLinks.get(teamId) ?? "").trim(),
+        (input.teamGithub.get(teamId) ?? "").trim(),
+      ]);
+    });
+  }
+  if (placedRows === 0) rows.push([winners.empty(SPONSOR_FINAL_TOP)]);
+  rows.push([]);
+
+  // 3. Presentations: the sent shortlist and each team's slot.
   rows.push([sheetCopy.schedule.title], [...sheetCopy.schedule.headers]);
   for (const t of input.tracks) {
     if (!t.sponsorId) continue;
