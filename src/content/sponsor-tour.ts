@@ -92,7 +92,7 @@ export const sponsorTourCopy = {
         },
         keyRooms: {
           title: "Key rooms",
-          body: "The sponsor lounge and overnight belongings rooms stay the same all weekend. Coffee chat rooms are set at 10:00 PM Friday.",
+          body: "The sponsor lounge and overnight belongings rooms stay the same all weekend. Your coffee chat schedule will be confirmed at 10:00 PM Friday.",
         },
         // Schedule
         scheduleDays: {
@@ -136,7 +136,7 @@ export const sponsorTourCopy = {
           },
           waiting: {
             title: "Check back at 10:00 PM",
-            body: "That's when your chat times and rooms show here. For any changes, ask your point of contact.",
+            body: "Your coffee chat schedule will be confirmed at 10:00 PM Friday. Your chat times and rooms show here then. For any changes, ask your point of contact.",
           },
           confirmed: {
             title: "Your chats",
