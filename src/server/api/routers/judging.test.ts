@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { faker } from "@faker-js/faker";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 // Same guard as cheat-check-sweep.test.ts: with a real CHEAT_SWEEP_SECRET in
 // .env, the sweep tests below would otherwise POST the real bearer token at
@@ -29,7 +29,7 @@ import {
   judges,
   judgingAssignments,
   judgingSettings,
-  judgingTables,
+  judgingSeats,
   type submissionStatusEnum,
   teamMarks,
   teams,
@@ -113,7 +113,7 @@ async function resetAll() {
   await db.delete(cheatCheckSweepItems).where(sql`true`);
   await db.delete(cheatCheckSweeps).where(sql`true`);
   await db.delete(teams).where(sql`true`);
-  await db.delete(judgingTables).where(sql`true`);
+  await db.delete(judgingSeats).where(sql`true`);
   await db.delete(judgingSettings).where(sql`true`);
 }
 
@@ -145,15 +145,18 @@ async function setupRoom(opts: {
     judgeList.push(await makeJudge());
   }
   await org.caller.judging.admin.autoAssign();
-  const tables = await db.query.judgingTables.findMany({
-    orderBy: (t, { asc }) => [asc(t.number)],
+  const tables = await db.query.judgingSeats.findMany({
+    orderBy: (t, { asc }) => [asc(t.tableNumber), asc(t.seat)],
   });
   return { org, teamIds, judges: judgeList, tables };
 }
 
-async function tableByNumber(number: number) {
-  const table = await db.query.judgingTables.findFirst({
-    where: eq(judgingTables.number, number),
+async function tableByNumber(number: number, seat = 1) {
+  const table = await db.query.judgingSeats.findFirst({
+    where: and(
+      eq(judgingSeats.tableNumber, number),
+      eq(judgingSeats.seat, seat),
+    ),
   });
   assertDefined(table, `expected table ${number}`);
   return table;
@@ -168,6 +171,29 @@ async function firstStop(caller: Caller) {
   const [stop] = await stopsOf(caller);
   assertDefined(stop, "expected the judge to have a stop");
   return stop;
+}
+
+/**
+ * Walk a judge through their stops before `stopId` (score seated teams,
+ * report empty seats), so `stopId` becomes their current stop.
+ */
+async function advanceTo(judge: Judge, stopId: number) {
+  for (const stop of await stopsOf(judge.caller)) {
+    if (stop.id === stopId) return;
+    if (stop.status !== "assigned") continue;
+    if (stop.team) {
+      await judge.caller.judging.me.submitStop({
+        assignmentId: stop.id,
+        teamId: stop.team.id,
+        score: 5,
+      });
+    } else {
+      await judge.caller.judging.me.reportAbsent({
+        assignmentId: stop.id,
+        teamId: null,
+      });
+    }
+  }
 }
 
 /** Score every stop a judge has, all with the same score. */
@@ -241,11 +267,11 @@ describe("setupTables", () => {
       tableCount: 70,
       rows: 5,
       perRow: 14,
-      judgesPerTable: 3,
+      judgesPerSeat: 3,
       tablesCreated: 70,
     });
-    const tables = await db.query.judgingTables.findMany({});
-    expect(tables.map((t) => t.number).sort((a, b) => a - b)).toEqual(
+    const tables = await db.query.judgingSeats.findMany({});
+    expect(tables.map((t) => t.tableNumber).sort((a, b) => a - b)).toEqual(
       Array.from({ length: 70 }, (_, i) => i + 1),
     );
     expect(tables.every((t) => t.status === "empty" && t.isActive)).toBe(true);
@@ -264,7 +290,7 @@ describe("setupTables", () => {
     const last = await db.query.teams.findFirst({
       where: eq(teams.id, teamIds[5]!),
     });
-    expect(last?.judgingTableId).toBeNull();
+    expect(last?.judgingSeatId).toBeNull();
   });
 
   test("is locked once judging starts", async () => {
@@ -294,13 +320,13 @@ describe("seatTeams", () => {
     const draft = await makeTeam({ submissionStatus: "draft" });
 
     const result = await org.caller.judging.admin.seatTeams({ random: false });
-    expect(result).toMatchObject({ random: false, seated: 2, emptyTables: 3 });
+    expect(result).toMatchObject({ random: false, seated: 2, emptySeats: 3 });
     expect(result.seating.map((s) => [s.teamId, s.tableNumber])).toEqual([
       [early, 1],
       [late, 2],
     ]);
     const d = await db.query.teams.findFirst({ where: eq(teams.id, draft) });
-    expect(d?.judgingTableId).toBeNull();
+    expect(d?.judgingSeatId).toBeNull();
   });
 
   test("random seating gives every submitted team its own table", async () => {
@@ -326,21 +352,148 @@ describe("seatTeams", () => {
     expect((await tableByNumber(2)).status).toBe("empty");
   });
 
-  test("refuses when more teams submitted than tables are active", async () => {
+  test("refuses when more than 2 teams per active table submitted", async () => {
     const org = await makeOrganizer();
     await org.caller.judging.admin.setupTables({ tableCount: 2, rows: 1 });
-    for (let i = 0; i < 3; i++) await makeTeam();
+    for (let i = 0; i < 5; i++) await makeTeam();
     await expect(
       org.caller.judging.admin.seatTeams({ random: false }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
   });
 
+  test("more teams than tables splits tables evenly, 2 teams each at most", async () => {
+    const org = await makeOrganizer();
+    await org.caller.judging.admin.setupTables({ tableCount: 4, rows: 1 });
+    for (let i = 0; i < 6; i++) {
+      await makeTeam({ submittedAt: new Date(Date.UTC(2026, 10, 20, 8, i)) });
+    }
+    const result = await org.caller.judging.admin.seatTeams({ random: false });
+    expect(result).toMatchObject({ seated: 6, emptySeats: 0 });
+    // Tables 2 and 4 get a second seat; the snake visits it right after.
+    expect(result.seating.map((s) => s.tableNumber)).toEqual([
+      1, 2, 2, 3, 4, 4,
+    ]);
+    expect((await tableByNumber(2, 2)).status).toBe("waiting");
+  });
+
+  test("fewer teams on re-seat removes the extra seats and clears the plan", async () => {
+    const { org, teamIds } = await setupRoom({
+      tableCount: 3,
+      teamCount: 5,
+      judgeCount: 3,
+    });
+    expect(await db.query.judgingAssignments.findMany()).toHaveLength(15);
+    await db
+      .update(teams)
+      .set({ submissionStatus: "draft" })
+      .where(inArray(teams.id, teamIds.slice(0, 2)));
+
+    const result = await org.caller.judging.admin.seatTeams({ random: false });
+    expect(result).toMatchObject({ seated: 3, emptySeats: 0, planCleared: 15 });
+    const seats = await db.query.judgingSeats.findMany();
+    expect(seats.every((s) => s.seat === 1)).toBe(true);
+    expect(await db.query.judgingAssignments.findMany()).toHaveLength(0);
+  });
+
+  test("toggleTable switches both seats; toggleSecondSeat only seat 2", async () => {
+    const { org } = await setupRoom({
+      tableCount: 2,
+      teamCount: 4,
+      judgeCount: 3,
+    });
+    // A seat with a team can't be switched off.
+    await expect(
+      org.caller.judging.admin.toggleSecondSeat({
+        tableNumber: 2,
+        isActive: false,
+      }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+
+    await db
+      .update(teams)
+      .set({ judgingSeatId: null })
+      .where(
+        inArray(teams.judgingSeatId, [
+          (await tableByNumber(2)).id,
+          (await tableByNumber(2, 2)).id,
+        ]),
+      );
+    await org.caller.judging.admin.toggleSecondSeat({
+      tableNumber: 2,
+      isActive: false,
+    });
+    expect((await tableByNumber(2)).isActive).toBe(true);
+    expect((await tableByNumber(2, 2)).isActive).toBe(false);
+
+    const off = await org.caller.judging.admin.toggleTable({
+      tableNumber: 2,
+      isActive: false,
+    });
+    expect(off.seats.map((s) => s.isActive)).toEqual([false, false]);
+    // Seat 2 is never on while seat 1 is off.
+    await expect(
+      org.caller.judging.admin.toggleSecondSeat({
+        tableNumber: 2,
+        isActive: true,
+      }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    const on = await org.caller.judging.admin.toggleTable({
+      tableNumber: 2,
+      isActive: true,
+    });
+    expect(on.seats.map((s) => s.isActive)).toEqual([true, true]);
+  });
+
+  test("a table whose seat 2 is switched off is never split", async () => {
+    const org = await makeOrganizer();
+    await org.caller.judging.admin.setupTables({ tableCount: 3, rows: 1 });
+    for (let i = 0; i < 4; i++) {
+      await makeTeam({ submittedAt: new Date(Date.UTC(2026, 10, 20, 8, i)) });
+    }
+    const first = await org.caller.judging.admin.seatTeams({ random: false });
+    expect(first.seating.map((s) => s.tableNumber)).toEqual([1, 2, 3, 3]);
+
+    const second = await tableByNumber(3, 2);
+    await db
+      .update(teams)
+      .set({ judgingSeatId: null })
+      .where(eq(teams.judgingSeatId, second.id));
+    await org.caller.judging.admin.toggleSecondSeat({
+      tableNumber: 3,
+      isActive: false,
+    });
+    const again = await org.caller.judging.admin.seatTeams({ random: false });
+    expect(again.seating.map((s) => s.tableNumber)).toEqual([1, 2, 2, 3]);
+    expect((await tableByNumber(3, 2)).isActive).toBe(false);
+
+    // 3 tables with one seat 2 off seat 5 teams at most, so 6 don't fit.
+    await makeTeam();
+    await makeTeam();
+    await expect(
+      org.caller.judging.admin.seatTeams({ random: false }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  });
+
+  test("switching seat 2 off before seating keeps that table from splitting", async () => {
+    const org = await makeOrganizer();
+    await org.caller.judging.admin.setupTables({ tableCount: 3, rows: 1 });
+    await org.caller.judging.admin.toggleSecondSeat({
+      tableNumber: 3,
+      isActive: false,
+    });
+    for (let i = 0; i < 4; i++) {
+      await makeTeam({ submittedAt: new Date(Date.UTC(2026, 10, 20, 8, i)) });
+    }
+    const result = await org.caller.judging.admin.seatTeams({ random: false });
+    expect(result.seating.map((s) => s.tableNumber)).toEqual([1, 2, 2, 3]);
+  });
+
   test("switched-off tables are skipped", async () => {
     const org = await makeOrganizer();
     await org.caller.judging.admin.setupTables({ tableCount: 3, rows: 1 });
-    const t1 = await tableByNumber(1);
-    await org.caller.judging.admin.setTableActive({
-      tableId: t1.id,
+    await org.caller.judging.admin.toggleTable({
+      tableNumber: 1,
       isActive: false,
     });
     await makeTeam();
@@ -352,6 +505,34 @@ describe("seatTeams", () => {
 /* ---------- auto-assign ---------- */
 
 describe("autoAssign", () => {
+  test("split tables: each seat gets 3 judges, and a section visits both seats in a row", async () => {
+    const { org, tables } = await setupRoom({
+      tableCount: 4,
+      teamCount: 6,
+      judgeCount: 6,
+    });
+    expect(tables).toHaveLength(6);
+    expect(await org.caller.judging.admin.autoAssign()).toMatchObject({
+      tables: 4,
+      seats: 6,
+      stops: 18,
+    });
+    for (const t of tables) {
+      const here = await db.query.judgingAssignments.findMany({
+        where: eq(judgingAssignments.judgingSeatId, t.id),
+      });
+      expect(new Set(here.map((s) => s.judgeId)).size).toBe(3);
+    }
+    // 18 visits / 6 judges = 3 stops; judge 1 walks 1, 2 (seat 1), 2 (seat 2).
+    const first = await db.query.judgingAssignments.findMany({
+      orderBy: (a, { asc }) => [asc(a.id)],
+      limit: 3,
+    });
+    expect(first.map((s) => s.judgingSeatId)).toEqual(
+      tables.slice(0, 3).map((t) => t.id),
+    );
+  });
+
   test("every table gets 3 different judges; sections follow the order judges were added", async () => {
     const { judges: js, tables } = await setupRoom({
       tableCount: 12,
@@ -359,7 +540,9 @@ describe("autoAssign", () => {
     });
     // 12 tables x 3 = 36 visits / 6 judges = 6 each.
     const sections = await Promise.all(
-      js.map(async (j) => (await stopsOf(j.caller)).map((s) => s.table.number)),
+      js.map(async (j) =>
+        (await stopsOf(j.caller)).map((s) => s.seat.tableNumber),
+      ),
     );
     expect(sections).toEqual([
       [1, 2, 3, 4, 5, 6],
@@ -371,7 +554,7 @@ describe("autoAssign", () => {
     ]);
     for (const t of tables) {
       const here = await db.query.judgingAssignments.findMany({
-        where: eq(judgingAssignments.judgingTableId, t.id),
+        where: eq(judgingAssignments.judgingSeatId, t.id),
       });
       expect(new Set(here.map((a) => a.judgeId)).size).toBe(3);
     }
@@ -384,10 +567,16 @@ describe("autoAssign", () => {
       judgeCount: 35,
     });
     const twelfth = await stopsOf(js[11]!.caller);
-    expect(twelfth.map((s) => s.table.number)).toEqual([67, 68, 69, 70, 1, 2]);
+    expect(twelfth.map((s) => s.seat.tableNumber)).toEqual([
+      67, 68, 69, 70, 1, 2,
+    ]);
     expect(twelfth.map((s) => s.position)).toEqual([1, 2, 3, 4, 5, 6]);
     // Table 70 sits at the end of the snake's last row.
-    expect(twelfth[3]?.table).toMatchObject({ number: 70, row: 4, col: 13 });
+    expect(twelfth[3]?.seat).toMatchObject({
+      tableNumber: 70,
+      row: 4,
+      col: 13,
+    });
   });
 
   test("fewer judges means more tables each", async () => {
@@ -461,10 +650,11 @@ describe("judge flow", () => {
     expect(mine.layout).toMatchObject({ tableCount: 6, rows: 1, perRow: 6 });
     const first = mine.stops[0];
     assertDefined(first, "expected a first stop");
-    expect(first.table).toMatchObject({ number: 1, row: 0, col: 0 });
+    expect(first.seat).toMatchObject({ tableNumber: 1, row: 0, col: 0 });
     expect(first.team?.id).toBe(teamIds[0]);
     expect(first.team).not.toHaveProperty("joinCode");
-    expect(mine.nextStopId).toBe(first.id);
+    expect(mine.currentStopId).toBe(first.id);
+    expect(mine.nextStopId).toBe(mine.stops[1]?.id);
     expect(mine.judge.type).toBe("organizer");
   });
 
@@ -525,7 +715,8 @@ describe("judge flow", () => {
     const [submitted] = await j.caller.judging.me.getSubmittedTeamMarks();
     expect(submitted?.ratings).toEqual(breakdown.ratings);
     expect(mine.finished).toBe(1);
-    expect(mine.nextStopId).toBe(mine.stops[1]?.id);
+    expect(mine.currentStopId).toBe(mine.stops[1]?.id);
+    expect(mine.nextStopId).toBe(mine.stops[2]?.id);
     // Two other judges still have table 1 to come.
     expect((await tableByNumber(1)).status).toBe("waiting");
   });
@@ -533,7 +724,9 @@ describe("judge flow", () => {
   test("a table is finished once all 3 of its judges have scored it", async () => {
     const { judges: js } = await setupRoom({ tableCount: 3, judgeCount: 3 });
     for (const j of js) {
-      const stop = (await stopsOf(j.caller)).find((s) => s.table.number === 1);
+      const stop = (await stopsOf(j.caller)).find(
+        (s) => s.seat.tableNumber === 1,
+      );
       assertDefined(stop, "expected table 1 in every section");
       await j.caller.judging.me.submitStop({
         assignmentId: stop.id,
@@ -566,18 +759,18 @@ describe("judge flow", () => {
     const plan = await org.caller.judging.admin.autoAssign();
     expect(plan.judges).toBe(3);
     expect(await stopsOf(sponsor.caller)).toHaveLength(0);
-    for (const t of await db.query.judgingTables.findMany({})) {
+    for (const t of await db.query.judgingSeats.findMany({})) {
       const here = await db.query.judgingAssignments.findMany({
-        where: eq(judgingAssignments.judgingTableId, t.id),
+        where: eq(judgingAssignments.judgingSeatId, t.id),
       });
       expect(here).toHaveLength(3);
     }
 
     const t1 = await tableByNumber(1);
     await expect(
-      org.caller.judging.admin.addJudgeToTable({
+      org.caller.judging.admin.addSeatToJudge({
         judgeId: sponsor.session.user.id,
-        tableId: t1.id,
+        seatId: t1.id,
       }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
     await expect(
@@ -618,7 +811,7 @@ describe("judge flow", () => {
       judgeCount: 6,
     });
     const j = js[0]!;
-    const [first, second] = await stopsOf(j.caller); // tables 1 and 2
+    const [first] = await stopsOf(j.caller); // table 1
     await org.caller.judging.admin.swapTeams({
       teamAId: teamIds[0]!,
       teamBId: teamIds[11]!,
@@ -635,24 +828,26 @@ describe("judge flow", () => {
         teamId: null,
       }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
+    // The team seated there now is the right one.
     await expect(
       j.caller.judging.me.reportAbsent({
-        assignmentId: second!.id,
-        teamId: second!.team!.id,
+        assignmentId: first!.id,
+        teamId: teamIds[11]!,
       }),
     ).resolves.toMatchObject({ status: "team_absent" });
 
     // Table 13 is empty; whoever has it can report it with teamId null.
     const progress = await org.caller.judging.admin.getProgress();
-    const t13 = progress.tables.find((t) => t.number === 13);
+    const t13 = progress.seats.find((t) => t.tableNumber === 13);
     const holder = js.find((x) =>
       t13?.judges.some((h) => h.judgeId === x.session.user.id),
     );
     assertDefined(holder, "expected a judge at table 13");
     const emptyStop = (await stopsOf(holder.caller)).find(
-      (s) => s.table.number === 13,
+      (s) => s.seat.tableNumber === 13,
     );
     assertDefined(emptyStop, "expected the stop at table 13");
+    await advanceTo(holder, emptyStop.id);
     await expect(
       holder.caller.judging.me.reportAbsent({
         assignmentId: emptyStop.id,
@@ -817,10 +1012,11 @@ describe("judge flow", () => {
       judgeCount: 3,
     });
     const empty = (await stopsOf(js[0]!.caller)).find(
-      (s) => s.table.number === 3,
+      (s) => s.seat.tableNumber === 3,
     );
     assertDefined(empty, "expected table 3 in the section");
     expect(empty.team).toBeNull();
+    await advanceTo(js[0]!, empty.id);
     await expect(
       js[0]!.caller.judging.me.submitStop({
         assignmentId: empty.id,
@@ -832,6 +1028,198 @@ describe("judge flow", () => {
       assignmentId: empty.id,
     });
     expect(row.status).toBe("team_absent");
+  });
+
+  test("absence is final: every open stop at the seat closes as team_absent", async () => {
+    const { judges: js } = await setupRoom({ tableCount: 3, judgeCount: 3 });
+    const stop = await firstStop(js[0]!.caller);
+    // Another judge is already at this seat; their stop closes too.
+    const others = await db.query.judgingAssignments.findMany({
+      where: and(
+        eq(judgingAssignments.judgingSeatId, stop.seat.id),
+        sql`${judgingAssignments.id} <> ${stop.id}`,
+      ),
+      orderBy: (a, { asc }) => [asc(a.id)],
+    });
+    expect(others).toHaveLength(2);
+    await db
+      .update(judgingAssignments)
+      .set({ status: "in_progress" })
+      .where(eq(judgingAssignments.id, others[0]!.id));
+
+    await js[0]!.caller.judging.me.reportAbsent({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? null,
+    });
+    const after = await db.query.judgingAssignments.findMany({
+      where: eq(judgingAssignments.judgingSeatId, stop.seat.id),
+      orderBy: (a, { asc }) => [asc(a.id)],
+    });
+    expect(after.map((s) => [s.id, s.status])).toEqual(
+      [
+        [stop.id, "team_absent"],
+        [others[0]!.id, "team_absent"],
+        [others[1]!.id, "team_absent"],
+      ].sort((a, b) => (a[0] as number) - (b[0] as number)),
+    );
+  });
+
+  test("an absent team drops out of the ranking, even with earlier marks", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    // With 3 judges, every judge has every table.
+    for (const j of js.slice(0, 2)) await scoreAll(j, 7);
+    const absentAt = (await stopsOf(js[2]!.caller))[0]!;
+    await js[2]!.caller.judging.me.reportAbsent({
+      assignmentId: absentAt.id,
+      teamId: absentAt.team?.id ?? null,
+    });
+
+    const ranking = await org.caller.judging.admin.getLatestRanking();
+    expect(ranking.map((r) => r.team_id)).not.toContain(absentAt.team!.id);
+    expect(ranking).toHaveLength(2);
+  });
+
+  test("a judge can't be added to a seat reported absent", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const stop = await firstStop(js[0]!.caller);
+    await js[0]!.caller.judging.me.reportAbsent({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? null,
+    });
+    const extra = await makeJudge();
+    await expect(
+      org.caller.judging.admin.addSeatToJudge({
+        judgeId: extra.session.user.id,
+        seatId: stop.seat.id,
+      }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  test("deleting a mark at a seat reported absent doesn't reopen the stop", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const stop = await firstStop(js[0]!.caller);
+    const { teamMarkId } = await js[0]!.caller.judging.me.submitStop({
+      assignmentId: stop.id,
+      teamId: stop.team!.id,
+      score: 6,
+    });
+    const other = (await stopsOf(js[1]!.caller)).find(
+      (s) => s.seat.id === stop.seat.id,
+    )!;
+    await js[1]!.caller.judging.me.reportAbsent({
+      assignmentId: other.id,
+      teamId: other.team!.id,
+    });
+
+    const result = await org.caller.judging.admin.deleteTeamMark({
+      teamMarkId,
+    });
+    expect(result.reopened).toBe(false);
+    const row = await db.query.judgingAssignments.findFirst({
+      where: eq(judgingAssignments.id, stop.id),
+    });
+    expect(row?.status).toBe("done");
+  });
+
+  test("a hand-off leaves stops at seats reported absent behind", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const stop = await firstStop(js[0]!.caller);
+    await js[0]!.caller.judging.me.startStop({
+      assignmentId: stop.id,
+      teamId: stop.team!.id,
+    });
+    const other = (await stopsOf(js[1]!.caller)).find(
+      (s) => s.seat.id === stop.seat.id,
+    )!;
+    await js[1]!.caller.judging.me.reportAbsent({
+      assignmentId: other.id,
+      teamId: other.team!.id,
+    });
+
+    const floater = await makeJudge();
+    const result = await org.caller.judging.admin.handOffJudge({
+      fromJudgeId: js[0]!.session.user.id,
+      toJudgeId: floater.session.user.id,
+    });
+    expect(result.seats.map((s) => s.seatId)).not.toContain(stop.seat.id);
+    expect(result.moved).toBe(2);
+    const kept = await db.query.judgingAssignments.findFirst({
+      where: eq(judgingAssignments.id, stop.id),
+    });
+    expect(kept).toMatchObject({
+      judgeId: js[0]!.session.user.id,
+      status: "team_absent",
+    });
+  });
+
+  test("a judge can only act on their current stop", async () => {
+    const { judges: js } = await setupRoom({ tableCount: 3, judgeCount: 3 });
+    const [first, second] = await stopsOf(js[0]!.caller);
+    assertDefined(second, "expected a second stop");
+    await expect(
+      js[0]!.caller.judging.me.startStop({
+        assignmentId: second.id,
+        teamId: second.team!.id,
+      }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(
+      js[0]!.caller.judging.me.reportAbsent({
+        assignmentId: second.id,
+        teamId: second.team!.id,
+      }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    await js[0]!.caller.judging.me.submitStop({
+      assignmentId: first!.id,
+      teamId: first!.team!.id,
+      score: 6,
+    });
+    // Once the first is done, the second is current.
+    await js[0]!.caller.judging.me.startStop({
+      assignmentId: second.id,
+      teamId: second.team!.id,
+    });
+  });
+
+  test("a no-show judge gets no section and can't be handed stops", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 4,
+    });
+    // Marking a judge with stops before judging starts clears the plan.
+    const marked = await org.caller.judging.admin.setJudgeNoShow({
+      judgeId: js[3]!.session.user.id,
+      noShow: true,
+    });
+    expect(marked.planCleared).toBeGreaterThan(0);
+    await org.caller.judging.admin.autoAssign();
+    expect(await stopsOf(js[3]!.caller)).toHaveLength(0);
+    expect(await stopsOf(js[0]!.caller)).toHaveLength(3);
+    await expect(
+      org.caller.judging.admin.handOffJudge({
+        fromJudgeId: js[0]!.session.user.id,
+        toJudgeId: js[3]!.session.user.id,
+      }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    // Undo it: they're back on the roster for the next auto-assign.
+    await org.caller.judging.admin.setJudgeNoShow({
+      judgeId: js[3]!.session.user.id,
+      noShow: false,
+    });
+    await org.caller.judging.admin.autoAssign();
+    expect((await stopsOf(js[3]!.caller)).length).toBeGreaterThan(0);
   });
 
   test("judges can't touch another judge's stops", async () => {
@@ -868,7 +1256,7 @@ describe("swapTeams / moveTeam", () => {
       teamBId: teamIds[11]!,
     });
     const first = await firstStop(js[0]!.caller);
-    expect(first.table.number).toBe(1);
+    expect(first.seat.tableNumber).toBe(1);
     expect(first.team?.id).toBe(teamIds[11]);
   });
 
@@ -912,19 +1300,19 @@ describe("swapTeams / moveTeam", () => {
     await expect(
       org.caller.judging.admin.moveTeam({
         teamId: teamIds[0]!,
-        tableId: t2.id,
+        seatId: t2.id,
       }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
     await org.caller.judging.admin.moveTeam({
       teamId: teamIds[0]!,
-      tableId: t4.id,
+      seatId: t4.id,
     });
     expect((await tableByNumber(1)).status).toBe("empty");
     expect((await tableByNumber(4)).status).toBe("waiting");
   });
 });
 
-describe("handOffJudge / addJudgeToTable / cancel / absent", () => {
+describe("handOffJudge / addSeatToJudge / cancel / absent", () => {
   test("a leaving judge's unfinished tables go to a floater, in order", async () => {
     const { org, judges: js } = await setupRoom({
       tableCount: 6,
@@ -950,7 +1338,9 @@ describe("handOffJudge / addJudgeToTable / cancel / absent", () => {
     expect(result.moved).toBe(5);
 
     const theirs = await stopsOf(floater.caller);
-    expect(theirs.map((s) => s.table.number)).toEqual(result.tables);
+    expect(theirs.map((s) => s.seat.id)).toEqual(
+      result.seats.map((s) => s.seatId),
+    );
     // The in-progress stop starts over for the new judge.
     expect(theirs.every((s) => s.status === "assigned")).toBe(true);
     // The finished stop stays with the judge who scored it.
@@ -998,16 +1388,16 @@ describe("handOffJudge / addJudgeToTable / cancel / absent", () => {
     ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
-  test("addJudgeToTable tops a table up, but never twice or for a team already scored", async () => {
+  test("addSeatToJudge tops a seat up, but never twice or for a team already scored", async () => {
     const { org, judges: js } = await setupRoom({
       tableCount: 6,
       judgeCount: 3,
     });
     const extra = await makeJudge();
     const t4 = await tableByNumber(4);
-    const added = await org.caller.judging.admin.addJudgeToTable({
+    const added = await org.caller.judging.admin.addSeatToJudge({
       judgeId: extra.session.user.id,
-      tableId: t4.id,
+      seatId: t4.id,
     });
     expect(added).toMatchObject({
       tableNumber: 4,
@@ -1015,9 +1405,9 @@ describe("handOffJudge / addJudgeToTable / cancel / absent", () => {
       status: "assigned",
     });
     await expect(
-      org.caller.judging.admin.addJudgeToTable({
+      org.caller.judging.admin.addSeatToJudge({
         judgeId: extra.session.user.id,
-        tableId: t4.id,
+        seatId: t4.id,
       }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
 
@@ -1030,9 +1420,9 @@ describe("handOffJudge / addJudgeToTable / cancel / absent", () => {
     });
     const t1 = await tableByNumber(1);
     await expect(
-      org.caller.judging.admin.addJudgeToTable({
+      org.caller.judging.admin.addSeatToJudge({
         judgeId: js[0]!.session.user.id,
-        tableId: t1.id,
+        seatId: t1.id,
       }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
   });
@@ -1179,7 +1569,7 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
       teamId: stop.team?.id ?? "none",
       score: 6,
     });
-    const [, second] = await stopsOf(js[1]!.caller);
+    const [second] = await stopsOf(js[1]!.caller);
     await js[1]!.caller.judging.me.startStop({
       assignmentId: second!.id,
       teamId: second!.team?.id ?? "none",
@@ -1195,16 +1585,16 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
       done: 1,
       team_absent: 0,
     });
-    const t1 = p.tables.find((t) => t.number === 1);
+    const t1 = p.seats.find((t) => t.tableNumber === 1);
     expect(t1).toMatchObject({ judgesDone: 1, row: 0, col: 0 });
     expect(t1?.judges).toHaveLength(3);
     // Table 4 starts row 2 on the right-hand side.
-    expect(p.tables.find((t) => t.number === 4)).toMatchObject({
+    expect(p.seats.find((t) => t.tableNumber === 4)).toMatchObject({
       row: 1,
       col: 2,
     });
     const busy = p.judges.find((j) => j.id === js[1]!.session.user.id);
-    expect(busy?.current?.tableNumber).toBe(second!.table.number);
+    expect(busy?.current?.tableNumber).toBe(second!.seat.tableNumber);
   });
 
   test("getAllJudges shows the team each judge is at right now", async () => {
@@ -1225,7 +1615,7 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
     const row = roster.find((j) => j.id === js[0]!.session.user.id);
     expect(row).toMatchObject({
       currentTeamId: teamIds[0],
-      currentTableNumber: 1,
+      currentSeat: { id: stop.seat.id, tableNumber: 1, seat: 1 },
     });
     expect(
       roster.find((j) => j.id === js[1]!.session.user.id)?.currentTeamId,
@@ -1251,7 +1641,8 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
       score: 6,
     });
     expect(await hacker.judging.team.getMyJudging()).toEqual({
-      table: { number: 1, zone: "Main room", row: 0, col: 0 },
+      seat: { tableNumber: 1, seat: 1, zone: "Main room", row: 0, col: 0 },
+      absent: false,
       judges: { done: 1, total: 3 },
     });
   });
@@ -1310,6 +1701,8 @@ describe("cheat check sweep trigger", () => {
     await org.caller.judging.admin.autoAssign();
     for (const j of js) {
       for (const stop of await stopsOf(j.caller)) {
+        // Another judge's absent report may have closed this stop already.
+        if (stop.status !== "assigned") continue;
         if (stop.team) {
           await j.caller.judging.me.submitStop({
             assignmentId: stop.id,
@@ -1417,7 +1810,7 @@ describe("getLatestRanking", () => {
 
 /* ---------- table status trigger ---------- */
 
-describe("judging_table.status trigger", () => {
+describe("judging_seat.status trigger", () => {
   test("tracks seating, judging and swaps", async () => {
     const {
       org,
@@ -1435,7 +1828,7 @@ describe("judging_table.status trigger", () => {
     const t4 = await tableByNumber(4);
     await org.caller.judging.admin.moveTeam({
       teamId: teamIds[2]!,
-      tableId: t4.id,
+      seatId: t4.id,
     });
     expect((await tableByNumber(3)).status).toBe("empty");
     expect((await tableByNumber(4)).status).toBe("waiting");
@@ -1443,7 +1836,7 @@ describe("judging_table.status trigger", () => {
     // A cancelled stop doesn't count; a table whose stops are all cancelled waits.
     const atTable2 = await db.query.judgingAssignments.findMany({
       where: and(
-        eq(judgingAssignments.judgingTableId, (await tableByNumber(2)).id),
+        eq(judgingAssignments.judgingSeatId, (await tableByNumber(2)).id),
       ),
     });
     for (const a of atTable2) {
@@ -1453,7 +1846,9 @@ describe("judging_table.status trigger", () => {
 
     // Every stop at table 1 finishes: finished.
     for (const j of js) {
-      const stop = (await stopsOf(j.caller)).find((s) => s.table.number === 1);
+      const stop = (await stopsOf(j.caller)).find(
+        (s) => s.seat.tableNumber === 1,
+      );
       if (stop)
         await j.caller.judging.me.submitStop({
           assignmentId: stop.id,

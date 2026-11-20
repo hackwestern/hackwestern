@@ -8,7 +8,7 @@
  * What it does, in order:
  *   1. Applies the judging triggers (idempotent — triggers.sql source of truth).
  *   2. Wipes the judging tables (judging_assignment, team_mark, judge,
- *      judging_table, judging_settings), ALL teams, and any judge accounts
+ *      judging_seat, judging_settings), ALL teams, and any judge accounts
  *      from a previous run.
  *   3. Inserts `--teams` submitted teams, one minute apart.
  *   4. Creates `--judges` judge accounts. These are REAL credentials-provider
@@ -43,7 +43,7 @@ import {
   judges,
   judgingAssignments,
   judgingSettings,
-  judgingTables,
+  judgingSeats,
   teamMarks,
   teams,
   users,
@@ -124,8 +124,8 @@ function parseArgs(argv: string[]): Args {
   if (args.tables < 1 || args.rows < 1 || args.teams < 1) {
     throw new Error("--tables, --rows and --teams must all be >= 1");
   }
-  if (args.teams > args.tables) {
-    throw new Error("--teams cannot exceed --tables (one team per table)");
+  if (args.teams > args.tables * 2) {
+    throw new Error("--teams cannot exceed 2 x --tables (two teams per table)");
   }
   // The organizer account judges too, so it counts toward the 3 per table.
   if (args.judges + 1 < 3) {
@@ -141,12 +141,12 @@ async function seedJudging(args: Args) {
   const organizerId = faker.string.uuid();
   await db.transaction(async (tx) => {
     // 2. Wipe judging state. Order respects FKs. users.team_id and
-    // team.judging_table_id are ON DELETE SET NULL, so deleting is safe.
+    // team.judging_seat_id are ON DELETE SET NULL, so deleting is safe.
     await tx.delete(judgingAssignments).where(sql`true`);
     await tx.delete(teamMarks).where(sql`true`);
     await tx.delete(judges).where(sql`true`);
     await tx.delete(teams).where(sql`true`);
-    await tx.delete(judgingTables).where(sql`true`);
+    await tx.delete(judgingSeats).where(sql`true`);
     await tx.delete(judgingSettings).where(sql`true`);
     await tx
       .delete(users)
@@ -320,7 +320,7 @@ try {
     // clack is TTY-only, so it's used solely for this interactive confirm.
     const ok = await p.confirm({
       message:
-        "This DELETES all rows in team, judge, team_mark, judging_table, " +
+        "This DELETES all rows in team, judge, team_mark, judging_seat, " +
         "judging_settings and judging_assignment. Continue?",
     });
     if (ok !== true) {
@@ -336,9 +336,9 @@ try {
   console.log(
     [
       `Seeded in ${secs}s:`,
-      `  ${args.tables} tables in ${args.rows} rows`,
-      `  ${seating.seated} teams seated (${args.random ? "random" : "submission order"}), ${seating.emptyTables} tables empty`,
-      `  ${plan.judges} judges, ${plan.tablesPerJudge.min}-${plan.tablesPerJudge.max} tables each, ${plan.judgesPerTable} per table`,
+      `  ${plan.tables} tables (${plan.seats} seats) in ${args.rows} rows`,
+      `  ${seating.seated} teams seated (${args.random ? "random" : "submission order"}), ${seating.emptySeats} seats empty`,
+      `  ${plan.judges} judges, ${plan.seatsPerJudge.min}-${plan.seatsPerJudge.max} seats each, ${plan.judgesPerSeat} per seat`,
       ...(args.marks
         ? [`  ${marks} marks written (see judging_team_scores)`]
         : []),

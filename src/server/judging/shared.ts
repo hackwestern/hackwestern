@@ -5,12 +5,13 @@ import { type Transaction, db } from "~/server/db";
 import {
   judgingAssignments,
   judgingSettings,
-  judgingTables,
+  judgingSeats,
 } from "~/server/db/schema";
 import {
   DEFAULT_SETTINGS,
   type LayoutSettings,
   tablesPerRow,
+  seatName,
 } from "~/server/judging/layout";
 
 export type Tx = Transaction | typeof db;
@@ -45,7 +46,7 @@ export async function getSettings(
   const settings = {
     tableCount: row?.tableCount ?? DEFAULT_SETTINGS.tableCount,
     rows: row?.rows ?? DEFAULT_SETTINGS.rows,
-    judgesPerTable: row?.judgesPerTable ?? DEFAULT_SETTINGS.judgesPerTable,
+    judgesPerSeat: row?.judgesPerSeat ?? DEFAULT_SETTINGS.judgesPerSeat,
   };
   return { ...settings, perRow: tablesPerRow(settings) };
 }
@@ -68,20 +69,81 @@ export async function assertNotStarted(action: string, tx: Tx = db) {
   }
 }
 
-/** True if any stop at one of these tables is in progress or finished. */
-export async function tablesHaveStarted(
-  tableIds: number[],
+/** True if any stop at one of these seats is in progress or finished. */
+export async function seatsHaveStarted(
+  seatIds: number[],
   tx: Tx = db,
 ): Promise<boolean> {
-  if (tableIds.length === 0) return false;
+  if (seatIds.length === 0) return false;
   const row = await tx.query.judgingAssignments.findFirst({
     where: and(
-      inArray(judgingAssignments.judgingTableId, tableIds),
+      inArray(judgingAssignments.judgingSeatId, seatIds),
       inArray(judgingAssignments.status, STARTED_STATUSES),
     ),
     columns: { id: true },
   });
   return !!row;
+}
+
+/**
+ * Seats (of these) whose team was reported absent. Absence is final, so no
+ * endpoint may give such a seat a live stop: no top-up, no hand-off, no
+ * reopened stop.
+ */
+export async function absentSeatIds(
+  seatIds: number[],
+  tx: Tx = db,
+): Promise<Set<number>> {
+  if (seatIds.length === 0) return new Set();
+  const rows = await tx
+    .selectDistinct({ seatId: judgingAssignments.judgingSeatId })
+    .from(judgingAssignments)
+    .where(
+      and(
+        inArray(judgingAssignments.judgingSeatId, seatIds),
+        eq(judgingAssignments.status, "team_absent"),
+      ),
+    );
+  return new Set(rows.map((r) => r.seatId));
+}
+
+/**
+ * Messages name seats like the screens do: "Table 4" for a table with one
+ * seat, "Table 4 (seat 1)" / "Table 4 (seat 2)" for a split table (one with
+ * an active seat 2). Returns the labels in the order given.
+ */
+export async function seatLabels(
+  tx: Tx,
+  seats: { tableNumber: number; seat: number }[],
+): Promise<string[]> {
+  const numbers = [...new Set(seats.map((s) => s.tableNumber))];
+  const split =
+    numbers.length === 0
+      ? new Set<number>()
+      : new Set(
+          (
+            await tx
+              .select({ tableNumber: judgingSeats.tableNumber })
+              .from(judgingSeats)
+              .where(
+                and(
+                  inArray(judgingSeats.tableNumber, numbers),
+                  eq(judgingSeats.seat, 2),
+                  eq(judgingSeats.isActive, true),
+                ),
+              )
+          ).map((r) => r.tableNumber),
+        );
+  return seats.map(
+    (s) => `Table ${seatName(s, s.seat === 2 || split.has(s.tableNumber))}`,
+  );
+}
+
+export async function seatLabel(
+  tx: Tx,
+  seat: { tableNumber: number; seat: number },
+) {
+  return (await seatLabels(tx, [seat]))[0]!;
 }
 
 /*
@@ -91,11 +153,11 @@ export async function tablesHaveStarted(
  *   1. the judging_settings row (exclusive for plan changes, shared otherwise)
  *   2. judging_assignment rows, by id
  *   3. team rows, by id
- *   4. judging_table rows, by id (the status trigger also locks these)
+ *   4. judging_seat rows, by id (the status trigger also locks these)
  */
 
 /**
- * Plan changes (table setup, seating, auto-assign, switching tables on/off)
+ * Plan changes (table setup, seating, auto-assign, switching seats on/off)
  * hold the settings row exclusively, so no judge action or day-of fix can run
  * between their "has judging started?" check and their writes.
  */
@@ -113,7 +175,7 @@ export async function lockPlanExclusive(tx: Tx) {
 
 /**
  * Judge actions and day-of fixes hold the settings row shared: they don't
- * block each other, only plan changes. No row yet means no tables, so no plan.
+ * block each other, only plan changes. No row yet means no seats, so no plan.
  */
 export async function lockPlanShared(tx: Tx) {
   await tx
@@ -123,14 +185,14 @@ export async function lockPlanShared(tx: Tx) {
     .for("share");
 }
 
-/** Lock judging_table rows in id order (step 4 of the lock order). */
-export async function lockTables(tx: Tx, tableIds: number[]) {
-  if (tableIds.length === 0) return;
+/** Lock judging_seat rows in id order (step 4 of the lock order). */
+export async function lockSeats(tx: Tx, seatIds: number[]) {
+  if (seatIds.length === 0) return;
   await tx
-    .select({ id: judgingTables.id })
-    .from(judgingTables)
-    .where(inArray(judgingTables.id, [...new Set(tableIds)]))
-    .orderBy(asc(judgingTables.id))
+    .select({ id: judgingSeats.id })
+    .from(judgingSeats)
+    .where(inArray(judgingSeats.id, [...new Set(seatIds)]))
+    .orderBy(asc(judgingSeats.id))
     .for("update");
 }
 
