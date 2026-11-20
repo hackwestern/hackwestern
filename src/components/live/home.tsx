@@ -13,7 +13,7 @@ import { ExternalLink } from "lucide-react";
 import AllScans from "~/components/live/all-scans";
 import { HackerChecklist } from "~/components/live/hacker-checklist";
 import { cn } from "~/lib/utils";
-import { realmLabel } from "~/constants/realms";
+import { realmLabel, realmTint } from "~/constants/realms";
 import { HW13_DEVPOST_URL } from "~/utils/urls";
 
 // Format text: replace underscores with spaces and capitalize each word
@@ -283,9 +283,18 @@ const HackerHome = () => {
                       </p>
                     )}
                     {application?.realm && (
-                      <p className="mt-1 text-center text-sm font-medium text-dashboard-text-medium">
-                        {realmLabel[application.realm]} Realm
-                      </p>
+                      <div className="mt-2 flex justify-center">
+                        <span
+                          className="rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide"
+                          style={{
+                            backgroundColor:
+                              realmTint[application.realm].tintColor,
+                            color: realmTint[application.realm].accent,
+                          }}
+                        >
+                          {realmLabel[application.realm]} Realm
+                        </span>
+                      </div>
                     )}
                   </>
                 ) : (
