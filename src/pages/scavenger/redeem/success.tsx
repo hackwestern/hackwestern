@@ -1,5 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { Check } from "lucide-react";
+import { DashboardButton } from "~/components/internals/dashboard-button";
 import { authRedirectOrganizer } from "~/utils/redirect";
 import type { GetServerSidePropsContext } from "next";
 
@@ -37,35 +39,25 @@ export default function RedeemSuccessPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-6 rounded-lg border border-border bg-card p-8 text-center">
+    <div className="flex h-dvh w-full flex-col items-center justify-center bg-dashboard-bg-nav p-6 font-figtree">
+      <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-[10px] border border-dashboard-border-subtle bg-dashboard-bg-surface p-8 text-center shadow-dashboard-card">
         {/* Success Icon */}
-        <div className="bg-green-100 mx-auto flex h-16 w-16 items-center justify-center rounded-full">
-          <svg
-            className="text-green-600 h-8 w-8"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
+        <div className="flex size-16 items-center justify-center rounded-full bg-dashboard-bg-highlight">
+          <Check className="size-8 text-dashboard-status-live" />
         </div>
 
         {/* Success Message */}
-        <h1 className="font-dico text-3xl font-medium text-heavy">
+        <h1 className="text-[32px] font-bold leading-[1.2] text-dashboard-text-heavy">
           Redemption Successful
         </h1>
 
         {/* Reward Name */}
         {rewardName && (
-          <div className="space-y-1">
-            <p className="font-secondary text-sm text-medium">Reward:</p>
-            <p className="font-secondary text-lg font-medium text-heavy">
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-medium text-dashboard-text-light">
+              Reward
+            </p>
+            <p className="text-lg font-semibold text-dashboard-text-heavy">
               {formatTitle(rewardName)}
             </p>
           </div>
@@ -73,9 +65,11 @@ export default function RedeemSuccessPage() {
 
         {/* User Name */}
         {userName && (
-          <div className="space-y-1">
-            <p className="font-secondary text-sm text-medium">Redeemed by:</p>
-            <p className="font-secondary text-lg font-medium text-heavy">
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-medium text-dashboard-text-light">
+              Hacker
+            </p>
+            <p className="text-lg font-semibold text-dashboard-text-heavy">
               {userName}
             </p>
           </div>
@@ -92,12 +86,9 @@ export default function RedeemSuccessPage() {
         )}
 
         {/* Back Button */}
-        <button
-          onClick={handleBackToRewards}
-          className="w-full rounded-lg bg-primary px-6 py-3 font-secondary font-medium text-primary-foreground transition-colors hover:bg-primary-700"
-        >
+        <DashboardButton className="w-full" onClick={handleBackToRewards}>
           Back to Rewards
-        </button>
+        </DashboardButton>
       </div>
     </div>
   );

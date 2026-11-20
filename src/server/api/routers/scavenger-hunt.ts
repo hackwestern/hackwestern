@@ -169,6 +169,7 @@ const redeemPrize = async (
   userId: string,
   rewardId: number,
   checkQuantity = false,
+  scannerId?: string,
   expectedCost?: number, // The price the scanner showed
 ) => {
   return withErrorHandling(async () => {
@@ -240,6 +241,7 @@ const redeemPrize = async (
       await tx.insert(scavengerHuntRedemptions).values({
         userId: userId,
         rewardId: rewardId,
+        scannerId,
       });
       return costPoints;
     });
@@ -834,26 +836,38 @@ export const scavengerHuntRouter = createTRPCRouter({
         .limit(input.limit);
     }),
 
-  // Redeem a Reward (only accessible to users)
-  redeem: protectedProcedure
-    .input(
-      z.object({
-        rewardId: z.number(),
-      }),
-    )
-    .mutation(async ({ input, ctx }) => {
-      return withErrorHandling(async () => {
-        const { rewardId } = input;
-        const userId = ctx.session.user.id;
-
-        await redeemPrize(userId, rewardId);
-
-        return {
-          success: true,
-          message: "Reward redeemed successfully",
-        };
-      }, "Failed to redeem reward");
-    }),
+  // Self-redeem endpoint: hackers redeem rewards themselves. Not used, since organizers redeem by scanning (redeemForUser).
+  // // Redeem a Reward (only accessible to users)
+  // redeem: protectedProcedure
+  //   .input(
+  //     z.object({
+  //       rewardId: z.number(),
+  //     }),
+  //   )
+  //   .mutation(async ({ input, ctx }) => {
+  //     return withErrorHandling(async () => {
+  //       const { rewardId } = input;
+  //       const userId = ctx.session.user.id;
+  //
+  //       // Check if reward exists
+  //       const reward = await db.query.scavengerHuntRewards.findFirst({
+  //         where: eq(scavengerHuntRewards.id, rewardId),
+  //       });
+  //       if (!reward) {
+  //         throw new TRPCError({
+  //           code: "NOT_FOUND",
+  //           message: "Reward not found",
+  //         });
+  //       }
+  //
+  //       await redeemPrize(userId, rewardId, reward.costPoints);
+  //
+  //       return {
+  //         success: true,
+  //         message: "Reward redeemed successfully",
+  //       };
+  //     }, "Failed to redeem reward");
+  //   }),
 
   // Redeem a Reward for a User (only accessible to organizers)
   redeemForUser: protectedOrganizerProcedure
@@ -864,7 +878,7 @@ export const scavengerHuntRouter = createTRPCRouter({
         expectedCost: z.number().int().optional(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       return withErrorHandling(async () => {
         const { rewardId, expectedCost } = input;
         const userId = await resolveScannedUserId(input.userId);
@@ -885,6 +899,7 @@ export const scavengerHuntRouter = createTRPCRouter({
           userId,
           rewardId,
           true,
+          ctx.session.user.id,
           expectedCost,
         );
 
@@ -1060,6 +1075,7 @@ export const scavengerHuntRouter = createTRPCRouter({
             "attendance",
             "wins",
             "bonus",
+            "rewards",
           ])
           .optional()
           .default("all"),
@@ -1085,9 +1101,10 @@ export const scavengerHuntRouter = createTRPCRouter({
           );
         } else if (filter === "wins") {
           conditions.push(eq(scavengerHuntScans.activityType, "win"));
-        } else if (filter !== "all") {
+        } else if (filter !== "all" && filter !== "rewards") {
           conditions.push(eq(scavengerHuntItems.type, FILTER_TYPES[filter]));
         }
+        const redemptionConditions: SQL[] = [];
         if (search) {
           const pattern = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
           conditions.push(
@@ -1098,87 +1115,196 @@ export const scavengerHuntRouter = createTRPCRouter({
               ilike(scannerUsers.name, pattern),
             )!,
           );
+          redemptionConditions.push(
+            or(
+              ilike(users.name, pattern),
+              ilike(users.email, pattern),
+              ilike(scavengerHuntRewards.name, pattern),
+              ilike(scannerUsers.name, pattern),
+            )!,
+          );
         }
         const where = conditions.length ? and(...conditions) : undefined;
+        const redemptionWhere = redemptionConditions.length
+          ? and(...redemptionConditions)
+          : undefined;
 
-        // Get one page of scans with user, item, and scanner info using joins
-        const [pageScans, [totals]] = await Promise.all([
-          db
-            .select({
-              userId: scavengerHuntScans.userId,
-              itemId: scavengerHuntScans.itemId,
-              scannerId: scavengerHuntScans.scannerId,
-              createdAt: scavengerHuntScans.createdAt,
-              userName: users.name,
-              userEmail: users.email,
-              itemName: scavengerHuntItems.name,
-              itemType: scavengerHuntItems.type,
-              activityType: scavengerHuntScans.activityType,
-              scannerName: scannerUsers.name,
-              scannerEmail: scannerUsers.email,
-            })
-            .from(scavengerHuntScans)
-            .innerJoin(users, eq(scavengerHuntScans.userId, users.id))
-            .innerJoin(
-              scavengerHuntItems,
-              eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
-            )
-            .leftJoin(
-              scannerUsers,
-              eq(scavengerHuntScans.scannerId, scannerUsers.id),
-            )
-            .where(where)
-            .orderBy(
-              desc(scavengerHuntScans.createdAt),
-              scavengerHuntScans.userId,
-              scavengerHuntScans.itemId,
-            )
-            .limit(pageSize)
-            .offset((page - 1) * pageSize),
-          db
-            .select({ total: count() })
-            .from(scavengerHuntScans)
-            .innerJoin(users, eq(scavengerHuntScans.userId, users.id))
-            .innerJoin(
-              scavengerHuntItems,
-              eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
-            )
-            .leftJoin(
-              scannerUsers,
-              eq(scavengerHuntScans.scannerId, scannerUsers.id),
-            )
-            .where(where),
+        const includeScans = filter !== "rewards";
+        const includeRedemptions = filter === "all" || filter === "rewards";
+
+        // With both sources, take the first page * pageSize rows of each, then merge and cut out the page
+        const offset = (page - 1) * pageSize;
+        const merged = includeScans && includeRedemptions;
+        const limit = merged ? page * pageSize : pageSize;
+        const sourceOffset = merged ? 0 : offset;
+
+        const [[totals], [redemptionTotals]] = await Promise.all([
+          includeScans
+            ? db
+                .select({ total: count() })
+                .from(scavengerHuntScans)
+                .innerJoin(users, eq(scavengerHuntScans.userId, users.id))
+                .innerJoin(
+                  scavengerHuntItems,
+                  eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+                )
+                .leftJoin(
+                  scannerUsers,
+                  eq(scavengerHuntScans.scannerId, scannerUsers.id),
+                )
+                .where(where)
+            : [{ total: 0 }],
+          includeRedemptions
+            ? db
+                .select({ total: count() })
+                .from(scavengerHuntRedemptions)
+                .innerJoin(users, eq(scavengerHuntRedemptions.userId, users.id))
+                .innerJoin(
+                  scavengerHuntRewards,
+                  eq(
+                    scavengerHuntRedemptions.rewardId,
+                    scavengerHuntRewards.id,
+                  ),
+                )
+                .leftJoin(
+                  scannerUsers,
+                  eq(scavengerHuntRedemptions.scannerId, scannerUsers.id),
+                )
+                .where(redemptionWhere)
+            : [{ total: 0 }],
         ]);
 
-        const total = totals?.total ?? 0;
+        const total = (totals?.total ?? 0) + (redemptionTotals?.total ?? 0);
+
+        // Skip the row queries past the last page, so a large page number can't load every row
+        const inRange = offset < total;
+
+        // Get one page of scans with user, item, and scanner info using joins
+        const [pageScans, pageRedemptions] = await Promise.all([
+          includeScans && inRange
+            ? db
+                .select({
+                  userId: scavengerHuntScans.userId,
+                  itemId: scavengerHuntScans.itemId,
+                  scannerId: scavengerHuntScans.scannerId,
+                  createdAt: scavengerHuntScans.createdAt,
+                  userName: users.name,
+                  userEmail: users.email,
+                  itemName: scavengerHuntItems.name,
+                  itemType: scavengerHuntItems.type,
+                  activityType: scavengerHuntScans.activityType,
+                  scannerName: scannerUsers.name,
+                  scannerEmail: scannerUsers.email,
+                })
+                .from(scavengerHuntScans)
+                .innerJoin(users, eq(scavengerHuntScans.userId, users.id))
+                .innerJoin(
+                  scavengerHuntItems,
+                  eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+                )
+                .leftJoin(
+                  scannerUsers,
+                  eq(scavengerHuntScans.scannerId, scannerUsers.id),
+                )
+                .where(where)
+                .orderBy(
+                  desc(scavengerHuntScans.createdAt),
+                  scavengerHuntScans.userId,
+                  scavengerHuntScans.itemId,
+                )
+                .limit(limit)
+                .offset(sourceOffset)
+            : [],
+          includeRedemptions && inRange
+            ? db
+                .select({
+                  id: scavengerHuntRedemptions.id,
+                  userId: scavengerHuntRedemptions.userId,
+                  scannerId: scavengerHuntRedemptions.scannerId,
+                  createdAt: scavengerHuntRedemptions.createdAt,
+                  userName: users.name,
+                  userEmail: users.email,
+                  rewardName: scavengerHuntRewards.name,
+                  scannerName: scannerUsers.name,
+                  scannerEmail: scannerUsers.email,
+                })
+                .from(scavengerHuntRedemptions)
+                .innerJoin(users, eq(scavengerHuntRedemptions.userId, users.id))
+                .innerJoin(
+                  scavengerHuntRewards,
+                  eq(
+                    scavengerHuntRedemptions.rewardId,
+                    scavengerHuntRewards.id,
+                  ),
+                )
+                .leftJoin(
+                  scannerUsers,
+                  eq(scavengerHuntRedemptions.scannerId, scannerUsers.id),
+                )
+                .where(redemptionWhere)
+                .orderBy(
+                  desc(scavengerHuntRedemptions.createdAt),
+                  desc(scavengerHuntRedemptions.id),
+                )
+                .limit(limit)
+                .offset(sourceOffset)
+            : [],
+        ]);
+
+        const formatDay = (date: Date | null) =>
+          date
+            ? new Date(date).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })
+            : "N/A";
+        const formatTime = (date: Date | null) =>
+          date
+            ? new Date(date).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "N/A";
 
         // Format the data for display
-        const scans = pageScans.map((scan) => ({
+        const scanRows = pageScans.map((scan) => ({
           id: `${scan.userId}-${scan.itemId}-${scan.activityType}`,
           hackerName: scan.userName ?? scan.userEmail ?? scan.userId,
           event: `${scan.itemName}${scan.activityType === "win" ? " (Win)" : ""}`,
-          type: scan.itemType,
-          activityType: scan.activityType,
+          type: scan.itemType as string,
+          activityType: scan.activityType as string | null,
           scanner:
             scan.scannerName ??
             scan.scannerEmail ??
             scan.scannerId ??
             "Organizer", // Use actual scanner name from database
-          day: scan.createdAt
-            ? new Date(scan.createdAt).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              })
-            : "N/A",
-          time: scan.createdAt
-            ? new Date(scan.createdAt).toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              })
-            : "N/A",
+          day: formatDay(scan.createdAt),
+          time: formatTime(scan.createdAt),
           createdAt: scan.createdAt,
         }));
+        const redemptionRows = pageRedemptions.map((redemption) => ({
+          id: `redemption-${redemption.id}`,
+          hackerName:
+            redemption.userName ?? redemption.userEmail ?? redemption.userId,
+          event: `${redemption.rewardName} (Reward)`,
+          type: "reward",
+          activityType: null,
+          scanner:
+            redemption.scannerName ??
+            redemption.scannerEmail ??
+            redemption.scannerId ??
+            "—",
+          day: formatDay(redemption.createdAt),
+          time: formatTime(redemption.createdAt),
+          createdAt: redemption.createdAt,
+        }));
+
+        const scans = merged
+          ? [...scanRows, ...redemptionRows]
+              .sort((x, y) => y.createdAt.getTime() - x.createdAt.getTime())
+              .slice(offset, offset + pageSize)
+          : [...scanRows, ...redemptionRows];
 
         return {
           scans,
