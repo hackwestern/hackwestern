@@ -16,6 +16,7 @@ import {
   readContacts,
   readRoster,
   readRunOfShow,
+  type CellMerge,
   type Person,
 } from "~/server/slack/organizer-schedule";
 import {
@@ -52,14 +53,8 @@ async function settings(): Promise<Config> {
   return { ...parse(file), ...process.env };
 }
 
-/** A sheet tab as rows of strings: a local CSV when a path is set, else live. */
-async function grid(
-  config: Config,
-  path: string | undefined,
-  sheet: string,
-  range: string,
-): Promise<string[][]> {
-  if (path) return readCsv(await readFile(path, "utf8"));
+/** The Sheets API as the service account, plus its email for error text. */
+function sheetsApi(config: Config) {
   const email = setting(config.RUN_OF_SHOW_SHEETS_CLIENT_EMAIL);
   const key = config.RUN_OF_SHOW_SHEETS_PRIVATE_KEY?.replace(/\\n/g, "\n");
   if (!email || !key) {
@@ -72,10 +67,45 @@ async function grid(
     key,
     scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
   });
+  return { api: google.sheets({ version: "v4", auth }), email };
+}
+
+/** The tab's merged cells (a task's height); none for a local CSV copy. */
+async function merges(
+  config: Config,
+  path: string | undefined,
+  sheet: string,
+  range: string,
+): Promise<CellMerge[]> {
+  if (path) return [];
+  const { api } = sheetsApi(config);
+  const res = await api.spreadsheets.get({
+    spreadsheetId: sheet,
+    ranges: [range],
+    fields: "sheets.merges",
+  });
+  return (res.data.sheets?.[0]?.merges ?? []).map((m) => ({
+    startRowIndex: m.startRowIndex ?? 0,
+    endRowIndex: m.endRowIndex ?? 0,
+    startColumnIndex: m.startColumnIndex ?? 0,
+    endColumnIndex: m.endColumnIndex ?? 0,
+  }));
+}
+
+/** A sheet tab as rows of strings: a local CSV when a path is set, else live. */
+async function grid(
+  config: Config,
+  path: string | undefined,
+  sheet: string,
+  range: string,
+): Promise<string[][]> {
+  if (path) return readCsv(await readFile(path, "utf8"));
+  const { api, email } = sheetsApi(config);
   try {
-    const res = await google
-      .sheets({ version: "v4", auth })
-      .spreadsheets.values.get({ spreadsheetId: sheet, range });
+    const res = await api.spreadsheets.values.get({
+      spreadsheetId: sheet,
+      range,
+    });
     return (res.data.values ?? []).map((row) => row.map((c) => String(c)));
   } catch (error) {
     const code = (error as { code?: number }).code;
@@ -102,7 +132,16 @@ async function load(config: Config) {
     ),
     readRoster(schedule),
   );
-  const parsed = readRunOfShow(schedule, contacts.people);
+  const parsed = readRunOfShow(
+    schedule,
+    contacts.people,
+    await merges(
+      config,
+      setting(config.ORGANIZER_RUN_OF_SHOW_PATH),
+      setting(config.ORGANIZER_RUN_OF_SHOW_SHEET) ?? RUN_OF_SHOW_SHEET,
+      RUN_OF_SHOW_RANGE,
+    ),
+  );
   const skipNames = new Set(
     (config.ORGANIZER_NOTIFICATION_SKIP_NAMES ?? "")
       .split(",")

@@ -119,14 +119,37 @@ describe("planOrganizerReminders", () => {
       reminderKey: "organizer:Ann:2026-11-20T21:45:00.000Z",
       postAt: new Date("2026-11-20T21:30:00Z"),
     });
+    // One row tall: ends when the next row starts.
     expect(ann[0]?.text).toContain(
-      "⏰ In 15 min (4:45 PM): *Registration desk*",
+      "⏰ In 15 min (4:45 PM to 5:00 PM): *Registration desk*",
     );
     expect(ann[0]?.text).toContain("> Location: Rm 1110");
     expect(ann[0]?.text).toContain("👥 With: Bob");
-    expect(ann[0]?.text).toContain(
-      "➡️ Next for you: 7:00 PM · ALL ORGANIZERS ARRIVE",
+    expect(ann[0]?.text).not.toContain("Next for you");
+  });
+
+  test("a merged (taller) cell ends at the row below it", () => {
+    // Registration desk sits at row 4, column 1; merged down through row 5.
+    const merged = readRunOfShow(grid, people, [
+      {
+        startRowIndex: 4,
+        endRowIndex: 6,
+        startColumnIndex: 1,
+        endColumnIndex: 2,
+      },
+    ]);
+    const desk = merged.tasks.find((t) => t.title === "Registration desk");
+    expect(desk?.end).toEqual(new Date("2026-11-20T23:00:00Z")); // 6:00 PM
+    const dm = planOrganizerReminders(merged.tasks).find(
+      (r) => r.recipientName === "Bob",
     );
+    expect(dm?.text).toContain("(4:45 PM to 6:00 PM)");
+  });
+
+  test("no end when the row below isn't a time row", () => {
+    // ALL ORGANIZERS ARRIVE (7:00 PM) is followed by the overnight note.
+    const all = tasks.find((t) => t.title === "ALL ORGANIZERS ARRIVE");
+    expect(all?.end).toBeUndefined();
   });
 
   test("a repeated row for the same task is one reminder", () => {

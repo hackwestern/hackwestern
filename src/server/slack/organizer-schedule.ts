@@ -63,12 +63,21 @@ const CONTINUATION_MS = 2 * 60 * 60_000;
 export type OrganizerTask = {
   id: string;
   at: Date;
+  /** When the cell's last row ends (its height on the sheet); unknown when not clear. */
+  end?: Date;
   title: string;
   details: string[];
   owners: string[];
   /** Whole teams the owner line names ("Spon"); their members are in owners. */
   teams: string[];
   everyone: boolean;
+};
+/** A merged range from the Sheets API (0-based, end exclusive). */
+export type CellMerge = {
+  startRowIndex: number;
+  endRowIndex: number;
+  startColumnIndex: number;
+  endColumnIndex: number;
 };
 export type SkippedCell = { at: Date; title: string; reason: string };
 export type UnrecognizedOwners = { at: Date; title: string; names: string[] };
@@ -292,6 +301,8 @@ export function readRoster(grid: string[][]): string[] {
 export function readRunOfShow(
   grid: string[][],
   people: Person[] = [],
+  /** The tab's merged cells (Sheets API, 0-based, end exclusive): a task's height. */
+  merges: CellMerge[] = [],
 ): {
   roster: string[];
   tasks: OrganizerTask[];
@@ -326,12 +337,47 @@ export function readRunOfShow(
         .map((p) => [p.fullName.toLowerCase(), p.name]),
     ),
   };
+  // When each time row starts, so a task's end is the row below its cell.
+  const rowAt = new Map<number, Date>();
+  {
+    let d: Day | null = null;
+    let prev: number | null = null;
+    grid.forEach((row, r) => {
+      if (r <= headerAt) return;
+      const first = row[0]?.trim() ?? "";
+      const heading = DAYS.find((x) => x === first.toUpperCase());
+      if (heading) {
+        d = heading;
+        prev = null;
+        return;
+      }
+      const m = minutesOf(first);
+      if (m === null || !d) return;
+      if (prev !== null && m < prev - 6 * 60)
+        d = DAYS[DAYS.indexOf(d) + 1] ?? d;
+      prev = m;
+      rowAt.set(r, instant(d, m));
+    });
+  }
+  /** End of the cell at (r, c): the next time row below it (merged = taller). */
+  const endOf = (r: number, c: number, at: Date): Date | undefined => {
+    const merge = merges.find(
+      (m) =>
+        m.startRowIndex === r &&
+        m.startColumnIndex <= c &&
+        c < m.endColumnIndex,
+    );
+    const end = rowAt.get(merge ? merge.endRowIndex : r + 1);
+    return end && end > at ? end : undefined;
+  };
+
   const tasks: OrganizerTask[] = [];
   const skipped: SkippedCell[] = [];
   const unrecognized: UnrecognizedOwners[] = [];
   let day: Day | null = null;
   let last: number | null = null;
-  for (const row of grid.slice(headerAt + 1)) {
+  for (const [offset, row] of grid.slice(headerAt + 1).entries()) {
+    const r = headerAt + 1 + offset;
     const first = row[0]?.trim() ?? "";
     const heading = DAYS.find((d) => d === first.toUpperCase());
     if (heading) {
@@ -370,6 +416,7 @@ export function readRunOfShow(
         tasks.push({
           id: idFor(day, minutes, `c${column}`),
           at,
+          end: endOf(r, column, at),
           title: cell.title,
           details: cell.details,
           owners: cell.owners,
@@ -429,18 +476,6 @@ const clock = new Intl.DateTimeFormat("en-US", {
   minute: "2-digit",
   hour12: true,
 });
-const weekday = new Intl.DateTimeFormat("en-US", {
-  timeZone: zone,
-  weekday: "short",
-});
-const dayKey = new Intl.DateTimeFormat("en-CA", { timeZone: zone });
-
-function when(date: Date, relativeTo: Date) {
-  return dayKey.format(date) === dayKey.format(relativeTo)
-    ? clock.format(date)
-    : `${weekday.format(date)} ${clock.format(date)}`;
-}
-
 const normalTitle = (title: string) =>
   title
     .toLowerCase()
@@ -455,22 +490,30 @@ export type OrganizerReminder = {
   text: string;
 };
 
+/** "4:45 PM to 5:30 PM", or just the start when the end isn't clear. */
+function span(task: Pick<OrganizerTask, "at" | "end">): string {
+  return task.end
+    ? copy.slack.span(clock.format(task.at), clock.format(task.end))
+    : clock.format(task.at);
+}
+
 function formatReminder(
   name: string,
   group: OrganizerTask[],
-  next: OrganizerTask | undefined,
   lead: number,
 ): string {
-  const at = group[0]!.at;
-  const time = clock.format(at);
   const lines = [
     group.length === 1
-      ? copy.slack.header(lead, time, escapeSlackText(group[0]!.title))
-      : copy.slack.headerMany(lead, time, group.length),
+      ? copy.slack.header(
+          lead,
+          span(group[0]!),
+          escapeSlackText(group[0]!.title),
+        )
+      : copy.slack.headerMany(lead, clock.format(group[0]!.at), group.length),
   ];
   for (const task of group) {
     if (group.length > 1)
-      lines.push(copy.slack.item(escapeSlackText(task.title)));
+      lines.push(copy.slack.item(escapeSlackText(task.title), span(task)));
     lines.push(...task.details.map((line) => `> ${escapeSlackText(line)}`));
     const others = task.owners.filter((owner) => owner !== name);
     if (task.everyone) lines.push(copy.slack.everyone);
@@ -480,11 +523,6 @@ function formatReminder(
       );
     else if (others.length) lines.push(copy.slack.with(others.join(", ")));
   }
-  lines.push(
-    next
-      ? copy.slack.next(when(next.at, at), escapeSlackText(next.title))
-      : copy.slack.last,
-  );
   return lines.join("\n");
 }
 
@@ -528,11 +566,7 @@ export function planTeamPosts(
       if (repeat) continue;
       posted.push({ team, at: +task.at, title });
       const lines = [
-        copy.slack.header(
-          lead,
-          clock.format(task.at),
-          escapeSlackText(task.title),
-        ),
+        copy.slack.header(lead, span(task), escapeSlackText(task.title)),
         ...task.details.map((line) => `> ${escapeSlackText(line)}`),
         copy.slack.teamLine(team, task.owners.join(", ")),
       ];
@@ -587,12 +621,7 @@ export function planOrganizerReminders(
         recipientName: name,
         postAt: new Date(time - lead * 60_000),
         taskIds: group.map((task) => `${name}/${task.id}`),
-        text: formatReminder(
-          name,
-          group,
-          kept.find((task) => +task.at > time),
-          lead,
-        ),
+        text: formatReminder(name, group, lead),
       });
     }
   }

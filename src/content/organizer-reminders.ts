@@ -10,8 +10,10 @@ export const organizerRemindersCopy = {
     /** First line when several of the person's tasks share a time. */
     headerMany: (lead: number, time: string, count: number) =>
       `⏰ In ${lead} min (${time}): ${count} things`,
-    /** Each task's title when several are listed. */
-    item: (title: string) => `• *${title}*`,
+    /** Each task's title and time when several are listed. */
+    item: (title: string, time: string) => `• *${title}* (${time})`,
+    /** A task's start and end, from its height on the run of show. */
+    span: (start: string, end: string) => `${start} to ${end}`,
     /** The other owners of the task. */
     with: (names: string) => `👥 With: ${names}`,
     /** The owner line names a team ("Spon"); names are its other members. */
@@ -21,11 +23,6 @@ export const organizerRemindersCopy = {
     teamLine: (team: string, names: string) => `👥 ${team} team: ${names}`,
     /** The task is for every organizer. */
     everyone: "👥 With: all organizers",
-    /** The person's next task after this one. */
-    next: (when: string, title: string) =>
-      `➡️ Next for you: ${when} · ${title}`,
-    /** Nothing after this one. */
-    last: "➡️ That's your last task on the run of show 🎉",
     /** Sheet-check DM to the admin when the problem list changes. */
     problems: {
       header: (count: number) =>
