@@ -31,7 +31,8 @@ describe("parseOrganizerLocation", () => {
       sponsor: null,
     });
     expect(parseOrganizerLocation({ tab: "coffee" }).tab).toBe("coffee");
-    expect(parseOrganizerLocation({ tab: "schedule" }).tab).toBe("schedule");
+    // The Full run of show tool is gone: its old links open Home.
+    expect(parseOrganizerLocation({ tab: "schedule" }).tab).toBe("sponsors");
     expect(parseOrganizerLocation({ tab: "judging" }).tab).toBe("judging");
     expect(parseOrganizerLocation({ tab: "nope" }).tab).toBe("sponsors");
     expect(parseOrganizerLocation({ tab: ["coffee", "judging"] }).tab).toBe(
@@ -50,7 +51,7 @@ describe("parseOrganizerLocation", () => {
       expect(loc.tab).toBe("sponsors");
     }
     expect(parseOrganizerLocation({ tab: "help" }, "#rooms").tab).toBe(
-      "schedule",
+      "sponsors",
     );
   });
 
@@ -58,14 +59,13 @@ describe("parseOrganizerLocation", () => {
     expect(ORGANIZER_TABS as readonly string[]).not.toContain("pings");
   });
 
-  it("sends the old Where is everyone links to the rooms", () => {
+  it("sends the old Where is everyone links to Home", () => {
     for (const loc of [
       parseOrganizerLocation({ tab: "where" }),
       parseOrganizerLocation({ view: "where" }),
       parseOrganizerLocation({ tab: "coffee" }, "#rooms"),
     ]) {
-      expect(loc.tab).toBe("schedule");
-      expect(loc.jumpToRooms).toBe(true);
+      expect(loc.tab).toBe("sponsors");
     }
     expect(parseOrganizerLocation({ view: "coffee" }).tab).toBe("coffee");
   });
@@ -112,11 +112,9 @@ describe("organizerHomeHref", () => {
 
 describe("legacyScheduleDestination", () => {
   it("maps /internal/sponsor-schedule onto the matching tab", () => {
-    expect(legacyScheduleDestination({})).toBe(
-      "/internal/sponsors?tab=schedule",
-    );
+    expect(legacyScheduleDestination({})).toBe("/internal/sponsors");
     expect(legacyScheduleDestination({ tab: "schedule" })).toBe(
-      "/internal/sponsors?tab=schedule",
+      "/internal/sponsors",
     );
     expect(legacyScheduleDestination({ tab: "coffee" })).toBe(
       "/internal/sponsors?tab=coffee",
@@ -128,7 +126,7 @@ describe("legacyScheduleDestination", () => {
       "/internal/sponsors",
     );
     expect(legacyScheduleDestination({ tab: "where" })).toBe(
-      "/internal/sponsors?tab=schedule#rooms",
+      "/internal/sponsors",
     );
     expect(legacyScheduleDestination({ tab: "coffee", sponsor: A })).toBe(
       `/internal/sponsors?tab=coffee&sponsor=${A}`,

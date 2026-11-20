@@ -77,11 +77,14 @@ export function parseOrganizerLocation(
 ): OrganizerLocation {
   const asked = first(query.tab) ?? first(query.view);
   const rooms = asked === "where" || hash === "#rooms";
-  const tab: OrganizerTab = rooms
-    ? "schedule"
-    : ORGANIZER_TABS.includes(asked as OrganizerTab)
-      ? (asked as OrganizerTab)
-      : "sponsors";
+  // The Full run of show tool is gone (Jazz, 2026-11-19): its links,
+  // ?tab=where and #rooms open Home, which now carries its extra sections.
+  const tab: OrganizerTab =
+    rooms || asked === "schedule"
+      ? "sponsors"
+      : ORGANIZER_TABS.includes(asked as OrganizerTab)
+        ? (asked as OrganizerTab)
+        : "sponsors";
   const sponsor = first(query.sponsor)?.trim();
   return {
     tab,
@@ -129,9 +132,7 @@ export function legacyScheduleDestination(query: OrganizerQuery): string {
   const tab: OrganizerTab =
     asked === "coffee"
       ? "coffee"
-      : asked === "help" || asked === "pings"
-        ? "sponsors"
-        : "schedule";
+      : "sponsors";
   return organizerHomeHref({
     tab,
     sponsor: first(query.sponsor) ?? null,

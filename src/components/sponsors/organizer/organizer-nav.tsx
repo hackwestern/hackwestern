@@ -12,7 +12,7 @@ const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1";
 
 /** The tools behind the Tools menu, in menu order. */
-const TOOLS = ["coffee", "judging", "schedule"] as const satisfies readonly OrganizerTab[];
+const TOOLS = ["coffee", "judging"] as const satisfies readonly OrganizerTab[];
 
 /**
  * The dashboard's nav (mock organizer-sponsors-home-v3): Home and a small

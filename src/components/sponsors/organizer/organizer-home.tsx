@@ -14,7 +14,10 @@ import { DayGrid } from "~/components/sponsors/day-grid";
 import { SponsorLogo } from "~/components/sponsors/organizer/day-cells";
 import { Pill, type MySponsorData } from "~/components/sponsors/organizer/my-sponsors";
 import { PrimaryCrownIcon } from "~/components/sponsors/organizer/primary-crown";
-import type { OrganizerSchedule } from "~/components/sponsors/organizer/run-of-show-tab";
+import {
+  RunOfShowExtras,
+  type OrganizerSchedule,
+} from "~/components/sponsors/organizer/run-of-show-tab";
 import { CopyLinkButton } from "~/components/sponsors/organizer/sponsors-tab";
 import { useSponsorWrites } from "~/components/sponsors/organizer/use-sponsor-writes";
 import { PhoneCopy } from "~/components/sponsors/phone-copy";
@@ -341,18 +344,6 @@ export function OrganizerHome({
                 {me ? copy.yourDay : copy.yourDayNoMatch}
               </h2>
             }
-            headerEnd={
-              <DashboardButton variant="link" asChild className="-mr-2">
-                <Link
-                  href={organizerHomeHref({ tab: "schedule" })}
-                  shallow
-                  scroll={false}
-                >
-                  {copy.fullRunOfShow}
-                  <ExternalLink aria-hidden />
-                </Link>
-              </DashboardButton>
-            }
             entries={[
               ...buildOrganizerTimeline({
                 day,
@@ -490,6 +481,8 @@ export function OrganizerHome({
           />
         )}
       </section>
+
+      {schedule && <RunOfShowExtras data={schedule} day={day} />}
     </div>
   );
 }

@@ -205,6 +205,54 @@ export function RunOfShowTab({
 }
 
 /**
+ * The run of show's extra sections for one day, on the organizer Home
+ * under the sponsor table (Jazz, 2026-11-19: the Full run of show tool is
+ * gone; Home's "Your day" already has the grid): the spon team's free
+ * hours, Sunday judging rooms, the ceremony running order, that day's
+ * workshops, the sheet link and when it was read.
+ */
+export function RunOfShowExtras({
+  data,
+  day,
+}: {
+  data: OrganizerSchedule;
+  day: RunOfShowDay;
+}) {
+  // Same query (and cache) as the page's sponsor summary.
+  const summary = api.sponsorOrganizer.summary.useQuery(undefined, {
+    refetchOnWindowFocus: true,
+    retry: 1,
+  });
+  const judging = summary.data?.judging;
+  const judgingDay = judging?.day ?? JUDGING_DEFAULT_DAY;
+  return (
+    <div className="flex min-w-0 flex-col gap-5">
+      <SponAvailabilityTable
+        availability={data.availability}
+        day={day}
+        items={data.items}
+      />
+      {!summary.isLoading && day === judgingDay && (
+        <JudgingPanel
+          board={judging}
+          failed={summary.isError}
+          sheetUrl={data.sheetUrl}
+        />
+      )}
+      <CeremonyOrder
+        segments={ceremonySegmentsForDay(data.ceremonies, data.items, day)}
+        items={data.items}
+      />
+      <WorkshopsTable workshops={workshopsForDay(data.workshops, day)} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <ReadAt iso={data.readAt} />
+        {data.sheetUrl && <SheetEditButton href={data.sheetUrl} />}
+      </div>
+    </div>
+  );
+}
+
+/**
  * The old coffee chat room-block editor (room-blocks.tsx, add-coffee-chat.tsx
  * via CoffeeChatRoomTable) is hidden: the Coffee chats tab's session board
  * replaces it (decisions 2026-11-19). The code stays; flip to show it again.
