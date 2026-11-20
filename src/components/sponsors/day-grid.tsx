@@ -795,6 +795,8 @@ function GridBlock({
 }) {
   const isTask = entry.kind === "task";
   const booking = entry.booking ?? null;
+  // The sponsor's Saturday before chats are confirmed: one dashed block.
+  const chatPlaceholder = entry.category === "coffee-chat" && !booking;
   // Meals and ceremonies matter to sponsors too: drawn full strength, not
   // greyed with the other hackathon events (Jazz, 2026-11-18).
   const strong = entry.kind !== "hackathon" || isAlwaysShown(entry);
@@ -865,7 +867,15 @@ function GridBlock({
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
           isTask
             ? "border-l-4 border-dashboard-border-task bg-dashboard-bg-task text-dashboard-text-task shadow-dashboard-card"
-            : strong
+            : chatPlaceholder
+              ? "border border-dashed border-dashboard-chat-line bg-dashboard-bg-surface text-dashboard-text-heavy"
+              : booking
+                ? cn(
+                    // A coffee chat: purple, a colour nothing else on the grid uses.
+                    "border-l-4 border-dashboard-chat-line bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card",
+                    live && "ring-2 ring-dashboard-chat-line",
+                  )
+                : strong
               ? cn(
                   "border-l-4 border-dashboard-action-primary bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card",
                   live && "ring-2 ring-dashboard-action-primary",
@@ -874,12 +884,12 @@ function GridBlock({
         )}
       >
         {/* Tint over white so the block stays opaque over the rules. */}
-        {strong && !isTask && (
+        {strong && !isTask && !chatPlaceholder && (
           <span
             aria-hidden
             className={cn(
               "pointer-events-none absolute inset-0",
-              COLUMN_TINT[column],
+              booking ? "bg-dashboard-chat-tint" : COLUMN_TINT[column],
             )}
           />
         )}

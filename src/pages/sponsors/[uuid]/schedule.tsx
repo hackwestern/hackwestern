@@ -1,51 +1,47 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/router";
-import Link from "next/link";
-import { ScanLine } from "lucide-react";
-import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DayPicker } from "~/components/sponsors/day-picker";
-import { HappeningNowBanner } from "~/components/sponsors/happening-now";
-import { NextEventCard } from "~/components/sponsors/next-event-card";
 import {
   DayGrid,
   HackathonToggle,
   useShowHackathon,
 } from "~/components/sponsors/day-grid";
+import { chip } from "~/components/sponsors/portal-ui";
 import {
   InvalidLink,
   LoadError,
-  ReadAt,
   ScheduleSkeleton,
 } from "~/components/sponsors/schedule-states";
-import { pressable, SponsorShell } from "~/components/sponsors/sponsor-shell";
+import { SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { useNow } from "~/components/sponsors/use-now";
-import { WorkshopDetails } from "~/components/sponsors/workshop-details";
-import { coffeeChatCopy } from "~/content/coffee-chat";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import { RUN_OF_SHOW_DAYS, type RunOfShowDay } from "~/lib/run-of-show";
 import { defaultRunOfShowDay } from "~/lib/run-of-show-time";
 import { fetchScheduleData } from "~/lib/schedule";
-import { chatsForSponsor, coffeeChatEntries } from "~/lib/schedule-bookings";
-import { nextOwnEvent } from "~/lib/sponsor-next-event";
-import { buildSponsorTimeline } from "~/lib/sponsor-timeline";
-import { cn } from "~/lib/utils";
+import { buildSponsorTimeline, type TimelineEntry } from "~/lib/sponsor-timeline";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
 const copy = scheduleCopy.schedule;
-/** How often booked coffee chats refresh on the schedule. */
-const LIVE_REFRESH_MS = 15_000;
 
-// A sponsor's own schedule from the run-of-show sheet (read-only; the sheet
-// is the source of truth), laid over the hackathon's public schedule (the
-// one /live shows, from /api/schedule). Refreshes every minute.
+const minutesOf = (hhmm: string) => {
+  const [h, m] = hhmm.split(":").map(Number) as [number, number];
+  return h * 60 + m;
+};
+
+// The sponsor's Schedule (mock sponsor-chats-v3, from sponsor-today-v4): the
+// run of show day grid with their own events full strength, the rest of the
+// hackathon behind them, and on Saturday their confirmed coffee chats (one
+// purple block per rep session, from the session setup), filterable by rep.
+// Before chats are confirmed, Saturday shows one placeholder block.
 export default function SponsorSchedulePage() {
   const router = useRouter();
   const id = typeof router.query.uuid === "string" ? router.query.uuid : "";
   const validUuid = uuidRegex.test(id);
   const now = useNow();
   const [day, setDay] = useState<RunOfShowDay | null>(null);
+  const [rep, setRep] = useState<string | null>(null);
 
   const q = api.sponsorSchedule.get.useQuery(
     { sponsor: id },
@@ -59,19 +55,14 @@ export default function SponsorSchedulePage() {
     refetchInterval: 60_000,
   });
   const [showHackathon, setShowHackathon] = useShowHackathon();
-  // This sponsor's own booked chats (the server scopes them to the UUID;
-  // first names only, as on scan). Live, like the organizer view.
-  const chats = api.coffeeChatRequests.sponsorChats.useQuery(
+  // The sponsor's coffee chats (session model): sent chats with invites.
+  const setupQ = api.coffeeChatSetup.get.useQuery(
     { sponsor: id },
-    {
-      enabled: validUuid,
-      refetchInterval: LIVE_REFRESH_MS,
-      refetchOnWindowFocus: true,
-    },
+    { enabled: validUuid, retry: 1, refetchInterval: 60_000, refetchOnWindowFocus: false },
   );
 
   const shell = (children: React.ReactNode) => (
-    <SponsorShell title={copy.seoTitle} heading={copy.seoTitle} lead={copy.intro}>
+    <SponsorShell title={copy.seoTitle} heading={copy.heading} lead={copy.lead}>
       {children}
     </SponsorShell>
   );
@@ -85,11 +76,55 @@ export default function SponsorSchedulePage() {
   if (!q.data) return shell(<LoadError onRetry={() => void q.refetch()} />);
 
   const data = q.data;
+  const setup = setupQ.data;
   // ?day=saturday opens a given day (shareable); otherwise today.
   const linkedDay = RUN_OF_SHOW_DAYS.find(
     (d) => d.toLowerCase() === String(router.query.day ?? "").toLowerCase(),
   );
   const shownDay = day ?? linkedDay ?? defaultRunOfShowDay(now);
+  const confirmed = !!setup?.confirmed && setup.chats.length > 0;
+  const repName = (repId: string) => setup?.reps.find((r) => r.id === repId)?.name ?? "";
+  const chatReps = setup?.reps.filter((r) => setup.chats.some((c) => c.repId === r.id)) ?? [];
+  const chatEntries: TimelineEntry[] =
+    shownDay !== "Saturday" || !setup
+      ? []
+      : confirmed
+        ? setup.chats
+            .filter((c) => rep === null || c.repId === rep)
+            .map((c) => {
+              const room = copy.chatRoom(c.room, c.building === "ivey");
+              return {
+                id: `chat-${c.placementId}`,
+                kind: "yours" as const,
+                category: "coffee-chat" as const,
+                title: copy.chatTitle(repName(c.repId)),
+                location: room,
+                start: minutesOf(c.start),
+                end: minutesOf(c.end),
+                booking: {
+                  sponsorName: data.sponsorName,
+                  room,
+                  slotTime: c.start,
+                  chats: c.hackers.map((h, i) => ({
+                    chatId: `${c.placementId}-${i}`,
+                    hacker: h.firstName,
+                    status: h.status,
+                  })),
+                },
+              };
+            })
+        : [
+            {
+              id: "chat-placeholder",
+              kind: "yours" as const,
+              category: "coffee-chat" as const,
+              title: copy.chatsPlaceholder,
+              location: null,
+              start: 600,
+              end: 1020,
+            },
+          ];
+  // The run of show's own coffee chat row is replaced by the sponsor's chats.
   const entries = [
     ...buildSponsorTimeline({
       day: shownDay,
@@ -97,73 +132,45 @@ export default function SponsorSchedulePage() {
       live: live.data,
       sponsorName: data.sponsorName,
       showHackathon,
-    }),
-    ...coffeeChatEntries(
-      shownDay,
-      chatsForSponsor(
-        (chats.data?.chats ?? []).map((c) => ({
-          ...c,
-          sponsorName: chats.data?.sponsorName ?? "",
-          hacker: c.firstName,
-        })),
-        data.sponsorName,
-      ),
-    ),
+    }).filter((e) => !(e.category === "coffee-chats" && e.kind === "yours")),
+    ...chatEntries,
   ];
-  const nextEvent = nextOwnEvent({
-    sponsorName: data.sponsorName,
-    items: data.items,
-    ceremonies: data.ceremonies,
-    coffeeChat: data.coffeeChat,
-    holds: chats.data?.holds ?? [],
-    now,
-  });
 
   return shell(
     <>
-      <HappeningNowBanner
-        items={data.items}
-        now={now}
-        sponsorName={data.sponsorName}
-      />
-      <NextEventCard event={nextEvent} sponsor={id} />
-      {/* Your workshops first, ahead of the schedule; Need help sits under
-          the schedule (Jazz, 2026-11-18). */}
-      <WorkshopDetails workshops={data.workshops} />
-      {shownDay === "Saturday" && (
-        <>
-          {/* The old window/hours CoffeeChatSummary is unlinked: the
-              session model lives on the Chats page (track A). */}
-          <nav
-            aria-label={coffeeChatCopy.hub.linksLabel}
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-          >
-            <DashboardButton
-              asChild
-              className={cn("md:h-11 md:w-full", pressable)}
-            >
-              <Link href={`/sponsors/${id}/scan`}>
-                <ScanLine aria-hidden />
-                {coffeeChatCopy.hub.scan}
-              </Link>
-            </DashboardButton>
-            <DashboardButton
-              variant="outline"
-              asChild
-              className={cn("h-11 w-full", pressable)}
-            >
-              <Link href={`/sponsors/${id}/coffee-chats`}>
-                {coffeeChatCopy.hub.list}
-              </Link>
-            </DashboardButton>
-          </nav>
-        </>
+      {shownDay === "Saturday" && confirmed && (
+        <div className="flex flex-col gap-3">
+          <div role="group" aria-label={copy.repsLabel} className="flex flex-wrap gap-2">
+            {[{ id: null, name: copy.everyone }, ...chatReps].map((r) => (
+              <button
+                key={r.id ?? "all"}
+                type="button"
+                aria-pressed={rep === r.id}
+                className={chip(rep === r.id)}
+                onClick={() => setRep(r.id)}
+              >
+                {/* First names fit the chips, as in the mock. */}
+                {r.id ? (r.name.split(/\s+/)[0] ?? r.name) : r.name}
+              </button>
+            ))}
+          </div>
+          <p className="m-0 flex flex-wrap gap-4 text-[13px] text-dashboard-text-medium">
+            <span className="inline-flex items-center gap-1.5">
+              <i aria-hidden className="inline-block h-3.5 w-2.5 rounded-sm border-l-4 border-dashboard-chat-line bg-dashboard-chat-tint" />
+              {copy.legendChats}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <i aria-hidden className="inline-block h-3.5 w-2.5 rounded-sm border-l-4 border-dashboard-action-primary bg-dashboard-bg-surface" />
+              {copy.legendEvents}
+            </span>
+          </p>
+        </div>
       )}
       <DayGrid
         day={shownDay}
         entries={entries}
         now={now}
-        headerStart={<DayPicker value={shownDay} onChange={setDay} />}
+        headerStart={<DayPicker value={shownDay} onChange={setDay} large />}
         headerEnd={
           <HackathonToggle
             showHackathon={showHackathon}
@@ -173,7 +180,6 @@ export default function SponsorSchedulePage() {
         sponsorName={data.sponsorName}
         workshops={data.workshops}
       />
-      <ReadAt iso={data.readAt} />
     </>,
   );
 }

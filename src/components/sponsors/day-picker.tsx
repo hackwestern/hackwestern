@@ -14,7 +14,10 @@ export function DayPicker({
   label = scheduleCopy.dayPicker,
   dayLabel = (day) => day,
   tourId,
+  large = false,
 }: {
+  /** 44px at every width (the sponsor Schedule, mock sponsor-chats-v2). */
+  large?: boolean;
   value: RunOfShowDay;
   onChange: (day: RunOfShowDay) => void;
   days?: readonly RunOfShowDay[];
@@ -41,7 +44,8 @@ export function DayPicker({
             aria-pressed={selected}
             onClick={() => onChange(day)}
             className={cn(
-              "inline-flex h-11 cursor-pixel-hover items-center justify-center whitespace-nowrap rounded-full px-3 font-figtree text-sm font-semibold leading-none sm:h-8 sm:text-xs",
+              "inline-flex h-11 cursor-pixel-hover items-center justify-center whitespace-nowrap rounded-full px-3 font-figtree text-sm font-semibold leading-none",
+              !large && "sm:h-8 sm:text-xs",
               press,
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-1",
               selected

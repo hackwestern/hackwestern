@@ -43,7 +43,20 @@ export const scheduleCopy = {
   },
 
   schedule: {
-    seoTitle: "Your schedule",
+    seoTitle: "Schedule",
+    heading: "Schedule",
+    /** Under the heading (mock sponsor-chats-v3). */
+    lead: "Times are Eastern",
+    /** Rep chips over Saturday's grid, once chats are confirmed. */
+    repsLabel: "Show coffee chats for",
+    everyone: "Everyone",
+    legendChats: "Your coffee chats",
+    legendEvents: "Your events",
+    /** One block per rep session. */
+    chatTitle: (rep: string) => `Coffee chats · ${rep}`,
+    chatRoom: (room: string, ivey: boolean) => (ivey ? `Ivey, Rm ${room}` : `Rm ${room}`),
+    /** Saturday before chats are confirmed. */
+    chatsPlaceholder: "Coffee chats: times confirmed Fri 10 PM",
     eyebrow: "Schedule",
     title: (sponsor: string) => `${sponsor} at Hack Western`,
     intro:
