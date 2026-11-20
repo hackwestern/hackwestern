@@ -44,11 +44,15 @@ import {
   type Building,
 } from "~/lib/coffee-chat-sessions";
 
-/** Saturday "HH:MM" -> absolute time. */
+/**
+ * Minutes after Saturday midnight -> absolute time. Counts on past
+ * midnight (1470 = Sun 12:30 AM): invite rounds keep numbering into Sunday,
+ * and a "24:30" time string would be an Invalid Date that broke the coffee
+ * chat board all of Sunday.
+ */
 export function saturdayAt(minutes: number): Date {
-  const h = String(Math.floor(minutes / 60)).padStart(2, "0");
-  const m = String(minutes % 60).padStart(2, "0");
-  return new Date(`${COFFEE_CHAT_DATE}T${h}:${m}:00${COFFEE_CHAT_UTC_OFFSET}`);
+  const midnight = new Date(`${COFFEE_CHAT_DATE}T00:00:00${COFFEE_CHAT_UTC_OFFSET}`);
+  return new Date(midnight.getTime() + minutes * 60_000);
 }
 
 /**

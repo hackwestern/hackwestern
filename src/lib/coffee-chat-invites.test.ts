@@ -300,6 +300,15 @@ describe("round timing", () => {
     expect(reconfirmExpiresAt(at("11:20"), min("11:45"), "near")).toBeNull();
   });
 
+  test("saturdayAt counts on past midnight (the board loads all Sunday)", () => {
+    // 24:30 used to be an Invalid Date, which broke coffeeChatInvites.status
+    // once invite rounds numbered into Sunday.
+    expect(saturdayAt(24 * 60 + 30).toISOString()).toBe(
+      "2026-11-22T05:30:00.000Z",
+    );
+    expect(Number.isNaN(saturdayAt(3000).getTime())).toBe(false);
+  });
+
   test("saturdayAt is Eastern time", () => {
     expect(saturdayAt(600).toISOString()).toBe("2026-11-21T15:00:00.000Z");
   });
