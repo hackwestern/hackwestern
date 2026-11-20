@@ -55,6 +55,7 @@ import {
   sponsorJudgingSponsors,
   sponsorPresentations,
   sponsorShortlistSends,
+  sponsorTop5Drafts,
   sponsorTeamReviews,
   sponsorTeamScores,
   teams,
@@ -388,11 +389,14 @@ export const sponsorScoringRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const sponsor = await findTrackSponsor(input.sponsor);
       const track = await fetchSponsorTrack(sponsor.name);
-      const [eligible, scores, final, round, reps] = await Promise.all([
+      const [eligible, scores, final, draft, round, reps] = await Promise.all([
         listEligibleTeams(track),
         scoresFor(sponsor.id),
         db.query.sponsorFinalPicks.findFirst({
           where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
+        }),
+        db.query.sponsorTop5Drafts.findFirst({
+          where: eq(sponsorTop5Drafts.sponsorId, sponsor.id),
         }),
         roundFor(sponsor.id),
         repNames(sponsor.id),
@@ -407,6 +411,9 @@ export const sponsorScoringRouter = createTRPCRouter({
         retrySheetSoon(sponsor.id, final.submittedAt);
       }
       const finalIds = final?.teamIds.filter((id) => visible.has(id)) ?? [];
+      const draftIds = draft?.teamIds
+        .slice(0, SPONSOR_FINAL_TOP)
+        .map((id) => (id && visible.has(id) ? id : null)) ?? null;
       return {
         sponsorName: sponsor.name,
         sponsorTrack: track,
@@ -422,6 +429,10 @@ export const sponsorScoringRouter = createTRPCRouter({
           ...round,
           slots: round.slots.filter((s) => visible.has(s.teamId)),
         },
+        /** Five place slots, preserving blank positions. */
+        top5Draft: draftIds
+          ? Array.from({ length: SPONSOR_FINAL_TOP }, (_, i) => draftIds[i] ?? null)
+          : null,
         final: final
           ? {
               teamIds: finalIds,
@@ -623,6 +634,68 @@ export const sponsorScoringRouter = createTRPCRouter({
         });
       await mirrorSponsorJudgingSoon();
       return { sentAt, teamIds };
+    }),
+
+  /**
+   * Autosave the sponsor's partial Top 5 slot state. Empty places are
+   * represented by null, preserving place numbers and allowing resumption.
+   * This never submits a final ranking.
+   */
+  saveTop5Draft: publicProcedure
+    .input(
+      z.object({
+        sponsor: sponsorInput,
+        teamIds: z
+          .array(teamIdInput.nullable())
+          .length(SPONSOR_FINAL_TOP),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      assertOpen();
+      const sponsor = await findTrackSponsor(input.sponsor);
+      const track = await fetchSponsorTrack(sponsor.name);
+      const round = await roundFor(sponsor.id);
+      if (!round.round2Open) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Round 2 is not open",
+        });
+      }
+      if (round.slots.length === 0) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "This sponsor has no presentation slots",
+        });
+      }
+
+      const allowed = new Set(round.slots.map((slot) => slot.teamId));
+      const chosen = input.teamIds.filter((id): id is string => id !== null);
+      if (new Set(chosen).size !== chosen.length) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Each place must contain a different team",
+        });
+      }
+      if (chosen.some((id) => !allowed.has(id))) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Only teams that presented to this sponsor can be picked",
+        });
+      }
+
+      const stored = input.teamIds.map((id) => id ?? "");
+      await db
+        .insert(sponsorTop5Drafts)
+        .values({
+          sponsorId: sponsor.id,
+          teamIds: stored,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: sponsorTop5Drafts.sponsorId,
+          set: { teamIds: stored, updatedAt: new Date() },
+        });
+      return { teamIds: input.teamIds };
     }),
 
   /**

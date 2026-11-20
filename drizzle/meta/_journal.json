@@ -407,6 +407,13 @@
       "when": 1795095525322,
       "tag": "0060_coffee_invite_notified",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1795141210054,
+      "tag": "0058_wet_scorpion",
+      "breakpoints": true
     }
   ]
 }

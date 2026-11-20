@@ -66,29 +66,18 @@ export function ShortlistRanking({
     [shortlist],
   );
   const submitted = data.final?.teamIds ?? [];
-
-  const initialIds = submitted.filter((id) =>
-    shortlist.some((team) => team.id === id),
-  );
+  const initialIds =
+    data.top5Draft ??
+    submitted.filter((id) => shortlist.some((team) => team.id === id));
   const [topIds, setTopIds] = useState<(string | null)[]>(() =>
-    Array.from({ length: top }, (_, i) => initialIds[i] ?? null),
+    Array.from(
+      { length: top },
+      (_, i) => initialIds[i] ?? null,
+    ),
   );
   const [selectionSlot, setSelectionSlot] = useState<number | null>(null);
   const [selectionQuery, setSelectionQuery] = useState("");
   const [draggedId, setDraggedId] = useState<string | null>(null);
-  const submittedKey = submitted.join(",");
-  const appliedSubmittedKey = useRef(submittedKey);
-
-  useEffect(() => {
-    if (appliedSubmittedKey.current === submittedKey) return;
-    appliedSubmittedKey.current = submittedKey;
-    const available = new Set(shortlist.map((team) => team.id));
-    setTopIds(
-      Array.from({ length: top }, (_, i) =>
-        submitted[i] && available.has(submitted[i]!) ? submitted[i]! : null,
-      ),
-    );
-  }, [submittedKey, submitted, shortlist, top]);
 
   // Keep the place number stable: if a team becomes unavailable, clear only
   // that slot instead of filling it or shifting the remaining picks.
@@ -105,8 +94,23 @@ export function ShortlistRanking({
 
   const [confirming, setConfirming] = useState(false);
   const [announce, setAnnounce] = useState("");
+  const [draftState, setDraftState] = useState<"saved" | "saving" | "error">(
+    "saved",
+  );
+  const draftKey = topIds.map((id) => id ?? "").join("|");
+  const firstDraftSave = useRef(true);
 
   const utils = api.useUtils();
+  const saveDraft = api.sponsorScoring.saveTop5Draft.useMutation({
+    onMutate: () => setDraftState("saving"),
+    onSuccess: (_res, vars) => {
+      setDraftState("saved");
+      utils.sponsorScoring.get.setData({ sponsor }, (old) =>
+        old ? { ...old, top5Draft: vars.teamIds } : old,
+      );
+    },
+    onError: () => setDraftState("error"),
+  });
   const submit = api.sponsorScoring.submit.useMutation({
     onSuccess: (res) => {
       setConfirming(false);
@@ -115,6 +119,20 @@ export function ShortlistRanking({
       );
     },
   });
+
+  useEffect(() => {
+    if (firstDraftSave.current) {
+      firstDraftSave.current = false;
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      saveDraft.mutate({
+        sponsor,
+        teamIds: topIds,
+      });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [draftKey, sponsor, saveDraft.mutate, topIds]);
 
   const picks = topIds.filter((id): id is string => id !== null);
   const canSubmit = picks.length === top && data.open;
@@ -214,9 +232,26 @@ export function ShortlistRanking({
       </p>
 
       <div className="flex flex-col gap-1">
-        <h3 className="m-0 text-base font-semibold text-dashboard-text-heavy">
-          {copy.shortlist.slotsHeading}
-        </h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="m-0 text-base font-semibold text-dashboard-text-heavy">
+            {copy.shortlist.slotsHeading}
+          </h3>
+          <span
+            aria-live="polite"
+            className={cn(
+              "min-w-20 text-right text-xs font-medium",
+              draftState === "error"
+                ? "text-dashboard-status-warning"
+                : "text-dashboard-text-light",
+            )}
+          >
+            {draftState === "saving"
+              ? copy.saving
+              : draftState === "error"
+                ? copy.saveFailed
+                : copy.saved}
+          </span>
+        </div>
         <p className="m-0 text-sm text-dashboard-text-medium">
           {copy.shortlist.slotsIntro}
         </p>

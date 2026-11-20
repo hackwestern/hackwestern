@@ -790,6 +790,18 @@ export const sponsorFinalPicks = pgTable("sponsor_final_pick", {
   sheetSyncedAt: timestamp("sheet_synced_at", { mode: "date", precision: 3 }),
 });
 
+// Unsubmitted Top 5 progress. Null slots are represented by empty strings
+// so the five-place order stays stable while a sponsor is choosing teams.
+export const sponsorTop5Drafts = pgTable("sponsor_top5_draft", {
+  sponsorId: uuid("sponsor_id")
+    .primaryKey()
+    .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+  teamIds: varchar("team_ids", { length: 12 }).array().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
+
 // The shortlist a sponsor sent at the end of round 1: a snapshot of the
 // shortlisted team ids, so later shortlist edits don't move the schedule
 // until the sponsor sends again. Sending again replaces it
