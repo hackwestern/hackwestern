@@ -264,6 +264,10 @@ export const dashboardColors = {
   },
   action: {
     primary: "#0b6bc4", // primary buttons, selected filters, tags, progress
+    destructive: "#c62828", // delete buttons
+    destructiveHover: "#a51f1f",
+    neutral: "#e6ebf0", // cancel buttons
+    neutralHover: "#d5dde5",
   },
   border: {
     default: "#cdddeb", // navigation, secondary buttons

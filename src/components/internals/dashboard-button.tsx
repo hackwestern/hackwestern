@@ -19,6 +19,10 @@ export const dashboardButtonVariants = cva(
           "gap-0 rounded-full border border-dashboard-border-default bg-dashboard-bg-surface p-[10px] text-[0px] text-dashboard-text-medium shadow-dashboard-secondary-btn hover:bg-dashboard-bg-highlight disabled:opacity-dashboard-disabled md:gap-2 md:px-4 md:py-[9px] md:text-[16px]",
         tertiary:
           "gap-2.5 py-1 text-sm text-dashboard-text-medium hover:text-dashboard-text-light md:text-[16px]",
+        destructive:
+          "h-11 w-full gap-2.5 rounded-dashboard-lg bg-dashboard-action-destructive px-4 pb-3 pt-2.5 text-base text-dashboard-text-inverse hover:bg-dashboard-action-destructiveHover disabled:opacity-dashboard-disabled md:h-auto md:w-auto",
+        neutral:
+          "h-11 w-full gap-2.5 rounded-dashboard-lg bg-dashboard-action-neutral px-4 pb-3 pt-2.5 text-base text-dashboard-text-heavy hover:bg-dashboard-action-neutralHover disabled:opacity-dashboard-disabled md:h-auto md:w-auto",
         outline:
           "h-10 gap-2 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3.5 text-sm text-dashboard-text-heavy hover:bg-dashboard-bg-highlight",
       },

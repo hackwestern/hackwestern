@@ -30,11 +30,15 @@ import {
   scavengerHuntRewards,
   scavengerHuntRedemptions,
   scavengerHuntActivityType,
+  scavengerHuntItemType,
   applications,
 } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { isUserApprovedForEvent } from "~/server/api/utils/approval";
-import { resolveScannedUserId } from "~/server/api/utils/hacker-id";
+import {
+  isUniqueViolation,
+  resolveScannedUserId,
+} from "~/server/api/utils/hacker-id";
 import { admittedStatuses } from "~/lib/admission";
 
 // Helper function to handle TRPC errors consistently
@@ -140,6 +144,12 @@ const notDeleted = () =>
 
 // Scannable: not deleted and not a draft or disabled
 const isOpen = () => and(eq(scavengerHuntItems.status, "active"), notDeleted());
+
+const activityNotFound = () =>
+  new TRPCError({
+    code: "NOT_FOUND",
+    message: "This activity was deleted. Refresh the page.",
+  });
 
 // * Safe Functions: Check is done within the transaction to avoid race conditions */
 const redeemPrize = async (
@@ -438,6 +448,173 @@ export const scavengerHuntRouter = createTRPCRouter({
           .set({ deletedAt: new Date() })
           .where(eq(scavengerHuntItems.id, itemId));
       }, "Failed to delete item");
+    }),
+
+  // * ACTIVITIES (organizer Activities tab) * //
+  getScavengerHuntItems: protectedOrganizerProcedure.query(async () => {
+    return withErrorHandling(
+      () =>
+        db
+          .select({
+            id: scavengerHuntItems.id,
+            name: scavengerHuntItems.name,
+            type: scavengerHuntItems.type,
+            points: scavengerHuntItems.points,
+            winPoints: scavengerHuntItems.winPoints,
+            status: scavengerHuntItems.status,
+            startsAt: scavengerHuntItems.startsAt,
+            endsAt: scavengerHuntItems.endsAt,
+            room: scavengerHuntItems.room,
+            // Attendance only, so a winner (attendance + win rows) counts once
+            scans: sql<number>`count(${scavengerHuntScans.userId}) filter (where ${scavengerHuntScans.activityType} = 'attendance')::int`,
+            winScans: sql<number>`count(${scavengerHuntScans.userId}) filter (where ${scavengerHuntScans.activityType} = 'win')::int`,
+          })
+          .from(scavengerHuntItems)
+          .leftJoin(
+            scavengerHuntScans,
+            eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+          )
+          .where(notDeleted())
+          .groupBy(scavengerHuntItems.id)
+          .orderBy(scavengerHuntItems.startsAt, scavengerHuntItems.id),
+      "Failed to fetch activities",
+    );
+  }),
+
+  saveActivity: protectedOrganizerProcedure
+    .input(
+      z
+        .object({
+          id: z.number().optional(), // Omit to create
+          name: z.string().trim().min(1).max(100),
+          type: z.enum(scavengerHuntItemType.enumValues),
+          startsAt: z.date(),
+          endsAt: z.date(),
+          room: z
+            .string()
+            .trim()
+            .nullable()
+            .transform((r) => (r ? r : null)),
+          points: z.number().int().min(0).max(32767),
+          winPoints: z.number().int().min(0).max(32767).nullable(), // Set only for winnable activities
+          status: z.enum(["draft", "active"]).optional(),
+        })
+        .refine((a) => a.endsAt > a.startsAt, {
+          message: "End time must be after start time",
+        }),
+    )
+    .mutation(async ({ input }) => {
+      return withErrorHandling(async () => {
+        const { id, winPoints, status, ...rest } = input;
+        const values = {
+          ...rest,
+          winPoints: input.type === "activity" ? winPoints : null,
+          ...(status && { status }),
+        };
+
+        const duplicateName = () =>
+          new TRPCError({
+            code: "CONFLICT",
+            message: `An activity named "${input.name}" already exists`,
+          });
+        // The unique index also blocks this; checking first gives a clear message
+        const duplicate = await db.query.scavengerHuntItems.findFirst({
+          columns: { id: true },
+          where: and(
+            sql`lower(${scavengerHuntItems.name}) = lower(${input.name})`,
+            notDeleted(),
+            id !== undefined ? ne(scavengerHuntItems.id, id) : undefined,
+          ),
+        });
+        if (duplicate) throw duplicateName();
+
+        // A new or changed end time must be in the future. The start can be in
+        // the past (an activity that already started), and an unchanged past end
+        // can stay, so a finished activity can still be edited. Compared by
+        // minute, because the form only sends minutes.
+        const existing =
+          id !== undefined
+            ? await db.query.scavengerHuntItems.findFirst({
+                columns: { endsAt: true },
+                where: and(eq(scavengerHuntItems.id, id), notDeleted()),
+              })
+            : undefined;
+        if (id !== undefined && !existing) throw activityNotFound();
+        const minute = (d: Date) => Math.floor(d.getTime() / 60_000);
+        const now = minute(new Date());
+        const endChanged =
+          !existing || minute(existing.endsAt) !== minute(input.endsAt);
+        if (endChanged && minute(input.endsAt) <= now) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "End time must be in the future",
+          });
+        }
+
+        try {
+          if (id !== undefined) {
+            await db.transaction(async (tx) => {
+              // Locked so two edits can't both adjust balances from the same old points
+              const [old] = await tx
+                .select({
+                  points: scavengerHuntItems.points,
+                  winPoints: scavengerHuntItems.winPoints,
+                })
+                .from(scavengerHuntItems)
+                .where(and(eq(scavengerHuntItems.id, id), notDeleted()))
+                .for("update");
+              if (!old) throw activityNotFound();
+
+              // Hackers who scanned this item get the point difference. A win
+              // scan on an item that is no longer winnable is worth 0.
+              const attendanceDelta = values.points - old.points;
+              const winDelta = (values.winPoints ?? 0) - (old.winPoints ?? 0);
+              if (attendanceDelta !== 0 || winDelta !== 0) {
+                await tx.execute(sql`
+                  UPDATE "user" u SET
+                    scavenger_hunt_earned = COALESCE(u.scavenger_hunt_earned, 0) + d.delta,
+                    scavenger_hunt_balance = COALESCE(u.scavenger_hunt_balance, 0) + d.delta
+                  FROM (
+                    SELECT user_id, SUM(CASE WHEN activity_type = 'win' THEN ${winDelta}::int ELSE ${attendanceDelta}::int END) AS delta
+                    FROM scavenger_hunt_scan
+                    WHERE item_id = ${id}
+                    GROUP BY user_id
+                  ) d
+                  WHERE u.id = d.user_id`);
+              }
+
+              await tx
+                .update(scavengerHuntItems)
+                .set(values)
+                .where(eq(scavengerHuntItems.id, id));
+            });
+            return;
+          }
+          await db.insert(scavengerHuntItems).values(values);
+        } catch (error) {
+          // Another organizer saved the same name after the check above
+          if (isUniqueViolation(error)) throw duplicateName();
+          throw error;
+        }
+      }, "Failed to save activity");
+    }),
+
+  setActivityStatus: protectedOrganizerProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        status: z.enum(["draft", "active", "disabled"]),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      return withErrorHandling(async () => {
+        const updated = await db
+          .update(scavengerHuntItems)
+          .set({ status: input.status })
+          .where(and(eq(scavengerHuntItems.id, input.id), notDeleted()))
+          .returning({ id: scavengerHuntItems.id });
+        if (!updated.length) throw activityNotFound();
+      }, "Failed to update activity");
     }),
 
   // * POINTS ENDPOINTS * //
