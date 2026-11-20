@@ -24,6 +24,8 @@ export interface MarkRow {
   /** The mark's rating columns as { [criterionId]: 0-10 }; empty for a slider-only mark. */
   ratings: Record<string, number>;
   notes: string;
+  /** team_mark.super_like. */
+  superLike: boolean;
 }
 
 export interface ResultMark {
@@ -33,7 +35,7 @@ export interface ResultMark {
   score: number;
   ratings: Record<string, number>;
   notes: string;
-  /** The judge gave this team a super like (score_breakdown.superLike). */
+  /** The judge gave this team a super like (team_mark.super_like). */
   superLike: boolean;
 }
 
@@ -103,10 +105,7 @@ export function buildTeamResults(
     score: r.score,
     ratings: r.ratings,
     notes: r.notes,
-    superLike:
-      typeof r.breakdown === "object" &&
-      r.breakdown !== null &&
-      (r.breakdown as { superLike?: unknown }).superLike === true,
+    superLike: r.superLike,
   });
 
   return [...teams]

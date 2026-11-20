@@ -38,12 +38,9 @@ const mark = (
   judgeType: roundType === "regular" ? "organizer" : "sponsored",
   roundType,
   score,
-  breakdown: {
-    ratings: { impact: score, creativity: score - 1 },
-    notes,
-    superLike,
-  },
+  ratings: { impact: score, creativity: score - 1, technical: score },
   notes,
+  superLike,
 });
 
 const results = buildTeamResults(
@@ -182,6 +179,21 @@ describe("Completeness and Final columns", () => {
   const header = buildResultsRows(results).rows[0]!.cells as string[];
   const at = (label: string) => header.indexOf(label);
 
+  test("every rubric criterion has a column, incl. Technical Complexity", () => {
+    expect(header).toEqual(
+      expect.arrayContaining([
+        "Innovation + Impact",
+        "Creativity",
+        "Technical Complexity",
+        "Design/Polish",
+        "Adventurous",
+      ]),
+    );
+    const { rows } = buildResultsRows(results);
+    const alpha = rows.find((r) => r.cells[2] === "Alpha")!.cells;
+    expect(alpha[at("Technical Complexity")]).toBe(6.5);
+  });
+
   test("sit right after Average", () => {
     expect(header.slice(4, 7)).toEqual([
       "Average",
@@ -197,7 +209,7 @@ describe("Completeness and Final columns", () => {
     expect(alpha[at(COMPLETENESS_LABEL)]).toBe(8);
     const sheetRow = alphaIndex + 1;
     expect(alpha[at("Final")]).toEqual({
-      formula: `=IF(E${sheetRow}="", "", IF(ISNUMBER(F${sheetRow}), ROUND((E${sheetRow} * 4 + F${sheetRow}) / 5, 2), E${sheetRow}))`,
+      formula: `=IF(E${sheetRow}="", "", IF(ISNUMBER(F${sheetRow}), ROUND((E${sheetRow} * 5 + F${sheetRow}) / 6, 2), E${sheetRow}))`,
     });
     const bravo = rows.find((r) => r.cells[2] === "Bravo")!.cells;
     expect(bravo[at(COMPLETENESS_LABEL)]).toBe("");

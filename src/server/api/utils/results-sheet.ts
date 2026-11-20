@@ -12,9 +12,10 @@
 //   "Results":  one bold row per team, ranked by judge average, with that
 //               team's judge marks in a collapsed row group under it. Next to
 //               Average: "Completeness" (blank, organizers type 0-10 on team
-//               rows) and "Final" — a formula, (Average × 4 + Completeness)
-//               / 5, i.e. completeness counts as a fifth rubric criterion; the
-//               Average alone while Completeness is blank. "Super likes"
+//               rows) and "Final" — a formula that counts completeness as
+//               one more rubric criterion: (Average × N + Completeness)
+//               / (N + 1), N = number of rubric criteria (5 now, so × 5 / 6);
+//               the Average alone while Completeness is blank. "Super likes"
 //               counts hearts from any judge; judge rows show ♥.
 //   "Marks":    flat list, one row per judge mark — easy to filter/sort.
 //
@@ -110,12 +111,19 @@ function letter(index: number): string {
   return s;
 }
 
+/**
+ * Completeness weighs the same as one rubric criterion, so Final is the
+ * average over the rubric criteria plus completeness.
+ */
+export const CRITERIA_COUNT = DEFAULT_RUBRIC.criteria.length;
+
 /** Final for the team row at 1-based sheet row `row`. */
 function finalFormula(row: number): Cell {
   const avg = `${letter(AVERAGE_COL)}${row}`;
   const comp = `${letter(COMPLETENESS_COL)}${row}`;
+  const n = CRITERIA_COUNT;
   return {
-    formula: `=IF(${avg}="", "", IF(ISNUMBER(${comp}), ROUND((${avg} * 4 + ${comp}) / 5, 2), ${avg}))`,
+    formula: `=IF(${avg}="", "", IF(ISNUMBER(${comp}), ROUND((${avg} * ${n} + ${comp}) / ${n + 1}, 2), ${avg}))`,
   };
 }
 

@@ -10,6 +10,7 @@ import {
 import { db, extractRows } from "~/server/db";
 import { judgingAssignments, judges, users } from "~/server/db/schema";
 import { maybeTriggerSweepOnJudgingComplete } from "~/server/api/utils/cheat-check-sweep";
+import { finalizeResultsSheet } from "~/server/api/utils/results-sheet";
 import {
   type AddJudgeInput,
   addJudgeByEmailSchema,
