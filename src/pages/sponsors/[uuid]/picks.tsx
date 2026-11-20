@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Lock } from "lucide-react";
+import { Lock, MapPin } from "lucide-react";
 import { useRouter } from "next/router";
 
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -23,6 +23,7 @@ import {
 } from "~/lib/sponsor-presentations";
 import { judgeKey } from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
+import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
 const copy = sponsorJudgingCopy;
@@ -72,6 +73,14 @@ export default function SponsorJudgingPage() {
   const data = query.data;
   const judge = useJudgeName(uuid);
   const [switchingJudge, setSwitchingJudge] = useState(false);
+  const portalInfo = api.sponsorPortal.getSponsorPortalInfo.useQuery(
+    { sponsor: uuid },
+    {
+      enabled: validUuid,
+      refetchOnWindowFocus: false,
+      retry: false,
+    },
+  );
 
   const [step, setStep] = useState<Step>("browse");
   const stepRefs = useRef(new Map<Step, HTMLButtonElement>());
@@ -205,6 +214,19 @@ export default function SponsorJudgingPage() {
         <p className="m-0 text-base leading-relaxed text-dashboard-text-medium">
           {copy.intro(data.finalTop)}
         </p>
+        {portalInfo.data?.roomNumber &&
+          portalInfo.data.roomNumber !== "TBD" && (
+            <div className="mt-1 inline-flex w-fit items-center gap-2 rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface px-3 py-2 text-sm shadow-dashboard-card">
+              <MapPin
+                aria-hidden
+                className="size-4 shrink-0 text-dashboard-text-active"
+              />
+              <span className="text-dashboard-text-light">Judging room</span>
+              <span className="font-semibold text-dashboard-text-heavy">
+                {portalInfo.data.roomNumber}
+              </span>
+            </div>
+          )}
       </div>
 
       {judge.ready &&
