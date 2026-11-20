@@ -281,6 +281,37 @@ export const scavengerHuntRouter = createTRPCRouter({
     }
   }),
 
+  // Scavenger hunt tasks (open bonus items) for the Scavenger Hunt tab on
+  // /live, with whether the current user has already been scanned for each
+  getTasks: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await db
+      .select({
+        id: scavengerHuntItems.id,
+        name: scavengerHuntItems.name,
+        points: scavengerHuntItems.points,
+        scannedAt: sql<Date | null>`min(${scavengerHuntScans.createdAt})`,
+      })
+      .from(scavengerHuntItems)
+      .leftJoin(
+        scavengerHuntScans,
+        and(
+          eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+          eq(scavengerHuntScans.userId, ctx.session.user.id),
+        ),
+      )
+      .where(and(eq(scavengerHuntItems.type, "bonus"), isOpen()))
+      .groupBy(scavengerHuntItems.id)
+      .orderBy(scavengerHuntItems.points, scavengerHuntItems.name);
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      points: row.points,
+      // Raw SQL aggregates come back as strings
+      scannedAt: row.scannedAt ? new Date(row.scannedAt) : null,
+    }));
+  }),
+
   // Get All Scavenger Hunt Rewards (only accessible to organizers)
   getAllRewards: protectedOrganizerProcedure.query(async () => {
     try {
