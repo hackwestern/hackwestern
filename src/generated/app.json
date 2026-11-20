@@ -199,14 +199,12 @@
       "serverGuards": []
     },
     {
-      "auth": "session",
+      "auth": "client-side-session",
       "dynamic": false,
       "file": "src/pages/live.tsx",
       "hasGetServerSideProps": true,
       "route": "/live",
-      "serverGuards": [
-        "disabledRedirect"
-      ]
+      "serverGuards": []
     },
     {
       "auth": "session",
