@@ -47,6 +47,19 @@ describe("seed scavenger hunt (DB integration)", () => {
     expect(game).toMatchObject({ points: 10, winPoints: 50, status: "active" });
   });
 
+  test("a task scheduled to close later still counts as existing", async () => {
+    await db.insert(scavengerHuntItems).values({
+      ...items[0]!,
+      startsAt: new Date(),
+      endsAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
+      deletedAt: new Date(Date.now() + 60 * 60 * 1000),
+    });
+    expect(await seedScavengerHunt(items, rewards)).toEqual({
+      items: 1,
+      rewards: 1,
+    });
+  });
+
   test("the task and prize lists have no repeated names", () => {
     const itemNames = ITEMS.map((i) => i.name.toLowerCase());
     const rewardNames = REWARDS.map((r) => r.name.toLowerCase());

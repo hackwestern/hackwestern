@@ -1,4 +1,4 @@
-import { isNull } from "drizzle-orm";
+import { gt, isNull, or } from "drizzle-orm";
 import { db } from "~/server/db";
 import { scavengerHuntItems, scavengerHuntRewards } from "~/server/db/schema";
 import { HACKATHON_END, HACKATHON_START } from "~/lib/date";
@@ -94,7 +94,14 @@ export async function findMissing(items = ITEMS, rewards = REWARDS) {
     db
       .select({ name: scavengerHuntItems.name })
       .from(scavengerHuntItems)
-      .where(isNull(scavengerHuntItems.deletedAt)),
+      // Same rule as the router's notDeleted(): a future deletedAt is a
+      // scheduled close, so the item is still live.
+      .where(
+        or(
+          isNull(scavengerHuntItems.deletedAt),
+          gt(scavengerHuntItems.deletedAt, new Date()),
+        ),
+      ),
     db.select({ name: scavengerHuntRewards.name }).from(scavengerHuntRewards),
   ]);
   const itemNames = new Set(existingItems.map((r) => r.name.toLowerCase()));
