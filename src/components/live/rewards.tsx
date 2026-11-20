@@ -325,15 +325,25 @@ const RewardDialog = ({
   const canSave =
     name.trim() !== "" && !isDuplicateName && !costInvalid && !quantityInvalid;
 
-  const submit = (status?: "draft" | "active") =>
-    save.mutate({
-      id: reward?.id,
-      name,
-      description,
+  const submit = (status?: "draft" | "active") => {
+    const fields = {
+      name: name.trim(),
+      description: description.trim() || null,
       costPoints: Number(cost),
       quantity: quantity.trim() === "" ? null : Number(quantity),
+    };
+    // An edit sends only values that differ from when the dialog opened
+    const sent = <K extends keyof typeof fields>(key: K) =>
+      isNew || fields[key] !== reward[key] ? fields[key] : undefined;
+    save.mutate({
+      id: reward?.id,
+      name: sent("name"),
+      description: sent("description"),
+      costPoints: sent("costPoints"),
+      quantity: sent("quantity"),
       status,
     });
+  };
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -355,6 +365,7 @@ const RewardDialog = ({
             <span className={LABEL}>Name</span>
             <input
               required
+              maxLength={255}
               className={FIELD}
               value={name}
               onChange={(e) => setName(e.target.value)}

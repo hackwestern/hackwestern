@@ -164,18 +164,21 @@ const rewardNotFound = () =>
   });
 
 // * Safe Functions: Check is done within the transaction to avoid race conditions */
+// Returns the points the reward cost
 const redeemPrize = async (
   userId: string,
   rewardId: number,
-  costPoints: number,
   checkQuantity = false,
+  expectedCost?: number, // The price the scanner showed
 ) => {
   return withErrorHandling(async () => {
-    await db.transaction(async (tx) => {
-      // Get reward to check quantity if needed
-      const reward = await tx.query.scavengerHuntRewards.findFirst({
-        where: and(eq(scavengerHuntRewards.id, rewardId), rewardIsOpen()),
-      });
+    return db.transaction(async (tx) => {
+      // Locked so concurrent redemptions can't oversell or change the price mid-way
+      const [reward] = await tx
+        .select()
+        .from(scavengerHuntRewards)
+        .where(and(eq(scavengerHuntRewards.id, rewardId), rewardIsOpen()))
+        .for("update");
       if (!reward) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -193,20 +196,27 @@ const redeemPrize = async (
         });
       }
 
-      // Check if user has enough points to redeem reward (using transaction)
-      const user = await tx.query.users.findFirst({
-        where: eq(users.id, userId),
-      });
+      // Locked so two redemptions for one hacker can't both spend the same points
+      const [user] = await tx
+        .select({ scavengerHuntBalance: users.scavengerHuntBalance })
+        .from(users)
+        .where(eq(users.id, userId))
+        .for("update");
       if (!user) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "User not found",
         });
       }
-      if (
-        user.scavengerHuntBalance !== null &&
-        user.scavengerHuntBalance < costPoints
-      ) {
+      const { costPoints } = reward;
+      if (expectedCost !== undefined && expectedCost !== costPoints) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `The price changed to ${costPoints} points. Check the new price and scan again.`,
+        });
+      }
+      // Check if user has enough points to redeem reward (using transaction); no balance yet counts as 0
+      if ((user.scavengerHuntBalance ?? 0) < costPoints) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "User does not have enough points to redeem reward",
@@ -231,6 +241,7 @@ const redeemPrize = async (
         userId: userId,
         rewardId: rewardId,
       });
+      return costPoints;
     });
   }, "Failed to redeem item");
 };
@@ -654,53 +665,93 @@ export const scavengerHuntRouter = createTRPCRouter({
     );
   }),
 
+  // An edit changes only the fields it sends, so a stale quantity can't undo redemptions
   saveReward: protectedOrganizerProcedure
     .input(
-      z.object({
-        id: z.number().optional(), // Omit to create
-        name: z.string().trim().min(1).max(100),
-        description: z
-          .string()
-          .trim()
-          .nullable()
-          .transform((d) => (d ? d : null)),
-        costPoints: z.number().int().min(0).max(32767),
-        quantity: z.number().int().min(0).max(2147483647).nullable(), // Null means unlimited
-        status: z.enum(["draft", "active"]).optional(),
-      }),
+      z
+        .object({
+          id: z.number().optional(), // Omit to create
+          name: z.string().trim().min(1).max(255).optional(),
+          description: z
+            .string()
+            .trim()
+            .nullable()
+            .transform((d) => (d ? d : null))
+            .optional(),
+          costPoints: z.number().int().min(0).max(32767).optional(),
+          quantity: z
+            .number()
+            .int()
+            .min(0)
+            .max(2147483647)
+            .nullable()
+            .optional(), // Null means unlimited
+          status: z.enum(["draft", "active"]).optional(),
+        })
+        .refine(
+          (r) =>
+            r.id !== undefined ||
+            (r.name !== undefined && r.costPoints !== undefined),
+          { message: "A new reward needs a name and a cost" },
+        ),
     )
     .mutation(async ({ input }) => {
       return withErrorHandling(async () => {
-        const { id, status, ...rest } = input;
-        const values = { ...rest, ...(status && { status }) };
+        const { id, name, description, costPoints, quantity, status } = input;
 
         const duplicateName = () =>
           new TRPCError({
             code: "CONFLICT",
-            message: `A reward named "${input.name}" already exists`,
+            message: `A reward named "${name}" already exists`,
           });
         // The unique index also blocks this; checking first gives a clear message
-        const duplicate = await db.query.scavengerHuntRewards.findFirst({
-          columns: { id: true },
-          where: and(
-            sql`lower(${scavengerHuntRewards.name}) = lower(${input.name})`,
-            rewardNotDeleted(),
-            id !== undefined ? ne(scavengerHuntRewards.id, id) : undefined,
-          ),
-        });
-        if (duplicate) throw duplicateName();
+        if (name !== undefined) {
+          const duplicate = await db.query.scavengerHuntRewards.findFirst({
+            columns: { id: true },
+            where: and(
+              sql`lower(${scavengerHuntRewards.name}) = lower(${name})`,
+              rewardNotDeleted(),
+              id !== undefined ? ne(scavengerHuntRewards.id, id) : undefined,
+            ),
+          });
+          if (duplicate) throw duplicateName();
+        }
 
         try {
-          if (id !== undefined) {
-            const updated = await db
-              .update(scavengerHuntRewards)
-              .set(values)
-              .where(and(eq(scavengerHuntRewards.id, id), rewardNotDeleted()))
-              .returning({ id: scavengerHuntRewards.id });
-            if (!updated.length) throw rewardNotFound();
+          if (id === undefined) {
+            // The refine above makes sure both are set
+            await db.insert(scavengerHuntRewards).values({
+              name: name!,
+              costPoints: costPoints!,
+              description,
+              quantity,
+              status,
+            });
             return;
           }
-          await db.insert(scavengerHuntRewards).values(values);
+          const values: Partial<typeof scavengerHuntRewards.$inferInsert> = {
+            ...(name !== undefined && { name }),
+            ...(description !== undefined && { description }),
+            ...(costPoints !== undefined && { costPoints }),
+            ...(quantity !== undefined && { quantity }),
+            ...(status !== undefined && { status }),
+          };
+          const where = and(
+            eq(scavengerHuntRewards.id, id),
+            rewardNotDeleted(),
+          );
+          // Nothing changed: only check that the reward still exists
+          const updated = Object.keys(values).length
+            ? await db
+                .update(scavengerHuntRewards)
+                .set(values)
+                .where(where)
+                .returning({ id: scavengerHuntRewards.id })
+            : await db
+                .select({ id: scavengerHuntRewards.id })
+                .from(scavengerHuntRewards)
+                .where(where);
+          if (!updated.length) throw rewardNotFound();
         } catch (error) {
           // Another organizer saved the same name after the check above
           if (isUniqueViolation(error)) throw duplicateName();
@@ -795,18 +846,7 @@ export const scavengerHuntRouter = createTRPCRouter({
         const { rewardId } = input;
         const userId = ctx.session.user.id;
 
-        // Check if reward exists
-        const reward = await db.query.scavengerHuntRewards.findFirst({
-          where: and(eq(scavengerHuntRewards.id, rewardId), rewardIsOpen()),
-        });
-        if (!reward) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Reward not found",
-          });
-        }
-
-        await redeemPrize(userId, rewardId, reward.costPoints);
+        await redeemPrize(userId, rewardId);
 
         return {
           success: true,
@@ -821,11 +861,12 @@ export const scavengerHuntRouter = createTRPCRouter({
       z.object({
         userId: z.string(),
         rewardId: z.number(),
+        expectedCost: z.number().int().optional(),
       }),
     )
     .mutation(async ({ input }) => {
       return withErrorHandling(async () => {
-        const { rewardId } = input;
+        const { rewardId, expectedCost } = input;
         const userId = await resolveScannedUserId(input.userId);
 
         // Get user info before redemption (for return value and to verify user exists)
@@ -839,19 +880,13 @@ export const scavengerHuntRouter = createTRPCRouter({
           });
         }
 
-        // Check if reward exists
-        const reward = await db.query.scavengerHuntRewards.findFirst({
-          where: and(eq(scavengerHuntRewards.id, rewardId), rewardIsOpen()),
-        });
-        if (!reward) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Reward not found",
-          });
-        }
-
         // Redeem prize with quantity checking
-        await redeemPrize(userId, rewardId, reward.costPoints, true);
+        const pointsUsed = await redeemPrize(
+          userId,
+          rewardId,
+          true,
+          expectedCost,
+        );
 
         // Fetch updated reward to return current quantity
         const updatedReward = await db.query.scavengerHuntRewards.findFirst({
@@ -862,6 +897,7 @@ export const scavengerHuntRouter = createTRPCRouter({
         return {
           success: true,
           message: "Reward redeemed successfully",
+          pointsUsed,
           user: {
             id: user.id,
             name: user.name,

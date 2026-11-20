@@ -34,9 +34,9 @@ export const SidebarNav = ({
             tabs={["activities", "rewards"]}
             hrefs={["/scavenger"]}
           >
+            <SectionLink tab="scan" name="Scan" href="/scavenger" />
             <SectionLink tab="activities" name="Activities" />
             <SectionLink tab="rewards" name="Rewards" />
-            <SectionLink tab="scan" name="Scan" href="/scavenger" />
           </SectionGroup>
         )}
         {isOrganizer && (

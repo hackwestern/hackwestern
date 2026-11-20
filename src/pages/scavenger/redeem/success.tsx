@@ -17,14 +17,18 @@ export default function RedeemSuccessPage() {
   const router = useRouter();
   const [rewardName, setRewardName] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [points, setPoints] = useState<string | null>(null);
 
   useEffect(() => {
-    const { reward, user } = router.query;
+    const { reward, user, points } = router.query;
     if (reward && typeof reward === "string") {
       setRewardName(reward);
     }
     if (user && typeof user === "string") {
       setUserName(user);
+    }
+    if (points && typeof points === "string") {
+      setPoints(points);
     }
   }, [router.query]);
 
@@ -73,6 +77,16 @@ export default function RedeemSuccessPage() {
             <p className="font-secondary text-sm text-medium">Redeemed by:</p>
             <p className="font-secondary text-lg font-medium text-heavy">
               {userName}
+            </p>
+          </div>
+        )}
+
+        {/* Points Used */}
+        {points && (
+          <div className="space-y-1">
+            <p className="font-secondary text-sm text-medium">Points used:</p>
+            <p className="font-secondary text-lg font-medium text-heavy">
+              {points}
             </p>
           </div>
         )}
