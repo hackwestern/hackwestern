@@ -132,6 +132,12 @@ interface SheetSponsorRow {
    * not, null when the tab has no such column.
    */
   hasPrizeTrack: boolean | null;
+  /**
+   * The "Coffee Chats & Interviews" checkbox: which sponsors do coffee chats
+   * (Jazz, 2026-11-20; replaces typing names in Coffee Chat Setup column A).
+   * Null when the tab has no such column.
+   */
+  doesCoffeeChats: boolean | null;
 }
 
 /** Newest name first; the tab was "Contract Breakdown" before 2026-11-19. */
@@ -169,6 +175,8 @@ const DAY_OF_HEADERS = {
   judgingRoom: ["judging room", "judging room number"],
   track: ["team track filter", "sponsor track"],
   prizeTrack: ["custom api / prize track", "prize track"],
+  /** Checkbox: the sponsor does coffee chats (contract "Coffee Chats & Interviews"). */
+  coffeeChats: ["coffee chats & interviews"],
   /** Checkbox: the sponsor came to the Friday coffee chat workshop. */
   ccWorkshop: ["at cc workshop"],
   maxMinutes: ["coffee chat max minutes"],
@@ -385,6 +393,32 @@ async function readSponsorDayOfTab(
  * "To do / mismatches" column are found by header name. The list ends at the
  * first blank name, so the footer rows under it are not sponsors.
  */
+/**
+ * Sponsors ticked "Coffee Chats & Interviews" on Sponsor Day-Of, by name;
+ * null when the tab has no such column or can't be read (callers fall back
+ * to Coffee Chat Setup column A). Shared and cached a minute like the other
+ * sheet reads, since the coffee board loads it often.
+ */
+export async function coffeeChatSponsorNames(): Promise<Set<string> | null> {
+  try {
+    const rows = await sharedSheetRead(
+      `dayof-coffee:${getSpreadsheetId()}`,
+      60_000,
+      fetchSheetSponsors,
+    );
+    if (!rows.some((r) => r.doesCoffeeChats !== null)) return null;
+    return new Set(
+      rows.filter((r) => r.doesCoffeeChats === true).map((r) => r.name.toLowerCase()),
+    );
+  } catch (error) {
+    console.warn(
+      "coffee chats: couldn't read Sponsor Day-Of's checkbox; using Coffee Chat Setup column A",
+      error instanceof Error ? error.message : error,
+    );
+    return null;
+  }
+}
+
 export async function fetchSheetSponsors(): Promise<SheetSponsorRow[]> {
   const sheets = await getSheetsClient();
   const spreadsheetId = getSpreadsheetId();
@@ -403,7 +437,7 @@ export async function fetchSheetSponsors(): Promise<SheetSponsorRow[]> {
 export function sheetSponsorsFromDayOf(
   dayOf: SponsorDayOfTab,
 ): SheetSponsorRow[] {
-  const { hwLead, notes, prizeTrack } = dayOf.cols;
+  const { hwLead, notes, prizeTrack, coffeeChats } = dayOf.cols;
   return sponsorDayOfRows(dayOf).map(({ name, row }) => ({
     name,
     tier: "",
@@ -412,6 +446,8 @@ export function sheetSponsorsFromDayOf(
     hwContact: hwLead === -1 ? "" : cell(row, hwLead),
     notes: notes === -1 ? "" : cell(row, notes),
     hasPrizeTrack: prizeTrack === -1 ? null : isTicked(cell(row, prizeTrack)),
+    doesCoffeeChats:
+      coffeeChats === -1 ? null : isTicked(cell(row, coffeeChats)),
   }));
 }
 

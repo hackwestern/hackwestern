@@ -316,6 +316,7 @@ export const coffeeSessionsCopy = {
       scanned: "Met at your booth",
       shortlist: "Shortlist",
       interested: "Interested",
+      anyone: "From the interest list",
     } as Record<string, string>,
     edit: "Edit hackers",
     done: "Done",

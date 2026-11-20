@@ -39,6 +39,7 @@ import type { RunOfShowItem } from "~/lib/run-of-show";
 import { isDigitalJudging } from "~/lib/sponsor-prize-tracks";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
+import { coffeeChatSponsorNames } from "~/server/api/utils/sponsor-sheets";
 import { db } from "~/server/db";
 import {
   coffeeChatPlacements,
@@ -90,12 +91,7 @@ export type BoardSponsorStatus =
    * want chats but have none that count (`total - done`), and chats on the
    * board that break a rule now (`broken`).
    */
-  | {
-      kind: "need" | "scheduled" | "sent";
-      done: number;
-      total: number;
-      broken: number;
-    };
+  | { kind: "need" | "scheduled" | "sent"; done: number; total: number; broken: number };
 
 export type BoardSessionSponsor = {
   id: string;
@@ -179,10 +175,7 @@ export type BoardState = {
   board: Board;
 };
 
-type Items = Pick<
-  RunOfShowItem,
-  "day" | "column" | "start" | "end" | "sponsors" | "location"
->[];
+type Items = Pick<RunOfShowItem, "day" | "column" | "start" | "end" | "sponsors" | "location">[];
 
 async function readRunOfShow(names: string[]): Promise<{
   items: Items;
@@ -208,11 +201,7 @@ export function boardOf(
 ): Board {
   const board: Board = {};
   for (const b of bookings) {
-    board[cellKey(b.room, b.sessionId)] = {
-      type: "booking",
-      ref: b.id,
-      pinned: true,
-    };
+    board[cellKey(b.room, b.sessionId)] = { type: "booking", ref: b.id, pinned: true };
   }
   for (const p of placements) {
     board[cellKey(p.room, p.sessionId)] = {
@@ -229,23 +218,12 @@ export function boardOf(
 export function pinsOf(state: BoardState): Pin[] {
   return [
     ...state.bookings.map(
-      (b): Pin => ({
-        room: b.room,
-        session: b.sessionId,
-        type: "booking",
-        ref: b.id,
-      }),
+      (b): Pin => ({ room: b.room, session: b.sessionId, type: "booking", ref: b.id }),
     ),
     ...state.placements
       .filter((p) => p.pinned || p.status === "sent")
       .map(
-        (p): Pin => ({
-          room: p.room,
-          session: p.sessionId,
-          type: "chat",
-          rep: p.repId,
-          forced: p.forced,
-        }),
+        (p): Pin => ({ room: p.room, session: p.sessionId, type: "chat", rep: p.repId, forced: p.forced }),
       ),
   ];
 }
@@ -258,44 +236,33 @@ export async function loadBoardState(
   const [registered, prefs, reps, repSessions, placementRows, bookings] =
     await Promise.all([
       database
-        .select({
-          id: sponsorJudgingSponsors.id,
-          name: sponsorJudgingSponsors.name,
-        })
+        .select({ id: sponsorJudgingSponsors.id, name: sponsorJudgingSponsors.name })
         .from(sponsorJudgingSponsors)
-        .orderBy(
-          asc(sponsorJudgingSponsors.name),
-          asc(sponsorJudgingSponsors.id),
-        ),
+        .orderBy(asc(sponsorJudgingSponsors.name), asc(sponsorJudgingSponsors.id)),
       database.select().from(coffeeChatPrefs),
       database
         .select()
         .from(coffeeChatReps)
-        .orderBy(
-          asc(coffeeChatReps.position),
-          asc(coffeeChatReps.createdAt),
-          asc(coffeeChatReps.id),
-        ),
+        .orderBy(asc(coffeeChatReps.position), asc(coffeeChatReps.createdAt), asc(coffeeChatReps.id)),
       database.select().from(coffeeChatRepSessions),
       database
         .select()
         .from(coffeeChatPlacements)
-        .orderBy(
-          asc(coffeeChatPlacements.createdAt),
-          asc(coffeeChatPlacements.id),
-        ),
+        .orderBy(asc(coffeeChatPlacements.createdAt), asc(coffeeChatPlacements.id)),
       database
         .select()
         .from(coffeeChatRoomBookings)
-        .orderBy(
-          asc(coffeeChatRoomBookings.createdAt),
-          asc(coffeeChatRoomBookings.id),
-        ),
+        .orderBy(asc(coffeeChatRoomBookings.createdAt), asc(coffeeChatRoomBookings.id)),
     ]);
-  const ros = await readRunOfShow(registered.map((s) => s.name));
-  const sheetNames = new Set(
-    (ros?.sheetSponsors ?? []).map((n) => n.toLowerCase()),
-  );
+  const [ros, ticked] = await Promise.all([
+    readRunOfShow(registered.map((s) => s.name)),
+    coffeeChatSponsorNames(),
+  ]);
+  // Who does coffee chats: Sponsor Day-Of's "Coffee Chats & Interviews"
+  // checkbox (Jazz, 2026-11-20). Coffee Chat Setup column A only when that
+  // column is missing or the read failed.
+  const sheetNames =
+    ticked ?? new Set((ros?.sheetSponsors ?? []).map((n) => n.toLowerCase()));
   const prefOf = new Map(prefs.map((p) => [p.sponsorId, p]));
   const freeOf = new Map<string, string[]>();
   for (const rs of repSessions) {
@@ -304,7 +271,7 @@ export async function loadBoardState(
   }
   const sponsorOfRep = new Map(reps.map((r) => [r.id, r.sponsorId]));
 
-  // Sponsors doing coffee chats: in the Coffee Chat Setup tab, or with
+  // Sponsors doing coffee chats: ticked on Sponsor Day-Of, or with
   // preferences or reps saved. Digital sponsors (PCBWay) never do.
   const doing = registered.filter(
     (s) =>
@@ -383,35 +350,29 @@ export async function loadBoardState(
     };
     sched.push(sp);
     const mine = placements.filter((p) => p.sponsorId === s.id);
-    for (const p of mine)
-      p.window = usableWindow(p.sessionId, windows, minutes);
+    for (const p of mine) p.window = usableWindow(p.sessionId, windows, minutes);
     // Chats that break a rule now don't count as scheduled.
     const bad = invalidChats([sp], COFFEE_SESSIONS, board).map((x) => x.key);
     const tally = repTally(sp, COFFEE_SESSIONS, withoutCells(board, bad));
     // Reps at 0 chats don't chat: they never make a sponsor "No availability".
     const chatting = sp.reps.filter((r) => r.sessionsWanted > 0);
-    const free = chatting.reduce(
-      (n, r) => n + availSessions(sp, r, COFFEE_SESSIONS).length,
-      0,
-    );
+    const free = chatting.reduce((n, r) => n + availSessions(sp, r, COFFEE_SESSIONS).length, 0);
     const status: BoardSponsorStatus = !submitted
       ? { kind: "not" }
       : chatting.length === 0
         ? { kind: "none" }
         : free === 0
-          ? { kind: "unavailable" }
-          : {
-              kind:
-                mine.length === 0
-                  ? "need"
-                  : mine.every((p) => p.status === "sent")
-                    ? "sent"
-                    : "scheduled",
-              ...tally,
-              broken: mine.filter((p) =>
-                bad.includes(cellKey(p.room, p.sessionId)),
-              ).length,
-            };
+        ? { kind: "unavailable" }
+        : {
+            kind:
+              mine.length === 0
+                ? "need"
+                : mine.every((p) => p.status === "sent")
+                  ? "sent"
+                  : "scheduled",
+            ...tally,
+            broken: mine.filter((p) => bad.includes(cellKey(p.room, p.sessionId))).length,
+          };
     // Sponsors are the only ones who write their preferences, so an update
     // after their chats were sent is the sponsor's change.
     // (Track A bumps coffee_chat_pref.updated_at on every reps/times edit.)
@@ -427,11 +388,7 @@ export async function loadBoardState(
       longerOneOnOne: format.longerOneOnOne,
       chatMinutes: minutes,
       chatsPerSession: chatsPerSession(format),
-      workshops: items.map((i) => ({
-        start: i.start,
-        end: i.end,
-        location: i.location,
-      })),
+      workshops: items.map((i) => ({ start: i.start, end: i.end, location: i.location })),
       blocked: [...blockedSessions(sp, COFFEE_SESSIONS)],
       partial: Object.fromEntries(partialSessions(sp, COFFEE_SESSIONS)),
       status,
@@ -464,23 +421,20 @@ export function sessionBoardOf(state: BoardState): SessionBoard {
       ? boardFixes(state.sched, COFFEE_ROOMS, COFFEE_SESSIONS, state.board)
       : [],
     draftCount: state.placements.filter((p) => p.status === "draft").length,
-    walks: [
-      ...buildingSwitches(state.board, COFFEE_ROOMS, COFFEE_SESSIONS),
-    ].flatMap(([repId, later]) =>
-      later.map((sessionId) => {
-        const room = state.placements.find(
-          (p) => p.repId === repId && p.sessionId === sessionId,
-        )?.room;
-        return {
-          repId,
-          sessionId,
-          toIvey: COFFEE_ROOMS.find((r) => r.id === room)?.building === "ivey",
-        };
-      }),
+    walks: [...buildingSwitches(state.board, COFFEE_ROOMS, COFFEE_SESSIONS)].flatMap(
+      ([repId, later]) =>
+        later.map((sessionId) => {
+          const room = state.placements.find(
+            (p) => p.repId === repId && p.sessionId === sessionId,
+          )?.room;
+          return {
+            repId,
+            sessionId,
+            toIvey: COFFEE_ROOMS.find((r) => r.id === room)?.building === "ivey",
+          };
+        }),
     ),
-    sentAt: sent.length
-      ? new Date(Math.max(...sent.map((d) => d.getTime())))
-      : null,
+    sentAt: sent.length ? new Date(Math.max(...sent.map((d) => d.getTime()))) : null,
   };
 }
 
@@ -503,9 +457,7 @@ export async function boardWrite<T>(
 ): Promise<T> {
   try {
     return await db.transaction(async (tx) => {
-      await tx.execute(
-        sql`select pg_advisory_xact_lock(${sql.raw(BOARD_LOCK_KEY)})`,
-      );
+      await tx.execute(sql`select pg_advisory_xact_lock(${sql.raw(BOARD_LOCK_KEY)})`);
       return fn(tx, await loadBoardState(tx));
     });
   } catch (error) {
@@ -533,18 +485,10 @@ export function boardDbError(error: unknown): unknown {
   if (error instanceof TRPCError) return error;
   const code = pgCode(error);
   if (code === "23505") {
-    return new TRPCError({
-      code: "CONFLICT",
-      message: errors.boardChanged,
-      cause: error,
-    });
+    return new TRPCError({ code: "CONFLICT", message: errors.boardChanged, cause: error });
   }
   if (code === "23503") {
-    return new TRPCError({
-      code: "BAD_REQUEST",
-      message: errors.badReference,
-      cause: error,
-    });
+    return new TRPCError({ code: "BAD_REQUEST", message: errors.badReference, cause: error });
   }
   return error;
 }
@@ -553,14 +497,9 @@ export function boardDbError(error: unknown): unknown {
  * Every board write needs the workshop windows: without the run of show a
  * chat could land in a sponsor's workshop. Throws PRECONDITION_FAILED.
  */
-export function assertWorkshopsKnown(
-  state: Pick<BoardState, "workshopsAvailable">,
-): void {
+export function assertWorkshopsKnown(state: Pick<BoardState, "workshopsAvailable">): void {
   if (!state.workshopsAvailable) {
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message: errors.workshopsUnknown,
-    });
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: errors.workshopsUnknown });
   }
 }
 
@@ -576,24 +515,15 @@ export function assertCellFree(
   }
   const taken =
     state.placements.some(
-      (p) =>
-        p.room === room &&
-        p.sessionId === sessionId &&
-        p.id !== except.placementId,
+      (p) => p.room === room && p.sessionId === sessionId && p.id !== except.placementId,
     ) ||
     state.bookings.some(
-      (b) =>
-        b.room === room &&
-        b.sessionId === sessionId &&
-        b.id !== except.bookingId,
+      (b) => b.room === room && b.sessionId === sessionId && b.id !== except.bookingId,
     );
   if (taken) {
     throw new TRPCError({
       code: "CONFLICT",
-      message: errors.roomTaken(
-        coffeeSessionsCopy.rooms.rm(room),
-        sessionLabel(sessionId),
-      ),
+      message: errors.roomTaken(coffeeSessionsCopy.rooms.rm(room), sessionLabel(sessionId)),
     });
   }
 }
@@ -614,48 +544,28 @@ export function assertRepCanChat(
   opts: { allowNotFree?: boolean } = {},
 ): boolean {
   assertWorkshopsKnown(state);
-  const sponsor = state.sponsors.find((s) =>
-    s.reps.some((r) => r.id === repId),
-  );
+  const sponsor = state.sponsors.find((s) => s.reps.some((r) => r.id === repId));
   const rep = sponsor?.reps.find((r) => r.id === repId);
   if (!sponsor || !rep) {
-    throw new TRPCError({
-      code: "NOT_FOUND",
-      message: errors.unknownPlacement,
-    });
+    throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownPlacement });
   }
   const s = sessionLabel(sessionId);
   if (!sponsor.submitted) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: errors.notSubmitted(sponsor.name),
-    });
+    throw new TRPCError({ code: "BAD_REQUEST", message: errors.notSubmitted(sponsor.name) });
   }
   if (sponsor.blocked.includes(sessionId)) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: errors.duringWorkshop(sponsor.name),
-    });
+    throw new TRPCError({ code: "BAD_REQUEST", message: errors.duringWorkshop(sponsor.name) });
   }
   if (
     state.placements.some(
-      (p) =>
-        p.repId === repId &&
-        p.sessionId === sessionId &&
-        p.id !== exceptPlacementId,
+      (p) => p.repId === repId && p.sessionId === sessionId && p.id !== exceptPlacementId,
     )
   ) {
-    throw new TRPCError({
-      code: "CONFLICT",
-      message: errors.repBusy(rep.name, s),
-    });
+    throw new TRPCError({ code: "CONFLICT", message: errors.repBusy(rep.name, s) });
   }
   const notFree = !rep.free.includes(sessionId);
   if (notFree && !opts.allowNotFree) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: errors.notFree(rep.name, s),
-    });
+    throw new TRPCError({ code: "BAD_REQUEST", message: errors.notFree(rep.name, s) });
   }
   return notFree;
 }
