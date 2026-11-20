@@ -11,6 +11,7 @@ import { reviewRouter } from "./routers/review";
 import { qrRouter } from "./routers/qr-code-generation";
 import { teamsRouter } from "./routers/teams";
 import { teamFinderRouter } from "./routers/team-finder";
+import { broadcastRouter } from "./routers/broadcast";
 import { sponsorJudgingRouter } from "./routers/sponsor-judging";
 import { sponsorDashboardRouter } from "./routers/sponsor-dashboard";
 import { sponsorPortalRouter } from "./routers/sponsor-portal";
@@ -47,6 +48,7 @@ export const appRouter = createTRPCRouter({
   scavengerHunt: scavengerHuntRouter,
   teams: teamsRouter,
   teamFinder: teamFinderRouter,
+  broadcast: broadcastRouter,
   sponsorJudging: sponsorJudgingRouter,
   sponsorDashboard: sponsorDashboardRouter,
   sponsorPortal: sponsorPortalRouter,
