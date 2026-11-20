@@ -47,8 +47,10 @@ Both teams at a split table show as the same table number.
   57 58 59 60 61 62 63 64 65 66 67 68 69 70   ->
   ```
 
-- Tables can be switched off (`is_active = false`); switched-off tables get no
-  team and no judges. Switching a table on or off covers both its seats.
+- Seats can be switched off (`is_active = false`) one at a time; a
+  switched-off seat gets no team and no judges. With seat 1 off, seating
+  doesn't use the table. With seat 2 off, seating never splits the table (the
+  row stays as a marker) and splits other tables instead.
 - Changing the table setup clears any plan that hasn't started, so auto-assign
   must be re-run.
 

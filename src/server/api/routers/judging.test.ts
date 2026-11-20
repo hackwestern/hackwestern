@@ -369,7 +369,7 @@ describe("seatTeams", () => {
     expect(await db.query.judgingAssignments.findMany()).toHaveLength(0);
   });
 
-  test("a split table can't be switched off while its second seat has a team", async () => {
+  test("switching is per seat: the other seat at the table stays on", async () => {
     const { org } = await setupRoom({
       tableCount: 2,
       teamCount: 4,
@@ -380,12 +380,49 @@ describe("seatTeams", () => {
       .update(teams)
       .set({ judgingTableId: null })
       .where(eq(teams.judgingTableId, first.id));
+    await org.caller.judging.admin.setTableActive({
+      tableId: first.id,
+      isActive: false,
+    });
+    expect((await tableByNumber(2)).isActive).toBe(false);
+    expect((await tableByNumber(2, 2)).isActive).toBe(true);
+    // A seat with a team can't be switched off.
     await expect(
       org.caller.judging.admin.setTableActive({
-        tableId: first.id,
+        tableId: (await tableByNumber(2, 2)).id,
         isActive: false,
       }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  test("a table whose seat 2 is switched off is never split", async () => {
+    const org = await makeOrganizer();
+    await org.caller.judging.admin.setupTables({ tableCount: 3, rows: 1 });
+    for (let i = 0; i < 4; i++) {
+      await makeTeam({ submittedAt: new Date(Date.UTC(2026, 10, 20, 8, i)) });
+    }
+    const first = await org.caller.judging.admin.seatTeams({ random: false });
+    expect(first.seating.map((s) => s.tableNumber)).toEqual([1, 2, 3, 3]);
+
+    const second = await tableByNumber(3, 2);
+    await db
+      .update(teams)
+      .set({ judgingTableId: null })
+      .where(eq(teams.judgingTableId, second.id));
+    await org.caller.judging.admin.setTableActive({
+      tableId: second.id,
+      isActive: false,
+    });
+    const again = await org.caller.judging.admin.seatTeams({ random: false });
+    expect(again.seating.map((s) => s.tableNumber)).toEqual([1, 2, 2, 3]);
+    expect((await tableByNumber(3, 2)).isActive).toBe(false);
+
+    // 3 tables with one seat 2 off seat 5 teams at most, so 6 don't fit.
+    await makeTeam();
+    await makeTeam();
+    await expect(
+      org.caller.judging.admin.seatTeams({ random: false }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
   });
 
   test("switched-off tables are skipped", async () => {

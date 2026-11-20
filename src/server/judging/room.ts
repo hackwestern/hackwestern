@@ -121,9 +121,10 @@ export async function setupTables(input: SetupTablesInput) {
 }
 
 /**
- * Switch a table on or off, with both its seats. A table with a team seated
- * can't be switched off. Before judging starts this clears the plan (sections
- * change); after, the table must have no live stops.
+ * Switch one seat on or off. A seat with a team seated can't be switched off.
+ * Seating skips switched-off seats: with seat 1 off the table isn't used, and
+ * with seat 2 off the table is never split. Before judging starts this clears
+ * the plan (sections change); after, the seat must have no live stops.
  */
 export async function setTableActive(tableId: number, isActive: boolean) {
   return db.transaction(async (tx) => {
@@ -134,16 +135,10 @@ export async function setTableActive(tableId: number, isActive: boolean) {
     });
     if (!table) throw notFound("Table");
     if (table.isActive === isActive) return { ...table, planCleared: 0 };
-    const seatIds = (
-      await tx
-        .select({ id: judgingTables.id })
-        .from(judgingTables)
-        .where(eq(judgingTables.number, table.number))
-    ).map((s) => s.id);
 
     if (!isActive) {
       const seated = await tx.query.teams.findFirst({
-        where: inArray(teams.judgingTableId, seatIds),
+        where: eq(teams.judgingTableId, tableId),
         columns: { name: true },
       });
       if (seated) {
@@ -159,7 +154,7 @@ export async function setTableActive(tableId: number, isActive: boolean) {
       if (!isActive) {
         const live = await tx.query.judgingAssignments.findFirst({
           where: and(
-            inArray(judgingAssignments.judgingTableId, seatIds),
+            eq(judgingAssignments.judgingTableId, tableId),
             sql`${judgingAssignments.status} <> 'cancelled'`,
           ),
           columns: { id: true },
@@ -175,10 +170,10 @@ export async function setTableActive(tableId: number, isActive: boolean) {
       planCleared = await clearPlan(tx);
     }
 
-    const rows = await tx
+    const [row] = await tx
       .update(judgingTables)
       .set({ isActive })
-      .where(inArray(judgingTables.id, seatIds))
+      .where(eq(judgingTables.id, tableId))
       .returning({
         id: judgingTables.id,
         number: judgingTables.number,
@@ -187,7 +182,7 @@ export async function setTableActive(tableId: number, isActive: boolean) {
         status: judgingTables.status,
         statusUpdatedAt: judgingTables.statusUpdatedAt,
       });
-    return { ...rows.find((r) => r.id === tableId)!, planCleared };
+    return { ...row!, planCleared };
   });
 }
 
@@ -204,9 +199,10 @@ function shuffle<T>(items: T[]): T[] {
  * Seat every submitted team at an active seat, one per seat, in snake order.
  * Each table has one seat; once there are more teams than active tables,
  * some tables get a second seat (spread evenly, see `tablesToSplit`), up to 2
- * teams per table. Random by default; `random: false` seats in submission
- * order. Replaces any previous seating, and clears the plan if the seats
- * changed. Locked once judging starts.
+ * teams per table. Tables whose seat 2 is switched off are never split.
+ * Random by default; `random: false` seats in submission order. Replaces any
+ * previous seating, and clears the plan if the seats changed. Locked once
+ * judging starts.
  */
 export async function seatTeams({ random }: { random: boolean }) {
   return db.transaction(async (tx) => {
@@ -228,20 +224,30 @@ export async function seatTeams({ random }: { random: boolean }) {
       .where(and(eq(judgingTables.isActive, true), eq(judgingTables.seat, 1)))
       .orderBy(asc(judgingTables.number));
 
-    const split = tablesToSplit(physical, submitted.length);
+    const seconds = await tx
+      .select({
+        id: judgingTables.id,
+        number: judgingTables.number,
+        isActive: judgingTables.isActive,
+      })
+      .from(judgingTables)
+      .where(eq(judgingTables.seat, 2));
+    const secondOff = new Set(
+      seconds.filter((s) => !s.isActive).map((s) => s.number),
+    );
+    const splittable = physical.filter((t) => !secondOff.has(t.number));
+    const splits = Math.max(0, submitted.length - physical.length);
+    const split = tablesToSplit(splittable, splittable.length + splits);
     if (!split) {
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
-        message: `${submitted.length} teams submitted but ${physical.length} active tables seat at most ${physical.length * 2}. Add or switch on more tables.`,
+        message: `${submitted.length} teams submitted but only ${physical.length + splittable.length} seats can be used. Switch on more tables or seats.`,
       });
     }
 
     const wanted = new Set(split.map((t) => t.number));
-    const seconds = await tx
-      .select({ id: judgingTables.id, number: judgingTables.number })
-      .from(judgingTables)
-      .where(eq(judgingTables.seat, 2));
-    const stale = seconds.filter((s) => !wanted.has(s.number));
+    // A switched-off seat 2 stays, so the table keeps being skipped.
+    const stale = seconds.filter((s) => s.isActive && !wanted.has(s.number));
     const have = new Set(seconds.map((s) => s.number));
     const missing = split.filter((t) => !have.has(t.number));
 
