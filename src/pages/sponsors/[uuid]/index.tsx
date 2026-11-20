@@ -11,6 +11,7 @@ import { useNow } from "~/components/sponsors/use-now";
 import { sponsorHomeCopy as home } from "~/content/sponsor-home";
 import { sponsorPortalCopy as copy } from "~/content/sponsor-portal";
 import type { HomeContext } from "~/lib/sponsor-home";
+import { showChats } from "~/lib/sponsor-chats";
 import { sponsorLogo } from "~/lib/sponsor-logos";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
@@ -76,6 +77,9 @@ export default function SponsorHubPage() {
   const workshop = setup?.workshops[0] ?? null;
   const ctx: HomeContext = {
     hasPrizeTrack: info?.hasPrizeTrack === true,
+    // Coffee chats off: no chat rows or Scan buttons (lib/sponsor-chats).
+    // A signed-in organizer still sees them.
+    hasCoffeeChats: showChats(info),
     availabilitySent: !!setup?.submittedAt,
     shortlistSent: !!setup?.shortlistSubmittedAt,
     confirmed: !!setup?.confirmed,
@@ -134,6 +138,7 @@ export default function SponsorHubPage() {
       />
       <TourEntry />
       <KeyRooms
+        showChats={showChats(info)}
         chats={
           setup?.confirmed
             ? setup.chats.map((c) => ({

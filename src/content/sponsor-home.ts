@@ -41,6 +41,11 @@ export type AgendaStep = {
   note?: boolean;
   /** Only for sponsors with a prize track. */
   prizeOnly?: boolean;
+  /** Only for sponsors who do coffee chats (Sponsor Day-Of checkbox). */
+  chatsOnly?: boolean;
+  /** Its button and sub-line are about coffee chats (booth scanning): a
+   * sponsor without chats sees the row without them. */
+  chatsExtras?: boolean;
   /** Done once the sponsor has sent this. */
   doneWhen?: "availability" | "shortlist";
   /** Saturday's coffee chat placeholder, replaced by the real chats once
@@ -61,6 +66,7 @@ export const AGENDA: AgendaStep[] = [
     where: "Sponsor workshop, Rm 2110",
     action: "chats",
     doneWhen: "availability",
+    chatsOnly: true,
   },
   {
     id: "f2",
@@ -79,6 +85,7 @@ export const AGENDA: AgendaStep[] = [
     where: "Sponsor Bay (SM Atrium)",
     sub: "Scan hackers you meet. They're invited first.",
     action: "scan",
+    chatsExtras: true,
   },
   {
     id: "f5",
@@ -96,6 +103,7 @@ export const AGENDA: AgendaStep[] = [
     title: "Back to your booth",
     where: "Sponsor Bay (SM Atrium)",
     action: "scan",
+    chatsExtras: true,
   },
   {
     id: "f7",
@@ -106,6 +114,7 @@ export const AGENDA: AgendaStep[] = [
     title: "Submit your shortlist",
     action: "chats",
     doneWhen: "shortlist",
+    chatsOnly: true,
   },
   {
     id: "f8",
@@ -114,6 +123,7 @@ export const AGENDA: AgendaStep[] = [
     end: 1320,
     title: "We confirm your chat times and invite hackers",
     sub: "Nothing to do.",
+    chatsOnly: true,
   },
   {
     id: "f9",
@@ -150,6 +160,7 @@ export const AGENDA: AgendaStep[] = [
     sub: "We confirm your reps' times and rooms at 10:00 PM Friday.",
     action: "chats",
     chatsPlaceholder: true,
+    chatsOnly: true,
   },
   { id: "s4", day: 1, start: 720, end: 810, title: "Lunch", where: "Rm 1230" },
   {

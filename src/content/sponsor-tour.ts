@@ -94,6 +94,11 @@ export const sponsorTourCopy = {
           title: "Key rooms",
           body: "The sponsor lounge and overnight belongings rooms stay the same all weekend. Your coffee chat schedule will be confirmed at 10:00 PM Friday.",
         },
+        /** Key rooms for a sponsor without coffee chats. */
+        keyRoomsNoChats: {
+          title: "Key rooms",
+          body: "The sponsor lounge and overnight belongings rooms stay the same all weekend.",
+        },
         // Schedule
         scheduleDays: {
           title: "Your personal schedule",

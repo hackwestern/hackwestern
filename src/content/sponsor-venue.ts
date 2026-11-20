@@ -23,10 +23,9 @@ export const sponsorVenueCopy = {
      * per building. */
     venue: {
       lead: "Heads up",
-      lines: [
-        "Main venue: Ronald D. Schmeichel Building for Entrepreneurship and Innovation, 1151 Richmond St, London.",
-        "Rooms 1348–1358 are in the Ivey building, a 15-minute walk from the Sponsor Bay.",
-      ],
+      main: "Main venue: Ronald D. Schmeichel Building for Entrepreneurship and Innovation, 1151 Richmond St, London.",
+      /** Coffee chat rooms: only for sponsors who do chats. */
+      ivey: "Rooms 1348–1358 are in the Ivey building, a 15-minute walk from the Sponsor Bay.",
     },
   },
   mapButton: "Map",

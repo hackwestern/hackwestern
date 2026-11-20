@@ -24,8 +24,11 @@ const unique = (rooms: string[]) => [...new Set(rooms)];
 export function KeyRooms({
   chats,
   mapHref,
+  showChats = true,
 }: {
   chats: KeyRoomChat[] | null;
+  /** False for a sponsor without coffee chats: no Coffee chats row. */
+  showChats?: boolean;
   /** The portal map opened on Ivey, for the Ivey walk note's Check map. */
   mapHref?: string;
 }) {
@@ -75,35 +78,37 @@ export function KeyRooms({
           </div>
           <span className="tabular-nums">{copy.lounge.room}</span>
         </div>
-        <div className={row}>
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <b className="block font-semibold">{copy.chats}</b>
-            {line ? (
-              <>
-                <span className="font-semibold tabular-nums">{line}</span>
-                <span className="flex flex-wrap gap-x-3.5 text-[13px] text-dashboard-text-light">
-                  {reps.map((r) => (
-                    <span key={r.rep} className="whitespace-nowrap">
-                      <b className="font-semibold">{copy.repRooms(r.rep)}</b>{" "}
-                      {r.rooms.join(", ")}
-                    </span>
-                  ))}
+        {showChats && (
+          <div className={row}>
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <b className="block font-semibold">{copy.chats}</b>
+              {line ? (
+                <>
+                  <span className="font-semibold tabular-nums">{line}</span>
+                  <span className="flex flex-wrap gap-x-3.5 text-[13px] text-dashboard-text-light">
+                    {reps.map((r) => (
+                      <span key={r.rep} className="whitespace-nowrap">
+                        <b className="font-semibold">{copy.repRooms(r.rep)}</b>{" "}
+                        {r.rooms.join(", ")}
+                      </span>
+                    ))}
+                  </span>
+                  {ivey.length > 0 && (
+                    <IveyWalkNote
+                      who="sponsor"
+                      mapHref={mapHref ?? null}
+                      className="mt-1 text-[13px]"
+                    />
+                  )}
+                </>
+              ) : (
+                <span className="text-[13px] text-dashboard-text-light">
+                  {copy.chatsPending}
                 </span>
-                {ivey.length > 0 && (
-                  <IveyWalkNote
-                    who="sponsor"
-                    mapHref={mapHref ?? null}
-                    className="mt-1 text-[13px]"
-                  />
-                )}
-              </>
-            ) : (
-              <span className="text-[13px] text-dashboard-text-light">
-                {copy.chatsPending}
-              </span>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
         <div className={row}>
           <div className="min-w-0 flex-1">
             <b className="block font-semibold">{copy.belongings.label}</b>

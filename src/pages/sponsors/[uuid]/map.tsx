@@ -12,6 +12,7 @@ import { sponsorVenueCopy as copy } from "~/content/sponsor-venue";
 import { boothFor, boothSpot } from "~/lib/sponsor-bay-layout";
 import { floorForQuery, roomsForLocation } from "~/lib/venue-map";
 import { IveyWalkNote } from "~/components/ivey-walk-note";
+import { showChats } from "~/lib/sponsor-chats";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
@@ -116,9 +117,9 @@ export default function SponsorMapPage() {
       <Note icon={<TriangleAlert aria-hidden />} tone="strong">
         <p className="m-0 font-bold">{copy.page.venue.lead}</p>
         <ul className="m-0 mt-1 flex list-disc flex-col gap-1 pl-5">
-          {copy.page.venue.lines.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
+          <li>{copy.page.venue.main}</li>
+          {/* Rooms 1348–1358 are coffee chat rooms. */}
+          {showChats(info.data) && <li>{copy.page.venue.ivey}</li>}
         </ul>
       </Note>
     </>,
