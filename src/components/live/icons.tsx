@@ -400,7 +400,7 @@ const SIDEBAR_ICONS: Record<string, LucideIcon> = {
   activities: ClipboardList,
   rewards: Gift,
   scavenger: Compass,
-  "bonus-tasks": Trophy,
+  "scavenger-hunt": Trophy,
 };
 
 const SidebarIcon = ({

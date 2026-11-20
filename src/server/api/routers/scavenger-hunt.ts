@@ -8,6 +8,7 @@ import {
   isNull,
   isNotNull,
   gt,
+  lte,
   desc,
   ilike,
   count,
@@ -315,7 +316,8 @@ export const scavengerHuntRouter = createTRPCRouter({
   }),
 
   // Scavenger hunt tasks (open bonus items) for the Scavenger Hunt tab on
-  // /live, with whether the current user has already been scanned for each
+  // /live, with whether the current user has already been scanned for each.
+  // A task shows up once its start time has passed (Friday 5 PM for all of them).
   getTasks: protectedProcedure.query(async ({ ctx }) => {
     const rows = await db
       .select({
@@ -332,7 +334,13 @@ export const scavengerHuntRouter = createTRPCRouter({
           eq(scavengerHuntScans.userId, ctx.session.user.id),
         ),
       )
-      .where(and(eq(scavengerHuntItems.type, "bonus"), isOpen()))
+      .where(
+        and(
+          eq(scavengerHuntItems.type, "bonus"),
+          isOpen(),
+          lte(scavengerHuntItems.startsAt, sql`now()`),
+        ),
+      )
       .groupBy(scavengerHuntItems.id)
       .orderBy(scavengerHuntItems.points, scavengerHuntItems.name);
 
@@ -343,6 +351,26 @@ export const scavengerHuntRouter = createTRPCRouter({
       // Raw SQL aggregates come back as strings
       scannedAt: row.scannedAt ? new Date(row.scannedAt) : null,
     }));
+  }),
+
+  // Prizes hackers can spend points on, for the Scavenger Hunt tab on /live
+  getPrizes: protectedProcedure.query(async () => {
+    return withErrorHandling(
+      () =>
+        db
+          .select({
+            id: scavengerHuntRewards.id,
+            name: scavengerHuntRewards.name,
+            costPoints: scavengerHuntRewards.costPoints,
+            quantity: scavengerHuntRewards.quantity,
+          })
+          .from(scavengerHuntRewards)
+          .where(
+            and(eq(scavengerHuntRewards.status, "active"), rewardNotDeleted()),
+          )
+          .orderBy(scavengerHuntRewards.costPoints, scavengerHuntRewards.name),
+      "Failed to fetch prizes",
+    );
   }),
 
   // Get All Scavenger Hunt Rewards (only accessible to organizers)
