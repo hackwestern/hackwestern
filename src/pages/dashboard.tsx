@@ -336,9 +336,11 @@ export const getServerSideProps = async (
       const user = await db.query.users.findFirst({
         where: (users, { eq }) => eq(users.id, session.user.id),
       });
+      // Organizers land on the sponsor dashboard (Jazz, 2026-11-17); the
+      // internal dashboard stays one click away under "My Dashboard".
       if (user?.type === "organizer") {
         return {
-          redirect: { destination: "/internal/dashboard", permanent: false },
+          redirect: { destination: "/internal/sponsors", permanent: false },
         };
       }
 

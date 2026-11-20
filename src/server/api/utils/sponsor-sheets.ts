@@ -1,8 +1,12 @@
 import { TRPCError } from "@trpc/server";
+import {
+  runOfShowCredentials,
+  runOfShowSpreadsheetId,
+  sheetWritesEnabled,
+} from "~/server/api/utils/run-of-show-sheet";
 import { google } from "googleapis";
 import { eq } from "drizzle-orm";
 
-import { env } from "~/env";
 import { normalizeCoffeeChatMinutes } from "~/lib/coffee-chats";
 import {
   SPONSOR_STATUS_VALUES,
@@ -10,11 +14,12 @@ import {
 } from "~/lib/sponsor-status";
 import { normalizeSponsorTrack, type TrackValue } from "~/lib/sponsor-track";
 import { db } from "~/server/db";
+import { isMissingRangeError } from "~/server/api/utils/run-of-show-sheet";
 import { sponsorJudgingSponsors } from "~/server/db/schema";
 
 // Sponsor judging Google Sheet. Layout: tab "Judging", header in row 2
 // ("Sponsor Name" | "Chosen Teams (Id)"), data from row 3 down. Column A
-// holds the sponsor name (matching the master sheet spelling), column B
+// holds the sponsor name (matching the Sponsor Day-Of spelling), column B
 // holds that sponsor's chosen team ids as a comma-separated list. Sponsors
 // only ever see their UUID (private URL); it never appears in the sheet.
 export const SHEET_TAB = "Judging";
@@ -59,29 +64,38 @@ export function normalizeOptionalText(val: string | undefined): string {
 }
 
 const SPREADSHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
+const READONLY_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
 
 const uuidRegex =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type SheetsClient = ReturnType<typeof google.sheets>;
 
+/**
+ * The sponsor tabs (Judging, sponsor info, HW Contacts, Coffee Chat Room
+ * Grid) live in the Spon Team RUN OF SHOW sheet since Lucas's judging sheet
+ * was merged into it (Jazz, 2026-11-18), so this uses the run-of-show login
+ * (falling back to the sponsor login). That account needs Editor on the
+ * sheet: shortlists, sponsor info and the room grid are written here.
+ */
 export async function getSheetsClient() {
-  const email = env.SPONSOR_SHEETS_CLIENT_EMAIL;
-  const key = env.SPONSOR_SHEETS_PRIVATE_KEY?.trim()
-    .replace(/^"+|"+$/g, "")
-    .replace(/\\n/g, "\n");
-  if (!email || !key) {
+  let creds: { email: string; key: string };
+  try {
+    creds = runOfShowCredentials();
+  } catch (e) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message:
-        "SPONSOR_SHEETS_CLIENT_EMAIL / SPONSOR_SHEETS_PRIVATE_KEY are not configured",
+      message: e instanceof Error ? e.message : String(e),
     });
   }
 
   const auth = new google.auth.JWT({
-    email,
-    key,
-    scopes: [SPREADSHEETS_SCOPE],
+    email: creds.email,
+    key: creds.key,
+    // Outside production (and in tests) the client is read-only, so a
+    // write (shortlist, sponsor info, room grid) fails instead of landing
+    // on the live sheet (sheetWritesEnabled).
+    scopes: [sheetWritesEnabled() ? SPREADSHEETS_SCOPE : READONLY_SCOPE],
   });
   await auth.authorize();
 
@@ -89,93 +103,318 @@ export async function getSheetsClient() {
 }
 
 export function getSpreadsheetId(): string {
-  const spreadsheetId = env.SPONSOR_JUDGING_SHEET;
-  if (!spreadsheetId) {
+  // One source of truth: the Spon Team RUN OF SHOW sheet. Lucas's old
+  // judging sheet (SPONSOR_JUDGING_SHEET) is no longer read.
+  try {
+    return runOfShowSpreadsheetId();
+  } catch (e) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message: "SPONSOR_JUDGING_SHEET env variable is not set",
+      message: e instanceof Error ? e.message : String(e),
     });
   }
-  return spreadsheetId;
 }
 
 /**
- * One acquired-sponsor row from the master sheet. Layout of the master
- * spreadsheet ("HW 13 Sponsors" tab): a goal/progress block on rows 1-9,
- * a header row (`Company Name | Tier | Amount $$ | Company Contact | HW
- * Contact | Notes`), then one row per acquired sponsor. The header row is
- * found by scanning for "Company Name" in column A rather than hardcoding its
- * row number, since the block moves as organizers edit the sheet.
+ * One sponsor row from the "Sponsor Day-Of" tab of the Spon Team sheet (the
+ * one sheet, RUN_OF_SHOW_SHEET). Tier, amount and company contact aren't on
+ * that sheet, so they come back empty and show as blanks.
  */
-interface MasterSponsorRow {
+interface SheetSponsorRow {
   name: string;
   tier: string;
   amount: string;
   companyContact: string;
   hwContact: string;
   notes: string;
+  /**
+   * The "Custom API / Prize Track" checkbox: true when ticked, false when
+   * not, null when the tab has no such column.
+   */
+  hasPrizeTrack: boolean | null;
 }
 
-const MASTER_HEADER_LABEL = "company name";
+/** Newest name first; the tab was "Contract Breakdown" before 2026-11-19. */
+const SPONSOR_LIST_TAB_NAMES = ["sponsor day-of", "contract breakdown"];
+const SPONSOR_LIST_HEADER = "sponsor name";
 
 export function cell(row: string[] | undefined, index: number): string {
   return String(row?.[index] ?? "").trim();
 }
 
-export async function fetchMasterSponsors(): Promise<MasterSponsorRow[]> {
-  const spreadsheetId = env.SPONSOR_MASTER_SHEET;
-  if (!spreadsheetId) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "SPONSOR_MASTER_SHEET env variable is not set",
-    });
-  }
-
-  const sheets = await getSheetsClient();
-  const tab = env.SPONSOR_MASTER_SHEET_TAB ?? "HW 13 Sponsors";
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${tab}!A1:F`,
-  });
-
-  const rows = res.data.values ?? [];
-  const headerIndex = rows.findIndex(
-    (row) => cell(row, 0).toLowerCase() === MASTER_HEADER_LABEL,
-  );
-  if (headerIndex === -1) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: `No "${MASTER_HEADER_LABEL}" header found in column A of tab "${tab}"`,
-    });
-  }
-
-  const sponsors: MasterSponsorRow[] = [];
-  const seen = new Set<string>();
-  for (const row of rows.slice(headerIndex + 1)) {
-    const name = cell(row, 0);
-    // Stop at the end of the acquired-sponsors block (blank name), and skip
-    // any duplicate name so the private-link list stays one row per sponsor.
-    if (!name) break;
-    if (seen.has(name)) continue;
-    seen.add(name);
-    sponsors.push({
-      name,
-      tier: cell(row, 1),
-      amount: cell(row, 2),
-      companyContact: cell(row, 3),
-      hwContact: cell(row, 4),
-      notes: cell(row, 5),
-    });
-  }
-  return sponsors;
+/** Header text compared loosely: invisible characters, case and spaces. */
+function headerKey(raw: unknown): string {
+  return String(raw ?? "")
+    .replace(/\p{Cf}/gu, "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
 }
 
 /**
- * Sponsor names from the master sponsor sheet, in sheet order. This is the
+ * Sponsor Day-Of header names the app reads, each with the names it had
+ * before (Sponsor Status merged into Sponsor Day-Of on 2026-11-19). Exact
+ * matches only: the tab also has contract checkboxes such as "Dedicated
+ * Workshop" and "Coffee Chats & Interviews" that a "contains" match would
+ * mistake for the workshop or coffee chat columns.
+ */
+const DAY_OF_HEADERS = {
+  name: ["sponsor name"],
+  format: ["in person / digital"],
+  hwLead: ["hw lead", "hw contact"],
+  status: ["status"],
+  booth: ["booth location"],
+  workshopLocation: ["workshop room", "workshop location"],
+  workshopTime: ["workshop time"],
+  judgingRoom: ["judging room", "judging room number"],
+  track: ["team track filter", "sponsor track"],
+  prizeTrack: ["custom api / prize track", "prize track"],
+  /** Checkbox: the sponsor came to the Friday coffee chat workshop. */
+  ccWorkshop: ["at cc workshop"],
+  maxMinutes: ["coffee chat max minutes"],
+  notes: ["to do / mismatches"],
+  /** Sponsorship tier ("Gold"), for the portal's welcome line. Optional. */
+  tier: ["tier", "sponsor tier", "sponsorship tier"],
+  /**
+   * Coffee chat hours the tier allows (a formula from Tier on the Tiers
+   * tab: Gold 4, Silver 3, Bronze 2). The sponsor's chats can't add up to
+   * more (Jazz, 2026-11-20). Optional.
+   */
+  chattingHours: ["chatting hours"],
+} as const;
+
+export type SponsorDayOfColumns = Record<keyof typeof DAY_OF_HEADERS, number>;
+
+/** Column index of each Sponsor Day-Of field by header name; -1 = missing. */
+export function parseSponsorDayOfColumns(
+  headerRow: readonly unknown[],
+): SponsorDayOfColumns {
+  const keys = headerRow.map(headerKey);
+  const find = (names: readonly string[]) =>
+    keys.findIndex((k) => k !== "" && names.includes(k));
+  return Object.fromEntries(
+    Object.entries(DAY_OF_HEADERS).map(([field, names]) => [
+      field,
+      find(names),
+    ]),
+  ) as SponsorDayOfColumns;
+}
+
+/** A checkbox cell as the API returns it ("TRUE" / "FALSE"). */
+export function isTicked(value: string): boolean {
+  return /^(true|yes|y|x|✓|✔)$/i.test(value.trim());
+}
+
+/**
+ * The Sponsor Day-Of tab: its title, all rows, the header row index (column
+ * A "Sponsor Name") and the sponsor rows under it (up to the first blank
+ * name). Null when the tab or its header row is missing.
+ */
+export interface SponsorDayOfTab {
+  tab: string;
+  rows: string[][];
+  headerIndex: number;
+  cols: SponsorDayOfColumns;
+}
+
+export function parseSponsorDayOfRows(
+  tab: string,
+  rows: string[][],
+): SponsorDayOfTab | null {
+  const headerIndex = rows.findIndex(
+    (row) => cell(row, 0).toLowerCase() === SPONSOR_LIST_HEADER,
+  );
+  if (headerIndex === -1) return null;
+  return {
+    tab,
+    rows,
+    headerIndex,
+    cols: parseSponsorDayOfColumns(rows[headerIndex] ?? []),
+  };
+}
+
+/**
+ * The sponsor rows of a Sponsor Day-Of read with their 1-based sheet row
+ * numbers, in sheet order: from under the header to the first blank name
+ * (the footer rows below are not sponsors). Duplicate names keep the first.
+ */
+export function sponsorDayOfRows(
+  dayOf: SponsorDayOfTab,
+): { name: string; row: string[]; sheetRow: number }[] {
+  const out: { name: string; row: string[]; sheetRow: number }[] = [];
+  const seen = new Set<string>();
+  for (let i = dayOf.headerIndex + 1; i < dayOf.rows.length; i++) {
+    const row = dayOf.rows[i] ?? [];
+    const name = cell(row, 0);
+    if (!name) break;
+    if (seen.has(name)) continue;
+    seen.add(name);
+    out.push({ name, row, sheetRow: i + 1 });
+  }
+  return out;
+}
+
+/**
+ * Sponsor Day-Of is read on almost every page and polled by organizer
+ * pages, which ran past Google's per-minute read limit (about 1 load in 3
+ * failed, 2026-11-20). So one read is shared for DAY_OF_TTL_MS, and when
+ * Google refuses, the last good copy is used instead of failing. Writes
+ * read fresh (`fresh`) and clear this, so they see the current rows.
+ */
+const DAY_OF_TTL_MS = 60_000;
+let dayOfCache: {
+  spreadsheetId: string;
+  at: number;
+  value: SponsorDayOfTab | null;
+} | null = null;
+let dayOfInFlight: Promise<SponsorDayOfTab | null> | null = null;
+
+/**
+ * One sheet read shared by every request for `ttlMs`, keeping the last good
+ * value when Google refuses (usually its per-minute read limit). Pages read
+ * the same tabs over and over; this keeps the app under the limit and stops
+ * a refused read from showing as blanks. Off in tests (they mock per test).
+ */
+const sharedReads = new Map<
+  string,
+  { at: number; value: unknown; inFlight: Promise<unknown> | null }
+>();
+
+export async function sharedSheetRead<T>(
+  key: string,
+  ttlMs: number,
+  load: () => Promise<T>,
+): Promise<T> {
+  if (process.env.VITEST) return load();
+  const entry = sharedReads.get(key);
+  if (entry && entry.at > 0 && Date.now() - entry.at < ttlMs) {
+    return entry.value as T;
+  }
+  if (entry?.inFlight) return entry.inFlight as Promise<T>;
+  const slot = entry ?? { at: 0, value: undefined, inFlight: null };
+  sharedReads.set(key, slot);
+  slot.inFlight = load()
+    .then((value) => {
+      slot.at = Date.now();
+      slot.value = value;
+      return value;
+    })
+    .catch((error: unknown) => {
+      if (slot.at > 0) {
+        console.warn(`Sheet read "${key}" failed; using the last good copy`, error);
+        return slot.value as T;
+      }
+      throw error;
+    })
+    .finally(() => {
+      slot.inFlight = null;
+    });
+  return slot.inFlight as Promise<T>;
+}
+
+/** After a write to Sponsor Day-Of: the next read goes to the sheet. */
+export function clearSponsorDayOfCache() {
+  dayOfCache = null;
+}
+
+/** Read the Sponsor Day-Of tab (falls back to "Contract Breakdown"). */
+export async function fetchSponsorDayOfTab(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+  { fresh = false }: { fresh?: boolean } = {},
+): Promise<SponsorDayOfTab | null> {
+  // Tests mock the sheet per test: no sharing between them.
+  if (fresh || process.env.VITEST) {
+    return readSponsorDayOfTab(sheets, spreadsheetId);
+  }
+  const cached = dayOfCache;
+  if (
+    cached?.spreadsheetId === spreadsheetId &&
+    Date.now() - cached.at < DAY_OF_TTL_MS
+  ) {
+    return cached.value;
+  }
+  dayOfInFlight ??= readSponsorDayOfTab(sheets, spreadsheetId)
+    .then((value) => {
+      dayOfCache = { spreadsheetId, at: Date.now(), value };
+      return value;
+    })
+    .catch((error: unknown) => {
+      // Google refused (often the per-minute limit): keep the last good copy.
+      if (cached?.spreadsheetId === spreadsheetId) {
+        console.warn("Sponsor Day-Of read failed; using the last good copy", error);
+        return cached.value;
+      }
+      throw error;
+    })
+    .finally(() => {
+      dayOfInFlight = null;
+    });
+  return dayOfInFlight;
+}
+
+async function readSponsorDayOfTab(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+): Promise<SponsorDayOfTab | null> {
+  let tab: string | null = null;
+  for (const name of SPONSOR_LIST_TAB_NAMES) {
+    tab = await findTabTitle(sheets, spreadsheetId, name);
+    if (tab) break;
+  }
+  if (!tab) return null;
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `'${tab}'!A1:AF`,
+  });
+  return parseSponsorDayOfRows(
+    tab,
+    (res.data.values ?? []).map((row) => row.map((c) => String(c ?? ""))),
+  );
+}
+
+/**
+ * Every sponsor on the Sponsor Day-Of tab, in sheet order. The header row is
+ * the first row whose column A is "Sponsor Name"; "HW lead" and the
+ * "To do / mismatches" column are found by header name. The list ends at the
+ * first blank name, so the footer rows under it are not sponsors.
+ */
+export async function fetchSheetSponsors(): Promise<SheetSponsorRow[]> {
+  const sheets = await getSheetsClient();
+  const spreadsheetId = getSpreadsheetId();
+  const dayOf = await fetchSponsorDayOfTab(sheets, spreadsheetId);
+  if (!dayOf) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message:
+        'No "Sponsor Day-Of" tab with a "Sponsor Name" header in column A in the Spon Team sheet',
+    });
+  }
+  return sheetSponsorsFromDayOf(dayOf);
+}
+
+/** The sponsor list from a Sponsor Day-Of read (pure, for tests). */
+export function sheetSponsorsFromDayOf(
+  dayOf: SponsorDayOfTab,
+): SheetSponsorRow[] {
+  const { hwLead, notes, prizeTrack } = dayOf.cols;
+  return sponsorDayOfRows(dayOf).map(({ name, row }) => ({
+    name,
+    tier: "",
+    amount: "",
+    companyContact: "",
+    hwContact: hwLead === -1 ? "" : cell(row, hwLead),
+    notes: notes === -1 ? "" : cell(row, notes),
+    hasPrizeTrack: prizeTrack === -1 ? null : isTicked(cell(row, prizeTrack)),
+  }));
+}
+
+/**
+ * Sponsor names from the Sponsor Day-Of tab, in sheet order. This is the
  * source of truth for which sponsors get a private judging link.
  */
-export async function fetchMasterSponsorNames(): Promise<string[]> {
-  return (await fetchMasterSponsors()).map((sponsor) => sponsor.name);
+export async function fetchSheetSponsorNames(): Promise<string[]> {
+  return (await fetchSheetSponsors()).map((sponsor) => sponsor.name);
 }
 
 export async function fetchColumnA(
@@ -197,10 +436,28 @@ export async function fetchAllChosenTeams(
   sheets: SheetsClient,
   spreadsheetId: string,
 ): Promise<Map<string, string[]>> {
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${SHEET_TAB}!A${HEADER_ROW + 1}:B`,
-  });
+  return sharedSheetRead(`picks:${spreadsheetId}`, 60_000, () =>
+    readAllChosenTeams(sheets, spreadsheetId),
+  );
+}
+
+async function readAllChosenTeams(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+): Promise<Map<string, string[]>> {
+  // The "Judging" tab was deleted on 2026-11-19 (picks move to the database
+  // and the Sponsor Judging tab). Without it there are simply no picks yet;
+  // don't fail the whole sponsor list, portal or judging board over it.
+  const res = await sheets.spreadsheets.values
+    .get({
+      spreadsheetId,
+      range: `${SHEET_TAB}!A${HEADER_ROW + 1}:B`,
+    })
+    .catch((error: unknown) => {
+      if (isMissingRangeError(error)) return null;
+      throw error;
+    });
+  if (!res) return new Map();
 
   const picks = new Map<string, string[]>();
   for (const row of res.data.values ?? []) {
@@ -258,6 +515,13 @@ export function parseTeamIds(cell: string | undefined): string[] {
 
 export interface SponsorInfoRecord {
   status: SponsorStatus;
+  /** Sponsor Day-Of's "Tier" column ("Gold"); empty when there's none. */
+  tier: string;
+  /**
+   * Minutes of coffee chats the tier allows (Sponsor Day-Of's "Chatting
+   * hours" x 60); null = no tier or no column, so no limit.
+   */
+  chattingMinutes: number | null;
   roomNumber: string;
   boothLocation: string;
   hwContact: string;
@@ -273,6 +537,94 @@ export interface SponsorInfoRecord {
    * then sees every submitted team.
    */
   track: TrackValue | null;
+  /**
+   * Sponsor Day-Of's "Custom API / Prize Track" checkbox. Null when it isn't
+   * known (the old Sponsor Status tab, or no such column).
+   */
+  hasPrizeTrack: boolean | null;
+  /**
+   * Sponsor Day-Of's "At CC workshop" checkbox (came to the Friday coffee
+   * chat workshop). Null when the tab has no such column.
+   */
+  atCcWorkshop: boolean | null;
+}
+
+const warned = new Set<string>();
+
+/** console.warn a message the first time it comes up in this process. */
+function warnOnce(message: string): void {
+  if (warned.has(message)) return;
+  warned.add(message);
+  console.warn(message);
+}
+
+/**
+ * Every sponsor's info from a Sponsor Day-Of read, keyed by lowercased name.
+ * Null when the tab has no "Status" column yet (the sheet before the
+ * 2026-11-19 merge), so the caller can fall back to the old tab.
+ */
+/** "Gold Sponsor" -> "Gold"; placeholders ("-", "N/A", "TBD", "Sponsor") -> "". */
+/** "4" (hours) -> 240 minutes; blank or not a positive number -> null. */
+export function chattingMinutesOf(raw: string): number | null {
+  const hours = Number(raw.trim());
+  return raw.trim() !== "" && Number.isFinite(hours) && hours > 0
+    ? Math.round(hours * 60)
+    : null;
+}
+
+export function normalizeTier(raw: string): string {
+  const tier = raw.trim().replace(/\s*sponsors?$/i, "").trim();
+  return /^(|-+|—|n\/?a|tbd|none)$/i.test(tier) ? "" : tier;
+}
+
+export function sponsorInfoFromDayOf(
+  dayOf: SponsorDayOfTab,
+): Map<string, SponsorInfoRecord> | null {
+  const c = dayOf.cols;
+  if (c.status === -1) {
+    warnOnce(
+      `sponsor info: "${dayOf.tab}" has no "Status" column; reading the old Sponsor Status tab instead`,
+    );
+    return null;
+  }
+  if (c.booth === -1) {
+    warnOnce(
+      `sponsor info: "${dayOf.tab}" has no "Booth location" column; every booth reads as blank`,
+    );
+  }
+  if (c.judgingRoom === -1) {
+    warnOnce(
+      `sponsor info: "${dayOf.tab}" has no "Judging room" column; every judging room reads as blank`,
+    );
+  }
+  if (c.ccWorkshop === -1) {
+    warnOnce(
+      `sponsor info: "${dayOf.tab}" has no "At CC workshop" column; coffee chat workshop attendance can't be read or saved`,
+    );
+  }
+  const at = (row: string[], col: number) => (col === -1 ? "" : cell(row, col));
+  const map = new Map<string, SponsorInfoRecord>();
+  for (const { name, row } of sponsorDayOfRows(dayOf)) {
+    const key = name.toLowerCase();
+    if (map.has(key)) continue;
+    map.set(key, {
+      status: normalizeSponsorStatus(at(row, c.status)),
+      tier: normalizeTier(at(row, c.tier)),
+      chattingMinutes: chattingMinutesOf(at(row, c.chattingHours)),
+      roomNumber: normalizeRoomNumber(at(row, c.judgingRoom)),
+      boothLocation: normalizeBoothLocation(at(row, c.booth)),
+      hwContact: normalizeHwContact(at(row, c.hwLead)),
+      workshopLocation: normalizeOptionalText(at(row, c.workshopLocation)),
+      workshopTime: normalizeOptionalText(at(row, c.workshopTime)),
+      maxCoffeeChatMinutes: normalizeCoffeeChatMinutes(at(row, c.maxMinutes)),
+      track: normalizeSponsorTrack(at(row, c.track)),
+      hasPrizeTrack:
+        c.prizeTrack === -1 ? null : isTicked(at(row, c.prizeTrack)),
+      atCcWorkshop:
+        c.ccWorkshop === -1 ? null : isTicked(at(row, c.ccWorkshop)),
+    });
+  }
+  return map;
 }
 
 /**
@@ -352,26 +704,57 @@ export async function findTabTitle(
       (s) => s.properties?.title?.trim().toLowerCase() === titleLower,
     );
     return found?.properties?.title ?? null;
-  } catch {
-    return null;
+  } catch (error) {
+    // A real failure (quota, network, auth) is an error, not "no such tab":
+    // reporting it as missing made pages show blanks as if they were real.
+    throw error;
   }
 }
 
-function findSponsorInfoTabTitle(
+/**
+ * The old sponsor info tab's title, newest first: "sponsor info", then
+ * "live sponsor info", then "Sponsor Status" (2026-11-19). Read only when
+ * Sponsor Day-Of has no "Status" column yet; the merged sheet renamed it
+ * "(old) Sponsor Status" and hid it, so it is never read there.
+ */
+export const SPONSOR_INFO_TAB_NAMES = [
+  "sponsor status",
+  "live sponsor info",
+  "sponsor info",
+];
+
+async function findSponsorInfoTabTitle(
   sheets: SheetsClient,
   spreadsheetId: string,
 ): Promise<string | null> {
-  return findTabTitle(sheets, spreadsheetId, "sponsor info");
+  for (const name of SPONSOR_INFO_TAB_NAMES) {
+    const title = await findTabTitle(sheets, spreadsheetId, name);
+    if (title) return title;
+  }
+  return null;
 }
 
 export async function fetchAllSponsorInfo(
   sheets: SheetsClient,
   spreadsheetId: string,
+  /** Rethrow read errors instead of returning an empty map. */
+  { strict = false }: { strict?: boolean } = {},
 ): Promise<Map<string, SponsorInfoRecord>> {
   const map = new Map<string, SponsorInfoRecord>();
   try {
+    // Sponsor Day-Of holds these columns since 2026-11-19. Until a sheet has
+    // them (no "Status" column there), read the old Sponsor Status tab.
+    const dayOf = await fetchSponsorDayOfTab(sheets, spreadsheetId);
+    const fromDayOf = dayOf ? sponsorInfoFromDayOf(dayOf) : null;
+    if (fromDayOf) return fromDayOf;
+
     const tabName = await findSponsorInfoTabTitle(sheets, spreadsheetId);
-    if (!tabName) return map;
+    if (!tabName) {
+      warnOnce(
+        `sponsor info: no Sponsor Day-Of "Status" column and no old tab (${SPONSOR_INFO_TAB_NAMES.join(", ")}); every sponsor reads with no status, booth or judging room`,
+      );
+      return map;
+    }
 
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId,
@@ -419,6 +802,8 @@ export async function fetchAllSponsorInfo(
       if (!map.has(lower)) {
         map.set(lower, {
           status: normalizeSponsorStatus(cell(row, cols.statusCol)),
+          tier: "",
+          chattingMinutes: null,
           roomNumber: normalizeRoomNumber(cell(row, cols.roomCol)),
           boothLocation: normalizeBoothLocation(cell(row, cols.boothCol)),
           hwContact: normalizeHwContact(cell(row, cols.hwContactCol)),
@@ -430,10 +815,13 @@ export async function fetchAllSponsorInfo(
             cell(row, cols.maxMinutesCol),
           ),
           track: normalizeSponsorTrack(cell(row, cols.trackCol)),
+          hasPrizeTrack: null,
+          atCcWorkshop: null,
         });
       }
     }
   } catch (error) {
+    if (strict) throw error;
     console.warn("Could not read sponsor info tab:", error);
   }
   return map;
