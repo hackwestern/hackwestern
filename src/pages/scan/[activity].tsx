@@ -44,6 +44,7 @@ type HeldResult = {
   kind: "success" | "already" | "error";
   name?: string;
   realm?: Realm | null;
+  shirtSize?: string | null;
   message?: string;
 };
 
@@ -104,6 +105,11 @@ const HeldResultOverlay = ({
             >
               {realmLabel[result.realm]} Realm
             </span>
+          )}
+          {result.shirtSize && (
+            <p className="text-2xl font-semibold text-dashboard-text-heavy">
+              Shirt size: {result.shirtSize}
+            </p>
           )}
           {result.message && (
             <p className={cn("text-xl font-semibold", style.text)}>
@@ -406,24 +412,31 @@ const ScanActivityPage = () => {
   // Look up a hacker's name and realm for the result, falling back to their ID
   const fetchUser = async (
     userId: string,
-  ): Promise<{ name: string; realm: Realm | null }> => {
+  ): Promise<{
+    name: string;
+    realm: Realm | null;
+    shirtSize: string | null;
+  }> => {
     try {
       const userResponse = await fetch(
         `/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`,
       );
-      if (!userResponse.ok) return { name: userId, realm: null };
+      if (!userResponse.ok)
+        return { name: userId, realm: null, shirtSize: null };
       const userData = (await userResponse.json()) as {
         name?: string;
         email?: string;
         realm?: Realm | null;
+        shirtSize?: string | null;
       };
       return {
         name: userData?.name ?? userData?.email ?? userId,
         realm: userData?.realm ?? null,
+        shirtSize: userData?.shirtSize ?? null,
       };
     } catch (userError) {
       console.error("Error fetching user info:", userError);
-      return { name: userId, realm: null };
+      return { name: userId, realm: null, shirtSize: null };
     }
   };
 
@@ -450,10 +463,10 @@ const ScanActivityPage = () => {
         itemId: itemData.id,
         activityType: isWinnable ? activityTypeRef.current : undefined,
       });
-      const { name: userName, realm } = await fetchUser(userId);
+      const { name: userName, realm, shirtSize } = await fetchUser(userId);
       setStatus("success");
       if (holdResults) {
-        setHeld({ kind: "success", name: userName, realm });
+        setHeld({ kind: "success", name: userName, realm, shirtSize });
         return; // scanning resumes when the organizer taps Next
       }
       toast(
