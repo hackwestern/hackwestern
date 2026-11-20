@@ -584,16 +584,25 @@ export const sponsorScoringRouter = createTRPCRouter({
     }),
 
   /**
-   * End round 1: snapshot the sponsor's current shortlist (eligible teams
-   * only, at most SHORTLIST_MAX: one per presentation slot) as the one
-   * organizers schedule from. Sending again replaces it;
-   * the schedule only changes when organizers schedule again.
+   * End round 1: one-time snapshot of the sponsor's current shortlist
+   * (eligible teams only, at most SHORTLIST_MAX: one per presentation slot)
+   * as the one organizers schedule from. Once sent, it cannot be replaced.
    */
   sendShortlist: publicProcedure
     .input(z.object({ sponsor: sponsorInput }))
     .mutation(async ({ input }) => {
       assertOpen();
       const sponsor = await findTrackSponsor(input.sponsor);
+      const alreadySent = await db.query.sponsorShortlistSends.findFirst({
+        where: eq(sponsorShortlistSends.sponsorId, sponsor.id),
+        columns: { sponsorId: true },
+      });
+      if (alreadySent) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Your shortlist has already been submitted.",
+        });
+      }
       const track = await fetchSponsorTrack(sponsor.name);
       const rows = await db
         .select({ teamId: sponsorTeamReviews.teamId })
@@ -653,6 +662,17 @@ export const sponsorScoringRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       assertOpen();
       const sponsor = await findTrackSponsor(input.sponsor);
+      const alreadySubmitted =
+        await db.query.sponsorFinalPicks.findFirst({
+          where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
+          columns: { sponsorId: true },
+        });
+      if (alreadySubmitted) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Your Top 5 has already been submitted.",
+        });
+      }
       const track = await fetchSponsorTrack(sponsor.name);
       const round = await roundFor(sponsor.id);
       if (!round.round2Open) {
@@ -703,7 +723,7 @@ export const sponsorScoringRouter = createTRPCRouter({
    * many, no repeats, all teams that presented to this sponsor and still
    * eligible. Only once organizers have opened round 2, and only for a
    * sponsor with a placed presentation slot (no slot: FORBIDDEN, Jazz
-   * 2026-11-18). Resubmitting replaces the last one while judging is open.
+   * 2026-11-18). One-time submission: cannot be replaced while judging is open.
    * Saved here first, then mirrored to the Sponsor Judging tab; if that
    * fails (or sheet writes are off) the submission still counts and
    * `sheetSynced` is false (the next `get` retries it).
@@ -720,6 +740,17 @@ export const sponsorScoringRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       assertOpen();
       const sponsor = await findTrackSponsor(input.sponsor);
+      const alreadySubmitted =
+        await db.query.sponsorFinalPicks.findFirst({
+          where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
+          columns: { sponsorId: true },
+        });
+      if (alreadySubmitted) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Your Top 5 has already been submitted.",
+        });
+      }
       const track = await fetchSponsorTrack(sponsor.name);
       const [eligible, round] = await Promise.all([
         eligibleTeamIds(track, input.teamIds),

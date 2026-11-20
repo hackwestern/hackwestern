@@ -33,7 +33,10 @@ import {
 const copy = sponsorJudgingCopy;
 const AVATARS = 4;
 
-const linkChip = dashboardButtonVariants({ variant: "small" });
+const linkChip = cn(
+  dashboardButtonVariants({ variant: "small" }),
+  "min-h-8 px-1.5 text-[11px] md:min-h-8",
+);
 
 export function ProjectLinks({ team }: { team: JudgingTeam }) {
   if (!team.devpostUrl && !team.githubUrl) return null;

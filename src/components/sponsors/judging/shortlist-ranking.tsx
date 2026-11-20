@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { CheckCircle2, GripVertical, Plus, Search, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -22,7 +22,7 @@ import { type JudgingData, type ReviewPatch } from "./use-sponsor-judging";
 const copy = sponsorJudgingCopy;
 
 const iconButton = cn(
-  "inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-heavy md:size-9",
+  "inline-flex size-9 shrink-0 items-center justify-center rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-heavy sm:size-9",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
   "disabled:cursor-not-allowed disabled:opacity-dashboard-disabled [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
   pressable,
@@ -78,6 +78,8 @@ export function ShortlistRanking({
   const [selectionSlot, setSelectionSlot] = useState<number | null>(null);
   const [selectionQuery, setSelectionQuery] = useState("");
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const touchDrag = useRef<{ id: string; from: number } | null>(null);
 
   // Keep the place number stable: if a team becomes unavailable, clear only
   // that slot instead of filling it or shifting the remaining picks.
@@ -94,6 +96,7 @@ export function ShortlistRanking({
 
   const [confirming, setConfirming] = useState(false);
   const [announce, setAnnounce] = useState("");
+  const canEdit = data.final === null;
   const [draftState, setDraftState] = useState<"saved" | "saving" | "error">(
     "saved",
   );
@@ -121,6 +124,7 @@ export function ShortlistRanking({
   });
 
   useEffect(() => {
+    if (!canEdit) return;
     if (firstDraftSave.current) {
       firstDraftSave.current = false;
       return;
@@ -132,7 +136,7 @@ export function ShortlistRanking({
       });
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [draftKey, sponsor, saveDraft.mutate, topIds]);
+  }, [draftKey, sponsor, saveDraft.mutate, topIds, canEdit]);
 
   const picks = topIds.filter((id): id is string => id !== null);
   const canSubmit = picks.length === top && data.open;
@@ -142,11 +146,13 @@ export function ShortlistRanking({
     picks.every((id, i) => submitted[i] === id);
 
   const openSelection = (index: number) => {
+    if (!canEdit) return;
     setSelectionSlot(index);
     setSelectionQuery("");
   };
 
   const chooseTeam = (teamId: string) => {
+    if (!canEdit) return;
     if (selectionSlot === null) return;
     const target = selectionSlot;
     const oldId = topIds[target] ?? null;
@@ -165,6 +171,7 @@ export function ShortlistRanking({
   };
 
   const clearSlot = (index: number) => {
+    if (!canEdit) return;
     const next = [...topIds];
     next[index] = null;
     setTopIds(next);
@@ -172,6 +179,7 @@ export function ShortlistRanking({
   };
 
   const reorder = (from: number, to: number) => {
+    if (!canEdit) return;
     if (from === to) return;
     const next = [...topIds];
     const [id] = next.splice(from, 1);
@@ -182,6 +190,44 @@ export function ShortlistRanking({
     if (id) {
       setAnnounce(copy.shortlist.moved(byId.get(id)?.name ?? id, to + 1));
     }
+  };
+
+  const beginTouchDrag = (
+    event: ReactPointerEvent<HTMLSpanElement>,
+    id: string,
+    from: number,
+  ) => {
+    if (event.pointerType === "mouse") return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    touchDrag.current = { id, from };
+    setDraggedId(id);
+    setDragOverIndex(from);
+  };
+
+  const moveTouchDrag = (event: ReactPointerEvent<HTMLSpanElement>) => {
+    if (!touchDrag.current) return;
+    const at = document.elementFromPoint(event.clientX, event.clientY);
+    const slot = at?.closest("[data-top-slot]");
+    const target = slot?.getAttribute("data-top-slot");
+    if (target !== null && target !== undefined) {
+      setDragOverIndex(Number(target));
+    }
+  };
+
+  const endTouchDrag = (event: ReactPointerEvent<HTMLSpanElement>) => {
+    if (!touchDrag.current) return;
+    event.preventDefault();
+    const drag = touchDrag.current;
+    const at = document.elementFromPoint(event.clientX, event.clientY);
+    const slot = at?.closest("[data-top-slot]");
+    const target = slot?.getAttribute("data-top-slot");
+    if (target !== null && target !== undefined) {
+      reorder(drag.from, Number(target));
+    }
+    touchDrag.current = null;
+    setDraggedId(null);
+    setDragOverIndex(null);
   };
 
   if (shortlist.length === 0 && presented) {
@@ -263,17 +309,16 @@ export function ShortlistRanking({
           return (
             <li
               key={`slot-${index}`}
-              draggable={team !== null}
-              onDragStart={(event) => {
-                if (!id) return;
-                setDraggedId(id);
-                event.dataTransfer.effectAllowed = "move";
-                event.dataTransfer.setData("text/plain", id);
-              }}
-              onDragEnd={() => setDraggedId(null)}
+              data-top-slot={index}
               onDragOver={(event) => {
                 event.preventDefault();
                 event.dataTransfer.dropEffect = "move";
+                setDragOverIndex(index);
+              }}
+              onDragLeave={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                  setDragOverIndex(null);
+                }
               }}
               onDrop={(event) => {
                 event.preventDefault();
@@ -283,18 +328,66 @@ export function ShortlistRanking({
                 const from = topIds.indexOf(sourceId);
                 if (from >= 0) reorder(from, index);
                 setDraggedId(null);
+                setDragOverIndex(null);
               }}
               className={cn(
-                "flex items-stretch gap-2 rounded-dashboard-2xl border bg-dashboard-bg-surface p-2 shadow-dashboard-card",
+                "flex items-stretch gap-1.5 rounded-dashboard-2xl border bg-dashboard-bg-surface p-1.5 shadow-dashboard-card sm:gap-2 sm:p-2",
                 team
                   ? "border-dashboard-border-default"
                   : "border-dashed border-dashboard-border-strong",
                 draggedId === id && "opacity-60",
+                dragOverIndex === index &&
+                  draggedId !== id &&
+                  "ring-2 ring-dashboard-action-primary ring-offset-2",
               )}
             >
-              <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-dashboard-md bg-dashboard-action-primary text-sm font-bold tabular-nums text-dashboard-text-inverse">
-                {index + 1}
-              </span>
+              <div className="flex shrink-0 flex-col items-center justify-center gap-1.5 self-stretch">
+                <span className="mx-1 flex h-11 w-11 items-center justify-center rounded-full bg-dashboard-action-primary text-sm font-bold tabular-nums text-dashboard-text-inverse">
+                  {index + 1}
+                </span>
+                {team && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Drag ${team.name} to reorder`}
+                    draggable
+                    onDragStart={(event) => {
+                      setDraggedId(team.id);
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", team.id);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedId(null);
+                      setDragOverIndex(null);
+                    }}
+                    onPointerDown={(event) =>
+                      beginTouchDrag(event, team.id, index)
+                    }
+                    onPointerMove={moveTouchDrag}
+                    onPointerUp={endTouchDrag}
+                    onPointerCancel={() => {
+                      touchDrag.current = null;
+                      setDraggedId(null);
+                      setDragOverIndex(null);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+                        event.preventDefault();
+                        if (index > 0) reorder(index, index - 1);
+                      } else if (
+                        event.key === "ArrowDown" ||
+                        event.key === "ArrowRight"
+                      ) {
+                        event.preventDefault();
+                        if (index < top - 1) reorder(index, index + 1);
+                      }
+                    }}
+                    className="inline-flex size-9 touch-none cursor-grab items-center justify-center rounded-dashboard-md text-dashboard-text-light active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:bg-dashboard-bg-highlight"
+                  >
+                    <GripVertical aria-hidden className="size-5" />
+                  </span>
+                )}
+              </div>
 
               {team ? (
                 <div className="flex min-w-0 flex-1 flex-col gap-1 px-1">
@@ -309,10 +402,6 @@ export function ShortlistRanking({
                       )}
                       aria-label={copy.shortlist.choose(index + 1)}
                     >
-                      <GripVertical
-                        aria-hidden
-                        className="mt-1 size-5 shrink-0 cursor-grab text-dashboard-text-light"
-                      />
                       <span className="flex min-w-0 flex-col gap-1">
                         <span className="break-words text-base font-semibold text-dashboard-text-heavy">
                           {team.name}
@@ -343,14 +432,16 @@ export function ShortlistRanking({
               )}
 
               {team && (
-                <button
-                  type="button"
-                  aria-label={copy.shortlist.clearTeam}
-                  onClick={() => clearSlot(index)}
-                  className={iconButton}
-                >
-                  <X aria-hidden className="size-4" />
-                </button>
+                <div className="flex shrink-0 flex-col gap-1">
+                  <button
+                    type="button"
+                    aria-label={copy.shortlist.clearTeam}
+                    onClick={() => clearSlot(index)}
+                    className={iconButton}
+                  >
+                    <X aria-hidden className="size-4" />
+                  </button>
+                </div>
               )}
             </li>
           );
@@ -449,49 +540,6 @@ export function ShortlistRanking({
           <p className="m-0 text-sm font-medium text-dashboard-text-medium">
             {copy.submit.closed}
           </p>
-        ) : confirming ? (
-          <div
-            className="flex flex-col gap-3"
-            role="group"
-            aria-labelledby="confirm-title"
-          >
-            <div className="flex flex-col gap-1">
-              <h3
-                id="confirm-title"
-                className="m-0 text-base font-semibold text-dashboard-text-heavy"
-              >
-                {copy.submit.confirmTitle(top)}
-              </h3>
-              <ol className="m-0 list-decimal pl-5 text-sm font-medium text-dashboard-text-heavy">
-                {picks.map((id) => (
-                  <li key={id} className="break-words">
-                    {byId.get(id)?.name}
-                  </li>
-                ))}
-              </ol>
-              <p className="m-0 text-sm text-dashboard-text-medium">
-                {copy.submit.confirmBody}
-              </p>
-            </div>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <DashboardButton
-                variant="small"
-                onClick={() => setConfirming(false)}
-                disabled={submit.isPending}
-              >
-                {copy.submit.cancel}
-              </DashboardButton>
-              <DashboardButton
-                onClick={() => submit.mutate({ sponsor, teamIds: picks })}
-                disabled={submit.isPending}
-                className="disabled:opacity-dashboard-disabled"
-              >
-                {submit.isPending
-                  ? copy.submit.submitting
-                  : copy.submit.confirm}
-              </DashboardButton>
-            </div>
-          </div>
         ) : (
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div aria-live="polite" className="flex min-w-0 flex-col gap-0.5">
@@ -535,17 +583,48 @@ export function ShortlistRanking({
             </div>
             <DashboardButton
               disabled={
-                !canSubmit ||
-                (matchesSubmitted && data.final?.sheetSynced === true)
+                !canSubmit || data.final !== null
               }
               onClick={() => setConfirming(true)}
               className="shrink-0 disabled:cursor-not-allowed disabled:opacity-dashboard-disabled"
             >
-              {data.final ? copy.submit.resubmit(top) : copy.submit.button(top)}
+              {copy.submit.button(top)}
             </DashboardButton>
           </div>
         )}
       </div>
+
+      <Dialog.Root open={confirming} onOpenChange={setConfirming}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <Dialog.Content className="fixed z-50 inset-x-0 bottom-0 flex max-h-[92dvh] flex-col gap-4 overflow-y-auto rounded-t-dashboard-2xl bg-dashboard-bg-surface p-5 shadow-dashboard-card focus:outline-none sm:inset-0 sm:m-auto sm:h-fit sm:max-w-[560px] sm:rounded-dashboard-2xl sm:p-6">
+            <Dialog.Title className="m-0 text-xl font-semibold text-dashboard-text-heavy">
+              {copy.submit.confirmTitle(top)}
+            </Dialog.Title>
+            <Dialog.Description className="m-0 text-sm leading-relaxed text-dashboard-text-medium">
+              {copy.submit.confirmBody}
+            </Dialog.Description>
+            <ol className="m-0 list-decimal pl-5 text-sm font-medium text-dashboard-text-heavy">
+              {picks.map((id) => (
+                <li key={id} className="py-1">{byId.get(id)?.name}</li>
+              ))}
+            </ol>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Dialog.Close asChild>
+                <DashboardButton variant="small" disabled={submit.isPending}>
+                  {copy.submit.cancel}
+                </DashboardButton>
+              </Dialog.Close>
+              <DashboardButton
+                onClick={() => submit.mutate({ sponsor, teamIds: picks })}
+                disabled={submit.isPending}
+              >
+                {submit.isPending ? copy.submit.submitting : copy.submit.confirm}
+              </DashboardButton>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }

@@ -60,7 +60,7 @@ export function PresentationScoring({
           return (
             <li
               key={team.id}
-              className="flex flex-col gap-3 rounded-dashboard-2xl bg-dashboard-bg-surface p-4 shadow-dashboard-card"
+              className="flex flex-col gap-3 rounded-dashboard-2xl bg-dashboard-bg-surface p-3 shadow-dashboard-card sm:p-4"
             >
               <div className="flex items-start gap-3">
                 <span className="inline-flex h-7 min-w-9 shrink-0 items-center justify-center rounded-full bg-dashboard-action-primary px-1.5 text-xs font-bold tabular-nums text-dashboard-text-inverse">

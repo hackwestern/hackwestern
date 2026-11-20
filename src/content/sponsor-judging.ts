@@ -243,12 +243,18 @@ export const sponsorJudgingCopy = {
     dragTeam: (team: string) => `Drag ${team} to reorder`,
   },
 
+  shortlistSubmitConfirm: {
+    title: "Submit your shortlist?",
+    body: (count: number) =>
+      `You are submitting ${count} teams. This action is final and cannot be changed.`,
+    confirm: "Confirm shortlist",
+  },
+
   submit: {
     button: (top: number) => `Submit top ${top}`,
-    resubmit: (top: number) => `Resubmit top ${top}`,
     confirmTitle: (top: number) => `Submit these ${top}?`,
     confirmBody:
-      "Hack Western uses this ranking for your prize. You can change it and resubmit while judging is open.",
+      "Hack Western uses this ranking for your prize. This submission is final and cannot be changed.",
     confirm: "Confirm and submit",
     cancel: "Go back",
     submitting: "Submitting…",
