@@ -35,8 +35,17 @@ export const sponsorJudgingCopy = {
 
   steps: {
     label: "Judging steps",
-    browse: "Browse projects",
-    shortlist: "Your shortlist",
+    browse: "Browse",
+    shortlist: "Shortlist",
+    presentations: "Presentations",
+    top: "Top 5",
+    round1: "Round 1",
+    round2: "Round 2",
+    lockedRound1: "Available during Round 1",
+    lockedRound2: "Available after Round 2 opens",
+    round1Complete: "Round 1 complete",
+    round1Stage: "Round 1 · Shortlist",
+    round2Stage: "Round 2 · Live judging",
   },
 
   browse: {
@@ -274,6 +283,7 @@ export const sponsorJudgingCopy = {
     noPresenters:
       "No teams are scheduled to present to you. Ask your Hack Western contact.",
     presentsAt: (time: string) => `Presents ${time}`,
+    presentingAt: (time: string) => `Presentation at ${time}`,
   },
 
   errors: {

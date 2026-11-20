@@ -1,10 +1,12 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Lock } from "lucide-react";
 import { useRouter } from "next/router";
 
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { BrowseProjects } from "~/components/sponsors/judging/browse-projects";
+import { PresentationScoring } from "~/components/sponsors/judging/presentation-scoring";
 import { ShortlistRanking } from "~/components/sponsors/judging/shortlist-ranking";
 import { ShortlistSend } from "~/components/sponsors/judging/shortlist-send";
 import { useSponsorJudging } from "~/components/sponsors/judging/use-sponsor-judging";
@@ -18,8 +20,17 @@ import { cn } from "~/lib/utils";
 import { uuidRegex } from "~/utils/urls";
 
 const copy = sponsorJudgingCopy;
-const STEPS = ["browse", "shortlist"] as const;
-type Step = (typeof STEPS)[number];
+type Step =
+  | "browse"
+  | "shortlist"
+  | "presentations"
+  | "top";
+const ALL_STEPS: readonly Step[] = [
+  "browse",
+  "shortlist",
+  "presentations",
+  "top",
+];
 
 // Sponsor judging (kept at Lucas's /sponsors/[uuid]/picks URL): each rep
 // picks their name, goes through the submitted projects one at a time or as
@@ -54,6 +65,20 @@ export default function SponsorJudgingPage() {
         : null,
     [data, round],
   );
+  const roundTwoAvailable = round === "rank";
+  const locked = (s: Step) =>
+    s === "browse" || s === "shortlist"
+      ? roundTwoAvailable
+      : !roundTwoAvailable;
+
+  useEffect(() => {
+    if (roundTwoAvailable && (step === "browse" || step === "shortlist")) {
+      setStep("presentations");
+    } else if (!roundTwoAvailable && (step === "presentations" || step === "top")) {
+      setStep("browse");
+    }
+  }, [roundTwoAvailable, step]);
+
   const shortlistCount = !data
     ? 0
     : presented
@@ -61,6 +86,7 @@ export default function SponsorJudgingPage() {
       : data.teams.filter((t) => reviews.get(t.id)?.shortlisted).length;
 
   const chooseStep = (s: Step, focus = false) => {
+    if (locked(s)) return;
     setStep(s);
     if (focus) stepRefs.current.get(s)?.focus();
   };
@@ -127,6 +153,8 @@ export default function SponsorJudgingPage() {
   const counts: Record<Step, number> = {
     browse: data.teams.length,
     shortlist: shortlistCount,
+    presentations: presented?.size ?? 0,
+    top: data.final?.teamIds.length ?? 0,
   };
 
   return (
@@ -139,6 +167,11 @@ export default function SponsorJudgingPage() {
               {copy.trackTag(data.sponsorTrack)}
             </DashboardTag>
           )}
+          {roundTwoAvailable ? (
+            <DashboardTag>{copy.steps.round2Stage}</DashboardTag>
+          ) : (
+            <DashboardTag>{copy.steps.round1Stage}</DashboardTag>
+          )}
         </div>
         <h1 className="dashboard-h1 m-0">{copy.title}</h1>
         <p className="m-0 text-base leading-relaxed text-dashboard-text-medium">
@@ -146,20 +179,37 @@ export default function SponsorJudgingPage() {
         </p>
       </div>
 
-      {/* Browse | Shortlist, sticky so switching is one tap on a long list. */}
+      {/* Four judging stages stay visible; unavailable stages stay locked. */}
       <div className="sticky top-0 z-20 -mx-4 bg-dashboard-bg-page/95 px-4 py-2 backdrop-blur-sm sm:-mx-5 sm:px-5">
         <div
           role="tablist"
           aria-label={copy.steps.label}
-          className="grid grid-cols-2 gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1"
+          className="grid grid-cols-2 gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1 sm:grid-cols-4"
           onKeyDown={(e) => {
             if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
             e.preventDefault();
-            chooseStep(step === "browse" ? "shortlist" : "browse", true);
+            const at = ALL_STEPS.indexOf(step);
+            if (at < 0) return;
+            const delta = e.key === "ArrowRight" ? 1 : -1;
+            for (let n = 1; n <= ALL_STEPS.length; n++) {
+              const next =
+                ALL_STEPS[
+                  (at + delta * n + ALL_STEPS.length * 2) % ALL_STEPS.length
+                ];
+              if (next && !locked(next)) {
+                chooseStep(next, true);
+                break;
+              }
+            }
           }}
         >
-          {STEPS.map((s) => {
+          {ALL_STEPS.map((s) => {
             const on = step === s;
+            const isLocked = locked(s);
+            const stage =
+              s === "browse" || s === "shortlist"
+                ? copy.steps.round1
+                : copy.steps.round2;
             return (
               <button
                 key={s}
@@ -171,30 +221,50 @@ export default function SponsorJudgingPage() {
                 role="tab"
                 id={`step-${s}`}
                 data-tour={
-                  s === "shortlist" ? "judging-shortlist-tab" : undefined
+                  s === "shortlist"
+                    ? "judging-shortlist-tab"
+                    : s === "top"
+                      ? "judging-top-tab"
+                      : undefined
                 }
                 aria-selected={on}
                 aria-controls={`panel-${s}`}
+                aria-disabled={isLocked}
+                disabled={isLocked}
                 tabIndex={on ? 0 : -1}
                 onClick={() => chooseStep(s)}
                 className={cn(
-                  "inline-flex min-h-11 items-center justify-center gap-2 rounded-dashboard-md px-2 text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                  "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-dashboard-md px-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                  isLocked &&
+                    "cursor-not-allowed text-dashboard-text-placeholder opacity-70",
                   on
                     ? "bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card"
                     : "text-dashboard-text-medium [@media(hover:hover)]:hover:text-dashboard-text-heavy",
                   pressable,
                 )}
               >
-                {copy.steps[s]}
-                <span
-                  className={cn(
-                    "rounded-full px-2 text-xs tabular-nums leading-5",
-                    on
-                      ? "bg-dashboard-bg-highlight text-dashboard-text-active"
-                      : "bg-dashboard-bg-navSelected text-dashboard-text-medium",
+                <span className="inline-flex items-center gap-1">
+                  {isLocked && <Lock aria-hidden className="size-3.5" />}
+                  {copy.steps[s]}
+                  {!isLocked && (
+                    <span
+                      className={cn(
+                        "ml-0.5 rounded-full px-1.5 text-xs tabular-nums leading-5",
+                        on
+                          ? "bg-dashboard-bg-highlight text-dashboard-text-active"
+                          : "bg-dashboard-bg-navSelected text-dashboard-text-medium",
+                      )}
+                    >
+                      {counts[s]}
+                    </span>
                   )}
-                >
-                  {counts[s]}
+                </span>
+                <span className="text-[11px] font-medium leading-4 text-dashboard-text-light">
+                  {isLocked
+                    ? s === "browse" || s === "shortlist"
+                      ? copy.steps.round1Complete
+                      : copy.steps.lockedRound2
+                    : stage}
                 </span>
               </button>
             );
@@ -218,7 +288,15 @@ export default function SponsorJudgingPage() {
             onSave={save}
             onScore={setScore}
           />
-        ) : presented ? (
+        ) : step === "presentations" && presented ? (
+          <PresentationScoring
+            sponsor={uuid}
+            data={data}
+            scoresByTeam={scoresByTeam}
+            saveState={saveState}
+            onScore={setScore}
+          />
+        ) : step === "top" && presented ? (
           <ShortlistRanking
             sponsor={uuid}
             data={data}
