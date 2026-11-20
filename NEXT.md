@@ -1,15 +1,36 @@
-# NEXT: organizer judging board (worktree `hackwestern-judging-board`, branch `judging-board`, off `coffee-prefs` at 8fe8a520)
+# NEXT: sponsor dashboard (worktree `hackwestern-coffee-prefs`, branch `coffee-prefs`)
 
 ## Now
-**Built and committed on `judging-board`; Jazz to look, then merge into `coffee-prefs` from the main folder.** Organizer judging board v2 with all five changes (see docs/decisions.md, "Judging board build choices", for the calls made while building). Checks passed: vitest 1810 (only the Apple Wallet test fails locally, missing signing key, untouched here), tsc, lint (0 errors), screenshots at 1280 and 390 with no sideways scroll in `mocks/judging-board-build-v1/screens/`.
+Organizer Home (v3 day view) is built and pushed (fcc1209e, bbb15965); screenshots in docs/screens/organizer-home/. Waiting on Jazz: what "contacts sit under Up next and Key rooms" means on the organizer Home (no Key rooms card there), and whether to add the left-out columns (docs/decisions.md, last entry). Re-check PR #1165's Vercel preview once its new deploy finishes.
 
-Before merging:
-- Migration is `drizzle/0061_judging_board.sql` (2 tables). If coffee-prefs also added a 0061, renumber this one and its snapshot/journal entry.
-- Try it: DB `hackwestern_judgeboard` (a copy of hackwestern_spon, migrated + `scripts/seed-judging-board-demo.sql`); server `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/hackwestern_judgeboard SKIP_ENV_VALIDATION=1 NEXTAUTH_SECRET=local-dev-only-secret DEV_LOGIN_KEY=judgeboard-local npx next dev -p 3015`, sign in at /api/dev/login?key=judgeboard-local, open /internal/sponsors?tab=judging&at=9:20 (`at=` pins the clock in dev only).
-- Slack Confirm button needs the app's interactivity URL already used by coffee chats (/api/slack/interactions): nothing new to configure.
+## Merged in from judging-board (2026-11-19)
+- The organizer Judging board (mock organizer-judging-board-v2 with Jazz's 5 changes) is merged: Tools → Judging board. Migration `0061_judging_board` (2 tables) needs running. Build notes: docs/decisions.md, "Judging board build choices"; screenshots in the judging-board worktree, mocks/judging-board-build-v1/screens/.
 
-## Notes
-- A separate session is building the organizer Home in `hackwestern-coffee-prefs` at the same time. Don't edit shared files (global CSS, Tailwind config, root layout, tokens, schema base) here; if you need one changed, stop and tell Jazz.
-- If accepting needs a new column or table (team judging confirmation), keep it to one small migration and note it in docs/decisions.md.
-- Dev server for this worktree: port **3015** (same command as coffee-prefs' NEXT.md with `-p 3015`). Keep few dev servers running (Google Sheets read quota is tight).
-- Tests: `SKIP_ENV_VALIDATION=1 npx vitest run`. Commit specific files only; no Co-Authored-By lines.
+## Where things stand (2026-11-19, end of day)
+- Built, reviewed, merged and pushed (PR #1165, sponsor-dashboard ← coffee-prefs): sponsor setup, invites (instant re-send on decline, round 1 expires Sat 10 AM, no open seats), organizer coffee board, My sponsors + Needs attention, sheet merge, judging (6-min slots, up to 15 teams, ranked top 5, Judging Scores tab), portal v6 restyle, Jazz has Noah's view, Agentation (dev only), phone dev login.
+- Local only, NOT pushed: bb218af5 locked "Coffee Chat Invites" sheet tab (push with the next work).
+- Tests 1784 pass (only the known Apple Wallet failure), tsc clean, lint 0 errors at last full run.
+- Ship-run docs: docs/ship/ (start at SHIPPED.md). Mock review queue: hackwestern-sponsor-dash/mocks/CHANGES.md "New mocks for review".
+
+## Mocks waiting for Jazz's review (don't build until approved)
+- sponsor-chats-v3 (sponsor Chats one stage at a time, Send availability, 40 hackers, icons, dynamic key rooms, contacts, welcome card)
+- sponsor-today-v4 (sponsor Home: chevron Up next, Help bottom left) — likely superseded by sponsor-chats-v3's Home
+- organizer-coffee-v12 (drag, fixed cells, red warnings, modal, per-chat counts, contact-the-rep step, edit hackers, first in line; 6 real sponsors)
+- organizer-invite-preview-v2 (preview + edit invites before Send; only "invited by 2 sponsors" list)
+- organizer-judging-board-v2 (3 rooms, room select, only "Text lead" warning, team modal with members/attendance/links) — finished, ready for review
+
+## Open questions for Jazz
+- Who merges PR #1165 to main (runs prod migrations 0059/0060) before Fri 5 PM; add Production secrets (Slack token, run-of-show sheet creds) and arm `COFFEE_ROUNDS_LIVE` Sat morning.
+- Sheet data: CSE coffee-chat box unticked; Manulife/Commure judging rooms "RM 555"/"RM 44" test values?; Sun Life has no judging room (4 in-person sponsors, 3 rooms).
+- Caroline owns the sheet, so she can't be removed from the locked tabs (only by transferring ownership).
+- Old task pings already scheduled in Slack (if any) need cancelling by hand.
+- When the real app gets "put someone first in line" / invite preview, it needs an "organizer pick" invite source (small migration).
+
+## Local setup
+- App: `DATABASE_URL="postgresql://postgres:postgres@localhost:5432/hackwestern_spon" SKIP_ENV_VALIDATION=1 NEXTAUTH_SECRET=local-dev-only-secret COFFEE_INVITES_ENABLED=dry npx next dev -H 0.0.0.0 -p 3014` (add DEV_LOGIN_KEY=<key> for the phone sign-in link /api/dev/login?key=…; Tailscale IP 100.84.66.106). Jazz's own server: hackwestern-sponsor-dash on :3013 (turbopack).
+- Tests: `SKIP_ENV_VALIDATION=1 npx vitest run`. Mock gallery: http://127.0.0.1:3040/mocks/ (rebuild list with `node mocks/build-index.mjs` in hackwestern-sponsor-dash).
+- Google Sheets read quota is tight: keep few dev servers running.
+- Commit specific files only; no Co-Authored-By lines.
+
+## Files touched this session (2026-11-19)
+Shared base (schema 0059/0060, root routers); tracks A–F and integration (coffee-chat-setup/invites/sessions/requests/respond routers + utils, sponsor portal pages + components, organizer components, sheet utils + mirrors, judging lib/routers/components, content files); portal shell restyle; dev login route, next.config, _app (Agentation); docs/ship/*, docs/handoff/*, docs/specs/judging-room-board.md, docs/decisions.md, context/refs.md. Live sheet: Sponsor Day-Of columns, Coffee Chat Setup rebuild, At CC workshop, Judging Scores, Coffee Chat Invites (locked), HW Contacts "Same view as".
