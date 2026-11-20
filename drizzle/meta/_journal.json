@@ -309,6 +309,13 @@
       "when": 1795133531919,
       "tag": "0043_drop_team_mark_score_breakdown",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1795133600000,
+      "tag": "0044_judging_normalization",
+      "breakpoints": true
     }
   ]
 }
