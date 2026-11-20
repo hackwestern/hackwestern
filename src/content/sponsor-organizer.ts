@@ -544,7 +544,7 @@ export const sponsorOrganizerCopy = {
       invites: "invites go out 10 PM",
       chats: "✓ confirmed · ⏳ waiting",
       workshop: "setup at −30 min",
-      judgingShortlist: "due 9:30 AM",
+      judgingShortlist: "due 9:45 AM",
       top5: "due 12:00 PM",
     } as Partial<Record<string, string>>,
     cell: {

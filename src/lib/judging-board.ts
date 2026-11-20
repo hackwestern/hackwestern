@@ -13,8 +13,8 @@ import {
   PRESENTATION_WINDOW_END,
 } from "~/lib/sponsor-presentations";
 
-/** Round 1 shortlists are due 9:30 AM Sunday. */
-export const SHORTLIST_DUE = 9 * 60 + 30;
+/** Round 1 shortlists are due 9:45 AM Sunday (Jazz, 2026-11-20). */
+export const SHORTLIST_DUE = 9 * 60 + 45;
 /** After this a missing shortlist (or room) is past fixing: round 1 ran. */
 export const ROUND1_OVER = PRESENTATION_WINDOW_END;
 /** Top 5 due 12:00 PM Sunday. */
