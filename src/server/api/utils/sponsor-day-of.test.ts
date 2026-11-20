@@ -143,6 +143,8 @@ describe("Sponsor Day-Of reads", () => {
       hasPrizeTrack: true,
       // This header has no "At CC workshop" column yet: unknown, not false.
       atCcWorkshop: null,
+      // No "Chatting hours" column in this header: no limit.
+      chattingMinutes: null,
     });
     // Blank cells read as before: Not arrived, TBD, an em dash, empty.
     expect(info.get("globex")).toMatchObject({
