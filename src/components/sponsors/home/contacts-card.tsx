@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, Copy, Phone } from "lucide-react";
 import { useHelpContacts } from "~/components/sponsors/help-button";
-import { formatPhone, telHref } from "~/components/sponsors/phone-copy";
+import { formatPhone } from "~/components/sponsors/phone-copy";
 import { btn, card, CardTitle } from "~/components/sponsors/portal-ui";
 import { sponsorHelpCopy } from "~/content/sponsor-help";
 import { sponsorHomeCopy } from "~/content/sponsor-home";
@@ -12,7 +12,8 @@ const copy = sponsorHomeCopy.contacts;
 /**
  * Home's Contacts card (mock sponsor-chats-v3): the sponsor's HW lead
  * (Sponsor Day-Of + HW Contacts) and the emergency contact (Noah, HW
- * Contacts), each with Copy and Call. Same people as the Help dialog.
+ * Contacts), each with an icon button that copies the number (no Call:
+ * Jazz, 2026-11-20). Same people as the Help dialog.
  */
 export function ContactsCard({ sponsor }: { sponsor: string }) {
   const { loading, failed, lead, emergency } = useHelpContacts(sponsor);
@@ -89,23 +90,15 @@ function ContactLine({
                 const done = () => setCopied(true);
                 void navigator.clipboard?.writeText(shown).then(done, done);
               }}
-              className={cn(btn.outline, "px-3 text-[15px] [&_svg]:size-[17px]")}
+              title={copied ? copy.copied : copy.copy}
+              className={cn(btn.outline, "size-11 px-0 [&_svg]:size-[18px]")}
             >
               {copied ? (
                 <Check aria-hidden className="text-dashboard-status-live" />
               ) : (
                 <Copy aria-hidden />
               )}
-              {copied ? copy.copied : copy.copy}
             </button>
-            <a
-              href={telHref(phone)}
-              aria-label={copy.callLabel(name, shown)}
-              className={cn(btn.primary, "px-3 text-[15px] [&_svg]:size-[17px]")}
-            >
-              <Phone aria-hidden />
-              {copy.call}
-            </a>
           </div>
         )}
       </div>

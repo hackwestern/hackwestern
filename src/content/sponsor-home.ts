@@ -93,10 +93,8 @@ export const sponsorHomeCopy = {
     emergency: "Emergency contact",
     copy: "Copy",
     copied: "Copied",
-    call: "Call",
     copyLabel: (name: string, phone: string) => `Copy ${name}'s number, ${phone}`,
     copiedLabel: (name: string) => `${name}'s number copied`,
-    callLabel: (name: string, phone: string) => `Call ${name}, ${phone}`,
     loading: "Loading contacts…",
   },
 
