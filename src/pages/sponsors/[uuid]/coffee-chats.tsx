@@ -10,6 +10,7 @@ import {
   FlowHeader,
 } from "~/components/sponsors/coffee-setup/shared";
 import { ShortlistFlow } from "~/components/sponsors/coffee-setup/shortlist-flow";
+import { AvailabilitySummary } from "~/components/sponsors/coffee-setup/submitted-summary";
 import { TeamStep } from "~/components/sponsors/coffee-setup/team-step";
 import {
   InvalidLink,
@@ -104,6 +105,13 @@ export default function SponsorCoffeeChatsPage() {
   const prefsHref = (step: number) => `${base}?flow=prefs&step=${step}`;
   const shortlistHref = (step: number) => `${base}?flow=shortlist&step=${step}`;
   const screen = screenOf(router.query);
+
+  // Submitted once (decisions 2026-11-20): after Send availability a
+  // sponsor sees a read-only summary, not the forms. Organizers on the
+  // portal link still get the forms.
+  if (screen.flow === "prefs" && data.submittedAt && !data.canEditSubmitted) {
+    return shell(<AvailabilitySummary data={data} homeHref={base} />);
+  }
 
   if (screen.flow === "prefs") {
     const f = copy.prefsFlow;

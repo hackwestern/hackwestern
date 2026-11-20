@@ -8,6 +8,7 @@ import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import type { SetupData } from "./shared";
+import { SubmittedNote } from "./submitted-summary";
 import { YourChats } from "./your-chats";
 
 const copy = sponsorSetupCopy.page;
@@ -48,6 +49,8 @@ export function ChatsHome({
   shortlistHref: string;
 }) {
   const stage = stageOf(data);
+  // Submitted once: sponsors can't change a sent step (organizers can).
+  const canChange = (sentAt: Date | null) => !sentAt || data.canEditSubmitted;
   const shortlistQ = api.sponsorShortlist.list.useQuery(
     { sponsor },
     { enabled: !!data.submittedAt, retry: 1, refetchOnWindowFocus: false },
@@ -94,7 +97,7 @@ export function ChatsHome({
         <div className="flex flex-col gap-2">
           <DoneLine
             text={copy.availabilitySent}
-            action={copy.change}
+            action={canChange(data.submittedAt) ? copy.change : undefined}
             label={copy.changeLabel}
             href={changeHref}
           />
@@ -102,11 +105,14 @@ export function ChatsHome({
             <DoneLine
               text={copy.shortlistSent}
               count={picked}
-              action={copy.edit}
+              action={
+                canChange(data.shortlistSubmittedAt) ? copy.edit : undefined
+              }
               label={copy.editLabel}
               href={shortlistHref}
             />
           )}
+          {!data.canEditSubmitted && <SubmittedNote />}
         </div>
       )}
       {stage === "prefs" && (
@@ -287,7 +293,8 @@ function DoneLine({
 }: {
   text: string;
   count?: number;
-  action: string;
+  /** "Change" / "Edit"; none once the sponsor can't change it. */
+  action?: string;
   label: string;
   href: string;
 }) {
@@ -305,12 +312,16 @@ function DoneLine({
           <span className="tabular-nums"> ({count})</span>
         )}
       </b>
-      <span aria-hidden className="text-dashboard-text-light">
-        ·
-      </span>
-      <Link href={href} aria-label={label} className={btn.link}>
-        {action}
-      </Link>
+      {action && (
+        <>
+          <span aria-hidden className="text-dashboard-text-light">
+            ·
+          </span>
+          <Link href={href} aria-label={label} className={btn.link}>
+            {action}
+          </Link>
+        </>
+      )}
     </p>
   );
 }
@@ -349,13 +360,17 @@ function Confirmed({ data, teamHref }: { data: SetupData; teamHref: string }) {
         </p>
       </section>
       <YourChats data={data} />
-      <button
-        type="button"
-        onClick={() => setAsking(true)}
-        className="min-h-11 self-start px-1 font-medium text-dashboard-text-light underline underline-offset-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:text-dashboard-text-heavy"
-      >
-        {copy.changeAsk}
-      </button>
+      {data.submittedAt && !data.canEditSubmitted ? (
+        <SubmittedNote />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAsking(true)}
+          className="min-h-11 self-start px-1 font-medium text-dashboard-text-light underline underline-offset-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:text-dashboard-text-heavy"
+        >
+          {copy.changeAsk}
+        </button>
+      )}
       <AlertDialog.Root open={asking} onOpenChange={setAsking}>
         <AlertDialog.Portal>
           <AlertDialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40" />
