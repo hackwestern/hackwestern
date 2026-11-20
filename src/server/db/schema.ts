@@ -197,11 +197,11 @@ export const judgingAssignmentStatusEnum = pgEnum("judging_assignment_status", [
 ]);
 
 /**
- * Live judging state of a seat, for the table map. `empty`: no
+ * Live judging state of a physical table, for the table map. `empty`: no
  * team seated. `waiting`: team seated with stops still to come (or none yet).
  * `being_judged`: a judge is there now. `finished`: every stop is done,
  * absent or cancelled. Kept in sync by triggers (see triggers.sql).
- * Switched-off seats use `judging_seat.is_active`.
+ * Switched-off tables use `judging_table.is_active`.
  */
 export const judgingSeatStatusEnum = pgEnum("judging_seat_status", [
   "empty",
@@ -311,7 +311,7 @@ export const teams = pgTable(
       .defaultNow()
       .notNull(),
     joinCode: varchar("joinCode", { length: 6 }).notNull().unique(),
-    // The seat the team is at for judging. One team per seat.
+    // The physical table the team is seated at for judging. One team per table.
     judgingSeatId: integer("judging_seat_id")
       .unique()
       .references(() => judgingSeats.id, { onDelete: "set null" }),
@@ -978,11 +978,10 @@ export const teamTracksRelations = relations(teamTracks, ({ one }) => ({
 }));
 
 /**
- * A seat in the judging hall: one team's place at physical table
- * `table_number`, numbered along the snake (row 1 left to right, row 2 right
- * to left, ...). Created from `judging_settings`; each submitted team is
- * seated at one (`team.judging_seat_id`). Inactive seats get no team and no
- * judges.
+ * A physical table in the judging hall, numbered along the snake (row 1 left
+ * to right, row 2 right to left, ...). Created from `judging_settings`; each
+ * submitted team is seated at one (`team.judging_table_id`). Inactive tables
+ * (broken, unused) get no team and no judges.
  */
 export const judgingSeats = pgTable(
   "judging_seat",
@@ -1019,7 +1018,7 @@ export const judgingSeatsRelations = relations(
 );
 
 /**
- * The room layout and how many judges each seat needs. One row (id = 1).
+ * The room layout and how many judges each table needs. One row (id = 1).
  * Tables per row = ceil(tableCount / rows); see docs/judging-engine.md.
  */
 export const judgingSettings = pgTable(
@@ -1037,8 +1036,8 @@ export const judgingSettings = pgTable(
 );
 
 /**
- * One stop on a judge's list: a seat in their section of the snake. The team
- * judged is whoever is seated there, so swapping two teams' seats moves each
+ * One stop on a judge's list: a table in their section of the snake. The team
+ * judged is whoever is seated there, so swapping two teams' tables moves each
  * into the other's judges' lineup. Written by auto-assign (in walking order)
  * and by organizer fixes. Cancelled rows are kept for history and ignored by
  * the unique indexes.
@@ -1073,7 +1072,7 @@ export const judgingAssignments = pgTable(
       .on(t.judgeId, t.judgingSeatId)
       .where(sql`${t.status} <> 'cancelled'`),
     index("judging_assignment_seat_idx").on(t.judgingSeatId),
-    // A judge is at one seat at a time; backs the check in startStop when
+    // A judge is at one table at a time; backs the check in startStop when
     // two starts race.
     uniqueIndex("judging_assignment_one_in_progress_idx")
       .on(t.judgeId)

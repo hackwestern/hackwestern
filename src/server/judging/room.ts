@@ -87,7 +87,7 @@ export async function setupTables(input: SetupTablesInput) {
     const removed = await tx
       .delete(judgingSeats)
       .where(gt(judgingSeats.tableNumber, input.tableCount))
-      .returning({ id: judgingSeats.id });
+      .returning({ tableNumber: judgingSeats.tableNumber });
 
     const existing = await tx
       .select({ tableNumber: judgingSeats.tableNumber })
@@ -114,7 +114,7 @@ export async function setupTables(input: SetupTablesInput) {
       perRow: tablesPerRow(input),
       judgesPerSeat,
       tablesCreated: missing.length,
-      tablesRemoved: removed.length,
+      tablesRemoved: new Set(removed.map((s) => s.tableNumber)).size,
       planCleared,
     };
   });
