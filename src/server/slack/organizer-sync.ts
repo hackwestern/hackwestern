@@ -46,7 +46,10 @@ export function normalizeDm(text: string): string {
 
 /** True for an organizer reminder (live or test-labelled). */
 export function isOrganizerDm(text: string): boolean {
-  return /^(\[TEST for [^\]]*\]\n)?In \d+ min \(/.test(normalizeDm(text));
+  // "Coming up: …" now; "In 15 min (…)" is the older format, still queued.
+  return /^(\[TEST for [^\]]*\]\n)?(Coming up: |In \d+ min \()/.test(
+    normalizeDm(text),
+  );
 }
 
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
