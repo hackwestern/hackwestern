@@ -66,6 +66,7 @@ export function ChatsHome({
       {stage === "new" && (
         <section
           aria-labelledby="stage-new"
+          data-tour="chats-start"
           className={cn(
             card,
             "gap-3.5 border-t-[6px] border-dashboard-action-primary",
@@ -111,6 +112,7 @@ export function ChatsHome({
       {stage === "prefs" && (
         <section
           aria-labelledby="stage-short"
+          data-tour="chats-shortlist"
           className={cn(
             card,
             "gap-3.5 border-t-[6px] border-dashboard-group-border",
@@ -161,7 +163,11 @@ export function ChatsHome({
         </section>
       )}
       {stage === "short" && (
-        <section aria-labelledby="stage-wait" className={card}>
+        <section
+          aria-labelledby="stage-wait"
+          data-tour="chats-waiting"
+          className={card}
+        >
           <div className="flex items-center gap-4">
             <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-highlight text-dashboard-text-active">
               <Clock aria-hidden className="size-6" />
@@ -257,6 +263,7 @@ function StepsLine({
   return (
     <ol
       aria-label={s.label}
+      data-tour="chats-steps"
       className="m-0 grid list-none grid-cols-[auto_auto_minmax(0,1fr)] items-start gap-x-3 p-0"
     >
       {item(one, 1, s.one, sub1)}
@@ -319,7 +326,11 @@ function Confirmed({ data, teamHref }: { data: SetupData; teamHref: string }) {
   const warn = sponsorSetupCopy.afterInvites;
   return (
     <>
-      <section aria-label={s.label} className={card}>
+      <section
+        aria-label={s.label}
+        data-tour="chats-confirmed"
+        className={card}
+      >
         <p className="m-0 text-lg tabular-nums text-dashboard-text-medium">
           <b className="text-[28px] font-extrabold tracking-tight text-dashboard-text-heavy">
             {confirmed}

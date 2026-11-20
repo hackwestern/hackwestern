@@ -49,7 +49,11 @@ export function KeyRooms({ chats }: { chats: KeyRoomChat[] | null }) {
   const row =
     "flex min-w-0 items-center gap-3 border-t border-dashboard-border-subtle py-3 first:border-t-0";
   return (
-    <section aria-labelledby="keyrooms-heading" className={card}>
+    <section
+      aria-labelledby="keyrooms-heading"
+      data-tour="home-keyrooms"
+      className={card}
+    >
       <CardTitle id="keyrooms-heading" icon={<House aria-hidden />}>
         {copy.title}
       </CardTitle>

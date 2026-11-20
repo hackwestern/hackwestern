@@ -1,279 +1,190 @@
-// The sponsor portal's tours as data: each step names its page, its
-// `data-tour` target, where the callout sits and whether it waits for the
-// sponsor's own click. Copy comes from src/content/sponsor-tour.ts.
+// The sponsor portal tour as data: each step names its page, its
+// `data-tour` target and where the callout sits. Copy comes from
+// src/content/sponsor-tour.ts. The order follows the organizers' "Sponsor
+// Dashboard Workshop" deck: Home, Schedule, Map, Chats, Scan a hacker,
+// Judging, Questions (decisions 2026-11-20, "Guided tour back on").
 //
-// The nav steps (nav-*) point at the side nav on tablets and up and at the
-// phone tab bar otherwise; whichever is visible is the target, and the
-// callout goes beside it when there's room, else above.
-//
-// The coffee chat steps target the coffee chats v2 page (sd-room-blocks):
-// the Your chats / Candidates tabs and the Candidates panel.
+// Every targeted step is optional: when its target isn't on the page (data
+// still missing, a feature this sponsor doesn't have) the tour skips it
+// instead of stopping. The nav steps (nav-*) point at the side nav on
+// tablets and up and at the phone tab bar otherwise; whichever is visible
+// is the target.
 
 import { sponsorTourCopy } from "~/content/sponsor-tour";
-import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
-import type { TourDef } from "~/lib/sponsor-tour";
+import type { TourDef, TourStep } from "~/lib/sponsor-tour";
 
-const t = sponsorTourCopy.tours;
+const s = sponsorTourCopy.tours.welcome.steps;
+const stage = s.chatsStage;
 
 export const WELCOME_TOUR_ID = "welcome";
 
-const tours = {
-  welcome: {
+/** A step that's skipped when its target is missing. */
+const step = (def: Omit<TourStep, "optional">): TourStep => ({
+  ...def,
+  optional: true,
+});
+
+const welcomeSteps: TourStep[] = [
+  // Home
+  step({
     id: "welcome",
-    steps: [
-      {
-        id: "welcome",
-        page: "home",
-        target: "welcome",
-        placement: "bottom",
-        ...t.welcome.steps.welcome,
-      },
-      {
-        id: "help",
-        page: "home",
-        target: "need-help",
-        placement: "bottom",
-        ...t.welcome.steps.help,
-      },
-      {
-        id: "scan",
-        page: "any",
-        target: "nav-scan",
-        placement: "right",
-        ...t.welcome.steps.scan,
-      },
-      {
-        id: "chats",
-        page: "any",
-        target: "nav-chats",
-        placement: "right",
-        ...t.welcome.steps.chats,
-      },
-      {
-        id: "schedule",
-        page: "any",
-        target: "nav-schedule",
-        placement: "right",
-        ...t.welcome.steps.schedule,
-      },
-      {
-        id: "judging",
-        page: "any",
-        target: "nav-judging",
-        placement: "right",
-        ...t.welcome.steps.judging,
-      },
-      {
-        id: "important",
-        page: "home",
-        target: "important",
-        placement: "top",
-        ...t.welcome.steps.important,
-      },
-      {
-        id: "booths",
-        page: "home",
-        target: "booths",
-        placement: "top",
-        ...t.welcome.steps.booths,
-      },
-      {
-        id: "map",
-        page: "any",
-        target: "map",
-        placement: "bottom",
-        ...t.welcome.steps.map,
-      },
+    page: "home",
+    target: "home-greeting",
+    placement: "bottom",
+    ...s.welcome,
+  }),
+  step({
+    id: "contacts",
+    page: "home",
+    target: "home-contacts",
+    placement: "bottom",
+    ...s.contacts,
+  }),
+  step({
+    id: "up-next",
+    page: "home",
+    target: "home-upnext",
+    placement: "top",
+    ...s.upNext,
+  }),
+  step({
+    id: "up-next-buttons",
+    page: "home",
+    target: "home-upnext-action",
+    placement: "bottom",
+    ...s.upNextButtons,
+  }),
+  step({
+    id: "key-rooms",
+    page: "home",
+    target: "home-keyrooms",
+    placement: "top",
+    ...s.keyRooms,
+  }),
+  // Schedule
+  step({
+    id: "schedule-days",
+    page: "schedule",
+    target: "schedule-days",
+    placement: "bottom",
+    ...s.scheduleDays,
+  }),
+  step({
+    id: "schedule-hackathon",
+    page: "schedule",
+    target: "schedule-hackathon",
+    placement: "bottom",
+    ...s.scheduleHackathon,
+  }),
+  step({
+    id: "schedule-blocks",
+    page: "schedule",
+    target: "schedule-grid",
+    placement: "top",
+    ...s.scheduleBlocks,
+  }),
+  // Map
+  step({
+    id: "booth",
+    page: "map",
+    target: "map-booth",
+    placement: "bottom",
+    ...s.booth,
+  }),
+  step({
+    id: "buildings",
+    page: "map",
+    target: "map-floors",
+    placement: "top",
+    ...s.buildings,
+  }),
+  // Chats
+  step({
+    id: "chats-nav",
+    page: "coffeeChats",
+    target: "nav-chats",
+    placement: "right",
+    ...s.chatsNav,
+  }),
+  step({
+    id: "chats-steps",
+    page: "coffeeChats",
+    target: "chats-steps",
+    placement: "bottom",
+    ...s.chatsSteps,
+  }),
+  // One stage card at a time: whichever is on the page.
+  step({
+    id: "chats-stage",
+    page: "coffeeChats",
+    placement: "bottom",
+    ...stage.start,
+    variants: [
+      { target: "chats-start", ...stage.start },
+      { target: "chats-shortlist", ...stage.shortlist },
+      { target: "chats-waiting", ...stage.waiting },
+      { target: "chats-confirmed", ...stage.confirmed },
     ],
-  },
-
-  coffeeChat: {
-    id: "coffeeChat",
-    steps: [
-      {
-        id: "setup",
-        page: "coffeeChats",
-        target: "chats-home",
-        placement: "bottom",
-        ...t.coffeeChat.steps.setup,
-      },
-      {
-        id: "scan",
-        page: "any",
-        target: "nav-scan",
-        placement: "right",
-        waitForClick: true,
-        ...t.coffeeChat.steps.scan,
-      },
-      {
-        id: "camera",
-        page: "scan",
-        target: "scan-camera",
-        placement: "top",
-        ...t.coffeeChat.steps.camera,
-      },
-      {
-        id: "add",
-        page: "scan",
-        target: "scan-camera",
-        placement: "top",
-        ...t.coffeeChat.steps.add,
-      },
-    ],
-  },
-
-  help: {
-    id: "help",
-    steps: [
-      {
-        id: "button",
-        page: "home",
-        target: "need-help",
-        placement: "bottom",
-        ...t.help.steps.button,
-      },
-      {
-        id: "next",
-        page: "home",
-        target: "need-help",
-        placement: "bottom",
-        ...t.help.steps.next,
-      },
-    ],
-  },
-
-  map: {
-    id: "map",
-    steps: [
-      {
-        id: "open",
-        page: "any",
-        target: "map",
-        placement: "bottom",
-        waitForClick: true,
-        ...t.map.steps.open,
-      },
-      {
-        id: "floors",
-        page: "any",
-        target: "map-floors",
-        placement: "bottom",
-        ...t.map.steps.floors,
-      },
-      {
-        id: "lounge",
-        page: "any",
-        target: "map-place-2110",
-        placement: "top",
-        ...t.map.steps.lounge,
-      },
-      {
-        id: "belongings",
-        page: "any",
-        target: "map-place-2244",
-        placement: "top",
-        ...t.map.steps.belongings,
-      },
-    ],
-  },
-
-  judging: {
+  }),
+  // Scan a hacker
+  step({
+    id: "scan",
+    page: "scan",
+    target: "scan-camera",
+    placement: "bottom",
+    ...s.scan,
+  }),
+  step({
+    id: "scan-manual",
+    page: "scan",
+    target: "scan-manual",
+    placement: "top",
+    ...s.scanManual,
+  }),
+  // Judging and questions, back on Home
+  step({
     id: "judging",
-    steps: [
-      {
-        id: "nav",
-        page: "any",
-        target: "nav-judging",
-        placement: "right",
-        ...t.judging.steps.nav,
-      },
-      {
-        id: "intro",
-        page: "picks",
-        target: "judging-intro",
-        placement: "bottom",
-        ...t.judging.steps.intro,
-      },
-      {
-        id: "score",
-        page: "picks",
-        target: "judging-first-project",
-        placement: "top",
-        ...t.judging.steps.score,
-      },
-      {
-        id: "shortlist",
-        page: "picks",
-        target: "judging-shortlist-tab",
-        placement: "bottom",
-        waitForClick: true,
-        ...t.judging.steps.shortlist,
-      },
-      {
-        id: "send",
-        page: "picks",
-        target: "judging-send",
-        placement: "top",
-        ...t.judging.steps.send,
-      },
-      {
-        id: "presentations",
-        page: "picks",
-        placement: "center",
-        ...t.judging.steps.presentations,
-      },
-      {
-        id: "rank",
-        page: "picks",
-        target: "judging-rank",
-        placement: "top",
-        title: t.judging.steps.rank.title(SPONSOR_FINAL_TOP),
-        body: t.judging.steps.rank.body(SPONSOR_FINAL_TOP),
-      },
-    ],
-  },
+    page: "home",
+    target: "nav-judging",
+    placement: "right",
+    ...s.judging,
+  }),
+  step({
+    id: "help",
+    page: "home",
+    target: "need-help",
+    placement: "right",
+    ...s.help,
+  }),
+];
+
+const tours = {
+  welcome: { id: WELCOME_TOUR_ID, steps: welcomeSteps },
 } satisfies Record<string, TourDef>;
 
 export type SponsorTourId = keyof typeof tours;
 
 export const SPONSOR_TOURS: Record<SponsorTourId, TourDef> = tours;
 
-/** The quick how-to flows in the "?" menu, in menu order. */
-export const HOW_TO_TOURS: readonly SponsorTourId[] = [
-  "coffeeChat",
-  "help",
-  "map",
-  "judging",
-];
-
-export const tourName = (id: SponsorTourId): string => t[id].name;
-
-/** Welcome tour steps about Judging (gone for sponsors who don't judge). */
+/** Steps about Judging (gone for sponsors who don't judge). */
 const JUDGING_STEP_IDS = new Set(["judging"]);
 
 /**
  * The tours a sponsor gets. Without a prize track there's no Judging in
- * the nav, so the welcome tour skips its Judging step and the "Judging on
- * Sunday" how-to is left out. `undefined` (still loading) keeps them all.
+ * the nav, so the tour drops its Judging step (it would be skipped anyway;
+ * dropping it keeps "Step n of N" right). `undefined` (still loading) keeps
+ * it, and the step skips itself if the nav item never shows.
  */
 export function toursFor(
   hasPrizeTrack: boolean | undefined,
-): Partial<Record<SponsorTourId, TourDef>> {
+): Record<SponsorTourId, TourDef> {
   if (hasPrizeTrack !== false) return SPONSOR_TOURS;
-  const { judging: _judging, ...rest } = SPONSOR_TOURS;
   return {
-    ...rest,
     welcome: {
-      ...rest.welcome,
-      steps: rest.welcome.steps.filter((s) => !JUDGING_STEP_IDS.has(s.id)),
+      ...SPONSOR_TOURS.welcome,
+      steps: SPONSOR_TOURS.welcome.steps.filter(
+        (st) => !JUDGING_STEP_IDS.has(st.id),
+      ),
     },
   };
-}
-
-/** The "?" menu's how-tos for a sponsor, in menu order. */
-export function howToToursFor(
-  hasPrizeTrack: boolean | undefined,
-): readonly SponsorTourId[] {
-  const tours = toursFor(hasPrizeTrack);
-  return HOW_TO_TOURS.filter((id) => id in tours);
 }

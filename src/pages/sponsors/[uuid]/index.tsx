@@ -4,6 +4,7 @@ import { ContactsCard } from "~/components/sponsors/home/contacts-card";
 import { KeyRooms } from "~/components/sponsors/home/key-rooms";
 import { QuickLinks } from "~/components/sponsors/home/quick-links";
 import { UpNext } from "~/components/sponsors/home/up-next";
+import { TourEntry } from "~/components/sponsors/home/tour-entry";
 import { WelcomeCard } from "~/components/sponsors/home/welcome-card";
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { useNow } from "~/components/sponsors/use-now";
@@ -102,7 +103,10 @@ export default function SponsorHubPage() {
 
   return (
     <SponsorShell title={home.seoTitle}>
-      <h1 className="m-0 flex min-w-0 flex-wrap items-center gap-x-[0.22em] whitespace-nowrap text-[32px] font-extrabold leading-[1.2] tracking-tight md:text-md-display">
+      <h1
+        data-tour="home-greeting"
+        className="m-0 flex min-w-0 flex-wrap items-center gap-x-[0.22em] whitespace-nowrap text-[32px] font-extrabold leading-[1.2] tracking-tight md:text-md-display"
+      >
         <span>{home.hi}</span>
         {logo && sponsorName ? (
           // eslint-disable-next-line @next/next/no-img-element -- small static logo
@@ -127,6 +131,7 @@ export default function SponsorHubPage() {
           judging: `${base}/picks`,
         }}
       />
+      <TourEntry />
       <QuickLinks />
       <KeyRooms
         chats={

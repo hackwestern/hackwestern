@@ -11,6 +11,7 @@ export const TOUR_PAGES = {
   scan: "/sponsors/[uuid]/scan",
   coffeeChats: "/sponsors/[uuid]/coffee-chats",
   schedule: "/sponsors/[uuid]/schedule",
+  map: "/sponsors/[uuid]/map",
   picks: "/sponsors/[uuid]/picks",
 } as const;
 
@@ -18,10 +19,25 @@ export type TourPage = keyof typeof TOUR_PAGES;
 
 export type TourPlacement = "top" | "bottom" | "left" | "right" | "center";
 
+/** One of a step's alternative targets, with its own words (both default
+ * to the step's). The Chats page shows one stage at a time, so its step
+ * points at whichever stage card is there. */
+export interface TourVariant {
+  target: string;
+  title?: string;
+  body?: string;
+}
+
 export interface TourStep {
   id: string;
   /** A `data-tour` value on the page; none = a centred callout. */
   target?: string;
+  /** Targets tried in order, instead of `target`; the first one on the
+   * page is shown. None there = the step is skipped. */
+  variants?: readonly TourVariant[];
+  /** Skip the step when its target isn't on the page (data not loaded,
+   * a feature this sponsor doesn't have), instead of centring it. */
+  optional?: boolean;
   /** The page the step lives on; "any" = wherever the tour is running. */
   page: TourPage | "any";
   placement?: TourPlacement;
@@ -40,6 +56,8 @@ export interface TourProgress {
   tour: string;
   step: number;
   sponsor: string;
+  /** The last move was Back: a skipped step keeps going back. */
+  back?: boolean;
 }
 
 // ------------------------------------------------------------
@@ -69,14 +87,30 @@ export function targetSelector(target: string): string {
 
 export type ResolvedStep =
   | { kind: "done" }
+  /** Its target isn't on the page and the step is optional: move on. */
+  | { kind: "skip" }
   /** The step is on another page: go there first. */
   | { kind: "navigate"; href: string }
   /** Show it; `anchored` false = centred (no target, or target missing). */
   | { kind: "show"; step: TourStep; anchored: boolean };
 
+/** The `data-tour` names a step looks for, in order (none for a centre step). */
+export function stepTargets(step: TourStep): string[] {
+  if (step.placement === "center") return [];
+  if (step.variants?.length) return step.variants.map((v) => v.target);
+  return step.target ? [step.target] : [];
+}
+
+/** Whether a missing target skips the step (optional, or has variants). */
+export function isSkippable(step: TourStep): boolean {
+  return step.optional === true || (step.variants?.length ?? 0) > 0;
+}
+
 /**
  * What to do for step `index` of `tour` while on `current`. A missing
- * target never breaks the tour: the step shows as a centred callout.
+ * target never breaks the tour: an optional step (or one with variants)
+ * is skipped, any other shows as a centred callout. With variants, the
+ * shown step carries the found variant's target and words.
  */
 export function resolveStep(
   tour: TourDef,
@@ -90,11 +124,39 @@ export function resolveStep(
   if (step.page !== "any" && step.page !== current) {
     return { kind: "navigate", href: pageHref(step.page, sponsor) };
   }
-  const anchored =
-    step.target !== undefined &&
-    step.placement !== "center" &&
-    hasTarget(step.target);
-  return { kind: "show", step, anchored };
+  const targets = stepTargets(step);
+  const found = targets.find((t) => hasTarget(t));
+  if (found === undefined) {
+    if (targets.length > 0 && isSkippable(step)) {
+      return { kind: "skip" };
+    }
+    return { kind: "show", step, anchored: false };
+  }
+  const variant = step.variants?.find((v) => v.target === found);
+  const shown: TourStep = variant
+    ? {
+        ...step,
+        target: found,
+        title: variant.title ?? step.title,
+        body: variant.body ?? step.body,
+      }
+    : step;
+  return { kind: "show", step: shown, anchored: true };
+}
+
+/**
+ * Where a skipped step `index` goes: on in the direction of the last move
+ * (`back` = Back was pressed), but forward again when going back runs out
+ * of steps, so the tour is never stuck. Null = past the last step (done).
+ */
+export function skipFrom(
+  index: number,
+  back: boolean,
+  total: number,
+): { step: number; back: boolean } | null {
+  if (back && index - 1 >= 0) return { step: index - 1, back: true };
+  if (index + 1 >= total) return null;
+  return { step: index + 1, back: false };
 }
 
 /** The page a move to `index` needs, or null when it stays put. */
@@ -132,12 +194,14 @@ export function parseProgress(
     return null;
   }
   if (!value || typeof value !== "object") return null;
-  const { tour, step, sponsor } = value as Record<string, unknown>;
+  const { tour, step, sponsor, back } = value as Record<string, unknown>;
   if (typeof tour !== "string" || typeof sponsor !== "string") return null;
   if (typeof step !== "number" || !Number.isInteger(step)) return null;
   const def = tours[tour];
   if (!def || step < 0 || step >= def.steps.length) return null;
-  return { tour, step, sponsor };
+  return back === true
+    ? { tour, step, sponsor, back }
+    : { tour, step, sponsor };
 }
 
 /** Progress for this sponsor, or null. Storage that throws counts as empty. */

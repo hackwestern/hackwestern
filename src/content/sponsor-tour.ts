@@ -1,21 +1,24 @@
-// User-facing copy for the sponsor portal's guided tours: the "?" How to
-// menu, the first-visit offer, the callout controls and every step. The
-// tour structure (targets, pages, clicks) is in src/lib/sponsor-tours.ts.
-// Keep wording here, not in components.
+// User-facing copy for the sponsor portal's guided tour: the entry points
+// (Home's "Take the tour", Help's button), the first-visit offer, the
+// callout controls and every step. The order follows the organizers'
+// "Sponsor Dashboard Workshop" deck: Home, Schedule, Map, Chats, Scan a
+// hacker, Judging, Questions. The structure (pages, targets, skips) is in
+// src/lib/sponsor-tours.ts. Keep wording here, not in components.
 
 export const sponsorTourCopy = {
-  menu: {
-    button: "How to",
-    label: "How to guides",
-    heading: "How to…",
-    welcome: "Take the portal tour",
-    /** The same guides inside Help, where phones find them (no How to
-     * button in the phone top bar). */
-    helpHeading: "Show me how",
+  /** Home, under Up next. */
+  homeEntry: {
+    text: "New to the portal? See how it all works.",
+    button: "Take the tour",
+  },
+  /** Inside the Help dialog. */
+  helpEntry: {
+    text: "Not sure where something is?",
+    button: "Take the tour",
   },
   offer: {
     title: "New here?",
-    body: "Take a 1-minute tour of your portal.",
+    body: "Take a 2-minute tour of your portal.",
     start: "Take the tour",
     dismiss: "Not now",
   },
@@ -30,140 +33,101 @@ export const sponsorTourCopy = {
     clickHint: "Tap the highlighted spot to continue, or press Next.",
     announce: (n: number, total: number, title: string, body: string) =>
       `Step ${n} of ${total}. ${title}. ${body}`,
+    /** Read once when the tour opens, for keyboard users. */
+    keys: "Use the arrow keys to move, Escape to skip.",
   },
 
   tours: {
     welcome: {
       name: "Portal tour",
       steps: {
+        // Home
         welcome: {
-          title: "This is your portal",
-          body: "Everything your team needs this weekend lives here. Keep this link handy: no login needed.",
+          title: "Welcome to your portal",
+          body: "Everything your team needs this weekend is here. Keep this link handy: no login needed.",
+        },
+        contacts: {
+          title: "Your contacts",
+          body: "Your point of contact is your Sponsorship Executive. Reach out to them first. Can't reach them? Call the emergency contact.",
+        },
+        upNext: {
+          title: "Up next",
+          body: "Your weekend, step by step. It updates live, and what's happening now is highlighted.",
+        },
+        upNextButtons: {
+          title: "Jump straight there",
+          body: "Buttons on a step take you to the right page. Both Scan buttons open the same page.",
+        },
+        keyRooms: {
+          title: "Key rooms",
+          body: "The sponsor lounge and overnight belongings rooms stay the same all weekend. Coffee chat rooms are set at 10:00 PM Friday.",
+        },
+        // Schedule
+        scheduleDays: {
+          title: "Your personal schedule",
+          body: "Everything you need to be at. Pick a day to see it.",
+        },
+        scheduleHackathon: {
+          title: "Hackathon events",
+          body: "Tick this to see what else is going on this weekend.",
+        },
+        scheduleBlocks: {
+          title: "Tap a block for details",
+          body: "Tap any block on the schedule to see where it is and what it's about.",
+        },
+        // Map
+        booth: {
+          title: "Your booth",
+          body: "This is where your booth is all weekend.",
+        },
+        buildings: {
+          title: "Building maps",
+          body: "Find every other room here: your workshop, coffee chats, the lounge. Tap a map to open it full size.",
+        },
+        // Chats
+        chatsNav: {
+          title: "Coffee chats",
+          body: "Open Chats from the menu, or with the Chats button in Up next. Both go to the same page.",
+        },
+        chatsSteps: {
+          title: "Two steps",
+          body: "First send your availability (required), then pick hackers to meet (optional). You can go back and change both until 10:00 PM Friday.",
+        },
+        chatsStage: {
+          start: {
+            title: "Step 1: send availability",
+            body: "Tap Start. Add the name and phone number of every rep from your firm, then when each one is free and how many chats they'll take.",
+          },
+          shortlist: {
+            title: "Step 2: pick hackers (optional)",
+            body: "We've lined up hackers who'd like to chat with your firm. Shortlist the ones you want to meet.",
+          },
+          waiting: {
+            title: "Check back at 10:00 PM",
+            body: "That's when your chat times and rooms show here. After that everything locks, so ask your point of contact for changes.",
+          },
+          confirmed: {
+            title: "Your chats",
+            body: "Every rep's chats, rooms and the hackers who confirmed. For changes now, ask your point of contact.",
+          },
+        },
+        // Scan a hacker
+        scan: {
+          title: "Scan a hacker",
+          body: "Met a hacker at your booth who isn't on your shortlist? Scan their badge to add them to your chats.",
+        },
+        scanManual: {
+          title: "No camera? Type it",
+          body: "You can also type the hacker code on their badge instead.",
+        },
+        // Judging and questions
+        judging: {
+          title: "Judging on Sunday",
+          body: "Judging stays locked until the judging workshop on Sunday morning. You'll pick your finalists here.",
         },
         help: {
-          title: "Need help?",
-          body: "Tap this any time for your Hack Western contact's name and number, and our emergency contact.",
-        },
-        scan: {
-          title: "Scan a badge",
-          body: "Met a hacker you like? Scan their badge to add them to your list. We invite them to a coffee chat first.",
-        },
-        chats: {
-          title: "Coffee chats",
-          body: "Tell us when your reps can chat (required), then see your chats here.",
-        },
-        schedule: {
-          title: "Your schedule",
-          body: "Your booth, workshop and judging times, all weekend.",
-        },
-        judging: {
-          title: "Judging",
-          body: "Opens Sunday at 9:00 AM. You'll score projects and pick your top teams here.",
-        },
-        important: {
-          title: "Important things to remember",
-          body: "Where the sponsor lounge is, where to leave your things overnight, and who to call in an emergency.",
-        },
-        booths: {
-          title: "Sponsor Bay",
-          body: "The booth layout around the projector screen. Your booth is highlighted.",
-        },
-        map: {
-          title: "The venue map",
-          body: "Floor plans and your booth, one tap from every page. Replay this tour or find a quick how-to with How to, at the top of the page.",
-        },
-      },
-    },
-
-    coffeeChat: {
-      name: "Coffee chats",
-      steps: {
-        setup: {
-          title: "Tell us when your reps can chat",
-          body: "Open Chats and tap Start: add your team, then when each rep is free. It's required, and organizers confirm your chat times Friday evening.",
-        },
-        scan: {
-          title: "Met someone at your booth?",
-          body: "Tap Scan when you're talking to a hacker.",
-        },
-        camera: {
-          title: "Point at their badge",
-          body: "Scan the QR code on their badge or their live site. No camera? Type their hacker code instead.",
-        },
-        add: {
-          title: "Add them to your list",
-          body: "Tap Add to my list. We invite people you met at your booth to a coffee chat first. Nothing to book.",
-        },
-      },
-    },
-
-    help: {
-      name: "Ask for help",
-      steps: {
-        button: {
-          title: "Need help?",
-          body: "Tap here to see your Hack Western contact. Text or call them, or tap the copy icon to copy their number.",
-        },
-        next: {
-          title: "Can't reach them?",
-          body: "Call our emergency contact. Their number is right under your contact's.",
-        },
-      },
-    },
-
-    map: {
-      name: "Find your way",
-      steps: {
-        open: {
-          title: "Open the map",
-          body: "Tap Map. It's on every sponsor page.",
-        },
-        floors: {
-          title: "Switch buildings and floors",
-          body: "Pick the SEI or Ivey building, then a level. Your rooms are outlined in blue; tap one to see what's on there.",
-        },
-        lounge: {
-          title: "Sponsor lounge",
-          body: "Rm 2110, floor 2. A space for sponsors all weekend.",
-        },
-        belongings: {
-          title: "Your belongings",
-          body: "Rm 2244, floor 2. Leave your things here overnight.",
-        },
-      },
-    },
-
-    judging: {
-      name: "Judging on Sunday",
-      steps: {
-        nav: {
-          title: "Judging opens Sunday",
-          body: "Judging unlocks at 9:00 AM on Sunday. Come to the judging debrief at 8:30 AM first.",
-        },
-        intro: {
-          title: "Your judging page",
-          body: "Everything for judging happens here. It saves as you go.",
-        },
-        score: {
-          title: "Score each project",
-          body: "Give each project a score out of 10, and tap Save as finalist for the teams you want to hear present.",
-        },
-        shortlist: {
-          title: "Open your final shortlist",
-          body: "Tap Submit final shortlist to see your finalists.",
-        },
-        send: {
-          title: "Submit your final shortlist",
-          body: "When you're happy with it, tap Submit final shortlist. You can only submit it once. We schedule each team to present in your room from 10:00.",
-        },
-        presentations: {
-          title: "Presentations",
-          body: "We schedule the teams you sent and tell them when to come to your room to present.",
-        },
-        rank: {
-          title: (top: number) => `Round 2: your top ${top}`,
-          body: (top: number) =>
-            `After presentations we open round 2. Rank the teams that presented and submit your top ${top}.`,
+          title: "Questions?",
+          body: "Tap Help any time for your point of contact and the emergency contact. You can replay this tour from there too.",
         },
       },
     },

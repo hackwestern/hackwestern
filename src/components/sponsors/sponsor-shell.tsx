@@ -18,6 +18,7 @@ import {
   SponsorHelp,
   SponsorHelpProvider,
 } from "~/components/sponsors/help-button";
+import { SponsorTour } from "~/components/sponsors/tour/sponsor-tour";
 import { useNow } from "~/components/sponsors/use-now";
 import { sponsorPortalCopy } from "~/content/sponsor-portal";
 import { sponsorVenueCopy } from "~/content/sponsor-venue";
@@ -364,6 +365,15 @@ export function SponsorShell({
           </nav>
         )}
       </div>
+
+      {/* The portal tour: one per page, carries on across pages. The
+          first-visit offer only shows on Home. */}
+      {id && (
+        <SponsorTour
+          offerWelcome={active === "home"}
+          hasPrizeTrack={info.data?.hasPrizeTrack}
+        />
+      )}
     </>
   );
 
@@ -445,6 +455,7 @@ function SideNavItem({ item, current }: { item: NavItem; current: boolean }) {
       <LockedJudging side="right">
         <button
           type="button"
+          data-tour={`nav-${item.id}`}
           aria-label={copy.judgingLocked(sponsorVenueCopy.judgingLocked.short)}
           className={cn(navLinkClass(current), ring)}
         >
@@ -456,6 +467,7 @@ function SideNavItem({ item, current }: { item: NavItem; current: boolean }) {
   return (
     <Link
       href={item.href}
+      data-tour={`nav-${item.id}`}
       aria-current={current ? "page" : undefined}
       className={cn(navLinkClass(current), ring)}
     >
@@ -472,6 +484,7 @@ function TabItem({ item, current }: { item: NavItem; current: boolean }) {
     return (
       <Link
         href={item.href}
+        data-tour={`nav-${item.id}`}
         aria-current={current ? "page" : undefined}
         className={cn(
           "group flex w-full min-w-0 flex-col items-center justify-end gap-0.5 rounded-dashboard-lg px-0.5 pb-0.5 text-xs font-semibold text-dashboard-text-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-dashboard-action-primary",
@@ -512,6 +525,7 @@ function TabItem({ item, current }: { item: NavItem; current: boolean }) {
       <LockedJudging side="top">
         <button
           type="button"
+          data-tour={`nav-${item.id}`}
           aria-label={copy.judgingLocked(sponsorVenueCopy.judgingLocked.short)}
           className={cn(cellClass, "font-medium text-dashboard-text-medium")}
         >
@@ -523,6 +537,7 @@ function TabItem({ item, current }: { item: NavItem; current: boolean }) {
   return (
     <Link
       href={item.href}
+      data-tour={`nav-${item.id}`}
       aria-current={current ? "page" : undefined}
       aria-label={item.tabLabel ? item.label : undefined}
       className={cn(

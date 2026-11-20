@@ -244,6 +244,7 @@ function CameraPanel({
       </div>
       <button
         type="button"
+        data-tour="scan-manual"
         className={cn(btn.link, "self-start")}
         onClick={() => setTyping(true)}
       >
@@ -260,6 +261,7 @@ function ManualEntry({ onSubmit }: { onSubmit: (text: string) => void }) {
   const [empty, setEmpty] = useState(false);
   return (
     <form
+      data-tour="scan-manual"
       className="flex flex-col gap-1.5"
       onSubmit={(event) => {
         event.preventDefault();

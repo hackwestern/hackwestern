@@ -75,27 +75,29 @@ export default function SponsorMapPage() {
 
   return shell(
     <>
-      <BoothLayout
-        sponsorName={info.data?.sponsorName}
-        title={
-          <h2 className="m-0 flex items-center gap-2.5 text-base font-semibold">
-            <MapPin
-              aria-hidden
-              className="size-5 shrink-0 text-dashboard-action-primary"
-            />
-            {where ? copy.page.boothAt(where) : copy.page.booth}
-          </h2>
-        }
-        lead={
-          mine &&
-          spot && (
-            <p className="m-0">
-              <b>{copy.booths.spot(mine.side, spot.place)}</b>
-              {copy.booths.neighbours(spot.neighbours)}
-            </p>
-          )
-        }
-      />
+      <div data-tour="map-booth" className="min-w-0">
+        <BoothLayout
+          sponsorName={info.data?.sponsorName}
+          title={
+            <h2 className="m-0 flex items-center gap-2.5 text-base font-semibold">
+              <MapPin
+                aria-hidden
+                className="size-5 shrink-0 text-dashboard-action-primary"
+              />
+              {where ? copy.page.boothAt(where) : copy.page.booth}
+            </h2>
+          }
+          lead={
+            mine &&
+            spot && (
+              <p className="m-0">
+                <b>{copy.booths.spot(mine.side, spot.place)}</b>
+                {copy.booths.neighbours(spot.neighbours)}
+              </p>
+            )
+          }
+        />
+      </div>
       <div data-tour="map-floors" className="min-w-0">
         <VenueMap
           highlights={highlights}
