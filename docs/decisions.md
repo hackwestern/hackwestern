@@ -1,5 +1,13 @@
 # Decisions
 
+## 2026-11-20 — Ping Logs page reads Slack's queue, not a new log table
+
+**Decision:** /internal/ping-logs shows the organizer reminder bot's health and every run-of-show ping (sent, queued in Slack, or not queued). It rebuilds the plan from the sheet with the bot's own loader (moved to src/server/slack/organizer-load.ts) and matches it to `chat.scheduledMessages.list` by send time and text. Health comes from the bot's queued "hasn't checked in" DM: its send time minus 10 minutes is the last check-in.
+
+**Why:** It works from Vercel even when the PC running the bot is off, needs no database or new Slack scopes, and can't disagree with what the bot actually queues.
+
+**Alternatives:** The bot writing a log to the database (the PC bot would need DB access, and a dead bot writes nothing); reading sent DMs from Slack (needs im:history and per-person channel lookups).
+
 ## 2026-10-02 — Desktop sections keep fixed heights; wide screens crop photos
 
 **Decision:** On desktop every section keeps its 1440-design height at every screen width (hero scene 1275px, About 1109px, Projects 1167px, Sponsors 1790px). Photos fill the width and are cropped top and bottom. The hero art is cropped from the top only, so its valley, where the scroll path and story pins sit, stays in view. Content stays its 1440 size and doesn't scale up. About's windows sit in a centred 1440 box, like the Projects stage, and the Projects clouds drift across the full width.

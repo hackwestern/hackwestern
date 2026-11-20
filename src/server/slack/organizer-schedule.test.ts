@@ -4,6 +4,8 @@ import { readCsv } from "./csv";
 import {
   planOrganizerReminders,
   planTeamPosts,
+  linkToken,
+  restoreLinks,
   readContacts,
   readRoster,
   readRunOfShow,
@@ -119,11 +121,12 @@ describe("planOrganizerReminders", () => {
       reminderKey: "organizer:Ann:2026-11-20T21:45:00.000Z",
       postAt: new Date("2026-11-20T21:30:00Z"),
     });
-    // One row tall: ends when the next row starts.
+    // One row tall (4:45 to 5:00) but "Starts: 5:00 PM": no Ends line.
     expect(ann[0]?.text).toContain(
-      "⏰ In 15 min (4:45 PM to 5:00 PM): *Registration desk*",
+      "⏰ Coming up: *Registration desk*\nStarts: 5:00 PM\n> Location: Rm 1110",
     );
-    expect(ann[0]?.text).toContain("> Location: Rm 1110");
+    expect(ann[0]?.text).not.toContain("Ends:");
+    expect(ann[0]?.text).not.toContain("> Starts:");
     expect(ann[0]?.text).toContain("👥 With: Bob");
     expect(ann[0]?.text).not.toContain("Next for you");
   });
@@ -143,7 +146,7 @@ describe("planOrganizerReminders", () => {
     const dm = planOrganizerReminders(merged.tasks).find(
       (r) => r.recipientName === "Bob",
     );
-    expect(dm?.text).toContain("(4:45 PM to 6:00 PM)");
+    expect(dm?.text).toContain("Starts: 5:00 PM\nEnds: 6:00 PM");
   });
 
   test("no end when the row below isn't a time row", () => {
@@ -251,4 +254,22 @@ test("a team-owned task is posted in that team's channel, once", () => {
   expect(posts[0]?.text).toContain("*Cheat Check*");
   expect(posts[0]?.text).toContain("> Location: Rm 2230");
   expect(posts[0]?.text).toContain("👥 Web team: Ann");
+});
+
+test("linked text in a cell becomes a Slack link, with escaping kept", () => {
+  const g = [
+    header,
+    ["FRIDAY"],
+    ["12:00 PM", "", "", "", "", "Ann"],
+    [
+      "1:00 PM",
+      `Plan & prep\nOwner: Ann\nNotes: see ${linkToken("https://example.com/a?b=1&c=2", "Auto-Ping")} now`,
+    ],
+  ];
+  const [dm] = planOrganizerReminders(readRunOfShow(g).tasks);
+  expect(dm?.text).toContain("*Plan &amp; prep*");
+  expect(dm?.text).toContain(
+    "> Notes: see <https://example.com/a?b=1&amp;c=2|Auto-Ping> now",
+  );
+  expect(restoreLinks(linkToken("javascript:alert(1)", "x"))).toBe("x");
 });

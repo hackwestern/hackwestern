@@ -1,22 +1,22 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { setTimeout as sleep } from "node:timers/promises";
 import { parse } from "dotenv";
-import { google } from "googleapis";
 import { organizerRemindersCopy as copy } from "~/content/organizer-reminders";
 import {
   SlackApiError,
   slackApi,
   type SlackResponse,
 } from "~/server/slack/client";
-import { readCsv } from "~/server/slack/csv";
+import {
+  ORGANIZER_HEARTBEAT_AFTER_MS,
+  loadOrganizerData,
+  setting,
+  type Config as OrganizerConfig,
+  type OrganizerData,
+} from "~/server/slack/organizer-load";
 import {
   KNOWN_SLACK_IDS,
-  planOrganizerReminders,
   planTeamPosts,
-  readContacts,
-  readRoster,
-  readRunOfShow,
-  type CellMerge,
   type Person,
 } from "~/server/slack/organizer-schedule";
 import {
@@ -32,16 +32,7 @@ import {
  * laptop (--watch). See docs/organizer-notifications.md.
  */
 
-const RUN_OF_SHOW_SHEET = "1lnRCD_q_EYaAcmL-IXkmuWZMNAiFIiU1Linbm8jHyAE";
-const RUN_OF_SHOW_RANGE = "'Schedule View'";
-const CONTACTS_SHEET = "16bur9ixrVm-DqXtAs3DJZEWZQ7gXTc92Gs4sflFUxSg";
-const CONTACTS_RANGE = "Sheet1";
-
-type Config = Record<string, string | undefined>;
-
-/** An env value, or undefined when unset or blank. */
-const setting = (value: string | undefined) =>
-  value?.trim() ? value.trim() : undefined;
+type Config = OrganizerConfig;
 
 async function settings(): Promise<Config> {
   const file = await readFile(".env", "utf8").catch(
@@ -53,105 +44,8 @@ async function settings(): Promise<Config> {
   return { ...parse(file), ...process.env };
 }
 
-/** The Sheets API as the service account, plus its email for error text. */
-function sheetsApi(config: Config) {
-  const email = setting(config.RUN_OF_SHOW_SHEETS_CLIENT_EMAIL);
-  const key = config.RUN_OF_SHOW_SHEETS_PRIVATE_KEY?.replace(/\\n/g, "\n");
-  if (!email || !key) {
-    throw new Error(
-      "Set RUN_OF_SHOW_SHEETS_CLIENT_EMAIL and RUN_OF_SHOW_SHEETS_PRIVATE_KEY (or the ORGANIZER_*_PATH snapshots)",
-    );
-  }
-  const auth = new google.auth.JWT({
-    email,
-    key,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
-  });
-  return { api: google.sheets({ version: "v4", auth }), email };
-}
-
-/** The tab's merged cells (a task's height); none for a local CSV copy. */
-async function merges(
-  config: Config,
-  path: string | undefined,
-  sheet: string,
-  range: string,
-): Promise<CellMerge[]> {
-  if (path) return [];
-  const { api } = sheetsApi(config);
-  const res = await api.spreadsheets.get({
-    spreadsheetId: sheet,
-    ranges: [range],
-    fields: "sheets.merges",
-  });
-  return (res.data.sheets?.[0]?.merges ?? []).map((m) => ({
-    startRowIndex: m.startRowIndex ?? 0,
-    endRowIndex: m.endRowIndex ?? 0,
-    startColumnIndex: m.startColumnIndex ?? 0,
-    endColumnIndex: m.endColumnIndex ?? 0,
-  }));
-}
-
-/** A sheet tab as rows of strings: a local CSV when a path is set, else live. */
-async function grid(
-  config: Config,
-  path: string | undefined,
-  sheet: string,
-  range: string,
-): Promise<string[][]> {
-  if (path) return readCsv(await readFile(path, "utf8"));
-  const { api, email } = sheetsApi(config);
-  try {
-    const res = await api.spreadsheets.values.get({
-      spreadsheetId: sheet,
-      range,
-    });
-    return (res.data.values ?? []).map((row) => row.map((c) => String(c)));
-  } catch (error) {
-    const code = (error as { code?: number }).code;
-    if (code === 403 || code === 404) {
-      throw new Error(`Can't read a sheet: share it with ${email} as a Viewer`);
-    }
-    throw error;
-  }
-}
-
-async function load(config: Config) {
-  const schedule = await grid(
-    config,
-    setting(config.ORGANIZER_RUN_OF_SHOW_PATH),
-    setting(config.ORGANIZER_RUN_OF_SHOW_SHEET) ?? RUN_OF_SHOW_SHEET,
-    RUN_OF_SHOW_RANGE,
-  );
-  const contacts = readContacts(
-    await grid(
-      config,
-      setting(config.ORGANIZER_CONTACTS_PATH),
-      setting(config.ORGANIZER_CONTACTS_SHEET) ?? CONTACTS_SHEET,
-      CONTACTS_RANGE,
-    ),
-    readRoster(schedule),
-  );
-  const parsed = readRunOfShow(
-    schedule,
-    contacts.people,
-    await merges(
-      config,
-      setting(config.ORGANIZER_RUN_OF_SHOW_PATH),
-      setting(config.ORGANIZER_RUN_OF_SHOW_SHEET) ?? RUN_OF_SHOW_SHEET,
-      RUN_OF_SHOW_RANGE,
-    ),
-  );
-  const skipNames = new Set(
-    (config.ORGANIZER_NOTIFICATION_SKIP_NAMES ?? "")
-      .split(",")
-      .map((name) => name.trim().toLowerCase())
-      .filter(Boolean),
-  );
-  const plan = planOrganizerReminders(parsed.tasks, { skipNames });
-  return { ...parsed, ...contacts, plan };
-}
-type Data = Awaited<ReturnType<typeof load>>;
+const load = loadOrganizerData;
+type Data = OrganizerData;
 
 const lookups = new Map<string, string | null>();
 
@@ -442,7 +336,7 @@ async function run(mode: string) {
 }
 
 const HEARTBEAT_FILE = ".organizer-heartbeat.json";
-const HEARTBEAT_AFTER_MS = 10 * 60_000;
+const HEARTBEAT_AFTER_MS = ORGANIZER_HEARTBEAT_AFTER_MS;
 
 /**
  * Dead man's switch for a watcher on a laptop: each healthy pass schedules a
