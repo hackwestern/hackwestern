@@ -39,6 +39,19 @@ export function snakePosition(number: number, perRow: number) {
 }
 
 /**
+ * A seat's name on screen: "4" when its table has one seat, "4 (seat 1)" or
+ * "4 (seat 2)" when the table is split.
+ */
+export function seatName(
+  seat: { tableNumber: number; seat: number },
+  split: boolean,
+) {
+  return split
+    ? `${seat.tableNumber} (seat ${seat.seat})`
+    : `${seat.tableNumber}`;
+}
+
+/**
  * Pick which of `tables` (in snake order) get a second seat so `teams` teams
  * fit at most 2 per table. Nothing is split until there are more teams than
  * tables; the split tables are spread evenly along the snake. Returns null if

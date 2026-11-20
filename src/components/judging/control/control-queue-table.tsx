@@ -7,6 +7,7 @@ import {
   TH,
   formatHold,
 } from "./control-shared";
+import { seatName } from "~/server/judging/layout";
 
 export function ControlQueueTable({
   queue,
@@ -44,7 +45,7 @@ export function ControlQueueTable({
               {teams.map((t) => (
                 <tr key={t.teamId} className="border-t border-[#e3e7ef]">
                   <td className={`${TD} tabular-nums`}>
-                    Table {t.tableNumber} (seat {t.seat})
+                    {seatName(t, t.split)}
                   </td>
                   <td className={`${TD} font-semibold`}>{t.teamName}</td>
                   <td className={`${TD} tabular-nums`}>

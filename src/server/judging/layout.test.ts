@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   LayoutError,
   buildSections,
+  seatName,
   snakePosition,
   tablesPerRow,
   tablesToSplit,
@@ -45,6 +46,12 @@ describe("snake grid", () => {
       expect(Math.abs(a.row - b.row) + Math.abs(a.col - b.col)).toBe(1);
     }
   });
+});
+
+test("seatName shows the seat only when the table is split", () => {
+  expect(seatName({ tableNumber: 4, seat: 1 }, false)).toBe("4");
+  expect(seatName({ tableNumber: 4, seat: 1 }, true)).toBe("4 (seat 1)");
+  expect(seatName({ tableNumber: 4, seat: 2 }, true)).toBe("4 (seat 2)");
 });
 
 describe("tablesToSplit", () => {

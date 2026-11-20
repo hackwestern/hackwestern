@@ -15,6 +15,7 @@ ALTER TABLE "judging_assignment" RENAME CONSTRAINT "judging_assignment_judging_t
 ALTER INDEX "judging_assignment_judge_table_idx" RENAME TO "judging_assignment_judge_seat_idx";--> statement-breakpoint
 ALTER INDEX "judging_assignment_table_idx" RENAME TO "judging_assignment_seat_idx";--> statement-breakpoint
 ALTER TABLE "judging_settings" RENAME COLUMN "judges_per_table" TO "judges_per_seat";--> statement-breakpoint
+ALTER TABLE "judge" ADD COLUMN "no_show" boolean DEFAULT false NOT NULL;--> statement-breakpoint
 -- Status triggers move to the seat names (mirrors src/server/db/triggers.sql section 4).
 DROP TRIGGER IF EXISTS trg_judging_assignment_table_status ON "judging_assignment";--> statement-breakpoint
 DROP TRIGGER IF EXISTS trg_team_judging_table_status ON "team";--> statement-breakpoint

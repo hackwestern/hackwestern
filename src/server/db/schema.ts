@@ -879,6 +879,7 @@ export const judges = pgTable("judge", {
     .references(() => users.id),
   type: judgeTypeEnum("type").default("organizer").notNull(),
   track: trackEnum("track").array(), // array of tracks for sponsored judges
+  noShow: boolean("no_show").default(false).notNull(),
 
   // Derived stats used for score normalization
   // markCount = n, markSum = S, markSquaredSum = S2

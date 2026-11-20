@@ -12,6 +12,8 @@ export type QueueTeam = {
   seatId: number;
   tableNumber: number;
   seat: number;
+  /** The table has an active seat 2, so seats show as "4 (seat 1)". */
+  split: boolean;
   /** Judges at this seat who haven't finished yet. */
   roundsRemaining: number;
   /** Judges at this seat who have scored the team. */
@@ -45,9 +47,17 @@ export type QueueState = {
   started: boolean;
 };
 
+/** Table numbers with an active seat 2. */
+export function splitTables(p: Progress): Set<number> {
+  return new Set(
+    p.seats.filter((s) => s.seat === 2 && s.isActive).map((s) => s.tableNumber),
+  );
+}
+
 /** Teams whose seat still has judges to go, plus the headline totals. */
 export function queueFromProgress(p: Progress): QueueState {
   const teams: QueueTeam[] = [];
+  const split = splitTables(p);
   for (const t of p.seats) {
     if (!t.team || !t.isActive) continue;
     const remaining = t.judges.filter(
@@ -62,6 +72,7 @@ export function queueFromProgress(p: Progress): QueueState {
       seatId: t.id,
       tableNumber: t.tableNumber,
       seat: t.seat,
+      split: split.has(t.tableNumber),
       roundsRemaining: remaining.length,
       seenJudges: t.judgesDone,
       tracks: [],

@@ -74,11 +74,12 @@ export async function loadJudgeData(
   userId: string,
   withComparison: boolean,
 ): Promise<JudgeInitialData> {
-  const [activeSeats, seated, linked, judge] = await Promise.all([
+  const [tables, seated, linked, judge] = await Promise.all([
     db.query.judgingSeats.findMany({
-      where: (t, { eq }) => eq(t.isActive, true),
+      // One row per physical table, not per seat.
+      where: (t, { and, eq }) => and(eq(t.isActive, true), eq(t.seat, 1)),
       columns: { tableNumber: true, zone: true },
-      orderBy: (t, { asc }) => [asc(t.tableNumber), asc(t.seat)],
+      orderBy: (t, { asc }) => [asc(t.tableNumber)],
     }),
     db.query.teams.findMany({
       where: (t, { isNotNull }) => isNotNull(t.judgingSeatId),
@@ -94,12 +95,6 @@ export async function loadJudgeData(
       columns: { type: true },
     }),
   ]);
-
-  // One row per physical table that has any active seat (seat 1 can be off
-  // while seat 2 still has a team).
-  const tables = activeSeats.filter(
-    (t, i) => i === 0 || activeSeats[i - 1]!.tableNumber !== t.tableNumber,
-  );
 
   const tableByTeam: Record<string, number> = {};
   for (const t of seated) {

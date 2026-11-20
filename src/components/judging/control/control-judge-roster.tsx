@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { api } from "~/utils/api";
+import { seatName } from "~/server/judging/layout";
 import { errorCode } from "~/components/judging/shared/judge-ui";
 import {
   BTN_DARK,
@@ -25,6 +26,7 @@ import {
   TH,
   errorText,
   formatHold,
+  splitTables,
 } from "./control-shared";
 
 const STOP_STYLE: Record<string, string> = {
@@ -62,6 +64,7 @@ export function JudgeRoster({
   });
   const addJudge = api.judging.admin.addJudgeByEmail.useMutation();
   const send = api.judging.admin.addSeatToJudge.useMutation();
+  const noShow = api.judging.admin.setJudgeNoShow.useMutation();
   const [picked, setPicked] = useState<Record<string, string>>({});
 
   const waiting = (queue?.teams ?? []).filter((t) => !t.currentJudgeId);
@@ -70,6 +73,7 @@ export function JudgeRoster({
       t.currentJudgeId ? [[t.currentJudgeId, t] as const] : [],
     ),
   );
+  const split = progress ? splitTables(progress) : new Set<number>();
   const teamAtSeat = new Map(
     (progress?.seats ?? []).map((t) => [t.id, t.team?.name ?? null]),
   );
@@ -171,6 +175,7 @@ export function JudgeRoster({
           <thead>
             <tr className={`text-left ${MUTED}`}>
               <th className={TH}>Name</th>
+              <th className={TH}>No-show</th>
               <th className={TH}>Marks</th>
               <th className={TH}>Avg score</th>
               <th className={TH}>Assigned teams</th>
@@ -181,14 +186,14 @@ export function JudgeRoster({
           <tbody>
             {judgesQuery.isLoading && (
               <tr className="border-t border-[#e3e7ef]">
-                <td colSpan={7} className={`${TD} ${MUTED}`}>
+                <td colSpan={8} className={`${TD} ${MUTED}`}>
                   Loading…
                 </td>
               </tr>
             )}
             {!judgesQuery.isLoading && visible.length === 0 && (
               <tr className="border-t border-[#e3e7ef]">
-                <td colSpan={7} className={`${TD} ${MUTED}`}>
+                <td colSpan={8} className={`${TD} ${MUTED}`}>
                   {judges.length === 0
                     ? "No judges yet. Add one by email to get started."
                     : "No judges match."}
@@ -215,6 +220,40 @@ export function JudgeRoster({
                       )}
                     </button>
                   </td>
+                  <td className={TD}>
+                    <button
+                      type="button"
+                      className={`${BTN_OUTLINE} text-sm`}
+                      disabled={noShow.isPending}
+                      onClick={() => {
+                        const name = j.name ?? j.email;
+                        setStatus(null);
+                        noShow.mutate(
+                          { judgeId: j.id, noShow: !j.noShow },
+                          {
+                            onSuccess: (r) => {
+                              setStatus({
+                                tone: "ok",
+                                text: `${name} is ${r.noShow ? "marked as a no-show" : "back on the roster"}.${
+                                  r.planCleared > 0
+                                    ? " The judge plan was cleared: run auto-assign again."
+                                    : ""
+                                }`,
+                              });
+                              void utils.judging.admin.invalidate();
+                            },
+                            onError: (e) =>
+                              setStatus({
+                                tone: "error",
+                                text: `Couldn't update ${name}. ${errorText(e)}`,
+                              }),
+                          },
+                        );
+                      }}
+                    >
+                      {j.noShow ? "Undo no-show" : "Mark no-show"}
+                    </button>
+                  </td>
                   <td className={`${TD} tabular-nums`}>{j.marksCount}</td>
                   <td
                     className={`${TD} tabular-nums ${
@@ -238,7 +277,7 @@ export function JudgeRoster({
                               className={`rounded-full px-2 py-1 text-xs font-semibold ${STOP_STYLE[st.status] ?? ""}`}
                             >
                               {teamAtSeat.get(st.seatId) ?? "Empty"} · Table{" "}
-                              {st.tableNumber} (seat {st.seat}) ·{" "}
+                              {seatName(st, split.has(st.tableNumber))} ·{" "}
                               {STOP_LABEL[st.status] ?? st.status}
                             </li>
                           ))}
@@ -320,14 +359,14 @@ export function JudgeRoster({
                                   onSuccess: () => {
                                     setStatus({
                                       tone: "ok",
-                                      text: `Added Table ${team.tableNumber} (seat ${team.seat}) (${team.teamName}) to ${name}'s list.`,
+                                      text: `Added Table ${seatName(team, team.split)} (${team.teamName}) to ${name}'s list.`,
                                     });
                                     void utils.judging.admin.invalidate();
                                   },
                                   onError: (e) =>
                                     setStatus({
                                       tone: "error",
-                                      text: `Couldn't add Table ${team.tableNumber} (seat ${team.seat}) to ${name}'s list. ${errorText(e)}`,
+                                      text: `Couldn't add Table ${seatName(team, team.split)} to ${name}'s list. ${errorText(e)}`,
                                     }),
                                 },
                               );

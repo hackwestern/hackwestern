@@ -65,6 +65,7 @@ export async function getProgress() {
         .select({
           id: judges.id,
           type: judges.type,
+          noShow: judges.noShow,
           marksCount: judges.marksCount,
           createdAt: judges.createdAt,
           name: users.name,
@@ -128,6 +129,7 @@ export async function getProgress() {
         name: j.name ?? j.email,
         email: j.email,
         type: j.type,
+        noShow: j.noShow,
         marksCount: j.marksCount,
         isFloater: mine.length === 0,
         current: current
@@ -158,6 +160,7 @@ export async function getAllJudges() {
         id: judges.id,
         type: judges.type,
         track: judges.track,
+        noShow: judges.noShow,
         marksCount: judges.marksCount,
         marksSum: judges.marksSum,
         createdAt: judges.createdAt,
@@ -198,8 +201,10 @@ export async function getAllJudges() {
 
 /**
  * A judge's own stops in walking order, each with its seat, grid position,
- * the team seated there and their score if given. `nextStopId` is the stop in
- * progress, else the first one still assigned.
+ * the team seated there and their score if given. `currentStopId` is the
+ * stop in progress, else the first one still assigned (the only stop the judge
+ * can act on); `nextStopId` is the assigned stop after it. A stop whose team
+ * was reported absent has status `team_absent`.
  */
 export async function getMyStops(judgeId: string) {
   const [settings, stops] = await Promise.all([
@@ -270,9 +275,10 @@ export async function getMyStops(judgeId: string) {
       mark: team ? (markByTeam.get(team.id) ?? null) : null,
     };
   });
-  const next =
+  const current =
     list.find((s) => s.status === "in_progress") ??
     list.find((s) => s.status === "assigned");
+  const next = list.find((s) => s.status === "assigned" && s !== current);
   const closed: StopStatus[] = ["done", "team_absent"];
 
   return {
@@ -282,6 +288,7 @@ export async function getMyStops(judgeId: string) {
       perRow: settings.perRow,
     },
     stops: list,
+    currentStopId: current?.id ?? null,
     nextStopId: next?.id ?? null,
     finished: list.filter((s) => closed.includes(s.status)).length,
     total: list.length,
@@ -349,7 +356,8 @@ export async function getTeamJudging(userId: string) {
     }),
   ]);
   const seat = team?.judgingSeat ?? null;
-  if (!seat) return { seat: null, judges: { done: 0, total: 0 } };
+  if (!seat)
+    return { seat: null, absent: false, judges: { done: 0, total: 0 } };
 
   const counts = await db
     .select({ status: judgingAssignments.status, n: count() })
@@ -368,6 +376,8 @@ export async function getTeamJudging(userId: string) {
       zone: seat.zone,
       ...snakePosition(seat.tableNumber, settings.perRow),
     },
+    // Reported absent: disqualified, and every stop at the seat is closed.
+    absent: counts.some((c) => c.status === "team_absent"),
     judges: {
       done: counts.find((c) => c.status === "done")?.n ?? 0,
       total: counts.reduce((sum, c) => sum + c.n, 0),

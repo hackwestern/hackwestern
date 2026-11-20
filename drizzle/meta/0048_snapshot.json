@@ -1114,6 +1114,13 @@
           "primaryKey": false,
           "notNull": false
         },
+        "no_show": {
+          "name": "no_show",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "marks_count": {
           "name": "marks_count",
           "type": "integer",

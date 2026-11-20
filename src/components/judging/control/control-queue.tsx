@@ -37,7 +37,12 @@ export function ControlQueue({ queue }: { queue: QueueState | undefined }) {
     setStatus({ tone: "error", text: `Couldn't ${what}. ${errorText(e)}` });
 
   const setup = api.judging.admin.setupTables.useMutation({
-    onSuccess: () => done("Tables set up."),
+    onSuccess: (r) =>
+      done(
+        r.planCleared > 0
+          ? "Tables set up. The judge plan was cleared: run auto-assign again."
+          : "Tables set up.",
+      ),
     onError: failed("set up the tables"),
   });
   const seat = api.judging.admin.seatTeams.useMutation({

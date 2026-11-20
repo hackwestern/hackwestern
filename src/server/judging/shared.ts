@@ -11,6 +11,7 @@ import {
   DEFAULT_SETTINGS,
   type LayoutSettings,
   tablesPerRow,
+  seatName,
 } from "~/server/judging/layout";
 
 export type Tx = Transaction | typeof db;
@@ -104,6 +105,45 @@ export async function absentSeatIds(
       ),
     );
   return new Set(rows.map((r) => r.seatId));
+}
+
+/**
+ * Messages name seats like the screens do: "Table 4" for a table with one
+ * seat, "Table 4 (seat 1)" / "Table 4 (seat 2)" for a split table (one with
+ * an active seat 2). Returns the labels in the order given.
+ */
+export async function seatLabels(
+  tx: Tx,
+  seats: { tableNumber: number; seat: number }[],
+): Promise<string[]> {
+  const numbers = [...new Set(seats.map((s) => s.tableNumber))];
+  const split =
+    numbers.length === 0
+      ? new Set<number>()
+      : new Set(
+          (
+            await tx
+              .select({ tableNumber: judgingSeats.tableNumber })
+              .from(judgingSeats)
+              .where(
+                and(
+                  inArray(judgingSeats.tableNumber, numbers),
+                  eq(judgingSeats.seat, 2),
+                  eq(judgingSeats.isActive, true),
+                ),
+              )
+          ).map((r) => r.tableNumber),
+        );
+  return seats.map(
+    (s) => `Table ${seatName(s, s.seat === 2 || split.has(s.tableNumber))}`,
+  );
+}
+
+export async function seatLabel(
+  tx: Tx,
+  seat: { tableNumber: number; seat: number },
+) {
+  return (await seatLabels(tx, [seat]))[0]!;
 }
 
 /*

@@ -71,8 +71,9 @@ export const setupTablesSchema = z.object({
 });
 export type SetupTablesInput = z.infer<typeof setupTablesSchema>;
 
-export const setSeatActiveSchema = z.object({
-  seatId,
+// Physical table on/off (both seats), or just its second seat.
+export const toggleTableSchema = z.object({
+  tableNumber: z.number().int().positive(),
   isActive: z.boolean(),
 });
 
@@ -100,6 +101,11 @@ export const handOffJudgeSchema = z
   });
 
 export const addSeatToJudgeSchema = z.object({ judgeId, seatId });
+
+export const setJudgeNoShowSchema = z.object({
+  judgeId,
+  noShow: z.boolean(),
+});
 
 // `id` is the user id being promoted to a judge. Stats columns are
 // server-derived, so they're omitted. `track` needs the array override

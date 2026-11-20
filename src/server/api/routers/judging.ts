@@ -23,8 +23,9 @@ import {
   moveTeamSchema,
   reportAbsentSchema,
   seatTeamsSchema,
-  setSeatActiveSchema,
+  setJudgeNoShowSchema,
   setupTablesSchema,
+  toggleTableSchema,
   startStopSchema,
   submitStopSchema,
   swapTeamsSchema,
@@ -37,6 +38,7 @@ import {
   editMark,
   handOffJudge,
   markAbsent,
+  setJudgeNoShow,
   startStop,
   submitStop,
 } from "~/server/judging/assignments";
@@ -52,9 +54,10 @@ import { getDevpostPreview } from "~/server/judging/devpost-preview";
 import {
   moveTeam,
   seatTeams,
-  setSeatActive,
   setupTables,
   swapTeams,
+  toggleSecondSeat,
+  toggleTable,
 } from "~/server/judging/room";
 
 /**
@@ -336,12 +339,33 @@ export const judgingRouter = createTRPCRouter({
         );
       }),
 
-    setSeatActive: protectedOrganizerProcedure
-      .input(setSeatActiveSchema)
+    /** Mark a judge as a no-show, or undo it. */
+    setJudgeNoShow: protectedOrganizerProcedure
+      .input(setJudgeNoShowSchema)
       .mutation(async ({ input }) => {
         return withErrorHandling(
-          () => setSeatActive(input.seatId, input.isActive),
-          "Failed to update seat",
+          () => setJudgeNoShow(input.judgeId, input.noShow),
+          "Failed to update the judge",
+        );
+      }),
+
+    /** Switch a whole table (both seats) on or off. */
+    toggleTable: protectedOrganizerProcedure
+      .input(toggleTableSchema)
+      .mutation(async ({ input }) => {
+        return withErrorHandling(
+          () => toggleTable(input.tableNumber, input.isActive),
+          "Failed to update table",
+        );
+      }),
+
+    /** Switch a table's second seat on or off. */
+    toggleSecondSeat: protectedOrganizerProcedure
+      .input(toggleTableSchema)
+      .mutation(async ({ input }) => {
+        return withErrorHandling(
+          () => toggleSecondSeat(input.tableNumber, input.isActive),
+          "Failed to update seat 2",
         );
       }),
 
