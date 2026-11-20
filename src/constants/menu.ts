@@ -83,7 +83,7 @@ export const allMeals: AllMealData = {
         name: "Soy Rice Bowls (Honey Garlic, Sweet Spicy)",
         vendor: "Mr. & Mrs. Bao",
         allergens: {
-          Halal: null,
+          Halal: false,
           Meat: false,
           Eggs: false,
           Nuts: null,
@@ -97,7 +97,7 @@ export const allMeals: AllMealData = {
         name: "Chicken Salad Bowl",
         vendor: "Mr. & Mrs. Bao",
         allergens: {
-          Halal: null,
+          Halal: false,
           Meat: true,
           Eggs: null,
           Nuts: null,
@@ -201,7 +201,7 @@ export const allMeals: AllMealData = {
         name: "Vegetarian Hot Dogs",
         vendor: "Frank & Furter's",
         allergens: {
-          Halal: null,
+          Halal: false,
           Meat: false,
           Eggs: null,
           Nuts: "May Contain",
@@ -215,7 +215,7 @@ export const allMeals: AllMealData = {
         name: "Dill Pickle Potato Salad",
         vendor: "Summerfresh",
         allergens: {
-          Halal: null,
+          Halal: false,
           Meat: false,
           Eggs: true,
           Nuts: null,
@@ -229,7 +229,7 @@ export const allMeals: AllMealData = {
         name: "Super Crunch Salad",
         vendor: "Summerfresh",
         allergens: {
-          Halal: null,
+          Halal: false,
           Meat: false,
           Eggs: false,
           Nuts: null,
@@ -273,7 +273,7 @@ export const allMeals: AllMealData = {
         name: "Mexican Bean Salad",
         vendor: "Summerfresh",
         allergens: {
-          Halal: null,
+          Halal: false,
           Meat: false,
           Eggs: false,
           Nuts: null,
@@ -287,7 +287,7 @@ export const allMeals: AllMealData = {
         name: "Chickpea & Edamame Salad",
         vendor: "Summerfresh",
         allergens: {
-          Halal: null,
+          Halal: false,
           Meat: false,
           Eggs: false,
           Nuts: null,
@@ -331,7 +331,7 @@ export const allMeals: AllMealData = {
         name: "Gluten-Free Stroopwafels",
         vendor: "The Fritter Shop",
         allergens: {
-          Halal: null,
+          Halal: false,
           Meat: false,
           Eggs: null,
           Nuts: null,
@@ -435,7 +435,7 @@ export const allMeals: AllMealData = {
         name: "Tofu Banh Mi",
         vendor: "Thy's Banh Mi",
         allergens: {
-          Halal: null,
+          Halal: false,
           Meat: false,
           Eggs: null,
           Nuts: null,
@@ -449,7 +449,7 @@ export const allMeals: AllMealData = {
         name: "Gluten-Free Grilled Chicken Banh Mi",
         vendor: "Thy's Banh Mi",
         allergens: {
-          Halal: null,
+          Halal: false,
           Meat: true,
           Eggs: true,
           Nuts: null,
@@ -463,7 +463,7 @@ export const allMeals: AllMealData = {
         name: "Butter Garlic Chicken Banh Mi",
         vendor: "Thy's Banh Mi",
         allergens: {
-          Halal: null,
+          Halal: false,
           Meat: true,
           Eggs: true,
           Nuts: false,
