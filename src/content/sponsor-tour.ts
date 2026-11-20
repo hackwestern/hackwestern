@@ -91,20 +91,20 @@ export const sponsorTourCopy = {
         },
         chatsSteps: {
           title: "Two steps",
-          body: "First send your availability (required), then pick hackers to meet (optional). You can go back and change both until 10:00 PM Friday.",
+          body: "First send your availability (required), then pick hackers to meet (optional). Each one can only be submitted once, so check it before you hit Submit.",
         },
         chatsStage: {
           start: {
             title: "Step 1: send availability",
-            body: "Tap Start. Add the name and phone number of every rep from your firm, then when each one is free and how many chats they'll take.",
+            body: "Tap Start. Add the name and phone number of every rep from your firm, then when each one is free and how many chats they'll take. You can only submit this once.",
           },
           shortlist: {
             title: "Step 2: pick hackers (optional)",
-            body: "We've lined up hackers who'd like to chat with your firm. Shortlist the ones you want to meet.",
+            body: "We've lined up hackers who'd like to chat with your firm. Pick the ones you want to meet and submit once. Skip it and we'll pick hackers for you from their interests and applications.",
           },
           waiting: {
             title: "Check back at 10:00 PM",
-            body: "That's when your chat times and rooms show here. After that everything locks, so ask your point of contact for changes.",
+            body: "That's when your chat times and rooms show here. For any changes, ask your point of contact.",
           },
           confirmed: {
             title: "Your chats",
