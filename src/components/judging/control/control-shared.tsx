@@ -72,9 +72,7 @@ export function queueFromProgress(p: Progress): QueueState {
   // never reach the round's judge count.
   const seated = p.tables.filter(
     (t) =>
-      t.team &&
-      t.isActive &&
-      !t.judges.some((j) => j.status === "team_absent"),
+      t.team && t.isActive && !t.judges.some((j) => j.status === "team_absent"),
   );
   const total = p.settings.judgesPerTable;
   const finished = seated.length
