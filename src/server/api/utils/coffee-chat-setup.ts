@@ -5,6 +5,7 @@
  * sponsorShortlist routers on the sponsor portal. The organizer board reads
  * the same tables (coffee-chat-sessions-board.ts).
  */
+import { effectiveChatMinutes } from "~/lib/coffee-chat-tiers";
 import { TRPCError } from "@trpc/server";
 import { and, asc, eq, inArray } from "drizzle-orm";
 
@@ -144,8 +145,9 @@ async function workshopsOf(
 }
 
 /**
- * Each sponsor's tier allowance in minutes, by lowercased name, from
- * Sponsor Day-Of. Cached a minute (setup pages poll and the Sheets quota is
+ * Each sponsor's chatting time in minutes, by lowercased name, from
+ * Sponsor Day-Of: the Chatting hours cell, else the tier's default
+ * (src/lib/coffee-chat-tiers.ts). Cached a minute (setup pages poll and the Sheets quota is
  * tight). A failed read is an empty map: no limit, so a Google outage never
  * stops a sponsor from saving.
  */
@@ -156,7 +158,11 @@ const allowanceCache = createCachedLoader(async () => {
       getSpreadsheetId(),
     );
     return new Map(
-      [...info].map(([name, r]) => [name.toLowerCase(), r.chattingMinutes]),
+      // The sheet's Chatting hours, else the tier's default (in code).
+      [...info].map(([name, r]) => [
+        name.toLowerCase(),
+        effectiveChatMinutes({ sheetMinutes: r.chattingMinutes, tier: r.tier }),
+      ]),
     );
   } catch (error) {
     console.error("coffee chat setup: tier allowance read failed", error);
