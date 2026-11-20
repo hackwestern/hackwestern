@@ -1,39 +1,26 @@
-# NEXT: sponsor dashboard (folder `hackwestern-sponsor-dash`, branch `sponsor-dashboard` = PR #1165, behind :3013)
+# NEXT: sponsor dashboard (folder `hackwestern-sponsor-dash`, branch `sponsor-dashboard`; ships as PR #1208)
 
-## Now
-Fix the run-through's problems, in this order (full report: the session of 2026-11-20; screenshots were in the session scratchpad, not kept):
-1. ~~Duplicate QNX~~ DONE (6602ae99): sheet cell renamed to "QNX", empty duplicate removed locally, names now match loosely (brackets ignored) in auto-sync and links. On production, check there's no "QNX (BlackBerry)" sponsor record; if there is, it's empty and can go.
-2. ~~Sheet reads failing~~ DONE: Sponsor Day-Of, picks and the coffee chat grid are read once a minute and shared (sharedSheetRead in sponsor-sheets.ts), with the last good copy when Google refuses; real errors aren't reported as a missing tab; the portal says "couldn't load" instead of blanks. 30/30 loads OK right after hitting Google's limit. If other pages still hit the limit, wrap their reads in sharedSheetRead too.
-3. ~~Phone Chats calendar zoom~~ DONE (6602ae99): checked 390 wide on Sun Life and Canada Life.
-4. ~~Sunday table vs judging board~~ DONE (643ef3f3): Home's judging panel now uses the board's sponsors (Sponsor Day-Of prize track box), TinyFish = Remote, picks = sent shortlist. Scotiabank drops off because its Prize Track box is unticked: tick it if they judge. Was: rooms (Scotiabank Rm 2110 vs free), TinyFish "Missing room" vs remote, and "Picks 0 of 5–15" for every sponsor even when shortlists are in.
-5. ~~Scan page link~~ DONE (643ef3f3): "Back to Coffee chats" builds `/sponsors//coffee-chats` before the sponsor ID is read (same fix as 5de1b754).
-6. **Meal rooms disagree** in three places (portal Home is typed into `src/content/sponsor-home.ts`: Rm 1230; portal Schedule: Grand Hall; run of show: Rm 1110), plus a duplicate Friday bubble tea snack. Sun Life / Canada Life workshop rooms differ between Sponsor Day-Of (2230) and the run of show (2235). Data: ask Jazz which is right.
-7. ~~Final-hacker rule~~ DONE (aa10b857; timing in docs/decisions.md): answered by 10 min before (25 Ivey). 30 minutes before a chat, any seat still waiting gets one last invite to the next hacker in line. If they don't answer, the seat stays empty: no more offers. How long they get to answer doesn't matter. Keep the earlier 30-minute rounds as they are. Code: src/lib/coffee-chat-invites.ts (lastCallAt, answerLeadMinutes, seatStillOfferable) and the round runner in src/server/api/utils/coffee-chat-invites.ts.
-Smaller: organizer table splits names mid-word ("Commur e"); the site's top nav "Sponsors" link is off-screen on phones; "Re-run auto-schedule" and "Notify teams" run with no confirm step.
+Event: HW13, Fri Nov 20 to Sun Nov 22. Sponsors need the live site by **Friday 5 PM**. Coffee chat deadline and invites: **Friday 10:00 PM**.
 
-Checks before done: `SKIP_ENV_VALIDATION=1 npx vitest run` (only Apple Wallet fails locally), `npx tsc --noEmit -p .`, `SKIP_ENV_VALIDATION=1 npx eslint src --quiet` (0 errors, or Vercel's build fails), a look at :3013 at 1280 and 390. Commit and push to `sponsor-dashboard`.
+## Now (Jazz wakes ~2 PM Friday)
+1. **Get #1208 approved and merged.** https://github.com/hackwestern/hackwestern/pull/1208 (branch `sponsor-dashboard-final`, worktree `../hackwestern-sponsor-pr`). One approval from someone with write access (Lucas); admins can't bypass. Squash and merge. GitHub's migrate workflow then applies migration `0048_sponsor_dashboard` to production (written to skip anything that exists; tested on a fresh DB, a DB that has it, and a DB with the old sponsor tables) and Vercel deploys. All CI checks passed at 306f6dbc.
+2. **After merge:** check the live sponsor portal and organizer pages load; send one test Slack DM (`docs/slack-bot-setup.md` section 4); then send sponsors their portal links.
+3. **#1207 organizer Slack reminders** (the Events "task ping" message was sent): merge it and set `ORGANIZER_NOTIFICATIONS_ENABLED` (and `ORGANIZER_SLACK_IDS` etc.) in Vercel. It shares 4 files with #1208 (`.env.example`, `docs/decisions.md`, `package.json`, `src/server/slack/client.ts`): if it conflicts after #1208 merges, fix those.
+4. **Sheet:** tick "Coffee Chats & Interviews" on Sponsor Day-Of for CSE if they do chats (it was in the old Coffee Chat Setup list, box is unticked). TinyFish needs a judging room (now in person). Clear the Judging Scores tab if it has old 15-team blocks (blocks are now 20 rows).
+5. **Spon team feedback:** they test the laptop copy and DM Jazz Agentation notes ("Question: …" for questions). Paste them into a new session; answer questions, build the rest.
 
-## Where things stand (2026-11-20)
-- Everything below is pushed to PR #1165 and the Vercel build passes (as of f3c41efb).
-- Built: organizer Home (day view), judging board, coffee board v12, sponsor portal v3, maps on Luka's interactive floor plan (Ivey included), notifications by Slack only, tier cap on coffee chats, judging lock back (Sun 9 AM), shortlists due 9:45 AM, teams told when the organizer presses Notify teams, new sponsors auto-registered, Lucas's judging work merged and fixed (his top 5 draft table is migration 0063).
-- Sheet (Spon Team RUN OF SHOW): Tier + Chatting hours + Tiers tab; app-written tabs locked; run of show tasks added. Never rename the "Sponsor Day-Of" tab.
-- Guides: `docs/test-checklist.md`, `docs/slack-bot-setup.md`. Local server :3013 (public link https://desktop-h6d0rg9.tailc07d02.ts.net via Tailscale Funnel; off: `tailscale funnel --https=443 off`).
+## Laptop test copy (for the spon team)
+- Link https://desktop-h6d0rg9.tailc07d02.ts.net/login (Tailscale Funnel → :3013). Login details: `_local/test-copy-login.md` (git-ignored; test DB only).
+- Production build of `sponsor-dashboard` on local DB `hackwestern_spon` (Docker `hackwestern_db`). Restart with:
+  `NEXT_PUBLIC_AGENTATION=1 SKIP_ENV_VALIDATION=1 npx next build`, then
+  `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/hackwestern_spon SKIP_ENV_VALIDATION=1 SHEET_WRITES=0 COFFEE_INVITES_ENABLED=dry NEXTAUTH_URL=https://desktop-h6d0rg9.tailc07d02.ts.net npx next start -p 3013`
+- Safe: no sheet writes, invites saved but never sent, no Slack. Laptop must stay awake.
 
-## Before Friday 5 PM (Jazz / Lucas)
-- Slack settings on Vercel (see `docs/slack-bot-setup.md`), production migrations 0059 to 0063, merge PR #1165 to main, one real test DM.
-- Lucas tests the Slack pings with his own account (guide, section 4).
+## Follow-ups (after Friday 5 PM)
+- **Booked coffee chats send the hacker a Slack DM** (Jazz said yes; "Book an event" makes an accepted chat but nobody is messaged).
+- **Speed:** measured getSponsors at ~6 s (Google Sheets) vs ~0.25 s for DB-only calls. Approved plan: keep the sheet for editing, but keep a DB copy of each sheet read refreshed in the background so pages never wait on Google (a subagent started it and was stopped before changing anything). Also fewer background refreshes on hidden tabs.
+- Shortlist queue size: `shortlistPoolSize` (hackers wanted + 20, min 40) is in `src/lib/coffee-chat-requests.ts` but unused, since Lucas's change lists every sharing hacker; use it to size only the review queue if wanted.
+- Open questions: refused-drop pop-up vs dialog on the coffee board; SEI address (1317 Western Rd vs 1151 Richmond St); MLH as a sponsor; meal rooms (portal Home Rm 1230, Schedule Grand Hall, run of show Rm 1110) and Sun Life/Canada Life workshop room (2230 vs 2235).
 
-## Open questions for Jazz
-1. **Coffee Chat Setup column A:** keep ticking which sponsors do chats by hand, or take it from Sponsor Day-Of's "Coffee Chats & Interviews" checkbox?
-2. **Coffee board:** refused drops as a small pop-up (now) or a dialog? "Goes to the front of the line" or "gets the seat" when an organizer picks a hacker by ID?
-3. **SEI address:** Luka's map says 1317 Western Rd, the portal says 1151 Richmond St. Which is right?
-4. **MLH** isn't in the app's sponsor list at all (so no portal link). Should it be?
-5. **Meal and workshop rooms** (Now, item 6): which values are right?
-
-## Files touched this session (main ones)
-- Judging: `src/components/sponsors/organizer/judging-board/*`, `src/lib/judging-board.ts`, `src/server/api/utils/{judging-board-data,presentation-schedule,presentation-confirm}.ts`, `src/server/api/routers/{sponsor-presentations,sponsor-scoring}.ts`, `src/server/slack/presentation-*`
-- Coffee chats: `src/server/api/{routers,utils}/coffee-chat-setup.ts`, `src/components/sponsors/coffee-setup/prefs-step.tsx`, `src/lib/coffee-chat-invites.ts` (Sunday crash fix)
-- Portal / organizer: `src/components/sponsors/sponsor-shell.tsx`, `src/pages/sponsors/[uuid]/{picks,coffee-chats,map}.tsx`, `src/components/sponsors/organizer/{organizer-home,organizer-nav,run-of-show-tab}.tsx`, `src/lib/sponsor-organizer.ts`, `src/pages/live.tsx`
-- Sheet reads: `src/server/api/utils/sponsor-sheets.ts`, `src/server/api/routers/sponsor-dashboard.ts`
-- Migrations 0061 to 0063; `docs/decisions.md`, `docs/test-checklist.md`, `docs/slack-bot-setup.md`
-- Other worktrees, all merged here (safe to remove): `hackwestern-judging-board`, `hackwestern-coffee-v12`, `hackwestern-maps`, `hackwestern-demo` (demo switcher, local only, NOT merged; Jazz said the demo isn't needed).
+## Done this session (2026-11-20, details in docs/decisions.md)
+Organizer Home judging matches the board; scan back link; final-call invite 30 min before a chat; organizer feedback rounds 1–34 (coffee board locks after Notify hackers, any organizer can notify, Book an event, judging typed rooms + 18 slots + Notify confirm, sponsor judging finalists, Home table rows, 10 PM deadline, TinyFish in person); Lucas's "verified slack msgs" merged; old PRs #1165, #1173–#1176 closed (Lucas's #1143 left for him); seats fill from the whole interest list; Coffee Chats & Interviews checkbox replaces Coffee Chat Setup column A (tab now fully locked); SPON CONTACTS block removed from RUN OF SHOW; A1 notes on every tab the app reads; Rationale + Decisions locked.
