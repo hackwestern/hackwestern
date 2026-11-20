@@ -8,6 +8,8 @@
 
 **Alternatives:** The bot writing a log to the database (the PC bot would need DB access, and a dead bot writes nothing); reading sent DMs from Slack (needs im:history and per-person channel lookups).
 
+**Added same day:** the page also lists the site's other pings (coffee chat invites, judging times, sponsor help, task and marketing reminders) read-only from the tables those features already keep, each source loaded on its own so one failing table doesn't blank the page. Coffee chat change/cancel DMs and fallback emails keep no record, so they don't appear; recording them would need a new table and was left out on event weekend.
+
 ## 2026-10-02 — Desktop sections keep fixed heights; wide screens crop photos
 
 **Decision:** On desktop every section keeps its 1440-design height at every screen width (hero scene 1275px, About 1109px, Projects 1167px, Sponsors 1790px). Photos fill the width and are cropped top and bottom. The hero art is cropped from the top only, so its valley, where the scroll path and story pins sit, stays in view. Content stays its 1440 size and doesn't scale up. About's windows sit in a centred 1440 box, like the Projects stage, and the Projects clouds drift across the full width.
