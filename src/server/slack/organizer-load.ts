@@ -1,13 +1,16 @@
 import { readFile } from "node:fs/promises";
 import { google } from "googleapis";
+import { SlackApiError, slackApi, type SlackResponse } from "./client";
 import { readCsv } from "./csv";
 import {
+  KNOWN_SLACK_IDS,
   linkToken,
   planOrganizerReminders,
   readContacts,
   readRoster,
   readRunOfShow,
   type CellMerge,
+  type Person,
 } from "./organizer-schedule";
 
 /**
@@ -205,3 +208,48 @@ export async function loadOrganizerData(config: Config) {
   return { ...parsed, ...contacts, plan };
 }
 export type OrganizerData = Awaited<ReturnType<typeof loadOrganizerData>>;
+
+/** Slack ids by email (null: not on Slack), kept for the life of the process. */
+export const slackLookups = new Map<string, string | null>();
+const lookups = slackLookups;
+
+/** Slack user id: ORGANIZER_SLACK_IDS / KNOWN_SLACK_IDS, else contact emails. */
+export async function slackId(
+  config: Config,
+  token: string,
+  person: Person | undefined,
+  name: string,
+): Promise<string | null> {
+  const overrides = {
+    ...KNOWN_SLACK_IDS,
+    ...(JSON.parse(setting(config.ORGANIZER_SLACK_IDS) ?? "{}") as Record<
+      string,
+      string
+    >),
+  };
+  const override = overrides[name]?.trim();
+  if (override && /^[UW][A-Z0-9]+$/.test(override)) return override;
+  for (const email of override ? [override] : (person?.emails ?? [])) {
+    if (!lookups.has(email)) {
+      try {
+        const res = await slackApi<SlackResponse & { user?: { id?: string } }>(
+          token,
+          "users.lookupByEmail",
+          { email },
+          fetch,
+          10_000,
+        );
+        lookups.set(email, res.user?.id ?? null);
+      } catch (error) {
+        if (
+          !(error instanceof SlackApiError && error.code === "users_not_found")
+        )
+          throw error;
+        lookups.set(email, null);
+      }
+    }
+    const id = lookups.get(email);
+    if (id) return id;
+  }
+  return null;
+}

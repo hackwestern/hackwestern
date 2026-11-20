@@ -11,7 +11,7 @@ import { env } from "~/env";
 import { runAutoPing } from "~/server/slack/auto-ping-run";
 import { dbStore, withPingsLock } from "~/server/slack/bot-state-db";
 import { runOrganizer } from "~/server/slack/organizer-run";
-import { decide, runPings } from "~/server/slack/pings-cron";
+import { botSettings, decide, runPings } from "~/server/slack/pings-cron";
 
 export const config = { maxDuration: 300 };
 
@@ -42,20 +42,21 @@ export default async function handler(
       .json({ skipped: decision.reason });
   }
 
+  const bots = botSettings(settings, decision.dryRun);
   const result = await withPingsLock(() =>
     runPings(
       {
-        env: settings,
+        env: bots,
         store: dbStore,
         organizer: (dryRun) =>
-          runOrganizer("--sync", settings, {
+          runOrganizer("--sync", bots, {
             store: dbStore,
             dryRun,
             heartbeat: true,
           }),
-        autoPingSync: (dryRun) => runAutoPing("--sync", settings, { dryRun }),
+        autoPingSync: (dryRun) => runAutoPing("--sync", bots, { dryRun }),
         autoPingFinal: (dryRun) =>
-          runAutoPing("--send-final", settings, { dryRun }),
+          runAutoPing("--send-final", bots, { dryRun }),
       },
       decision.dryRun,
     ),

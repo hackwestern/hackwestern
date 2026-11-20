@@ -53,6 +53,19 @@ export function decide(env: Env): CronDecision {
   return { run: true, dryRun: mode === "dry-run" };
 }
 
+/**
+ * The settings the bots see. A dry run always acts as if both bots are on,
+ * so it shows what going live would do while the Vercel on-switches stay off
+ * (the laptop is the sender until the switch-over).
+ */
+export function botSettings(env: Env, dryRun: boolean): Env {
+  if (!dryRun) return env;
+  return Object.fromEntries([
+    ...Object.entries(env),
+    ...ENABLE_FLAGS.map((k) => [k, "1"]),
+  ]) as Env;
+}
+
 export type CronDeps = {
   env: Env;
   store: StateStore;

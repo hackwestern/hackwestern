@@ -142,3 +142,87 @@ export async function slackQueue(token: string): Promise<ScheduledMessage[]> {
   } while (cursor);
   return all;
 }
+
+/** Why someone can't get run-of-show DMs, or "ok". */
+export type Reach = "ok" | "noContact" | "noSlack";
+
+export type PersonHealth = {
+  name: string;
+  reach: Reach;
+  /** Pings whose time has passed and that reached them. */
+  received: number;
+  /** Pings whose time passed while they couldn't be reached. */
+  missed: number;
+  /** Upcoming pings waiting in Slack's queue. */
+  upcoming: number;
+  /** Upcoming pings not in Slack's queue (they'll miss these unless fixed). */
+  atRisk: number;
+  lastAt: Date | null;
+  nextAt: Date | null;
+};
+
+export type OrganizerHealth = {
+  people: PersonHealth[];
+  /** The most recent ping that went out, and the next one due. */
+  lastSent: { at: Date; to: string; title: string } | null;
+  nextUp: { at: Date; to: string; title: string } | null;
+  /** Pings that went out in the last hour. */
+  sentLastHour: number;
+};
+
+/**
+ * Who is getting their run-of-show pings. A team channel ("#Events") always
+ * counts as reachable. Someone unreachable missed every ping already due.
+ */
+export function organizerHealth(
+  rows: PingRow[],
+  reach: ReadonlyMap<string, Reach>,
+  now: number,
+): OrganizerHealth {
+  const reachOf = (to: string): Reach =>
+    to.startsWith("#") ? "ok" : (reach.get(to) ?? "ok");
+  const people = new Map<string, PersonHealth>();
+  let lastSent: OrganizerHealth["lastSent"] = null;
+  let nextUp: OrganizerHealth["nextUp"] = null;
+  let sentLastHour = 0;
+  for (const row of rows) {
+    const r = reachOf(row.to);
+    const p = people.get(row.to) ?? {
+      name: row.to,
+      reach: r,
+      received: 0,
+      missed: 0,
+      upcoming: 0,
+      atRisk: 0,
+      lastAt: null,
+      nextAt: null,
+    };
+    people.set(row.to, p);
+    const due = +row.postAt <= now;
+    if (due) {
+      if (r === "ok") {
+        p.received++;
+        if (!p.lastAt || +row.postAt > +p.lastAt) p.lastAt = row.postAt;
+        if (!lastSent || +row.postAt > +lastSent.at)
+          lastSent = { at: row.postAt, to: row.to, title: row.title };
+        if (now - +row.postAt <= 60 * 60_000) sentLastHour++;
+      } else p.missed++;
+    } else if (row.status === "queued") {
+      p.upcoming++;
+      if (!p.nextAt || +row.postAt < +p.nextAt) p.nextAt = row.postAt;
+      if (!nextUp || +row.postAt < +nextUp.at)
+        nextUp = { at: row.postAt, to: row.to, title: row.title };
+    } else p.atRisk++;
+  }
+  // People with problems first, then by name.
+  const order = (p: PersonHealth) =>
+    p.reach !== "ok" || p.missed || p.atRisk ? 0 : 1;
+  return {
+    people: [...people.values()].sort(
+      (a, b) => order(a) - order(b) || a.name.localeCompare(b.name),
+    ),
+    lastSent,
+    nextUp,
+    sentLastHour,
+  };
+}

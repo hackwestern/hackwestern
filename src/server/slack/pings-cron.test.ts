@@ -3,6 +3,7 @@ import { memoryStore } from "./bot-state";
 import {
   FINAL_AT,
   FINAL_SENT_KEY,
+  botSettings,
   decide,
   runPings,
   type CronDeps,
@@ -36,6 +37,12 @@ describe("decide", () => {
     expect(refused).toMatchObject({ run: false, failed: true });
     expect(!refused.run && refused.reason).toContain("AUTO_PING_ENABLED");
     expect(decide({ PINGS_CRON: "live" })).toMatchObject({ run: false });
+  });
+
+  test("a dry run acts as if both bots are on; live uses the real switches", () => {
+    const off = { PINGS_CRON: "dry-run", AUTO_PING_ENABLED: "0" };
+    expect(botSettings(off, true)).toMatchObject(ON);
+    expect(botSettings(off, false)).toEqual(off);
   });
 
   test("an unknown mode is refused, not treated as live", () => {
