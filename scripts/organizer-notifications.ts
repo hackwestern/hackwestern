@@ -74,6 +74,12 @@ function sheetsApi(config: Config) {
 type GridCell = {
   formattedValue?: string | null;
   hyperlink?: string | null;
+  chipRuns?:
+    | {
+        startIndex?: number | null;
+        chip?: { richLinkProperties?: { uri?: string | null } | null } | null;
+      }[]
+    | null;
   textFormatRuns?:
     | {
         startIndex?: number | null;
@@ -82,22 +88,50 @@ type GridCell = {
     | null;
 };
 
-/** A cell's text with its linked parts kept as link tokens (see linkToken). */
+/** Runs of a cell (text links or smart chips): each lasts until the next. */
+type Run = { start: number; uri: string | null };
+
+/** The run covering character `at` (the last one starting at or before it). */
+function covering(runs: Run[], at: number): string | null {
+  let uri: string | null = null;
+  for (const r of runs) if (r.start <= at) uri = r.uri;
+  return uri;
+}
+
+/**
+ * A cell's text with its linked parts kept as link tokens (see linkToken).
+ * Links come from text links ("Auto-Ping" linked by hand) or smart chips
+ * (a pasted Google Doc, e.g. "HW13 Help Desk Guide").
+ */
 function cellText(cell: GridCell): string {
   const text = cell.formattedValue ?? "";
-  const runs = (cell.textFormatRuns ?? []).map((r) => ({
+  const textRuns: Run[] = (cell.textFormatRuns ?? []).map((r) => ({
     start: r.startIndex ?? 0,
     uri: r.format?.link?.uri ?? null,
   }));
-  if (runs.some((r) => r.uri)) {
-    return runs
-      .map((r, i) => {
-        const part = text.slice(r.start, runs[i + 1]?.start ?? text.length);
-        return r.uri && part.trim() ? linkToken(r.uri, part) : part;
-      })
-      .join("");
+  const chipRuns: Run[] = (cell.chipRuns ?? []).map((r) => ({
+    start: r.startIndex ?? 0,
+    uri: r.chip?.richLinkProperties?.uri ?? null,
+  }));
+  if (![...textRuns, ...chipRuns].some((r) => r.uri)) {
+    return cell.hyperlink && text ? linkToken(cell.hyperlink, text) : text;
   }
-  return cell.hyperlink && text ? linkToken(cell.hyperlink, text) : text;
+  const cuts = [
+    ...new Set(
+      [0, ...textRuns, ...chipRuns].map((r) =>
+        typeof r === "number" ? r : r.start,
+      ),
+    ),
+  ]
+    .filter((n) => n < text.length)
+    .sort((a, b) => a - b);
+  return cuts
+    .map((start, i) => {
+      const part = text.slice(start, cuts[i + 1] ?? text.length);
+      const uri = covering(chipRuns, start) ?? covering(textRuns, start);
+      return uri && part.trim() ? linkToken(uri, part) : part;
+    })
+    .join("");
 }
 
 /**
@@ -118,7 +152,7 @@ async function runOfShow(
       ranges: [range],
       includeGridData: true,
       fields:
-        "sheets.merges,sheets.data.rowData.values(formattedValue,hyperlink,textFormatRuns(startIndex,format(link(uri))))",
+        "sheets.merges,sheets.data.rowData.values(formattedValue,hyperlink,textFormatRuns(startIndex,format(link(uri))),chipRuns(startIndex,chip(richLinkProperties(uri))))",
     });
     const tab = res.data.sheets?.[0];
     return {
