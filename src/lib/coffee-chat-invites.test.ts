@@ -2,6 +2,9 @@ import { describe, expect, test } from "vitest";
 
 import {
   currentRound,
+  finalCallAt,
+  finalCallExpiresAt,
+  isFinalCallInvite,
   inviteExpiresAt,
   nextRoundAt,
   planInviteRound,
@@ -593,7 +596,7 @@ describe("planner", () => {
     expect(unfilled).toEqual([]);
   });
 
-  test("round 3 (10:30) leaves 10:00-10:45 seats unfilled; 11:00 gets its last 10 minutes", () => {
+  test("round 3 (10:30) leaves 10:00-10:45 seats unfilled; 11:00 is at its final call", () => {
     const chats = [600, 615, 630, 645, 660].map((start) =>
       chat({ placementId: `p${start}`, start }),
     );
@@ -606,8 +609,9 @@ describe("planner", () => {
       chats,
       candidates: cands({ A: users }),
     });
+    // 10:30 is 11:00's final call: one last invite, answered by 10:50.
     expect(invites.map((i) => [i.start, i.expiresAt])).toEqual([
-      [660, at("10:40")],
+      [660, at("10:50")],
     ]);
     expect(unfilled).toHaveLength(4);
   });
@@ -730,5 +734,66 @@ describe("planner", () => {
         }
       }
     }
+  });
+});
+
+describe("final call (one last hacker, 30 minutes before)", () => {
+  const two = cands({ A: [["h1", "shortlist"], ["h2", "shortlist"]] });
+
+  test("starts 30 minutes before a chat (45 for Ivey) and is answered by 10 before (25)", () => {
+    expect(finalCallAt(min("11:00"), "near")).toEqual(at("10:30"));
+    expect(finalCallAt(min("11:00"), "ivey")).toEqual(at("10:15"));
+    expect(finalCallExpiresAt(min("11:00"), "near", at("10:29"))).toBeNull();
+    expect(finalCallExpiresAt(min("11:00"), "near", at("10:35"))).toEqual(at("10:50"));
+    expect(finalCallExpiresAt(min("11:00"), "ivey", at("10:20"))).toEqual(at("10:35"));
+    // Under 10 minutes left to answer: too late even for the last offer.
+    expect(finalCallExpiresAt(min("11:00"), "near", at("10:41"))).toBeNull();
+  });
+
+  test("a waiting seat gets one last invite, to the next in line", () => {
+    const { invites } = plan({
+      round: currentRound(at("10:35")),
+      now: at("10:35"),
+      chats: [chat({ placementId: "p", start: min("11:00") })],
+      candidates: two,
+    });
+    expect(invites).toHaveLength(1);
+    expect(invites[0]!.userId).toBe("h1");
+    expect(invites[0]!.expiresAt).toEqual(at("10:50"));
+    expect(isFinalCallInvite(invites[0]!.expiresAt, min("11:00"), "near")).toBe(true);
+  });
+
+  test("after the last invite ends, the seat stays empty and isn't flagged", () => {
+    const { invites, unfilled } = plan({
+      round: currentRound(at("10:38")),
+      now: at("10:38"),
+      chats: [chat({ placementId: "p", start: min("11:00"), finalSpent: 1 })],
+      candidates: two,
+      blocked: new Set(["A|h1"]),
+    });
+    expect(invites).toEqual([]);
+    expect(unfilled).toEqual([]);
+  });
+
+  test("each waiting seat has its own last offer", () => {
+    const { invites } = plan({
+      round: currentRound(at("10:38")),
+      now: at("10:38"),
+      chats: [chat({ placementId: "p", start: min("11:00"), seats: 3, live: 1, finalSpent: 1 })],
+      candidates: two,
+    });
+    expect(invites.map((i) => i.userId)).toEqual(["h1"]);
+  });
+
+  test("before the final call the rounds are as before", () => {
+    const { invites } = plan({
+      round: currentRound(at("10:20")),
+      now: at("10:20"),
+      chats: [chat({ placementId: "p", start: min("11:00"), finalSpent: 1 })],
+      candidates: two,
+    });
+    // Answer by the round's close capped at the last call (10:40).
+    expect(invites[0]!.expiresAt).toEqual(at("10:40"));
+    expect(isFinalCallInvite(invites[0]!.expiresAt, min("11:00"), "near")).toBe(false);
   });
 });

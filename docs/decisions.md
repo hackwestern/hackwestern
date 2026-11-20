@@ -947,3 +947,9 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Decision:** Sponsor Day-Of, the picks read and the coffee chat grid are each read from Google at most once a minute and shared by every request (sharedSheetRead). When Google refuses (its per-minute read limit, confirmed in the server log: "Read requests per minute per user"), the last good copy is used. A refused read is no longer reported as "tab not found", and the sponsor portal says it couldn't load instead of showing blanks as real ("contact not assigned"). Writes to Sponsor Day-Of read fresh and clear the copy, so changes show at once. Sheet edits show within a minute.
 **Why:** every page and every organizer poll read the sheet, which ran past Google's limit; on event day many people have pages open.
 **Alternatives:** asking Google for a higher quota (slow, not guaranteed); fewer refreshes only (not enough).
+
+## 2026-11-20: Final call timing (build of "One final hacker")
+
+**Decision:** The final call starts when the rounds can no longer offer a chat: 30 minutes before it (45 for Ivey, the walk). Each seat still waiting then (including one freed later by an earlier invite expiring) gets one invite to the next hacker in line, answered by 10 minutes before the chat (25 for Ivey). A final invite is recognised by its answer-by time being after the chat's normal last call (20 / 35 minutes before), so no migration. Once it's declined or expires, that seat stays empty and the board stops flagging it.
+**Why:** Jazz said how long the final hacker gets doesn't matter; 10 minutes before still lets them reach the room.
+**Alternatives:** answer by the normal last call (no time left at the 30-minute mark); a new column marking final invites (needs a migration).

@@ -48,6 +48,7 @@ import {
   LAST_CHAT_STARTS_AT,
   chatKey,
   currentRound,
+  isFinalCallInvite,
   planInviteRound,
   reconfirmExpiresAt,
   repChatStarts,
@@ -495,8 +496,13 @@ async function writeInviteRound(
   const live = rows.filter(isLive);
   // A seat whose invite was declined or expired is empty again: it goes to
   // the next candidate now, not in a later round.
+  // Past a chat's final call, a seat whose last invite ended stays empty.
   for (const c of layout) {
-    c.live = rows.filter((r) => atChat(r, c) && isLive(r)).length;
+    const here = rows.filter((r) => atChat(r, c));
+    c.live = here.filter(isLive).length;
+    c.finalSpent = here.filter(
+      (r) => !isLive(r) && isFinalCallInvite(r.expiresAt, c.start, c.building),
+    ).length;
   }
   const blocked = new Set([
     ...rows
