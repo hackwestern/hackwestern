@@ -9,14 +9,18 @@
 // Only the top TOP_N teams by judge average are exported (teams with no
 // regular-round marks are never included).
 //
+//   "Top 20":   rank, team and Final, best first — a single sheet formula
+//               over Results, so it re-sorts live as completeness is typed.
 //   "Results":  one bold row per team, ranked by judge average, with that
 //               team's judge marks in a collapsed row group under it. Next to
-//               Average: "Completeness" (blank, organizers type 0-10 on team
-//               rows) and "Final" — a formula that counts completeness as
-//               one more rubric criterion: (Average × N + Completeness)
-//               / (N + 1), N = number of rubric criteria (5 now, so × 5 / 6);
-//               the Average alone while Completeness is blank. "Super likes"
-//               counts hearts from any judge; judge rows show ♥.
+//               Average: Devpost / GitHub links, "Completeness" (blank,
+//               organizers type 0-10 on team rows; red while blank, green
+//               once scored) and "Final" (highlighted) — a formula that
+//               counts completeness as one more rubric criterion:
+//               (Average × N + Completeness) / (N + 1), N = number of rubric
+//               criteria (5 now, so × 5 / 6); the Average alone while
+//               Completeness is blank. "Super likes" counts hearts from any
+//               judge; judge rows show ♥.
 //   "Marks":    flat list, one row per judge mark — easy to filter/sort.
 //
 // The app's own ranking (and Results' Rank column) stay judges-only;
@@ -40,8 +44,15 @@ import { loadTeamResults } from "~/server/api/utils/team-results-data";
 
 export const RESULTS_TAB = "Results";
 export const MARKS_TAB = "Marks";
+/** How many teams the export includes, best judge average first. */
+export const TOP_N = 20;
+/**
+ * A live summary (rank, team, Final) computed by a sheet formula from
+ * Results, so it re-sorts as completeness scores are typed.
+ */
+export const SUMMARY_TAB = `Top ${TOP_N}`;
 /** Tabs in the order they appear in the spreadsheet. */
-const TABS = [RESULTS_TAB, MARKS_TAB];
+const TABS = [SUMMARY_TAB, RESULTS_TAB, MARKS_TAB];
 /**
  * Where scores were typed before they moved into Results. Its scores are
  * carried over on the next export, then the tab is removed.
@@ -49,15 +60,18 @@ const TABS = [RESULTS_TAB, MARKS_TAB];
 const LEGACY_COMPLETENESS_TAB = "Completeness";
 /** Written by earlier exports (a top-N view). Removed on the next export. */
 const LEGACY_CONTROL_TAB = "Control";
-/** How many teams the export includes, best judge average first. */
-export const TOP_N = 20;
 
 /**
  * A cell value. Plain strings are always written as text — never parsed as
  * formulas — so team names, judge names and notes can't inject formulas.
  * Only `{ formula }` cells, built in this file, become formulas.
  */
-type Cell = string | number | boolean | { formula: string };
+type Cell =
+  | string
+  | number
+  | boolean
+  | { formula: string }
+  | { text: string; link: string };
 
 /** Shown on a judge's row when they super liked the team. */
 const SUPER_LIKE = "♥";
@@ -87,6 +101,8 @@ const RESULTS_HEADER: string[] = [
   "Team / Judge",
   "Judges",
   "Average",
+  "Devpost",
+  "GitHub",
   COMPLETENESS_LABEL,
   "Final",
   "Super likes",
@@ -94,14 +110,31 @@ const RESULTS_HEADER: string[] = [
   "Sponsor judges",
   "Sponsor average",
   "Notes",
-  "Devpost",
-  "GitHub",
   "Team ID",
 ];
 const col = (label: string) => RESULTS_HEADER.indexOf(label);
+const RANK_COL = col("Rank"); // A
+const NAME_COL = col("Team / Judge"); // C
 const AVERAGE_COL = col("Average"); // E
-const COMPLETENESS_COL = col(COMPLETENESS_LABEL); // F
+const COMPLETENESS_COL = col(COMPLETENESS_LABEL); // H
+const FINAL_COL = col("Final"); // I
 const TEAM_ID_COL = col("Team ID"); // last
+
+/**
+ * A short clickable link ("Devpost", "GitHub") instead of the whole URL.
+ * Only http(s) URLs become links (a bare "github.com/..." gets https://);
+ * anything else is shown as plain text.
+ */
+export function linkCell(url: string | null | undefined, text: string): Cell {
+  const raw = url?.trim();
+  if (!raw) return "";
+  const href = /^https?:\/\//i.test(raw)
+    ? raw
+    : /^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(raw)
+      ? `https://${raw}`
+      : null;
+  return href ? { text, link: href } : raw;
+}
 
 function letter(index: number): string {
   let s = "";
@@ -190,6 +223,8 @@ export function buildResultsRows(
         r.team.name,
         r.regular.count,
         num(r.regular.average),
+        linkCell(r.team.devpost, "Devpost"),
+        linkCell(r.team.github, "GitHub"),
         scores.get(r.team.id) ?? "",
         finalFormula(rows.length + 1),
         r.regular.superLikes + r.sponsored.superLikes,
@@ -197,8 +232,6 @@ export function buildResultsRows(
         r.sponsored.count,
         num(r.sponsored.average),
         "",
-        r.team.devpost ?? "",
-        r.team.github ?? "",
         r.team.id,
       ],
     });
@@ -218,13 +251,13 @@ export function buildResultsRows(
             round === "regular" ? num(m.score) : "",
             "",
             "",
+            "",
+            "",
             m.superLike ? SUPER_LIKE : "",
             ...criteria.map((c) => num(m.ratings[c.id])),
             "",
             round === "sponsored" ? num(m.score) : "",
             m.notes,
-            "",
-            "",
             r.team.id,
           ],
         });
@@ -325,6 +358,14 @@ export interface TabState {
 }
 
 function cellData(value: Cell, bold = false): sheets_v4.Schema$CellData {
+  if (typeof value === "object" && "link" in value) {
+    return {
+      userEnteredValue: { stringValue: value.text },
+      userEnteredFormat: {
+        textFormat: { bold, link: { uri: value.link } },
+      },
+    };
+  }
   const userEnteredValue =
     typeof value === "object"
       ? { formulaValue: value.formula }
@@ -337,7 +378,7 @@ function cellData(value: Cell, bold = false): sheets_v4.Schema$CellData {
             : { stringValue: value };
   return {
     userEnteredValue,
-    userEnteredFormat: bold ? { textFormat: { bold: true } } : undefined,
+    userEnteredFormat: { textFormat: { bold } },
   };
 }
 
@@ -413,7 +454,7 @@ function rewriteTabRequests(
         rows: rows.map((r) => ({
           values: r.cells.map((c) => cellData(c, r.bold ?? false)),
         })),
-        fields: "userEnteredValue,userEnteredFormat.textFormat.bold",
+        fields: "userEnteredValue,userEnteredFormat.textFormat",
       },
     },
   );
@@ -441,45 +482,109 @@ export function buildResultsAndMarksRequests(input: {
     startIndex: g.start,
     endIndex: g.end,
   });
-  const compCell = (row: number): sheets_v4.Schema$GridRange => ({
+  const cell = (
+    column: number,
+    startRow: number,
+    endRow = startRow + 1,
+  ): sheets_v4.Schema$GridRange => ({
     sheetId,
-    startRowIndex: row,
-    endRowIndex: row + 1,
-    startColumnIndex: COMPLETENESS_COL,
-    endColumnIndex: COMPLETENESS_COL + 1,
+    startRowIndex: startRow,
+    endRowIndex: endRow,
+    startColumnIndex: column,
+    endColumnIndex: column + 1,
   });
-  const tint = {
-    userEnteredFormat: {
-      backgroundColor: { red: 0.91, green: 0.96, blue: 1 },
+  const compCells = teamRows.map((row) => cell(COMPLETENESS_COL, row));
+  const statusRule = (
+    type: "BLANK" | "NOT_BLANK",
+    color: sheets_v4.Schema$Color,
+    index: number,
+  ): sheets_v4.Schema$Request => ({
+    addConditionalFormatRule: {
+      index,
+      rule: {
+        ranges: compCells,
+        booleanRule: {
+          condition: { type },
+          format: { backgroundColor: color },
+        },
+      },
     },
+  });
+  const border = {
+    style: "SOLID_MEDIUM",
+    color: { red: 0.85, green: 0.6, blue: 0.05 },
   };
 
   return [
     ...rewriteTabRequests(input.resultsTab, rows, 1),
     ...rewriteTabRequests(input.marksTab, buildMarksRows(input.results), 1),
-    // Completeness is typed on team rows only: validate and tint those.
-    ...teamRows.flatMap((row) => [
-      {
-        setDataValidation: {
-          range: compCell(row),
-          rule: {
-            condition: {
-              type: "NUMBER_BETWEEN",
-              values: [{ userEnteredValue: "0" }, { userEnteredValue: "10" }],
-            },
-            strict: true,
-            inputMessage: "Completeness, 0 to 10",
+    // Completeness is typed on team rows only: validate those, and show them
+    // red while blank, green once scored.
+    ...compCells.map((range) => ({
+      setDataValidation: {
+        range,
+        rule: {
+          condition: {
+            type: "NUMBER_BETWEEN",
+            values: [{ userEnteredValue: "0" }, { userEnteredValue: "10" }],
+          },
+          strict: true,
+          inputMessage: "Completeness, 0 to 10",
+        },
+      },
+    })),
+    ...(compCells.length > 0
+      ? [
+          statusRule("BLANK", { red: 0.96, green: 0.8, blue: 0.8 }, 0),
+          statusRule("NOT_BLANK", { red: 0.8, green: 0.92, blue: 0.78 }, 1),
+        ]
+      : []),
+    // Final stands out: amber column with a border, bigger bold team scores.
+    {
+      repeatCell: {
+        range: cell(FINAL_COL, 1, rows.length),
+        cell: {
+          userEnteredFormat: {
+            backgroundColor: { red: 1, green: 0.95, blue: 0.8 },
           },
         },
+        fields: "userEnteredFormat.backgroundColor",
       },
-      {
-        repeatCell: {
-          range: compCell(row),
-          cell: tint,
-          fields: "userEnteredFormat.backgroundColor",
+    },
+    {
+      repeatCell: {
+        range: cell(FINAL_COL, 0),
+        cell: {
+          userEnteredFormat: {
+            backgroundColor: { red: 0.98, green: 0.74, blue: 0.18 },
+            textFormat: { bold: true, fontSize: 12 },
+          },
         },
+        fields:
+          "userEnteredFormat.backgroundColor,userEnteredFormat.textFormat",
       },
-    ]),
+    },
+    ...teamRows.map((row) => ({
+      repeatCell: {
+        range: cell(FINAL_COL, row),
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 12 },
+            numberFormat: { type: "NUMBER", pattern: "0.00" },
+          },
+        },
+        fields: "userEnteredFormat.textFormat,userEnteredFormat.numberFormat",
+      },
+    })),
+    {
+      updateBorders: {
+        range: cell(FINAL_COL, 0, rows.length),
+        left: border,
+        right: border,
+        top: border,
+        bottom: border,
+      },
+    },
     ...groups.map((g) => ({ addDimensionGroup: { range: range(g) } })),
     ...groups.map((g) => ({
       updateDimensionGroup: {
@@ -487,6 +592,65 @@ export function buildResultsAndMarksRequests(input: {
         fields: "collapsed",
       },
     })),
+  ];
+}
+
+/**
+ * The summary tab: one formula in A1 that lists Results' team rows as rank,
+ * team, Final, best Final first. It re-sorts by itself as completeness is
+ * typed. Only A:C is touched; anything else on the tab is left alone.
+ */
+export function summaryFormula(): string {
+  const r = (c: number) => `${RESULTS_TAB}!${letter(c)}2:${letter(c)}`;
+  return (
+    `={"Rank", "Team", "Final"; ` +
+    `LET(t, SORT(FILTER({${r(NAME_COL)}, ${r(FINAL_COL)}}, ${r(RANK_COL)}<>""), 2, FALSE), ` +
+    `{SEQUENCE(ROWS(t)), t})}`
+  );
+}
+
+export function buildSummaryRequests(
+  tab: TabState,
+): sheets_v4.Schema$Request[] {
+  const sheetId = tab.sheetId;
+  return [
+    {
+      updateCells: {
+        range: { sheetId, startColumnIndex: 0, endColumnIndex: 3 },
+        fields: "userEnteredValue",
+      },
+    },
+    {
+      updateCells: {
+        start: { sheetId, rowIndex: 0, columnIndex: 0 },
+        rows: [{ values: [cellData({ formula: summaryFormula() })] }],
+        fields: "userEnteredValue",
+      },
+    },
+    {
+      repeatCell: {
+        range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
+        cell: { userEnteredFormat: { textFormat: { bold: true } } },
+        fields: "userEnteredFormat.textFormat.bold",
+      },
+    },
+    {
+      repeatCell: {
+        range: { sheetId, startColumnIndex: 2, endColumnIndex: 3 },
+        cell: {
+          userEnteredFormat: {
+            numberFormat: { type: "NUMBER", pattern: "0.00" },
+          },
+        },
+        fields: "userEnteredFormat.numberFormat",
+      },
+    },
+    {
+      updateSheetProperties: {
+        properties: { sheetId, gridProperties: { frozenRowCount: 1 } },
+        fields: "gridProperties.frozenRowCount",
+      },
+    },
   ];
 }
 
@@ -584,6 +748,7 @@ export async function finalizeResultsSheet(): Promise<{
       results,
       scores,
     }),
+    ...buildSummaryRequests(tabs.get(SUMMARY_TAB)!),
   ];
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,

@@ -2,6 +2,8 @@ import { describe, expect, test } from "vitest";
 
 import {
   COMPLETENESS_LABEL,
+  linkCell,
+  summaryFormula,
   TOP_N,
   type TabState,
   buildMarksRows,
@@ -194,12 +196,31 @@ describe("Completeness and Final columns", () => {
     expect(alpha[at("Technical Complexity")]).toBe(6.5);
   });
 
-  test("sit right after Average", () => {
-    expect(header.slice(4, 7)).toEqual([
+  test("sit right after Average and the links", () => {
+    expect(header.slice(4, 9)).toEqual([
       "Average",
+      "Devpost",
+      "GitHub",
       COMPLETENESS_LABEL,
       "Final",
     ]);
+  });
+
+  test("links show a short name, not the whole URL", () => {
+    const { rows } = buildResultsRows(results);
+    const alpha = rows.find((r) => r.cells[2] === "Alpha")!.cells;
+    expect(alpha[at("Devpost")]).toEqual({
+      text: "Devpost",
+      link: "https://devpost.com/a",
+    });
+    expect(alpha[at("GitHub")]).toBe("");
+    expect(linkCell("github.com/x/y", "GitHub")).toEqual({
+      text: "GitHub",
+      link: "https://github.com/x/y",
+    });
+    expect(linkCell("javascript:alert(1)", "GitHub")).toBe(
+      "javascript:alert(1)",
+    );
   });
 
   test("team rows get the typed score and a Final formula for their row", () => {
@@ -209,7 +230,7 @@ describe("Completeness and Final columns", () => {
     expect(alpha[at(COMPLETENESS_LABEL)]).toBe(8);
     const sheetRow = alphaIndex + 1;
     expect(alpha[at("Final")]).toEqual({
-      formula: `=IF(E${sheetRow}="", "", IF(ISNUMBER(F${sheetRow}), ROUND((E${sheetRow} * 5 + F${sheetRow}) / 6, 2), E${sheetRow}))`,
+      formula: `=IF(E${sheetRow}="", "", IF(ISNUMBER(H${sheetRow}), ROUND((E${sheetRow} * 5 + H${sheetRow}) / 6, 2), E${sheetRow}))`,
     });
     const bravo = rows.find((r) => r.cells[2] === "Bravo")!.cells;
     expect(bravo[at(COMPLETENESS_LABEL)]).toBe("");
@@ -223,7 +244,7 @@ describe("Completeness and Final columns", () => {
     }
   });
 
-  test("validation and tint go on team rows only", () => {
+  test("validation and red/green status go on team rows only", () => {
     const requests = buildResultsAndMarksRequests({
       resultsTab: tab(1),
       marksTab: tab(2),
@@ -236,7 +257,21 @@ describe("Completeness and Final columns", () => {
     expect(validated).toEqual(buildResultsRows(results).teamRows);
     expect(
       requests.filter((r) => r.setDataValidation)[0]!.setDataValidation!.range,
-    ).toMatchObject({ startColumnIndex: 5, endColumnIndex: 6 });
+    ).toMatchObject({ startColumnIndex: 7, endColumnIndex: 8 });
+    const rules = requests
+      .filter((r) => r.addConditionalFormatRule)
+      .map((r) => r.addConditionalFormatRule!.rule!);
+    expect(rules.map((r) => r.booleanRule!.condition!.type)).toEqual([
+      "BLANK",
+      "NOT_BLANK",
+    ]);
+    expect(rules[0]!.ranges!.map((g) => g.startRowIndex)).toEqual(validated);
+  });
+
+  test("the summary tab ranks Results' team rows by Final", () => {
+    expect(summaryFormula()).toBe(
+      '={"Rank", "Team", "Final"; LET(t, SORT(FILTER({Results!C2:C, Results!I2:I}, Results!A2:A<>""), 2, FALSE), {SEQUENCE(ROWS(t)), t})}',
+    );
   });
 });
 
