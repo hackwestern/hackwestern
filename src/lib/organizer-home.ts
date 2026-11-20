@@ -94,7 +94,10 @@ export type HomeSponsor = {
   }[];
   /** Has a prize track (judges on Sunday). */
   prizeTrack: boolean;
-  /** Digital prize track (PCBWay): no booth, chats or room. */
+  /**
+   * Not on site (Sponsor Day-Of "In person / Digital" = Digital, or a
+   * digital prize track like PCBWay): no arrival, booth, chats or room.
+   */
   digital: boolean;
 };
 
@@ -334,7 +337,10 @@ export function sponsorsOnDay(
   day: RunOfShowDay,
   sponsors: readonly HomeSponsor[],
 ): HomeSponsor[] {
-  return sponsors.filter((s) => !s.digital || day === "Sunday");
+  // Digital sponsors show only on Sunday, and only to judge.
+  return sponsors.filter(
+    (s) => !s.digital || (day === "Sunday" && s.prizeTrack),
+  );
 }
 
 /**

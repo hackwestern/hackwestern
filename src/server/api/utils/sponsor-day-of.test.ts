@@ -10,6 +10,7 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
 
 import {
   fetchAllSponsorInfo,
+  isDigitalFormat,
   normalizeTier,
   parseSponsorDayOfColumns,
   parseSponsorDayOfRows,
@@ -145,6 +146,7 @@ describe("Sponsor Day-Of reads", () => {
       atCcWorkshop: null,
       // No "Chatting hours" column in this header: no limit.
       chattingMinutes: null,
+      digital: false,
     });
     // Blank cells read as before: Not arrived, TBD, an em dash, empty.
     expect(info.get("globex")).toMatchObject({
@@ -159,7 +161,21 @@ describe("Sponsor Day-Of reads", () => {
       hwContact: "—",
       roomNumber: "Remote",
       hasPrizeTrack: true,
+      digital: true,
     });
+    expect(info.get("globex")?.digital).toBe(false);
+  });
+
+  test("In person / Digital: only Digital counts, blank is in person", () => {
+    expect(isDigitalFormat("Digital")).toBe(true);
+    expect(isDigitalFormat(" digital ")).toBe(true);
+    expect(isDigitalFormat("In person")).toBe(false);
+    expect(isDigitalFormat("")).toBe(false);
+    const noColumn = parseSponsorDayOfRows("Sponsor Day-Of", [
+      ["Sponsor Name", "Status"],
+      ["Acme", "Not arrived"],
+    ])!;
+    expect(sponsorInfoFromDayOf(noColumn)?.get("acme")?.digital).toBe(false);
   });
 
   test("an optional Tier column feeds the portal's welcome line", () => {

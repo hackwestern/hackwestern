@@ -166,6 +166,7 @@ function headerKey(raw: unknown): string {
  */
 const DAY_OF_HEADERS = {
   name: ["sponsor name"],
+  /** "In person" or "Digital" (not on site: no arrival, no portal link). */
   format: ["in person / digital"],
   hwLead: ["hw lead", "hw contact"],
   status: ["status"],
@@ -591,6 +592,17 @@ export interface SponsorInfoRecord {
    * chat workshop). Null when the tab has no such column.
    */
   atCcWorkshop: boolean | null;
+  /**
+   * Sponsor Day-Of's "In person / Digital" says Digital: not on site, so
+   * never expected to arrive and given no portal link (Jazz, 2026-11-20).
+   * False when blank, anything else, or the column is missing.
+   */
+  digital: boolean;
+}
+
+/** "Digital" (any case) -> true; "In person", blank or anything else -> false. */
+export function isDigitalFormat(raw: string): boolean {
+  return raw.trim().toLowerCase() === "digital";
 }
 
 const warned = new Set<string>();
@@ -669,6 +681,7 @@ export function sponsorInfoFromDayOf(
         c.prizeTrack === -1 ? null : isTicked(at(row, c.prizeTrack)),
       atCcWorkshop:
         c.ccWorkshop === -1 ? null : isTicked(at(row, c.ccWorkshop)),
+      digital: isDigitalFormat(at(row, c.format)),
     });
   }
   return map;
@@ -864,6 +877,7 @@ export async function fetchAllSponsorInfo(
           track: normalizeSponsorTrack(cell(row, cols.trackCol)),
           hasPrizeTrack: null,
           atCcWorkshop: null,
+          digital: false,
         });
       }
     }

@@ -45,6 +45,43 @@ export function hasArrived(status: SponsorStatus): boolean {
   return status !== "Not arrived";
 }
 
+/**
+ * Friday's "Arrived" and "Portal link given" counts. Digital sponsors
+ * (Sponsor Day-Of "In person / Digital" = Digital) aren't on site and get no
+ * portal link, so they're left out of both numbers (Jazz, 2026-11-20).
+ * `registered` are the sponsors with a portal link (their summaries); one
+ * whose id matches a digital sponsor is left out of the link count.
+ */
+export function fridayCounts(
+  sponsors: readonly {
+    status: SponsorStatus;
+    digital: boolean;
+    sponsorId: string | null;
+  }[],
+  registered: readonly { sponsorId: string; linkGivenAt: string | null }[],
+): {
+  arrived: number;
+  expected: number;
+  linkGiven: number;
+  linkExpected: number;
+} {
+  const onSite = sponsors.filter((s) => !s.digital);
+  const digitalIds = new Set(
+    sponsors
+      .filter((s) => s.digital && s.sponsorId)
+      .map((s) => s.sponsorId!.toLowerCase()),
+  );
+  const linked = registered.filter(
+    (r) => !digitalIds.has(r.sponsorId.toLowerCase()),
+  );
+  return {
+    arrived: onSite.filter((s) => hasArrived(s.status)).length,
+    expected: onSite.length,
+    linkGiven: linked.filter((r) => r.linkGivenAt).length,
+    linkExpected: linked.length,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Saturday
 // ---------------------------------------------------------------------------
