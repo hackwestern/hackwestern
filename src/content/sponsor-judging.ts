@@ -323,6 +323,9 @@ export const sponsorJudgingCopy = {
     digitalAmbiguous: (place: number, link: string) =>
       `${ordinal(place)} place: "${link}" matches more than one team in this sponsor's track. Paste the team ID instead.`,
     noJudge: "Enter the name of who's judging.",
+    shortlistAlreadySent: "Your shortlist has already been submitted.",
+    topAlreadySubmitted: (top: number) =>
+      `Your top ${top} has already been submitted.`,
     ranking: {
       wrongCount: (top: number) => `Submit exactly ${top} teams.`,
       duplicate: () => "Each team can appear only once.",

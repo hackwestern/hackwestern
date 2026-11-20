@@ -608,7 +608,7 @@ export const sponsorScoringRouter = createTRPCRouter({
       if (alreadySent) {
         throw new TRPCError({
           code: "CONFLICT",
-          message: "Your shortlist has already been submitted.",
+          message: errors.shortlistAlreadySent,
         });
       }
       const track = await fetchSponsorTrack(sponsor.name);
@@ -686,7 +686,7 @@ export const sponsorScoringRouter = createTRPCRouter({
       if (alreadySubmitted) {
         throw new TRPCError({
           code: "CONFLICT",
-          message: "Your Top 5 has already been submitted.",
+          message: errors.topAlreadySubmitted(SPONSOR_FINAL_TOP),
         });
       }
       const track = await fetchSponsorTrack(sponsor.name);
@@ -694,7 +694,7 @@ export const sponsorScoringRouter = createTRPCRouter({
       if (!round.round2Open) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Round 2 is not open",
+          message: errors.round2Closed,
         });
       }
       // Same rule as submit: teams that presented, or for a remote sponsor
@@ -705,7 +705,7 @@ export const sponsorScoringRouter = createTRPCRouter({
       if (rankable.length === 0) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "This sponsor has no presentation slots",
+          message: errors.noSlot(SPONSOR_FINAL_TOP),
         });
       }
 
@@ -714,13 +714,13 @@ export const sponsorScoringRouter = createTRPCRouter({
       if (new Set(chosen).size !== chosen.length) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Each place must contain a different team",
+          message: errors.ranking.duplicate(),
         });
       }
       if (chosen.some((id) => !allowed.has(id))) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Only teams that presented to this sponsor can be picked",
+          message: errors.ranking.notPresented(),
         });
       }
 
@@ -769,7 +769,7 @@ export const sponsorScoringRouter = createTRPCRouter({
       if (alreadySubmitted) {
         throw new TRPCError({
           code: "CONFLICT",
-          message: "Your Top 5 has already been submitted.",
+          message: errors.topAlreadySubmitted(SPONSOR_FINAL_TOP),
         });
       }
       const track = await fetchSponsorTrack(sponsor.name);
