@@ -408,7 +408,9 @@ export async function coffeeChatSponsorNames(): Promise<Set<string> | null> {
     );
     if (!rows.some((r) => r.doesCoffeeChats !== null)) return null;
     return new Set(
-      rows.filter((r) => r.doesCoffeeChats === true).map((r) => r.name.toLowerCase()),
+      rows
+        .filter((r) => r.doesCoffeeChats === true)
+        .map((r) => r.name.toLowerCase()),
     );
   } catch (error) {
     console.warn(

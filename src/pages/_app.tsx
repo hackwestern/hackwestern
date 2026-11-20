@@ -17,7 +17,9 @@ import dynamic from "next/dynamic";
 const AGENTATION_DEV = process.env.NODE_ENV === "development";
 const Agentation =
   AGENTATION_DEV || process.env.NEXT_PUBLIC_AGENTATION === "1"
-    ? dynamic(() => import("agentation").then((m) => m.Agentation), { ssr: false })
+    ? dynamic(() => import("agentation").then((m) => m.Agentation), {
+        ssr: false,
+      })
     : null;
 
 // Agentation is desktop only (its README: mobile not supported), and on a

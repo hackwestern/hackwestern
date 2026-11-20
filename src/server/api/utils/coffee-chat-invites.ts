@@ -440,7 +440,9 @@ export async function loadCandidates(
   add(shortlist, "shortlist");
   add(interested, "interested");
   add(
-    ids.flatMap((sponsorId) => pool.map((r) => ({ sponsorId, userId: r.userId }))),
+    ids.flatMap((sponsorId) =>
+      pool.map((r) => ({ sponsorId, userId: r.userId })),
+    ),
     "anyone",
   );
   return out;
