@@ -219,7 +219,7 @@ const ResultCard = ({
       className={cn(
         "flex flex-col gap-1 px-6 py-5",
         submitted
-          ? "bg-green-50 text-dashboard-status-live"
+          ? "bg-dashboard-status-live/10 text-dashboard-status-live"
           : "bg-red-50 text-red-800",
         checking && "opacity-60",
       )}
