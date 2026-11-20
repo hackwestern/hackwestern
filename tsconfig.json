@@ -40,5 +40,5 @@
     "**/*.js",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "workers", "**/_to_delete/**"]
+  "exclude": ["node_modules", "workers", "**/_to_delete/**", "mocks"]
 }
