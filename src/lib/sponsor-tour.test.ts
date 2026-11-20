@@ -11,6 +11,9 @@ import {
   pageHref,
   pageOf,
   parseProgress,
+  PHONE_GAP,
+  phoneDock,
+  phoneScrollPlan,
   placeCallout,
   resolveStep,
   saveProgress,
@@ -609,5 +612,81 @@ describe("tours by prize track", () => {
   it("keeps everything for prize track sponsors and while loading", () => {
     expect(toursFor(true)).toBe(SPONSOR_TOURS);
     expect(toursFor(undefined)).toBe(SPONSOR_TOURS);
+  });
+});
+
+describe("phone callout placement", () => {
+  const vh = 844;
+  const callout = 220;
+  const at = (top: number, height: number) => ({
+    top,
+    left: 16,
+    width: 358,
+    height,
+  });
+
+  it("docks to the bottom when the target is in the upper half", () => {
+    expect(phoneDock(at(120, 200), callout, vh)).toBe("bottom");
+  });
+
+  it("docks to the top when the target is low and clears a top callout", () => {
+    expect(phoneDock(at(560, 200), callout, vh)).toBe("top");
+  });
+
+  it("keeps the bottom for a target too tall to clear either callout", () => {
+    // Its start (the heading) stays in view above the callout.
+    expect(phoneDock(at(76, 900), callout, vh)).toBe("bottom");
+  });
+
+  it("stays at the bottom when nothing overlaps it", () => {
+    expect(phoneDock(at(300, 80), callout, vh)).toBe("bottom");
+  });
+
+  it("picks the edge that covers less when the page can't scroll further", () => {
+    // 360x640, a 284px card stuck at the end of the page.
+    expect(phoneDock(at(300, 284), 230, 640)).toBe("top");
+    expect(phoneDock(at(90, 284), 230, 640)).toBe("bottom");
+  });
+
+  it("always docks to the top for a tab bar target", () => {
+    expect(phoneDock(at(780, 56), callout, vh, true)).toBe("top");
+  });
+
+  it("scrolls a target into the room the callout leaves, below the top bar", () => {
+    const plan = phoneScrollPlan(200, callout, vh, {
+      topBar: 64,
+      bottomBar: 64,
+    });
+    expect(plan).toEqual({
+      marginTop: 64 + PHONE_GAP,
+      marginBottom: callout + PHONE_GAP * 2,
+      block: "center",
+    });
+  });
+
+  it("shows the start of a target too tall for that room", () => {
+    const plan = phoneScrollPlan(900, callout, vh, {
+      topBar: 64,
+      bottomBar: 64,
+    });
+    expect(plan.block).toBe("start");
+  });
+
+  it("with a top callout, keeps the target clear of it and the tab bar", () => {
+    const plan = phoneScrollPlan(
+      120,
+      callout,
+      vh,
+      { topBar: 64, bottomBar: 64 },
+      "top",
+    );
+    expect(plan.marginTop).toBe(callout + PHONE_GAP * 2);
+    expect(plan.marginBottom).toBe(64 + PHONE_GAP);
+  });
+
+  it("small phones (360x640) still fit a short target", () => {
+    expect(
+      phoneScrollPlan(120, 200, 640, { topBar: 64, bottomBar: 64 }).block,
+    ).toBe("center");
   });
 });
