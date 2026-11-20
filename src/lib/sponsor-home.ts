@@ -106,6 +106,10 @@ export function stateOf(step: AgendaStep, abs: number, ctx: HomeContext): StepSt
   if (step.doneWhen === "availability" && ctx.availabilitySent) return "done";
   if (step.doneWhen === "shortlist" && ctx.shortlistSent) return "done";
   const s = step.day * 1440 + step.start;
+  // Availability is required: unsent, it stays current after its slot
+  // instead of reading as done. (The shortlist is optional: past its
+  // deadline, skipping it is fine.)
+  if (step.doneWhen === "availability") return abs >= s ? "on" : "later";
   const e = step.day * 1440 + step.end;
   if (step.start === step.end) return abs >= s ? "done" : "later";
   return abs >= e ? "done" : abs >= s ? "on" : "later";

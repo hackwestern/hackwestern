@@ -297,7 +297,7 @@ function Row({
               : step.note
                 ? "border-dashed border-dashboard-border-control bg-dashboard-bg-inset text-dashboard-text-light"
                 : highlight
-                  ? "border-dashboard-action-primary shadow-[0_0_0_4px_rgba(11,107,196,0.18)]"
+                  ? "border-dashboard-action-primary shadow-[0_0_0_4px_theme(colors.dashboard.action.halo)]"
                   : "border-dashboard-border-control",
           )}
         >

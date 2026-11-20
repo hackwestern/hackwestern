@@ -10,6 +10,7 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
 
 import {
   fetchAllSponsorInfo,
+  normalizeTier,
   parseSponsorDayOfColumns,
   parseSponsorDayOfRows,
   sheetSponsorsFromDayOf,
@@ -168,6 +169,9 @@ describe("Sponsor Day-Of reads", () => {
     const info = sponsorInfoFromDayOf(withTier)!;
     expect(info.get("acme")?.tier).toBe("Gold");
     expect(info.get("globex")?.tier).toBe("");
+    expect(normalizeTier("N/A")).toBe("");
+    expect(normalizeTier(" Sponsor ")).toBe("");
+    expect(normalizeTier("Title Sponsors")).toBe("Title");
   });
 
   test("no Status column means the sheet isn't merged yet", () => {

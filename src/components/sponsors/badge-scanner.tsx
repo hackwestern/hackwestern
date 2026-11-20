@@ -368,16 +368,25 @@ function HackerStep({
   // Scanned before: start from the rep already credited, not "Anyone".
   const creditedRep = scanQ.data?.repName ?? null;
   const repList = setupQ.data?.reps;
+  // Once only: a later refetch must not put back the rep they just changed.
+  const preselected = useRef(false);
   useEffect(() => {
-    if (!creditedRep || !repList) return;
+    if (preselected.current || !creditedRep || !repList) return;
+    preselected.current = true;
     const match = repList.find((r) => r.name === creditedRep);
     if (match) setRepId(match.id);
   }, [creditedRep, repList]);
+  // The first save adds them (announce it, focus the new heading); later
+  // saves only change "Who talked to them?" and leave focus on the pick.
+  const firstSave = useRef(true);
   const record = api.coffeeChatSetup.recordScan.useMutation({
     onSuccess: () => {
-      if (hackerQ.data) announce(metCopy.added(hackerQ.data.firstName));
       void utils.coffeeChatSetup.get.invalidate({ sponsor });
       void utils.coffeeChatSetup.scanOf.invalidate({ sponsor });
+      if (!firstSave.current) return;
+      firstSave.current = false;
+      preselected.current = true;
+      if (hackerQ.data) announce(metCopy.added(hackerQ.data.firstName));
       onFocusHeading();
     },
     onError: () => announce(metCopy.error),

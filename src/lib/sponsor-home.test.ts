@@ -53,6 +53,12 @@ describe("sponsor Home Up next", () => {
     expect(steps[0]?.note).toBe(true);
   });
 
+  test("unsent availability stays current after its slot, never done", () => {
+    const { abs } = eventClock(fri6pm);
+    const plan = planDay(0, abs, ctx());
+    expect(plan.rows.find((r) => r.step.id === "f1")?.state).toBe("on");
+  });
+
   test("no prize track: no judging steps on Sunday", () => {
     expect(stepsFor(2, ctx({ hasPrizeTrack: false })).some((s) => s.prizeOnly)).toBe(false);
   });

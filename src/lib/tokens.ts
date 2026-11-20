@@ -266,6 +266,7 @@ export const dashboardColors = {
   },
   action: {
     primary: "#0b6bc4", // primary buttons, selected filters, tags, progress
+    halo: "rgba(11,107,196,0.18)", // glow around the current step dot
   },
   border: {
     default: "#cdddeb", // navigation, secondary buttons

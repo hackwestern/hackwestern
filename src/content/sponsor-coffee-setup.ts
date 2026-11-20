@@ -58,6 +58,7 @@ export const sponsorSetupCopy = {
     scan: "Scan a hacker",
     steps: {
       label: "Coffee chat setup, 2 steps",
+      arrow: "→",
       one: "Send availability",
       two: "Hackers you'd like to meet",
       required: "Required",
