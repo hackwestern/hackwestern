@@ -52,12 +52,17 @@ export default function SponsorJudgingPage() {
   const presented = useMemo(
     () =>
       data && round === "rank"
-        ? new Map(
-            data.round.slots.map((s) => [
-              s.teamId,
-              formatPresentationTime(s.start),
-            ]),
-          )
+        ? data.round.remote
+          ? // Judged online: their sent shortlist, no times.
+            new Map(
+              (data.round.shortlistSent?.teamIds ?? []).map((id) => [id, ""]),
+            )
+          : new Map(
+              data.round.slots.map((s) => [
+                s.teamId,
+                formatPresentationTime(s.start),
+              ]),
+            )
         : null,
     [data, round],
   );
