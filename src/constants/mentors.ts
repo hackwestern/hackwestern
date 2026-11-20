@@ -67,6 +67,7 @@ export const MentorsList: Mentor[] = [
     name: "Mohamed Toman",
     skills: ["Full-stack", "React", "Python", "Cloud", "Databases"],
     tags: ["Software Engineering"],
+    image: "/landing/mentors/mohamedt.webp",
     linkedin: "https://www.linkedin.com/in/hadytoman/",
     slack:
       "https://slack.com/app_redirect?channel=U0CJQT97ATT&team=T0CD393939Q",
