@@ -35,6 +35,9 @@ const READONLY_SCOPE = "https://www.googleapis.com/auth/spreadsheets.readonly";
  */
 export function sheetWritesEnabled(): boolean {
   if (process.env.VITEST) return false;
+  // "0" turns writes off even in a production build (a test copy run on a
+  // laptop for the team to try, so it never writes over the real sheet).
+  if (env.SHEET_WRITES === "0") return false;
   return env.NODE_ENV === "production" || env.SHEET_WRITES === "1";
 }
 
