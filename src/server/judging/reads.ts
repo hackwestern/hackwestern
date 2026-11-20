@@ -5,6 +5,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, asc, count, desc, eq, inArray, ne } from "drizzle-orm";
 
+import { ratingsFromColumns } from "~/lib/judging-criteria";
 import { db } from "~/server/db";
 import {
   judges,
@@ -219,7 +220,13 @@ export async function getMyStops(judgeId: string) {
             id: teamMarks.id,
             teamId: teamMarks.teamId,
             score: teamMarks.score,
-            scoreBreakdown: teamMarks.scoreBreakdown,
+            impactRating: teamMarks.impactRating,
+            creativityRating: teamMarks.creativityRating,
+            technicalRating: teamMarks.technicalRating,
+            designRating: teamMarks.designRating,
+            adventurousRating: teamMarks.adventurousRating,
+            notes: teamMarks.notes,
+            superLike: teamMarks.superLike,
           })
           .from(teamMarks)
           .where(
@@ -228,7 +235,19 @@ export async function getMyStops(judgeId: string) {
               inArray(teamMarks.teamId, teamIds),
             ),
           );
-  const markByTeam = new Map(marks.map((m) => [m.teamId, m]));
+  const markByTeam = new Map(
+    marks.map((m) => [
+      m.teamId,
+      {
+        id: m.id,
+        teamId: m.teamId,
+        score: m.score,
+        ratings: ratingsFromColumns(m),
+        notes: m.notes,
+        superLike: m.superLike,
+      },
+    ]),
+  );
 
   const list = stops.map(({ table: { team: seated, ...table }, ...stop }) => {
     const team = orNull(seated);
@@ -257,13 +276,36 @@ export async function getMyStops(judgeId: string) {
   };
 }
 
-/** A judge's own submitted marks, most recent first. */
+/**
+ * A judge's own submitted marks, most recent first. The rating columns come
+ * back folded into `ratings` ({ [criterionId]: 0-10 }), empty for a mark with
+ * only an overall score.
+ */
 export async function getSubmittedMarks(judgeId: string) {
-  return db.query.teamMarks.findMany({
+  const marks = await db.query.teamMarks.findMany({
     where: eq(teamMarks.judgeId, judgeId),
     with: { team: { columns: JUDGE_TEAM_COLUMNS } },
     orderBy: [desc(teamMarks.createdAt)],
   });
+  return marks.map(
+    ({
+      impactRating,
+      creativityRating,
+      technicalRating,
+      designRating,
+      adventurousRating,
+      ...mark
+    }) => ({
+      ...mark,
+      ratings: ratingsFromColumns({
+        impactRating,
+        creativityRating,
+        technicalRating,
+        designRating,
+        adventurousRating,
+      }),
+    }),
+  );
 }
 
 /**

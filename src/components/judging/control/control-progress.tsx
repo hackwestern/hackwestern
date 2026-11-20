@@ -57,12 +57,13 @@ export function ControlProgress({
     return (
       <section
         aria-label="Progress"
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
       >
         {[
+          "Judging round",
           "Teams fully judged",
           "Marks submitted",
-          "Organizer judges",
+          "Judges",
           "Longest hold",
         ].map((label) => (
           <Tile key={label} label={label} value="…" />
@@ -84,9 +85,8 @@ export function ControlProgress({
   const holders = new Set(
     queue.teams.flatMap((t) => (t.currentJudgeId ? [t.currentJudgeId] : [])),
   );
-  const organizers = judges.filter((j) => j.type === "organizer");
+  const organizers = judges;
   const busy = organizers.filter((j) => holders.has(j.id)).length;
-  const sponsors = judges.length - organizers.length;
 
   let longest: { ms: number; judge: string; team: string } | null = null;
   for (const t of queue.teams) {
@@ -101,12 +101,34 @@ export function ControlProgress({
     }
   }
   const tooLong = !!longest && longest.ms > LONG_HOLD_MS;
+  const { round } = queue;
+  const notStarted = !queue.started && queue.regularMarks === 0;
 
   return (
     <section
       aria-label="Progress"
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
     >
+      <Tile
+        label="Judging round"
+        value={
+          notStarted
+            ? "Not started"
+            : round.complete
+              ? "All done"
+              : `Round ${round.current} of ${round.total}`
+        }
+      >
+        {!notStarted && !round.complete && (
+          <>
+            <Bar done={round.teamsDone} total={round.teamsSeated} />
+            <span className={`text-[13px] ${MUTED}`}>
+              {round.teamsDone} of {round.teamsSeated} teams done with this
+              round
+            </span>
+          </>
+        )}
+      </Tile>
       <Tile
         label="Teams fully judged"
         value={`${fullyJudged} / ${queue.submittedTeams}`}
@@ -120,15 +142,9 @@ export function ControlProgress({
         <Bar done={queue.regularMarks} total={marksTotal} />
       </Tile>
       <Tile
-        label="Organizer judges"
+        label="Judges"
         value={`${busy} judging · ${organizers.length - busy} free`}
-      >
-        <span className={`text-[13px] ${MUTED}`}>
-          {sponsors === 0
-            ? "No sponsor judges"
-            : `Plus ${sponsors} sponsor judge${sponsors === 1 ? "" : "s"}`}
-        </span>
-      </Tile>
+      />
       <Tile
         label="Longest hold"
         value={longest ? formatHold(longest.ms) : "—"}

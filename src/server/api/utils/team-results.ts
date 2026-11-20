@@ -2,7 +2,6 @@
 //
 // Pure maths for the organizer results page: every team with the averages of
 // all the marks it got. No database access, so it can be tested on its own.
-import { ratingsOf } from "~/server/api/utils/judge-comparison";
 
 export interface TeamInfo {
   id: string;
@@ -11,6 +10,12 @@ export interface TeamInfo {
   table: number | null;
   github: string | null;
   devpost: string | null;
+  /** From the judging_team_scores view; absent until the team has marks. */
+  superLikes?: number;
+  /** Normalized score (0-10), null until the normalization has run. */
+  normalized?: number | null;
+  /** Adventure score (0-10), null until normalized. */
+  adventure?: number | null;
 }
 
 /** One judge's mark on one team, as read from team_mark. */
@@ -22,8 +27,8 @@ export interface MarkRow {
   judgeType: "organizer" | "sponsored";
   roundType: "regular" | "sponsored";
   score: number;
-  /** team_mark.score_breakdown, { ratings: { [criterionId]: 0-10 }, notes? }. */
-  breakdown: unknown;
+  /** The mark's rating columns as { [criterionId]: 0-10 }; empty for a slider-only mark. */
+  ratings: Record<string, number>;
   notes: string;
 }
 
@@ -97,7 +102,7 @@ export function buildTeamResults(
     judgeName: r.judgeName,
     judgeType: r.judgeType,
     score: r.score,
-    ratings: ratingsOf(r.breakdown),
+    ratings: r.ratings,
     notes: r.notes,
   });
 

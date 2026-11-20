@@ -4,6 +4,7 @@ import {
   type ComparisonData,
   buildComparison,
 } from "~/server/api/utils/judge-comparison";
+import { ratingsFromColumns } from "~/lib/judging-criteria";
 import { db } from "~/server/db";
 import { getMyStops } from "~/server/judging/reads";
 import { teamMarks, teams } from "~/server/db/schema";
@@ -161,7 +162,12 @@ async function loadComparison(
       teamId: teamMarks.teamId,
       judgeId: teamMarks.judgeId,
       score: teamMarks.score,
-      breakdown: teamMarks.scoreBreakdown,
+      impactRating: teamMarks.impactRating,
+      creativityRating: teamMarks.creativityRating,
+      technicalRating: teamMarks.technicalRating,
+      designRating: teamMarks.designRating,
+      adventurousRating: teamMarks.adventurousRating,
+      superLike: teamMarks.superLike,
     })
     .from(teamMarks)
     .where(eq(teamMarks.roundType, roundType))
@@ -179,5 +185,15 @@ async function loadComparison(
       : [];
   const teamNames = Object.fromEntries(named.map((t) => [t.id, t.name]));
 
-  return buildComparison(rows, viewerId, teamNames);
+  return buildComparison(
+    rows.map((r) => ({
+      teamId: r.teamId,
+      judgeId: r.judgeId,
+      score: r.score,
+      ratings: ratingsFromColumns(r),
+      superLike: r.superLike,
+    })),
+    viewerId,
+    teamNames,
+  );
 }

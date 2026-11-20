@@ -4,7 +4,12 @@ import { eq } from "drizzle-orm";
 import { db } from "~/server/db";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
-import { applications, dayOfRegistrations, users } from "~/server/db/schema";
+import {
+  applications,
+  dayOfRegistrations,
+  teams,
+  users,
+} from "~/server/db/schema";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
 import { TRPCError } from "@trpc/server";
 import { getOrCreateHackerId } from "~/server/api/utils/hacker-id";
@@ -329,6 +334,103 @@ describe("checkIn.checkIsHackerApproved", () => {
       expect(err).toBeInstanceOf(TRPCError);
       expect((err as TRPCError).code).toBe("FORBIDDEN");
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getProjectStatus
+// ---------------------------------------------------------------------------
+
+describe("checkIn.getProjectStatus", () => {
+  let hackerSession: Awaited<ReturnType<typeof mockSession>>;
+  const teamId = "projcheck001";
+
+  beforeEach(async () => {
+    hackerSession = await mockSession(db);
+    await insertTestApplication(hackerSession.user.id, {
+      firstName: "Ada",
+      lastName: "Lovelace",
+      status: "CONFIRMED",
+    });
+  });
+
+  afterEach(async () => {
+    await db
+      .update(users)
+      .set({ teamId: null })
+      .where(eq(users.id, hackerSession.user.id));
+    await db.delete(teams).where(eq(teams.id, teamId));
+    await db
+      .delete(applications)
+      .where(eq(applications.userId, hackerSession.user.id));
+    await db.delete(users).where(eq(users.id, hackerSession.user.id));
+  });
+
+  const joinTeam = async (
+    submissionStatus: (typeof teams.$inferInsert)["submissionStatus"],
+  ) => {
+    await db.insert(teams).values({
+      id: teamId,
+      name: "Analytical Engine",
+      joinCode: "PRJCHK",
+      devpostUrl: "https://devpost.com/software/analytical-engine",
+      submissionStatus,
+    });
+    await db
+      .update(users)
+      .set({ teamId })
+      .where(eq(users.id, hackerSession.user.id));
+  };
+
+  test("is submitted when the team submitted, looked up by hacker ID", async () => {
+    await joinTeam("submitted");
+    const hackerId = await getOrCreateHackerId(hackerSession.user.id);
+    const result = await organizerCaller.checkIn.getProjectStatus({
+      userId: hackerId,
+    });
+    expect(result.name).toBe("Ada Lovelace");
+    expect(result.submitted).toBe(true);
+    expect(result.team?.name).toBe("Analytical Engine");
+  });
+
+  test("counts a late submission", async () => {
+    await joinTeam("late");
+    const result = await organizerCaller.checkIn.getProjectStatus({
+      userId: hackerSession.user.id,
+    });
+    expect(result.submitted).toBe(true);
+  });
+
+  test("is not submitted when the team is still a draft", async () => {
+    await joinTeam("draft");
+    const result = await organizerCaller.checkIn.getProjectStatus({
+      userId: hackerSession.user.id,
+    });
+    expect(result.submitted).toBe(false);
+    expect(result.team?.submissionStatus).toBe("draft");
+  });
+
+  test("is not submitted when the hacker has no team", async () => {
+    const result = await organizerCaller.checkIn.getProjectStatus({
+      userId: hackerSession.user.id,
+    });
+    expect(result.submitted).toBe(false);
+    expect(result.team).toBeNull();
+  });
+
+  test("throws NOT_FOUND for an unknown code", async () => {
+    await expect(
+      organizerCaller.checkIn.getProjectStatus({ userId: "no-such-user" }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  test("throws FORBIDDEN for non-organizer", async () => {
+    const userCaller = createCaller(
+      createInnerTRPCContext({ session: hackerSession }),
+    );
+    await expect(
+      userCaller.checkIn.getProjectStatus({ userId: hackerSession.user.id }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });
 

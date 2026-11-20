@@ -175,16 +175,6 @@
     {
       "auth": "organizer",
       "dynamic": false,
-      "file": "src/pages/internal/rubric.tsx",
-      "hasGetServerSideProps": true,
-      "route": "/internal/rubric",
-      "serverGuards": [
-        "authRedirectOrganizer"
-      ]
-    },
-    {
-      "auth": "organizer",
-      "dynamic": false,
       "file": "src/pages/internal/sponsors.tsx",
       "hasGetServerSideProps": true,
       "route": "/internal/sponsors",
@@ -193,14 +183,12 @@
       ]
     },
     {
-      "auth": "organizer",
+      "auth": "none-detected",
       "dynamic": false,
       "file": "src/pages/internal/team-results.tsx",
       "hasGetServerSideProps": true,
       "route": "/internal/team-results",
-      "serverGuards": [
-        "authRedirectOrganizer"
-      ]
+      "serverGuards": []
     },
     {
       "auth": "none-detected",
@@ -301,6 +289,16 @@
       "hasGetServerSideProps": true,
       "route": "/scan/[activity]",
       "serverGuards": []
+    },
+    {
+      "auth": "organizer",
+      "dynamic": false,
+      "file": "src/pages/scan/project.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/scan/project",
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
     },
     {
       "auth": "none-detected",
@@ -6374,6 +6372,107 @@
           "source": "input validation (data.zodError populated)"
         },
         {
+          "code": "NOT_FOUND",
+          "httpStatus": 404,
+          "message": "No hacker found for this code.",
+          "source": "handler"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/checkIn.getProjectStatus?input=<superjson>",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "submitted": {
+            "type": "boolean"
+          },
+          "team": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "properties": {
+                  "devpostUrl": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "submissionStatus": {
+                    "enum": [
+                      "draft",
+                      "submitted",
+                      "late"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "devpostUrl",
+                  "submissionStatus"
+                ],
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "submitted",
+          "team"
+        ],
+        "type": "object"
+      },
+      "path": "checkIn.getProjectStatus",
+      "source": "src/server/api/routers/check-in.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
           "code": "INTERNAL_SERVER_ERROR",
           "httpStatus": 500,
           "source": "unhandled"
@@ -7699,6 +7798,99 @@
           "source": "auth middleware"
         },
         {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/judging.admin.getDevpostPreview?input=<superjson>",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "teamId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "teamId"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "anyOf": [
+          {
+            "type": "null"
+          },
+          {
+            "properties": {
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "image": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "title": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "url",
+              "title",
+              "description",
+              "image"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "path": "judging.admin.getDevpostPreview",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
           "code": "INTERNAL_SERVER_ERROR",
           "httpStatus": 500,
           "source": "unhandled"
@@ -8069,6 +8261,273 @@
         "type": "object"
       },
       "path": "judging.admin.getProgress",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/judging.admin.getTeamResults?input=<superjson>",
+      "input": null,
+      "output": {
+        "items": {
+          "properties": {
+            "regular": {
+              "properties": {
+                "average": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "count": {
+                  "type": "number"
+                },
+                "criteria": {
+                  "additionalProperties": {
+                    "type": "number"
+                  },
+                  "properties": {},
+                  "type": "object"
+                },
+                "marks": {
+                  "items": {
+                    "properties": {
+                      "judgeId": {
+                        "type": "string"
+                      },
+                      "judgeName": {
+                        "type": "string"
+                      },
+                      "judgeType": {
+                        "enum": [
+                          "organizer",
+                          "sponsored"
+                        ]
+                      },
+                      "notes": {
+                        "type": "string"
+                      },
+                      "ratings": {
+                        "additionalProperties": {
+                          "type": "number"
+                        },
+                        "properties": {},
+                        "type": "object"
+                      },
+                      "score": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "judgeId",
+                      "judgeName",
+                      "judgeType",
+                      "score",
+                      "ratings",
+                      "notes"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "count",
+                "average",
+                "criteria",
+                "marks"
+              ],
+              "type": "object"
+            },
+            "sponsored": {
+              "properties": {
+                "average": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "count": {
+                  "type": "number"
+                },
+                "criteria": {
+                  "additionalProperties": {
+                    "type": "number"
+                  },
+                  "properties": {},
+                  "type": "object"
+                },
+                "marks": {
+                  "items": {
+                    "properties": {
+                      "judgeId": {
+                        "type": "string"
+                      },
+                      "judgeName": {
+                        "type": "string"
+                      },
+                      "judgeType": {
+                        "enum": [
+                          "organizer",
+                          "sponsored"
+                        ]
+                      },
+                      "notes": {
+                        "type": "string"
+                      },
+                      "ratings": {
+                        "additionalProperties": {
+                          "type": "number"
+                        },
+                        "properties": {},
+                        "type": "object"
+                      },
+                      "score": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "judgeId",
+                      "judgeName",
+                      "judgeType",
+                      "score",
+                      "ratings",
+                      "notes"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "count",
+                "average",
+                "criteria",
+                "marks"
+              ],
+              "type": "object"
+            },
+            "team": {
+              "properties": {
+                "adventure": {
+                  "anyOf": [
+                    {
+                      "type": "undefined"
+                    },
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "devpost": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "github": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "normalized": {
+                  "anyOf": [
+                    {
+                      "type": "undefined"
+                    },
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "superLikes": {
+                  "anyOf": [
+                    {
+                      "type": "undefined"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "table": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "table",
+                "github",
+                "devpost"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "team",
+            "regular",
+            "sponsored"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "path": "judging.admin.getTeamResults",
       "source": "src/server/api/routers/judging.ts",
       "type": "query"
     },
@@ -8728,14 +9187,38 @@
                 ]
               },
               "ratings": {
-                "additionalProperties": {
-                  "maximum": 10,
-                  "minimum": 0,
-                  "multipleOf": 0.5,
-                  "type": "number"
-                },
-                "propertyNames": {
-                  "maxLength": 64
+                "additionalProperties": false,
+                "properties": {
+                  "adventurous": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "creativity": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "design": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "impact": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "technical": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  }
                 },
                 "type": "object"
               },
@@ -8896,36 +9379,28 @@
                         "id": {
                           "type": "number"
                         },
-                        "score": {
-                          "type": "number"
-                        },
-                        "scoreBreakdown": {
+                        "notes": {
                           "anyOf": [
                             {
                               "type": "null"
                             },
                             {
-                              "properties": {
-                                "notes": {
-                                  "description": "max depth reached"
-                                },
-                                "ratings": {
-                                  "additionalProperties": {
-                                    "description": "max depth reached"
-                                  },
-                                  "properties": {},
-                                  "type": "object"
-                                },
-                                "superLike": {
-                                  "description": "max depth reached"
-                                }
-                              },
-                              "required": [
-                                "ratings"
-                              ],
-                              "type": "object"
+                              "type": "string"
                             }
                           ]
+                        },
+                        "ratings": {
+                          "additionalProperties": {
+                            "type": "number"
+                          },
+                          "properties": {},
+                          "type": "object"
+                        },
+                        "score": {
+                          "type": "number"
+                        },
+                        "superLike": {
+                          "type": "boolean"
                         },
                         "teamId": {
                           "type": "string"
@@ -8935,7 +9410,9 @@
                         "id",
                         "teamId",
                         "score",
-                        "scoreBreakdown"
+                        "ratings",
+                        "notes",
+                        "superLike"
                       ],
                       "type": "object"
                     }
@@ -9121,6 +9598,23 @@
             "judgeId": {
               "type": "string"
             },
+            "notes": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "ratings": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "properties": {},
+              "type": "object"
+            },
             "roundType": {
               "enum": [
                 "sponsored",
@@ -9130,53 +9624,8 @@
             "score": {
               "type": "number"
             },
-            "scoreBreakdown": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "properties": {
-                    "notes": {
-                      "anyOf": [
-                        {
-                          "type": "undefined"
-                        },
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "ratings": {
-                      "additionalProperties": {
-                        "type": "number"
-                      },
-                      "properties": {},
-                      "type": "object"
-                    },
-                    "superLike": {
-                      "anyOf": [
-                        {
-                          "type": "undefined"
-                        },
-                        {
-                          "const": false
-                        },
-                        {
-                          "const": true
-                        }
-                      ]
-                    }
-                  },
-                  "required": [
-                    "ratings"
-                  ],
-                  "type": "object"
-                }
-              ]
+            "superLike": {
+              "type": "boolean"
             },
             "team": {
               "properties": {
@@ -9239,12 +9688,14 @@
             }
           },
           "required": [
+            "ratings",
             "createdAt",
             "id",
             "teamId",
+            "notes",
             "judgeId",
             "score",
-            "scoreBreakdown",
+            "superLike",
             "roundType",
             "team"
           ],
@@ -9558,14 +10009,38 @@
                 ]
               },
               "ratings": {
-                "additionalProperties": {
-                  "maximum": 10,
-                  "minimum": 0,
-                  "multipleOf": 0.5,
-                  "type": "number"
-                },
-                "propertyNames": {
-                  "maxLength": 64
+                "additionalProperties": false,
+                "properties": {
+                  "adventurous": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "creativity": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "design": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "impact": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "technical": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  }
                 },
                 "type": "object"
               },
@@ -10771,6 +11246,51 @@
           "source": "unhandled"
         }
       ],
+      "http": "POST /api/trpc/scavengerHunt.deleteReward",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "type": "undefined"
+      },
+      "path": "scavengerHunt.deleteReward",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
       "http": "POST /api/trpc/scavengerHunt.deleteScavengerHuntItem",
       "input": {
         "additionalProperties": false,
@@ -10824,6 +11344,18 @@
             "costPoints": {
               "type": "number"
             },
+            "deletedAt": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "format": "date-time",
+                  "type": "string",
+                  "x-superjson": "Date"
+                }
+              ]
+            },
             "description": {
               "anyOf": [
                 {
@@ -10849,12 +11381,21 @@
                   "type": "number"
                 }
               ]
+            },
+            "status": {
+              "enum": [
+                "draft",
+                "active",
+                "disabled"
+              ]
             }
           },
           "required": [
             "description",
+            "status",
             "id",
             "name",
+            "deletedAt",
             "costPoints",
             "quantity"
           ],
@@ -10910,7 +11451,8 @@
               "activities",
               "attendance",
               "wins",
-              "bonus"
+              "bonus",
+              "rewards"
             ],
             "type": "string"
           },
@@ -10948,9 +11490,13 @@
             "items": {
               "properties": {
                 "activityType": {
-                  "enum": [
-                    "attendance",
-                    "win"
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
                   ]
                 },
                 "createdAt": {
@@ -10977,13 +11523,7 @@
                   "type": "string"
                 },
                 "type": {
-                  "enum": [
-                    "meal",
-                    "workshop",
-                    "sponsor_workshop",
-                    "activity",
-                    "bonus"
-                  ]
+                  "type": "string"
                 }
               },
               "required": [
@@ -11382,6 +11922,16 @@
             "rewardId": {
               "type": "number"
             },
+            "scannerId": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
             "userId": {
               "type": "string"
             }
@@ -11390,6 +11940,7 @@
             "userId",
             "createdAt",
             "id",
+            "scannerId",
             "rewardId"
           ],
           "type": "object"
@@ -11430,6 +11981,16 @@
             "rewardId": {
               "type": "number"
             },
+            "scannerId": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
             "userId": {
               "type": "string"
             }
@@ -11438,6 +11999,7 @@
             "userId",
             "createdAt",
             "id",
+            "scannerId",
             "rewardId"
           ],
           "type": "object"
@@ -11502,6 +12064,18 @@
           "costPoints": {
             "type": "number"
           },
+          "deletedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
           "description": {
             "anyOf": [
               {
@@ -11527,12 +12101,21 @@
                 "type": "number"
               }
             ]
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "active",
+              "disabled"
+            ]
           }
         },
         "required": [
           "description",
+          "status",
           "id",
           "name",
+          "deletedAt",
           "costPoints",
           "quantity"
         ],
@@ -11801,6 +12384,196 @@
           "source": "auth middleware"
         },
         {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/scavengerHunt.getScavengerHuntItems?input=<superjson>",
+      "input": null,
+      "output": {
+        "items": {
+          "properties": {
+            "endsAt": {
+              "format": "date-time",
+              "type": "string",
+              "x-superjson": "Date"
+            },
+            "id": {
+              "type": "number"
+            },
+            "name": {
+              "type": "string"
+            },
+            "points": {
+              "type": "number"
+            },
+            "room": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "scans": {
+              "type": "number"
+            },
+            "startsAt": {
+              "format": "date-time",
+              "type": "string",
+              "x-superjson": "Date"
+            },
+            "status": {
+              "enum": [
+                "draft",
+                "active",
+                "disabled"
+              ]
+            },
+            "type": {
+              "enum": [
+                "meal",
+                "workshop",
+                "sponsor_workshop",
+                "activity",
+                "bonus"
+              ]
+            },
+            "winPoints": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "winScans": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "type",
+            "points",
+            "winPoints",
+            "status",
+            "startsAt",
+            "endsAt",
+            "room",
+            "scans",
+            "winScans"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "path": "scavengerHunt.getScavengerHuntItems",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/scavengerHunt.getScavengerHuntRewards?input=<superjson>",
+      "input": null,
+      "output": {
+        "items": {
+          "properties": {
+            "costPoints": {
+              "type": "number"
+            },
+            "description": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "id": {
+              "type": "number"
+            },
+            "name": {
+              "type": "string"
+            },
+            "quantity": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "redemptions": {
+              "type": "number"
+            },
+            "status": {
+              "enum": [
+                "draft",
+                "active",
+                "disabled"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "description",
+            "costPoints",
+            "quantity",
+            "status",
+            "redemptions"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "path": "scavengerHunt.getScavengerHuntRewards",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
           "code": "BAD_REQUEST",
           "httpStatus": 400,
           "source": "input validation (data.zodError populated)"
@@ -11866,63 +12639,6 @@
       "type": "query"
     },
     {
-      "auth": "protected",
-      "errors": [
-        {
-          "code": "UNAUTHORIZED",
-          "httpStatus": 401,
-          "source": "auth middleware"
-        },
-        {
-          "code": "BAD_REQUEST",
-          "httpStatus": 400,
-          "source": "input validation (data.zodError populated)"
-        },
-        {
-          "code": "NOT_FOUND",
-          "httpStatus": 404,
-          "message": "Reward not found",
-          "source": "handler"
-        },
-        {
-          "code": "INTERNAL_SERVER_ERROR",
-          "httpStatus": 500,
-          "source": "unhandled"
-        }
-      ],
-      "http": "POST /api/trpc/scavengerHunt.redeem",
-      "input": {
-        "additionalProperties": false,
-        "properties": {
-          "rewardId": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "rewardId"
-        ],
-        "type": "object"
-      },
-      "output": {
-        "properties": {
-          "message": {
-            "type": "string"
-          },
-          "success": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "success",
-          "message"
-        ],
-        "type": "object"
-      },
-      "path": "scavengerHunt.redeem",
-      "source": "src/server/api/routers/scavenger-hunt.ts",
-      "type": "mutation"
-    },
-    {
       "auth": "organizer",
       "errors": [
         {
@@ -11948,12 +12664,6 @@
           "source": "handler"
         },
         {
-          "code": "NOT_FOUND",
-          "httpStatus": 404,
-          "message": "Reward not found",
-          "source": "handler"
-        },
-        {
           "code": "INTERNAL_SERVER_ERROR",
           "httpStatus": 500,
           "source": "unhandled"
@@ -11963,6 +12673,9 @@
       "input": {
         "additionalProperties": false,
         "properties": {
+          "expectedCost": {
+            "type": "integer"
+          },
           "rewardId": {
             "type": "number"
           },
@@ -11980,6 +12693,9 @@
         "properties": {
           "message": {
             "type": "string"
+          },
+          "pointsUsed": {
+            "type": "number"
           },
           "reward": {
             "anyOf": [
@@ -12051,12 +12767,218 @@
         "required": [
           "success",
           "message",
+          "pointsUsed",
           "user",
           "reward"
         ],
         "type": "object"
       },
       "path": "scavengerHunt.redeemForUser",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "message": "End time must be in the future",
+          "source": "handler"
+        },
+        {
+          "code": "CONFLICT",
+          "httpStatus": 409,
+          "source": "handler"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/scavengerHunt.saveActivity",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "endsAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "points": {
+            "maximum": 32767,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "room": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "startsAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "active"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "meal",
+              "workshop",
+              "sponsor_workshop",
+              "activity",
+              "bonus"
+            ],
+            "type": "string"
+          },
+          "winPoints": {
+            "anyOf": [
+              {
+                "maximum": 32767,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "startsAt",
+          "endsAt",
+          "room",
+          "points",
+          "winPoints"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "type": "undefined"
+      },
+      "path": "scavengerHunt.saveActivity",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "CONFLICT",
+          "httpStatus": 409,
+          "source": "handler"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/scavengerHunt.saveReward",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "costPoints": {
+            "maximum": 32767,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "maximum": 2147483647,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "active"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "output": {
+        "type": "undefined"
+      },
+      "path": "scavengerHunt.saveReward",
       "source": "src/server/api/routers/scavenger-hunt.ts",
       "type": "mutation"
     },
@@ -12159,6 +13081,114 @@
         "type": "object"
       },
       "path": "scavengerHunt.scan",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/scavengerHunt.setActivityStatus",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "active",
+              "disabled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "type": "undefined"
+      },
+      "path": "scavengerHunt.setActivityStatus",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/scavengerHunt.setRewardStatus",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "active",
+              "disabled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "type": "undefined"
+      },
+      "path": "scavengerHunt.setRewardStatus",
       "source": "src/server/api/routers/scavenger-hunt.ts",
       "type": "mutation"
     },

@@ -4,7 +4,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { SearchAutocomplete } from "../internals/search-autocomplete";
 import { Button } from "../ui/button";
-import { SectionLink, IconlessLink } from "./navlinks";
+import { SectionLink, SectionGroup, IconlessLink } from "./navlinks";
 import * as tokens from "~/lib/tokens";
 import { SCHEDULE_ENABLED } from "~/constants/live";
 
@@ -28,11 +28,18 @@ export const SidebarNav = ({
         <SectionLink tab="mentors" name="Mentors" />
         <SectionLink tab="sponsors" name="Sponsors" />
         {isOrganizer && (
-          // Mobile-only scan page
-          <div className="md:hidden">
+          <SectionGroup
+            icon="scavenger"
+            name="Scavenger Hunt"
+            tabs={["activities", "rewards"]}
+            hrefs={["/scavenger"]}
+          >
             <SectionLink tab="scan" name="Scan" href="/scavenger" />
-          </div>
+            <SectionLink tab="activities" name="Activities" />
+            <SectionLink tab="rewards" name="Rewards" />
+          </SectionGroup>
         )}
+        {isOrganizer && <SectionLink tab="activities" name="Activities" />}
         {isOrganizer && (
           <SectionLink tab="judge" name="Judging" href="/judge" />
         )}

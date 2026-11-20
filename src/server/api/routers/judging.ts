@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { z } from "zod";
+import { and, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 
 import {
   createTRPCRouter,
@@ -46,6 +47,8 @@ import {
   getSubmittedMarks,
   getTeamJudging,
 } from "~/server/judging/reads";
+import { loadTeamResults } from "~/server/api/utils/team-results-data";
+import { getDevpostPreview } from "~/server/judging/devpost-preview";
 import {
   moveTeam,
   seatTeams,
@@ -125,6 +128,8 @@ async function getRanking() {
  * Promote one or more existing users to judges (or update their type/tracks
  * if they already are). The PK is the user id, so this upserts on conflict.
  * Sponsored judges carry the tracks they cover; organizer judges have none.
+ * Plain accounts (`hacker`) also become `judge` users; organizers and sponsors
+ * keep their type.
  * All-or-nothing: if any user id is unknown, nothing is written.
  */
 async function addJudges(
@@ -189,6 +194,18 @@ async function addJudges(
         .returning();
       rows.push(row!);
     }
+
+    // Judges are their own account type. Only plain accounts are switched:
+    // an organizer or sponsor who judges keeps their type (and their pages).
+    await tx
+      .update(users)
+      .set({ type: "judge" })
+      .where(
+        and(
+          inArray(users.id, ids),
+          or(eq(users.type, "hacker"), isNull(users.type)),
+        ),
+      );
     return rows;
   });
 }
@@ -394,6 +411,15 @@ export const judgingRouter = createTRPCRouter({
     getLatestRanking: protectedOrganizerProcedure.query(async () => {
       return withErrorHandling(() => getRanking(), "Failed to get ranking");
     }),
+
+    /** Every team with its marks, oldest first, for the per-round view. */
+    getTeamResults: protectedOrganizerProcedure.query(() =>
+      withErrorHandling(() => loadTeamResults(), "Failed to load results"),
+    ),
+
+    getDevpostPreview: protectedOrganizerProcedure
+      .input(z.object({ teamId: z.string() }))
+      .query(({ input }) => getDevpostPreview(input.teamId)),
 
     getAllJudges: protectedOrganizerProcedure.query(async () => {
       return withErrorHandling(() => getAllJudges(), "Failed to get judges");
