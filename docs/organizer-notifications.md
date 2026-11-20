@@ -26,6 +26,7 @@ npm run organizer:notifications -- --who             # each person's Slack accou
 npm run organizer:notifications -- --send-test=Noah  # all of Noah's DMs to the test person now
 npm run organizer:notifications -- --rehearse=Noah   # 5 of Noah's DMs to the test person, one a minute from 2 min from now
 npm run organizer:notifications -- --sync            # one sync (what Actions runs)
+npm run organizer:notifications -- --dry-run         # what one sync would change, changing nothing
 npm run organizer:notifications -- --watch           # sync every 30 seconds from a laptop
 ```
 
@@ -54,3 +55,5 @@ When live, the sync DMs Jasmine (`ORGANIZER_NOTIFICATION_ADMIN`, blank turns it 
 - `ORGANIZER_NOTIFICATION_TEST_MODE=1` sends every live DM to the test person instead, labelled.
 
 Marketing reminders (Lucas's) are a separate bot; organizer syncs never touch them.
+
+Running from Vercel instead of a laptop: see `docs/vercel-pings.md`.

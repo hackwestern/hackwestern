@@ -1,5 +1,15 @@
 # Decisions
 
+## 2026-11-20 — Ping Logs page reads Slack's queue, not a new log table
+
+**Decision:** /internal/ping-logs shows the organizer reminder bot's health and every run-of-show ping (sent, queued in Slack, or not queued). It rebuilds the plan from the sheet with the bot's own loader (moved to src/server/slack/organizer-load.ts) and matches it to `chat.scheduledMessages.list` by send time and text. Health comes from the bot's queued "hasn't checked in" DM: its send time minus 10 minutes is the last check-in.
+
+**Why:** It works from Vercel even when the PC running the bot is off, needs no database or new Slack scopes, and can't disagree with what the bot actually queues.
+
+**Alternatives:** The bot writing a log to the database (the PC bot would need DB access, and a dead bot writes nothing); reading sent DMs from Slack (needs im:history and per-person channel lookups).
+
+**Added same day:** the page also lists the site's other pings (coffee chat invites, judging times, sponsor help, task and marketing reminders) read-only from the tables those features already keep, each source loaded on its own so one failing table doesn't blank the page. Coffee chat change/cancel DMs and fallback emails keep no record, so they don't appear; recording them would need a new table and was left out on event weekend.
+
 ## 2026-10-02 — Desktop sections keep fixed heights; wide screens crop photos
 
 **Decision:** On desktop every section keeps its 1440-design height at every screen width (hero scene 1275px, About 1109px, Projects 1167px, Sponsors 1790px). Photos fill the width and are cropped top and bottom. The hero art is cropped from the top only, so its valley, where the scroll path and story pins sit, stays in view. Content stays its 1440 size and doesn't scale up. About's windows sit in a centred 1440 box, like the Projects stage, and the Projects clouds drift across the full width.
@@ -1075,3 +1085,18 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 - **Unchanged:** the shortlist stays optional. "Skip for now" is a link back to Chats and never submits; a sponsor who never submits keeps editing, and at 10:00 PM we pick hackers from their interests as before. Booth scans (`recordScan`) keep working all weekend. Sponsors who had already submitted just see the locked view; no data migration.
 **Why:** the tour and the forms say "you can only submit this once", and organizers schedule from what was submitted; late sponsor edits moved chats after invites were out.
 **Alternatives:** lock only after 10:00 PM (option B: still lets a sponsor change things organizers already planned around); a separate organizer edit screen on /internal (more to build mid-event; the portal link already works for organizers).
+
+## 2026-11-20: Auto-Ping sender for mentors, volunteers and judges (Jazz)
+
+**Decision:** a second Slack bot (`scripts/auto-ping.ts`, `.github/workflows/auto-ping.yml`, docs/auto-ping.md) DMs mentors, volunteers and judges from the Auto-Ping sheet. A person is their email: schedule names are looked up in the contact info tabs (the only loose name match, flagged in Check before sending) and nothing is guessed when there's no email or two. The bot keeps its own record of scheduled Slack messages on a Queue tab, and shows every planned message, with its exact text and status, on a Planned messages tab. A blank fill-in holds that message instead of dropping the line. Shifts under an hour apart are one stretch. A 4th shift that isn't the last gets no reminder. "Last day" goes 8 AM Sunday only. The final thank you is sent by hand and uses the person's first shift's role.
+**Why:** templates are free text Jess edits, so scheduled messages can't be recognised by their text the way the organizer bot does, and the sheet is the only state a GitHub Actions run has. Names on the schedules don't match the forms (reversed, nicknames, case), so emails are the only safe identity. A message with a blank channel or count would look broken. The "Last day" template says "the last day of Hack Western 13", which is only true on Sunday. The "third shift" text says "Shift #3", so it can't be reused for a 4th.
+**Alternatives:** recognising our messages by a hidden text marker (Slack shows it); a database (none on main, and a fresh CI job needs the state); matching People rows by name (wrong person on a reversed or shared name); dropping lines with blank fill-ins (the first plan, changed by Jazz the same day); sending "Last day" on Saturday for people who finish Saturday.
+
+## 2026-11-20: Auto-Ping People columns locked, moved times bolded
+- People headers end in a pencil (edit) or lock icon. Locked for real (not warning-only): header row, Role/Full name for existing rows, Email, All messages; Planned messages, Queue, Log and Full messages too. Only Jasmine and the bot's service account can edit them. Why: Jess was free to type over formulas and bot-owned cells. Alternative: warning-only locks (already there, too easy to click through).
+- The bot writes a Time changed column (the schedule note, e.g. 12pm start) and People column H shows that time in bold (Unicode bold, since a formula can't bold part of a cell). Alternative: the bot writes column H as rich text; more code in a running bot.
+
+## 2026-11-20 — Both ping bots can sync from a Vercel cron
+- **Decision:** `/api/cron/pings` runs the organizer and Auto-Ping syncs once a minute (`vercel.json`), behind `PINGS_CRON` (off by default, then dry-run, then live). The sync code moved from the CLI scripts into `src/server/slack/*-run.ts` so the laptop and Vercel run the same code. A Postgres advisory lock stops overlapping runs, and organizer state that lived in files moved to a `bot_state` table (migration 0051). Live refuses to run unless both bots' on-switches are set.
+- **Why:** the laptop watchers died twice on Nov 20 (a Ctrl+C signal killed them and their restart loops), and sheet edits stopped reaching Slack until someone noticed. The team is on Vercel Pro, so a cron can run every minute.
+- **Alternatives:** keep the laptop with a 5-minute restart trigger (done as the stopgap); GitHub Actions (schedules run 10 to 30 minutes late); a hosted always-on worker (another service to run). The live guard exists because a disabled bot cancels its whole queue.

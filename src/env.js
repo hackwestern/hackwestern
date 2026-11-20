@@ -121,6 +121,11 @@ export const env = createEnv({
     // Bearer token for /api/cheat-check/sweep, which the sweep worker also uses
     // to re-invoke itself. Leave unset to disable automated sweeps entirely.
     CHEAT_SWEEP_SECRET: z.string().optional(),
+    // Vercel cron for the Slack ping bots (src/pages/api/cron/pings.ts).
+    CRON_SECRET: z.string().optional(),
+    // "off" (default), "dry-run" or "live"; checked in the route, so a typo
+    // can't fail the site's build.
+    PINGS_CRON: z.string().optional(),
     // The Hack Western Slack app (hackers and the sponsor team share one
     // workspace and one app). Unset = Slack features are skipped.
     SLACK_BOT_TOKEN: z.string().optional(),
@@ -241,6 +246,8 @@ export const env = createEnv({
     PROJECT_SUBMISSION_DEADLINE: process.env.PROJECT_SUBMISSION_DEADLINE,
     SPONSOR_JUDGING_CLOSES_AT: process.env.SPONSOR_JUDGING_CLOSES_AT,
     CHEAT_SWEEP_SECRET: process.env.CHEAT_SWEEP_SECRET,
+    CRON_SECRET: process.env.CRON_SECRET,
+    PINGS_CRON: process.env.PINGS_CRON,
     SLACK_BOT_TOKEN: process.env.SLACK_BOT_TOKEN,
     SLACK_SIGNING_SECRET: process.env.SLACK_SIGNING_SECRET,
     SPONSOR_HELP_SLACK_BOT_TOKEN: process.env.SPONSOR_HELP_SLACK_BOT_TOKEN,

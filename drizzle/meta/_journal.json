@@ -358,6 +358,13 @@
       "when": 1795198633850,
       "tag": "0050_room_booking_event",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1795206138381,
+      "tag": "0051_bot_state",
+      "breakpoints": true
     }
   ]
 }

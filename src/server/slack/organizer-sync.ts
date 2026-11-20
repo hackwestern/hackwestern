@@ -46,13 +46,16 @@ export function normalizeDm(text: string): string {
 
 /** True for an organizer reminder (live or test-labelled). */
 export function isOrganizerDm(text: string): boolean {
-  return /^(\[TEST for [^\]]*\]\n)?In \d+ min \(/.test(normalizeDm(text));
+  // "Coming up: …" now; "In 15 min (…)" is the older format, still queued.
+  return /^(\[TEST for [^\]]*\]\n)?(Coming up: |In \d+ min \()/.test(
+    normalizeDm(text),
+  );
 }
 
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-/** A Slack call that waits out a rate limit (up to 3 times) instead of failing. */
-async function call<T extends SlackResponse>(
+/** A Slack call that waits out a rate limit (up to 3 times) instead of failing. Also used by Auto-Ping. */
+export async function call<T extends SlackResponse>(
   token: string,
   method: string,
   args: Record<string, unknown>,
@@ -80,8 +83,11 @@ export async function syncOrganizerDms(
     fetchImpl?: typeof fetch;
     now?: () => number;
     sleep?: (ms: number) => Promise<void>;
+    /** Count what would change without cancelling or scheduling anything. */
+    dryRun?: boolean;
   } = {},
 ) {
+  const dryRun = options.dryRun ?? false;
   const fetchImpl = options.fetchImpl ?? fetch;
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? wait;
@@ -154,6 +160,10 @@ export async function syncOrganizerDms(
       kept++;
       continue;
     }
+    if (dryRun) {
+      cancelled++;
+      continue;
+    }
     try {
       await call(
         token,
@@ -168,6 +178,10 @@ export async function syncOrganizerDms(
     }
   }
   for (const dm of wanted.values()) {
+    if (dryRun) {
+      scheduled++;
+      continue;
+    }
     try {
       await call(
         token,
