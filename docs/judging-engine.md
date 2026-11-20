@@ -23,7 +23,7 @@ row; `team.judging_seat_id` and `judging_assignment.judging_seat_id` point at
 it. A table exists only as the physical place a seat sits: `table_number`
 (position on the snake grid) plus `seat` (1 or 2) to tell the two seats at a
 split table apart. The API sends `seatId`, `tableNumber` and `seat`; screens
-show a seat as `4` or `4 (seat 2)` (`seatName`).
+always show a seat as `Table 4 (seat 1)` or `Table 4 (seat 2)`.
 
 ## Tables and the snake
 

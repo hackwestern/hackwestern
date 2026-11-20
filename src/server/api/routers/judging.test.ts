@@ -37,6 +37,7 @@ import {
   users,
 } from "~/server/db/schema";
 import { applyTriggers } from "~/server/db/triggers";
+import { loadJudgeData } from "~/server/api/utils/judge-data";
 
 // Every test builds a room (teams, tables, judges, a plan) through the real
 // procedures. That's fast alone (~5s for the file) but can pass the 5s
@@ -366,7 +367,7 @@ describe("seatTeams", () => {
       .where(inArray(teams.id, teamIds.slice(0, 2)));
 
     const result = await org.caller.judging.admin.seatTeams({ random: false });
-    expect(result).toMatchObject({ seated: 3, emptySeats: 0 });
+    expect(result).toMatchObject({ seated: 3, emptySeats: 0, planCleared: 15 });
     const seats = await db.query.judgingSeats.findMany();
     expect(seats.every((s) => s.seat === 1)).toBe(true);
     expect(await db.query.judgingAssignments.findMany()).toHaveLength(0);
@@ -1034,6 +1035,88 @@ describe("judge flow", () => {
         seatId: stop.seat.id,
       }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  test("deleting a mark at a seat reported absent doesn't reopen the stop", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const stop = await firstStop(js[0]!.caller);
+    const { teamMarkId } = await js[0]!.caller.judging.me.submitStop({
+      assignmentId: stop.id,
+      teamId: stop.team!.id,
+      score: 6,
+    });
+    const other = (await stopsOf(js[1]!.caller)).find(
+      (s) => s.seat.id === stop.seat.id,
+    )!;
+    await js[1]!.caller.judging.me.reportAbsent({
+      assignmentId: other.id,
+      teamId: other.team!.id,
+    });
+
+    const result = await org.caller.judging.admin.deleteTeamMark({
+      teamMarkId,
+    });
+    expect(result.reopened).toBe(false);
+    const row = await db.query.judgingAssignments.findFirst({
+      where: eq(judgingAssignments.id, stop.id),
+    });
+    expect(row?.status).toBe("done");
+  });
+
+  test("a hand-off leaves stops at seats reported absent behind", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const stop = await firstStop(js[0]!.caller);
+    await js[0]!.caller.judging.me.startStop({
+      assignmentId: stop.id,
+      teamId: stop.team!.id,
+    });
+    const other = (await stopsOf(js[1]!.caller)).find(
+      (s) => s.seat.id === stop.seat.id,
+    )!;
+    await js[1]!.caller.judging.me.reportAbsent({
+      assignmentId: other.id,
+      teamId: other.team!.id,
+    });
+
+    const floater = await makeJudge();
+    const result = await org.caller.judging.admin.handOffJudge({
+      fromJudgeId: js[0]!.session.user.id,
+      toJudgeId: floater.session.user.id,
+    });
+    expect(result.seats.map((s) => s.seatId)).not.toContain(stop.seat.id);
+    expect(result.moved).toBe(2);
+    const kept = await db.query.judgingAssignments.findFirst({
+      where: eq(judgingAssignments.id, stop.id),
+    });
+    expect(kept).toMatchObject({
+      judgeId: js[0]!.session.user.id,
+      status: "in_progress",
+    });
+  });
+
+  test("the judge map lists a table whose only active seat is seat 2", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 2,
+      teamCount: 4,
+      judgeCount: 3,
+    });
+    const first = await tableByNumber(2);
+    await db
+      .update(teams)
+      .set({ judgingSeatId: null })
+      .where(eq(teams.judgingSeatId, first.id));
+    await org.caller.judging.admin.setSeatActive({
+      seatId: first.id,
+      isActive: false,
+    });
+    const data = await loadJudgeData(js[0]!.session.user.id, false);
+    expect(data.tables.map((t) => t.tableNumber)).toEqual([1, 2]);
   });
 
   test("judges can't touch another judge's stops", async () => {

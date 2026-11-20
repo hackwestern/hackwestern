@@ -18,11 +18,12 @@ import {
   teamMarks,
   teams,
 } from "~/server/db/schema";
-import { LayoutError, buildSections, seatName } from "~/server/judging/layout";
+import { LayoutError, buildSections } from "~/server/judging/layout";
 import {
   OPEN_STATUSES,
   type StopStatus,
   type Tx,
+  absentSeatIds,
   assertGeneralJudge,
   assertNotStarted,
   conflictOnUniqueViolation,
@@ -156,7 +157,7 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
             message: "That judge has no unfinished seats to hand off.",
           });
         }
-        const open = await tx
+        const stops = await tx
           .select({
             id: judgingAssignments.id,
             seatId: judgingAssignments.judgingSeatId,
@@ -175,6 +176,18 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
             ),
           )
           .orderBy(asc(judgingAssignments.position));
+        // A seat reported absent is closed: its stop stays where it is.
+        const absent = await absentSeatIds(
+          stops.map((s) => s.seatId),
+          tx,
+        );
+        const open = stops.filter((s) => !absent.has(s.seatId));
+        if (open.length === 0) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "That judge has no unfinished seats to hand off.",
+          });
+        }
         const seatIds = open.map((s) => s.seatId);
 
         const clash = await tx
@@ -197,9 +210,9 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
         if (clash.length > 0) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: `That judge already has table${clash.length === 1 ? "" : "s"} ${clash
+            message: `That judge already has ${clash
               .sort((x, y) => x.tableNumber - y.tableNumber || x.seat - y.seat)
-              .map(seatName)
+              .map((c) => `Table ${c.tableNumber} (seat ${c.seat})`)
               .join(", ")}. Pick someone else, like a floater.`,
           });
         }
@@ -287,20 +300,13 @@ export async function addJudgeToSeat(
         if (!seatRow.isActive) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
-            message: `Table ${seatName(seatRow)} is switched off.`,
+            message: `Table ${seatRow.tableNumber} (seat ${seatRow.seat}) is switched off.`,
           });
         }
-        const absent = await tx.query.judgingAssignments.findFirst({
-          where: and(
-            eq(judgingAssignments.judgingSeatId, seatId),
-            eq(judgingAssignments.status, "team_absent"),
-          ),
-          columns: { id: true },
-        });
-        if (absent) {
+        if ((await absentSeatIds([seatId], tx)).has(seatId)) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: `The team at table ${seatName(seatRow)} was reported absent, so it can't be judged.`,
+            message: `The team at Table ${seatRow.tableNumber} (seat ${seatRow.seat}) was reported absent, so it can't be judged.`,
           });
         }
         const existing = await tx.query.judgingAssignments.findFirst({
@@ -314,7 +320,7 @@ export async function addJudgeToSeat(
         if (existing) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: `That judge already has table ${seatName(seatRow)}.`,
+            message: `That judge already has Table ${seatRow.tableNumber} (seat ${seatRow.seat}).`,
           });
         }
         const seated = await tx.query.teams.findFirst({
@@ -507,7 +513,7 @@ async function seatedTeamAt(tx: Tx, seatId: number, expectedTeamId: string) {
     });
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: `No team is seated at table ${seatRow ? seatName(seatRow) : "?"}. Report it as absent instead.`,
+      message: `No team is seated at ${seatRow ? `Table ${seatRow.tableNumber} (seat ${seatRow.seat})` : "this seat"}. Report it as absent instead.`,
     });
   }
   if (team.id !== expectedTeamId) {
@@ -658,6 +664,11 @@ export async function deleteMark(teamMarkId: number) {
       columns: { judgingSeatId: true },
     });
     if (team?.judgingSeatId == null) return { reopened: false };
+    if (
+      (await absentSeatIds([team.judgingSeatId], tx)).has(team.judgingSeatId)
+    ) {
+      return { reopened: false };
+    }
 
     const reopened = await tx
       .update(judgingAssignments)

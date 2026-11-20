@@ -84,6 +84,28 @@ export async function seatsHaveStarted(
   return !!row;
 }
 
+/**
+ * Seats (of these) whose team was reported absent. Absence is final, so no
+ * endpoint may give such a seat a live stop: no top-up, no hand-off, no
+ * reopened stop.
+ */
+export async function absentSeatIds(
+  seatIds: number[],
+  tx: Tx = db,
+): Promise<Set<number>> {
+  if (seatIds.length === 0) return new Set();
+  const rows = await tx
+    .selectDistinct({ seatId: judgingAssignments.judgingSeatId })
+    .from(judgingAssignments)
+    .where(
+      and(
+        inArray(judgingAssignments.judgingSeatId, seatIds),
+        eq(judgingAssignments.status, "team_absent"),
+      ),
+    );
+  return new Set(rows.map((r) => r.seatId));
+}
+
 /*
  * Lock order, used by every judging write so concurrent requests wait for each
  * other instead of deadlocking:

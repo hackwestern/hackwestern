@@ -15,7 +15,7 @@ import {
   teams,
 } from "~/server/db/schema";
 import { type SetupTablesInput } from "~/schemas/judging";
-import { seatName, tablesPerRow, tablesToSplit } from "~/server/judging/layout";
+import { tablesPerRow, tablesToSplit } from "~/server/judging/layout";
 import {
   ELIGIBLE_SUBMISSIONS,
   type Tx,
@@ -143,7 +143,7 @@ export async function setSeatActive(seatId: number, isActive: boolean) {
       if (seated) {
         throw new TRPCError({
           code: "CONFLICT",
-          message: `"${seated.name}" is seated at table ${seatName(seatRow)}. Move them first.`,
+          message: `"${seated.name}" is seated at Table ${seatRow.tableNumber} (seat ${seatRow.seat}). Move them first.`,
         });
       }
     }
@@ -161,7 +161,7 @@ export async function setSeatActive(seatId: number, isActive: boolean) {
         if (live) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: `Table ${seatName(seatRow)} still has judges assigned. Cancel those stops first.`,
+            message: `Table ${seatRow.tableNumber} (seat ${seatRow.seat}) still has judges assigned. Cancel those stops first.`,
           });
         }
       }
@@ -245,6 +245,7 @@ export async function seatTeams({ random }: { random: boolean }) {
     const have = new Set(seconds.map((s) => s.tableNumber));
     const missing = split.filter((t) => !have.has(t.tableNumber));
 
+    let planCleared = 0;
     if (stale.length > 0 || missing.length > 0) {
       // Same order as setupTables: lock the seated team rows before
       // clearPlan's status trigger locks tables.
@@ -254,7 +255,7 @@ export async function seatTeams({ random }: { random: boolean }) {
         .where(isNotNull(teams.judgingSeatId))
         .orderBy(asc(teams.id))
         .for("update");
-      await clearPlan(tx);
+      planCleared = await clearPlan(tx);
     }
 
     const order = random ? shuffle(submitted) : submitted;
@@ -315,6 +316,7 @@ export async function seatTeams({ random }: { random: boolean }) {
       random,
       seated: seating.length,
       emptySeats: seats.length - seating.length,
+      planCleared,
       seating,
     };
   });
@@ -466,7 +468,7 @@ async function moveTeamTx(teamId: string, seatId: number) {
     if (!seatRow.isActive) {
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
-        message: `Table ${seatName(seatRow)} is switched off.`,
+        message: `Table ${seatRow.tableNumber} (seat ${seatRow.seat}) is switched off.`,
       });
     }
     const occupant = await tx.query.teams.findFirst({
@@ -476,7 +478,7 @@ async function moveTeamTx(teamId: string, seatId: number) {
     if (occupant) {
       throw new TRPCError({
         code: "CONFLICT",
-        message: `Table ${seatName(seatRow)} already has "${occupant.name}". Swap them instead.`,
+        message: `Table ${seatRow.tableNumber} (seat ${seatRow.seat}) already has "${occupant.name}". Swap them instead.`,
       });
     }
     // Stops first, then the team row (see lockSeatsForReseat).

@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { api } from "~/utils/api";
-import { seatName } from "~/server/judging/layout";
 import { errorCode } from "~/components/judging/shared/judge-ui";
 import {
   BTN_DARK,
@@ -238,8 +237,8 @@ export function JudgeRoster({
                               key={st.assignmentId}
                               className={`rounded-full px-2 py-1 text-xs font-semibold ${STOP_STYLE[st.status] ?? ""}`}
                             >
-                              {teamAtSeat.get(st.seatId) ?? "Empty"} · T
-                              {seatName(st)} ·{" "}
+                              {teamAtSeat.get(st.seatId) ?? "Empty"} · Table{" "}
+                              {st.tableNumber} (seat {st.seat}) ·{" "}
                               {STOP_LABEL[st.status] ?? st.status}
                             </li>
                           ))}
@@ -321,14 +320,14 @@ export function JudgeRoster({
                                   onSuccess: () => {
                                     setStatus({
                                       tone: "ok",
-                                      text: `Added ${name} to table ${seatName(team)} (${team.teamName}).`,
+                                      text: `Added ${name} to Table ${team.tableNumber} (seat ${team.seat}) (${team.teamName}).`,
                                     });
                                     void utils.judging.admin.invalidate();
                                   },
                                   onError: (e) =>
                                     setStatus({
                                       tone: "error",
-                                      text: `Couldn't add ${name} to table ${seatName(team)}. ${errorText(e)}`,
+                                      text: `Couldn't add ${name} to Table ${team.tableNumber} (seat ${team.seat}). ${errorText(e)}`,
                                     }),
                                 },
                               );
