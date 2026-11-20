@@ -10660,6 +10660,36 @@
       "type": "mutation"
     },
     {
+      "auth": "protected",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/qrRouter.hackerId?input=<superjson>",
+      "input": null,
+      "output": {
+        "anyOf": [
+          {
+            "type": "null"
+          },
+          {
+            "type": "string"
+          }
+        ]
+      },
+      "path": "qrRouter.hackerId",
+      "source": "src/server/api/routers/qr-code-generation.ts",
+      "type": "query"
+    },
+    {
       "auth": "organizer",
       "errors": [
         {
