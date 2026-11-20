@@ -139,6 +139,7 @@ export function OrganizerHome({
   schedule,
   scheduleFailed,
   round2Open,
+  prizeTracks,
   view,
   onView,
 }: {
@@ -154,6 +155,8 @@ export function OrganizerHome({
   schedule: OrganizerSchedule | undefined;
   scheduleFailed: boolean;
   round2Open: boolean;
+  /** The Judging board's prize track list; undefined = the built-in one. */
+  prizeTracks?: readonly string[];
   view: "mine" | "all";
   onView: (view: "mine" | "all") => void;
 }) {
@@ -243,12 +246,12 @@ export function OrganizerHome({
           end: null,
         })),
         workshopRooms: theirs.map((w) => w.room),
-        prizeTrack: hasPrizeTrack(b.name),
+        prizeTrack: hasPrizeTrack(b.name, prizeTracks),
         digital: isDigitalJudging(b.name),
         summary,
       };
     });
-  }, [sheet, summaries, mine, schedule?.workshops]);
+  }, [sheet, summaries, mine, schedule?.workshops, prizeTracks]);
 
   const isMine = (r: Row) => !!me && leadsSponsor(r.hwContact, me, contactNames);
   const led = rows.filter(isMine);

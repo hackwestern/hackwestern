@@ -63,7 +63,7 @@ export const AGENDA: AgendaStep[] = [
   // Sunday
   { id: "u1", day: 2, start: 480, end: 570, title: "Breakfast", where: "Rm 1230" },
   { id: "u2", day: 2, start: 510, end: 540, title: "Judging workshop", where: "SM 2235", prizeOnly: true },
-  { id: "u3", day: 2, start: 540, end: 570, due: 570, title: "Pick the teams you want to see, up to 15", action: "judging", prizeOnly: true },
+  { id: "u3", day: 2, start: 540, end: 585, due: 585, title: "Pick the teams you want to see, up to 15", action: "judging", prizeOnly: true },
   { id: "u4", day: 2, start: 600, end: 690, range: true, title: "Hear presentations", prizeOnly: true },
   { id: "u5", day: 2, start: 690, end: 720, by: true, title: "Submit your top 5", action: "judging", prizeOnly: true },
   { id: "u6", day: 2, start: 720, end: 780, title: "Demo fair", where: "Grand Hall" },
@@ -93,10 +93,8 @@ export const sponsorHomeCopy = {
     emergency: "Emergency contact",
     copy: "Copy",
     copied: "Copied",
-    call: "Call",
     copyLabel: (name: string, phone: string) => `Copy ${name}'s number, ${phone}`,
     copiedLabel: (name: string) => `${name}'s number copied`,
-    callLabel: (name: string, phone: string) => `Call ${name}, ${phone}`,
     loading: "Loading contacts…",
   },
 

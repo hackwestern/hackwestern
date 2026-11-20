@@ -113,6 +113,7 @@
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
     "@vitejs/plugin-react": "^4.3.0",
+    "agentation": "^3.1.2",
     "babel-plugin-react-compiler": "^19.1.0-rc.2",
     "dotenv": "^16.4.5",
     "dotenv-cli": "^7.4.2",

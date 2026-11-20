@@ -15,6 +15,7 @@ import {
 } from "~/lib/coffee-chats";
 import { assertSheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
 import {
+  sharedSheetRead,
   findTabTitle,
   type SheetsClient,
 } from "~/server/api/utils/sponsor-sheets";
@@ -128,6 +129,16 @@ function buildCoffeeChatGridRows(
  * "everything free" rather than breaking the sponsor portal.
  */
 export async function fetchCoffeeChatGrid(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+): Promise<CoffeeChatBooking[]> {
+  // Shared a minute across requests (Google's per-minute read limit).
+  return sharedSheetRead(`coffee-grid:${spreadsheetId}`, 60_000, () =>
+    readCoffeeChatGrid(sheets, spreadsheetId),
+  );
+}
+
+async function readCoffeeChatGrid(
   sheets: SheetsClient,
   spreadsheetId: string,
 ): Promise<CoffeeChatBooking[]> {

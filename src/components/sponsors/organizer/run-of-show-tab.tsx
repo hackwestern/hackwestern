@@ -1,7 +1,7 @@
-import { SPONSOR_MAP_FLOORS } from "~/lib/sponsor-map-rooms";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import VenueMap from "~/components/live/venue-map";
 import { CeremonyOrder } from "~/components/sponsors/ceremony-order";
 import {
   CoffeeChatRoomTable,
@@ -42,8 +42,6 @@ import { api, type RouterOutputs } from "~/utils/api";
 
 const copy = scheduleCopy.organizer;
 const roomCopy = coffeeChatCopy.organizer.roomTable;
-// The coffee chat rooms (Rm 2241-2243) are on floor 2.
-const FLOOR_2 = SPONSOR_MAP_FLOORS[1];
 const booked = coffeeChatCopy.organizer;
 /** How often booked coffee chats refresh on the schedule. */
 const LIVE_REFRESH_MS = 15_000;
@@ -52,7 +50,7 @@ const NO_NAMES: string[] = [];
 export type OrganizerSchedule = RouterOutputs["sponsorSchedule"]["organizer"];
 
 // Organizer run of show: the whole sheet, read-only, with team tasks, at
-// full width; the room booking table and live coffee chat map under it. Edits
+// full width; the room booking table and the venue map under it. Edits
 // happen in the sheet (SheetEditButton). `sponsor` (an id or name, from
 // ?sponsor=) sets the sponsor filter, which narrows the coffee chats on the
 // grid and in the rooms table.
@@ -260,9 +258,10 @@ export function RunOfShowExtras({
 const SHOW_ROOM_BLOCKS = false;
 
 // The coffee chat rooms as a booking table, right under the run of show,
-// with the floor 2 plan beside it (it replaced the "Where is everyone"
-// tab, which now lands here: #rooms). No heading or intro. The sponsor
-// strip highlights a sponsor's blocks, as on the Coffee chats tab.
+// with the venue map (the /live floor plan) under it. It replaced the
+// "Where is everyone" tab, which now lands here: #rooms. No heading or
+// intro. The sponsor strip highlights a sponsor's blocks, as on the Coffee
+// chats tab.
 function RoomsSection({
   jump,
   onJumped,
@@ -283,35 +282,16 @@ function RoomsSection({
     <section
       id="rooms"
       aria-label={roomCopy.heading}
-      className="flex scroll-mt-4 flex-col gap-3"
+      className="flex min-w-0 scroll-mt-4 flex-col gap-5"
     >
-      {/* The room table with the live floor map beside it (below it on
-          phones and tablets). */}
-      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
-        <div className="flex min-w-0 flex-col gap-3">
-          <CoffeeChatRoomTable
-            highlight={highlight}
-            onHighlight={(name) =>
-              setHighlight((h) => (h === name ? null : name))
-            }
-            onClearHighlight={() => setHighlight(null)}
-          />
-        </div>
-        {/* Just the floor plan for reference (Jazz, 2026-11-18): no pins,
-            toggles or live state. */}
-        <div className="min-w-0 xl:sticky xl:top-4">
-          {/* eslint-disable-next-line @next/next/no-img-element -- static
-              plan image at its natural size; no optimisation needed */}
-          <img
-            src={FLOOR_2.image}
-            width={FLOOR_2.width}
-            height={FLOOR_2.height}
-            alt={roomCopy.floorPlanAlt}
-            loading="lazy"
-            className="h-auto w-full rounded-dashboard-lg bg-dashboard-bg-surface shadow-dashboard-card"
-          />
-        </div>
-      </div>
+      <CoffeeChatRoomTable
+        highlight={highlight}
+        onHighlight={(name) => setHighlight((h) => (h === name ? null : name))}
+        onClearHighlight={() => setHighlight(null)}
+      />
+      {/* The floor plan for reference, opened on SEI level 2 where Rm
+          2241-2243 are. No sponsor pins or live state (Jazz, 2026-11-18). */}
+      <VenueMap initialFloor={2} />
     </section>
   );
 }

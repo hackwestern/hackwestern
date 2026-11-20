@@ -907,3 +907,49 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 - **Sun 9:45 AM:** sponsors' shortlists must be submitted by now. Go to the Judging board, give each sponsor a room, then send the room details to hackers (Notify teams).
 
 **Why:** one timeline for when hackers hear from us and what the spon team does at each point.
+
+## 2026-11-20: Sponsors can't pick more coffee chat time than their tier allows (Jazz)
+
+**Decision:** A sponsor's chats (every rep's chats x the chat length) can't add up to more than their tier's chatting hours: Gold 4 h, Silver 3 h, Bronze 2 h (the Tiers tab; Sponsor Day-Of's Chatting hours column). The chats step shows the allowance and how much is picked, the + button stops at the limit, and saving over it is refused with the reason. A rep added when the limit is reached starts at 0 chats. No tier, or the sheet unreadable: no limit, so a Google outage never blocks a sponsor.
+**Why:** chat time is part of what each tier buys.
+
+## 2026-11-20: Notifications plan applied (Jazz)
+
+**Decision:**
+- **Judging time lock is back:** sponsors' Judging opens Sunday 9:00 AM (nav and page), undoing the Nov 19 removal.
+- **Shortlists are due 9:45 AM Sunday** (was 9:30): the sponsor timeline, organizer Home and the judging board's "Text lead" warning all say 9:45.
+- **Teams hear their times when the organizer confirms rooms:** an organizer sets the rooms on the judging board and presses Notify teams. A sponsor sending a shortlist no longer messages anyone. Supersedes "Shortlisted teams are told at once" (Nov 19).
+- **Nothing on /live:** hackers get everything by Slack DM (email if Slack can't find them).
+## 2026-11-20: Every portal and organizer map is Luka's interactive floor plan (Jazz)
+
+**Decision:** The sponsor portal Map tab, and the organizer rooms section under the coffee chat room table, use Luka's venue map from /live (`src/components/live/venue-map.tsx`, data in `src/lib/venue-map.ts`, cherry-picked from main #1186): SEI levels 1 and 2 and the Ivey building, search, room cards with the live schedule. The component gained two optional props that /live doesn't pass, so /live looks the same: `highlights` (rooms outlined in the action blue, labelled on the plan once the room is big enough, and listed under the map as buttons that focus the room) and `initialFloor`. On the Map tab a sponsor sees their booth (the Sponsor Bay, with the Sponsor Bay booth layout still above the map for their exact spot), their workshop rooms, their coffee chat rooms once organizers confirm them (SEI and Ivey), the sponsor lounge (2110) and the belongings room (2244). The organizer map opens on SEI level 2 with no sponsor pins, as Jazz asked on 2026-11-18. The old image floor plans, pin positions and the unused "Where is everyone" occupancy code moved to `_to_delete/`.
+**Why:** one map everywhere, with the Ivey building, real room shapes and the same behaviour hackers see, instead of static images with pins placed by eye.
+**Alternatives:** keep the static images and add an Ivey image (no search, pins drift); a separate sponsor copy of the map component (two maps to keep in sync).
+
+## 2026-11-20: Sponsors sync automatically; sheet changes (Jazz)
+
+**Decision:**
+- **Auto-sync:** a sponsor added to Sponsor Day-Of gets its portal link the next time the organizer dashboard loads its sponsor list; nobody has to press "Sync from sponsor sheet" (Accenture had no link because it was never synced).
+- **Sheet (Spon Team RUN OF SHOW, edited directly):**
+  - Sponsor Day-Of has Tier (dropdown) and Chatting hours (formula from the new Tiers tab: Gold 4, Silver 3, Bronze 2).
+  - Locked (only Jazz, Caroline and the app can edit): Coffee Chat Room Grid, Coffee Chat Invites, Sponsor Judging, Judging Scores, Coffee Chat Setup except column A, Chatting hours, the two (old) tabs.
+  - The tab name "Sponsor Day-Of" must not change; the app finds it by name (it was renamed "EDIT HERE" once and broke the app).
+  - Run of show tasks for the whole team: Fri 10 PM coffee chat notifications, Sat 9:30 AM check in with reps, Sun 9:45 AM shortlists due, set rooms and Notify teams.
+**Why:** fewer manual steps, and nobody types over what the app writes.
+
+## 2026-11-20: One final hacker, 30 minutes before a chat (Jazz)
+
+**Decision:** 30 minutes before a coffee chat, a seat still waiting goes to one last hacker in line. If they don't answer, the seat stays empty. The rounds before that stay as they are.
+**Why:** one last try to fill the seat, without chasing hackers right up to the chat.
+
+## 2026-11-20: Sheet reads shared and cached (fix for "1 load in 3 fails")
+
+**Decision:** Sponsor Day-Of, the picks read and the coffee chat grid are each read from Google at most once a minute and shared by every request (sharedSheetRead). When Google refuses (its per-minute read limit, confirmed in the server log: "Read requests per minute per user"), the last good copy is used. A refused read is no longer reported as "tab not found", and the sponsor portal says it couldn't load instead of showing blanks as real ("contact not assigned"). Writes to Sponsor Day-Of read fresh and clear the copy, so changes show at once. Sheet edits show within a minute.
+**Why:** every page and every organizer poll read the sheet, which ran past Google's limit; on event day many people have pages open.
+**Alternatives:** asking Google for a higher quota (slow, not guaranteed); fewer refreshes only (not enough).
+
+## 2026-11-20: Final call timing (build of "One final hacker")
+
+**Decision:** The final call starts when the rounds can no longer offer a chat: 30 minutes before it (45 for Ivey, the walk). Each seat still waiting then (including one freed later by an earlier invite expiring) gets one invite to the next hacker in line, answered by 10 minutes before the chat (25 for Ivey). A final invite is recognised by its answer-by time being after the chat's normal last call (20 / 35 minutes before), so no migration. Once it's declined or expires, that seat stays empty and the board stops flagging it.
+**Why:** Jazz said how long the final hacker gets doesn't matter; 10 minutes before still lets them reach the room.
+**Alternatives:** answer by the normal last call (no time left at the 30-minute mark); a new column marking final invites (needs a migration).

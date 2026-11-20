@@ -1,5 +1,5 @@
 import { coffeeChatInvitesCopy as invitesCopy } from "~/content/coffee-chat-invites";
-import { LIVE_URL, coffeeChatNotifyCopy } from "~/content/coffee-chat-notify";
+import { coffeeChatNotifyCopy } from "~/content/coffee-chat-notify";
 import { env } from "~/env";
 import { formatCoffeeChatTime } from "~/lib/coffee-chats";
 import {

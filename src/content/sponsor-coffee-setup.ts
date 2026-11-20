@@ -318,6 +318,11 @@ export const sponsorSetupCopy = {
     partialLabel: (session: string, only: string) => `${session}, ${only}`,
     q3: "How many chats?",
     q3Hint: "For each rep. 0 is fine for someone who's only at the booth. Organizers won't schedule a rep for more than this.",
+    /** The tier's chatting hours across every rep (Sponsor Day-Of). */
+    allowance: (max: number, used: number) =>
+      `Your sponsorship includes ${chatTime(max)} of coffee chats across your team. ${chatTime(used)} picked so far.`,
+    overAllowance: (max: number, used: number) =>
+      `That's ${chatTime(used)}, more than the ${chatTime(max)} your sponsorship includes. Take some chats off to save.`,
     fewer: (name: string) => `Fewer chats for ${name}`,
     more: (name: string) => `More chats for ${name}`,
     chatsLabel: (name: string) => `Chats for ${name}`,
@@ -545,6 +550,9 @@ export const sponsorSetupCopy = {
     unknownRep: "That rep isn't on your team anymore. Refresh and try again.",
     afterInvites: "Invites are already out. Confirm the change to save it.",
     tooManyReps: (max: number) => `You can add up to ${max} reps.`,
+    /** Over the tier's chatting hours (Sponsor Day-Of). */
+    overTier: (max: number, total: number) =>
+      `Your sponsorship includes ${chatTime(max)} of coffee chats. These add up to ${chatTime(total)}: take some chats off to save.`,
     shortPhone: "That phone number looks too short.",
     badSession: "That isn't one of the chat sessions.",
     noReps: "Add at least one rep in Your team first.",

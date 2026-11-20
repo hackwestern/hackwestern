@@ -41,9 +41,12 @@ export function WorkshopDetails({ workshops }: { workshops: WorkshopInfo[] }) {
               <Row icon={<MapPin aria-hidden className="size-4" />} label={copy.room}>
                 {w.room ?? scheduleCopy.noLocation}
               </Row>
-              <Row icon={<Users aria-hidden className="size-4" />} label={copy.runBy}>
-                {w.runners.length > 0 ? w.runners.join("; ") : copy.runnersTbd}
-              </Row>
+              {/* Workshops have no rep (Jazz, 2026-11-20): only shown if listed. */}
+              {w.runners.length > 0 && (
+                <Row icon={<Users aria-hidden className="size-4" />} label={copy.runBy}>
+                  {w.runners.join("; ")}
+                </Row>
+              )}
             </dl>
             {w.description && (
               <p className="m-0 text-sm text-dashboard-text-medium">

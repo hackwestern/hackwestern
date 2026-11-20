@@ -90,6 +90,8 @@ export function useHelpContacts(sponsor: string) {
       : null;
   return {
     loading: info.isLoading || contacts.isLoading,
+    /** The sheet couldn't be read: say so instead of "not assigned". */
+    failed: info.data?.sheetFailed === true,
     lead: leadName
       ? { name: leadName, phone: info.data?.hwContactPhone ?? null }
       : null,
@@ -148,7 +150,7 @@ function HelpContacts({
   onCloseAutoFocus: (event: Event) => void;
 }) {
   const c = copy.contacts;
-  const { loading, lead, emergency } = useHelpContacts(sponsor);
+  const { loading, failed, lead, emergency } = useHelpContacts(sponsor);
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -193,7 +195,7 @@ function HelpContacts({
                 label={c.lead}
                 name={lead?.name ?? null}
                 phone={lead?.phone ?? null}
-                missingName={c.noLead}
+                missingName={failed ? c.loadFailed : c.noLead}
                 missingPhone={c.noPhone}
               />
               <ContactRow

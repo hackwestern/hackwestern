@@ -45,6 +45,8 @@ export const sponsorHelpCopy = {
     lead: "Your Hack Western contact",
     emergency: "Emergency contact",
     noLead: "Your contact hasn't been assigned yet.",
+    /** The sheet couldn't be read: unknown, not unassigned. */
+    loadFailed: "Couldn't load your contact right now. Try again in a minute.",
     noEmergency:
       "Couldn't load the emergency contact. Ask at the sponsor lounge (Rm 2110).",
     noPhone: "Number not available. Ask at the sponsor lounge (Rm 2110).",

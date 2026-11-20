@@ -275,3 +275,26 @@ describe("judgingStatus", () => {
     ).toBe("too-few-picks");
   });
 });
+
+describe("buildJudgingBoard, as the organizer Home builds it", () => {
+  it("leaves out registered sponsors that don't judge, without 'not registered' rows", () => {
+    const board = buildJudgingBoard({
+      sponsors: SPONSORS.filter((s) => s.name !== "Scotiabank"),
+      otherSponsors: [{ name: "Scotiabank" }],
+      items: [item({})],
+      sheet: { rooms: new Map(), pickCount: pickCountFromChosenTeams(new Map()) },
+    });
+    expect(board.rows.map((r) => r.name)).toEqual(["Canada Life", "RBC", "QNX"]);
+  });
+  it("counts picks from the given count (shortlist sizes), not the sheet", () => {
+    const board = buildJudgingBoard({
+      sponsors: SPONSORS,
+      items: [item({})],
+      sheet: null,
+      pickCount: (name) => (name === "RBC" ? 8 : 0),
+    });
+    const rbc = board.rows.find((r) => r.name === "RBC");
+    expect(rbc?.picks).toBe(8);
+    expect(board.rows.find((r) => r.name === "Canada Life")?.picks).toBe(0);
+  });
+});

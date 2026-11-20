@@ -47,7 +47,6 @@ import {
 } from "~/server/api/utils/sponsor-judging-teams";
 import { assertPortalJudge } from "~/server/api/utils/sponsor-judging-guard";
 import { rebuildPresentationScheduleQuietly } from "~/server/api/utils/presentation-schedule";
-import { notifyShortlistedTeamsLater } from "~/server/api/routers/sponsor-presentations";
 import { round2OpenedAt } from "~/server/api/utils/sponsor-judging-settings";
 import { mirrorJudgingScoresLater } from "~/server/api/utils/sponsor-judging-scores-mirror";
 import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
@@ -655,9 +654,8 @@ export const sponsorScoringRouter = createTRPCRouter({
       if (!(await rebuildPresentationScheduleQuietly())) {
         await mirrorSponsorJudgingSoon();
       }
-      // Every member of each shortlisted team hears their times now, by
-      // Slack DM and on /live (Jazz, 2026-11-19); in the background.
-      notifyShortlistedTeamsLater(teamIds);
+      // Teams hear their times only when an organizer has set the rooms and
+      // presses Notify teams on the judging board (Jazz, 2026-11-20).
       return { sentAt, teamIds };
     }),
 

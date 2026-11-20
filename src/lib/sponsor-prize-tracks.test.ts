@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import { SPONSOR_PRIZE_TRACKS } from "~/content/sponsor-prize-tracks";
-import { hasPrizeTrack, prizeTrackOf } from "./sponsor-prize-tracks";
+import { hasPrizeTrack, prizeTrackOf, sponsorNameKey } from "./sponsor-prize-tracks";
 
 describe("prize tracks", () => {
   test("the list Jazz gave", () => {
@@ -48,5 +48,13 @@ describe("prize tracks", () => {
     expect(hasPrizeTrack("BlackBerry", sheet)).toBe(false);
     expect(hasPrizeTrack("Canada", sheet)).toBe(false);
     expect(hasPrizeTrack("Life", sheet)).toBe(false);
+  });
+});
+
+describe("sponsorNameKey", () => {
+  test("treats bracketed asides, case and punctuation as the same sponsor", () => {
+    expect(sponsorNameKey("QNX (BlackBerry)")).toBe(sponsorNameKey("QNX"));
+    expect(sponsorNameKey("Sun Life")).toBe(sponsorNameKey("sunlife"));
+    expect(sponsorNameKey("Canada")).not.toBe(sponsorNameKey("Canada Life"));
   });
 });

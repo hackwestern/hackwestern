@@ -1,97 +1,20 @@
-"use client";
+import { DashboardPanel } from "~/components/internals/dashboard-panel";
+import VenueMap from "~/components/live/venue-map";
 
-import { motion } from "framer-motion";
-import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { useIsMobile } from "~/hooks/use-mobile";
-
-const Map = () => {
-  const MIN_ZOOM = 0.5;
-  const MAX_ZOOM = 10;
-  const [scale2, setScale2] = useState(1);
-  const [scale3, setScale3] = useState(1);
-  const isMobile = useIsMobile();
-
-  return (
-    <div className="flex h-screen flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <p className="font-secondary text-base text-medium">
-          This year&apos;s venue will be at Somerville House & Thames Hall!
-        </p>
-        <p className="font-secondary text-base text-medium">
-          <b className="text-heavy">Address:</b> 40 Lambton Dr, London, ON N6G
-          2V4
-        </p>
-      </div>
-      <Tabs defaultValue="Floor 2">
-        <div className="flex flex-col items-center gap-4 md:flex-row">
-          <TabsList>
-            <TabsTrigger value="Floor 2">Floor 2 Map</TabsTrigger>
-            <TabsTrigger value="Floor 3">Floor 3 Map</TabsTrigger>
-          </TabsList>
-          <p className="font-secondary text-sm text-medium">
-            {isMobile
-              ? "* View the map below"
-              : "* Zoom in and out of the map by scrolling!"}
-          </p>
-        </div>
-        <TabsContent value="Floor 2">
-          <div className="flex max-h-[calc(100vh-240px)] w-full flex-col gap-3 overflow-auto p-5 sm:p-10">
-            {isMobile ? (
-              <img
-                src="/live/map/floor_2.jpg"
-                alt="Floor 2 Map"
-                className="mb-8 h-auto w-full object-contain"
-              />
-            ) : (
-              <motion.img
-                src="/live/map/floor_2.jpg"
-                alt="Floor 2 Map"
-                drag
-                dragMomentum={false}
-                onWheel={(e) => {
-                  e.preventDefault();
-                  setScale2((prev) => {
-                    const next = prev + e.deltaY * -0.001;
-                    return Math.min(Math.max(next, MIN_ZOOM), MAX_ZOOM);
-                  });
-                }}
-                style={{ scale: scale2 }}
-                className="mb-8 h-full w-auto cursor-grab object-contain active:cursor-grabbing"
-              />
-            )}
-          </div>
-        </TabsContent>
-        <TabsContent value="Floor 3">
-          <div className="flex max-h-[calc(100vh-240px)] w-full flex-col gap-3 overflow-auto p-5 sm:p-10">
-            {isMobile ? (
-              <img
-                src="/live/map/floor_3.jpg"
-                alt="Floor 3 Map"
-                className="mb-8 h-auto w-full object-contain"
-              />
-            ) : (
-              <motion.img
-                src="/live/map/floor_3.jpg"
-                alt="Floor 3 Map"
-                drag
-                dragMomentum={false}
-                onWheel={(e) => {
-                  e.preventDefault();
-                  setScale3((prev) => {
-                    const next = prev + e.deltaY * -0.001;
-                    return Math.min(Math.max(next, MIN_ZOOM), MAX_ZOOM);
-                  });
-                }}
-                style={{ scale: scale3 }}
-                className="mb-8 h-full w-auto cursor-grab object-contain active:cursor-grabbing"
-              />
-            )}
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-};
+const Map = () => (
+  <div className="flex flex-col gap-6 pb-16 font-figtree">
+    <VenueMap />
+    <DashboardPanel title="Venue">
+      <p className="text-base font-medium text-dashboard-text-medium">
+        This year&apos;s event will be at the Ronald D. Schmeichel Building for
+        Entrepreneurship and Innovation!
+      </p>
+      <p className="text-base font-medium text-dashboard-text-medium">
+        <b className="font-semibold text-dashboard-text-heavy">Address:</b> 1317
+        Western Rd, London, ON
+      </p>
+    </DashboardPanel>
+  </div>
+);
 
 export default Map;

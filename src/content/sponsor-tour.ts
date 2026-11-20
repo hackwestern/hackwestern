@@ -119,8 +119,8 @@ export const sponsorTourCopy = {
           body: "Tap Map. It's on every sponsor page.",
         },
         floors: {
-          title: "Switch floors",
-          body: "Each floor has its own plan. The pins show the rooms sponsors use.",
+          title: "Switch buildings and floors",
+          body: "Pick the SEI or Ivey building, then a level. Your rooms are outlined in blue; tap one to see what's on there.",
         },
         lounge: {
           title: "Sponsor lounge",

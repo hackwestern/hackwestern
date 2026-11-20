@@ -134,6 +134,7 @@ export default function SponsorOrganizerHome() {
               schedule={schedule.data}
               scheduleFailed={!schedule.data && schedule.isError}
               round2Open={summary.data?.round2Open ?? false}
+              prizeTracks={summary.data?.prizeTracks ?? undefined}
               view={view}
               onView={setView}
             />

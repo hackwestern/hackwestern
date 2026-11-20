@@ -32,6 +32,7 @@ import {
 } from "~/server/api/utils/coffee-chat-invites";
 import { mirrorCoffeeInvitesLater } from "~/server/api/utils/coffee-chat-invites-sheet-mirror";
 import {
+  assertWithinTier,
   findSponsor,
   loadSponsorSetup,
   type SponsorSetup,
@@ -344,6 +345,14 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         if (existing.length >= MAX_SETUP_REPS) {
           throw new TRPCError({ code: "BAD_REQUEST", message: errors.tooManyReps(MAX_SETUP_REPS) });
         }
+        // A new rep starts with the default chats, or none when that would
+        // go past the tier's chatting hours (they can still be listed).
+        const used = setup.reps.reduce((n, r) => n + r.chatsWanted, 0) * setup.chatMinutes;
+        const startingChats =
+          setup.maxChatMinutes !== null &&
+          used + DEFAULT_CHATS_WANTED * setup.chatMinutes > setup.maxChatMinutes
+            ? 0
+            : DEFAULT_CHATS_WANTED;
         const [pos] = await tx
           .select({ n: max(coffeeChatReps.position) })
           .from(coffeeChatReps)
@@ -355,7 +364,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
             name: input.name,
             phone: input.phone,
             isPrimary: !existing.some((r) => r.isPrimary),
-            chatsWanted: DEFAULT_CHATS_WANTED,
+            chatsWanted: startingChats,
             position: (pos?.n ?? -1) + 1,
           })
           .returning({ id: coffeeChatReps.id, isPrimary: coffeeChatReps.isPrimary });
@@ -492,6 +501,14 @@ export const coffeeChatSetupRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const sponsor = await findSponsor(input.sponsor);
       const setup = await loadSponsorSetup(sponsor);
+      // Every rep's chats (the ones sent, else what's saved) can't add up to
+      // more than the tier's chatting hours.
+      const sentChats = new Map(input.reps.map((r) => [r.id, r.chatsWanted]));
+      assertWithinTier(
+        setup.reps.map((r) => sentChats.get(r.id) ?? r.chatsWanted),
+        chatMinutes({ hackersPerChat: input.hackersPerChat }),
+        setup.maxChatMinutes,
+      );
       const { jobs, ...result } = await db.transaction(async (tx) => {
         const locked = await lockForWrite(tx, sponsor.id, input.confirmAfterInvites);
         const reps = await tx

@@ -1,6 +1,7 @@
 import { type SponsorStatus } from "~/lib/sponsor-status";
 import { sheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
 import {
+  clearSponsorDayOfCache,
   fetchSponsorDayOfTab,
   sponsorDayOfRows,
   type SheetsClient,
@@ -70,7 +71,10 @@ export async function writeSponsorStatus(
   if (!sheetWritesEnabled()) {
     return { ok: true, written: false, reason: "sheet-writes-off" };
   }
-  const dayOf = await fetchSponsorDayOfTab(sheets, spreadsheetId);
+  // Writes find their row on a fresh read, never the shared copy.
+  const dayOf = await fetchSponsorDayOfTab(sheets, spreadsheetId, {
+    fresh: true,
+  });
   if (!dayOf) return { ok: false, reason: "no-tab" };
   const target = sponsorStatusCell(dayOf, sponsorName);
   if (!target.ok) return target;
@@ -82,6 +86,7 @@ export async function writeSponsorStatus(
     valueInputOption: "RAW",
     requestBody: { majorDimension: "ROWS", values: [[status]] },
   });
+  clearSponsorDayOfCache();
   return { ok: true, range };
 }
 
@@ -100,7 +105,10 @@ export async function writeSponsorCcWorkshop(
   if (!sheetWritesEnabled()) {
     return { ok: true, written: false, reason: "sheet-writes-off" };
   }
-  const dayOf = await fetchSponsorDayOfTab(sheets, spreadsheetId);
+  // Writes find their row on a fresh read, never the shared copy.
+  const dayOf = await fetchSponsorDayOfTab(sheets, spreadsheetId, {
+    fresh: true,
+  });
   if (!dayOf) return { ok: false, reason: "no-tab" };
   const target = sponsorStatusCell(dayOf, sponsorName, "ccWorkshop");
   if (!target.ok) return target;
@@ -111,5 +119,6 @@ export async function writeSponsorCcWorkshop(
     valueInputOption: "RAW",
     requestBody: { majorDimension: "ROWS", values: [[attended]] },
   });
+  clearSponsorDayOfCache();
   return { ok: true, range: target.range };
 }

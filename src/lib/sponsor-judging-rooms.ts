@@ -168,15 +168,23 @@ export function judgingCounts(rows: readonly JudgingRow[]): JudgingCounts {
  * failed. A sponsor with no room is "missing" only when both sources were
  * read; otherwise its room is unknown. `boardRooms` (by sponsor id) are
  * rooms organizers set on the Judging board; they win over both sheets.
+ * `pickCount`, when given, replaces the sheet's pick count (the organizer
+ * Home passes shortlist sizes, so picks don't depend on the sheet read).
+ * `otherSponsors` are registered sponsors that don't judge (no prize
+ * track): they get no row, and aren't listed as "not registered" either.
  */
 export function buildJudgingBoard({
   sponsors,
+  otherSponsors = [],
   items,
   runOfShowRead = true,
   sheet,
   boardRooms,
+  pickCount,
 }: {
   boardRooms?: ReadonlyMap<string, string>;
+  otherSponsors?: readonly { name: string }[];
+  pickCount?: PickCount;
   sponsors: readonly { id: string; name: string }[];
   items: readonly RunOfShowItem[];
   runOfShowRead?: boolean;
@@ -201,7 +209,11 @@ export function buildJudgingBoard({
       const fromList = listedRoom(s.name);
       const fromBoard = boardRooms?.get(s.id) ?? null;
       const room = fromBoard ?? fromSheet ?? fromList;
-      const picks = sheet ? sheet.pickCount(s.name) : null;
+      const picks = pickCount
+        ? pickCount(s.name)
+        : sheet
+          ? sheet.pickCount(s.name)
+          : null;
       return {
         name: s.name,
         sponsorId: s.id,
@@ -228,7 +240,9 @@ export function buildJudgingBoard({
       };
     });
 
-  const known = new Set(sponsors.map((s) => norm(s.name)));
+  const known = new Set(
+    [...sponsors, ...otherSponsors].map((s) => norm(s.name)),
+  );
   const seen = new Set<string>();
   const unregistered: JudgingRow[] = [];
   for (const l of listed) {

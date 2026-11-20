@@ -99,7 +99,7 @@ export function YourChats({ data }: { data: SetupData }) {
             role="region"
             tabIndex={0}
             aria-label={copy.calendarLabel}
-            className="overflow-x-auto rounded-dashboard-md border border-dashboard-border-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+            className="relative overflow-x-auto rounded-dashboard-md border border-dashboard-border-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
           >
             <div
               className="grid min-w-[812px]"

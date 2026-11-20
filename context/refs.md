@@ -10,3 +10,5 @@ Images and links that give project context. Open images only when a task needs t
 - Mock gallery: http://127.0.0.1:3040/mocks/ (served from hackwestern-sponsor-dash; Topic / Most recent sort, likes).
 - `docs/ship/` (2026-11-19): the unattended ship run. Jazz's brief (build → test guide → walkthrough as UX specialist + 5-year-old → clarity review → simplify → fix loop → ship), plus build-status, test-guide, clarity-review, simplify-decisions, decisions-log and SHIPPED.md. Start at SHIPPED.md.
 - Mock review queue (2026-11-19): every mock Jazz asked for this session is in `hackwestern-sponsor-dash/mocks/CHANGES.md` under "New mocks for review", with status. organizer-sponsors-home-v3 is APPROVED for build.
+- `docs/test-checklist.md` (2026-11-20): everything to click through before the event, by area, with what should happen.
+- `docs/slack-bot-setup.md` (2026-11-20): Slack app manifest, every environment variable (placeholders), how Lucas tests the pings safely, launch checks.

@@ -1,5 +1,4 @@
 import { TRPCError } from "@trpc/server";
-import { waitUntil } from "@vercel/functions";
 import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -379,35 +378,6 @@ export async function notifyPresentationTimes({
     /** Members left alone: they already had these times. */
     skipped: members.length - targets.length,
   };
-}
-
-/**
- * Tell every member of `teamIds` their presentation times as soon as their
- * team is shortlisted (Jazz, 2026-11-19): Slack DM (email if not on Slack)
- * and the /live notification bell. Runs after the response (waitUntil), so
- * a sponsor's Send never waits on Slack. Nothing to send (no schedule, no
- * Slack token) is normal and skipped; other failures are logged, and the
- * judging board's "Notify teams" to-do still shows who wasn't told.
- */
-export function notifyShortlistedTeamsLater(teamIds: readonly string[]) {
-  if (teamIds.length === 0) return;
-  waitUntil(
-    notifyPresentationTimes({ teamIds }).then(
-      () => undefined,
-      (error: unknown) => {
-        if (
-          error instanceof TRPCError &&
-          (error.code === "PRECONDITION_FAILED" || error.code === "BAD_REQUEST")
-        ) {
-          return;
-        }
-        console.error(
-          "shortlist notify failed:",
-          error instanceof Error ? error.message : String(error),
-        );
-      },
-    ),
-  );
 }
 
 /**

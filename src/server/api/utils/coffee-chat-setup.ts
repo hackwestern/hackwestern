@@ -17,7 +17,15 @@ import {
   isSessionId,
 } from "~/lib/coffee-chat-sessions";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
-import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
+import {
+  createCachedLoader,
+  getRunOfShow,
+} from "~/server/api/utils/run-of-show-sheet";
+import {
+  fetchAllSponsorInfo,
+  getSheetsClient,
+  getSpreadsheetId,
+} from "~/server/api/utils/sponsor-sheets";
 import { db } from "~/server/db";
 import {
   coffeeChatPlacements,
@@ -52,6 +60,11 @@ export type SetupWorkshop = {
 export type SponsorSetup = {
   sponsorId: string;
   sponsorName: string;
+  /**
+   * Most minutes of chats the sponsor's tier allows across all reps
+   * (Sponsor Day-Of's Chatting hours); null = no tier or unreadable, no limit.
+   */
+  maxChatMinutes: number | null;
   hackersPerChat: number;
   longerOneOnOne: boolean;
   chatMinutes: 15 | 30;
@@ -125,12 +138,57 @@ async function workshopsOf(
   }
 }
 
+/**
+ * Each sponsor's tier allowance in minutes, by lowercased name, from
+ * Sponsor Day-Of. Cached a minute (setup pages poll and the Sheets quota is
+ * tight). A failed read is an empty map: no limit, so a Google outage never
+ * stops a sponsor from saving.
+ */
+const allowanceCache = createCachedLoader(async () => {
+  try {
+    const info = await fetchAllSponsorInfo(
+      await getSheetsClient(),
+      getSpreadsheetId(),
+    );
+    return new Map(
+      [...info].map(([name, r]) => [name.toLowerCase(), r.chattingMinutes]),
+    );
+  } catch (error) {
+    console.error("coffee chat setup: tier allowance read failed", error);
+    return new Map<string, number | null>();
+  }
+}, 60_000);
+
+/** The sponsor's tier allowance in minutes; null = no limit. */
+export async function chatAllowanceMinutes(name: string) {
+  return (await allowanceCache.get()).get(name.toLowerCase()) ?? null;
+}
+
+/**
+ * Refuse a coffee chat setup whose chats add up to more time than the tier
+ * allows (Jazz, 2026-11-20): every rep's chats x the chat length.
+ */
+export function assertWithinTier(
+  chatsPerRep: readonly number[],
+  minutesPerChat: number,
+  maxMinutes: number | null,
+) {
+  if (maxMinutes === null) return;
+  const total = chatsPerRep.reduce((n, c) => n + c, 0) * minutesPerChat;
+  if (total > maxMinutes) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: sponsorSetupCopy.errors.overTier(maxMinutes, total),
+    });
+  }
+}
+
 /** Everything the portal's coffee chat setup pages show, in one read. */
 export async function loadSponsorSetup(
   sponsor: { id: string; name: string },
   conn: Conn = db,
 ): Promise<SponsorSetup> {
-  const [prefRows, repRows, workshops] = await Promise.all([
+  const [prefRows, repRows, workshops, maxChatMinutes] = await Promise.all([
     conn
       .select()
       .from(coffeeChatPrefs)
@@ -145,6 +203,7 @@ export async function loadSponsorSetup(
         asc(coffeeChatReps.id),
       ),
     workshopsOf(sponsor.name, conn),
+    chatAllowanceMinutes(sponsor.name),
   ]);
   const repIds = repRows.map((r) => r.id);
   const [sessionRows, sent] = repIds.length
@@ -192,6 +251,7 @@ export async function loadSponsorSetup(
   return {
     sponsorId: sponsor.id,
     sponsorName: sponsor.name,
+    maxChatMinutes,
     ...format,
     chatMinutes: minutes,
     chatsPerSession: chatsPerSession(format),

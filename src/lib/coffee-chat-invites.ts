@@ -31,6 +31,11 @@
  *   the next candidate, with the current round's answer-by time (decision
  *   2026-11-19, "Declines re-send at once…"). Every seat is filled while an
  *   eligible candidate is left; a seat stays empty only when none is.
+ * - Final call (decision 2026-11-20, "One final hacker…"): from 30 minutes
+ *   before a chat (45 for Ivey), when the rounds above can no longer offer
+ *   it, each seat still waiting gets exactly one last invite, to the next
+ *   hacker in line, answered by 10 minutes before the chat (25 for Ivey).
+ *   If that hacker declines or doesn't answer, the seat stays empty.
  */
 import {
   COFFEE_CHAT_DATE,
@@ -73,6 +78,8 @@ export const ROUND_MINUTES = 30;
 export const IVEY_WALK_MIN = WORKSHOP_BUFFER_MIN;
 /** An invite leaving less than this to answer isn't sent; the seat waits. */
 export const MIN_ANSWER_MINUTES = 10;
+/** A final-call invite is answered by this long before its chat (+ walk). */
+export const FINAL_ANSWER_LEAD_MIN = 10;
 /** Live (pending or accepted) chats one hacker may hold at a time. */
 export const MAX_LIVE_CHATS_PER_HACKER = 2;
 
@@ -125,8 +132,9 @@ export function lastCallAt(startMin: number, building: Building): Date {
 }
 
 /**
- * Whether a seat at this chat can still be offered at all (in this round or
+ * Whether a seat at this chat can still be offered by a round (this one or
  * a later one): its last call leaves at least MIN_ANSWER_MINUTES to answer.
+ * After that only the final call offers it (finalCallExpiresAt).
  */
 export function seatStillOfferable(
   startMin: number,
@@ -137,6 +145,47 @@ export function seatStillOfferable(
     lastCallAt(startMin, building).getTime() - now.getTime() >=
     MIN_ANSWER_MINUTES * 60_000
   );
+}
+
+/**
+ * A chat's final call: when the rounds can no longer offer it (its last call
+ * minus MIN_ANSWER_MINUTES: 30 minutes before; 45 for Ivey). From then on
+ * each waiting seat gets one last invite (finalCallExpiresAt).
+ */
+export function finalCallAt(startMin: number, building: Building): Date {
+  return new Date(
+    lastCallAt(startMin, building).getTime() - MIN_ANSWER_MINUTES * 60_000,
+  );
+}
+
+/**
+ * The answer-by time of a final-call invite sent at `now` (10 minutes before
+ * the chat; 25 for Ivey), or null before the final call or once that leaves
+ * under MIN_ANSWER_MINUTES to answer.
+ */
+export function finalCallExpiresAt(
+  startMin: number,
+  building: Building,
+  now: Date,
+): Date | null {
+  if (now < finalCallAt(startMin, building)) return null;
+  const walk = building === "ivey" ? IVEY_WALK_MIN : 0;
+  const at = saturdayAt(startMin - FINAL_ANSWER_LEAD_MIN - walk);
+  return at.getTime() - now.getTime() >= MIN_ANSWER_MINUTES * 60_000
+    ? at
+    : null;
+}
+
+/**
+ * Whether an invite was this chat's final-call one: the only invites
+ * answered after the chat's last call (every round caps there).
+ */
+export function isFinalCallInvite(
+  expiresAt: Date | null,
+  startMin: number,
+  building: Building,
+): boolean {
+  return !!expiresAt && expiresAt > lastCallAt(startMin, building);
 }
 
 /**
@@ -284,6 +333,11 @@ export type PlanChat = {
   seats: number;
   /** Invites holding a seat now (pending and not expired, or accepted). */
   live: number;
+  /**
+   * Final-call invites at this chat that were declined or expired (or
+   * otherwise ended): each used up one waiting seat's last offer.
+   */
+  finalSpent?: number;
 };
 
 export const chatKey = (c: { placementId: string; start: number }) =>
@@ -361,9 +415,16 @@ export function planInviteRound(input: PlanInput): PlanResult {
   for (const c of input.chats) {
     const free = c.seats - c.live;
     if (free <= 0) continue;
-    const expiresAt = inviteExpiresAt(round, c.start, c.building, now);
-    if (expiresAt) open.push({ ...c, open: free, expiresAt });
-    else unfillable.push({ ...c, open: free, expiresAt: now });
+    // Past the final call, a seat whose last offer was refused stays empty
+    // (and isn't reported as unfilled: that's the rule, not a problem).
+    const final = now >= finalCallAt(c.start, c.building);
+    const offerable = final ? free - (c.finalSpent ?? 0) : free;
+    if (offerable <= 0) continue;
+    const expiresAt = final
+      ? finalCallExpiresAt(c.start, c.building, now)
+      : inviteExpiresAt(round, c.start, c.building, now);
+    if (expiresAt) open.push({ ...c, open: offerable, expiresAt });
+    else unfillable.push({ ...c, open: offerable, expiresAt: now });
   }
   open.sort(
     (a, b) => a.start - b.start || a.placementId.localeCompare(b.placementId),
