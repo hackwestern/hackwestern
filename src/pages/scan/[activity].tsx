@@ -63,7 +63,7 @@ const HELD_STYLES = {
   },
 } as const;
 
-// Covers the camera until Next is tapped (or Enter, since Next has focus)
+// Covers the camera until Next (or "Photo ID checked") is tapped, or Enter
 const HeldResultOverlay = ({
   result,
   onNext,
@@ -98,12 +98,13 @@ const HeldResultOverlay = ({
             </p>
           )}
         </div>
+        {/* A new check-in can't be cleared without confirming the ID */}
         <DashboardButton
           autoFocus
           onClick={onNext}
           className="h-16 w-full text-xl font-semibold"
         >
-          Next
+          {result.kind === "success" ? "Photo ID checked" : "Next"}
         </DashboardButton>
       </div>
     </div>
