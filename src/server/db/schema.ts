@@ -477,6 +477,12 @@ export const coffeeChats = pgTable(
       () => coffeeChatPlacements.id,
       { onDelete: "cascade" },
     ),
+    // A hacker invited to an organizer's room booking ("Book an event"):
+    // the booking it belongs to. Null for every other chat. Removing the
+    // booking cancels its live chats first (the link is then cleared).
+    bookingId: uuid("booking_id").references(() => coffeeChatRoomBookings.id, {
+      onDelete: "set null",
+    }),
     // Invite round: 1 = Fri 10:00 PM batch, 2+ = Saturday 30-minute rounds.
     round: smallint("round"),
     // Pending invites expire at this time and the seat passes on.
@@ -500,6 +506,7 @@ export const coffeeChats = pgTable(
     index("coffee_chat_sponsor_slot_idx").on(t.sponsorId, t.slotTime),
     index("coffee_chat_user_idx").on(t.userId),
     index("coffee_chat_placement_idx").on(t.placementId),
+    index("coffee_chat_booking_idx").on(t.bookingId),
   ],
 );
 
@@ -712,8 +719,15 @@ export const coffeeChatRoomBookings = pgTable(
       () => sponsorJudgingSponsors.id,
       { onDelete: "set null" },
     ),
+    // What it's for (Book an event's Description; older rows: who it's for).
     label: varchar("label", { length: 255 }).notNull(),
     note: varchar("note", { length: 255 }),
+    // Who on the sponsorship team booked it (an HW Contacts name). Null on
+    // rows from before Book an event asked.
+    bookedBy: varchar("booked_by", { length: 255 }),
+    // The sponsor's reps in it (any number, maybe none). Their chats
+    // elsewhere in this session are refused.
+    repIds: uuid("rep_ids").array(),
     createdBy: varchar("created_by", { length: 255 }).references(
       () => users.id,
       { onDelete: "set null" },

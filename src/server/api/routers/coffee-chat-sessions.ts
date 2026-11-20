@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { sessionCap } from "~/lib/coffee-chat-schedule";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
@@ -37,7 +37,11 @@ import {
 } from "~/server/api/utils/coffee-chat-invites";
 import { sheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
 import { bookEvent, bookingHackers } from "~/server/api/utils/coffee-chat-book";
-import { notifyCoffeeChat } from "~/server/api/utils/coffee-chat-notify";
+import {
+  loadCoffeeChatNotices,
+  notifyCoffeeChat,
+} from "~/server/api/utils/coffee-chat-notify";
+import { fetchSponsorshipTeamNames } from "~/server/api/utils/sponsor-hw-contacts";
 import { db } from "~/server/db";
 import {
   assertCellFree,
@@ -54,6 +58,7 @@ import {
   coffeeChatPlacements,
   coffeeChatReps,
   coffeeChatRoomBookings,
+  coffeeChats,
   sponsorJudgingSponsors,
 } from "~/server/db/schema";
 
@@ -518,26 +523,83 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
     .query(({ input }) => bookingHackers(db, input.sponsorId, input.q)),
 
   /**
-   * Book an event on an empty cell: a rep of a sponsor and a hacker. Makes
-   * a sent (locked) placement and the hacker's accepted chat at the first
-   * time in that hour they can take (coffee-chat-book.ts). After the
-   * commit: the confirmed-chat notice path (bookings tab), the Invites tab
-   * and the Room Grid tab follow.
+   * Book an event, the form's lists: every registered sponsor with its reps
+   * (set up for chats or not), and the sponsorship team for "Booked by"
+   * (HW Contacts; null when the tab couldn't be read).
+   */
+  bookingOptions: protectedOrganizerProcedure.query(async () => {
+    const [sponsors, reps, staff] = await Promise.all([
+      db
+        .select({
+          id: sponsorJudgingSponsors.id,
+          name: sponsorJudgingSponsors.name,
+        })
+        .from(sponsorJudgingSponsors)
+        .orderBy(
+          asc(sponsorJudgingSponsors.name),
+          asc(sponsorJudgingSponsors.id),
+        ),
+      db
+        .select({
+          id: coffeeChatReps.id,
+          name: coffeeChatReps.name,
+          sponsorId: coffeeChatReps.sponsorId,
+        })
+        .from(coffeeChatReps)
+        .orderBy(asc(coffeeChatReps.position), asc(coffeeChatReps.id)),
+      fetchSponsorshipTeamNames(),
+    ]);
+    return {
+      sponsors: sponsors.map((sp) => ({
+        ...sp,
+        reps: reps
+          .filter((r) => r.sponsorId === sp.id)
+          .map((r) => ({ id: r.id, name: r.name })),
+      })),
+      staff,
+    };
+  }),
+
+  /**
+   * Book an event on an empty cell (coffee-chat-book.ts): description and
+   * booked by (a sponsorship team name), then an optional sponsor, reps and
+   * hackers. Each hacker gets a pending invite, sent after the commit;
+   * hackers who can't be invited are listed, the booking still goes in.
    */
   bookEvent: protectedOrganizerProcedure
     .input(
       z.object({
         room,
         sessionId,
-        sponsorId: z.string().uuid(),
-        repId: z.string().uuid(),
-        userId: z.string().min(1).max(255),
+        description: z.string().trim().min(1).max(255),
+        bookedBy: z.string().trim().min(1).max(255),
+        sponsorId: z.string().uuid().nullable().default(null),
+        repIds: z.array(z.string().uuid()).max(20).default([]),
+        userIds: z.array(z.string().min(1).max(255)).max(30).default([]),
       }),
     )
-    .mutation(async ({ input }) => {
-      const out = await boardWrite((tx, state) => bookEvent(tx, state, input));
-      await notifyCoffeeChat("accepted", { id: out.chatId });
-      mirrorCoffeeInvitesLater();
+    .mutation(async ({ ctx, input }) => {
+      // A sheet read, so before the board lock. Checked only when the tab
+      // could be read: a sheet outage never blocks booking.
+      const staff = await fetchSponsorshipTeamNames();
+      const who = input.bookedBy.toLowerCase();
+      if (staff && !staff.some((n) => n.toLowerCase() === who)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: errors.bookedByUnknown,
+        });
+      }
+      const out = await boardWrite((tx, state) =>
+        bookEvent(tx, state, { ...input, by: ctx.session.user.id }),
+      );
+      // The usual invite DM (or email) for each hacker, after the commit.
+      if (out.chatIds.length) {
+        const notices = await loadCoffeeChatNotices(out.chatIds);
+        await deliverInviteNotices(
+          notices.map((notice) => ({ event: "offered" as const, notice })),
+        );
+        mirrorCoffeeInvitesLater();
+      }
       await remirrorIf(true);
       return out;
     }),
@@ -564,6 +626,8 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         sessionId,
         forSponsorId: z.string().uuid().nullable().default(null),
         label: z.string().trim().min(1).max(255),
+        /** Undo of a Book an event booking keeps who booked it. */
+        bookedBy: z.string().trim().max(255).nullable().default(null),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -588,6 +652,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
             sessionId: input.sessionId,
             forSponsorId: input.forSponsorId,
             label: input.label,
+            bookedBy: input.bookedBy === "" ? null : input.bookedBy,
             createdBy: ctx.session.user.id,
           })
           .returning({ id: coffeeChatRoomBookings.id });
@@ -610,6 +675,23 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         assertCellFree(state, input.room, input.sessionId, {
           bookingId: input.bookingId,
         });
+        // Its hackers were told the room and time.
+        const invited = await tx
+          .select({ id: coffeeChats.id })
+          .from(coffeeChats)
+          .where(
+            and(
+              eq(coffeeChats.bookingId, input.bookingId),
+              inArray(coffeeChats.status, ["pending", "accepted"]),
+            ),
+          )
+          .limit(1);
+        if (invited.length) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: errors.bookingHasHackers,
+          });
+        }
         await tx
           .update(coffeeChatRoomBookings)
           .set({ room: input.room, sessionId: input.sessionId })
@@ -623,7 +705,18 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
   removeBooking: protectedOrganizerProcedure
     .input(z.object({ bookingId: z.string().uuid() }))
     .mutation(async ({ input }) => {
-      const sent = await boardWrite(async (tx, state) => {
+      const { sent, cancelled } = await boardWrite(async (tx, state) => {
+        // Its hackers' live invites are called off first (and told).
+        const cancelled = await tx
+          .update(coffeeChats)
+          .set({ status: "cancelled", respondedAt: new Date() })
+          .where(
+            and(
+              eq(coffeeChats.bookingId, input.bookingId),
+              inArray(coffeeChats.status, ["pending", "accepted"]),
+            ),
+          )
+          .returning({ id: coffeeChats.id });
         const gone = await tx
           .delete(coffeeChatRoomBookings)
           .where(eq(coffeeChatRoomBookings.id, input.bookingId))
@@ -633,10 +726,18 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
             code: "NOT_FOUND",
             message: errors.unknownBooking,
           });
-        return anySent(state);
+        return {
+          sent: anySent(state),
+          cancelled: cancelled.map((c) => c.id),
+        };
       });
-      await remirrorIf(sent);
-      return { ok: true };
+      // After the commit: the cancel DM (or email); the reminder goes too.
+      await Promise.all(
+        cancelled.map((id) => notifyCoffeeChat("cancelled", { id })),
+      );
+      if (cancelled.length) mirrorCoffeeInvitesLater();
+      await remirrorIf(sent || cancelled.length > 0);
+      return { ok: true, cancelled: cancelled.length };
     }),
 
   /**

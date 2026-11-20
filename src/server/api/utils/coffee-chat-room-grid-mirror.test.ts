@@ -103,6 +103,8 @@ const state: Pick<BoardState, "sponsors" | "placements" | "bookings"> = {
       forSponsorId: null,
       label: "Mentors",
       note: "Resumes",
+      bookedBy: null,
+      repIds: [],
     },
   ], // an older booking: its note is kept but not shown
 };

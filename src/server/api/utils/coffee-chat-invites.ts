@@ -987,10 +987,13 @@ export async function deliverInviteNotices(
   return result;
 }
 
-/** Pending session invites whose notice hasn't gone out, still answerable. */
+/**
+ * Pending session invites (and booked-event invites) whose notice hasn't
+ * gone out, still answerable.
+ */
 function unnotifiedInvites(now: Date) {
   return and(
-    isNotNull(coffeeChats.placementId),
+    or(isNotNull(coffeeChats.placementId), isNotNull(coffeeChats.bookingId)),
     eq(coffeeChats.status, "pending"),
     isNull(coffeeChats.notifiedAt),
     or(isNull(coffeeChats.expiresAt), gt(coffeeChats.expiresAt, now)),

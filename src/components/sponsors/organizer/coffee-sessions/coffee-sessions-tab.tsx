@@ -12,7 +12,6 @@ import {
 } from "~/lib/coffee-chat-board-view";
 import {
   chatsInWindow,
-  minutesOfClock,
   type CoffeeRoomId,
   type CoffeeSessionId,
 } from "~/lib/coffee-chat-sessions";
@@ -33,12 +32,7 @@ import {
 } from "./chat-modal";
 import { FixesBand } from "./fixes-band";
 import { HelpSheet } from "./help-sheet";
-import {
-  BoardTips,
-  clockOf,
-  sessionLabel,
-  type SessionBoardData,
-} from "./parts";
+import { BoardTips, sessionLabel, type SessionBoardData } from "./parts";
 import { RoomsGrid } from "./rooms-grid";
 import { SponsorsBand, sponsorRowId } from "./sponsors-band";
 import { useBoardDrag } from "./use-board-drag";
@@ -197,6 +191,7 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
                     sessionId: b.sessionId as CoffeeSessionId,
                     label: b.label,
                     forSponsorId: b.forSponsorId,
+                    bookedBy: b.bookedBy,
                   }),
               },
             }
@@ -206,13 +201,13 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     onError,
     onSettled: refresh,
   });
-  // Book an event: a sent (locked) chat with an accepted hacker.
+  // Book an event: a room booking; each hacker picked gets an invite.
   const bookEvent = api.coffeeChatSessions.bookEvent.useMutation({
     onSuccess: (r) =>
       toast.success(
         copy.toast.eventBooked(
-          r.name,
-          clockOf(minutesOfClock(r.slotTime) ?? 0),
+          r.chatIds.length,
+          r.skipped.map((x) => x.reason),
         ),
       ),
     onError,
@@ -487,12 +482,14 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
             {
               room: v.room as CoffeeRoomId,
               sessionId: v.session as CoffeeSessionId,
+              description: v.description,
+              bookedBy: v.bookedBy,
               sponsorId: v.sponsorId,
-              repId: v.repId,
-              userId: v.userId,
+              repIds: v.repIds,
+              userIds: v.userIds,
             },
             {
-              // The modal shows the new chat.
+              // The modal shows the new booking.
               onSuccess: () =>
                 void refresh().then(() => {
                   const k = keyOf(v.room, v.session);

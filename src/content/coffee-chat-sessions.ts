@@ -383,19 +383,31 @@ export const coffeeSessionsCopy = {
     toastFront: (name: string) => `${name} is first in line.`,
   },
 
-  /** Book an event on an empty cell: sponsor, then rep, then hacker. */
+  /**
+   * Book an event on an empty cell: what it's for and who on the
+   * sponsorship team books it (both required), then an optional sponsor,
+   * any of its reps and any hackers (each gets a normal invite).
+   */
   booking: {
     title: "Book an event",
     /** The cell it's for, as fixed text: "Rm 2241 · 10–11". */
     where: (room: string, s: string) => `For ${room} · ${s}`,
+    description: "Description",
+    descriptionPlaceholder: "e.g. Resume reviews with Acme",
+    bookedBy: "Booked by",
+    bookedByPick: "Pick who's booking",
+    /** HW Contacts couldn't be read: no names to pick from. */
+    noStaff: "Couldn't load the sponsorship team. Try again in a minute.",
+    optional: "(optional)",
     sponsor: "Sponsor",
-    sponsorPick: "Pick a sponsor",
-    noSponsors: "No sponsor has submitted yet.",
-    rep: "Rep",
-    repPick: "Pick a rep",
-    /** None of the sponsor's reps can chat in this session. */
+    sponsorNone: "No sponsor",
+    reps: "Reps",
+    /** The sponsor has no reps saved, or none is free then. */
     noReps: (s: string) => `None of their reps is free at ${s}.`,
-    hacker: "Hacker",
+    hackers: "Hackers",
+    /** Hackers are invited only to a sponsor's event. */
+    hackersNeedSponsor: "Pick a sponsor to invite hackers.",
+    picked: (n: number) => `${plural(n, "hacker")} picked`,
     scannedTitle: "Scanned at their booth",
     scannedNone: "They haven't scanned anyone yet.",
     searchLabel: "Or search by name or hacker ID",
@@ -406,14 +418,16 @@ export const coffeeSessionsCopy = {
     /** One hacker in the list: "Ada L. · brave-otter-kite". */
     hackerLine: (name: string, hackerId: string | null) =>
       hackerId ? `${name} · ${hackerId}` : name,
-    /** Under the Book button: booked chats skip Notify hackers. */
-    lockedNote:
-      "Booked chats are confirmed and locked right away: no Notify needed.",
+    /** Under the Book button. */
+    inviteNote:
+      "Each hacker gets the usual invite to accept or decline, until 20 minutes before the event. More than one hacker makes it a group chat.",
     book: "Book",
     cancel: "Cancel",
-    needSponsor: "Pick a sponsor.",
-    needRep: "Pick a rep.",
-    needHacker: "Pick a hacker.",
+    needDescription: "Add a description.",
+    needBookedBy: "Pick who's booking.",
+    /** In the booking's detail. */
+    bookedByLine: (name: string) => `Booked by ${name}`,
+    repsLine: (names: string) => `Reps: ${names}`,
   },
 
   bar: {
@@ -475,8 +489,9 @@ export const coffeeSessionsCopy = {
     undo: "Undo",
     restored: "Put back.",
     booked: "Room booked.",
-    /** After Book an event: "Booked Ada L. at 10:15." */
-    eventBooked: (name: string, time: string) => `Booked ${name} at ${time}.`,
+    /** After Book an event: how many hackers were invited, and who couldn't be. */
+    eventBooked: (invited: number, skipped: string[]) =>
+      `Room booked.${invited ? ` Invited ${plural(invited, "hacker")}.` : ""}${skipped.length ? ` Couldn't invite: ${skipped.join(" ")}` : ""}`,
     sent: (chats: number, invited: number) =>
       `Sent ${plural(chats, "chat")}. Invited ${plural(invited, "hacker")}.`,
     /** Sponsors who changed after invites; Send confirmed their schedule again. */
@@ -515,6 +530,16 @@ export const coffeeSessionsCopy = {
       "That hacker can't be booked: they aren't admitted or didn't agree to share with sponsors.",
     bookSameSponsor: (name: string, sponsor: string) =>
       `${name} already has a chat with ${sponsor}.`,
+    /** Book an event: "Booked by" isn't on the sponsorship team list. */
+    bookedByUnknown: "Pick who's booking from the sponsorship team list.",
+    bookHackersNeedSponsor: "Pick a sponsor to invite hackers.",
+    /** Book an event: too close to the start for an invite to be answered. */
+    bookTooLate: (name: string) => `${name}: too close to the start to invite.`,
+    /** A rep picked for an event who is busy then. */
+    bookRepBusy: (rep: string, s: string) =>
+      `${rep} already has a chat or event at ${s}.`,
+    bookingHasHackers:
+      "Hackers were invited to this event, so it can't be moved. Remove it and book again.",
     workshopsUnknown,
   },
 
@@ -560,7 +585,7 @@ export const coffeeSessionsCopy = {
     sameWord: `A sponsor's "Confirmed" (in their portal) means the same as your "Sent" here.`,
     after: {
       lead: "After Notify hackers:",
-      rest: " notified chats are locked. Nobody can drag, move or remove them, and Auto-schedule never touches them. A chat you add later (a new time slot) stays a draft you can move until the next Notify hackers, which notifies only the new ones. Sponsor edits (fewer chats, a removed rep, a new group size) still update invites: hackers move to another open seat or are told. Booking changes update the Room Grid tab right away. To book an event, click an empty cell: pick the sponsor, the rep and the hacker (someone they scanned, or search). It's confirmed and locked right away.",
+      rest: " notified chats are locked. Nobody can drag, move or remove them, and Auto-schedule never touches them. A chat you add later (a new time slot) stays a draft you can move until the next Notify hackers, which notifies only the new ones. Sponsor edits (fewer chats, a removed rep, a new group size) still update invites: hackers move to another open seat or are told. Booking changes update the Room Grid tab right away. To book an event, click an empty cell, add a description and who's booking; the sponsor, reps and hackers are optional. Each hacker gets the usual invite.",
     },
     dataTitle: "Where data lives",
     data: "Spon Team RUN OF SHOW sheet: RUN OF SHOW, Sponsor Day-Of, Workshops, Opening + Closing Ceremonies, Coffee Chat Setup, Coffee Chat Room Grid (app-written, locked), HW Contacts, Sponsor Judging (app-written). Edits to grey tabs are overwritten by the app.",

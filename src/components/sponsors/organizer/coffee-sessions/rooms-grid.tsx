@@ -275,7 +275,9 @@ function Cell({
   const dragged = drag?.src === k && "opacity-40";
   if (c.kind === "booking") {
     const b = c.booking;
-    const title = rc.cellTitle([b.label, rc.adhoc]);
+    // Who booked it, when the booking says (Book an event).
+    const by = b.bookedBy ? copy.booking.bookedByLine(b.bookedBy) : rc.adhoc;
+    const title = rc.cellTitle([b.label, by]);
     return (
       <button
         type="button"
@@ -299,7 +301,7 @@ function Cell({
           {b.label}
         </span>
         <span className={cn(line, "font-semibold text-dashboard-text-medium")}>
-          {rc.adhoc}
+          {by}
         </span>
       </button>
     );

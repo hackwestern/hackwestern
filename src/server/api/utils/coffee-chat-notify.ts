@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 
 import { isAdmittedStatus } from "~/lib/admission";
 import {
@@ -61,19 +61,25 @@ export type CoffeeChatNotice = {
   expiresAt: Date | null;
   /** Group chat (true), 1-on-1 (false), unknown (null): chatIsGroup. */
   group?: boolean | null;
+  /** An organizer's room booking it belongs to (Book an event), or null. */
+  bookingId?: string | null;
 };
 
 /**
  * Group or 1-on-1. A session chat (has a placement) is a group when the
  * sponsor's hackers per chat is over 1 (no prefs row = 1, like the board's
- * NO_PREFS). An old per-slot request follows the sponsor's chat style
- * ("group" / "oneOnOne"); null when it has none.
+ * NO_PREFS). A booked event (Book an event) is a group when more than one
+ * hacker was invited to it. An old per-slot request follows the sponsor's
+ * chat style ("group" / "oneOnOne"); null when it has none.
  */
 export function chatIsGroup(chat: {
   placementId: string | null;
   hackersPerChat: number | null;
   style: string | null;
+  bookingId?: string | null;
+  bookingHackers?: number | null;
 }): boolean | null {
+  if (chat.bookingId) return (chat.bookingHackers ?? 1) > 1;
   if (chat.placementId) return (chat.hackersPerChat ?? 1) > 1;
   if (chat.style === "group") return true;
   if (chat.style === "oneOnOne") return false;
@@ -114,6 +120,9 @@ export async function loadCoffeeChatNotices(
       repName: coffeeChats.repName,
       hackersPerChat: coffeeChatPrefs.hackersPerChat,
       style: sponsorJudgingSponsors.coffeeChatStyle,
+      bookingId: coffeeChats.bookingId,
+      // Hackers invited to the same booked event (any answer).
+      bookingHackers: sql<number>`(select count(*)::int from coffee_chat b where b.booking_id = ${coffeeChats.bookingId})`,
     })
     .from(coffeeChats)
     .innerJoin(
@@ -147,6 +156,7 @@ export async function loadCoffeeChatNotices(
       repName: row.repName,
       expiresAt: row.expiresAt,
       group: chatIsGroup(row),
+      bookingId: row.bookingId,
     };
   });
 }

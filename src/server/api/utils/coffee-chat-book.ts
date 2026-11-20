@@ -1,13 +1,15 @@
 /**
- * "Book an event" on the organizer coffee board: an organizer picks a
- * sponsor, one of its reps and a hacker for an empty cell (a room and a
- * session). It makes a real chat: a placement for the rep there, already
- * notified (sent, so it's locked like every notified chat), and the
- * hacker's coffee chat at the first time in that hour they can take,
- * accepted (they agreed in person). The hacker is picked from the hackers
- * the sponsor scanned at their booth, or found by name or hacker ID. Only
- * admitted hackers who agreed to share with sponsors are listed or booked,
- * as everywhere else on the board.
+ * "Book an event" on the organizer coffee board: an organizer books an
+ * empty cell (a room and a session) with a description and who on the
+ * sponsorship team booked it. A sponsor (any, set up for chats or not), any
+ * of its reps and any hackers are optional. The cell is then an organizer
+ * booking: taken on the board, blocked for Auto-schedule and other
+ * bookings. Each hacker picked gets a normal pending invite (Slack DM with
+ * Accept / Decline, or email), answered by 20 minutes before the event; the
+ * 15-minute reminder follows an accept. Hackers are picked from the ones the
+ * sponsor scanned at their booth, or found by name or hacker ID. Only
+ * admitted hackers who agreed to share with sponsors are listed or invited,
+ * as everywhere else on the board. docs/decisions.md 2026-11-20.
  */
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
@@ -17,12 +19,15 @@ import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import { admittedStatuses } from "~/lib/admission";
 import { currentRound } from "~/lib/coffee-chat-invites";
 import { seatFit } from "~/lib/coffee-chat-line";
-import { coffeeChatTimeOf } from "~/lib/coffee-chat-requests";
-import { sessionCap } from "~/lib/coffee-chat-schedule";
+import {
+  coffeeChatExpiresAt,
+  coffeeChatTimeOf,
+} from "~/lib/coffee-chat-requests";
+import { COFFEE_SESSIONS } from "~/lib/coffee-chat-sessions";
+import { inviteRoomLabel } from "~/server/api/utils/coffee-chat-invite-text";
 import {
   busyOf,
   isLive,
-  layoutOf,
   loadChatRows,
   sweepExpired,
   type InviteTx,
@@ -30,22 +35,25 @@ import {
 import { shortName } from "~/server/api/utils/coffee-chat-invites-sheet-mirror";
 import {
   assertCellFree,
-  assertRepCanChat,
   assertWorkshopsKnown,
+  repInBooking,
   type BoardState,
 } from "~/server/api/utils/coffee-chat-sessions-board";
 import { normalizeHackerId } from "~/server/api/utils/hacker-id";
-import { db } from "~/server/db";
+import type { db } from "~/server/db";
 import {
   applications,
-  coffeeChatPlacements,
+  coffeeChatReps,
+  coffeeChatRoomBookings,
   coffeeChats,
+  sponsorJudgingSponsors,
   sponsorScans,
   users,
 } from "~/server/db/schema";
 
 const lineErrors = coffeeChatInvitesCopy.line;
 const errors = coffeeSessionsCopy.errors;
+const sessionLabel = (id: string) => coffeeSessionsCopy.sessions[id] ?? id;
 type Conn = typeof db | InviteTx;
 
 export type BookingHacker = {
@@ -138,125 +146,169 @@ const fail = (code: "BAD_REQUEST" | "CONFLICT", message: string) =>
 export type BookInput = {
   room: string;
   sessionId: string;
-  sponsorId: string;
-  repId: string;
-  userId: string;
+  description: string;
+  bookedBy: string;
+  sponsorId: string | null;
+  repIds: string[];
+  userIds: string[];
+  /** The organizer signed in (created_by). */
+  by: string | null;
+};
+
+export type BookResult = {
+  bookingId: string;
+  /** New pending invites, for delivery after the commit. */
+  chatIds: string[];
+  /** Hackers who couldn't be invited, each with why (a full sentence). */
+  skipped: { userId: string; reason: string }[];
 };
 
 /**
- * Book the event inside the board write (`tx` holds the board lock and
- * `state` was read under it). Same rules as any chat: the rep is free then
- * (ticked, not in their workshop, not elsewhere) and has a session left of
- * the chats they asked for; the cell is empty; the hacker is admitted and
- * shares with sponsors, has no chat with this sponsor yet, no other chat
- * then and fewer than 2 live chats.
+ * Book an event inside the board write (`tx` holds the board lock and
+ * `state` was read under it): a room booking on an empty cell with a
+ * description and who booked it, for any sponsor (or none), any of its reps
+ * and any hackers. Each hacker gets a normal pending invite (answer by 20
+ * minutes before the event; the usual DM goes out after the commit) for the
+ * whole session hour, in this room. Per-hacker rules as everywhere: admitted
+ * and shares with sponsors, no chat with this sponsor yet, nothing else
+ * then, fewer than 2 live chats. A hacker who fails one is skipped (and
+ * reported), not the booking. Hackers need a sponsor. Reps already in a chat
+ * or another event this session are refused.
  */
 export async function bookEvent(
   tx: InviteTx,
   state: BoardState,
   input: BookInput,
   now = new Date(),
-): Promise<{
-  placementId: string;
-  chatId: string;
-  name: string;
-  slotTime: string;
-}> {
+): Promise<BookResult> {
   assertWorkshopsKnown(state);
-  const sponsor = state.sponsors.find((s) => s.id === input.sponsorId);
-  const rep = sponsor?.reps.find((r) => r.id === input.repId);
-  if (!sponsor || !rep) throw fail("BAD_REQUEST", errors.badReference);
-  assertRepCanChat(state, rep.id, input.sessionId);
   assertCellFree(state, input.room, input.sessionId);
-  // Like Undo (placeChat): one more session than the rep's chats need is refused.
-  const schedRep = state.sched
-    .flatMap((sp) => sp.reps)
-    .find((r) => r.id === rep.id);
-  const has = state.placements.filter((p) => p.repId === rep.id).length;
-  if (schedRep && has >= sessionCap(schedRep)) {
-    throw fail("BAD_REQUEST", errors.repAtCap(has));
+  const session = COFFEE_SESSIONS.find((s) => s.id === input.sessionId);
+  if (!session) throw fail("BAD_REQUEST", errors.badCell);
+  const userIds = [...new Set(input.userIds)];
+  const repIds = [...new Set(input.repIds)];
+  if (!input.sponsorId && (userIds.length || repIds.length)) {
+    throw fail("BAD_REQUEST", errors.bookHackersNeedSponsor);
+  }
+  let sponsorName = "";
+  const repNames: string[] = [];
+  if (input.sponsorId) {
+    const [sponsor] = await tx
+      .select({
+        id: sponsorJudgingSponsors.id,
+        name: sponsorJudgingSponsors.name,
+      })
+      .from(sponsorJudgingSponsors)
+      .where(eq(sponsorJudgingSponsors.id, input.sponsorId));
+    if (!sponsor) throw fail("BAD_REQUEST", errors.unknownSponsor);
+    sponsorName = sponsor.name;
+    const reps = repIds.length
+      ? await tx
+          .select({ id: coffeeChatReps.id, name: coffeeChatReps.name })
+          .from(coffeeChatReps)
+          .where(
+            and(
+              inArray(coffeeChatReps.id, repIds),
+              eq(coffeeChatReps.sponsorId, sponsor.id),
+            ),
+          )
+      : [];
+    if (reps.length !== repIds.length) {
+      throw fail("BAD_REQUEST", errors.badReference);
+    }
+    for (const id of repIds) {
+      const rep = reps.find((r) => r.id === id)!;
+      const busy =
+        state.placements.some(
+          (p) => p.repId === id && p.sessionId === input.sessionId,
+        ) || repInBooking(state, id, input.sessionId);
+      if (busy) {
+        throw fail(
+          "CONFLICT",
+          errors.bookRepBusy(rep.name, sessionLabel(input.sessionId)),
+        );
+      }
+      repNames.push(rep.name);
+    }
   }
 
-  const [h] = await tx
+  const [booking] = await tx
+    .insert(coffeeChatRoomBookings)
+    .values({
+      room: input.room,
+      sessionId: input.sessionId,
+      forSponsorId: input.sponsorId,
+      label: input.description,
+      bookedBy: input.bookedBy,
+      repIds,
+      createdBy: input.by,
+    })
+    .returning({ id: coffeeChatRoomBookings.id });
+  const bookingId = booking!.id;
+  const result: BookResult = { bookingId, chatIds: [], skipped: [] };
+  if (!input.sponsorId || userIds.length === 0) return result;
+
+  const slotTime = coffeeChatTimeOf(session.start);
+  const expiresAt = coffeeChatExpiresAt(slotTime);
+  const minutes = session.end - session.start;
+  const hackers = await tx
     .select(hackerCols)
     .from(users)
     .innerJoin(applications, eq(applications.userId, users.id))
-    .where(and(eq(users.id, input.userId), shareable(now)));
-  if (!h) throw fail("BAD_REQUEST", errors.bookNoHacker);
-  const name = toHacker(h).name;
-
-  // The chats this placement holds, as the invites lay them out.
-  const placementId = crypto.randomUUID();
-  const chats = layoutOf(
-    {
-      ...state,
-      placements: [
-        ...state.placements,
-        {
-          id: placementId,
-          repId: rep.id,
-          sponsorId: sponsor.id,
-          sessionId: input.sessionId,
-          room: input.room,
-          pinned: true,
-          forced: false,
-          status: "sent",
-          sentAt: now,
-          window: null,
-        },
-      ],
-    },
-    (p) => p.id === placementId,
-  );
-  if (chats.length === 0) throw fail("BAD_REQUEST", errors.repAtCap(has));
-  // The hacker takes the first chat of the hour they're free for.
+    .where(and(inArray(users.id, userIds), shareable(now)));
   const rows = await sweepExpired(tx, await loadChatRows(tx), now);
-  const theirs = rows
-    .filter((r) => r.userId === h.userId && isLive(r))
-    .map(busyOf);
-  const fits = chats.map((c) => ({ c, fit: seatFit(c, theirs) }));
-  const pick = fits.find((x) => x.fit === "ok")?.c;
-  if (!pick) {
-    const fit = fits[0]!.fit;
-    const withSponsor = theirs.some((b) => b.sponsorId === sponsor.id);
-    throw fail(
-      "CONFLICT",
-      fit === "full"
-        ? lineErrors.full(name)
-        : withSponsor
-          ? errors.bookSameSponsor(name, sponsor.name)
-          : lineErrors.busy(name),
-    );
+  const seat = { sponsorId: input.sponsorId, start: session.start, minutes };
+  for (const userId of userIds) {
+    const h = hackers.find((x) => x.userId === userId);
+    if (!h) {
+      result.skipped.push({ userId, reason: errors.bookNoHacker });
+      continue;
+    }
+    const name = toHacker(h).name;
+    if (now >= expiresAt) {
+      result.skipped.push({ userId, reason: errors.bookTooLate(name) });
+      continue;
+    }
+    const theirs = rows
+      .filter((r) => r.userId === userId && isLive(r))
+      .map(busyOf);
+    const fit = seatFit(seat, theirs);
+    if (fit !== "ok") {
+      const withSponsor = theirs.some((b) => b.sponsorId === input.sponsorId);
+      result.skipped.push({
+        userId,
+        reason:
+          fit === "full"
+            ? lineErrors.full(name)
+            : withSponsor
+              ? errors.bookSameSponsor(name, sponsorName)
+              : lineErrors.busy(name),
+      });
+      continue;
+    }
+    const [chat] = await tx
+      .insert(coffeeChats)
+      .values({
+        sponsorId: input.sponsorId,
+        userId,
+        room: inviteRoomLabel(input.room),
+        slotTime,
+        durationMinutes: minutes,
+        status: "pending",
+        repName: repNames.length ? repNames.join(", ") : null,
+        bookingId,
+        round: currentRound(now),
+        expiresAt,
+        source: "organizer",
+      })
+      .onConflictDoNothing()
+      .returning({ id: coffeeChats.id });
+    // Another chat for them at this time committed after the read.
+    if (!chat) {
+      result.skipped.push({ userId, reason: lineErrors.busy(name) });
+      continue;
+    }
+    result.chatIds.push(chat.id);
   }
-
-  await tx.insert(coffeeChatPlacements).values({
-    id: placementId,
-    repId: rep.id,
-    room: input.room,
-    sessionId: input.sessionId,
-    pinned: true,
-    status: "sent",
-    sentAt: now,
-  });
-  const slotTime = coffeeChatTimeOf(pick.start);
-  const [chat] = await tx
-    .insert(coffeeChats)
-    .values({
-      sponsorId: sponsor.id,
-      userId: h.userId,
-      room: pick.room,
-      slotTime,
-      durationMinutes: pick.minutes,
-      status: "accepted",
-      respondedAt: now,
-      repName: pick.repName,
-      placementId,
-      round: currentRound(now),
-      source: "organizer",
-    })
-    .onConflictDoNothing()
-    .returning({ id: coffeeChats.id });
-  // Another chat for them at this time committed after the read.
-  if (!chat) throw fail("CONFLICT", lineErrors.busy(name));
-  return { placementId, chatId: chat.id, name, slotTime };
+  return result;
 }

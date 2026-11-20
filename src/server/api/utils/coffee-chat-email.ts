@@ -43,7 +43,10 @@ type OfferDetails = Pick<
   "sponsorName" | "hackerFirstName" | "slotTime" | "durationMinutes" | "room"
 > &
   Partial<
-    Pick<CoffeeChatNotice, "placementId" | "repName" | "expiresAt" | "group">
+    Pick<
+      CoffeeChatNotice,
+      "placementId" | "repName" | "expiresAt" | "group" | "bookingId"
+    >
   > & {
     /** A changed session invite the hacker must confirm again. */
     reconfirm?: boolean;
@@ -110,7 +113,7 @@ export function sessionInviteEmail(chat: OfferDetails) {
 }
 
 export function coffeeChatOfferEmail(chat: OfferDetails) {
-  if (chat.placementId) return sessionInviteEmail(chat);
+  if (chat.placementId ?? chat.bookingId) return sessionInviteEmail(chat);
   const when = coffeeChatNotifyCopy.when(
     formatCoffeeChatTime(chat.slotTime),
     chat.durationMinutes,
