@@ -124,8 +124,8 @@ function parseArgs(argv: string[]): Args {
   if (args.tables < 1 || args.rows < 1 || args.teams < 1) {
     throw new Error("--tables, --rows and --teams must all be >= 1");
   }
-  if (args.teams > args.tables) {
-    throw new Error("--teams cannot exceed --tables (one team per table)");
+  if (args.teams > args.tables * 2) {
+    throw new Error("--teams cannot exceed 2 x --tables (two teams per table)");
   }
   // The organizer account judges too, so it counts toward the 3 per table.
   if (args.judges + 1 < 3) {
@@ -336,7 +336,7 @@ try {
   console.log(
     [
       `Seeded in ${secs}s:`,
-      `  ${args.tables} tables in ${args.rows} rows`,
+      `  ${plan.tables} tables (${plan.seats} seats) in ${args.rows} rows`,
       `  ${seating.seated} teams seated (${args.random ? "random" : "submission order"}), ${seating.emptyTables} tables empty`,
       `  ${plan.judges} judges, ${plan.tablesPerJudge.min}-${plan.tablesPerJudge.max} tables each, ${plan.judgesPerTable} per table`,
       ...(args.marks

@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { faker } from "@faker-js/faker";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 // Same guard as cheat-check-sweep.test.ts: with a real CHEAT_SWEEP_SECRET in
 // .env, the sweep tests below would otherwise POST the real bearer token at
@@ -146,14 +146,14 @@ async function setupRoom(opts: {
   }
   await org.caller.judging.admin.autoAssign();
   const tables = await db.query.judgingTables.findMany({
-    orderBy: (t, { asc }) => [asc(t.number)],
+    orderBy: (t, { asc }) => [asc(t.number), asc(t.seat)],
   });
   return { org, teamIds, judges: judgeList, tables };
 }
 
-async function tableByNumber(number: number) {
+async function tableByNumber(number: number, seat = 1) {
   const table = await db.query.judgingTables.findFirst({
-    where: eq(judgingTables.number, number),
+    where: and(eq(judgingTables.number, number), eq(judgingTables.seat, seat)),
   });
   assertDefined(table, `expected table ${number}`);
   return table;
@@ -326,13 +326,66 @@ describe("seatTeams", () => {
     expect((await tableByNumber(2)).status).toBe("empty");
   });
 
-  test("refuses when more teams submitted than tables are active", async () => {
+  test("refuses when more than 2 teams per active table submitted", async () => {
     const org = await makeOrganizer();
     await org.caller.judging.admin.setupTables({ tableCount: 2, rows: 1 });
-    for (let i = 0; i < 3; i++) await makeTeam();
+    for (let i = 0; i < 5; i++) await makeTeam();
     await expect(
       org.caller.judging.admin.seatTeams({ random: false }),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  });
+
+  test("more teams than tables splits tables evenly, 2 teams each at most", async () => {
+    const org = await makeOrganizer();
+    await org.caller.judging.admin.setupTables({ tableCount: 4, rows: 1 });
+    for (let i = 0; i < 6; i++) {
+      await makeTeam({ submittedAt: new Date(Date.UTC(2026, 10, 20, 8, i)) });
+    }
+    const result = await org.caller.judging.admin.seatTeams({ random: false });
+    expect(result).toMatchObject({ seated: 6, emptyTables: 0 });
+    // Tables 2 and 4 get a second seat; the snake visits it right after.
+    expect(result.seating.map((s) => s.tableNumber)).toEqual([
+      1, 2, 2, 3, 4, 4,
+    ]);
+    expect((await tableByNumber(2, 2)).status).toBe("waiting");
+  });
+
+  test("fewer teams on re-seat removes the extra seats and clears the plan", async () => {
+    const { org, teamIds } = await setupRoom({
+      tableCount: 3,
+      teamCount: 5,
+      judgeCount: 3,
+    });
+    expect(await db.query.judgingAssignments.findMany()).toHaveLength(15);
+    await db
+      .update(teams)
+      .set({ submissionStatus: "draft" })
+      .where(inArray(teams.id, teamIds.slice(0, 2)));
+
+    const result = await org.caller.judging.admin.seatTeams({ random: false });
+    expect(result).toMatchObject({ seated: 3, emptyTables: 0 });
+    const seats = await db.query.judgingTables.findMany();
+    expect(seats.every((s) => s.seat === 1)).toBe(true);
+    expect(await db.query.judgingAssignments.findMany()).toHaveLength(0);
+  });
+
+  test("a split table can't be switched off while its second seat has a team", async () => {
+    const { org } = await setupRoom({
+      tableCount: 2,
+      teamCount: 4,
+      judgeCount: 3,
+    });
+    const first = await tableByNumber(2);
+    await db
+      .update(teams)
+      .set({ judgingTableId: null })
+      .where(eq(teams.judgingTableId, first.id));
+    await expect(
+      org.caller.judging.admin.setTableActive({
+        tableId: first.id,
+        isActive: false,
+      }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
   test("switched-off tables are skipped", async () => {
@@ -352,6 +405,34 @@ describe("seatTeams", () => {
 /* ---------- auto-assign ---------- */
 
 describe("autoAssign", () => {
+  test("split tables: each seat gets 3 judges, and a section visits both seats in a row", async () => {
+    const { org, tables } = await setupRoom({
+      tableCount: 4,
+      teamCount: 6,
+      judgeCount: 6,
+    });
+    expect(tables).toHaveLength(6);
+    expect(await org.caller.judging.admin.autoAssign()).toMatchObject({
+      tables: 4,
+      seats: 6,
+      stops: 18,
+    });
+    for (const t of tables) {
+      const here = await db.query.judgingAssignments.findMany({
+        where: eq(judgingAssignments.judgingTableId, t.id),
+      });
+      expect(new Set(here.map((s) => s.judgeId)).size).toBe(3);
+    }
+    // 18 visits / 6 judges = 3 stops; judge 1 walks 1, 2 (seat 1), 2 (seat 2).
+    const first = await db.query.judgingAssignments.findMany({
+      orderBy: (a, { asc }) => [asc(a.id)],
+      limit: 3,
+    });
+    expect(first.map((s) => s.judgingTableId)).toEqual(
+      tables.slice(0, 3).map((t) => t.id),
+    );
+  });
+
   test("every table gets 3 different judges; sections follow the order judges were added", async () => {
     const { judges: js, tables } = await setupRoom({
       tableCount: 12,
@@ -832,6 +913,40 @@ describe("judge flow", () => {
       assignmentId: empty.id,
     });
     expect(row.status).toBe("team_absent");
+  });
+
+  test("absence is final: the seat's other assigned stops are cancelled", async () => {
+    const { judges: js } = await setupRoom({ tableCount: 3, judgeCount: 3 });
+    const stop = await firstStop(js[0]!.caller);
+    // Another judge is already at this seat; their visit is left alone.
+    const others = await db.query.judgingAssignments.findMany({
+      where: and(
+        eq(judgingAssignments.judgingTableId, stop.table.id),
+        sql`${judgingAssignments.id} <> ${stop.id}`,
+      ),
+      orderBy: (a, { asc }) => [asc(a.id)],
+    });
+    expect(others).toHaveLength(2);
+    await db
+      .update(judgingAssignments)
+      .set({ status: "in_progress" })
+      .where(eq(judgingAssignments.id, others[0]!.id));
+
+    await js[0]!.caller.judging.me.reportAbsent({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? null,
+    });
+    const after = await db.query.judgingAssignments.findMany({
+      where: eq(judgingAssignments.judgingTableId, stop.table.id),
+      orderBy: (a, { asc }) => [asc(a.id)],
+    });
+    expect(after.map((s) => [s.id, s.status])).toEqual(
+      [
+        [stop.id, "team_absent"],
+        [others[0]!.id, "in_progress"],
+        [others[1]!.id, "cancelled"],
+      ].sort((a, b) => (a[0] as number) - (b[0] as number)),
+    );
   });
 
   test("judges can't touch another judge's stops", async () => {

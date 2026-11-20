@@ -983,20 +983,28 @@ export const teamTracksRelations = relations(teamTracks, ({ one }) => ({
  * submitted team is seated at one (`team.judging_table_id`). Inactive tables
  * (broken, unused) get no team and no judges.
  */
-export const judgingTables = pgTable("judging_table", {
-  id: serial("id").primaryKey(),
-  number: integer("number").notNull().unique(),
-  zone: varchar("zone", { length: 64 }).notNull(),
-  isActive: boolean("is_active").default(true).notNull(),
-  // Kept in sync with seating and judging_assignment by triggers.
-  status: judgingTableStatusEnum("status").default("empty").notNull(),
-  statusUpdatedAt: timestamp("status_updated_at", {
-    mode: "date",
-    precision: 3,
-  })
-    .defaultNow()
-    .notNull(),
-});
+export const judgingTables = pgTable(
+  "judging_table",
+  {
+    id: serial("id").primaryKey(),
+    number: integer("number").notNull(),
+    seat: integer("seat").default(1).notNull(),
+    zone: varchar("zone", { length: 64 }).notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    // Kept in sync with seating and judging_assignment by triggers.
+    status: judgingTableStatusEnum("status").default("empty").notNull(),
+    statusUpdatedAt: timestamp("status_updated_at", {
+      mode: "date",
+      precision: 3,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex("judging_table_number_seat_idx").on(t.number, t.seat),
+    check("judging_table_seat_check", sql`${t.seat} in (1, 2)`),
+  ],
+);
 
 export const judgingTablesRelations = relations(
   judgingTables,

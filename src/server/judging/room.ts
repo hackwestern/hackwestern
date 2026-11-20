@@ -15,7 +15,7 @@ import {
   teams,
 } from "~/server/db/schema";
 import { type SetupTablesInput } from "~/schemas/judging";
-import { tablesPerRow } from "~/server/judging/layout";
+import { tablesPerRow, tablesToSplit } from "~/server/judging/layout";
 import {
   ELIGIBLE_SUBMISSIONS,
   type Tx,
@@ -121,22 +121,29 @@ export async function setupTables(input: SetupTablesInput) {
 }
 
 /**
- * Switch a table on or off. A table with a team seated can't be switched off.
- * Before judging starts this clears the plan (sections change); after, the
- * table must have no live stops.
+ * Switch a table on or off, with both its seats. A table with a team seated
+ * can't be switched off. Before judging starts this clears the plan (sections
+ * change); after, the table must have no live stops.
  */
 export async function setTableActive(tableId: number, isActive: boolean) {
   return db.transaction(async (tx) => {
     await lockPlanExclusive(tx);
     const table = await tx.query.judgingTables.findFirst({
       where: eq(judgingTables.id, tableId),
+      columns: { seat: false },
     });
     if (!table) throw notFound("Table");
     if (table.isActive === isActive) return { ...table, planCleared: 0 };
+    const seatIds = (
+      await tx
+        .select({ id: judgingTables.id })
+        .from(judgingTables)
+        .where(eq(judgingTables.number, table.number))
+    ).map((s) => s.id);
 
     if (!isActive) {
       const seated = await tx.query.teams.findFirst({
-        where: eq(teams.judgingTableId, tableId),
+        where: inArray(teams.judgingTableId, seatIds),
         columns: { name: true },
       });
       if (seated) {
@@ -152,7 +159,7 @@ export async function setTableActive(tableId: number, isActive: boolean) {
       if (!isActive) {
         const live = await tx.query.judgingAssignments.findFirst({
           where: and(
-            eq(judgingAssignments.judgingTableId, tableId),
+            inArray(judgingAssignments.judgingTableId, seatIds),
             sql`${judgingAssignments.status} <> 'cancelled'`,
           ),
           columns: { id: true },
@@ -168,12 +175,19 @@ export async function setTableActive(tableId: number, isActive: boolean) {
       planCleared = await clearPlan(tx);
     }
 
-    const [row] = await tx
+    const rows = await tx
       .update(judgingTables)
       .set({ isActive })
-      .where(eq(judgingTables.id, tableId))
-      .returning();
-    return { ...row!, planCleared };
+      .where(inArray(judgingTables.id, seatIds))
+      .returning({
+        id: judgingTables.id,
+        number: judgingTables.number,
+        zone: judgingTables.zone,
+        isActive: judgingTables.isActive,
+        status: judgingTables.status,
+        statusUpdatedAt: judgingTables.statusUpdatedAt,
+      });
+    return { ...rows.find((r) => r.id === tableId)!, planCleared };
   });
 }
 
@@ -187,9 +201,12 @@ function shuffle<T>(items: T[]): T[] {
 }
 
 /**
- * Seat every submitted team at an active table, one per table, in table
- * order. Random by default; `random: false` seats in submission order.
- * Replaces any previous seating. Locked once judging starts.
+ * Seat every submitted team at an active seat, one per seat, in snake order.
+ * Each table has one seat; once there are more teams than active tables,
+ * some tables get a second seat (spread evenly, see `tablesToSplit`), up to 2
+ * teams per table. Random by default; `random: false` seats in submission
+ * order. Replaces any previous seating, and clears the plan if the seats
+ * changed. Locked once judging starts.
  */
 export async function seatTeams({ random }: { random: boolean }) {
   return db.transaction(async (tx) => {
@@ -201,17 +218,43 @@ export async function seatTeams({ random }: { random: boolean }) {
       .from(teams)
       .where(inArray(teams.submissionStatus, [...ELIGIBLE_SUBMISSIONS]))
       .orderBy(sql`${teams.submittedAt} asc nulls last`, asc(teams.id));
-    const tables = await tx
-      .select({ id: judgingTables.id, number: judgingTables.number })
+    const physical = await tx
+      .select({
+        id: judgingTables.id,
+        number: judgingTables.number,
+        zone: judgingTables.zone,
+      })
       .from(judgingTables)
-      .where(eq(judgingTables.isActive, true))
+      .where(and(eq(judgingTables.isActive, true), eq(judgingTables.seat, 1)))
       .orderBy(asc(judgingTables.number));
 
-    if (submitted.length > tables.length) {
+    const split = tablesToSplit(physical, submitted.length);
+    if (!split) {
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
-        message: `${submitted.length} teams submitted but only ${tables.length} tables are active. Add or switch on more tables.`,
+        message: `${submitted.length} teams submitted but ${physical.length} active tables seat at most ${physical.length * 2}. Add or switch on more tables.`,
       });
+    }
+
+    const wanted = new Set(split.map((t) => t.number));
+    const seconds = await tx
+      .select({ id: judgingTables.id, number: judgingTables.number })
+      .from(judgingTables)
+      .where(eq(judgingTables.seat, 2));
+    const stale = seconds.filter((s) => !wanted.has(s.number));
+    const have = new Set(seconds.map((s) => s.number));
+    const missing = split.filter((t) => !have.has(t.number));
+
+    if (stale.length > 0 || missing.length > 0) {
+      // Same order as setupTables: lock the seated team rows before
+      // clearPlan's status trigger locks tables.
+      await tx
+        .select({ id: teams.id })
+        .from(teams)
+        .where(isNotNull(teams.judgingTableId))
+        .orderBy(asc(teams.id))
+        .for("update");
+      await clearPlan(tx);
     }
 
     const order = random ? shuffle(submitted) : submitted;
@@ -220,6 +263,26 @@ export async function seatTeams({ random }: { random: boolean }) {
       .update(teams)
       .set({ judgingTableId: null })
       .where(isNotNull(teams.judgingTableId));
+    if (stale.length > 0) {
+      await tx.delete(judgingTables).where(
+        inArray(
+          judgingTables.id,
+          stale.map((s) => s.id),
+        ),
+      );
+    }
+    if (missing.length > 0) {
+      await tx
+        .insert(judgingTables)
+        .values(
+          missing.map((t) => ({ number: t.number, seat: 2, zone: t.zone })),
+        );
+    }
+    const tables = await tx
+      .select({ id: judgingTables.id, number: judgingTables.number })
+      .from(judgingTables)
+      .where(eq(judgingTables.isActive, true))
+      .orderBy(asc(judgingTables.number), asc(judgingTables.seat));
     const seating: { teamId: string; teamName: string; tableNumber: number }[] =
       [];
     for (const [i, team] of order.entries()) {

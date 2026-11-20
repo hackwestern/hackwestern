@@ -39,7 +39,7 @@ export async function getProgress() {
       getSettings(),
       isJudgingStarted(),
       db.query.judgingTables.findMany({
-        orderBy: asc(judgingTables.number),
+        orderBy: [asc(judgingTables.number), asc(judgingTables.seat)],
         with: { team: { columns: { id: true, name: true } } },
       }),
       db

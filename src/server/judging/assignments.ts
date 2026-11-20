@@ -53,7 +53,7 @@ export async function autoAssign(assignedBy: string) {
       .select({ id: judgingTables.id, number: judgingTables.number })
       .from(judgingTables)
       .where(eq(judgingTables.isActive, true))
-      .orderBy(asc(judgingTables.number));
+      .orderBy(asc(judgingTables.number), asc(judgingTables.seat));
     const judgeRows = await tx
       .select({ id: judges.id })
       .from(judges)
@@ -90,7 +90,8 @@ export async function autoAssign(assignedBy: string) {
 
     const sizes = sections.map((s) => s.tables.length);
     return {
-      tables: tables.length,
+      tables: new Set(tables.map((t) => t.number)).size,
+      seats: tables.length,
       judges: judgeRows.length,
       judgesPerTable: settings.judgesPerTable,
       stops: rows.length,
@@ -377,6 +378,10 @@ export async function cancelStop(assignmentId: number) {
  * also pass the team their screen showed (`expectedTeamId`, null for an empty
  * table); if a different team is seated now, it's refused, so a stale screen
  * can't mark the wrong team absent.
+ *
+ * Absence is final: the team seated there is disqualified (its seat now has a
+ * `team_absent` stop), and the seat's other `assigned` stops are cancelled so
+ * those judges skip it.
  */
 export async function markAbsent(
   assignmentId: number,
@@ -385,6 +390,24 @@ export async function markAbsent(
 ) {
   return db.transaction(async (tx) => {
     await lockPlanShared(tx);
+    const target = await tx.query.judgingAssignments.findFirst({
+      where: eq(judgingAssignments.id, assignmentId),
+      columns: { judgingTableId: true },
+    });
+    if (!target) throw notFound("Stop");
+    // Lock every live stop at the seat in id order (step 2), so two judges
+    // reporting the same seat absent at once wait instead of deadlocking.
+    await tx
+      .select({ id: judgingAssignments.id })
+      .from(judgingAssignments)
+      .where(
+        and(
+          eq(judgingAssignments.judgingTableId, target.judgingTableId),
+          ne(judgingAssignments.status, "cancelled"),
+        ),
+      )
+      .orderBy(asc(judgingAssignments.id))
+      .for("update");
     if (judgeId && expectedTeamId !== undefined) {
       const stop = await lockStop(tx, assignmentId, judgeId);
       const [seated] = await tx
@@ -401,13 +424,23 @@ export async function markAbsent(
         });
       }
     }
-    return transition(
+    const row = await transition(
       tx,
       assignmentId,
       OPEN_STATUSES,
       { status: "team_absent", completedAt: new Date() },
       judgeId,
     );
+    await tx
+      .update(judgingAssignments)
+      .set({ status: "cancelled" })
+      .where(
+        and(
+          eq(judgingAssignments.judgingTableId, row.judgingTableId),
+          eq(judgingAssignments.status, "assigned"),
+        ),
+      );
+    return row;
   });
 }
 

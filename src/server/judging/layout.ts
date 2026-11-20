@@ -38,6 +38,24 @@ export function snakePosition(number: number, perRow: number) {
   return { row, col };
 }
 
+/**
+ * Pick which of `tables` (in snake order) get a second seat so `teams` teams
+ * fit at most 2 per table. Nothing is split until there are more teams than
+ * tables; the split tables are spread evenly along the snake. Returns null if
+ * the teams don't fit even with every table split.
+ */
+export function tablesToSplit<T>(tables: readonly T[], teams: number) {
+  const splits = Math.max(0, teams - tables.length);
+  if (splits > tables.length) return null;
+  // Table i is split when floor(i * splits / tables) steps up, which spaces
+  // the splits as evenly as whole tables allow.
+  return tables.filter(
+    (_, i) =>
+      Math.floor(((i + 1) * splits) / tables.length) >
+      Math.floor((i * splits) / tables.length),
+  );
+}
+
 export class LayoutError extends Error {}
 
 /**

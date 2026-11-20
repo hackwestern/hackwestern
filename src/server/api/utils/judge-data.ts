@@ -76,7 +76,8 @@ export async function loadJudgeData(
 ): Promise<JudgeInitialData> {
   const [tables, seated, linked, judge] = await Promise.all([
     db.query.judgingTables.findMany({
-      where: (t, { eq }) => eq(t.isActive, true),
+      // One row per physical table, not per seat.
+      where: (t, { and, eq }) => and(eq(t.isActive, true), eq(t.seat, 1)),
       columns: { number: true, zone: true },
       orderBy: (t, { asc }) => [asc(t.number)],
     }),

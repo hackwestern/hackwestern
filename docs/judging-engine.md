@@ -11,11 +11,16 @@ create and submit teams; organizers add judges on the roster), sponsor judging
 ## Model in one paragraph
 
 The room has a fixed number of physical tables (70 by default), numbered along
-a snake. Every submitted team is seated at one table. Every judge owns a fixed
-**section** of consecutive tables along the snake. Each table falls inside the
+a snake. Each table has one **seat**, or two once there are more teams than
+tables. Every submitted team is seated at one seat. Every judge owns a fixed
+**section** of consecutive seats along the snake. Each seat falls inside the
 sections of exactly **3 different judges**, so every team gets 3 scores. The
 sections never move; to put a team in a different judge's lineup, organizers
-swap teams between tables.
+swap teams between seats.
+
+In the code and the API a seat is a `judging_table` row: `number` is the
+physical table and `seat` (1 or 2, internal only) tells the two seats apart.
+Both teams at a split table show as the same table number.
 
 ## Tables and the snake
 
@@ -43,19 +48,28 @@ swap teams between tables.
   ```
 
 - Tables can be switched off (`is_active = false`); switched-off tables get no
-  team and no judges.
+  team and no judges. Switching a table on or off covers both its seats.
 - Changing the table setup clears any plan that hasn't started, so auto-assign
   must be re-run.
 
 ## Seating
 
 - Every submitted team (`submission_status` = `submitted` or `late`) gets one
-  active table. One team per table.
+  active seat. One team per seat, at most **2 teams per table**.
+- Up to one team per active table, every table has one seat. Above that,
+  `teams - tables` tables get a second seat, **spread evenly** along the snake
+  (`tablesToSplit`). 70 tables: 95 teams split 25 tables (every 2nd-3rd),
+  105 split every 2nd, 140 split all.
+- Seats are filled in snake order; a split table's two seats are next to each
+  other, so a judge scores both teams there one after the other.
 - **Random by default**; a flag seats in **submission order** instead
   (earliest `submitted_at` gets table 1).
-- More submitted teams than active tables is an error. Fewer leaves the last
-  tables empty.
-- Seating can be re-run until judging starts.
+- More than 2 teams per active table is an error. Fewer teams than tables
+  leaves the last tables empty.
+- Seating can be re-run until judging starts. If the re-run adds or removes
+  second seats, the plan is cleared and auto-assign must be re-run.
+- Order on the day: submissions close -> seat teams -> organizers remove
+  no-show judges from the roster -> auto-assign.
 
 ## Auto-assign: judge sections
 
@@ -73,6 +87,15 @@ swap teams between tables.
 - Section size adapts to the judge count: 35 judges -> 6 tables each, 30 -> 7,
   21 -> 10. Fewer than 3 judges is an error (a table can't get 3 different
   judges).
+- With split tables the slots are seats, not tables: about `3 * teams / judges`
+  stops each. At 6.5 minutes a stop (3 min pitch, 2 min Q&A, 1.5 min buffer),
+  judging takes (most stops) x 6.5 min:
+
+  | Teams \ judges | 35               | 30                | 25                |
+  | -------------- | ---------------- | ----------------- | ----------------- |
+  | 84             | 7-8 (52 min)     | 8-9 (58.5 min)    | 10-11 (71.5 min)  |
+  | 95             | 8-9 (58.5 min)   | 9-10 (65 min)     | 11-12 (78 min)    |
+  | 111            | 9-10 (65 min)    | 11-12 (78 min)    | 13-14 (91 min)    |
 - A judge's stops are written in walking order (`position` 1, 2, 3, ...). A run
   that crosses the end of a pass wraps from the last table back to table 1.
 - All judges judge at the same time. They start at different tables, and
@@ -92,6 +115,14 @@ J25 [5-10] J26 [11-16] ... J35 [65-70]
 Table 1 is judged by J1, J12 and J24.
 ```
 
+## Judges who know a team
+
+There is no automatic conflict check (decided against: too much complexity
+for the day). If a judge knows a team personally, an organizer fixes it by
+hand: cancel that judge's stop at the seat, then **add another judge to the
+table** (see Day-of fixes). Swapping the team to another seat also works
+before judging starts there.
+
 ## Judging starts
 
 Judging has started once any stop is `in_progress`, `done` or `team_absent`.
@@ -107,6 +138,13 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
 ```
 
 - A judge has at most one stop `in_progress` at a time.
+- **Absence is final.** The first absent report at a seat disqualifies the
+  team seated there: the seat has a `team_absent` stop from then on (the seat
+  is locked, so the team can't be moved away from it). The seat's other
+  `assigned` stops are cancelled in the same transaction, so those judges skip
+  it. A stop another judge already has `in_progress` is left alone. A team
+  that shows up late stays disqualified; there is no undo. The ranking must
+  leave out teams whose seat has a `team_absent` stop.
 - Submitting writes the `team_mark` (score + breakdown) for the team seated at
   the table and marks the stop `done` in one transaction.
 - Start and submit also send the `teamId` the judge's screen showed. If a

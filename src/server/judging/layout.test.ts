@@ -5,6 +5,7 @@ import {
   buildSections,
   snakePosition,
   tablesPerRow,
+  tablesToSplit,
 } from "~/server/judging/layout";
 
 const range = (n: number) => Array.from({ length: n }, (_, i) => i + 1);
@@ -43,6 +44,26 @@ describe("snake grid", () => {
       const b = snakePosition(n + 1, perRow);
       expect(Math.abs(a.row - b.row) + Math.abs(a.col - b.col)).toBe(1);
     }
+  });
+});
+
+describe("tablesToSplit", () => {
+  test("no table is split until there are more teams than tables", () => {
+    expect(tablesToSplit(range(70), 60)).toEqual([]);
+    expect(tablesToSplit(range(70), 70)).toEqual([]);
+  });
+
+  test("the split tables are spread evenly along the snake", () => {
+    const split = tablesToSplit(range(70), 95)!;
+    expect(split).toHaveLength(25);
+    const gaps = split.slice(1).map((n, i) => n - split[i]!);
+    expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThanOrEqual(1);
+    expect(tablesToSplit(range(70), 105)).toEqual(range(35).map((n) => n * 2));
+  });
+
+  test("140 teams split every table; 141 don't fit", () => {
+    expect(tablesToSplit(range(70), 140)).toEqual(range(70));
+    expect(tablesToSplit(range(70), 141)).toBeNull();
   });
 });
 
