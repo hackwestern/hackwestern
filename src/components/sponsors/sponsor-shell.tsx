@@ -111,7 +111,9 @@ export function SponsorShell({
   const sponsorName = info.data?.sponsorName ?? null;
 
   const active = NAV_BY_PATH[router.pathname] ?? null;
-  const base = `/sponsors/${id}`;
+  // Before the router reads the URL (first render of these statically
+  // optimised pages) the id is empty: never build "/sponsors//scan".
+  const base = id ? `/sponsors/${id}` : "/sponsors";
   const withPreview = (href: string) => {
     if (!preview) return href;
     const [path, frag] = href.split("#");

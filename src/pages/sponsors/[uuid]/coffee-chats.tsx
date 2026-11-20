@@ -65,13 +65,16 @@ export default function SponsorCoffeeChatsPage() {
         title={copy.seoTitle}
         heading={copy.home.title}
         headerEnd={
-          <Link
-            href={`/sponsors/${id}/scan`}
-            className={cn(btn.primary, "min-h-14 rounded-dashboard-2xl px-6 text-[17px] font-bold [&_svg]:size-6")}
-          >
-            <ScanLine aria-hidden />
-            {copy.page.scan}
-          </Link>
+          // Only once the URL is read: no "/sponsors//scan" link.
+          validUuid && (
+            <Link
+              href={`/sponsors/${id}/scan`}
+              className={cn(btn.primary, "min-h-14 rounded-dashboard-2xl px-6 text-[17px] font-bold [&_svg]:size-6")}
+            >
+              <ScanLine aria-hidden />
+              {copy.page.scan}
+            </Link>
+          )
         }
       >
         {children}
