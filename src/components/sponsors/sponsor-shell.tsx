@@ -285,7 +285,10 @@ export function SponsorShell({
 
         <div className="flex min-w-0 flex-1 flex-col">
           {/* Phone top bar: logo, the section's title, Help. */}
-          <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-2 border-b border-dashboard-border-default bg-dashboard-bg-nav px-4 pt-[env(safe-area-inset-top)] md:hidden">
+          <header
+            data-sponsor-topbar=""
+            className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-2 border-b border-dashboard-border-default bg-dashboard-bg-nav px-4 pt-[env(safe-area-inset-top)] md:hidden"
+          >
             {id ? (
               <div className="flex shrink-0 items-center gap-1">
                 <Link
