@@ -8,8 +8,10 @@ export interface ComparisonRow {
   teamId: string;
   judgeId: string;
   score: number;
-  /** team_mark.score_breakdown, which is { ratings: { [criterionId]: 0-10 }, notes? }. */
-  breakdown: unknown;
+  /** The mark's rating columns as { [criterionId]: 0-10 }; empty for a slider-only mark. */
+  ratings: Record<string, number>;
+  /** team_mark.super_like. */
+  superLike: boolean;
 }
 
 export interface ComparisonTeam {
@@ -33,18 +35,6 @@ export interface ComparisonData {
   otherJudgeCount: number;
   /** Only the teams the viewer has marked, in the order they were marked. */
   teams: ComparisonTeam[];
-}
-
-/** Pulls the 0-10 ratings out of a stored breakdown. Anything else is ignored. */
-export function ratingsOf(breakdown: unknown): Record<string, number> {
-  const out: Record<string, number> = {};
-  if (!breakdown || typeof breakdown !== "object") return out;
-  const ratings = (breakdown as { ratings?: unknown }).ratings;
-  if (!ratings || typeof ratings !== "object") return out;
-  for (const [id, value] of Object.entries(ratings)) {
-    if (typeof value === "number" && Number.isFinite(value)) out[id] = value;
-  }
-  return out;
 }
 
 const mean = (values: number[]) =>
@@ -79,7 +69,7 @@ export function buildComparison(
     if (others.length > 0) {
       const perCriterion = new Map<string, number[]>();
       for (const m of others) {
-        for (const [id, value] of Object.entries(ratingsOf(m.breakdown))) {
+        for (const [id, value] of Object.entries(m.ratings)) {
           const list = perCriterion.get(id);
           if (list) list.push(value);
           else perCriterion.set(id, [value]);
@@ -93,11 +83,8 @@ export function buildComparison(
     teams.push({
       teamId: row.teamId,
       teamName: teamNames[row.teamId] ?? "Unknown team",
-      mine: { score: row.score, ratings: ratingsOf(row.breakdown) },
-      superLike:
-        !!row.breakdown &&
-        typeof row.breakdown === "object" &&
-        (row.breakdown as { superLike?: unknown }).superLike === true,
+      mine: { score: row.score, ratings: row.ratings },
+      superLike: row.superLike,
       others: average,
       otherCount: new Set(others.map((m) => m.judgeId)).size,
     });

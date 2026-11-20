@@ -4,7 +4,7 @@ import { focusRing } from "~/components/judging/shared/judge-ui";
 
 /**
  * A judge's "super like": a heart they can put on a team they loved. It is
- * saved on the mark (score_breakdown.superLike), so it shows again while
+ * saved on the mark (team_mark.super_like), so it shows again while
  * re-scoring, on the final review and in the results.
  */
 export function SuperLikeToggle({
