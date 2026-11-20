@@ -26,6 +26,15 @@ function withoutAsides(entry: string): string {
 }
 
 /**
+ * One key per sponsor however it's spelled: case, spaces, punctuation and
+ * bracketed asides ignored, so "QNX (BlackBerry)" and "QNX" are the same
+ * sponsor (Jazz, 2026-11-20: one QNX).
+ */
+export function sponsorNameKey(name: string): string {
+  return nameKey(withoutAsides(name));
+}
+
+/**
  * The prize track entry a registered sponsor name matches, or null when the
  * sponsor has no prize track (and so takes no part in judging). A name
  * matches an entry when it equals or contains it, ignoring case, spaces and

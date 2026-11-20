@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { eq, inArray } from "drizzle-orm";
+import { sponsorNameKey } from "~/lib/sponsor-prize-tracks";
 import { z } from "zod";
 
 import { sponsorStatusSheetCopy as statusCopy } from "~/content/sponsor-status-sheet";
@@ -102,9 +103,11 @@ export const sponsorDashboardRouter = createTRPCRouter({
       // Sponsors added to Sponsor Day-Of get their portal link on their own
       // (Jazz, 2026-11-20): register any the app doesn't have yet, so
       // nobody has to press "Sync from sponsor sheet".
-      const known = new Set(registered.map((row) => row.name));
+      // Matched loosely, so "QNX (BlackBerry)" on the sheet is the
+      // registered "QNX", never a second, empty sponsor.
+      const known = new Set(registered.map((row) => sponsorNameKey(row.name)));
       const missing = [...new Set(master.map((s) => s.name))].filter(
-        (name) => !known.has(name),
+        (name) => !known.has(sponsorNameKey(name)),
       );
       if (missing.length > 0) {
         await db
@@ -118,7 +121,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
         );
       }
       const registeredByName = new Map(
-        registered.map((row) => [row.name, row]),
+        registered.map((row) => [sponsorNameKey(row.name), row]),
       );
 
       const sponsors = master.map((sponsor) => {
@@ -135,7 +138,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
           companyContact: sponsor.companyContact,
           hwContact,
           notes: sponsor.notes,
-          sponsorId: registeredByName.get(sponsor.name)?.id ?? null,
+          sponsorId: registeredByName.get(sponsorNameKey(sponsor.name))?.id ?? null,
           teamIds: picks.get(sponsor.name) ?? [],
           status: info?.status ?? "Not arrived",
           roomNumber: info?.roomNumber ?? "TBD",
