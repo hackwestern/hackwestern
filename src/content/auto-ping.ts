@@ -61,6 +61,11 @@ export const autoPingCopy = {
    * Check before sending column (J). Lines the bot writes start with
    * `marker`, so the bot can replace its own lines and keep anyone else's.
    */
+  /** POC column "@HelpDesk": this replaces the check-in line that names {poc}. */
+  helpDesk: {
+    checkIn:
+      "📍 Your POC is Jessica. She isn't available at the moment to check you in, so please go to the Help Desk when you arrive.",
+  },
   flags: {
     marker: "🤖 ",
     removed: "Not on the schedule anymore",
