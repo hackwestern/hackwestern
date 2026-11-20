@@ -5,9 +5,11 @@ import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { HACKATHON_START } from "~/lib/date";
 import { fetchScheduleData } from "~/lib/schedule";
 import {
+  BOUNDS,
   DAYS,
   FLOORS,
-  PLAN_BOUNDS,
+  IVEY,
+  IVEY_ADDRESS,
   ROOMS,
   ZONES,
   eventsFromSchedule,
@@ -23,11 +25,12 @@ import {
 type View = { tx: number; ty: number; k: number };
 type Size = { w: number; h: number };
 
-const BB = {
-  ...PLAN_BOUNDS,
-  w: PLAN_BOUNDS.x1 - PLAN_BOUNDS.x0,
-  h: PLAN_BOUNDS.y1 - PLAN_BOUNDS.y0,
+const bounds = (f: Floor) => {
+  const b = BOUNDS[f];
+  return { ...b, w: b.x1 - b.x0, h: b.y1 - b.y0 };
 };
+const sameBuilding = (a: Floor, b: Floor) => (a === IVEY) === (b === IVEY);
+const where = (f: Floor) => (f === IVEY ? "Ivey building" : `Level ${f}`);
 // Same breakpoint as Tailwind's md: below it the room card is a bottom sheet
 const NARROW = "(max-width: 767px)";
 
@@ -100,7 +103,8 @@ function padding(s: Size, narrow: boolean, card: boolean) {
     : { l: 20, r: card ? 372 : 20, t: 68, b: 56 };
 }
 
-function fitView(s: Size, narrow: boolean, card: boolean): View {
+function fitView(s: Size, narrow: boolean, card: boolean, floor: Floor): View {
+  const BB = bounds(floor);
   const p = padding(s, narrow, card);
   const aw = s.w - p.l - p.r;
   const ah = s.h - p.t - p.b;
@@ -117,7 +121,7 @@ function focusView(r: Room, s: Size, narrow: boolean): View {
   const aw = s.w - p.l - p.r;
   const ah = s.h - p.t - p.b;
   const g = GEO[r.id]!;
-  const fitK = fitView(s, narrow, false).k;
+  const fitK = fitView(s, narrow, false, r.floor).k;
   const k = clamp(
     Math.min((aw * 0.45) / g.w, (ah * 0.45) / g.h),
     fitK * 1.6,
@@ -144,6 +148,8 @@ const VenueMap = () => {
   const [stage, setStage] = useState<Size>({ w: 0, h: 0 });
   const [narrow, setNarrow] = useState(false);
   const [floor, setFloor] = useState<Floor>(1);
+  // The SEI level to go back to after looking at Ivey
+  const seiLevel = useRef<Floor>(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [day, setDay] = useState<DayIndex | null>(null);
   const [events, setEvents] = useState<RoomEvent[]>([]);
@@ -157,7 +163,7 @@ const VenueMap = () => {
   const userMoved = useRef(false);
   const frame = useRef(0);
   const selected = selectedId ? ROOM_BY_ID[selectedId] : undefined;
-  const fitK = stage.w ? fitView(stage, narrow, false).k : 1;
+  const fitK = stage.w ? fitView(stage, narrow, false, floor).k : 1;
 
   useEffect(() => {
     void fetchScheduleData().then((d) => setEvents(eventsFromSchedule(d)));
@@ -211,7 +217,7 @@ const VenueMap = () => {
     setView(
       selected
         ? focusView(selected, stage, narrow)
-        : fitView(stage, narrow, false),
+        : fitView(stage, narrow, false, floor),
     );
     // Only on size changes; selection changes animate in select()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -226,13 +232,31 @@ const VenueMap = () => {
       const r = id ? ROOM_BY_ID[id] : undefined;
       if (r) {
         setFloor(r.floor);
-        animateTo(focusView(r, stage, narrow));
+        if (r.floor !== IVEY) seiLevel.current = r.floor;
+        const target = focusView(r, stage, narrow);
+        // The buildings have separate plans, so there's nothing to animate between
+        if (sameBuilding(r.floor, floor)) animateTo(target);
+        else {
+          cancelAnimationFrame(frame.current);
+          setView(target);
+        }
       } else {
-        animateTo(fitView(stage, narrow, false));
+        animateTo(fitView(stage, narrow, false, floor));
       }
     },
-    [stage, narrow, animateTo],
+    [stage, narrow, floor, animateTo],
   );
+
+  const showBuilding = (ivey: boolean) => {
+    if (ivey === (floor === IVEY)) return;
+    const f = ivey ? IVEY : seiLevel.current;
+    cancelAnimationFrame(frame.current);
+    userMoved.current = false;
+    setSelectedId(null);
+    setDay(null);
+    setFloor(f);
+    if (stage.w) setView(fitView(stage, narrow, false, f));
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -379,11 +403,17 @@ const VenueMap = () => {
         .toLowerCase()
         .includes(q),
     ).map((room) => ({ room }));
+    // One result per event and building (coffee chats run in eight rooms)
     const evs = events
       .filter((ev) => ev.title.toLowerCase().includes(q))
-      .flatMap((ev) =>
-        ev.rooms.map((id) => ({ room: ROOM_BY_ID[id]!, event: ev })),
-      )
+      .flatMap((ev) => {
+        const rooms = ev.rooms.map((id) => ROOM_BY_ID[id]!);
+        const sei = rooms.find((r) => r.floor !== IVEY);
+        const ivey = rooms.find((r) => r.floor === IVEY);
+        return [sei, ivey]
+          .filter((r): r is Room => !!r)
+          .map((room) => ({ room, event: ev }));
+      })
       .slice(0, 8);
     return [...rooms, ...evs];
   }, [query, events]);
@@ -411,11 +441,34 @@ const VenueMap = () => {
 
   const plan = FLOORS[floor];
   const zonesShown = (Object.keys(ZONES) as (keyof typeof ZONES)[]).filter(
-    (z) => ROOMS.some((r) => r.zone === z),
+    (z) => ROOMS.some((r) => r.zone === z && sameBuilding(r.floor, floor)),
   );
 
   return (
     <div className="flex flex-col gap-3">
+      <div
+        className="flex gap-6 border-b border-dashboard-border-subtle font-figtree"
+        role="group"
+        aria-label="Building"
+      >
+        {[
+          { label: "SEI building", ivey: false },
+          { label: "Ivey building", ivey: true },
+        ].map((b) => {
+          const on = b.ivey === (floor === IVEY);
+          return (
+            <button
+              key={b.label}
+              type="button"
+              aria-pressed={on}
+              onClick={() => showBuilding(b.ivey)}
+              className={`-mb-px border-b-2 pb-2 text-base transition-colors ${on ? "border-dashboard-action-primary font-bold text-dashboard-text-heavy" : "border-transparent font-medium text-dashboard-text-light hover:text-dashboard-text-heavy"}`}
+            >
+              {b.label}
+            </button>
+          );
+        })}
+      </div>
       <div
         ref={stageRef}
         className="relative h-[calc(100dvh-170px)] min-h-[440px] overflow-hidden rounded-dashboard-lg border border-dashboard-border-subtle bg-dashboard-bg-surface font-figtree shadow-dashboard-card md:h-[calc(100dvh-280px)] md:min-h-[520px]"
@@ -425,7 +478,7 @@ const VenueMap = () => {
           className="absolute inset-0 h-full w-full cursor-grab touch-none select-none active:cursor-grabbing"
           viewBox={`0 0 ${stage.w || 1} ${stage.h || 1}`}
           role="img"
-          aria-label={`Floor plan, level ${floor}`}
+          aria-label={`Floor plan, ${floor === IVEY ? "Ivey building" : `SEI level ${floor}`}`}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerEnd}
@@ -565,20 +618,23 @@ const VenueMap = () => {
 
         {/* Level switch and search */}
         <div className="pointer-events-none absolute inset-x-3 top-3 z-20 flex gap-2">
-          <div className="pointer-events-auto flex shrink-0 gap-1">
-            {([1, 2] as Floor[]).map((n) => (
-              <DashboardChip
-                key={n}
-                selected={floor === n}
-                onClick={() => {
-                  setFloor(n);
-                  if (selected && selected.floor !== n) select(null);
-                }}
-              >
-                Level {n}
-              </DashboardChip>
-            ))}
-          </div>
+          {floor !== IVEY && (
+            <div className="pointer-events-auto flex shrink-0 gap-1">
+              {([1, 2] as Floor[]).map((n) => (
+                <DashboardChip
+                  key={n}
+                  selected={floor === n}
+                  onClick={() => {
+                    setFloor(n);
+                    seiLevel.current = n;
+                    if (selected && selected.floor !== n) select(null);
+                  }}
+                >
+                  Level {n}
+                </DashboardChip>
+              ))}
+            </div>
+          )}
           <div className="pointer-events-auto relative min-w-0 flex-1 md:max-w-[280px]">
             <input
               type="search"
@@ -628,8 +684,8 @@ const VenueMap = () => {
                         </span>
                         <span className="block text-xs text-dashboard-text-light">
                           {h.event
-                            ? `${DAYS[h.event.day].slice(0, 3)} ${formatTime(h.event.start)} · ${h.room.name}`
-                            : `${h.room.place ?? `Room ${h.room.id}`}, level ${h.room.floor}`}
+                            ? `${DAYS[h.event.day].slice(0, 3)} ${formatTime(h.event.start)} · ${h.room.name}${h.room.floor === IVEY ? " (Ivey)" : ""}`
+                            : `${h.room.place ?? `Room ${h.room.id}`} · ${where(h.room.floor)}`}
                         </span>
                       </span>
                     </button>
@@ -720,9 +776,14 @@ const VenueMap = () => {
                   style={{ background: ZONES[selected.zone].color }}
                 />
                 {ZONES[selected.zone].label} ·{" "}
-                {selected.place ?? `Room ${selected.id}`} · Level{" "}
-                {selected.floor}
+                {selected.place ?? `Room ${selected.id}`} ·{" "}
+                {where(selected.floor)}
               </p>
+              {selected.floor === IVEY && (
+                <p className="mt-1 text-sm text-dashboard-text-light">
+                  {IVEY_ADDRESS}
+                </p>
+              )}
             </div>
             <p className="text-sm text-dashboard-text-medium">
               {selected.about}

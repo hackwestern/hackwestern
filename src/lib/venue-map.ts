@@ -1,9 +1,10 @@
 import type { DaySchedule, ParsedScheduleEvent } from "~/types/schedule";
 import { getTimeInMinutes } from "~/lib/schedule";
 
-// Floor plans of the Schmeichel Building (SEI) for the live map.
-// Coordinates are in one shared plan space; the long wing is a rectangle
-// rotated about 31 degrees, so its rooms are placed in the wing's own axes.
+// Floor plans for the live map: the Schmeichel Building (SEI, floors 1 and 2)
+// and the Ivey Business School ground floor ("floor" 3, its own plan space).
+// SEI's long wing is a rectangle rotated about 31 degrees, so its rooms are
+// placed in the wing's own axes.
 
 export type Point = [number, number];
 export type Zone =
@@ -12,9 +13,14 @@ export type Zone =
   | "learn"
   | "expo"
   | "lounge"
+  | "stage"
   | "lab"
   | "staff";
-export type Floor = 1 | 2;
+/** 1 and 2 are SEI levels; 3 is the Ivey building */
+export type Floor = 1 | 2 | 3;
+export const IVEY: Floor = 3;
+export const IVEY_ADDRESS =
+  "Richard Ivey Building, 1255 Western Road. A separate building from the SEI.";
 
 const P = (s: number, t: number): Point => [
   Math.round(325 + 0.858 * s + 0.513 * t),
@@ -39,6 +45,7 @@ export const ZONES: Record<Zone, { label: string; color: string }> = {
   learn: { label: "Workshops", color: "#2E9E4F" },
   expo: { label: "Sponsors", color: "#E0702B" },
   lounge: { label: "Coffee chats", color: "#8B3FD9" },
+  stage: { label: "Ceremonies", color: "#D4457A" },
   lab: { label: "Makerspace", color: "#0F8F86" },
   staff: { label: "Staff only", color: "#6B7A90" },
 };
@@ -301,13 +308,201 @@ export const FLOORS: Record<Floor, FloorPlan> = {
       B(1342, 942, 1573, 1205),
     ],
   },
+  3: {
+    outline: [
+      [65, 318],
+      [1175, 318],
+      [1175, 255],
+      [1090, 65],
+      [1395, 88],
+      [1400, 330],
+      [1540, 360],
+      [1620, 345],
+      [1800, 340],
+      [1930, 348],
+      [1955, 375],
+      [1950, 470],
+      [1925, 560],
+      [1850, 600],
+      [1720, 615],
+      [1715, 1280],
+      [1520, 1285],
+      [1520, 1210],
+      [600, 1210],
+      [565, 1212],
+      [515, 1228],
+      [435, 1228],
+      [170, 1255],
+      [205, 1000],
+      [358, 1000],
+      [358, 630],
+      [125, 630],
+      [125, 545],
+      [358, 545],
+      [358, 490],
+      [218, 490],
+      [218, 440],
+      [65, 440],
+    ],
+    rooms: [
+      room({
+        id: "1100",
+        name: "BMO Auditorium",
+        short: "BMO",
+        zone: "stage",
+        floor: 3,
+        poly: [
+          [1540, 360],
+          [1620, 345],
+          [1800, 340],
+          [1930, 348],
+          [1955, 375],
+          [1950, 470],
+          [1925, 560],
+          [1850, 600],
+          [1720, 615],
+          [1620, 618],
+          [1570, 612],
+          [1565, 420],
+        ],
+        about:
+          "The opening ceremony is here on Friday. The closing ceremony is in the Grand Hall at the SEI.",
+        keywords: "Ivey opening ceremony",
+      }),
+      room({
+        id: "1354",
+        name: "Coffee Chat Room",
+        short: "Chat",
+        zone: "lounge",
+        floor: 3,
+        poly: B(388, 458, 442, 512),
+        about: "Coffee chats and interviews.",
+        keywords: "Ivey interviews breakout",
+      }),
+      room({
+        id: "1352",
+        name: "Coffee Chat Room",
+        short: "Chat",
+        zone: "lounge",
+        floor: 3,
+        poly: B(445, 458, 498, 512),
+        about: "Coffee chats and interviews.",
+        keywords: "Ivey interviews breakout",
+      }),
+      room({
+        id: "1348",
+        name: "Coffee Chat Room",
+        short: "Chat",
+        zone: "lounge",
+        floor: 3,
+        poly: B(587, 452, 643, 497),
+        about: "Coffee chats and interviews.",
+        keywords: "Ivey interviews breakout",
+      }),
+      room({
+        id: "1356",
+        name: "Coffee Chat Room",
+        short: "Chat",
+        zone: "lounge",
+        floor: 3,
+        poly: B(450, 545, 497, 597),
+        about: "Coffee chats and interviews.",
+        keywords: "Ivey interviews breakout",
+      }),
+      room({
+        id: "1358",
+        name: "Coffee Chat Room",
+        short: "Chat",
+        zone: "lounge",
+        floor: 3,
+        poly: B(499, 545, 540, 597),
+        about: "Coffee chats and interviews.",
+        keywords: "Ivey interviews breakout",
+      }),
+    ],
+    service: [
+      B(68, 322, 202, 440),
+      B(205, 322, 355, 440),
+      B(220, 452, 278, 490),
+      B(282, 452, 335, 490),
+      B(360, 322, 525, 452),
+      B(560, 322, 722, 450),
+      B(647, 452, 703, 497),
+      B(726, 322, 892, 450),
+      B(765, 455, 865, 498),
+      B(895, 322, 1050, 452),
+      B(900, 455, 1005, 498),
+      B(1055, 322, 1210, 452),
+      B(1090, 460, 1195, 515),
+      [
+        [1090, 65],
+        [1395, 88],
+        [1400, 385],
+        [1255, 385],
+        [1255, 300],
+        [1175, 255],
+      ],
+      B(125, 545, 250, 630),
+      B(405, 545, 448, 597),
+      B(385, 600, 512, 762),
+      B(520, 598, 558, 735),
+      B(358, 802, 500, 930),
+      B(510, 800, 555, 930),
+      B(608, 583, 662, 765),
+      B(925, 545, 1135, 605),
+      B(748, 922, 850, 980),
+      B(883, 922, 935, 980),
+      B(1145, 910, 1265, 975),
+      B(1268, 910, 1360, 975),
+      B(1383, 870, 1500, 975),
+      B(1440, 1030, 1515, 1180),
+      B(605, 1060, 765, 1205),
+      B(770, 1060, 930, 1205),
+      B(935, 1060, 1100, 1205),
+      B(1100, 1060, 1265, 1205),
+      B(1265, 1060, 1430, 1205),
+      B(630, 1012, 750, 1058),
+      B(795, 1012, 915, 1058),
+      B(960, 1012, 1085, 1058),
+      B(1125, 1012, 1230, 1058),
+      B(1290, 1012, 1410, 1058),
+      [
+        [205, 1000],
+        [515, 1000],
+        [515, 1225],
+        [435, 1228],
+        [170, 1255],
+      ],
+      B(360, 1075, 432, 1200),
+      B(432, 1075, 560, 1210),
+      B(1565, 625, 1695, 775),
+      B(1565, 790, 1715, 950),
+      B(1565, 955, 1715, 1115),
+      B(1565, 1120, 1715, 1280),
+    ],
+    voids: [B(730, 630, 990, 810)],
+  },
 };
 
-/** Both floors fit inside this box */
-export const PLAN_BOUNDS = { x0: 315, y0: 380, x1: 1625, y1: 1224 };
+/** The part of the plan to frame for each floor */
+export const BOUNDS: Record<
+  Floor,
+  { x0: number; y0: number; x1: number; y1: number }
+> = {
+  1: { x0: 315, y0: 380, x1: 1625, y1: 1224 },
+  2: { x0: 315, y0: 380, x1: 1625, y1: 1224 },
+  3: { x0: 55, y0: 55, x1: 1965, y1: 1295 },
+};
 
-export const ROOMS: Room[] = [...FLOORS[1].rooms, ...FLOORS[2].rooms];
+export const ROOMS: Room[] = [
+  ...FLOORS[1].rooms,
+  ...FLOORS[2].rooms,
+  ...FLOORS[3].rooms,
+];
 const ROOM_IDS = new Set(ROOMS.map((r) => r.id));
+const IVEY_CHAT_ROOMS = FLOORS[3].rooms
+  .filter((r) => r.zone === "lounge")
+  .map((r) => r.id);
 
 // ---------- events from the live schedule ----------
 
@@ -337,6 +532,9 @@ export function roomsForLocation(location: string): string[] {
   }
   if (/grand hall/i.test(loc)) found.add("1110");
   if (/atrium/i.test(loc)) found.add("1235");
+  if (/bmo auditorium/i.test(loc)) found.add("1100");
+  if (/ivey breakout/i.test(loc))
+    IVEY_CHAT_ROOMS.forEach((id) => found.add(id));
   return [...found];
 }
 

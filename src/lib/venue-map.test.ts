@@ -8,9 +8,6 @@ import {
 
 describe("roomsForLocation", () => {
   test("reads room numbers, the Grand Hall, the atrium and the help desk", () => {
-    expect(
-      roomsForLocation("Rm 2241, 2242, 2243 & Ivey Breakout Rooms"),
-    ).toEqual(["2241", "2242", "2243"]);
     expect(roomsForLocation("SM 2235")).toEqual(["2235"]);
     expect(roomsForLocation("Grand Hall")).toEqual(["1110"]);
     expect(roomsForLocation("SM Atrium")).toEqual(["1235"]);
@@ -19,9 +16,18 @@ describe("roomsForLocation", () => {
     ).toEqual(["help"]);
   });
 
+  test("reads the Ivey auditorium and breakout rooms", () => {
+    expect(roomsForLocation("Ivey BMO Auditorium")).toEqual(["1100"]);
+    expect(
+      roomsForLocation("Rm 2241, 2242, 2243 & Ivey Breakout Rooms"),
+    ).toEqual(["2241", "2242", "2243", "1354", "1352", "1348", "1356", "1358"]);
+  });
+
   test("ignores places that are not on the map", () => {
-    expect(roomsForLocation("Ivey BMO Auditorium")).toEqual([]);
     expect(roomsForLocation("Outside of Morrissette")).toEqual([]);
+    expect(roomsForLocation("Josephine Spencer Niblett Law Building")).toEqual(
+      [],
+    );
     expect(roomsForLocation("")).toEqual([]);
   });
 });
