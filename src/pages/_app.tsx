@@ -7,15 +7,6 @@ import { Figtree } from "next/font/google";
 import localFont from "next/font/local";
 import { api } from "~/utils/api";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import dynamic from "next/dynamic";
-
-// Agentation: dev-only toolbar to click elements and leave notes for the
-// coding agent (synced live through the agentation MCP server on :4747).
-// Client-only and never in production builds.
-const Agentation =
-  process.env.NODE_ENV === "development"
-    ? dynamic(() => import("agentation").then((m) => m.Agentation), { ssr: false })
-    : null;
 
 import "~/styles/globals.css";
 import { Toaster } from "~/components/ui/sonner";
@@ -94,7 +85,6 @@ const MyApp: AppType<{ session: Session | null }> = ({
       </main>
       <Toaster style={{ zIndex: 90 }} />
       <CustomToaster />
-      {Agentation && <Agentation endpoint="http://localhost:4747" />}
     </SessionProvider>
   );
 };
