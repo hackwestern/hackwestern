@@ -8,6 +8,7 @@ import {
   matchScore,
   parseRange,
   parseShiftList,
+  peopleColumns,
   planAll,
   planFinal,
   planUnit,
@@ -71,6 +72,23 @@ function people(rows: string[][]): PersonRow[] {
     ),
   ]);
 }
+
+test("People headers still match with a ✏️ / 🔒 marker after them", () => {
+  const col = peopleColumns([
+    "Role 🔒",
+    "Full name 🔒",
+    "Email 🔒",
+    "Shift ✏️",
+    "POC ✏️",
+    "Personal note ✏️",
+    "Send? ✏️",
+    "All messages 🔒",
+    "",
+    "Check before sending ✏️",
+    "Email override (use when not in the forms) ✏️",
+  ]);
+  expect(col).toMatchObject({ email: 2, send: 6, check: 9, override: 10 });
+});
 
 describe("schedule grid", () => {
   const grid = [

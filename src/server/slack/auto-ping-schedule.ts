@@ -335,10 +335,15 @@ const PEOPLE_HEADERS = {
 };
 export type PeopleColumns = Record<keyof typeof PEOPLE_HEADERS, number>;
 
+/** A header without the ✏️ / 🔒 marker after it: "Email 🔒" -> "Email". */
+export function headerText(h: string): string {
+  return h.replace(/[\s\p{Extended_Pictographic}\u{FE0F}]+$/u, "").trim();
+}
+
 export function peopleColumns(header: string[] = []): PeopleColumns {
   const found = {} as PeopleColumns;
   for (const [key, re] of Object.entries(PEOPLE_HEADERS)) {
-    const at = header.findIndex((h) => re.test(h.trim()));
+    const at = header.findIndex((h) => re.test(headerText(h)));
     if (at < 0) throw new Error(`People tab has no "${key}" column header`);
     found[key as keyof PeopleColumns] = at;
   }
@@ -354,7 +359,7 @@ export function readPeople(grid: string[][]): PersonRow[] {
   grid.slice(1).forEach((r, i) => {
     const cell = (c: number) => r[c]?.trim() ?? "";
     const manualAt = (grid[0] ?? []).findIndex((h) =>
-      /^manual row/i.test(h.trim()),
+      /^manual row/i.test(headerText(h)),
     );
     if (!cell(col.role) && !cell(col.fullName)) return;
     rows.push({
