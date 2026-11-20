@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
-import { MapPin } from "lucide-react";
+import { MapPin, TriangleAlert } from "lucide-react";
 import { BoothLayout } from "~/components/sponsors/booth-layout";
+import { Note } from "~/components/sponsors/portal-ui";
 import VenueMap, { type VenueMapHighlight } from "~/components/live/venue-map";
 import {
   InvalidLink,
@@ -104,7 +105,14 @@ export default function SponsorMapPage() {
           highlightsLabel={copy.page.marksLabel}
         />
       </div>
-      <p className="m-0 text-sm">{copy.page.venue}</p>
+      <Note icon={<TriangleAlert aria-hidden />} tone="strong">
+        <p className="m-0 font-bold">{copy.page.venue.lead}</p>
+        <ul className="m-0 mt-1 flex list-disc flex-col gap-1 pl-5">
+          {copy.page.venue.lines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      </Note>
     </>,
   );
 }
