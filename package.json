@@ -8,6 +8,7 @@
     "node": "24.x"
   },
   "scripts": {
+    "organizer:notifications": "node --import tsx scripts/organizer-notifications.ts",
     "build": "next build",
     "test": "vitest",
     "db:start": "bash ./start-database.sh",
