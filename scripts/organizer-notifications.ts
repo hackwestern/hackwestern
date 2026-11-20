@@ -12,12 +12,17 @@ import { readCsv } from "~/server/slack/csv";
 import {
   KNOWN_SLACK_IDS,
   planOrganizerReminders,
+  planTeamPosts,
   readContacts,
   readRoster,
   readRunOfShow,
   type Person,
 } from "~/server/slack/organizer-schedule";
-import { DM_OPTIONS, syncOrganizerDms } from "~/server/slack/organizer-sync";
+import {
+  DM_OPTIONS,
+  syncOrganizerDms,
+  type DesiredDm,
+} from "~/server/slack/organizer-sync";
 
 /**
  * Slack DMs reminding organizers of their HW13 run-of-show tasks, 15 minutes
@@ -335,7 +340,7 @@ async function run(mode: string) {
       `${missing.length} people with no Slack account`,
     );
   }
-  const desired = upcoming.flatMap((row) => {
+  const desired: DesiredDm[] = upcoming.flatMap((row): DesiredDm[] => {
     const slackUserId = ids.get(testMode ? testName : row.recipientName);
     if (!slackUserId) return [];
     const text = testMode
@@ -343,6 +348,25 @@ async function run(mode: string) {
       : row.text;
     return [{ slackUserId, postAt: row.postAt, text }];
   });
+  // Team-owned tasks ("Owner: WEB") also go to the team's channel.
+  const testId = testMode ? ids.get(testName) : undefined;
+  for (const post of enabled ? planTeamPosts(data.tasks) : []) {
+    if (+post.postAt <= Date.now()) continue;
+    if (testMode) {
+      if (testId)
+        desired.push({
+          slackUserId: testId,
+          postAt: post.postAt,
+          text: `${testLabel(`#${post.team}`, post.postAt)}\n${post.text}`,
+        });
+    } else {
+      desired.push({
+        channel: post.channel,
+        postAt: post.postAt,
+        text: post.text,
+      });
+    }
+  }
   // Disabled: an empty plan cancels every queued organizer DM.
   const result = await syncOrganizerDms(token, desired);
   console.log(

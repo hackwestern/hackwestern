@@ -488,6 +488,65 @@ function formatReminder(
   return lines.join("\n");
 }
 
+/** Slack channels for teams; a task owned by the team is posted there too. */
+export const TEAM_CHANNELS: Record<string, string> = {
+  Events: "C0CKJGX7674",
+  Web: "C0CKLJXB1SM",
+};
+
+export type TeamPost = {
+  team: string;
+  channel: string;
+  postAt: Date;
+  text: string;
+};
+
+/**
+ * A channel post for each task whose owner line names a team with a channel
+ * ("Owner: Pranav (lead), WEB"), `lead` minutes before, alongside the DMs.
+ * A repeated row for the same task within two hours is posted once.
+ */
+export function planTeamPosts(
+  tasks: OrganizerTask[],
+  options: { lead?: number; channels?: Record<string, string> } = {},
+): TeamPost[] {
+  const lead = options.lead ?? ORGANIZER_LEAD_MINUTES;
+  const channels = options.channels ?? TEAM_CHANNELS;
+  const posts: TeamPost[] = [];
+  const posted: { team: string; at: number; title: string }[] = [];
+  for (const task of [...tasks].sort((a, b) => +a.at - +b.at)) {
+    for (const team of task.teams) {
+      const channel = channels[team];
+      if (!channel) continue;
+      const title = normalTitle(task.title);
+      const repeat = posted.some(
+        (p) =>
+          p.team === team &&
+          +task.at - p.at <= CONTINUATION_MS &&
+          (title.startsWith(p.title) || p.title.startsWith(title)),
+      );
+      if (repeat) continue;
+      posted.push({ team, at: +task.at, title });
+      const lines = [
+        copy.slack.header(
+          lead,
+          clock.format(task.at),
+          escapeSlackText(task.title),
+        ),
+        ...task.details.map((line) => `> ${escapeSlackText(line)}`),
+        copy.slack.teamLine(team, task.owners.join(", ")),
+      ];
+      posts.push({
+        team,
+        channel,
+        postAt: new Date(+task.at - lead * 60_000),
+        text: lines.join("\n"),
+      });
+    }
+  }
+  return posts;
+}
+
 /**
  * One DM per person per row time (tasks at the same time share a DM),
  * posted `lead` minutes before. A repeated row for the same task (same

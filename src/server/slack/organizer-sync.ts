@@ -16,7 +16,11 @@ export const DM_OPTIONS = {
 /** Leave DMs this close to sending alone: Slack can't cancel the last minute. */
 export const FREEZE_MS = 2 * 60_000;
 
-export type DesiredDm = { slackUserId: string; postAt: Date; text: string };
+/** A scheduled message: to a person's DM (slackUserId) or a channel id. */
+export type DesiredDm = (
+  | { slackUserId: string; channel?: undefined }
+  | { channel: string; slackUserId?: undefined }
+) & { postAt: Date; text: string };
 type Scheduled = {
   id: string;
   channel_id: string;
@@ -124,12 +128,19 @@ export async function syncOrganizerDms(
   const cutoff = now() + FREEZE_MS;
   const key = (channel: string, postAt: number, text: string) =>
     `${channel}|${postAt}|${normalizeDm(text)}`;
-  const wanted = new Map<string, DesiredDm & { channel: string }>();
+  const wanted = new Map<
+    string,
+    { postAt: Date; text: string; channel: string }
+  >();
   for (const dm of desired) {
     if (+dm.postAt <= cutoff) continue;
-    const channel = await channelFor(dm.slackUserId);
+    const channel = dm.channel ?? (await channelFor(dm.slackUserId));
     const postAt = Math.floor(+dm.postAt / 1000);
-    wanted.set(key(channel, postAt, dm.text), { ...dm, channel });
+    wanted.set(key(channel, postAt, dm.text), {
+      postAt: dm.postAt,
+      text: dm.text,
+      channel,
+    });
   }
 
   let kept = 0;

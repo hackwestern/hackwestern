@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import { readCsv } from "./csv";
 import {
   planOrganizerReminders,
+  planTeamPosts,
   readContacts,
   readRoster,
   readRunOfShow,
@@ -191,4 +192,40 @@ test('"Everyone except Sarina, Daniel" leaves those two out', () => {
   const [task] = readRunOfShow(g).tasks;
   expect(task?.owners.sort()).toEqual(["Ann", "Bob"]);
   expect(readRunOfShow(g).unrecognized).toEqual([]);
+});
+
+test("a team-owned task is posted in that team's channel, once", () => {
+  const g = [
+    header,
+    ["FRIDAY"],
+    ["12:00 PM", "", "", "", "", "Ann, Bob"],
+    [
+      "1:00 PM",
+      "",
+      "",
+      "Cheat Check\nOwner: Ann (lead), WEB\nLocation: Rm 2230",
+    ],
+    ["2:00 PM", "", "", "Cheat Check\nOwner: Ann (lead), WEB"],
+    ["3:00 PM", "Snacks\nOwner: Bob"],
+  ];
+  const people = readContacts(
+    [
+      ["Name", "Position", "Email"],
+      ["Ann Lee", "Web Lead", "ann@example.com"],
+      ["Bob Kim", "Events", "bob@example.com"],
+    ],
+    ["Ann", "Bob"],
+  ).people;
+  const posts = planTeamPosts(readRunOfShow(g, people).tasks, {
+    channels: { Web: "CWEB", Events: "CEVENTS" },
+  });
+  expect(posts).toHaveLength(1);
+  expect(posts[0]).toMatchObject({
+    team: "Web",
+    channel: "CWEB",
+    postAt: new Date("2026-11-20T17:45:00Z"),
+  });
+  expect(posts[0]?.text).toContain("*Cheat Check*");
+  expect(posts[0]?.text).toContain("> Location: Rm 2230");
+  expect(posts[0]?.text).toContain("👥 Web team: Ann");
 });

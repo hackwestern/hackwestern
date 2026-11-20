@@ -17,6 +17,8 @@ export const organizerRemindersCopy = {
     /** The owner line names a team ("Spon"); names are its other members. */
     withTeams: (teams: string, names: string) =>
       `👥 With: ${teams} team${names ? ` (${names})` : ""}`,
+    /** Team channel posts: who on the team owns it. */
+    teamLine: (team: string, names: string) => `👥 ${team} team: ${names}`,
     /** The task is for every organizer. */
     everyone: "👥 With: all organizers",
     /** The person's next task after this one. */
