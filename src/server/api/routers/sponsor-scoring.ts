@@ -628,9 +628,11 @@ export const sponsorScoringRouter = createTRPCRouter({
           set: { teamIds, sentAt },
         });
       // The Judging board schedules each shortlist as it arrives; times
-      // already given never move (judging board v2).
-      await rebuildPresentationScheduleQuietly();
-      await mirrorSponsorJudgingSoon();
+      // already given never move (judging board v2). A rebuild rewrites
+      // the Sponsor Judging tab itself.
+      if (!(await rebuildPresentationScheduleQuietly())) {
+        await mirrorSponsorJudgingSoon();
+      }
       return { sentAt, teamIds };
     }),
 

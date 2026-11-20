@@ -789,17 +789,25 @@ describe("sponsorScoring round 2", () => {
           sponsorId: s.id,
           teamId,
           room: "Rm 2110",
-          startMinute: 600 + i * 5,
+          startMinute: 600 + i * 6,
         })),
       );
-      // A new team joins the shortlist and is re-sent; it hasn't presented.
+      // A new team joins the shortlist and is re-sent after presentations
+      // (Sunday 11:40): the rebuild keeps every time and has no slot left
+      // for it, so it hasn't presented.
       const added = await team();
       await anon.sponsorScoring.review({
         sponsor: s.id,
         teamId: added,
         shortlisted: true,
       });
-      await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-22T11:40:00-05:00"));
+      try {
+        await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
+      } finally {
+        vi.useRealTimers();
+      }
       await expect(
         anon.sponsorScoring.submit({
           sponsor: s.id,

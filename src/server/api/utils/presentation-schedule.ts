@@ -13,6 +13,7 @@ import {
   isDigitalJudging,
   remoteJudgingRoom,
 } from "~/lib/sponsor-prize-tracks";
+import { judgingDayMinutes } from "~/lib/judging-board";
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
 import { mirrorJudgingScoresLater } from "~/server/api/utils/sponsor-judging-scores-mirror";
 import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
@@ -129,6 +130,22 @@ export async function presentingSponsors() {
 }
 
 /**
+ * How much notice a team added on judging day gets: its first slot starts
+ * at least this long from now.
+ */
+export const NEW_SLOT_NOTICE_MINUTES = 10;
+
+/**
+ * The earliest start a newly placed team may get: no limit before judging
+ * day; on it, now plus NEW_SLOT_NOTICE_MINUTES (so never a slot that
+ * already passed); after it, nothing.
+ */
+export function newSlotsFrom(now: Date) {
+  const minutes = judgingDayMinutes(now);
+  return minutes < 0 ? -Infinity : minutes + NEW_SLOT_NOTICE_MINUTES;
+}
+
+/**
  * Build the presentation schedule from every sent shortlist and replace
  * the stored one. Times already given stay where they are (in the
  * sponsor's current room); new teams fit around them. Rooms come from the
@@ -176,22 +193,27 @@ export async function rebuildPresentationSchedule({
           ).map((t) => t.id)
         : [],
     );
-    const requests = sends.map((s) => ({
-      sponsorId: s.sponsorId,
-      // Clamped to the column, so a long sheet value can't abort this.
-      room: normalizeRoom(rooms.get(s.sponsorId)),
-      teamIds: s.teamIds.filter((id) => existing.has(id)),
-    }));
     const kept = await tx
       .select({
         sponsorId: sponsorPresentations.sponsorId,
         teamId: sponsorPresentations.teamId,
+        room: sponsorPresentations.room,
         start: sponsorPresentations.startMinute,
       })
       .from(sponsorPresentations)
       .where(isNotNull(sponsorPresentations.startMinute));
+    // A room the schedule already uses stays when no source names one now
+    // (a sheet read failing mid-event must never wipe teams' times).
+    const usedRoom = new Map(kept.map((k) => [k.sponsorId, k.room]));
+    const requests = sends.map((s) => ({
+      sponsorId: s.sponsorId,
+      // Clamped to the column, so a long sheet value can't abort this.
+      room: normalizeRoom(rooms.get(s.sponsorId) ?? usedRoom.get(s.sponsorId)),
+      teamIds: s.teamIds.filter((id) => existing.has(id)),
+    }));
     const result = schedulePresentations(requests, undefined, {
       keep: kept.map((k) => ({ ...k, start: k.start! })),
+      notBefore: newSlotsFrom(scheduledAt),
     });
     if (gapViolations(result.slots).length > 0) {
       // The scheduler guarantees this; refuse rather than store a clash.
@@ -262,16 +284,21 @@ export async function rebuildPresentationSchedule({
 /**
  * Rebuild after a shortlist send or a room change, never throwing: no
  * shortlist yet is normal, and a failure is logged (the board still shows
- * the last schedule, and the next change rebuilds again).
+ * the last schedule, and the next change rebuilds again). True when it
+ * rebuilt (and so already rewrote the Sponsor Judging tab).
  */
-export async function rebuildPresentationScheduleQuietly() {
+export async function rebuildPresentationScheduleQuietly(): Promise<boolean> {
   try {
     await rebuildPresentationSchedule();
+    return true;
   } catch (error) {
-    if (error instanceof TRPCError && error.code === "BAD_REQUEST") return;
+    if (error instanceof TRPCError && error.code === "BAD_REQUEST") {
+      return false;
+    }
     console.error(
       "presentation schedule rebuild failed:",
       error instanceof Error ? error.message : String(error),
     );
+    return false;
   }
 }

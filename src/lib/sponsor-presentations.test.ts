@@ -241,6 +241,25 @@ describe("schedulePresentations", () => {
     expect(gapViolations(result.slots)).toEqual([]);
   });
 
+  it("never gives a new team a slot that already passed", () => {
+    const requests = [{ sponsorId: "qnx", room: "R", teamIds: ["a", "b"] }];
+    const keep = [{ sponsorId: "qnx", teamId: "a", start: 600 }];
+    const result = schedulePresentations(requests, undefined, {
+      keep,
+      notBefore: 640,
+    });
+    expect(result.slots.map((s) => [s.teamId, s.start])).toEqual([
+      ["a", 600],
+      ["b", 642],
+    ]);
+    // After the window: nowhere left, flagged instead.
+    const late = schedulePresentations(requests, undefined, {
+      keep,
+      notBefore: 24 * 60,
+    });
+    expect(late.unplaced).toEqual([{ sponsorId: "qnx", teamId: "b" }]);
+  });
+
   it("drops kept slots for teams no longer on the shortlist", () => {
     const requests = [{ sponsorId: "qnx", room: "R", teamIds: ["b"] }];
     const keep = [

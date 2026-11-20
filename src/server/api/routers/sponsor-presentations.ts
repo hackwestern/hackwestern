@@ -8,10 +8,6 @@ import {
   PRESENTATION_ROOM_MAX,
   PRESENTATION_SLOTS_PER_ROOM,
   SHORTLIST_MAX,
-  gapViolations,
-  normalizeRoom,
-  schedulePresentations,
-  slotsKey,
 } from "~/lib/sponsor-presentations";
 import { hasPrizeTrack, isDigitalJudging } from "~/lib/sponsor-prize-tracks";
 import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
@@ -24,8 +20,6 @@ import {
 import { runAllTeamChecks } from "~/server/api/utils/cheat-check-runners";
 import { sendPresentationEmail } from "~/server/api/utils/presentation-email";
 import { SHEET_WRITES_DISABLED } from "~/server/api/utils/coffee-chat-sheet-mirror";
-import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
-import { mirrorJudgingScoresLater } from "~/server/api/utils/sponsor-judging-scores-mirror";
 import {
   mirrorSponsorJudging,
   mirrorSponsorJudgingSoon,
@@ -73,7 +67,6 @@ const CHEAT_CONCURRENCY = 2;
  */
 const STALE_CLAIM = sql`now() - interval '10 minutes'`;
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /** Run `fn` over `items`, at most `limit` at a time, results in order. */
 async function mapPool<T, R>(

@@ -115,9 +115,6 @@ export const sponsorJudgingBoardCopy = {
     time: "Time",
     twoSponsors: (n: number) => `${n} sponsors`,
     legend: {
-      notSent: "Invite not sent",
-      waiting: "Waiting",
-      accepted: "Accepted",
       twoSponsors: "On 2+ shortlists, always 10+ min apart",
     },
     roomTeams: (n: number) => `${n} ${n === 1 ? "team" : "teams"}`,

@@ -374,7 +374,10 @@ describe("sponsorPresentations.notify", () => {
       [{ sponsorName: s.name, room: "Rm 2235", start: 600 }],
       undefined,
       // The Confirm button carries the team and the times it was sent.
-      { teamId: expect.any(String), key: expect.stringContaining("600|") },
+      {
+        teamId: expect.any(String) as string,
+        key: expect.stringContaining("600|") as string,
+      },
     );
     expect(await hacker.sponsorPresentations.mine()).toEqual([
       { sponsorName: s.name, room: "Rm 2235", start: 600 },

@@ -35,6 +35,7 @@ import {
   coffeeChats,
   sponsorFinalPicks,
   sponsorHelpRequests,
+  sponsorJudgingRooms,
   sponsorJudgingSponsors,
   sponsorPresentations,
   sponsorShortlistSends,
@@ -136,6 +137,7 @@ export const sponsorOrganizerRouter = createTRPCRouter({
         sunday,
         presentations,
         openedAt,
+        boardRooms,
       ] = await Promise.all([
         runOfShowFor(sponsors.map((s) => s.name)),
         judgingSheet(),
@@ -198,6 +200,8 @@ export const sponsorOrganizerRouter = createTRPCRouter({
           .innerJoin(teams, eq(teams.id, sponsorPresentations.teamId))
           .where(isNotNull(sponsorPresentations.startMinute)),
         round2OpenedAt(),
+        // Rooms set on the Judging board win over the sheets.
+        db.select().from(sponsorJudgingRooms),
       ]);
       return buildSponsorSummaries({
         sponsors,
@@ -217,6 +221,7 @@ export const sponsorOrganizerRouter = createTRPCRouter({
           items: runOfShow?.items ?? [],
           runOfShowRead: runOfShow !== null,
           sheet,
+          boardRooms: new Map(boardRooms.map((r) => [r.sponsorId, r.room])),
         }),
         sunday,
         presentations: presentations.flatMap((p) =>

@@ -54,7 +54,7 @@ export function DigitalJudging({
   );
 }
 
-function DigitalSponsor({ name, top }: { name: string; top: number }) {
+export function DigitalSponsor({ name, top }: { name: string; top: number }) {
   const id = useId();
   const utils = api.useUtils();
   const query = api.sponsorScoring.digitalTeams.useQuery(

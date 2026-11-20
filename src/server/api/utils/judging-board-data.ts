@@ -23,6 +23,7 @@ import {
   scheduleLock,
 } from "~/server/api/utils/presentation-schedule";
 import { judgingRoomsWithSource } from "~/server/api/utils/sponsor-judging-board";
+import { safeProfileUrl } from "~/server/api/utils/sponsor-shortlist";
 import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
 import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import { db } from "~/server/db";
@@ -236,7 +237,7 @@ export async function loadJudgingBoard() {
   };
 }
 
-/** A blank link is no link. */
+/** Blank text is none. */
 const link = (url: string | null | undefined) =>
   url?.trim() ? url.trim() : null;
 
@@ -301,8 +302,9 @@ export async function loadBoardTeam(teamId: string) {
   return {
     teamId: team.id,
     name: team.name,
-    devpostUrl: link(team.devpostUrl),
-    githubUrl: link(team.githubUrl),
+    // Typed by hackers: http(s) only, never a javascript: href.
+    devpostUrl: safeProfileUrl(team.devpostUrl),
+    githubUrl: safeProfileUrl(team.githubUrl),
     status,
     members: members
       .map((m) => {
@@ -323,10 +325,10 @@ export async function loadBoardTeam(teamId: string) {
               ? m.year
               : null,
           links: {
-            linkedin: link(m.linkedin),
-            github: link(m.github),
-            resume: link(m.resume),
-            website: link(m.website),
+            linkedin: safeProfileUrl(m.linkedin),
+            github: safeProfileUrl(m.github),
+            resume: safeProfileUrl(m.resume),
+            website: safeProfileUrl(m.website),
           },
         };
       })
@@ -408,7 +410,8 @@ export async function setJudgingRoom(input: {
       ...(holder && mine ? [{ sponsorId: holder.id, room: mine }] : []),
     ]);
   });
-  await rebuildPresentationScheduleQuietly();
-  await mirrorSponsorJudgingSoon();
+  if (!(await rebuildPresentationScheduleQuietly())) {
+    await mirrorSponsorJudgingSoon();
+  }
   return { room, swappedWith: holder?.name ?? null };
 }

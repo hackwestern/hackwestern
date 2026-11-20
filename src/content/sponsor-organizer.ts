@@ -411,6 +411,7 @@ export const sponsorOrganizerCopy = {
       status: "Status",
     },
     source: {
+      "judging-board": "Judging board",
       "sponsor-sheet": "Sponsor sheet",
       "run-of-show": "Run of show",
     },
