@@ -17864,6 +17864,59 @@
       "type": "query"
     },
     {
+      "auth": "protected",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/scavengerHunt.getPrizes?input=<superjson>",
+      "input": null,
+      "output": {
+        "items": {
+          "properties": {
+            "costPoints": {
+              "type": "number"
+            },
+            "id": {
+              "type": "number"
+            },
+            "name": {
+              "type": "string"
+            },
+            "quantity": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "costPoints",
+            "quantity"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "path": "scavengerHunt.getPrizes",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "query"
+    },
+    {
       "auth": "organizer",
       "errors": [
         {
