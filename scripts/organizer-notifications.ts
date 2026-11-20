@@ -11,6 +11,7 @@ import {
 import { readCsv } from "~/server/slack/csv";
 import {
   KNOWN_SLACK_IDS,
+  linkToken,
   planOrganizerReminders,
   planTeamPosts,
   readContacts,
@@ -70,26 +71,74 @@ function sheetsApi(config: Config) {
   return { api: google.sheets({ version: "v4", auth }), email };
 }
 
-/** The tab's merged cells (a task's height); none for a local CSV copy. */
-async function merges(
+type GridCell = {
+  formattedValue?: string | null;
+  hyperlink?: string | null;
+  textFormatRuns?:
+    | {
+        startIndex?: number | null;
+        format?: { link?: { uri?: string | null } | null } | null;
+      }[]
+    | null;
+};
+
+/** A cell's text with its linked parts kept as link tokens (see linkToken). */
+function cellText(cell: GridCell): string {
+  const text = cell.formattedValue ?? "";
+  const runs = (cell.textFormatRuns ?? []).map((r) => ({
+    start: r.startIndex ?? 0,
+    uri: r.format?.link?.uri ?? null,
+  }));
+  if (runs.some((r) => r.uri)) {
+    return runs
+      .map((r, i) => {
+        const part = text.slice(r.start, runs[i + 1]?.start ?? text.length);
+        return r.uri && part.trim() ? linkToken(r.uri, part) : part;
+      })
+      .join("");
+  }
+  return cell.hyperlink && text ? linkToken(cell.hyperlink, text) : text;
+}
+
+/**
+ * The run of show in one read: cell text (with links) and merged cells (a
+ * task's height). A local CSV copy has no links or merges.
+ */
+async function runOfShow(
   config: Config,
   path: string | undefined,
   sheet: string,
   range: string,
-): Promise<CellMerge[]> {
-  if (path) return [];
-  const { api } = sheetsApi(config);
-  const res = await api.spreadsheets.get({
-    spreadsheetId: sheet,
-    ranges: [range],
-    fields: "sheets.merges",
-  });
-  return (res.data.sheets?.[0]?.merges ?? []).map((m) => ({
-    startRowIndex: m.startRowIndex ?? 0,
-    endRowIndex: m.endRowIndex ?? 0,
-    startColumnIndex: m.startColumnIndex ?? 0,
-    endColumnIndex: m.endColumnIndex ?? 0,
-  }));
+): Promise<{ rows: string[][]; merges: CellMerge[] }> {
+  if (path) return { rows: readCsv(await readFile(path, "utf8")), merges: [] };
+  const { api, email } = sheetsApi(config);
+  try {
+    const res = await api.spreadsheets.get({
+      spreadsheetId: sheet,
+      ranges: [range],
+      includeGridData: true,
+      fields:
+        "sheets.merges,sheets.data.rowData.values(formattedValue,hyperlink,textFormatRuns(startIndex,format(link(uri))))",
+    });
+    const tab = res.data.sheets?.[0];
+    return {
+      rows: (tab?.data?.[0]?.rowData ?? []).map((r) =>
+        (r.values ?? []).map((v) => cellText(v)),
+      ),
+      merges: (tab?.merges ?? []).map((m) => ({
+        startRowIndex: m.startRowIndex ?? 0,
+        endRowIndex: m.endRowIndex ?? 0,
+        startColumnIndex: m.startColumnIndex ?? 0,
+        endColumnIndex: m.endColumnIndex ?? 0,
+      })),
+    };
+  } catch (error) {
+    const code = (error as { code?: number }).code;
+    if (code === 403 || code === 404) {
+      throw new Error(`Can't read a sheet: share it with ${email} as a Viewer`);
+    }
+    throw error;
+  }
 }
 
 /** A sheet tab as rows of strings: a local CSV when a path is set, else live. */
@@ -117,7 +166,7 @@ async function grid(
 }
 
 async function load(config: Config) {
-  const schedule = await grid(
+  const { rows: schedule, merges } = await runOfShow(
     config,
     setting(config.ORGANIZER_RUN_OF_SHOW_PATH),
     setting(config.ORGANIZER_RUN_OF_SHOW_SHEET) ?? RUN_OF_SHOW_SHEET,
@@ -132,16 +181,7 @@ async function load(config: Config) {
     ),
     readRoster(schedule),
   );
-  const parsed = readRunOfShow(
-    schedule,
-    contacts.people,
-    await merges(
-      config,
-      setting(config.ORGANIZER_RUN_OF_SHOW_PATH),
-      setting(config.ORGANIZER_RUN_OF_SHOW_SHEET) ?? RUN_OF_SHOW_SHEET,
-      RUN_OF_SHOW_RANGE,
-    ),
-  );
+  const parsed = readRunOfShow(schedule, contacts.people, merges);
   const skipNames = new Set(
     (config.ORGANIZER_NOTIFICATION_SKIP_NAMES ?? "")
       .split(",")

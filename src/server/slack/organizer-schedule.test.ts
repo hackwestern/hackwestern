@@ -4,6 +4,8 @@ import { readCsv } from "./csv";
 import {
   planOrganizerReminders,
   planTeamPosts,
+  linkToken,
+  restoreLinks,
   readContacts,
   readRoster,
   readRunOfShow,
@@ -252,4 +254,22 @@ test("a team-owned task is posted in that team's channel, once", () => {
   expect(posts[0]?.text).toContain("*Cheat Check*");
   expect(posts[0]?.text).toContain("> Location: Rm 2230");
   expect(posts[0]?.text).toContain("👥 Web team: Ann");
+});
+
+test("linked text in a cell becomes a Slack link, with escaping kept", () => {
+  const g = [
+    header,
+    ["FRIDAY"],
+    ["12:00 PM", "", "", "", "", "Ann"],
+    [
+      "1:00 PM",
+      `Plan & prep\nOwner: Ann\nNotes: see ${linkToken("https://example.com/a?b=1&c=2", "Auto-Ping")} now`,
+    ],
+  ];
+  const [dm] = planOrganizerReminders(readRunOfShow(g).tasks);
+  expect(dm?.text).toContain("*Plan &amp; prep*");
+  expect(dm?.text).toContain(
+    "> Notes: see <https://example.com/a?b=1&amp;c=2|Auto-Ping> now",
+  );
+  expect(restoreLinks(linkToken("javascript:alert(1)", "x"))).toBe("x");
 });

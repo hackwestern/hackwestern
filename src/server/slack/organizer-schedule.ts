@@ -554,7 +554,29 @@ function formatReminder(name: string, group: OrganizerTask[]): string {
       );
     else if (others.length) lines.push(copy.slack.with(others.join(", ")));
   }
-  return lines.join("\n");
+  return restoreLinks(lines.join("\n"));
+}
+
+/**
+ * Linked text in a run-of-show cell ("Auto-Ping" linking to the sheet) is
+ * carried through parsing as LINK_OPEN uri LINK_MID text LINK_CLOSE, so
+ * escaping and name matching leave it alone, then becomes a Slack link.
+ */
+export const LINK_OPEN = "\u0001";
+export const LINK_MID = "\u0003";
+export const LINK_CLOSE = "\u0002";
+const LINK_TOKEN = /\u0001([^\u0003]*)\u0003([^\u0002]*)\u0002/g;
+
+/** Wrap a cell's linked part for parsing (see LINK_OPEN). */
+export function linkToken(uri: string, text: string): string {
+  return `${LINK_OPEN}${uri}${LINK_MID}${text}${LINK_CLOSE}`;
+}
+
+/** Turn link tokens into Slack links: <https://…|Auto-Ping>. */
+export function restoreLinks(text: string): string {
+  return text.replace(LINK_TOKEN, (_, uri: string, label: string) =>
+    /^https?:\/\//i.test(uri) ? `<${uri}|${label}>` : label,
+  );
 }
 
 /** Slack channels for teams; a task owned by the team is posted there too. */
@@ -605,7 +627,7 @@ export function planTeamPosts(
         team,
         channel,
         postAt: new Date(+task.at - lead * 60_000),
-        text: lines.join("\n"),
+        text: restoreLinks(lines.join("\n")),
       });
     }
   }
