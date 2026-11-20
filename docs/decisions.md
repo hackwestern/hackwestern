@@ -892,3 +892,18 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Decision:** Hackers hear about things by Slack DM only (email still covers anyone Slack can't find). /live has no notification bell and no "Sponsor presentations" card, and teams confirm their presentation times with the button in the Slack DM, not on /live. The DM and email no longer link to /live. The bell, the card and the /live Confirm button are in src/components/live/_to_delete/. The coffee chats section on /live stays for now.
 **Why:** one place for notifications; hackers already live in Slack during the event.
 **Supersedes:** the /live notification center (2026-11-18) and confirming on /live (judging board, 2026-11-19).
+
+## 2026-11-20: Notifications plan (Jazz)
+
+**Hackers (Slack DMs):**
+- **Coffee chats, Fri 10 PM:** invites go out. Hackers accept by Sat 10:00 AM. Anyone still waiting at 10:00 has their seat sent to the next hacker.
+- **A decline:** the seat goes to the next hacker on the waitlist, and they're notified.
+- **No answer 30 min before the chat:** the seat goes to one final hacker.
+- **Sun 9:45 AM:** hackers are told to check their Slack for their invite and accept their sponsor judging time if they've been selected.
+
+**Spon team (a task for the whole team, posted to the spon channel):**
+- **Fri 10 PM:** sponsors have to go through the coffee chat flow, and the spon team sends out the notifications to hackers.
+- **Sat 9:30 AM:** check in with your sponsors' reps to make sure they'll attend their chats.
+- **Sun 9:45 AM:** sponsors' shortlists must be submitted by now. Go to the Judging board, give each sponsor a room, then send the room details to hackers (Notify teams).
+
+**Why:** one timeline for when hackers hear from us and what the spon team does at each point.
