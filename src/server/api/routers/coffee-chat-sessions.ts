@@ -19,7 +19,6 @@ import {
 import { createTRPCRouter, protectedOrganizerProcedure } from "~/server/api/trpc";
 import { mirrorRoomGrid } from "~/server/api/utils/coffee-chat-room-grid-mirror";
 import { mirrorCoffeeInvitesLater } from "~/server/api/utils/coffee-chat-invites-sheet-mirror";
-import { checkCoffeeSender, type SenderCheck } from "~/server/api/utils/coffee-chat-sender";
 import {
   deliverInviteNotices,
   invitesDeliveryLive,
@@ -112,15 +111,8 @@ const sessionId = z.enum(COFFEE_SESSION_IDS);
  * through boardWrite(): one board lock, then checks on a fresh read.
  */
 export const coffeeChatSessionsRouter = createTRPCRouter({
-  /** The board, plus whether this organizer may press Send (Noah only). */
-  getBoard: protectedOrganizerProcedure.query(
-    async ({ ctx }): Promise<SessionBoard & { sender: SenderCheck }> => {
-      const [state, sender] = await Promise.all([
-        loadBoardState(),
-        checkCoffeeSender(ctx.session.user.email),
-      ]);
-      return { ...sessionBoardOf(state), sender };
-    },
+  getBoard: protectedOrganizerProcedure.query(async (): Promise<SessionBoard> =>
+    sessionBoardOf(await loadBoardState()),
   ),
 
   /** Run the scheduler: keeps pinned, sent and booked cells; replaces drafts. */
@@ -400,21 +392,8 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       return { ok: true };
     }),
 
-  /**
-   * Send: only Noah Medland or a "Same view as" Noah row (login email on HW Contacts, read
-   * fresh). Every draft chat becomes sent (sentAt now), sponsors who changed
-   * after invites get their sent chats re-confirmed (sentAt now), then the Room Grid
-   * tab is mirrored (only when sheetWritesEnabled(); locally nothing is
-   * written). If HW Contacts can't be read, nobody can send.
-   */
-  send: protectedOrganizerProcedure.mutation(async ({ ctx }) => {
-    const sender = await checkCoffeeSender(ctx.session.user.email, { fresh: true });
-    if (!sender.canSend) {
-      throw new TRPCError({
-        code: sender.reason === "notSender" ? "FORBIDDEN" : "PRECONDITION_FAILED",
-        message: errors.sender[sender.reason],
-      });
-    }
+  /** Finalize draft chats, re-confirm changed schedules, and send hacker invites. */
+  send: protectedOrganizerProcedure.mutation(async () => {
     const now = new Date();
     // One transaction: mark every draft chat sent, then invite hackers to
     // their seats (scanned → shortlist → interested). Both take the same

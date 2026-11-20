@@ -1,7 +1,6 @@
 import { beforeAll, describe, expect, test, vi } from "vitest";
 import type * as InvitesModule from "~/server/api/utils/coffee-chat-invites";
 import type * as RunOfShowModule from "~/server/api/utils/run-of-show-sheet";
-import type * as SenderModule from "~/server/api/utils/coffee-chat-sender";
 import type * as RoomGridModule from "~/server/api/utils/coffee-chat-room-grid-mirror";
 import { and, eq } from "drizzle-orm";
 import { db } from "~/server/db";
@@ -23,14 +22,9 @@ import { roomGridRows } from "~/server/api/utils/coffee-chat-room-grid-mirror";
 import { loadBoardState } from "~/server/api/utils/coffee-chat-sessions-board";
 import { layoutOf } from "~/server/api/utils/coffee-chat-invites";
 
-const { names, ros, mirror, hw, deliver } = vi.hoisted(() => {
+const { names, ros, mirror, deliver } = vi.hoisted(() => {
   const stamp = Date.now();
   return {
-    /**
-     * What HW Contacts says Noah's login email is: an email, null (no
-     * login email) or "unreadable". Set to the organizer's email below.
-     */
-    hw: { sender: "unreadable" as string | null },
     names: { work: `WorkCo${stamp}`, team: `TeamCo${stamp}`, late: `LateCo${stamp}`, busy: `BusyCo${stamp}` },
     /** Flip to make the run-of-show read fail, or to turn sheet writes on. */
     ros: { fail: false, writes: false },
@@ -74,27 +68,14 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
     }),
 }));
 
-// HW Contacts is never read in tests: the sender's login email comes from `hw`.
-vi.mock("~/server/api/utils/coffee-chat-sender", async (importOriginal) => {
-  const real = await importOriginal<typeof SenderModule>();
-  return {
-    ...real,
-    checkCoffeeSender: (email: string | null | undefined) =>
-      Promise.resolve(real.senderCheckOf(email, hw.sender)),
-  };
-});
-
 // Spy on the Room Grid mirror (it never writes here: no sheet in tests).
 vi.mock("~/server/api/utils/coffee-chat-room-grid-mirror", async (importOriginal) => ({
   ...(await importOriginal<typeof RoomGridModule>()),
   mirrorRoomGrid: mirror,
 }));
 
-const noahSession = await mockOrganizerSession(db);
-const organizer = createCaller(createInnerTRPCContext({ session: noahSession }));
+const organizer = createCaller(createInnerTRPCContext({ session: await mockOrganizerSession(db) }));
 const otherOrganizer = createCaller(createInnerTRPCContext({ session: await mockOrganizerSession(db) }));
-// `organizer` is Noah: HW Contacts' Login email matches them.
-hw.sender = noahSession.user.email!.toLowerCase();
 const hacker = createCaller(createInnerTRPCContext({ session: await mockSession(db) }));
 const anon = createCaller(createInnerTRPCContext({ session: null }));
 
@@ -282,32 +263,16 @@ describe("guards", () => {
 });
 
 describe("send", () => {
-  test("only Noah sends; nobody can when HW Contacts can't be read", async () => {
-    const msg = (p: Promise<unknown>) => p.then(() => "ok", (e: { code?: string; message?: string }) => `${e.code}: ${e.message}`);
-    const other = await otherOrganizer.coffeeChatSessions.getBoard();
-    expect(other.sender).toEqual({ canSend: false, reason: "notSender" });
-    expect(await msg(otherOrganizer.coffeeChatSessions.send())).toBe("FORBIDDEN: Only Noah sends the confirmed schedule.");
-    expect((await organizer.coffeeChatSessions.getBoard()).sender).toEqual({ canSend: true, reason: null });
-    const was = hw.sender;
-    try {
-      hw.sender = "unreadable";
-      expect((await organizer.coffeeChatSessions.getBoard()).sender).toEqual({ canSend: false, reason: "sheetUnreadable" });
-      expect(await msg(organizer.coffeeChatSessions.send())).toBe(
-        "PRECONDITION_FAILED: Can't read HW Contacts, so nobody can send right now. Try again in a minute.",
-      );
-      hw.sender = null;
-      expect(await code(organizer.coffeeChatSessions.send())).toBe("PRECONDITION_FAILED");
-    } finally {
-      hw.sender = was;
-    }
-    // Nothing was sent by any refused call.
+  test("requires an organizer session to send", async () => {
+    expect(await code(hacker.coffeeChatSessions.send())).toBe("FORBIDDEN");
+    expect(await code(anon.coffeeChatSessions.send())).toBe("UNAUTHORIZED");
     expect((await db.select().from(coffeeChatPlacements)).every((r) => r.status === "draft")).toBe(true);
   });
 
-  test("marks drafts sent, writes nothing to the sheet, runs the invite round (switched off in tests)", async () => {
+  test("another organizer can send draft schedules and run the invite round", async () => {
     const before = await loadBoardState();
     const draftChats = layoutOf(before, (p) => p.status === "draft").length;
-    const res = await organizer.coffeeChatSessions.send();
+    const res = await otherOrganizer.coffeeChatSessions.send();
     // "Sent N chats." counts chats, not cells.
     expect(res.chats).toBe(draftChats);
     expect(res.chats).toBeGreaterThan(res.sent);

@@ -142,12 +142,14 @@ export type RankedInterestRow = {
  * at least one completed review, by average review score (ties by name),
  * capped at `limit` (null for no cap). One row per email (the first form
  * response wins). Pass only admitted hackers' reviews, so the cap counts
- * admitted hackers.
+ * admitted hackers. With prioritizePick, include unreviewed respondents and
+ * order by sponsor preference before review score.
  */
 export function rankInterestRows(
   interestRows: readonly InterestRow[],
   scoredReviews: readonly ScoredReview[],
   limit: number | null = INTERESTED_HACKER_LIMIT,
+  prioritizePick = false,
 ): RankedInterestRow[] {
   const interestedEmails = new Set(interestRows.map((row) => row.email));
   const scores = new Map<string, number>();
@@ -172,7 +174,7 @@ export function rankInterestRows(
 
   const ranked = [...firstByEmail.values()]
     .flatMap((row) =>
-      row.rank !== null && row.rank <= 3 && scores.has(row.email)
+      row.rank !== null && row.rank <= 3 && (prioritizePick || scores.has(row.email))
         ? [
             {
               email: row.email,
@@ -189,6 +191,7 @@ export function rankInterestRows(
     )
     .sort(
       (a, b) =>
+        (prioritizePick ? a.pick - b.pick : 0) ||
         b.score - a.score ||
         a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
     )
@@ -231,11 +234,12 @@ export async function fetchRankedInterestRows(
   {
     limit = INTERESTED_HACKER_LIMIT,
     now = Date.now(),
-  }: { limit?: number | null; now?: number } = {},
+    prioritizePick = false,
+  }: { limit?: number | null; now?: number; prioritizePick?: boolean } = {},
 ): Promise<RankedInterestRow[]> {
   const [interestRows, scoredReviews] = await Promise.all([
     fetchHackerInterestRows(sponsorName),
     fetchAdmittedScoredReviews(now),
   ]);
-  return rankInterestRows(interestRows, scoredReviews, limit);
+  return rankInterestRows(interestRows, scoredReviews, limit, prioritizePick);
 }

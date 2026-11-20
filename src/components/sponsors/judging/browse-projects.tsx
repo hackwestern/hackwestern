@@ -234,7 +234,7 @@ export function BrowseProjects({
                   : copy.one.progress(scoredByMe, scoped.length)}
               </span>
             </div>
-            <div data-tour="judging-first-project">{card(current)}</div>
+            <div>{card(current)}</div>
             <div className="sticky bottom-[var(--sponsor-tabbar,0px)] z-10 -mx-4 grid grid-cols-[auto_1fr_auto] gap-2 border-t border-dashboard-border-subtle bg-dashboard-bg-page/95 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm sm:-mx-5 sm:px-5">
               <DashboardButton
                 type="button"
@@ -347,7 +347,6 @@ export function BrowseProjects({
               {listed.map((team, i) => (
                 <li
                   key={team.id}
-                  data-tour={i === 0 ? "judging-first-project" : undefined}
                 >
                   {card(team)}
                 </li>

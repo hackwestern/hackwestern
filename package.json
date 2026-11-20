@@ -19,6 +19,7 @@
     "seed:sponsor-picks": "dotenv -- tsx ./src/server/db/seed/sponsor-picks.ts",
     "judging:driver": "dotenv -- tsx ./scripts/judging-driver.ts",
     "judging:warmup": "dotenv -- tsx ./scripts/judging-warmup.ts",
+    "slack:test": "dotenv -- tsx ./scripts/test-slack.ts",
     "dev": "next dev --turbopack",
     "dev:prod": "dotenv -e .env.prod next dev --turbopack",
     "lint": "next lint",
@@ -28,7 +29,8 @@
     "load-tester:dev": "npx wrangler dev -c workers/hw-network-requests/wrangler.toml --env-file \"$PWD/.env\"",
     "load-tester:migrate:new": "npx wrangler d1 migrations create hw-network-requests -c workers/hw-network-requests/wrangler.toml",
     "load-tester:migrate": "npx wrangler d1 migrations apply hw-network-requests -c workers/hw-network-requests/wrangler.toml --local",
-    "load-tester:studio": "drizzle-kit studio --config workers/hw-network-requests/studio.config.ts"
+    "load-tester:studio": "drizzle-kit studio --config workers/hw-network-requests/studio.config.ts",
+    "marketing:notifications": "node --import tsx scripts/marketing-notifications.ts"
   },
   "dependencies": {
     "@auth/core": "^0.34.2",

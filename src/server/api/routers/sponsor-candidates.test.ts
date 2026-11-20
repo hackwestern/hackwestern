@@ -80,7 +80,8 @@ const formRow = (email: string, pick = 1): RankedInterestRow => ({
   pick,
 });
 
-beforeEach(() => {
+beforeEach(async () => {
+  await db.delete(applications);
   formRanking.mockReset();
   formRanking.mockRejectedValue(new Error("HACKER_INTEREST_FORM is not set"));
 });
@@ -89,18 +90,23 @@ describe("candidates from the interest form", () => {
   test("lists form candidates by user id in ranking order, with no emails", async () => {
     const mine = await sponsor();
     const first = await hacker(false);
-    const second = await hacker(true);
+    const second = await hacker(true, mine.id);
+    const inAppOnly = await hacker(true, mine.id);
+    const unranked = await hacker(true);
+    await hacker(false);
     formRanking.mockResolvedValue([
-      formRow(first.email, 2),
-      formRow(second.email, 1),
+      formRow(first.email, 1),
+      formRow(second.email, 2),
     ]);
 
     const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
     expect(res.source).toBe("interestForm");
     expect(res.showSource).toBe(false);
     expect(res.hackers.map((h) => [h.userId, h.rank, h.pick])).toEqual([
-      [first.id, 1, 2],
-      [second.id, 2, 1],
+      [first.id, 1, 1],
+      [second.id, 2, 2],
+      [inAppOnly.id, 3, 1],
+      [unranked.id, 4, null],
     ]);
     expect(res.hackers[0]).toMatchObject({ name: "Private", shared: false });
     expect(res.hackers[1]).toMatchObject({
@@ -112,23 +118,22 @@ describe("candidates from the interest form", () => {
     expect(json).not.toContain(second.email);
   });
 
-  test("form candidates and sharing hackers found by search can be shortlisted", async () => {
+  test("form candidates and sharing hackers who did not rank the sponsor can be shortlisted", async () => {
     const mine = await sponsor();
     await withSeats(mine.id);
     const candidate = await hacker(false);
-    // Ranked the sponsor in the app, but isn't on the form list.
-    const inAppOnly = await hacker(true, mine.id);
+    const unranked = await hacker(true);
     formRanking.mockResolvedValue([formRow(candidate.email)]);
 
     // A form candidate can be shortlisted even without app consent (the
     // form is their consent); anyone else needs to share with sponsors.
     await anon.sponsorShortlist.add({ sponsor: mine.id, userId: candidate.id });
-    await anon.sponsorShortlist.add({ sponsor: mine.id, userId: inAppOnly.id });
+    await anon.sponsorShortlist.add({ sponsor: mine.id, userId: unranked.id });
 
     const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
     expect(
       res.hackers.filter((h) => h.shortlisted).map((h) => h.userId),
-    ).toEqual([candidate.id, inAppOnly.id]);
+    ).toEqual([candidate.id, unranked.id]);
 
     const organizer = createCaller(
       createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
@@ -138,11 +143,11 @@ describe("candidates from the interest form", () => {
     });
     expect(forSponsor.hackers.map((h) => h.userId)).toEqual([
       candidate.id,
-      inAppOnly.id,
+      unranked.id,
     ]);
   });
 
-  test("drops hackers who aren't admitted, then cuts to 40", async () => {
+  test("drops hackers who aren't admitted and includes every eligible candidate", async () => {
     const mine = await sponsor();
     const declined = await Promise.all(
       Array.from({ length: 5 }, () => hacker(true, undefined, "DECLINED")),
@@ -157,12 +162,12 @@ describe("candidates from the interest form", () => {
     ]);
 
     const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
-    expect(res.hackers).toHaveLength(40);
+    expect(res.hackers).toHaveLength(42);
     expect(res.hackers.map((h) => h.userId)).toEqual(
-      admitted.slice(0, 40).map((h) => h.id),
+      admitted.map((h) => h.id),
     );
     expect(res.hackers.map((h) => h.rank)).toEqual(
-      Array.from({ length: 40 }, (_, i) => i + 1),
+      Array.from({ length: 42 }, (_, i) => i + 1),
     );
     await expect(
       anon.sponsorShortlist.add({ sponsor: mine.id, userId: declined[0]!.id }),

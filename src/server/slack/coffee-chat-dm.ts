@@ -109,12 +109,6 @@ export function coffeeChatDmMessage(chat: ChatDetails) {
           },
         ],
       },
-      {
-        type: "context",
-        elements: [
-          { type: "mrkdwn", text: `${copy.footer} <${LIVE_URL}|${LIVE_URL}>` },
-        ],
-      },
     ],
   };
 }

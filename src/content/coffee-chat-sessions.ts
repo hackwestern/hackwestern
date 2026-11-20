@@ -232,7 +232,7 @@ export const coffeeSessionsCopy = {
     draft: "Draft",
     pinned: "Placed by hand: Auto-schedule keeps it here.",
     forcedNote: (rep: string) => `Moved by hand to a time ${rep} isn't free.`,
-    notSentYet: "Not sent yet. Hackers are invited when Noah sends.",
+    notSentYet: "Not sent yet. Hackers are invited when an organizer sends the schedule.",
     /** "Sun Life · Rm 2241 · 10–11" under the rep's name. */
     sub: (sponsor: string, where: string) => `${sponsor} · ${where}`,
     /** A draft: "6 seats in 2 chats". */
@@ -374,8 +374,6 @@ export const coffeeSessionsCopy = {
     working: "Working…",
     sentAt: (time: string) => `Sent ${time}`,
     nothingToSend: "Nothing new to send.",
-    /** Beside the disabled Send button for anyone but Noah (or someone with his HW Contacts "Same view as"). */
-    onlyNoah: "Only Noah (or someone with Noah's view) sends",
   },
 
   /** The one pause before Send: it messages hackers and can't be undone. */
@@ -414,14 +412,14 @@ export const coffeeSessionsCopy = {
     nothingYet:
       "No sponsor has submitted yet. They give their chatting preferences at the Friday workshop.",
     notScheduled: (n: number) =>
-      `${plural(n, "sponsor")} submitted. Run Auto-schedule, then Noah sends schedules and invites by 10 PM.`,
+      `${plural(n, "sponsor")} submitted. Run Auto-schedule, then send schedules and invites by 10 PM.`,
     need: (n: number) =>
-      `${plural(n, "sponsor")} ${n === 1 ? "needs" : "need"} scheduling. Then Noah sends schedules and invites by 10 PM.`,
+      `${plural(n, "sponsor")} ${n === 1 ? "needs" : "need"} scheduling. Then send schedules and invites by 10 PM.`,
     fixes: (n: number) =>
-      `${plural(n, "suggested fix", "suggested fixes")} open. Then Noah sends schedules and invites by 10 PM.`,
-    ready: "Everything is scheduled. Next: Noah sends schedules and invites by 10 PM.",
+      `${plural(n, "suggested fix", "suggested fixes")} open. Then send schedules and invites by 10 PM.`,
+    ready: "Everything is scheduled. Send schedules and invites by 10 PM.",
     changedAfterSend: (n: number) =>
-      `${plural(n, "sponsor")} changed after invites. Check their chats, then Noah sends again.`,
+      `${plural(n, "sponsor")} changed after invites. Check their chats, then send again.`,
     sent: (time: string) => `Schedules sent ${time}. Nothing to do now.`,
     notSubmittedTail: (n: number) =>
       ` ${plural(n, "sponsor")} still ${n === 1 ? "hasn't" : "haven't"} submitted.`,
@@ -467,13 +465,6 @@ export const coffeeSessionsCopy = {
     badReference: "That sponsor or rep is gone. Refresh and try again.",
     unknownSponsor: "That sponsor isn't registered. Refresh and try again.",
     workshopsUnknown,
-    /** Why Send is refused (only Noah Medland sends). */
-    sender: {
-      notSender: "Only Noah sends the confirmed schedule.",
-      noLoginEmail:
-        "Noah's row in HW Contacts has no login email, so nobody can send. Add it in the sheet.",
-      sheetUnreadable: "Can't read HW Contacts, so nobody can send right now. Try again in a minute.",
-    },
   },
 
   help: {
@@ -506,7 +497,7 @@ export const coffeeSessionsCopy = {
         " (another free session, Ivey together, or fewer chats). Apply it or contact the sponsor.",
     },
     send: {
-      lead: "Send (Noah only, by 10 PM Friday):",
+      lead: "Send (by 10 PM Friday):",
       before: " marks every draft chat confirmed, re-confirms sponsors who changed after invites (their hackers were already asked again when they saved), and updates the locked ",
       bold: "Coffee Chat Room Grid",
       after:

@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, notInArray, sql } from "drizzle-orm";
 
 import { admittedStatuses } from "~/lib/admission";
 import { COFFEE_CHAT_SHORTLIST_SIZE } from "~/lib/coffee-chat-requests";
@@ -107,6 +107,7 @@ export async function sponsorShortlist(
     .leftJoin(teams, eq(users.teamId, teams.id))
     .where(
       and(
+        eq(users.type, "hacker"),
         eq(sponsorInterests.sponsorId, sponsorId),
         eq(applications.agreeShareWithSponsors, true),
         inArray(applications.status, [...admittedStatuses(now)]),
@@ -242,12 +243,12 @@ function firstNameOf(profile: CandidateProfile, formName: string) {
  * keep the ranking's order, number them 1..n, then cap at `limit`. Each
  * profile is trimmed to what the hacker agreed to share. Pure, so the
  * privacy rules are easy to test. `profiles` must hold admitted hackers
- * only (profilesByEmail).
+ * only (candidateProfiles).
  */
 export function candidatesFromInterestForm(
   ranked: readonly RankedInterestRow[],
   profiles: readonly CandidateProfile[],
-  limit = INTERESTED_HACKER_LIMIT,
+  limit: number | null = INTERESTED_HACKER_LIMIT,
 ): SponsorCandidate[] {
   const byEmail = new Map<string, CandidateProfile>();
   for (const profile of profiles) {
@@ -259,7 +260,7 @@ export function candidatesFromInterestForm(
     const profile = byEmail.get(row.email.trim().toLowerCase());
     return profile ? [{ row, profile }] : [];
   });
-  return matched.slice(0, limit).map(({ row, profile }, index) => {
+  return (limit === null ? matched : matched.slice(0, limit)).map(({ row, profile }, index) => {
     const formResume = safeProfileUrl(row.resumeUrl);
     const extraLink = safeProfileUrl(row.extraLink);
     const base = { userId: profile.userId, rank: index + 1, pick: row.pick };
@@ -296,14 +297,14 @@ export function candidatesFromInterestForm(
 }
 
 /**
- * Admitted hackers' accounts (and application profile) for these lowercased
- * emails. Anyone not admitted is left out.
+ * Admitted hacker profiles for form respondents or additional candidates
+ * who agreed to share their application with sponsors.
  */
-async function profilesByEmail(
-  emails: readonly string[],
+async function candidateProfiles(
   now: number,
+  filter: { emails: string[] } | { excludeUserIds: string[] },
 ): Promise<CandidateProfile[]> {
-  if (emails.length === 0) return [];
+  if ("emails" in filter && filter.emails.length === 0) return [];
   const email = sql<string>`lower(trim(${users.email}))`;
   return db
     .select({
@@ -325,11 +326,19 @@ async function profilesByEmail(
     .leftJoin(teams, eq(users.teamId, teams.id))
     .where(
       and(
-        inArray(email, [...emails]),
+        eq(users.type, "hacker"),
+        "emails" in filter
+          ? inArray(email, filter.emails)
+          : and(
+              eq(applications.agreeShareWithSponsors, true),
+              filter.excludeUserIds.length
+                ? notInArray(users.id, filter.excludeUserIds)
+                : undefined,
+            ),
         inArray(applications.status, [...admittedStatuses(now)]),
       ),
     )
-    .orderBy(asc(users.id));
+    .orderBy(asc(applications.firstName), asc(applications.lastName), asc(users.id));
 }
 
 // The form ranking reads a Google Sheet and every completed review, so keep
@@ -345,8 +354,7 @@ function cachedRanking(sponsorName: string) {
   const now = Date.now();
   const hit = rankingCache.get(sponsorName);
   if (hit && now - hit.at < RANKING_TTL_MS) return hit.rows;
-  // Uncapped: the 40 are cut after matching admitted accounts.
-  const rows = fetchRankedInterestRows(sponsorName, { limit: null });
+  const rows = fetchRankedInterestRows(sponsorName, { limit: null, prioritizePick: true });
   rankingCache.set(sponsorName, { at: now, rows });
   // Don't keep a failure around: the next call tries again.
   rows.catch(() => {
@@ -358,9 +366,8 @@ function cachedRanking(sponsorName: string) {
 }
 
 /**
- * The sponsor's candidates, best first, at most INTERESTED_HACKER_LIMIT:
- * the interest form ranking when it's set up and readable, otherwise the
- * in-app ranking (sponsorShortlist above).
+ * Form preferences come first, followed by in-app preferences and other
+ * admitted hackers who agreed to share their profiles.
  */
 export async function sponsorCandidates(
   sponsor: { id: string; name: string },
@@ -376,36 +383,47 @@ export async function sponsorCandidates(
     );
   }
 
-  if (ranked) {
-    const profiles = await profilesByEmail(
-      ranked.map((row) => row.email.trim().toLowerCase()),
-      now,
-    );
-    return {
-      source: "interestForm",
-      hackers: await withStudy(candidatesFromInterestForm(ranked, profiles)),
-    };
+  const preferred = ranked
+    ? candidatesFromInterestForm(
+        ranked,
+        await candidateProfiles(now, { emails: ranked.map((row) => row.email.trim().toLowerCase()) }),
+        null,
+      )
+    : [];
+  const seen = new Set(preferred.map((hacker) => hacker.userId));
+
+  const inApp = await sponsorShortlist(sponsor.id, { now, limit: null });
+  for (const hacker of inApp) {
+    if (seen.has(hacker.userId)) continue;
+    seen.add(hacker.userId);
+    preferred.push({
+      ...hacker,
+      rank: preferred.length + 1,
+      pick: hacker.rank,
+      shared: true,
+      extraLink: null,
+    });
   }
 
-  const fallback = await sponsorShortlist(sponsor.id, {
-    now,
-    limit: INTERESTED_HACKER_LIMIT,
-  });
-  return {
-    source: "inAppRanking",
-    hackers: await withStudy(fallback.map((h, index) => ({
-      userId: h.userId,
-      hackerId: h.hackerId,
-      rank: index + 1,
-      pick: h.rank,
-      name: h.name,
+  const others = await candidateProfiles(now, { excludeUserIds: [...seen] });
+  for (const hacker of others) {
+    preferred.push({
+      userId: hacker.userId,
+      hackerId: hacker.hackerId,
+      rank: preferred.length + 1,
+      pick: null,
+      name: displayName(hacker.firstName, hacker.lastName, hacker.accountName),
       shared: true,
-      team: h.team,
-      resume: h.resume,
-      github: h.github,
-      linkedIn: h.linkedIn,
-      devpost: h.devpost,
+      team: hacker.team,
+      resume: safeProfileUrl(hacker.resume),
+      github: safeProfileUrl(hacker.github),
+      linkedIn: safeProfileUrl(hacker.linkedIn),
+      devpost: safeProfileUrl(hacker.devpost),
       extraLink: null,
-    }))),
+    });
+  }
+  return {
+    source: ranked ? "interestForm" : "inAppRanking",
+    hackers: await withStudy(preferred),
   };
 }
