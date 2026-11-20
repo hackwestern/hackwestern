@@ -8,7 +8,10 @@ import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { useNow } from "~/components/sponsors/use-now";
+import { IveyWalkNote } from "~/components/ivey-walk-note";
 import { coffeeChatCopy } from "~/content/coffee-chat";
+import { iveyWalkCopy } from "~/content/ivey-walk";
+import { buildingOfRoomLabel } from "~/lib/coffee-chat-sessions";
 import {
   clockOf,
   groupChats,
@@ -363,6 +366,11 @@ function ChatCard({
           />
           {chat.room ?? copy.roomTbd}
         </li>
+        {buildingOfRoomLabel(chat.room) === "ivey" && (
+          <li>
+            <IveyWalkNote who="hacker" mapHref={iveyWalkCopy.hackerMapPath} />
+          </li>
+        )}
         {chat.repName && (
           <li className="flex items-center gap-2">
             <UserRound

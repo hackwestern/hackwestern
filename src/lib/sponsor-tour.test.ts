@@ -1,8 +1,11 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   clickTargetOf,
   hasSeenWelcome,
   hrefForMove,
+  isSkippable,
   loadProgress,
   markWelcomeSeen,
   pageHref,
@@ -11,13 +14,22 @@ import {
   placeCallout,
   resolveStep,
   saveProgress,
+  skipFrom,
+  stepTargets,
   targetSelector,
   TOUR_PROGRESS_KEY,
   VIEWPORT_MARGIN,
   type TourDef,
   type TourStorage,
 } from "~/lib/sponsor-tour";
-import { howToToursFor, SPONSOR_TOURS, toursFor } from "~/lib/sponsor-tours";
+import {
+  pageOfTour,
+  pageTourId,
+  SPONSOR_TOURS,
+  stepsByPage,
+  toursFor,
+  WELCOME_TOUR_ID,
+} from "~/lib/sponsor-tours";
 
 const SPONSOR = "89170676-4186-4912-8a06-fa0eda0ff309";
 
@@ -235,21 +247,311 @@ describe("placeCallout", () => {
 });
 
 describe("SPONSOR_TOURS", () => {
+  const steps = SPONSOR_TOURS.welcome.steps;
+
   it("every step has copy and a known page", () => {
     for (const def of Object.values(SPONSOR_TOURS)) {
       expect(def.steps.length).toBeGreaterThan(0);
       for (const step of def.steps) {
         expect(step.title.length).toBeGreaterThan(0);
         expect(step.body.length).toBeGreaterThan(0);
-        expect(step.target ?? step.placement).toBeTruthy();
+        expect(stepTargets(step).length).toBeGreaterThan(0);
+        expect(step.page).not.toBe("any");
       }
     }
   });
 
-  it("the welcome tour stays on the portal home", () => {
-    for (const step of SPONSOR_TOURS.welcome.steps) {
-      expect(["home", "any"]).toContain(step.page);
+  it("follows the workshop deck: Home, Schedule, Map, Chats, Scan, Judging, Help", () => {
+    // Consecutive steps on the same page collapse to one visit.
+    const visits = steps
+      .map((st) => st.page)
+      .filter((page, i, all) => page !== all[i - 1]);
+    expect(visits).toEqual([
+      "home",
+      "schedule",
+      "map",
+      "coffeeChats",
+      "scan",
+      "home",
+    ]);
+    expect(steps[0]?.id).toBe("welcome");
+    expect(steps.at(-1)?.id).toBe("help");
+    expect(steps.at(-2)?.id).toBe("judging");
+  });
+
+  it("never stops on a missing target: every targeted step can be skipped", () => {
+    for (const step of steps) {
+      expect(isSkippable(step)).toBe(true);
     }
+  });
+
+  it("has unique step ids", () => {
+    const ids = steps.map((st) => st.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("points the Chats stage step at whichever stage card is shown", () => {
+    const stage = steps.find((st) => st.id === "chats-stage");
+    expect(stage && stepTargets(stage)).toEqual([
+      "chats-start",
+      "chats-shortlist",
+      "chats-waiting",
+      "chats-confirmed",
+    ]);
+  });
+
+  it("only uses targets that some component or page renders", () => {
+    const read = (dir: string): string =>
+      readdirSync(dir, { withFileTypes: true })
+        .filter((e) => !e.name.startsWith("_to_delete"))
+        .map((e) =>
+          e.isDirectory()
+            ? read(join(dir, e.name))
+            : /\.tsx?$/.test(e.name) && !e.name.includes(".test.")
+              ? readFileSync(join(dir, e.name), "utf8")
+              : "",
+        )
+        .join("\n");
+    const source = read(join(process.cwd(), "src"));
+    // Templated names: data-tour={`nav-${item.id}`}, {`judging-tab-${s}`}.
+    const templated = [...source.matchAll(/data-tour=\{`([a-z-]+)\$\{/g)].map(
+      (m) => m[1] ?? "",
+    );
+    for (const def of Object.values(SPONSOR_TOURS)) {
+      for (const step of def.steps) {
+        for (const t of stepTargets(step)) {
+          const literal = new RegExp(
+            `data-tour=["'\`]${t}["'\`]|tourId="${t}"`,
+          ).test(source);
+          const fromTemplate = templated.some((p) => p && t.startsWith(p));
+          expect(literal || fromTemplate, `data-tour "${t}"`).toBe(true);
+        }
+      }
+    }
+  });
+
+  it("never targets the removed Quick links card", () => {
+    for (const step of steps) {
+      for (const t of stepTargets(step)) expect(t).not.toMatch(/quick/i);
+    }
+  });
+});
+
+describe("page tours (Tour this page)", () => {
+  const welcome = SPONSOR_TOURS.welcome.steps;
+
+  it("groups steps by page, keeping tour order", () => {
+    const byPage = stepsByPage([
+      { id: "a", page: "home", target: "a", title: "A", body: "a" },
+      { id: "b", page: "map", target: "b", title: "B", body: "b" },
+      { id: "c", page: "any", target: "c", title: "C", body: "c" },
+      { id: "d", page: "home", target: "d", title: "D", body: "d" },
+    ]);
+    expect(byPage.home?.map((st) => st.id)).toEqual(["a", "d"]);
+    expect(byPage.map?.map((st) => st.id)).toEqual(["b"]);
+    // "any" steps never join a page tour: it would follow the sponsor off.
+    expect(Object.keys(byPage).sort()).toEqual(["home", "map"]);
+  });
+
+  it("has a tour for every portal page, made of that page's own steps", () => {
+    for (const page of [
+      "home",
+      "schedule",
+      "map",
+      "coffeeChats",
+      "scan",
+      "picks",
+    ] as const) {
+      const def = SPONSOR_TOURS[pageTourId(page)];
+      expect(def, page).toBeDefined();
+      expect(def?.steps.length).toBeGreaterThan(0);
+      for (const st of def?.steps ?? []) expect(st.page).toBe(page);
+    }
+  });
+
+  it("reuses the full tour's steps, in the same order", () => {
+    const schedule = SPONSOR_TOURS[pageTourId("schedule")]?.steps ?? [];
+    expect(schedule).toEqual(welcome.filter((st) => st.page === "schedule"));
+    const home = SPONSOR_TOURS[pageTourId("home")]?.steps.map((st) => st.id);
+    expect(home).toEqual([
+      "welcome",
+      "contacts",
+      "up-next",
+      "up-next-buttons",
+      "key-rooms",
+      "judging",
+      "help",
+    ]);
+  });
+
+  it("gives Judging its own 2-4 steps, outside the full tour", () => {
+    const picks = SPONSOR_TOURS[pageTourId("picks")]?.steps ?? [];
+    expect(picks.length).toBeGreaterThanOrEqual(2);
+    expect(picks.length).toBeLessThanOrEqual(4);
+    expect(welcome.some((st) => st.page === "picks")).toBe(false);
+  });
+
+  it("drops the Judging page tour and step without a prize track", () => {
+    const tours = toursFor(false);
+    expect(tours[pageTourId("picks")]).toBeUndefined();
+    expect(tours[pageTourId("home")]?.steps.map((st) => st.id)).not.toContain(
+      "judging",
+    );
+  });
+
+  it("runs a single page's steps without ever navigating", () => {
+    for (const [id, def] of Object.entries(SPONSOR_TOURS)) {
+      const page = pageOfTour(id);
+      if (!page) continue;
+      for (let i = 0; i < def.steps.length; i++) {
+        const r = resolveStep(def, i, page, SPONSOR, () => true);
+        expect(r.kind, `${id} step ${i}`).toBe("show");
+        expect(hrefForMove(def, i, page, SPONSOR)).toBeNull();
+      }
+      // Past its last step it's done (it ends on its page).
+      expect(
+        resolveStep(def, def.steps.length, page, SPONSOR, () => true),
+      ).toEqual({ kind: "done" });
+    }
+  });
+
+  it("tells page tours apart from the full tour", () => {
+    expect(pageOfTour(pageTourId("map"))).toBe("map");
+    expect(pageOfTour(WELCOME_TOUR_ID)).toBeNull();
+    expect(pageOfTour("page:nowhere")).toBeNull();
+  });
+
+  it("restores a running page tour from saved progress", () => {
+    const store = memoryStorage();
+    const id = pageTourId("scan");
+    saveProgress(store, { tour: id, step: 1, sponsor: SPONSOR });
+    expect(loadProgress(store, SPONSOR_TOURS, SPONSOR)?.tour).toBe(id);
+  });
+});
+
+describe("skipping missing targets", () => {
+  const skipTour: TourDef = {
+    id: "skip",
+    steps: [
+      {
+        id: "a",
+        page: "home",
+        target: "a",
+        optional: true,
+        title: "A",
+        body: "a",
+      },
+      {
+        id: "b",
+        page: "home",
+        target: "b",
+        optional: true,
+        title: "B",
+        body: "b",
+      },
+      {
+        id: "c",
+        page: "home",
+        title: "C",
+        body: "c",
+        variants: [
+          { target: "c1", title: "C one", body: "c one" },
+          { target: "c2", body: "c two" },
+        ],
+      },
+      { id: "d", page: "home", target: "d", title: "D", body: "d" },
+    ],
+  };
+  const only =
+    (...present: string[]) =>
+    (t: string) =>
+      present.includes(t);
+
+  it("skips an optional step whose target is missing", () => {
+    expect(resolveStep(skipTour, 1, "home", SPONSOR, only("a"))).toEqual({
+      kind: "skip",
+    });
+  });
+
+  it("still shows an optional step when its target is there", () => {
+    const r = resolveStep(skipTour, 1, "home", SPONSOR, only("b"));
+    expect(r).toMatchObject({ kind: "show", anchored: true });
+  });
+
+  it("centres, not skips, a required step whose target is missing", () => {
+    const r = resolveStep(skipTour, 3, "home", SPONSOR, only());
+    expect(r).toMatchObject({ kind: "show", anchored: false });
+  });
+
+  it("navigates first, never skips a step on another page", () => {
+    const r = resolveStep(skipTour, 0, "scan", SPONSOR, only());
+    expect(r.kind).toBe("navigate");
+  });
+
+  it("shows the first variant on the page, with its own words", () => {
+    const first = resolveStep(skipTour, 2, "home", SPONSOR, only("c1", "c2"));
+    expect(first).toMatchObject({
+      kind: "show",
+      anchored: true,
+      step: { target: "c1", title: "C one", body: "c one" },
+    });
+    const second = resolveStep(skipTour, 2, "home", SPONSOR, only("c2"));
+    // A variant without a title keeps the step's.
+    expect(second).toMatchObject({
+      kind: "show",
+      step: { target: "c2", title: "C", body: "c two" },
+    });
+  });
+
+  it("skips a variant step when none of its targets is there", () => {
+    expect(resolveStep(skipTour, 2, "home", SPONSOR, only("a")).kind).toBe(
+      "skip",
+    );
+  });
+
+  it("moves on in the direction the sponsor was going", () => {
+    expect(skipFrom(1, false, 4)).toEqual({ step: 2, back: false });
+    expect(skipFrom(2, true, 4)).toEqual({ step: 1, back: true });
+  });
+
+  it("turns forward when going back runs out, so it's never stuck", () => {
+    expect(skipFrom(0, true, 4)).toEqual({ step: 1, back: false });
+  });
+
+  it("is done when the last step is skipped", () => {
+    expect(skipFrom(3, false, 4)).toBeNull();
+  });
+
+  it("walks a whole tour with every target missing to the end", () => {
+    let at: number | null = 0;
+    let back = false;
+    let moves = 0;
+    while (at !== null && moves < 10) {
+      const r = resolveStep(skipTour, at, "home", SPONSOR, only());
+      if (r.kind !== "skip") break;
+      const next = skipFrom(at, back, skipTour.steps.length);
+      at = next?.step ?? null;
+      back = next?.back ?? false;
+      moves++;
+    }
+    // a, b and c skip; d (required) centres.
+    expect(at).toBe(3);
+  });
+
+  it("keeps the Back direction through saved progress", () => {
+    const store = memoryStorage();
+    saveProgress(store, {
+      tour: "skip",
+      step: 2,
+      sponsor: SPONSOR,
+      back: true,
+    });
+    expect(loadProgress(store, { skip: skipTour }, SPONSOR)).toEqual({
+      tour: "skip",
+      step: 2,
+      sponsor: SPONSOR,
+      back: true,
+    });
   });
 });
 
@@ -296,16 +598,16 @@ describe("clickTargetOf", () => {
 describe("tours by prize track", () => {
   it("drops Judging for sponsors without a prize track", () => {
     const tours = toursFor(false);
-    expect(tours.judging).toBeUndefined();
-    expect(tours.welcome?.steps.map((s) => s.target)).not.toContain(
+    expect(tours.welcome.steps.map((st) => st.target)).not.toContain(
       "nav-judging",
     );
-    expect(howToToursFor(false)).not.toContain("judging");
+    expect(tours.welcome.steps.length).toBe(
+      SPONSOR_TOURS.welcome.steps.length - 1,
+    );
   });
 
   it("keeps everything for prize track sponsors and while loading", () => {
     expect(toursFor(true)).toBe(SPONSOR_TOURS);
     expect(toursFor(undefined)).toBe(SPONSOR_TOURS);
-    expect(howToToursFor(true)).toContain("judging");
   });
 });

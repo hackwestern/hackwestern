@@ -1,0 +1,80 @@
+name: Auto-Ping
+
+# Slack DMs for HW13 mentors, volunteers and judges from the Auto-Ping sheet
+# (docs/auto-ping.md). Every 5 minutes Fri Nov 20 to Sun Nov 22 2026 this
+# reads the sheet, rebuilds People from the schedule tabs, and makes Slack's
+# queue of scheduled DMs match the plan, tracked on the sheet's Queue tab.
+# Slack holds and sends the DMs, so a late or skipped run only delays picking
+# up sheet edits. The final thank you is sent by hand (Run workflow ->
+# send-final).
+#
+# ARMING:
+#   - Runs do nothing unless the repo variable AUTO_PING_LIVE is 'true':
+#       gh variable set AUTO_PING_LIVE --body true
+#   - Pause and cancel every queued Auto-Ping DM: set it to 'pause', then
+#     run the workflow once (Actions -> Auto-Ping -> Run workflow).
+#   - Needs repo secrets SLACK_BOT_TOKEN, RUN_OF_SHOW_SHEETS_CLIENT_EMAIL and
+#     RUN_OF_SHOW_SHEETS_PRIVATE_KEY, and Auto-Ping shared with that service
+#     account as Editor.
+#   - Logs show counts only (AUTO_PING_QUIET): this repo's Actions logs are
+#     public, so no names, emails or phone numbers.
+
+on:
+  schedule:
+    - cron: "*/5 * 20-22 11 *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "sync (default) or send-final (the final thank you, once {hackers} and {projects} are filled)"
+        type: choice
+        options:
+          - sync
+          - send-final
+        default: sync
+
+concurrency:
+  group: auto-ping
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      RUN_OF_SHOW_SHEETS_CLIENT_EMAIL: ${{ secrets.RUN_OF_SHOW_SHEETS_CLIENT_EMAIL }}
+      RUN_OF_SHOW_SHEETS_PRIVATE_KEY: ${{ secrets.RUN_OF_SHOW_SHEETS_PRIVATE_KEY }}
+      SKIP_ENV_VALIDATION: "1"
+      AUTO_PING_QUIET: "1"
+      LIVE: ${{ vars.AUTO_PING_LIVE }}
+      AUTO_PING_ENABLED: ${{ vars.AUTO_PING_LIVE == 'true' && '1' || '0' }}
+      MODE: ${{ inputs.mode || 'sync' }}
+    steps:
+      - name: Only when armed, during the event
+        id: gate
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          today="$(date -u +%Y-%m-%d)"
+          if [ "$EVENT" = "schedule" ] && { [ "$today" \< "2026-11-20" ] || [ "$today" \> "2026-11-23" ]; }; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "Not event weekend; skipping."; exit 0
+          fi
+          # 'pause' runs a sync with an empty plan, which cancels queued DMs.
+          if [ "$LIVE" != "true" ] && [ "$LIVE" != "pause" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "Not armed; skipping."; exit 0
+          fi
+          echo "Mode: $LIVE / $MODE"
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.skip != 'true'
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.skip != 'true'
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+        if: steps.gate.outputs.skip != 'true'
+
+      - name: Sync Slack with the Auto-Ping sheet
+        if: steps.gate.outputs.skip != 'true'
+        run: npm run -s auto-ping -- "--$MODE"

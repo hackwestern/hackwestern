@@ -5,11 +5,13 @@ import {
   runDueInviteRounds,
   type DeliveryResult,
 } from "~/server/api/utils/coffee-chat-invites";
+import { syncAllCoffeeChatReminders } from "~/server/api/utils/coffee-chat-reminder";
 
 // One tick of the Saturday coffee chat invites: the current round
 // (runDueInviteRounds: a no-op before 10:00 AM Saturday and after the last chat; a
 // late or missed round catches up as the current one), then the delivery
-// sweep (any pending invite whose DM or email hasn't gone out yet). Run by
+// sweep (any pending invite whose DM or email hasn't gone out yet), then the
+// 15-minute reminder sync for accepted chats (backfill and safety net). Run by
 // .github/workflows/coffee-invite-rounds.yml every 10 minutes on Saturday.
 //
 //   npx tsx scripts/run-coffee-invite-round.ts [--now=<ISO time>]
@@ -31,6 +33,7 @@ export async function main(argv: readonly string[], liveFlag?: string) {
   if (!live) {
     // Nothing in this run may send, whatever else is set.
     process.env.COFFEE_INVITES_ENABLED = "0";
+    process.env.COFFEE_CHAT_REMINDERS = "0";
     const preview = await previewDueInviteRound(now);
     const unnotified = await countUnnotifiedInvites(now);
     console.log(
@@ -47,6 +50,7 @@ export async function main(argv: readonly string[], liveFlag?: string) {
   // Armed: the workflow's COFFEE_ROUNDS_LIVE is the switch here (a "0" set
   // in this environment still wins).
   process.env.COFFEE_INVITES_ENABLED ??= "1";
+  process.env.COFFEE_CHAT_REMINDERS ??= "1";
   console.log(`Coffee invite round at ${now.toISOString()}. Mode: LIVE.`);
   const out = await runDueInviteRounds(now);
   if (out.status === "ran") {
@@ -62,6 +66,11 @@ export async function main(argv: readonly string[], liveFlag?: string) {
   }
   const sweep = await deliverUnnotifiedInvites();
   console.log(`Sweep: ${counts(sweep)}.`);
+  // Inside the job's 9-minute timeout; the rest waits for the next run.
+  const r = await syncAllCoffeeChatReminders({ budgetMs: 5 * 60_000 });
+  console.log(
+    `Reminders: scheduled ${r.scheduled}, sent now ${r.sent}, cancelled ${r.cancelled}, kept ${r.kept}, not on Slack ${r["not-found"]}, failed ${r.failed}, left ${r.left}.`,
+  );
   console.log("Done.");
 }
 

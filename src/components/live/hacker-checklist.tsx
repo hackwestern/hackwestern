@@ -1,6 +1,14 @@
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Check, Clock, ExternalLink } from "lucide-react";
+import { useSession } from "next-auth/react";
+import {
+  ArrowRight,
+  Check,
+  Clock,
+  ExternalLink,
+  TriangleAlert,
+} from "lucide-react";
+import { hackerChecklistCopy } from "~/content/hacker-checklist";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardCheckbox } from "~/components/internals/dashboard-checkbox";
 import AddToWallet from "~/components/wallet/add-to-wallet";
@@ -189,6 +197,7 @@ export function HackerChecklist({ data }: { data: ChecklistData }) {
                           {description}
                         </p>
                       )}
+                      {step.id === "slack" && <SlackEmailNote />}
                       <div className="pt-[14px]">
                         <StepAction
                           id={step.id}
@@ -203,6 +212,35 @@ export function HackerChecklist({ data }: { data: ChecklistData }) {
             </ul>
           )}
         </section>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Slack lookups match hackers by the email they applied with, so the Join
+ * the Slack step says so and shows that email.
+ */
+function SlackEmailNote() {
+  const { data: session } = useSession();
+  const email = session?.user?.email;
+  const copy = hackerChecklistCopy.slackEmail;
+  return (
+    <div className="flex items-start gap-2 rounded-lg border border-dashboard-border-subtle bg-dashboard-bg-surface px-3 py-2 text-sm">
+      <TriangleAlert
+        aria-hidden="true"
+        className="mt-0.5 size-4 shrink-0 text-dashboard-text-warning"
+      />
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <p className="font-semibold text-dashboard-text-heavy">
+          {copy.caution}
+        </p>
+        {email && (
+          <p className="break-all text-dashboard-text-medium">
+            {copy.yours(email)}
+          </p>
+        )}
+        <p className="text-dashboard-text-light">{copy.why}</p>
       </div>
     </div>
   );

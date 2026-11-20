@@ -19,8 +19,15 @@ export const sponsorVenueCopy = {
       lounge: "Sponsor lounge",
       belongings: "Belongings overnight",
     },
-    venue:
-      "Venue: Ronald D. Schmeichel Building for Entrepreneurship and Innovation, 1151 Richmond St, London. Rooms 1348–1358 are in the Ivey building, a 15-minute walk from the Sponsor Bay.",
+    /** Under the map, as a heads-up callout: a bold lead, then one line
+     * per building. */
+    venue: {
+      lead: "Heads up",
+      lines: [
+        "Main venue: Ronald D. Schmeichel Building for Entrepreneurship and Innovation, 1151 Richmond St, London.",
+        "Rooms 1348–1358 are in the Ivey building, a 15-minute walk from the Sponsor Bay.",
+      ],
+    },
   },
   mapButton: "Map",
   mapButtonLabel: "Open the venue map",
@@ -53,6 +60,8 @@ export const sponsorVenueCopy = {
     yours: (sponsor: string) => `Your booth is highlighted: ${sponsor}.`,
     /** Inside your own booth on the Map. */
     you: (sponsor: string) => `${sponsor} · you`,
+    /** Under the own booth's logo. */
+    youShort: "You",
     /** "Right wall, middle booth" */
     spot: (
       side: "top" | "left" | "right" | "bottom",

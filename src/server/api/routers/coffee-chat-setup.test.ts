@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from "vitest";
+import { beforeAll, describe, expect, test, vi } from "vitest";
 import type * as InvitesModule from "~/server/api/utils/coffee-chat-invites";
 import type * as RunOfShowModule from "~/server/api/utils/run-of-show-sheet";
 import { asc, eq } from "drizzle-orm";
@@ -7,7 +7,7 @@ import { faker } from "@faker-js/faker";
 import { db } from "~/server/db";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
-import { mockSession } from "~/server/auth";
+import { mockOrganizerSession, mockSession } from "~/server/auth";
 import {
   applications,
   coffeeChatPlacements,
@@ -90,6 +90,14 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
 // Sponsors aren't logged in: their private UUID is the credential.
 const anon = createCaller(createInnerTRPCContext({ session: null }));
 const setup = anon.coffeeChatSetup;
+
+/** A signed-in organizer on the sponsor's portal link: may still edit
+ * after the sponsor submitted (sponsors submit once). */
+async function organizerSetup() {
+  return createCaller(
+    createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
+  ).coffeeChatSetup;
+}
 
 let n = 0;
 async function sponsor(name = `Co${stamp}-${n++}`) {
@@ -413,6 +421,12 @@ describe("coffeeChatSetup: every write bumps coffee_chat_pref.updated_at", () =>
 });
 
 describe("coffeeChatSetup: after organizers send", () => {
+  // Edits after submit are organizers' now (sponsors submit once).
+  let setup: Awaited<ReturnType<typeof organizerSetup>>;
+  beforeAll(async () => {
+    setup = await organizerSetup();
+  });
+
   test("Your chats, seats and the after-invites warning", async () => {
     const id = await sponsor();
     const a = await setup.addRep({
@@ -509,6 +523,108 @@ describe("coffeeChatSetup: after organizers send", () => {
   });
 });
 
+describe("coffeeChatSetup: submitted once", () => {
+  async function submitted() {
+    const id = await sponsor();
+    const a = await setup.addRep({
+      sponsor: id,
+      name: "Dana",
+      phone: "5195550001",
+    });
+    await setup.savePrefs({
+      sponsor: id,
+      hackersPerChat: 1,
+      reps: [{ id: a.id, chatsWanted: 2, free: ["10", "11"] }],
+    });
+    await setup.submitPrefs({ sponsor: id });
+    return { id, repId: a.id };
+  }
+  const refusal = (p: Promise<unknown>) =>
+    p.then(
+      () => null,
+      (e: { code?: string; message: string }) => e,
+    );
+
+  test("a sponsor can't change their team or preferences after submitting", async () => {
+    const { id, repId } = await submitted();
+    const attempts = [
+      setup.addRep({ sponsor: id, name: "Sam", phone: "5195550002" }),
+      setup.updateRep({
+        sponsor: id,
+        repId,
+        name: "Dana W.",
+        phone: "5195550001",
+      }),
+      setup.removeRep({ sponsor: id, repId }),
+      setup.setPrimary({ sponsor: id, repId }),
+      setup.savePrefs({
+        sponsor: id,
+        hackersPerChat: 2,
+        reps: [{ id: repId, chatsWanted: 1, free: ["10"] }],
+      }),
+      setup.submitPrefs({ sponsor: id }),
+    ];
+    for (const attempt of attempts) {
+      const e = await refusal(attempt);
+      expect(e?.code).toBe("FORBIDDEN");
+      expect(e?.message).toContain("ask your point of contact");
+    }
+    // Nothing changed.
+    const after = await setup.get({ sponsor: id });
+    expect(after.reps.map((r) => [r.name, r.chatsWanted])).toEqual([
+      ["Dana", 2],
+    ]);
+    expect(after.hackersPerChat).toBe(1);
+    expect(after.canEditSubmitted).toBe(false);
+  });
+
+  test("an organizer on the portal link can still change it", async () => {
+    const { id, repId } = await submitted();
+    const org = await organizerSetup();
+    await org.updateRep({
+      sponsor: id,
+      repId,
+      name: "Dana W.",
+      phone: "5195550001",
+    });
+    await org.savePrefs({
+      sponsor: id,
+      hackersPerChat: 1,
+      reps: [{ id: repId, chatsWanted: 1, free: ["10"] }],
+    });
+    const after = await org.get({ sponsor: id });
+    expect(after.reps.map((r) => [r.name, r.chatsWanted])).toEqual([
+      ["Dana W.", 1],
+    ]);
+    expect(after.submittedAt).not.toBeNull();
+    expect(after.canEditSubmitted).toBe(true);
+  });
+
+  test("before submitting, a sponsor edits freely", async () => {
+    const id = await sponsor();
+    const a = await setup.addRep({
+      sponsor: id,
+      name: "Dana",
+      phone: "5195550001",
+    });
+    await setup.updateRep({
+      sponsor: id,
+      repId: a.id,
+      name: "Dana W.",
+      phone: "5195550001",
+    });
+    expect((await setup.get({ sponsor: id })).reps[0]?.name).toBe("Dana W.");
+  });
+
+  test("booth scans still work after submitting", async () => {
+    const { id } = await submitted();
+    const hacker = await admittedHacker();
+    await expect(
+      setup.recordScan({ sponsor: id, userId: hacker }),
+    ).resolves.toBeDefined();
+  });
+});
+
 describe("coffeeChatSetup.recordScan", () => {
   test("records a scan once, updates the rep by id, refuses non-hackers and other sponsors' reps", async () => {
     const id = await sponsor();
@@ -584,6 +700,12 @@ describe("coffeeChatSetup.recordScan", () => {
 });
 
 describe("coffeeChatSetup: edits after Send update invites", () => {
+  // Edits after submit are organizers' now (sponsors submit once).
+  let setup: Awaited<ReturnType<typeof organizerSetup>>;
+  beforeAll(async () => {
+    setup = await organizerSetup();
+  });
+
   // Friday night, before round 1 closes: re-asked invites get Sat 10 AM.
   const FRI_1030PM = new Date("2026-11-20T22:30:00-05:00");
 

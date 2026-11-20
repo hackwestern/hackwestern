@@ -539,7 +539,7 @@ export const sponsorSetupCopy = {
       "Thanks! We'll invite people you met at your booth first, then your shortlist.",
     edit: "Edit shortlist",
     lockedSubmitted:
-      "Your shortlist is submitted. Editing un-submits it until you submit again.",
+      "Submitted. To change anything, ask your point of contact.",
     skipForNow: "Skip for now",
   },
 
@@ -612,6 +612,20 @@ export const sponsorSetupCopy = {
     error: "Couldn't add them. Try again.",
   },
 
+  /** Submitted once (decisions 2026-11-20): what a sponsor sees instead
+   * of the forms after they submit. Organizers still get the forms. */
+  submittedLock: {
+    note: "Submitted. To change anything, ask your point of contact.",
+    availabilityTitle: "Availability submitted",
+    perChat: (n: number) =>
+      n === 1 ? "1 hacker per chat" : `${n} hackers per chat`,
+    rep: (name: string, chats: number) =>
+      `${name} · ${chats === 1 ? "1 chat" : `${chats} chats`}`,
+    primary: "Primary",
+    free: (times: string) => `Free ${times}`,
+    noTimes: "No times ticked",
+  },
+
   errors: {
     unknownSponsor: "This private link isn't valid.",
     unknownRep: "That rep isn't on your team anymore. Refresh and try again.",
@@ -630,7 +644,13 @@ export const sponsorSetupCopy = {
     notAHacker: "That isn't a Hack Western hacker's badge.",
     prefsFirst: "Submit your chatting preferences first.",
     shortlistSubmitted:
-      "Your shortlist is submitted. Tap Edit shortlist to change it.",
+      "Your shortlist is submitted, so it can't be changed here. To change anything, ask your point of contact.",
+    /** Submitted once (decisions 2026-11-20): sponsors can't edit or
+     * un-submit; organizers still can. */
+    availabilityLocked:
+      "Your availability is submitted, so it can't be changed here. To change anything, ask your point of contact.",
+    shortlistLocked:
+      "Your shortlist is submitted, so it can't be changed here. To change anything, ask your point of contact.",
     shortlistFull: "Your shortlist is full. Remove someone to add another.",
     notCandidate: "This hacker isn't on your list.",
     /** Fewer chats after shortlisting: shortlist places, not seats (B5). */

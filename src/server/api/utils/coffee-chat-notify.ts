@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 
 import { isAdmittedStatus } from "~/lib/admission";
 import {
@@ -9,10 +9,12 @@ import {
   sendCoffeeChatChangeEmail,
   sendCoffeeChatOfferEmail,
 } from "~/server/api/utils/coffee-chat-email";
+import { syncCoffeeChatRemindersLater } from "~/server/api/utils/coffee-chat-reminder";
 import { mirrorCoffeeChats } from "~/server/api/utils/coffee-chat-sheet-mirror";
 import { db } from "~/server/db";
 import {
   applications,
+  coffeeChatPrefs,
   coffeeChats,
   sponsorJudgingSponsors,
   users,
@@ -57,7 +59,32 @@ export type CoffeeChatNotice = {
   repName: string | null;
   /** A session invite's answer-by time; null = 20 min before the chat. */
   expiresAt: Date | null;
+  /** Group chat (true), 1-on-1 (false), unknown (null): chatIsGroup. */
+  group?: boolean | null;
+  /** An organizer's room booking it belongs to (Book an event), or null. */
+  bookingId?: string | null;
 };
+
+/**
+ * Group or 1-on-1. A session chat (has a placement) is a group when the
+ * sponsor's hackers per chat is over 1 (no prefs row = 1, like the board's
+ * NO_PREFS). A booked event (Book an event) is a group when more than one
+ * hacker was invited to it. An old per-slot request follows the sponsor's
+ * chat style ("group" / "oneOnOne"); null when it has none.
+ */
+export function chatIsGroup(chat: {
+  placementId: string | null;
+  hackersPerChat: number | null;
+  style: string | null;
+  bookingId?: string | null;
+  bookingHackers?: number | null;
+}): boolean | null {
+  if (chat.bookingId) return (chat.bookingHackers ?? 1) > 1;
+  if (chat.placementId) return (chat.hackersPerChat ?? 1) > 1;
+  if (chat.style === "group") return true;
+  if (chat.style === "oneOnOne") return false;
+  return null;
+}
 
 export async function loadCoffeeChatNotice(
   chatId: string,
@@ -91,11 +118,20 @@ export async function loadCoffeeChatNotices(
       status: coffeeChats.status,
       placementId: coffeeChats.placementId,
       repName: coffeeChats.repName,
+      hackersPerChat: coffeeChatPrefs.hackersPerChat,
+      style: sponsorJudgingSponsors.coffeeChatStyle,
+      bookingId: coffeeChats.bookingId,
+      // Hackers invited to the same booked event (any answer).
+      bookingHackers: sql<number>`(select count(*)::int from coffee_chat b where b.booking_id = ${coffeeChats.bookingId})`,
     })
     .from(coffeeChats)
     .innerJoin(
       sponsorJudgingSponsors,
       eq(sponsorJudgingSponsors.id, coffeeChats.sponsorId),
+    )
+    .leftJoin(
+      coffeeChatPrefs,
+      eq(coffeeChatPrefs.sponsorId, coffeeChats.sponsorId),
     )
     .innerJoin(users, eq(users.id, coffeeChats.userId))
     .leftJoin(applications, eq(applications.userId, coffeeChats.userId))
@@ -119,6 +155,8 @@ export async function loadCoffeeChatNotices(
       placementId: row.placementId,
       repName: row.repName,
       expiresAt: row.expiresAt,
+      group: chatIsGroup(row),
+      bookingId: row.bookingId,
     };
   });
 }
@@ -185,6 +223,7 @@ type Channel = (
   event: CoffeeChatEvent,
   load: () => Promise<CoffeeChatNotice | null>,
   dm: () => Promise<CoffeeChatDmResult | null>,
+  chatId: string,
 ) => Promise<unknown>;
 
 const channels: Record<string, Channel> = {
@@ -206,6 +245,11 @@ const channels: Record<string, Channel> = {
   },
   // Every change rewrites the bookings tab; logs its own failures.
   sheet: () => mirrorCoffeeChats(),
+  // Every change re-syncs the 15-minute reminder (scheduled on accept,
+  // deleted on decline or cancel, moved with the room). Keeps going after
+  // the cap (waitUntil); never rejects.
+  reminder: (_event, _load, _dm, chatId) =>
+    syncCoffeeChatRemindersLater([chatId]),
 };
 
 /**
@@ -237,7 +281,7 @@ export async function notifyCoffeeChat(
     ));
   const names = Object.keys(channels);
   const all = Promise.allSettled(
-    names.map((name) => channels[name]!(event, load, dm)),
+    names.map((name) => channels[name]!(event, load, dm, chat.id)),
   ).then((results) =>
     results.forEach((result, i) => {
       if (result.status === "rejected") {

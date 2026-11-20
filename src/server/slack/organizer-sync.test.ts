@@ -164,4 +164,23 @@ describe("syncOrganizerDms", () => {
     expect(result).toMatchObject({ scheduled: 1, issues: [] });
     expect(waits).toEqual([1000]);
   });
+
+  test("a dry run counts changes but never schedules or cancels", async () => {
+    const stale = {
+      id: "Q0",
+      channel_id: "DUBOB",
+      post_at: Date.parse("2026-11-20T20:00:00Z") / 1000,
+      text: ":alarm_clock: In 15 min (3:00 PM): *Old task*",
+    };
+    const slack = fakeSlack([stale]);
+    const result = await syncOrganizerDms(
+      "t",
+      [dm("UANN", "2026-11-20T21:30:00Z")],
+      { fetchImpl: slack.fetchImpl, now: () => NOW, dryRun: true },
+    );
+    expect(result).toMatchObject({ scheduled: 1, cancelled: 1, kept: 0 });
+    expect(slack.held).toEqual([stale]);
+    expect(slack.calls).not.toContain("chat.scheduleMessage");
+    expect(slack.calls).not.toContain("chat.deleteScheduledMessage");
+  });
 });

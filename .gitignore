@@ -77,3 +77,5 @@ traffic-profile.json
 .organizer-state/
 organizer-watch.log
 .organizer-heartbeat.json
+auto-ping-watch.log
+.auto-ping-final-sent

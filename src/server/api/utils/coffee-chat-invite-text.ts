@@ -2,7 +2,7 @@ import { coffeeChatInvitesCopy } from "~/content/coffee-chat-invites";
 import { coffeeChatNotifyCopy } from "~/content/coffee-chat-notify";
 import { COFFEE_CHAT_UTC_OFFSET } from "~/lib/coffee-chat-requests";
 import { formatCoffeeChatTime } from "~/lib/coffee-chats";
-import { buildingOf } from "~/lib/coffee-chat-sessions";
+import { buildingOfRoomLabel } from "~/lib/coffee-chat-sessions";
 
 /**
  * The words of a session invite (Slack DM and email): when, where with the
@@ -13,13 +13,8 @@ import { buildingOf } from "~/lib/coffee-chat-sessions";
 /** Session invite rows store the room as "Rm 2241"; the board uses "2241". */
 export const inviteRoomLabel = (roomId: string) => `Rm ${roomId}`;
 
-/** "Rm 1348" -> "ivey"; null when it isn't a session room. */
-export function buildingOfRoomLabel(
-  room: string | null,
-): "near" | "ivey" | null {
-  const id = /(\d{4})/.exec(room ?? "")?.[1];
-  return id ? buildingOf(id) : null;
-}
+/** Re-exported from src/lib (the client uses it too). */
+export { buildingOfRoomLabel };
 
 /** COFFEE_CHAT_UTC_OFFSET ("-05:00") in minutes (-300). */
 const OFFSET_MINUTES = (() => {

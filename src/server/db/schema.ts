@@ -477,6 +477,12 @@ export const coffeeChats = pgTable(
       () => coffeeChatPlacements.id,
       { onDelete: "cascade" },
     ),
+    // A hacker invited to an organizer's room booking ("Book an event"):
+    // the booking it belongs to. Null for every other chat. Removing the
+    // booking cancels its live chats first (the link is then cleared).
+    bookingId: uuid("booking_id").references(() => coffeeChatRoomBookings.id, {
+      onDelete: "set null",
+    }),
     // Invite round: 1 = Fri 10:00 PM batch, 2+ = Saturday 30-minute rounds.
     round: smallint("round"),
     // Pending invites expire at this time and the seat passes on.
@@ -500,8 +506,31 @@ export const coffeeChats = pgTable(
     index("coffee_chat_sponsor_slot_idx").on(t.sponsorId, t.slotTime),
     index("coffee_chat_user_idx").on(t.userId),
     index("coffee_chat_placement_idx").on(t.placementId),
+    index("coffee_chat_booking_idx").on(t.bookingId),
   ],
 );
+
+// The Slack reminder DM'd to a hacker 15 minutes before an accepted coffee
+// chat (src/server/api/utils/coffee-chat-reminder.ts). One row per chat.
+// No foreign key on purpose: a chat deleted with its placement leaves its
+// row, so the next sync can still delete the scheduled message in Slack.
+export const coffeeChatReminders = pgTable("coffee_chat_reminder", {
+  chatId: uuid("chat_id").notNull().primaryKey(),
+  // The hacker's DM channel (conversations.open).
+  slackChannel: varchar("slack_channel", { length: 32 }).notNull(),
+  // chat.scheduleMessage's scheduled_message_id, or chat.postMessage's ts
+  // when it was sent at once. Empty while a send-now is in flight.
+  messageId: varchar("message_id", { length: 64 }).notNull(),
+  // "scheduled" (Slack posts it at post_at) or "sent" (posted at once).
+  kind: varchar("kind", { length: 16 }).notNull(),
+  postAt: timestamp("post_at", { mode: "date", precision: 3 }).notNull(),
+  // sha256 of what the reminder says (start, length, sponsor, room,
+  // group): a change reschedules it.
+  contentKey: varchar("content_key", { length: 64 }).notNull(),
+  createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
 
 // An organizer's room hold: a coffee chat room set aside for one sponsor at
 // one Saturday time, before any hacker is booked ("Needs a hacker"). A room
@@ -690,8 +719,15 @@ export const coffeeChatRoomBookings = pgTable(
       () => sponsorJudgingSponsors.id,
       { onDelete: "set null" },
     ),
+    // What it's for (Book an event's Description; older rows: who it's for).
     label: varchar("label", { length: 255 }).notNull(),
     note: varchar("note", { length: 255 }),
+    // Who on the sponsorship team booked it (an HW Contacts name). Null on
+    // rows from before Book an event asked.
+    bookedBy: varchar("booked_by", { length: 255 }),
+    // The sponsor's reps in it (any number, maybe none). Their chats
+    // elsewhere in this session are refused.
+    repIds: uuid("rep_ids").array(),
     createdBy: varchar("created_by", { length: 255 }).references(
       () => users.id,
       { onDelete: "set null" },
@@ -2175,6 +2211,17 @@ export const marketingNotificationReminders = pgTable(
     index("marketing_notification_status_idx").on(t.status),
   ],
 );
+
+// Small text values the Slack bots keep between Vercel cron runs: the last
+// sheet-check DM, pending heartbeat DMs, cached Slack ids
+// (src/server/slack/bot-state-db.ts).
+export const botState = pgTable("bot_state", {
+  key: varchar("key", { length: 64 }).primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
 
 // One row (id 1) of settings for the venue broadcast display (/broadcast),
 // edited by organizers at /internal/broadcast.

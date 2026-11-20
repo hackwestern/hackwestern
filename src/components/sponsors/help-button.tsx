@@ -1,13 +1,16 @@
 import { createContext, useContext, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { CircleHelp, LifeBuoy, X } from "lucide-react";
+import { CircleHelp, Compass, LifeBuoy, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { PhoneCopy } from "~/components/sponsors/phone-copy";
+import { btn } from "~/components/sponsors/portal-ui";
+import { startSponsorTour } from "~/components/sponsors/tour/sponsor-tour";
 import {
   hoverTint,
   pressable,
 } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorHelpCopy } from "~/content/sponsor-help";
+import { sponsorTourCopy } from "~/content/sponsor-tour";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 
@@ -23,8 +26,8 @@ const HelpContext = createContext<HelpState | null>(null);
  * HW lead's name and phone, and Noah as the emergency contact, each phone
  * with a copy icon. No message form, no Slack, no tracking. The shell mounts
  * this once; `SponsorHelp` views (side nav, page card on phones) open it.
- * The guided tours aren't offered since the v3 portal (mock
- * sponsor-chats-v3 has none); their code stays in tour/, unused.
+ * The dialog ends with "Take the tour", which replays the portal tour
+ * (decisions 2026-11-20, "Guided tour back on").
  * The tracked request flow (help-sheet.tsx, help-status.tsx, the
  * sponsorHelp request/status routes) is kept in the repo, unused.
  */
@@ -33,7 +36,7 @@ export function SponsorHelpProvider({
   children,
 }: {
   sponsor: string;
-  /** Unused since the guided tours were switched off. */
+  /** Unused (the shell passes the tour its own). */
   hasPrizeTrack?: boolean;
   /** Unused since the tracked help flow was switched off. */
   boothLocation?: string | null;
@@ -43,6 +46,9 @@ export function SponsorHelpProvider({
   // The button that opened Help gets focus back on close (Radix can't
   // know it: the dialog is opened from context, not a Dialog.Trigger).
   const opener = useRef<HTMLElement | null>(null);
+  // Starting the tour from Help: the tour's callout takes focus, so the
+  // closing dialog mustn't hand it back to the Help button.
+  const toTour = useRef(false);
   return (
     <HelpContext.Provider
       value={{
@@ -60,7 +66,17 @@ export function SponsorHelpProvider({
         sponsor={sponsor}
         open={open}
         onOpenChange={setOpen}
+        onStartTour={() => {
+          toTour.current = true;
+          setOpen(false);
+          startSponsorTour();
+        }}
         onCloseAutoFocus={(event) => {
+          if (toTour.current) {
+            toTour.current = false;
+            event.preventDefault();
+            return;
+          }
           if (!opener.current?.isConnected) return;
           event.preventDefault();
           opener.current.focus();
@@ -142,13 +158,16 @@ function HelpContacts({
   sponsor,
   open,
   onOpenChange,
+  onStartTour,
   onCloseAutoFocus,
 }: {
   sponsor: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onStartTour: () => void;
   onCloseAutoFocus: (event: Event) => void;
 }) {
+  const tour = sponsorTourCopy.helpEntry;
   const c = copy.contacts;
   const { loading, failed, lead, emergency } = useHelpContacts(sponsor);
   return (
@@ -207,6 +226,19 @@ function HelpContacts({
               />
             </div>
           )}
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-dashboard-border-subtle pt-4">
+            <p className="m-0 text-sm text-dashboard-text-medium">
+              {tour.text}
+            </p>
+            <button
+              type="button"
+              onClick={onStartTour}
+              className={cn(btn.outline, btn.sm, "[&_svg]:size-[18px]")}
+            >
+              <Compass aria-hidden className="text-dashboard-action-primary" />
+              {tour.button}
+            </button>
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

@@ -1,8 +1,10 @@
 import { useRouter } from "next/router";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { ContactsCard } from "~/components/sponsors/home/contacts-card";
+import { iveyWalkCopy } from "~/content/ivey-walk";
 import { KeyRooms } from "~/components/sponsors/home/key-rooms";
 import { UpNext } from "~/components/sponsors/home/up-next";
+import { TourEntry } from "~/components/sponsors/home/tour-entry";
 import { WelcomeCard } from "~/components/sponsors/home/welcome-card";
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { useNow } from "~/components/sponsors/use-now";
@@ -15,7 +17,7 @@ import { uuidRegex } from "~/utils/urls";
 
 /**
  * Sponsor portal Home (mock sponsor-chats-v3): "Hi [logo]", the welcome
- * card, Contacts, Up next and Key rooms.
+ * card, Contacts, Up next, "Take the tour" and Key rooms.
  */
 export default function SponsorHubPage() {
   const router = useRouter();
@@ -101,7 +103,10 @@ export default function SponsorHubPage() {
 
   return (
     <SponsorShell title={home.seoTitle}>
-      <h1 className="m-0 flex min-w-0 flex-wrap items-center gap-x-[0.22em] whitespace-nowrap text-[32px] font-extrabold leading-[1.2] tracking-tight md:text-md-display">
+      <h1
+        data-tour="home-greeting"
+        className="m-0 flex min-w-0 flex-wrap items-center gap-x-[0.22em] whitespace-nowrap text-[32px] font-extrabold leading-[1.2] tracking-tight md:text-md-display"
+      >
         <span>{home.hi}</span>
         {logo && sponsorName ? (
           // eslint-disable-next-line @next/next/no-img-element -- small static logo
@@ -125,7 +130,9 @@ export default function SponsorHubPage() {
           yourChats: `${base}/coffee-chats`,
           judging: `${base}/picks`,
         }}
+        mapHref={iveyWalkCopy.sponsorMapPath(id)}
       />
+      <TourEntry />
       <KeyRooms
         chats={
           setup?.confirmed
@@ -137,6 +144,7 @@ export default function SponsorHubPage() {
               }))
             : null
         }
+        mapHref={iveyWalkCopy.sponsorMapPath(id)}
       />
     </SponsorShell>
   );

@@ -81,6 +81,8 @@ export type JudgingSheetInput = {
   teamNames: ReadonlyMap<string, string>;
   /** Devpost link by team id (absent or null = none). */
   teamLinks: ReadonlyMap<string, string | null>;
+  /** GitHub link by team id (absent or null = none). */
+  teamGithub: ReadonlyMap<string, string | null>;
   /** Member names by team id. */
   members: ReadonlyMap<string, readonly string[]>;
   /** How each scheduled team's members heard, by team id ("" = not yet). */
@@ -196,7 +198,29 @@ export function judgingSheetRows(input: JudgingSheetInput): string[][] {
   }
   rows.push([]);
 
-  // 2. Presentations: the sent shortlist and each team's slot.
+  // 2. Each sponsor's top 5, one row per place, with the Devpost and GitHub
+  // links in their own columns so the spon team can open them.
+  const winners = sheetCopy.winners;
+  rows.push([winners.title], [...winners.headers]);
+  let placedRows = 0;
+  for (const t of input.tracks) {
+    const final = t.sponsorId ? finalOf.get(t.sponsorId) : undefined;
+    final?.teamIds.slice(0, SPONSOR_FINAL_TOP).forEach((teamId, i) => {
+      placedRows++;
+      rows.push([
+        t.name,
+        winners.place(i + 1),
+        teamId,
+        teamName(teamId),
+        (input.teamLinks.get(teamId) ?? "").trim(),
+        (input.teamGithub.get(teamId) ?? "").trim(),
+      ]);
+    });
+  }
+  if (placedRows === 0) rows.push([winners.empty(SPONSOR_FINAL_TOP)]);
+  rows.push([]);
+
+  // 3. Presentations: the sent shortlist and each team's slot.
   rows.push([sheetCopy.schedule.title], [...sheetCopy.schedule.headers]);
   for (const t of input.tracks) {
     if (!t.sponsorId) continue;
@@ -272,6 +296,7 @@ export async function loadJudgingSheetInput(
       presentations: [],
       teamNames: new Map(),
       teamLinks: new Map(),
+      teamGithub: new Map(),
       members: new Map(),
       notified: new Map(),
       scoring: new Set(),
@@ -331,6 +356,7 @@ export async function loadJudgingSheetInput(
             id: teams.id,
             name: teams.name,
             devpostUrl: teams.devpostUrl,
+            githubUrl: teams.githubUrl,
           })
           .from(teams)
           .where(inArray(teams.id, teamIds))
@@ -393,6 +419,12 @@ export async function loadJudgingSheetInput(
       nameRows.map((t) => [
         t.id,
         t.devpostUrl?.trim() ? t.devpostUrl.trim() : null,
+      ]),
+    ),
+    teamGithub: new Map(
+      nameRows.map((t) => [
+        t.id,
+        t.githubUrl?.trim() ? t.githubUrl.trim() : null,
       ]),
     ),
     members: new Map(

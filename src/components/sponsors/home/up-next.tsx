@@ -17,6 +17,7 @@ import {
   type HomeContext,
   type StepState,
 } from "~/lib/sponsor-home";
+import { IveyWalkNote } from "~/components/ivey-walk-note";
 import { cn } from "~/lib/utils";
 import { readStored, writeStored } from "./welcome-card";
 
@@ -54,10 +55,13 @@ export function UpNext({
   ctx,
   now,
   hrefs,
+  mapHref,
 }: {
   ctx: HomeContext;
   now: Date;
   hrefs: Record<AgendaAction, string>;
+  /** The portal map opened on Ivey, for the Ivey walk note's Check map. */
+  mapHref?: string;
 }) {
   const [less, setLess] = useState(false);
   const [earlier, setEarlier] = useState(false);
@@ -78,7 +82,11 @@ export function UpNext({
   };
 
   return (
-    <section aria-labelledby="upnext-heading" className={card}>
+    <section
+      aria-labelledby="upnext-heading"
+      data-tour="home-upnext"
+      className={card}
+    >
       <div className="flex items-start justify-between gap-3">
         <h2
           id="upnext-heading"
@@ -126,6 +134,7 @@ export function UpNext({
                 highlight
                 label={label(hi.step)}
                 hrefs={hrefs}
+                mapHref={mapHref}
               />
             </ol>
           ) : (
@@ -159,6 +168,7 @@ export function UpNext({
                   highlight={hi?.step === r.step}
                   label={label(r.step)}
                   hrefs={hrefs}
+                  mapHref={mapHref}
                 />
               ))}
             </ol>
@@ -310,6 +320,7 @@ function Row({
   highlight = false,
   label = null,
   hrefs,
+  mapHref,
   compact = false,
 }: {
   step: AgendaStep;
@@ -317,6 +328,7 @@ function Row({
   highlight?: boolean;
   label?: React.ReactNode;
   hrefs?: Record<AgendaAction, string>;
+  mapHref?: string;
   compact?: boolean;
 }) {
   const done = state === "done";
@@ -391,10 +403,19 @@ function Row({
               {step.sub}
             </p>
           )}
+          {step.ivey && (
+            <IveyWalkNote
+              who="sponsor"
+              mapHref={mapHref ?? null}
+              className="mt-1"
+            />
+          )}
         </div>
         {action && hrefs && (
           <Link
             href={hrefs[action]}
+            // The tour points at the first one on the page.
+            data-tour="home-upnext-action"
             className={cn(highlight ? btn.primary : btn.outline, btn.sm)}
           >
             {action === "scan" && <ScanLine aria-hidden />}

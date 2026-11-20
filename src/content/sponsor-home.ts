@@ -46,6 +46,8 @@ export type AgendaStep = {
   /** Saturday's coffee chat placeholder, replaced by the real chats once
    * organizers send them. */
   chatsPlaceholder?: boolean;
+  /** A coffee chat at Ivey: shows the walk note (src/content/ivey-walk.ts). */
+  ivey?: boolean;
 };
 
 export const AGENDA: AgendaStep[] = [
@@ -108,8 +110,8 @@ export const AGENDA: AgendaStep[] = [
   {
     id: "f8",
     day: 0,
-    start: 1325,
-    end: 1325,
+    start: 1320,
+    end: 1320,
     title: "We confirm your chat times and invite hackers",
     sub: "Nothing to do.",
   },

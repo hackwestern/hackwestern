@@ -58,23 +58,21 @@ export async function findSlackUserId(
 }
 
 /**
- * DM the first Slack user found by `emails`, tried in order: look them up,
- * open the DM, post `message` (chat.postMessage args minus `channel`).
- * "not-found" when no email matches a Slack user. Any other Slack failure
+ * Open the bot's DM with the first Slack user found by `emails`, tried in
+ * order. Null when no email matches a Slack user. Any other Slack failure
  * throws a SlackApiError.
  */
-export async function dmByEmails(
+export async function openDmByEmails(
   token: string,
   emails: readonly string[],
-  message: Record<string, unknown>,
   fetchImpl: typeof fetch = fetch,
-): Promise<"sent" | "not-found"> {
+): Promise<string | null> {
   let slackUserId: string | null = null;
   for (const email of emails) {
     slackUserId = await findSlackUserId(token, email, fetchImpl);
     if (slackUserId) break;
   }
-  if (!slackUserId) return "not-found";
+  if (!slackUserId) return null;
 
   const opened = await slackApi<OpenResponse>(
     token,
@@ -84,7 +82,23 @@ export async function dmByEmails(
   );
   const channel = opened.channel?.id;
   if (!channel) throw new SlackApiError("conversations.open", "no_channel");
+  return channel;
+}
 
+/**
+ * DM the first Slack user found by `emails` (openDmByEmails), then post
+ * `message` (chat.postMessage args minus `channel`). "not-found" when no
+ * email matches a Slack user. Any other Slack failure throws a
+ * SlackApiError.
+ */
+export async function dmByEmails(
+  token: string,
+  emails: readonly string[],
+  message: Record<string, unknown>,
+  fetchImpl: typeof fetch = fetch,
+): Promise<"sent" | "not-found"> {
+  const channel = await openDmByEmails(token, emails, fetchImpl);
+  if (!channel) return "not-found";
   await slackApi(token, "chat.postMessage", { channel, ...message }, fetchImpl);
   return "sent";
 }
