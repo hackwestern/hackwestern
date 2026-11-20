@@ -104,9 +104,23 @@ for (const name of readdirSync(root)) {
   });
 }
 
+// Which mocks are being built for the real site (build-status.json).
+const BUILD = existsSync(join(root, "build-status.json"))
+  ? JSON.parse(readFileSync(join(root, "build-status.json"), "utf8"))
+  : {};
+const BUILD_LABEL = { building: "Being built", built: "Built", live: "Live" };
+const buildOf = (name) => (BUILD[name] && BUILD_LABEL[BUILD[name].status] ? BUILD[name] : null);
+const buildTag = (m) => {
+  const b = buildOf(m.name);
+  if (!b) return "";
+  const title = [b.branch && `Branch: ${b.branch}`, b.note].filter(Boolean).join(" · ");
+  return `<span class="build build-${esc(b.status)}" title="${esc(title)}">${esc(BUILD_LABEL[b.status])}</span>`;
+};
+
 const cardHtml = (m) => `
-      <div class="card" data-name="${esc(m.name)}" data-style="${esc(m.style[0])}">
+      <div class="card" data-name="${esc(m.name)}" data-style="${esc(m.style[0])}" data-build="${esc(buildOf(m.name)?.status ?? "none")}">
         <a class="link" href="${esc(m.href)}">
+          ${buildTag(m)}
           <div class="thumb">${m.thumb ? `<img loading="lazy" src="${esc(m.thumb)}" alt="">` : `<span>No screenshot</span>`}</div>
           <div class="meta">
             <div class="name">${esc(m.name)}</div>
@@ -150,6 +164,10 @@ const render = (list, pageTitle, intro, nav) => `<!doctype html>
   .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px; }
   .card { position:relative; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
   .card:hover, .card:focus-within { border-color:var(--accent); }
+  .build { position:absolute; top:8px; left:8px; z-index:1; padding:3px 9px; border-radius:999px; font-size:12px; font-weight:700; color:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25); }
+  .build-building { background:#b45309; }
+  .build-built { background:#1d4ed8; }
+  .build-live { background:#15803d; }
   .card.liked { border-color:#e11d48; box-shadow:0 0 0 1px #e11d48; }
   .link { display:flex; flex-direction:column; color:inherit; text-decoration:none; outline:none; }
   .like { position:absolute; top:8px; right:8px; width:44px; height:44px; border-radius:22px; border:1px solid var(--line); background:var(--card); color:var(--muted); font-size:22px; line-height:1; cursor:pointer; }
@@ -181,6 +199,7 @@ const render = (list, pageTitle, intro, nav) => `<!doctype html>
   <p>${list.length} ${intro}, grouped by topic, newest first. ${nav} · <a href="CHANGES.md">Change log: every change asked for, and its status</a> Built ${new Date().toLocaleString("en-CA", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}.</p>
   <div class="tools">
     <input id="q" type="search" placeholder="Filter by name" aria-label="Filter mocks by name">
+    <select id="buildFilter" aria-label="Filter by build status"><option value="">Any build status</option><option value="building">Being built</option><option value="built">Built, not live</option><option value="live">Live</option><option value="none">Not built</option></select>
     <select id="styleFilter" aria-label="Filter by style"><option value="">All styles</option>${[...new Set(list.map((m) => m.style[0]))].map((st) => `<option>${esc(st)}</option>`).join("")}</select>
     <div class="seg" role="group" aria-label="Sort mocks">
       <button id="sortTopic" type="button" aria-pressed="true">Topic</button>
@@ -218,8 +237,9 @@ const render = (list, pageTitle, intro, nav) => `<!doctype html>
     const t = q.value.trim().toLowerCase();
     const only = onlyBtn.getAttribute("aria-pressed") === "true";
     const st = document.getElementById("styleFilter").value;
+    const bs = document.getElementById("buildFilter").value;
     document.querySelectorAll(".card").forEach((c) =>
-      c.classList.toggle("hidden", (!!t && !c.dataset.name.includes(t)) || (only && !likes.has(c.dataset.name)) || (!!st && c.dataset.style !== st)));
+      c.classList.toggle("hidden", (!!t && !c.dataset.name.includes(t)) || (only && !likes.has(c.dataset.name)) || (!!st && c.dataset.style !== st) || (!!bs && c.dataset.build !== bs)));
     document.querySelectorAll("section").forEach((s) => s.classList.toggle("hidden", !s.querySelector(".card:not(.hidden)")));
   }
   document.addEventListener("click", (e) => {
@@ -231,6 +251,7 @@ const render = (list, pageTitle, intro, nav) => `<!doctype html>
   });
   q.addEventListener("input", filter);
   document.getElementById("styleFilter").addEventListener("change", filter);
+  document.getElementById("buildFilter").addEventListener("change", filter);
   onlyBtn.addEventListener("click", () => {
     onlyBtn.setAttribute("aria-pressed", String(onlyBtn.getAttribute("aria-pressed") !== "true"));
     filter();
