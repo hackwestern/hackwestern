@@ -398,7 +398,10 @@ export function planLines(
         message: p.template,
         sendsAt: final ? copy.planned.byHand : when(p.postAt),
         status: messageStatus(p, { ...options, gate }),
-        text: p.text === null ? "" : displayText(p.text),
+        text:
+          p.text === null
+            ? copy.planned.heldText(p.missing ?? "a fill-in")
+            : displayText(p.text),
         sortAt: final ? Number.MAX_SAFE_INTEGER : +p.postAt,
       });
     }

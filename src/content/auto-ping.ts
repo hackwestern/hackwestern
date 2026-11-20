@@ -25,6 +25,9 @@ export const autoPingCopy = {
       "Text",
     ],
     byHand: "By hand (--send-final)",
+    /** Text column for a held message: what it's waiting on. */
+    heldText: (missing: string) =>
+      `(Not written yet: fill in ${missing} on the Messages tab and the full message appears here.)`,
     status: {
       queued: "Queued",
       notQueued: "Not queued yet (next sync)",
