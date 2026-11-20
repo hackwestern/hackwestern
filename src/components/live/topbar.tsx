@@ -34,7 +34,7 @@ const Topbar = ({
           className="flex w-full flex-col justify-between gap-6 overflow-y-auto border-0 bg-dashboard-bg-surface px-6 pb-6 pt-16 font-figtree sm:max-w-none"
           closeClassName="right-6 top-5 opacity-100 text-dashboard-text-heavy data-[state=open]:bg-transparent focus:ring-dashboard-action-primary"
           closeIconClassName="size-6"
-          // Otherwise the search box gets focus and opens its empty results dropdown
+          // Don't move focus to the first link when the menu opens
           onOpenAutoFocus={(event) => event.preventDefault()}
         >
           <SheetTitle className="sr-only">Menu</SheetTitle>
