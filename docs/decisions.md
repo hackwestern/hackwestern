@@ -936,3 +936,8 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
   - The tab name "Sponsor Day-Of" must not change; the app finds it by name (it was renamed "EDIT HERE" once and broke the app).
   - Run of show tasks for the whole team: Fri 10 PM coffee chat notifications, Sat 9:30 AM check in with reps, Sun 9:45 AM shortlists due, set rooms and Notify teams.
 **Why:** fewer manual steps, and nobody types over what the app writes.
+
+## 2026-11-20: One final hacker, 30 minutes before a chat (Jazz)
+
+**Decision:** 30 minutes before a coffee chat, a seat still waiting goes to one last hacker in line. If they don't answer, the seat stays empty. The rounds before that stay as they are.
+**Why:** one last try to fill the seat, without chasing hackers right up to the chat.

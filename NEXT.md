@@ -8,6 +8,7 @@ Fix the run-through's problems, in this order (full report: the session of 2026-
 4. **Sunday table on organizer Home disagrees with the judging board:** rooms (Scotiabank Rm 2110 vs free), TinyFish "Missing room" vs remote, and "Picks 0 of 5–15" for every sponsor even when shortlists are in.
 5. **Scan page link** "Back to Coffee chats" builds `/sponsors//coffee-chats` before the sponsor ID is read (same fix as 5de1b754).
 6. **Meal rooms disagree** in three places (portal Home is typed into `src/content/sponsor-home.ts`: Rm 1230; portal Schedule: Grand Hall; run of show: Rm 1110), plus a duplicate Friday bubble tea snack. Sun Life / Canada Life workshop rooms differ between Sponsor Day-Of (2230) and the run of show (2235). Data: ask Jazz which is right.
+7. **Build the final-hacker rule (Jazz, 2026-11-20):** 30 minutes before a chat, any seat still waiting gets one last invite to the next hacker in line. If they don't answer, the seat stays empty: no more offers. How long they get to answer doesn't matter. Keep the earlier 30-minute rounds as they are. Code: src/lib/coffee-chat-invites.ts (lastCallAt, answerLeadMinutes, seatStillOfferable) and the round runner in src/server/api/utils/coffee-chat-invites.ts.
 Smaller: organizer table splits names mid-word ("Commur e"); the site's top nav "Sponsors" link is off-screen on phones; "Re-run auto-schedule" and "Notify teams" run with no confirm step.
 
 Checks before done: `SKIP_ENV_VALIDATION=1 npx vitest run` (only Apple Wallet fails locally), `npx tsc --noEmit -p .`, `SKIP_ENV_VALIDATION=1 npx eslint src --quiet` (0 errors, or Vercel's build fails), a look at :3013 at 1280 and 390. Commit and push to `sponsor-dashboard`.
@@ -23,12 +24,11 @@ Checks before done: `SKIP_ENV_VALIDATION=1 npx vitest run` (only Apple Wallet fa
 - Lucas tests the Slack pings with his own account (guide, section 4).
 
 ## Open questions for Jazz
-1. **Final hacker 30 min before a chat:** how long does the final hacker get to answer (invites close 20 min before a chat, 35 for Ivey), and does it replace the 30-minute rounds or add one last offer?
-2. **Coffee Chat Setup column A:** keep ticking which sponsors do chats by hand, or take it from Sponsor Day-Of's "Coffee Chats & Interviews" checkbox?
-3. **Coffee board:** refused drops as a small pop-up (now) or a dialog? "Goes to the front of the line" or "gets the seat" when an organizer picks a hacker by ID?
-4. **SEI address:** Luka's map says 1317 Western Rd, the portal says 1151 Richmond St. Which is right?
-5. **MLH** isn't in the app's sponsor list at all (so no portal link). Should it be?
-6. **Meal and workshop rooms** (Now, item 6): which values are right?
+1. **Coffee Chat Setup column A:** keep ticking which sponsors do chats by hand, or take it from Sponsor Day-Of's "Coffee Chats & Interviews" checkbox?
+2. **Coffee board:** refused drops as a small pop-up (now) or a dialog? "Goes to the front of the line" or "gets the seat" when an organizer picks a hacker by ID?
+3. **SEI address:** Luka's map says 1317 Western Rd, the portal says 1151 Richmond St. Which is right?
+4. **MLH** isn't in the app's sponsor list at all (so no portal link). Should it be?
+5. **Meal and workshop rooms** (Now, item 6): which values are right?
 
 ## Files touched this session (main ones)
 - Judging: `src/components/sponsors/organizer/judging-board/*`, `src/lib/judging-board.ts`, `src/server/api/utils/{judging-board-data,presentation-schedule,presentation-confirm}.ts`, `src/server/api/routers/{sponsor-presentations,sponsor-scoring}.ts`, `src/server/slack/presentation-*`
