@@ -13,6 +13,7 @@ import { ExternalLink } from "lucide-react";
 import AllScans from "~/components/live/all-scans";
 import { HackerChecklist } from "~/components/live/hacker-checklist";
 import { cn } from "~/lib/utils";
+import { realmLabel } from "~/constants/realms";
 import { HW13_DEVPOST_URL } from "~/utils/urls";
 
 // Format text: replace underscores with spaces and capitalize each word
@@ -54,7 +55,7 @@ const HackerHome = () => {
   // scan endpoints reject unapproved users); this is defense-in-depth / UX.
   const { data: application, isLoading: applicationLoading } =
     api.application.get.useQuery(
-      { fields: ["status"] },
+      { fields: ["status", "realm"] },
       { enabled: !!session?.user?.id },
     );
   const isApproved = isAdmittedStatus(application?.status);
@@ -279,6 +280,11 @@ const HackerHome = () => {
                     {hackerId && (
                       <p className="mt-3 text-center text-lg font-semibold text-dashboard-text-heavy">
                         {hackerId}
+                      </p>
+                    )}
+                    {application?.realm && (
+                      <p className="mt-1 text-center text-sm font-medium text-dashboard-text-medium">
+                        {realmLabel[application.realm]} Realm
                       </p>
                     )}
                   </>
