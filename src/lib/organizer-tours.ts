@@ -144,18 +144,25 @@ export const ORGANIZER_TOURS: Record<OrganizerTourId, TourDef> = {
     id: "judging",
     steps: [
       {
-        id: "sent",
+        id: "todo",
         page: "any",
-        target: "judging-sent",
+        target: "judging-todo",
         placement: "bottom",
-        ...t.judging.sent,
+        ...t.judging.todo,
       },
       {
-        id: "actions",
+        id: "sponsors",
         page: "any",
-        target: "judging-actions",
+        target: "judging-sponsors",
+        placement: "top",
+        ...t.judging.sponsors,
+      },
+      {
+        id: "rooms",
+        page: "any",
+        target: "judging-rooms",
         placement: "bottom",
-        ...t.judging.actions,
+        ...t.judging.rooms,
       },
       {
         id: "round2",

@@ -112,6 +112,13 @@ const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
  * returned in `overCap`. Anything that can't fit is returned in
  * `unplaced`, and sponsors without a room in `noRoom`; nothing is
  * dropped. The same input always gives the same schedule.
+ *
+ * `keep` is the schedule teams were already given: each (sponsor, team)
+ * still wanted keeps its start time (in the sponsor's current room), and is
+ * never moved to fit someone else. So a room change or a late shortlist
+ * never moves a time that's already set (Jazz, judging board v2).
+ * `notBefore` (minutes) closes earlier slots to anything not kept, so a
+ * team added on judging day never gets a slot that already passed.
  */
 export function schedulePresentations(
   requests: readonly PresentationRequest[],
@@ -119,7 +126,14 @@ export function schedulePresentations(
   {
     searchLimit = SEARCH_LIMIT,
     maxPerSponsor = SHORTLIST_MAX,
-  }: { searchLimit?: number; maxPerSponsor?: number } = {},
+    keep = [],
+    notBefore = -Infinity,
+  }: {
+    searchLimit?: number;
+    maxPerSponsor?: number;
+    keep?: readonly { sponsorId: string; teamId: string; start: number }[];
+    notBefore?: number;
+  } = {},
 ): PresentationSchedule {
   const slotCount = slotsPerRoom(window);
   const startOf = (i: number) => window.start + i * window.slotMinutes;
@@ -174,6 +188,8 @@ export function schedulePresentations(
     }
     return m;
   };
+  /** A slot new placements may use (kept times may be earlier). */
+  const open = (index: number) => startOf(index) >= notBefore;
   const fits = (teamId: string, index: number, except?: string) => {
     for (const [sponsorId, other] of slotsOf(teamId)) {
       if (sponsorId === except) continue;
@@ -194,6 +210,35 @@ export function schedulePresentations(
     slotsOf(teamId).delete(sponsorId);
   };
 
+  // Times already given stay: pin each one that still fits.
+  const pinned = new Set<string>();
+  const pinKey = (sponsorId: string, teamId: string) =>
+    `${sponsorId}|${teamId}`;
+  const keptInOrder = [...keep].sort(
+    (a, b) =>
+      a.start - b.start ||
+      byText(a.sponsorId, b.sponsorId) ||
+      byText(a.teamId, b.teamId),
+  );
+  for (const k of keptInOrder) {
+    const grid = grids.get(k.sponsorId);
+    const index = (k.start - window.start) / window.slotMinutes;
+    if (
+      !grid ||
+      !wanted.get(k.teamId)?.includes(k.sponsorId) ||
+      !Number.isInteger(index) ||
+      index < 0 ||
+      index >= slotCount ||
+      grid[index] !== null ||
+      slotsOf(k.teamId).has(k.sponsorId) ||
+      !fits(k.teamId, index)
+    ) {
+      continue;
+    }
+    assign(k.sponsorId, k.teamId, index);
+    pinned.add(pinKey(k.sponsorId, k.teamId));
+  }
+
   // Most-constrained teams first: most shortlists, then id.
   const teamOrder = [...wanted.keys()].sort(
     (a, b) => wanted.get(b)!.length - wanted.get(a)!.length || byText(a, b),
@@ -202,10 +247,12 @@ export function schedulePresentations(
   const stuck: { sponsorId: string; teamId: string }[] = [];
   for (const teamId of teamOrder) {
     // Busiest rooms first: they have the fewest free slots to choose from.
-    const list = [...wanted.get(teamId)!].sort(
-      (a, b) => demand.get(b)! - demand.get(a)! || byText(a, b),
-    );
-    const best = searchTeam(list);
+    const list = wanted
+      .get(teamId)!
+      .filter((sponsorId) => !slotsOf(teamId).has(sponsorId))
+      .sort((a, b) => demand.get(b)! - demand.get(a)! || byText(a, b));
+    if (list.length === 0) continue;
+    const best = searchTeam(teamId, list);
     for (const [sponsorId, index] of best) assign(sponsorId, teamId, index);
     for (const sponsorId of list) {
       if (!best.has(sponsorId)) stuck.push({ sponsorId, teamId });
@@ -217,12 +264,13 @@ export function schedulePresentations(
    * otherwise as many as fit (earliest slots first on ties). Depth-first,
    * trying each free slot that keeps the team's gaps, then skipping.
    */
-  function searchTeam(list: string[]) {
+  function searchTeam(teamId: string, list: string[]) {
     let best = new Map<string, number>();
     const chosen = new Map<string, number>();
     let steps = 0;
+    // The team's pinned slots count for its gaps too.
     const gapOk = (index: number) => {
-      for (const other of chosen.values()) {
+      for (const other of [...chosen.values(), ...slotsOf(teamId).values()]) {
         if (Math.abs(startOf(index) - startOf(other)) < window.minGapMinutes) {
           return false;
         }
@@ -239,7 +287,7 @@ export function schedulePresentations(
       const sponsorId = list[k]!;
       const grid = grids.get(sponsorId)!;
       for (let i = 0; i < slotCount; i++) {
-        if (grid[i] !== null || !gapOk(i)) continue;
+        if (grid[i] !== null || !open(i) || !gapOk(i)) continue;
         chosen.set(sponsorId, i);
         if (walk(k + 1)) return true;
         chosen.delete(sponsorId);
@@ -258,13 +306,15 @@ export function schedulePresentations(
   function augment(sponsorId: string, teamId: string, seen: Set<number>) {
     const grid = grids.get(sponsorId)!;
     for (let i = 0; i < slotCount; i++) {
-      if (seen.has(i) || !fits(teamId, i, sponsorId)) continue;
+      if (seen.has(i) || !open(i) || !fits(teamId, i, sponsorId)) continue;
       seen.add(i);
       const occupant = grid[i];
       if (occupant === null || occupant === undefined) {
         assign(sponsorId, teamId, i);
         return true;
       }
+      // A time already given never moves.
+      if (pinned.has(pinKey(sponsorId, occupant))) continue;
       release(sponsorId, occupant);
       if (augment(sponsorId, occupant, seen)) {
         assign(sponsorId, teamId, i);
@@ -365,9 +415,16 @@ export function judgingRound(round: {
   scheduledAt: Date | string | null;
   slots: readonly unknown[];
   round2Open: boolean;
+  /**
+   * The sponsor judges online (TinyFish): their teams don't present, so
+   * they rank their sent shortlist in round 2 (Jazz, 2026-11-19).
+   */
+  remote?: boolean;
 }): JudgingRound {
   if (round.round2Open) {
-    if (round.slots.length > 0) return "rank";
+    if (round.slots.length > 0 || (round.remote && round.shortlistSent)) {
+      return "rank";
+    }
     if (round.scheduledAt) return "locked";
   }
   return round.shortlistSent ? "sent" : "shortlist";

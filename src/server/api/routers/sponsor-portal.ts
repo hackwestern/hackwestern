@@ -127,6 +127,9 @@ export const sponsorPortalRouter = createTRPCRouter({
           sponsorName,
           hwContact,
           hwContactPhone: hwContactPhones[0] ?? null,
+          // Sponsor Day-Of's "Tier" column, for the welcome line; null when
+          // the sheet has no tier for them.
+          tier: info?.tier ? info.tier : null,
           roomNumber: info?.roomNumber ?? "TBD",
           boothLocation: info?.boothLocation ?? "TBD",
           // Empty string when blank so the portal can omit the workshop card.
@@ -148,6 +151,7 @@ export const sponsorPortalRouter = createTRPCRouter({
           sponsorName,
           hwContact: null,
           hwContactPhone: null,
+          tier: null,
           roomNumber: "TBD",
           boothLocation: "TBD",
           workshopLocation: null,

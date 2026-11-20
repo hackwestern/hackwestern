@@ -15,6 +15,10 @@ import {
   COFFEE_CHAT_DECLINE_ACTION,
   coffeeChatDetailsBlock,
 } from "~/server/slack/coffee-chat-dm";
+import {
+  handlePresentationConfirm,
+  isPresentationConfirm,
+} from "~/server/slack/presentation-interactions";
 import { verifySlackRequest } from "~/server/slack/verify";
 
 /**
@@ -45,7 +49,7 @@ const ANSWERS: Record<string, CoffeeChatAnswer> = {
   [COFFEE_CHAT_DECLINE_ACTION]: "decline",
 };
 
-const payloadSchema = z.object({
+export const payloadSchema = z.object({
   type: z.string(),
   user: z.object({ id: z.string() }).optional(),
   response_url: z.string().optional(),
@@ -63,13 +67,15 @@ export type InteractionOutcome =
   | "ignored"
   | "accepted"
   | "declined"
+  | "confirmed"
+  | "changed"
   | "notYours"
   | "notPending"
   | "failed";
 
-type Deps = { token?: string; fetch?: typeof fetch; now?: Date };
+export type Deps = { token?: string; fetch?: typeof fetch; now?: Date };
 
-type UserInfo = SlackResponse & { user?: { profile?: { email?: string } } };
+export type UserInfo = SlackResponse & { user?: { profile?: { email?: string } } };
 
 /**
  * The hacker who owns `chatId` when the clicking Slack user is them: the
@@ -113,13 +119,13 @@ async function hackerForSlackUser(
  * channel ids start with "D"). The offer buttons are only ever posted in
  * the DM the bot opened with the hacker it found (dmHacker).
  */
-function isDirectMessage(payload: z.infer<typeof payloadSchema>): boolean {
+export function isDirectMessage(payload: z.infer<typeof payloadSchema>): boolean {
   const channelId = payload.channel?.id ?? payload.container?.channel_id;
   return typeof channelId === "string" && channelId.startsWith("D");
 }
 
 /** Post the result back to the DM through Slack's response_url. */
-async function reply(
+export async function reply(
   responseUrl: string | undefined,
   message: Record<string, unknown>,
   fetchImpl: typeof fetch,
@@ -159,7 +165,7 @@ async function resultMessage(chatId: string, text: string) {
 }
 
 /** A note only the clicker sees; the DM and its buttons stay. */
-const ephemeral = (text: string) => ({
+export const ephemeral = (text: string) => ({
   response_type: "ephemeral",
   replace_original: false,
   text,
@@ -278,6 +284,9 @@ export async function handleSlackInteractionRequest(
   } catch {
     return { status: 400 };
   }
-  const outcome = await handleCoffeeChatInteraction(payload, deps);
+  // The presentation DM's Confirm button; everything else is coffee chats.
+  const outcome = isPresentationConfirm(payload)
+    ? await handlePresentationConfirm(payload, deps)
+    : await handleCoffeeChatInteraction(payload, deps);
   return { status: 200, outcome };
 }

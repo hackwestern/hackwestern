@@ -7,8 +7,8 @@ import {
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { SponsorBadge } from "~/components/sponsors/sponsor-badge";
-import { DigitalJudging } from "~/components/sponsors/organizer/digital-judging";
-import { PresentationsPanel } from "~/components/sponsors/organizer/presentations-panel";
+import { AfterPresentations } from "~/components/sponsors/organizer/judging-board/after-presentations";
+import { JudgingBoard } from "~/components/sponsors/organizer/judging-board/judging-board";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { sponsorColorIndexes } from "~/lib/sponsor-colors";
@@ -91,7 +91,8 @@ export function JudgingTab({ sponsor }: { sponsor: string | null }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <PresentationsPanel colors={colors} />
+      <JudgingBoard />
+      <AfterPresentations />
       {data.unsyncedCount > 0 && (
         <p
           role="status"
@@ -144,8 +145,6 @@ export function JudgingTab({ sponsor }: { sponsor: string | null }) {
           ))}
         </div>
       </div>
-
-      <DigitalJudging names={data.digital} top={data.finalTop} />
 
       <div
         role="tabpanel"

@@ -179,6 +179,12 @@ export const sponsorPresentationsCopy = {
     intro: "Sunday. Be at each room a few minutes early.",
     slot: (time: string, sponsor: string, room: string) =>
       `${time} · ${sponsor} · ${room}`,
+    /** One tap confirms for the whole team (Jazz, 2026-11-19). */
+    confirm: "Confirm our times",
+    confirming: "Confirming…",
+    confirmHint: "One person confirming is enough for your team.",
+    confirmed: "Your team confirmed these times.",
+    confirmFailed: "Couldn't confirm. Try again.",
   },
 
   /** Slack DM to each team member. */
@@ -190,6 +196,16 @@ export const sponsorPresentationsCopy = {
       `• ${time}: ${sponsor}, ${room}`,
     footer: (pitch: number, qa: number) =>
       `Each presentation is a ${pitch} min pitch and ${qa} min of Q&A. Be at the room a few minutes early. Your times are also on`,
+    /** The button: one member's tap confirms for the whole team. */
+    confirmButton: "Confirm our times",
+    confirmHint: "One person confirming is enough for your team.",
+    result: {
+      confirmed: "Thanks! Your team's times are confirmed.",
+      notYours: "These times aren't linked to your Slack account.",
+      changed:
+        "Your times have changed since this message. Check the newest message or your Live page.",
+      failed: "Something went wrong. Please confirm on your Live page.",
+    },
   },
 
   /** Email to a team member Slack can't find (same times as the DM). */
@@ -212,5 +228,7 @@ export const sponsorPresentationsCopy = {
     noSchedule: "Schedule presentations first.",
     round2NoSchedule:
       "Schedule presentations before opening round 2. No team has a presentation slot yet.",
+    nothingToConfirm:
+      "Your team has no presentation times to confirm right now.",
   },
 } as const;

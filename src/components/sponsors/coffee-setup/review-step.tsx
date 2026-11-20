@@ -1,6 +1,8 @@
-import { useState } from "react";
 import Link from "next/link";
-import { CircleCheck, Crown, TriangleAlert } from "lucide-react";
+import { useRouter } from "next/router";
+import { Crown, Info, TriangleAlert } from "lucide-react";
+import { toast } from "sonner";
+import { Note } from "~/components/sponsors/portal-ui";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { pressable } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
@@ -30,29 +32,33 @@ const shift = (t: string, by: number) => {
 const minus15 = (t: string) => shift(t, -15);
 const plus15 = (t: string) => shift(t, 15);
 
-/** Step 3: warnings with fixes, a read-only summary, Submit preferences. */
+/**
+ * Part 3: warnings with fixes, a read-only summary, Send availability.
+ * Sending goes back to the Chats page with a toast (mock sponsor-chats-v3).
+ */
 export function ReviewStep({
   sponsor,
   data,
   teamHref,
   prefsHref,
-  shortlistHref,
+  homeHref,
 }: {
   sponsor: string;
   data: SetupData;
   teamHref: string;
   prefsHref: string;
-  shortlistHref: string;
+  /** The Chats page, where Send availability lands. */
+  homeHref: string;
 }) {
+  const router = useRouter();
   const utils = api.useUtils();
   const { announce, region } = useAnnounce();
   const { guard, dialog } = useAfterInvites(data);
-  const [justSubmitted, setJustSubmitted] = useState(false);
   const submit = api.coffeeChatSetup.submitPrefs.useMutation({
     onSuccess: async () => {
       await utils.coffeeChatSetup.get.invalidate({ sponsor });
-      setJustSubmitted(true);
-      announce(copy.submitted);
+      toast(data.submittedAt ? copy.savedToast : sponsorSetupCopy.page.sentToast);
+      await router.push(homeHref);
     },
     onError: (e) => announce(e.message),
   });
@@ -82,25 +88,6 @@ export function ReviewStep({
 
   const when = workshopWhen(data);
 
-  if (justSubmitted) {
-    return (
-      <section className={cardClass}>
-        {region}
-        <div className="flex items-center gap-3">
-          <CircleCheck aria-hidden className="size-8 shrink-0 text-dashboard-status-live" />
-          <h2 className="m-0 text-xl font-semibold text-dashboard-text-heavy">{copy.submitted}</h2>
-        </div>
-        <p className="m-0 text-base text-dashboard-text-medium">{copy.submittedBody}</p>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <LinkButton href={shortlistHref}>{copy.shortlistNext}</LinkButton>
-          <DashboardButton variant="outline" className={cn("h-11 text-base", pressable)} onClick={() => setJustSubmitted(false)}>
-            {copy.edit}
-          </DashboardButton>
-        </div>
-      </section>
-    );
-  }
-
   return (
     <section className={cardClass} aria-labelledby="review-heading">
       {region}
@@ -108,19 +95,19 @@ export function ReviewStep({
       <h2 id="review-heading" className="m-0 text-xl font-semibold text-dashboard-text-heavy">{copy.heading}</h2>
 
       {warnings.length === 0 ? (
-        <p className="m-0 flex items-center gap-2 rounded-dashboard-md bg-dashboard-bg-highlight p-3 text-base text-dashboard-text-heavy">
-          <CircleCheck aria-hidden className="size-5 text-dashboard-status-live" />
+        <Note tone="ok" icon={<Info aria-hidden />}>
           {copy.allGood}
-        </p>
+        </Note>
       ) : (
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {warnings.map((w) => (
-            <li key={w.text} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-dashboard-md bg-dashboard-bg-task p-3 text-base text-dashboard-text-task">
-              <TriangleAlert aria-hidden className="size-5 shrink-0" />
-              <span className="min-w-0 flex-1">{w.text}</span>
-              <Link href={w.href} className="inline-flex min-h-11 items-center font-semibold text-dashboard-text-link underline-offset-2 hover:underline">
-                {w.fix}
-              </Link>
+            <li key={w.text}>
+              <Note tone="warn" icon={<TriangleAlert aria-hidden />}>
+                {w.text}{" "}
+                <Link href={w.href} className="inline-flex min-h-11 items-center px-2 font-semibold text-dashboard-text-link">
+                  {w.fix}
+                </Link>
+              </Note>
             </li>
           ))}
         </ul>
@@ -146,7 +133,7 @@ export function ReviewStep({
               <span className="flex flex-wrap items-center gap-2 text-base text-dashboard-text-heavy">
                 <span className="font-semibold">{rep.name}</span>
                 {rep.isPrimary && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-dashboard-bg-task px-2 py-0.5 text-xs font-semibold text-dashboard-text-task">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-dashboard-notice-cautionBg px-2 py-0.5 text-xs font-semibold text-dashboard-text-warning">
                     <Crown aria-hidden className="size-3" />
                     {sponsorSetupCopy.team.primaryContact}
                   </span>
@@ -183,11 +170,6 @@ export function ReviewStep({
           </p>
         </div>
       )}
-
-      <div className="flex flex-col gap-0.5 border-t border-dashboard-border-subtle pt-3">
-        <h3 className="m-0 text-sm font-semibold text-dashboard-text-medium">{copy.shortlist}</h3>
-        <p className="m-0 text-base text-dashboard-text-medium">{copy.shortlistNote}</p>
-      </div>
 
       <StepFooter
         back={<LinkButton href={prefsHref} variant="outline">{sponsorSetupCopy.backStep}</LinkButton>}

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { Minus, Plus } from "lucide-react";
+import { Info, Minus, Plus } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { useOpenSponsorHelp } from "~/components/sponsors/help-button";
+import { Note } from "~/components/sponsors/portal-ui";
 import { pressable } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
 import {
@@ -71,7 +71,6 @@ export function PrefsStep({
   const { announce, region } = useAnnounce();
   const { guard, dialog } = useAfterInvites(data);
   const refreshOwn = useRefreshOwn(sponsor);
-  const openHelp = useOpenSponsorHelp();
   const [draft, setDraft] = useState<Draft>(() => draftOf(data));
   const [error, setError] = useState<string | null>(null);
   const dirty = useRef(false);
@@ -207,10 +206,13 @@ export function PrefsStep({
     <section className={cardClass} aria-labelledby="prefs-heading">
       {region}
       {dialog}
-      <div className="flex flex-col gap-1">
-        <h2 id="prefs-heading" className="m-0 text-xl font-semibold text-dashboard-text-heavy">{copy.heading}</h2>
-        <p className="m-0 text-base text-dashboard-text-medium">{copy.intro}</p>
+      <div className="flex flex-col gap-1.5">
+        <h2 id="prefs-heading" className="m-0 text-[22px] font-bold leading-tight text-dashboard-text-heavy">{copy.heading}</h2>
+        <p className="m-0 text-sm text-dashboard-text-light">{copy.intro}</p>
       </div>
+      {data.submittedAt && !data.confirmed && (
+        <Note icon={<Info aria-hidden />}>{sponsorSetupCopy.prefsFlow.editNote}</Note>
+      )}
 
       {/* Q1 */}
       <fieldset className="m-0 flex flex-col gap-3 border-0 p-0">
@@ -242,7 +244,7 @@ export function PrefsStep({
           })}
         </div>
         <p className="m-0 text-base font-semibold text-dashboard-text-link">{copy.format(draft.hackersPerChat)}</p>
-        <p className="m-0 text-sm text-dashboard-text-light">{copy.roomCap(draft.hackersPerChat)}</p>
+        <p className="m-0 text-sm text-dashboard-text-light">{copy.formatHint}</p>
       </fieldset>
 
       <hr className="m-0 border-dashboard-border-subtle" />
@@ -341,20 +343,6 @@ export function PrefsStep({
 
       {error && (
         <p role="alert" className="m-0 text-sm font-semibold text-dashboard-text-warning">{error}</p>
-      )}
-
-      {openHelp && (
-        <p className="m-0 flex flex-wrap items-center gap-x-1 text-base text-dashboard-text-medium">
-          {sponsorSetupCopy.help.question}
-          <button
-            type="button"
-            aria-haspopup="dialog"
-            onClick={openHelp}
-            className="min-h-11 rounded-dashboard-md px-1 text-base font-semibold text-dashboard-text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
-          >
-            {sponsorSetupCopy.help.contact}
-          </button>
-        </p>
       )}
 
       <StepFooter

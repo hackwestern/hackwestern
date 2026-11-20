@@ -173,6 +173,8 @@ const DAY_OF_HEADERS = {
   ccWorkshop: ["at cc workshop"],
   maxMinutes: ["coffee chat max minutes"],
   notes: ["to do / mismatches"],
+  /** Sponsorship tier ("Gold"), for the portal's welcome line. Optional. */
+  tier: ["tier", "sponsor tier", "sponsorship tier"],
 } as const;
 
 export type SponsorDayOfColumns = Record<keyof typeof DAY_OF_HEADERS, number>;
@@ -400,6 +402,8 @@ export function parseTeamIds(cell: string | undefined): string[] {
 
 export interface SponsorInfoRecord {
   status: SponsorStatus;
+  /** Sponsor Day-Of's "Tier" column ("Gold"); empty when there's none. */
+  tier: string;
   roomNumber: string;
   boothLocation: string;
   hwContact: string;
@@ -473,6 +477,7 @@ export function sponsorInfoFromDayOf(
     if (map.has(key)) continue;
     map.set(key, {
       status: normalizeSponsorStatus(at(row, c.status)),
+      tier: at(row, c.tier).replace(/\s+sponsors?$/i, ""),
       roomNumber: normalizeRoomNumber(at(row, c.judgingRoom)),
       boothLocation: normalizeBoothLocation(at(row, c.booth)),
       hwContact: normalizeHwContact(at(row, c.hwLead)),
@@ -662,6 +667,7 @@ export async function fetchAllSponsorInfo(
       if (!map.has(lower)) {
         map.set(lower, {
           status: normalizeSponsorStatus(cell(row, cols.statusCol)),
+          tier: "",
           roomNumber: normalizeRoomNumber(cell(row, cols.roomCol)),
           boothLocation: normalizeBoothLocation(cell(row, cols.boothCol)),
           hwContact: normalizeHwContact(cell(row, cols.hwContactCol)),
