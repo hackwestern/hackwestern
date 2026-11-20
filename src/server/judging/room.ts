@@ -272,15 +272,13 @@ export async function seatTeams({ random }: { random: boolean }) {
       );
     }
     if (missing.length > 0) {
-      await tx
-        .insert(judgingSeats)
-        .values(
-          missing.map((t) => ({
-            tableNumber: t.tableNumber,
-            seat: 2,
-            zone: t.zone,
-          })),
-        );
+      await tx.insert(judgingSeats).values(
+        missing.map((t) => ({
+          tableNumber: t.tableNumber,
+          seat: 2,
+          zone: t.zone,
+        })),
+      );
     }
     const seats = await tx
       .select({
