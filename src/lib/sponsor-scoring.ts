@@ -500,11 +500,18 @@ export function linkIsAmbiguous(
   return linkMatches(input, teams).length > 1;
 }
 
+/** A link without its scheme or trailing slash: "devpost.com/software/x". */
+export function bareLink(url: string | null | undefined): string {
+  return (
+    url
+      ?.trim()
+      .replace(/^https?:\/\//i, "")
+      .replace(/\/+$/, "") ?? ""
+  );
+}
+
 /** "a1c3e5f70912 · devpost.com/software/x": how judging shows a team. */
 export function teamIdAndLink(teamId: string, devpostUrl: string | null) {
-  const link = devpostUrl
-    ?.trim()
-    .replace(/^https?:\/\//i, "")
-    .replace(/\/+$/, "");
+  const link = bareLink(devpostUrl);
   return link ? `${teamId} · ${link}` : teamId;
 }

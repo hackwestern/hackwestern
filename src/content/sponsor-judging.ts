@@ -370,6 +370,8 @@ export const sponsorJudgingCopy = {
       ],
       inPerson: "In person",
       digital: "Digital",
+      /** Second line of a 1st to 5th place cell. */
+      github: (link: string) => `GitHub: ${link}`,
       status: {
         notRegistered: "No portal link yet",
         notStarted: "Not started",
