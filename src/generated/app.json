@@ -11838,6 +11838,114 @@
           "source": "auth middleware"
         },
         {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/scavengerHunt.getScavengerHuntItems?input=<superjson>",
+      "input": null,
+      "output": {
+        "items": {
+          "properties": {
+            "endsAt": {
+              "format": "date-time",
+              "type": "string",
+              "x-superjson": "Date"
+            },
+            "id": {
+              "type": "number"
+            },
+            "name": {
+              "type": "string"
+            },
+            "points": {
+              "type": "number"
+            },
+            "room": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "scans": {
+              "type": "number"
+            },
+            "startsAt": {
+              "format": "date-time",
+              "type": "string",
+              "x-superjson": "Date"
+            },
+            "status": {
+              "enum": [
+                "draft",
+                "active",
+                "disabled"
+              ]
+            },
+            "type": {
+              "enum": [
+                "meal",
+                "workshop",
+                "sponsor_workshop",
+                "activity",
+                "bonus"
+              ]
+            },
+            "winPoints": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "winScans": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "type",
+            "points",
+            "winPoints",
+            "status",
+            "startsAt",
+            "endsAt",
+            "room",
+            "scans",
+            "winScans"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "path": "scavengerHunt.getScavengerHuntItems",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
           "code": "BAD_REQUEST",
           "httpStatus": 400,
           "source": "input validation (data.zodError populated)"
@@ -12062,6 +12170,125 @@
         {
           "code": "BAD_REQUEST",
           "httpStatus": 400,
+          "message": "End time must be in the future",
+          "source": "handler"
+        },
+        {
+          "code": "CONFLICT",
+          "httpStatus": 409,
+          "source": "handler"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/scavengerHunt.saveActivity",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "endsAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string"
+          },
+          "points": {
+            "maximum": 32767,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "room": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "startsAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "active"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "meal",
+              "workshop",
+              "sponsor_workshop",
+              "activity",
+              "bonus"
+            ],
+            "type": "string"
+          },
+          "winPoints": {
+            "anyOf": [
+              {
+                "maximum": 32767,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "startsAt",
+          "endsAt",
+          "room",
+          "points",
+          "winPoints"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "type": "undefined"
+      },
+      "path": "scavengerHunt.saveActivity",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
           "source": "handler"
         },
         {
@@ -12139,6 +12366,60 @@
         "type": "object"
       },
       "path": "scavengerHunt.scan",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/scavengerHunt.setActivityStatus",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "active",
+              "disabled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "type": "undefined"
+      },
+      "path": "scavengerHunt.setActivityStatus",
       "source": "src/server/api/routers/scavenger-hunt.ts",
       "type": "mutation"
     },
