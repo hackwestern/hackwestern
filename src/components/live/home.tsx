@@ -58,6 +58,9 @@ const HackerHome = () => {
       { enabled: !!session?.user?.id },
     );
   const isApproved = isAdmittedStatus(application?.status);
+  const { data: hackerId } = api.qrRouter.hackerId.useQuery(undefined, {
+    enabled: !!session?.user?.id && isApproved,
+  });
 
   // Onboarding checklist for accepted hackers. Required: the rest of Home is
   // locked until they've RSVPed.
@@ -265,13 +268,20 @@ const HackerHome = () => {
                     </p>
                   </div>
                 ) : qrCodeUrl ? (
-                  <Image
-                    src={qrCodeUrl}
-                    alt="Your Hacker Pass QR Code"
-                    width={300}
-                    height={300}
-                    className="h-auto w-full"
-                  />
+                  <>
+                    <Image
+                      src={qrCodeUrl}
+                      alt="Your Hacker Pass QR Code"
+                      width={300}
+                      height={300}
+                      className="h-auto w-full"
+                    />
+                    {hackerId && (
+                      <p className="mt-3 text-center text-lg font-semibold text-dashboard-text-heavy">
+                        {hackerId}
+                      </p>
+                    )}
+                  </>
                 ) : (
                   <div className="flex h-[300px] w-[300px] items-center justify-center bg-dashboard-bg-inset">
                     <p className="text-sm text-dashboard-text-light">
