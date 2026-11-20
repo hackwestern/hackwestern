@@ -556,129 +556,128 @@ describe("scavengerHuntRouter basic endpoints", () => {
 });
 
 describe("scavengerHuntRouter redemption endpoints", () => {
-  const initialBalance = 100;
-  const initialEarned = 100;
-
-  // redeem tests
-  describe("redeem", () => {
-    let testReward: Awaited<ReturnType<typeof insertTestReward>>;
-
-    beforeEach(async () => {
-      // Create a fresh reward for each test
-      testReward = await insertTestReward();
-
-      // Reset user's scavenger hunt balance and points
-      await db
-        .update(users)
-        .set({
-          scavengerHuntBalance: initialBalance,
-          scavengerHuntEarned: initialEarned,
-        })
-        .where(eq(users.id, session.user.id));
-
-      // Clean up any existing redemptions for this user
-      await db
-        .delete(scavengerHuntRedemptions)
-        .where(eq(scavengerHuntRedemptions.userId, session.user.id));
-    });
-
-    afterEach(async () => {
-      // Clean up redemptions
-      await db
-        .delete(scavengerHuntRedemptions)
-        .where(eq(scavengerHuntRedemptions.userId, session.user.id));
-
-      // Clean up test reward if it still exists
-      if (testReward) {
-        await db
-          .delete(scavengerHuntRewards)
-          .where(eq(scavengerHuntRewards.id, testReward.id));
-      }
-    });
-
-    test("successfully redeems reward and deducts points", async () => {
-      const redeemResult = await caller.scavengerHunt.redeem({
-        rewardId: testReward.id,
-      });
-
-      expect(redeemResult.success).toBe(true);
-      expect(redeemResult.message).toBe("Reward redeemed successfully");
-
-      // Check that redemption was recorded
-      const redemption = await db.query.scavengerHuntRedemptions.findFirst({
-        where: and(
-          eq(scavengerHuntRedemptions.userId, session.user.id),
-          eq(scavengerHuntRedemptions.rewardId, testReward.id),
-        ),
-      });
-      expect(redemption).not.toBeNull();
-      expect(redemption?.rewardId).toBe(testReward.id);
-
-      // Check that points were deducted
-      const updatedUser = await db.query.users.findFirst({
-        where: eq(users.id, session.user.id),
-      });
-      expect(updatedUser?.scavengerHuntBalance).toBe(
-        initialBalance - testReward.costPoints,
-      );
-      // Earned points should remain the same
-      expect(updatedUser?.scavengerHuntEarned).toBe(100);
-    });
-
-    test("throws error if reward not found", async () => {
-      const nonExistentRewardId = 99999;
-
-      try {
-        await caller.scavengerHunt.redeem({ rewardId: nonExistentRewardId });
-        expect.fail("Route should return a TRPCError");
-      } catch (err) {
-        expect(err).toBeInstanceOf(TRPCError);
-        const trpcErr = err as TRPCError;
-        expect(trpcErr.code).toBe("NOT_FOUND");
-        expect(trpcErr.message).toBe("Reward not found");
-      }
-    });
-
-    test("throws error if user is not authenticated", async () => {
-      const unauthenticatedCtx = createInnerTRPCContext({ session: null });
-      const unauthenticatedCaller = createCaller(unauthenticatedCtx);
-
-      try {
-        (await unauthenticatedCaller.scavengerHunt.redeem({
-          rewardId: testReward.id,
-        }),
-          expect.fail("Route should return a TRPCError"));
-      } catch (err) {
-        expect(err).toBeInstanceOf(TRPCError);
-        const trpcErr = err as TRPCError;
-        expect(trpcErr.code).toBe("UNAUTHORIZED");
-        expect(trpcErr.message).toBe("UNAUTHORIZED");
-      }
-    });
-
-    test("throws error if user has insufficient balance", async () => {
-      // Set user balance to less than reward cost
-      await db
-        .update(users)
-        .set({
-          scavengerHuntBalance: testReward.costPoints - 1,
-          scavengerHuntEarned: 100,
-        })
-        .where(eq(users.id, session.user.id));
-
-      try {
-        await caller.scavengerHunt.redeem({ rewardId: testReward.id });
-        expect.fail("Route should return a TRPCError");
-      } catch (err) {
-        expect(err).toBeInstanceOf(TRPCError);
-        const trpcErr = err as TRPCError;
-        expect(trpcErr.code).toBe("BAD_REQUEST");
-        expect(trpcErr.message).toBe(
-          "User does not have enough points to redeem reward",
-        );
-      }
-    });
-  });
+  // redeem tests (commented out with the self-redeem endpoint)
+  // describe("redeem", () => {
+  //   const initialBalance = 100;
+  //   const initialEarned = 100;
+  //   let testReward: Awaited<ReturnType<typeof insertTestReward>>;
+  //
+  //   beforeEach(async () => {
+  //     // Create a fresh reward for each test
+  //     testReward = await insertTestReward();
+  //
+  //     // Reset user's scavenger hunt balance and points
+  //     await db
+  //       .update(users)
+  //       .set({
+  //         scavengerHuntBalance: initialBalance,
+  //         scavengerHuntEarned: initialEarned,
+  //       })
+  //       .where(eq(users.id, session.user.id));
+  //
+  //     // Clean up any existing redemptions for this user
+  //     await db
+  //       .delete(scavengerHuntRedemptions)
+  //       .where(eq(scavengerHuntRedemptions.userId, session.user.id));
+  //   });
+  //
+  //   afterEach(async () => {
+  //     // Clean up redemptions
+  //     await db
+  //       .delete(scavengerHuntRedemptions)
+  //       .where(eq(scavengerHuntRedemptions.userId, session.user.id));
+  //
+  //     // Clean up test reward if it still exists
+  //     if (testReward) {
+  //       await db
+  //         .delete(scavengerHuntRewards)
+  //         .where(eq(scavengerHuntRewards.id, testReward.id));
+  //     }
+  //   });
+  //
+  //   test("successfully redeems reward and deducts points", async () => {
+  //     const redeemResult = await caller.scavengerHunt.redeem({
+  //       rewardId: testReward.id,
+  //     });
+  //
+  //     expect(redeemResult.success).toBe(true);
+  //     expect(redeemResult.message).toBe("Reward redeemed successfully");
+  //
+  //     // Check that redemption was recorded
+  //     const redemption = await db.query.scavengerHuntRedemptions.findFirst({
+  //       where: and(
+  //         eq(scavengerHuntRedemptions.userId, session.user.id),
+  //         eq(scavengerHuntRedemptions.rewardId, testReward.id),
+  //       ),
+  //     });
+  //     expect(redemption).not.toBeNull();
+  //     expect(redemption?.rewardId).toBe(testReward.id);
+  //
+  //     // Check that points were deducted
+  //     const updatedUser = await db.query.users.findFirst({
+  //       where: eq(users.id, session.user.id),
+  //     });
+  //     expect(updatedUser?.scavengerHuntBalance).toBe(
+  //       initialBalance - testReward.costPoints,
+  //     );
+  //     // Earned points should remain the same
+  //     expect(updatedUser?.scavengerHuntEarned).toBe(100);
+  //   });
+  //
+  //   test("throws error if reward not found", async () => {
+  //     const nonExistentRewardId = 99999;
+  //
+  //     try {
+  //       await caller.scavengerHunt.redeem({ rewardId: nonExistentRewardId });
+  //       expect.fail("Route should return a TRPCError");
+  //     } catch (err) {
+  //       expect(err).toBeInstanceOf(TRPCError);
+  //       const trpcErr = err as TRPCError;
+  //       expect(trpcErr.code).toBe("NOT_FOUND");
+  //       expect(trpcErr.message).toBe("Reward not found");
+  //     }
+  //   });
+  //
+  //   test("throws error if user is not authenticated", async () => {
+  //     const unauthenticatedCtx = createInnerTRPCContext({ session: null });
+  //     const unauthenticatedCaller = createCaller(unauthenticatedCtx);
+  //
+  //     try {
+  //       (await unauthenticatedCaller.scavengerHunt.redeem({
+  //         rewardId: testReward.id,
+  //       }),
+  //         expect.fail("Route should return a TRPCError"));
+  //     } catch (err) {
+  //       expect(err).toBeInstanceOf(TRPCError);
+  //       const trpcErr = err as TRPCError;
+  //       expect(trpcErr.code).toBe("UNAUTHORIZED");
+  //       expect(trpcErr.message).toBe("UNAUTHORIZED");
+  //     }
+  //   });
+  //
+  //   test("throws error if user has insufficient balance", async () => {
+  //     // Set user balance to less than reward cost
+  //     await db
+  //       .update(users)
+  //       .set({
+  //         scavengerHuntBalance: testReward.costPoints - 1,
+  //         scavengerHuntEarned: 100,
+  //       })
+  //       .where(eq(users.id, session.user.id));
+  //
+  //     try {
+  //       await caller.scavengerHunt.redeem({ rewardId: testReward.id });
+  //       expect.fail("Route should return a TRPCError");
+  //     } catch (err) {
+  //       expect(err).toBeInstanceOf(TRPCError);
+  //       const trpcErr = err as TRPCError;
+  //       expect(trpcErr.code).toBe("BAD_REQUEST");
+  //       expect(trpcErr.message).toBe(
+  //         "User does not have enough points to redeem reward",
+  //       );
+  //     }
+  //   });
+  // });
 
   // getRedemptions tests
   describe("getRedemptions", () => {
@@ -720,7 +719,10 @@ describe("scavengerHuntRouter redemption endpoints", () => {
 
     test("returns user's redemptions", async () => {
       // Redeem a reward first
-      await caller.scavengerHunt.redeem({ rewardId: testReward.id });
+      await organizerCaller.scavengerHunt.redeemForUser({
+        userId: session.user.id,
+        rewardId: testReward.id,
+      });
 
       const redemptions = await caller.scavengerHunt.getRedemptions();
 
@@ -743,8 +745,14 @@ describe("scavengerHuntRouter redemption endpoints", () => {
         .where(eq(users.id, session.user.id));
 
       // Redeem both rewards
-      await caller.scavengerHunt.redeem({ rewardId: testReward.id });
-      await caller.scavengerHunt.redeem({ rewardId: secondReward.id });
+      await organizerCaller.scavengerHunt.redeemForUser({
+        userId: session.user.id,
+        rewardId: testReward.id,
+      });
+      await organizerCaller.scavengerHunt.redeemForUser({
+        userId: session.user.id,
+        rewardId: secondReward.id,
+      });
 
       const redemptions = await caller.scavengerHunt.getRedemptions();
 
@@ -822,12 +830,11 @@ describe("scavengerHuntRouter redemption endpoints", () => {
     });
 
     test("returns redemptions for requested user", async () => {
-      // Create a context for the test user to redeem
-      const testUserCtx = createInnerTRPCContext({ session: testUser });
-      const testUserCaller = createCaller(testUserCtx);
-
-      // Test user redeems a reward
-      await testUserCaller.scavengerHunt.redeem({ rewardId: testReward.id });
+      // An organizer redeems a reward for the test user
+      await organizerCaller.scavengerHunt.redeemForUser({
+        userId: testUser.user.id,
+        rewardId: testReward.id,
+      });
 
       // Organizer queries the redemptions
       const redemptions =
@@ -950,6 +957,86 @@ describe("scavengerHuntRouter scan endpoints", () => {
       const result = await organizerCaller.scavengerHunt.getAllScans({});
       expect(result.scans).toEqual([]);
       expect(result.total).toBe(0);
+    });
+
+    test("redeemForUser records the organizer as the scanner", async () => {
+      const reward = await insertTestReward({ costPoints: 5 });
+      try {
+        await db
+          .update(users)
+          .set({ scavengerHuntBalance: 10 })
+          .where(eq(users.id, testUser1.user.id));
+
+        await organizerCaller.scavengerHunt.redeemForUser({
+          userId: testUser1.user.id,
+          rewardId: reward.id,
+        });
+
+        const redemption = await db.query.scavengerHuntRedemptions.findFirst({
+          where: eq(scavengerHuntRedemptions.rewardId, reward.id),
+        });
+        expect(redemption?.scannerId).toBe(organizerSession.user.id);
+      } finally {
+        await db
+          .delete(scavengerHuntRedemptions)
+          .where(eq(scavengerHuntRedemptions.rewardId, reward.id));
+        await db
+          .delete(scavengerHuntRewards)
+          .where(eq(scavengerHuntRewards.id, reward.id));
+      }
+    });
+
+    test("includes reward redemptions under All and Rewards only", async () => {
+      const reward = await insertTestReward({
+        name: faker.string.alphanumeric(12),
+      });
+      try {
+        await db.insert(scavengerHuntRedemptions).values({
+          userId: testUser1.user.id,
+          rewardId: reward.id,
+          scannerId: organizerSession.user.id,
+        });
+        await db.insert(scavengerHuntScans).values({
+          userId: testUser2.user.id,
+          itemId: testItem1.id,
+          scannerId: organizerSession.user.id,
+        });
+
+        const all = await organizerCaller.scavengerHunt.getAllScans({
+          search: reward.name,
+        });
+        expect(all.total).toBe(1);
+        expect(all.scans[0]).toMatchObject({
+          event: `${reward.name} (Reward)`,
+          scanner: organizerSession.user.name ?? organizerSession.user.email,
+        });
+
+        const rewards = await organizerCaller.scavengerHunt.getAllScans({
+          filter: "rewards",
+          search: reward.name,
+        });
+        expect(rewards.scans).toHaveLength(1);
+
+        const activities = await organizerCaller.scavengerHunt.getAllScans({
+          filter: "activities",
+          search: reward.name,
+        });
+        expect(activities.scans).toEqual([]);
+
+        const allUnfiltered = await organizerCaller.scavengerHunt.getAllScans(
+          {},
+        );
+        const events = allUnfiltered.scans.map((scan) => scan.event);
+        expect(events).toContain(`${reward.name} (Reward)`);
+        expect(events).toContain(testItem1.name);
+      } finally {
+        await db
+          .delete(scavengerHuntRedemptions)
+          .where(eq(scavengerHuntRedemptions.rewardId, reward.id));
+        await db
+          .delete(scavengerHuntRewards)
+          .where(eq(scavengerHuntRewards.id, reward.id));
+      }
     });
 
     test("throws error if user is not an organizer", async () => {

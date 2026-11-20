@@ -5,7 +5,7 @@ ALTER TABLE "team_mark" ADD COLUMN "design_rating" real;--> statement-breakpoint
 ALTER TABLE "team_mark" ADD COLUMN "adventurous_rating" real;--> statement-breakpoint
 ALTER TABLE "team_mark" ADD COLUMN "notes" text;--> statement-breakpoint
 ALTER TABLE "team_mark" ADD COLUMN "super_like" boolean DEFAULT false NOT NULL;--> statement-breakpoint
--- Backfill the new columns from score_breakdown, which 0043 drops. Only the
+-- Backfill the new columns from score_breakdown, which 0045 drops. Only the
 -- five criteria with a column carry over; any other key in `ratings` (from an
 -- earlier rubric) is left behind. Rows with a null breakdown keep null
 -- ratings/notes and super_like = false. trg_team_mark_stats fires on this

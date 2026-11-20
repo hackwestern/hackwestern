@@ -1,6 +1,6 @@
 {
-  "id": "dd64d170-f3ea-4079-9e50-097fe8ad936a",
-  "prevId": "cbd69950-5f85-45bc-a213-39e5dd388a48",
+  "id": "50f28fcc-ef67-4853-9d24-ef526c285b7a",
+  "prevId": "2cd4aae1-6dd6-4893-a06b-e167539b8813",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1846,6 +1846,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "scanner_id": {
+          "name": "scanner_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp (3)",
@@ -1896,6 +1902,19 @@
             "id"
           ],
           "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "scavenger_hunt_redemption_scanner_id_user_id_fk": {
+          "name": "scavenger_hunt_redemption_scanner_id_user_id_fk",
+          "tableFrom": "scavenger_hunt_redemption",
+          "tableTo": "user",
+          "columnsFrom": [
+            "scanner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -2578,6 +2597,21 @@
           "primaryKey": false,
           "notNull": true
         },
+        "round_type": {
+          "name": "round_type",
+          "type": "round_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'regular'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
         "impact_rating": {
           "name": "impact_rating",
           "type": "real",
@@ -2620,21 +2654,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "round_type": {
-          "name": "round_type",
-          "type": "round_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'regular'"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
         }
       },
       "indexes": {
@@ -2850,6 +2869,12 @@
         "judging_table_id": {
           "name": "judging_table_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "import_flags": {
+          "name": "import_flags",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         }

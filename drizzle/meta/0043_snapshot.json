@@ -1,6 +1,6 @@
 {
-  "id": "cbd69950-5f85-45bc-a213-39e5dd388a48",
-  "prevId": "0051c70b-6466-446e-be6c-0dffc9d69110",
+  "id": "2cd4aae1-6dd6-4893-a06b-e167539b8813",
+  "prevId": "21930618-7ed2-4662-a768-42ae2e4f3c17",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1846,6 +1846,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "scanner_id": {
+          "name": "scanner_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp (3)",
@@ -1896,6 +1902,19 @@
             "id"
           ],
           "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "scavenger_hunt_redemption_scanner_id_user_id_fk": {
+          "name": "scavenger_hunt_redemption_scanner_id_user_id_fk",
+          "tableFrom": "scavenger_hunt_redemption",
+          "tableTo": "user",
+          "columnsFrom": [
+            "scanner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -2578,48 +2597,11 @@
           "primaryKey": false,
           "notNull": true
         },
-        "impact_rating": {
-          "name": "impact_rating",
-          "type": "real",
+        "score_breakdown": {
+          "name": "score_breakdown",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
-        },
-        "creativity_rating": {
-          "name": "creativity_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "technical_rating": {
-          "name": "technical_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "design_rating": {
-          "name": "design_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "adventurous_rating": {
-          "name": "adventurous_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "super_like": {
-          "name": "super_like",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "round_type": {
           "name": "round_type",
@@ -2850,6 +2832,12 @@
         "judging_table_id": {
           "name": "judging_table_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "import_flags": {
+          "name": "import_flags",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         }

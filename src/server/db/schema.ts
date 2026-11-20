@@ -267,6 +267,26 @@ export const teamCheckType = pgEnum("team_check_type", [
 // ---------------------------------------------------------------------------
 
 /**
+ * One note from the Devpost import about a team's members (`team.import_flags`).
+ * - not_hacker: one per team, listing every entered ID that matches no hacker
+ *   (a typo or a well-formed ID nobody has). If the team entered no IDs at
+ *   all, `members` holds the Devpost names instead.
+ * - duplicate: the hacker is listed on more than one project; they're linked
+ *   to the earliest-submitted one (`linkedHere`)
+ * - incorrect_team_size: more than 4 hackers matched (`matched` = how many)
+ */
+export type ImportFlag =
+  | {
+      reason: "duplicate";
+      rawId: string;
+      name: string | null;
+      otherProjects: string[];
+      linkedHere: boolean;
+    }
+  | { reason: "not_hacker"; members: string[] }
+  | { reason: "incorrect_team_size"; matched: number };
+
+/**
  * The table for storing hacker teams formed during the event.
  * Also serves as the project submission record (devpostUrl, githubUrl, submissionStatus).
  */
@@ -295,6 +315,10 @@ export const teams = pgTable(
     judgingTableId: integer("judging_table_id")
       .unique()
       .references(() => judgingTables.id, { onDelete: "set null" }),
+    // Set by the Devpost import when a member's hacker ID didn't match
+    // cleanly; null when every member matched. Notes only: flagged teams are
+    // still seated and judged.
+    importFlags: jsonb("import_flags").$type<ImportFlag[]>(),
   },
   (t) => [index("team_created_at_idx").on(t.createdAt)],
 );
@@ -1362,6 +1386,10 @@ export const scavengerHuntRedemptions = pgTable(
     rewardId: integer("reward_id")
       .notNull()
       .references(() => scavengerHuntRewards.id),
+    scannerId: varchar("scanner_id", { length: 255 }).references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
       .notNull(),
