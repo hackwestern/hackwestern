@@ -70,6 +70,8 @@ export type Shift = {
   start: Date;
   end: Date;
   label: string;
+  /** The schedule note that moved it off its block ("12pm start", "3-7pm"). */
+  note?: string;
 };
 
 function instant(day: Day, minutes: number): Date {
@@ -255,6 +257,7 @@ export function readSchedule(
             range.end + shiftBy,
           );
         }
+        if (shift) shift = { ...shift, note };
       }
       entries.push({
         role,
@@ -770,6 +773,8 @@ export type Planned = {
   /** null when held: `missing` names the blank placeholder. */
   text: string | null;
   missing: string | null;
+  /** Set when the shift this message is about isn't its block's usual time. */
+  changed?: string;
 };
 
 const ORDINALS = ["", "second", "third"];
@@ -793,6 +798,7 @@ function message(
   deadline: Date,
   values: Record<string, Value | undefined>,
   messages: Messages,
+  about?: Session,
 ): Planned {
   const body = messages.templates.get(template.toLowerCase());
   const rendered = body
@@ -810,6 +816,7 @@ function message(
     deadline,
     text: "text" in rendered ? rendered.text : null,
     missing: "missing" in rendered ? rendered.missing : null,
+    ...(about?.shifts[0]?.note ? { changed: about.shifts[0].note } : {}),
   };
 }
 
@@ -863,6 +870,7 @@ export function planUnit(
       first.end,
       with_(first.label, stretches[1]?.label),
       messages,
+      first,
     ),
   );
   stretches.forEach((s, i) => {
@@ -880,6 +888,7 @@ export function planUnit(
             new Date(+s.start - REMINDER_LEAD_MIN * MIN),
             with_(s.label, next?.label),
             messages,
+            s,
           ),
         );
     }

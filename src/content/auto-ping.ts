@@ -23,6 +23,7 @@ export const autoPingCopy = {
       "Sends at",
       "Status",
       "Text",
+      "Time changed",
     ],
     byHand: "Sun 6:00 PM (once {hackers} and {projects} are filled)",
     /** Text column for a held message: what it's waiting on. */

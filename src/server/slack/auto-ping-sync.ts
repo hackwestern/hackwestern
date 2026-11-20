@@ -332,6 +332,8 @@ export type PlanLine = {
   sendsAt: string;
   status: string;
   text: string;
+  /** The schedule note behind an off-block time ("12pm start"), else "". */
+  changed: string;
   sortAt: number;
 };
 
@@ -402,6 +404,7 @@ export function planLines(
           p.text === null
             ? copy.planned.heldText(p.missing ?? "a fill-in")
             : displayText(p.text),
+        changed: p.changed ?? "",
         sortAt: final ? Number.MAX_SAFE_INTEGER : +p.postAt,
       });
     }
@@ -434,6 +437,7 @@ export function planGrid(lines: PlanLine[]): string[][] {
       l.sendsAt,
       l.status,
       l.text,
+      l.changed,
     ]),
   ];
 }

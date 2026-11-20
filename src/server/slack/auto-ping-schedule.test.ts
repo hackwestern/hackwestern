@@ -106,6 +106,9 @@ describe("schedule grid", () => {
   test("(2am start) and (12pm start) keep the block's end", () => {
     expect(byName("Bo Chan")[0]?.shift?.label).toBe("Sat 2am-9am");
     expect(byName("Cy Diaz")[0]?.shift?.label).toBe("Sat 12pm-3pm");
+    // Kept so the People tab can flag the moved check-in time.
+    expect(byName("Cy Diaz")[0]?.shift?.note).toBe("12pm start");
+    expect(byName("Ann Lee")[0]?.shift?.note).toBeUndefined();
   });
 
   test("(3-7pm) and (8-11pm) replace the block's times", () => {
