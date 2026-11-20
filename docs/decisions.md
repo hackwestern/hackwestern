@@ -25,3 +25,9 @@
 **Decision:** Past 1440 wide, About, Sponsors and hero content sits in the same centred column as the Projects stage (1440 × `--ui-scale` wide). Horizontal positions are measured from the screen centre, and vertical positions are unchanged. The hero text and message windows (box and text), and the navbar (via CSS `zoom`), grow with `--ui-scale` too. 1440 and below are unchanged.
 
 **Why:** With elements following the full-width photo, very wide screens spread them to the edges. Keeping one column lines up every section title with "Discover past projects".
+
+## 2026-11-20: Organizer reminders from the HW 13 Run of Show (Jazz)
+
+**Decision:** every organizer gets a Slack DM 15 minutes before each of their tasks on the HW 13 Run of Show "Schedule View" tab, with the cell's details. Slack holds the queue; a GitHub Actions sync every 5 minutes makes it match the sheet, so owner changes move the DM and no database is needed. Slack accounts come from the HW13 Contacts sheet emails; team words (Spon, Web) ping the whole team. The bot never edits the run of show; it DMs Jazz what to fix instead. Shipped as a small PR to main (new files only) so it doesn't depend on the sponsor-dashboard merge.
+**Why:** the run of show changes all weekend and people miss their slots. Schedule View is the source (Person View is pasted text and goes stale). Main has no Slack code or reminder tables, and merging sponsor-dashboard on event day is too big.
+**Alternatives:** a CSV like the marketing bot (stale after the first edit); a laptop watcher with a database (stops when the laptop does); auto-reformatting the sheet (could overwrite someone's edit); matching first names in the Slack directory (hundreds of hackers share first names).
