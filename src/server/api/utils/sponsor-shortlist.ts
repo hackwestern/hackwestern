@@ -1,7 +1,10 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 
 import { admittedStatuses } from "~/lib/admission";
-import { COFFEE_CHAT_SHORTLIST_SIZE } from "~/lib/coffee-chat-requests";
+import {
+  COFFEE_CHAT_SHORTLIST_SIZE,
+  shortlistPoolSize,
+} from "~/lib/coffee-chat-requests";
 import {
   fetchRankedInterestRows,
   INTERESTED_HACKER_LIMIT,
@@ -10,6 +13,8 @@ import {
 import { db } from "~/server/db";
 import {
   applications,
+  coffeeChatPrefs,
+  coffeeChatReps,
   sponsorInterests,
   teams,
   users,
@@ -345,7 +350,7 @@ function cachedRanking(sponsorName: string) {
   const now = Date.now();
   const hit = rankingCache.get(sponsorName);
   if (hit && now - hit.at < RANKING_TTL_MS) return hit.rows;
-  // Uncapped: the 40 are cut after matching admitted accounts.
+  // Uncapped: the pool is cut after matching admitted accounts.
   const rows = fetchRankedInterestRows(sponsorName, { limit: null });
   rankingCache.set(sponsorName, { at: now, rows });
   // Don't keep a failure around: the next call tries again.
@@ -358,7 +363,28 @@ function cachedRanking(sponsorName: string) {
 }
 
 /**
- * The sponsor's candidates, best first, at most INTERESTED_HACKER_LIMIT:
+ * Hackers the sponsor's availability asks for: hackers per chat (their
+ * coffee chat preferences, 1 when unsaved) x every rep's chats wanted.
+ */
+export async function hackersWanted(sponsorId: string): Promise<number> {
+  const [prefs, reps] = await Promise.all([
+    db
+      .select({ hackersPerChat: coffeeChatPrefs.hackersPerChat })
+      .from(coffeeChatPrefs)
+      .where(eq(coffeeChatPrefs.sponsorId, sponsorId))
+      .limit(1),
+    db
+      .select({ chatsWanted: coffeeChatReps.chatsWanted })
+      .from(coffeeChatReps)
+      .where(eq(coffeeChatReps.sponsorId, sponsorId)),
+  ]);
+  const perChat = prefs[0]?.hackersPerChat ?? 1;
+  return perChat * reps.reduce((n, r) => n + r.chatsWanted, 0);
+}
+
+/**
+ * The sponsor's candidates, best first, at most shortlistPoolSize (their
+ * hackers wanted + 20, at least 40):
  * the interest form ranking when it's set up and readable, otherwise the
  * in-app ranking (sponsorShortlist above).
  */
@@ -366,6 +392,7 @@ export async function sponsorCandidates(
   sponsor: { id: string; name: string },
   { now = Date.now() }: { now?: number } = {},
 ): Promise<{ source: CandidateSource; hackers: SponsorCandidate[] }> {
+  const limit = shortlistPoolSize(await hackersWanted(sponsor.id));
   let ranked: RankedInterestRow[] | null = null;
   try {
     ranked = await cachedRanking(sponsor.name);
@@ -383,14 +410,13 @@ export async function sponsorCandidates(
     );
     return {
       source: "interestForm",
-      hackers: await withStudy(candidatesFromInterestForm(ranked, profiles)),
+      hackers: await withStudy(
+        candidatesFromInterestForm(ranked, profiles, limit),
+      ),
     };
   }
 
-  const fallback = await sponsorShortlist(sponsor.id, {
-    now,
-    limit: INTERESTED_HACKER_LIMIT,
-  });
+  const fallback = await sponsorShortlist(sponsor.id, { now, limit });
   return {
     source: "inAppRanking",
     hackers: await withStudy(fallback.map((h, index) => ({

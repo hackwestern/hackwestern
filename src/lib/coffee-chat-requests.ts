@@ -34,6 +34,21 @@ export const ACTIVE_COFFEE_CHAT_STATUSES = ["pending", "accepted"] as const;
 /** Top interested, consenting hackers shown to each sponsor. */
 export const COFFEE_CHAT_SHORTLIST_SIZE = 40;
 
+/** The fewest hacker profiles a sponsor gets to shortlist from. */
+export const SHORTLIST_POOL_MIN = 40;
+/** How many more profiles than hackers they asked to meet (Jazz, 2026-11-20). */
+export const SHORTLIST_POOL_EXTRA = 20;
+
+/**
+ * How many hacker profiles a sponsor shortlists from: the hackers their
+ * availability asks for (hackers per chat x every rep's chats) plus
+ * SHORTLIST_POOL_EXTRA, and never fewer than SHORTLIST_POOL_MIN.
+ * 60 hackers wanted -> 80 profiles; 10 wanted -> 40.
+ */
+export function shortlistPoolSize(hackersWanted: number): number {
+  return Math.max(SHORTLIST_POOL_MIN, hackersWanted + SHORTLIST_POOL_EXTRA);
+}
+
 /** An unanswered request expires this long before the chat starts. */
 export const COFFEE_CHAT_EXPIRY_MINUTES_BEFORE = 20;
 

@@ -112,3 +112,14 @@ describe("coffee chat rooms (T41)", () => {
     expect(coffeeChatRoomOf(null)).toBeNull();
   });
 });
+
+describe("shortlistPoolSize", () => {
+  it("is the hackers wanted plus 20, never under 40", async () => {
+    const { shortlistPoolSize } = await import("~/lib/coffee-chat-requests");
+    expect(shortlistPoolSize(60)).toBe(80);
+    expect(shortlistPoolSize(20)).toBe(40);
+    expect(shortlistPoolSize(10)).toBe(40);
+    expect(shortlistPoolSize(0)).toBe(40);
+    expect(shortlistPoolSize(21)).toBe(41);
+  });
+});

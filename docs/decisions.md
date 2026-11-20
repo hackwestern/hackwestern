@@ -953,3 +953,13 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Decision:** The final call starts when the rounds can no longer offer a chat: 30 minutes before it (45 for Ivey, the walk). Each seat still waiting then (including one freed later by an earlier invite expiring) gets one invite to the next hacker in line, answered by 10 minutes before the chat (25 for Ivey). A final invite is recognised by its answer-by time being after the chat's normal last call (20 / 35 minutes before), so no migration. Once it's declined or expires, that seat stays empty and the board stops flagging it.
 **Why:** Jazz said how long the final hacker gets doesn't matter; 10 minutes before still lets them reach the room.
 **Alternatives:** answer by the normal last call (no time left at the 30-minute mark); a new column marking final invites (needs a migration).
+
+## 2026-11-20: TinyFish judges in person (Jazz)
+
+**Decision:** TinyFish is off the remote judging list (REMOTE_JUDGING_SPONSORS is empty). It gets a judging room, presentation slots and notices like the other in-person sponsors.
+**Why:** TinyFish is coming in person now. Supersedes "TinyFish judges remotely" (2026-11-19).
+
+## 2026-11-20: Shortlist pool grows with the sponsor's availability (Jazz)
+
+**Decision:** A sponsor shortlists from (hackers per chat x every rep's chats wanted) + 20 hacker profiles, never fewer than 40. 60 hackers wanted gives 80 profiles. Applies to both the interest form ranking and the in-app fallback (sponsorCandidates). The portal no longer says "Up to 40".
+**Why:** a fixed 40 runs out for sponsors who want to meet many hackers; 20 spare covers declines and no-shows.

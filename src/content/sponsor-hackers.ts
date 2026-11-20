@@ -25,7 +25,7 @@ export const sponsorHackersCopy = {
   heading: "Candidates",
   // Candidates from the hacker interest form (the usual case).
   introForm:
-    "Up to 40 hackers who named you as one of their top 3 sponsors, strongest applications first. Shortlist the ones you'd like to meet.",
+    "Hackers who named you as one of their top 3 sponsors, strongest applications first. Shortlist the ones you'd like to meet.",
   // Candidates from the in-app ranking on /live (when the form can't be read).
   intro:
     "Hackers who put you on their list of sponsors to meet, top picks first. Only hackers who agreed to share their profile with sponsors are shown.",
