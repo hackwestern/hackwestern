@@ -4,16 +4,10 @@ import { CircleHelp, LifeBuoy, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { PhoneCopy } from "~/components/sponsors/phone-copy";
 import {
-  SponsorTourList,
-  startSponsorTour,
-} from "~/components/sponsors/tour/sponsor-tour";
-import {
   hoverTint,
   pressable,
 } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorHelpCopy } from "~/content/sponsor-help";
-import { sponsorTourCopy } from "~/content/sponsor-tour";
-import type { SponsorTourId } from "~/lib/sponsor-tours";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 
@@ -29,18 +23,17 @@ const HelpContext = createContext<HelpState | null>(null);
  * HW lead's name and phone, and Noah as the emergency contact, each phone
  * with a copy icon. No message form, no Slack, no tracking. The shell mounts
  * this once; `SponsorHelp` views (side nav, page card on phones) open it.
- * Under the contacts, "Show me how" lists the guided tours, the only way
- * to them on phones (the phone top bar has no How to button).
+ * The guided tours aren't offered since the v3 portal (mock
+ * sponsor-chats-v3 has none); their code stays in tour/, unused.
  * The tracked request flow (help-sheet.tsx, help-status.tsx, the
  * sponsorHelp request/status routes) is kept in the repo, unused.
  */
 export function SponsorHelpProvider({
   sponsor,
-  hasPrizeTrack,
   children,
 }: {
   sponsor: string;
-  /** False drops the Judging how-to from "Show me how". */
+  /** Unused since the guided tours were switched off. */
   hasPrizeTrack?: boolean;
   /** Unused since the tracked help flow was switched off. */
   boothLocation?: string | null;
@@ -50,9 +43,6 @@ export function SponsorHelpProvider({
   // The button that opened Help gets focus back on close (Radix can't
   // know it: the dialog is opened from context, not a Dialog.Trigger).
   const opener = useRef<HTMLElement | null>(null);
-  // A tour picked in "Show me how" starts once the dialog has closed, so
-  // the dialog's focus trap and exit don't fight the tour's callout.
-  const pendingTour = useRef<SponsorTourId | null>(null);
   return (
     <HelpContext.Provider
       value={{
@@ -68,22 +58,9 @@ export function SponsorHelpProvider({
       {children}
       <HelpContacts
         sponsor={sponsor}
-        hasPrizeTrack={hasPrizeTrack}
         open={open}
         onOpenChange={setOpen}
-        onPickTour={(id) => {
-          pendingTour.current = id;
-          setOpen(false);
-        }}
         onCloseAutoFocus={(event) => {
-          const tour = pendingTour.current;
-          if (tour) {
-            pendingTour.current = null;
-            // The tour moves focus to its callout.
-            event.preventDefault();
-            startSponsorTour(tour);
-            return;
-          }
           if (!opener.current?.isConnected) return;
           event.preventDefault();
           opener.current.focus();
@@ -161,17 +138,13 @@ export function ContactRow({
 
 function HelpContacts({
   sponsor,
-  hasPrizeTrack,
   open,
   onOpenChange,
-  onPickTour,
   onCloseAutoFocus,
 }: {
   sponsor: string;
-  hasPrizeTrack?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onPickTour: (id: SponsorTourId) => void;
   onCloseAutoFocus: (event: Event) => void;
 }) {
   const c = copy.contacts;
@@ -232,21 +205,6 @@ function HelpContacts({
               />
             </div>
           )}
-          <section
-            aria-labelledby="sponsor-help-how"
-            className="-mx-3 flex flex-col gap-1 border-t border-dashboard-border-subtle pt-3"
-          >
-            <h3
-              id="sponsor-help-how"
-              className="dashboard-section-label m-0 px-3 pb-1 text-dashboard-text-light"
-            >
-              {sponsorTourCopy.menu.helpHeading}
-            </h3>
-            <SponsorTourList
-              hasPrizeTrack={hasPrizeTrack}
-              onPick={onPickTour}
-            />
-          </section>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

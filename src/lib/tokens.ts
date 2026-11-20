@@ -291,6 +291,33 @@ export const dashboardColors = {
     green: "rgba(104,250,109,0.15)",
     orange: "rgba(254,145,37,0.15)",
   },
+  // Sponsor portal (mock sponsor-chats-v3). The shortlist step's purple,
+  // the group colours of /live's day schedule.
+  group: {
+    bg: "#c4c0de", // shortlist flow header
+    border: "#a8a2cf", // shortlist card edge, selected hacker
+    text: "#3b2a85", // shortlist buttons, step rail (on white: 10.6:1)
+    strong: "#2c1f66", // shortlist button hover
+    subtle: "#f8f7fc", // a shortlisted hacker's card
+  },
+  // Coffee chat blocks on the sponsor Schedule: a colour nothing else on the
+  // grid uses.
+  chat: {
+    line: "#6b45c2",
+    tint: "rgba(107,69,194,0.13)",
+    tintHover: "rgba(107,69,194,0.2)",
+  },
+  notice: {
+    welcomeBg: "#fff8ec", // Home's welcome card
+    welcomeBorder: "#f3dfbd",
+    cautionBg: "#fff4e5", // warnings, "Met at your booth", primary contact
+    cautionBorder: "#f0c98a",
+    star: "#f6c453", // the primary contact's crown fill
+    okBg: "#e3f4e8", // "Everything checks out", Accepted
+    okText: "#106b31",
+    danger: "#b42318", // Remove, Change anyway, field errors
+    workshopBg: "#fff4f8", // your workshop row in Your chats
+  },
 } as const;
 
 // ------------------------------------------------------------
