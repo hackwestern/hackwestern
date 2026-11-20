@@ -356,9 +356,8 @@ async function writeSentNext(
   enabled: boolean,
 ) {
   const header = book.tabs.people[0] ?? [];
-  let at = header.findIndex((h) => /^sent \/ next/i.test(h.trim()));
-  // The old Status column (I), header removed: reuse it.
-  if (at < 0 && /^(status)?$/i.test(header[8]?.trim() ?? "")) at = 8;
+  // Only when a "Sent / next" column exists; Jasmine removed it (2026-11-20).
+  const at = header.findIndex((h) => /^sent \/ next/i.test(h.trim()));
   if (at < 0) return 0;
   const tab = quote(TABS.people);
   const letter = columnLetter(at);
