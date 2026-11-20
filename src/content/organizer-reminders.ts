@@ -41,6 +41,9 @@ export const organizerRemindersCopy = {
       allClear:
         "✅ Run of show check: every task has an owner the bot recognizes.",
     },
+    /** Dead man's switch: delivered only if the watcher stops checking in. */
+    heartbeat: (lastSync: string) =>
+      `⚠️ The organizer reminder bot on your PC hasn't checked in since ${lastSync}. Queued reminders still go out, but Run of Show edits aren't syncing. Check the PC (Tailscale), or run: schtasks /run /tn "HW Organizer Reminders"`,
     /** Prefix on test DMs (--send-test and test mode). */
     test: (name: string, when: string) => `[TEST for ${name} · ${when}]`,
   },

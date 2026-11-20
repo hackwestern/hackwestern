@@ -76,3 +76,4 @@ traffic-profile.json
 .organizer-sheet-check.txt
 .organizer-state/
 organizer-watch.log
+.organizer-heartbeat.json

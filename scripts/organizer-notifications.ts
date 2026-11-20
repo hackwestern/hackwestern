@@ -392,11 +392,71 @@ async function run(mode: string) {
       }
     }
   }
+  if (mode === "--watch" && enabled && admin) {
+    await pushHeartbeat(config, token, byName.get(admin), admin);
+  }
   if (result.issues.length) {
     throw new Error(
       quiet ? `${result.issues.length} Slack errors` : result.issues.join("\n"),
     );
   }
+}
+
+const HEARTBEAT_FILE = ".organizer-heartbeat.json";
+const HEARTBEAT_AFTER_MS = 10 * 60_000;
+
+/**
+ * Dead man's switch for a watcher on a laptop: each healthy pass schedules a
+ * "the bot stopped" DM to the admin 10 minutes out and cancels the previous
+ * one. If the PC dies or syncs keep failing, nothing pushes it back and Slack
+ * delivers it. The new one is queued before old ones are cancelled.
+ */
+async function pushHeartbeat(
+  config: Config,
+  token: string,
+  person: Person | undefined,
+  name: string,
+) {
+  const user = await slackId(config, token, person, name);
+  if (!user) return;
+  type Pending = { channel: string; id: string };
+  const pending = JSON.parse(
+    await readFile(HEARTBEAT_FILE, "utf8").catch(() => "[]"),
+  ) as Pending[];
+  const channel = await openDm(token, user);
+  const res = await slackApi<SlackResponse & { scheduled_message_id?: string }>(
+    token,
+    "chat.scheduleMessage",
+    {
+      channel,
+      post_at: String(Math.floor((Date.now() + HEARTBEAT_AFTER_MS) / 1000)),
+      text: copy.slack.heartbeat(clock.format(new Date())),
+      ...DM_OPTIONS,
+    },
+    fetch,
+    10_000,
+  );
+  const keep: Pending[] = res.scheduled_message_id
+    ? [{ channel, id: res.scheduled_message_id }]
+    : [];
+  for (const old of pending) {
+    try {
+      await slackApi(
+        token,
+        "chat.deleteScheduledMessage",
+        { channel: old.channel, scheduled_message_id: old.id },
+        fetch,
+        10_000,
+      );
+    } catch (error) {
+      // Already sent or gone: drop it. Anything else: retry next pass.
+      const gone =
+        error instanceof SlackApiError &&
+        error.code === "invalid_scheduled_message_id";
+      if (!gone) keep.push(old);
+    }
+  }
+  await writeFile(HEARTBEAT_FILE, JSON.stringify(keep));
 }
 
 const [mode = "--preview", ...extra] = process.argv.slice(2);
