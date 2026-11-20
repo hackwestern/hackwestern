@@ -83,7 +83,7 @@ const TabComponent = ({
       return <Mentors />;
     case "sponsors":
       return <Sponsors />;
-    case "bonus-tasks":
+    case "scavenger-hunt":
       return <ScavengerHunt isOrganizer={isOrganizer} />;
     case "event-logistics":
       return <EventLogistics />;

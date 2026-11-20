@@ -21,10 +21,19 @@ const FILTERS = [
 type Filter = (typeof FILTERS)[number][0];
 
 const EMPTY_MESSAGE: Record<Filter, string> = {
-  all: "No bonus tasks yet. Check back soon!",
+  all: "Bonus tasks unlock Friday at 5 PM. Check back then!",
   todo: "You've done every bonus task. Nice work!",
   done: "You haven't been scanned for any bonus tasks yet.",
 };
+
+// Points per scan, from the HW13 scavenger hunt doc
+const EARNING = [
+  ["Check in, or grab a meal", "1 pt"],
+  ["Take part in an activity", "10 pts"],
+  ["Win an activity", "50 pts"],
+  ["Attend a workshop", "20 pts"],
+  ["Attend a sponsor workshop", "25 pts"],
+] as const;
 
 const ScavengerHunt = ({ isOrganizer = false }: { isOrganizer?: boolean }) => {
   const [filter, setFilter] = useState<Filter>("all");
@@ -33,6 +42,12 @@ const ScavengerHunt = ({ isOrganizer = false }: { isOrganizer?: boolean }) => {
     undefined,
     { refetchInterval: isOrganizer ? false : 5000 },
   );
+  const { data: prizes } = api.scavengerHunt.getPrizes.useQuery();
+  const { data: points } = api.scavengerHunt.getPoints.useQuery(undefined, {
+    enabled: !isOrganizer,
+    refetchInterval: 5000,
+  });
+  const balance = points?.balance ?? 0;
 
   const all = tasks ?? [];
   const done = all.filter((task) => task.scannedAt !== null);
@@ -46,13 +61,22 @@ const ScavengerHunt = ({ isOrganizer = false }: { isOrganizer?: boolean }) => {
 
   return (
     <div className="flex w-full flex-col gap-6 font-figtree">
-      <p className="text-sm font-medium leading-default text-dashboard-text-light md:text-base">
-        These are <strong className="text-dashboard-text-heavy">bonus</strong>{" "}
-        scavenger hunt tasks. Complete them around the venue and find an
-        organizer to scan your hacker pass. Each one counts once. Meals,
-        workshops and activities still earn points separately, and your full
-        total is under Your Points on Home.
-      </p>
+      <DashboardPanel title="How to earn points" className="gap-3">
+        <ul className="flex flex-col gap-1.5 text-sm font-medium leading-default text-dashboard-text-medium md:text-base">
+          {EARNING.map(([what, pts]) => (
+            <li key={what} className="flex justify-between gap-4">
+              <span>{what}</span>
+              <span className="whitespace-nowrap font-bold text-dashboard-action-primary">
+                {pts}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="text-sm font-medium leading-default text-dashboard-text-light">
+          An organizer scans your hacker pass each time. Bonus tasks are below:
+          show an organizer your proof, and each one counts once.
+        </p>
+      </DashboardPanel>
 
       {showProgress && all.length > 0 && (
         <DashboardPanel className="gap-4">
@@ -210,6 +234,63 @@ const ScavengerHunt = ({ isOrganizer = false }: { isOrganizer?: boolean }) => {
           </TableBody>
         </Table>
       )}
+
+      <DashboardPanel title="Prizes" className="gap-4">
+        <p className="text-sm font-medium leading-default text-dashboard-text-light md:text-base">
+          Spend your points at the help desk, by the stairs outside the Grand
+          Hall.
+          {!isOrganizer && (
+            <>
+              {" "}
+              You have{" "}
+              <strong className="text-dashboard-text-heavy">
+                {balance} pts
+              </strong>{" "}
+              to spend.
+            </>
+          )}
+        </p>
+        {!prizes || prizes.length === 0 ? (
+          <p className="rounded-dashboard-sm bg-dashboard-bg-inset p-5 text-sm font-medium italic leading-default text-dashboard-text-medium">
+            {prizes ? "No prizes yet. Check back soon!" : "Loading prizes..."}
+          </p>
+        ) : (
+          <ul className="flex flex-col">
+            {prizes.map((prize) => {
+              const soldOut = prize.quantity === 0;
+              const affordable = !isOrganizer && balance >= prize.costPoints;
+              return (
+                <li
+                  key={prize.id}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-3 odd:bg-dashboard-bg-highlightSubtle",
+                    soldOut && "opacity-45",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "inline-flex w-[76px] shrink-0 justify-center whitespace-nowrap rounded-dashboard-lg px-2 py-1 text-sm font-bold tabular-nums leading-default",
+                      affordable && !soldOut
+                        ? "bg-dashboard-action-primary text-dashboard-text-inverse"
+                        : "bg-dashboard-bg-nav text-dashboard-action-primary",
+                    )}
+                  >
+                    {prize.costPoints} pts
+                  </span>
+                  <span className="min-w-0 flex-1 break-words text-sm font-medium text-dashboard-text-heavy md:text-base">
+                    {prize.name}
+                  </span>
+                  {(soldOut || prize.quantity !== null) && (
+                    <span className="whitespace-nowrap text-xs font-medium text-dashboard-text-light">
+                      {soldOut ? "Sold out" : `${prize.quantity} left`}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </DashboardPanel>
     </div>
   );
 };
