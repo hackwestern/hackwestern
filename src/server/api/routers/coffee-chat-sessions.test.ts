@@ -112,13 +112,11 @@ async function addSponsor(
     .returning();
   ids[name] = sp!.id;
   if (submitted) {
-    await db
-      .insert(coffeeChatPrefs)
-      .values({
-        sponsorId: sp!.id,
-        hackersPerChat: 1,
-        submittedAt: new Date(),
-      });
+    await db.insert(coffeeChatPrefs).values({
+      sponsorId: sp!.id,
+      hackersPerChat: 1,
+      submittedAt: new Date(),
+    });
   }
   for (const [i, r] of reps.entries()) {
     const [rep] = await db
@@ -1316,15 +1314,13 @@ describe("Book an event (rep + hacker on an empty cell)", () => {
       `CONFLICT: Ada${tag} B. already has a chat with ${name}.`,
     );
     // Bob: a 60-minute chat with another sponsor at 4:00 covers all of Ben's 4-5.
-    await db
-      .insert(coffeeChats)
-      .values({
-        sponsorId: ids[names.team]!,
-        userId: bob,
-        slotTime: "16:00",
-        durationMinutes: 60,
-        status: "accepted",
-      });
+    await db.insert(coffeeChats).values({
+      sponsorId: ids[names.team]!,
+      userId: bob,
+      slotTime: "16:00",
+      durationMinutes: 60,
+      status: "accepted",
+    });
     expect(await book(bob)).toBe(
       `CONFLICT: Bob${tag} B. already has a chat then.`,
     );
@@ -1358,14 +1354,12 @@ describe("Book an event (rep + hacker on an empty cell)", () => {
 
   test("a hacker busy at the start of the hour gets the next chat in it", async () => {
     const dee = await hackerUser(`Dee${tag}`);
-    await db
-      .insert(coffeeChats)
-      .values({
-        sponsorId: ids[names.team]!,
-        userId: dee,
-        slotTime: "16:00",
-        status: "accepted",
-      });
+    await db.insert(coffeeChats).values({
+      sponsorId: ids[names.team]!,
+      userId: dee,
+      slotTime: "16:00",
+      status: "accepted",
+    });
     const res = await organizer.coffeeChatSessions.bookEvent({
       room: await roomAt("16"),
       sessionId: "16",

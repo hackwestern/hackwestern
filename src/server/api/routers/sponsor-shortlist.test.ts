@@ -47,14 +47,12 @@ async function withSeats(sponsorId: string, seats: number) {
       chatsWanted: seats,
     })
     .returning();
-  await db
-    .insert(coffeeChatRepSessions)
-    .values(
-      ["10", "11", "15", "16"].map((sessionId) => ({
-        repId: rep!.id,
-        sessionId,
-      })),
-    );
+  await db.insert(coffeeChatRepSessions).values(
+    ["10", "11", "15", "16"].map((sessionId) => ({
+      repId: rep!.id,
+      sessionId,
+    })),
+  );
 }
 
 async function hackerRanking(

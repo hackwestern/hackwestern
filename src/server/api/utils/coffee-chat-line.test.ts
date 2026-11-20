@@ -67,14 +67,12 @@ let n = 0;
 async function hacker(key: string, opts: { share?: boolean } = {}) {
   const id = `line-${key}-${++n}-${Date.now()}`;
   ids[key] = id;
-  await db
-    .insert(users)
-    .values({
-      id,
-      email: `${id}@example.com`,
-      name: `${key} Person`,
-      type: "hacker",
-    });
+  await db.insert(users).values({
+    id,
+    email: `${id}@example.com`,
+    name: `${key} Person`,
+    type: "hacker",
+  });
   await db.insert(applications).values({
     userId: id,
     status: "CONFIRMED",

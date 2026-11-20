@@ -353,16 +353,14 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
               .where(inArray(coffeeChatPlacements.id, ids));
           }
         }
-        await tx
-          .insert(coffeeChatPlacements)
-          .values(
-            sug.places.map((p) => ({
-              repId: p.rep,
-              room: p.room,
-              sessionId: p.session,
-              pinned: true,
-            })),
-          );
+        await tx.insert(coffeeChatPlacements).values(
+          sug.places.map((p) => ({
+            repId: p.rep,
+            room: p.room,
+            sessionId: p.session,
+            pinned: true,
+          })),
+        );
         return untouched;
       });
       await afterSentChange(after);
