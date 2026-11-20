@@ -75,3 +75,4 @@ traffic-profile.json
 *.local.csv
 .organizer-sheet-check.txt
 .organizer-state/
+organizer-watch.log
