@@ -43,6 +43,8 @@ export async function listFolderMedia(
 ): Promise<BroadcastMedia[] | null> {
   const cached = cache.get(folderId);
   if (cached && Date.now() - cached.fetchedAt < TTL_MS) return cached.media;
+  const key = env.GOOGLE_SHEETS_API_KEY;
+  if (!key) return null;
 
   try {
     const media: BroadcastMedia[] = [];
@@ -52,7 +54,7 @@ export async function listFolderMedia(
         q: `'${folderId}' in parents and trashed = false`,
         fields: "nextPageToken,files(id,mimeType)",
         pageSize: "1000",
-        key: env.GOOGLE_SHEETS_API_KEY,
+        key,
       });
       if (pageToken) params.set("pageToken", pageToken);
       const response = await fetch(
