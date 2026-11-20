@@ -199,6 +199,8 @@ export function OrganizerHome({
       companyContact: string;
       boothLocation: string;
       notes: string;
+      /** Sponsor Day-Of "In person / Digital" = Digital. */
+      sheetDigital: boolean;
       fromSheet: boolean;
     }[] = sheet
       ? sheet.map((s) => ({
@@ -210,6 +212,7 @@ export function OrganizerHome({
           companyContact: s.companyContact,
           boothLocation: s.boothLocation,
           notes: s.notes,
+          sheetDigital: s.digital,
           fromSheet: true,
         }))
       : [...summaries.values()]
@@ -222,11 +225,12 @@ export function OrganizerHome({
             companyContact: "",
             boothLocation: "",
             notes: "",
+            sheetDigital: false,
             fromSheet: false,
           }))
           .sort((a, b) => a.name.localeCompare(b.name));
     const workshops = schedule?.workshops ?? [];
-    return base.map((b) => {
+    return base.map(({ sheetDigital, ...b }) => {
       const summary = b.sponsorId
         ? summaries.get(b.sponsorId.toLowerCase())
         : undefined;
@@ -250,7 +254,9 @@ export function OrganizerHome({
         })),
         workshopRooms: theirs.map((w) => w.room),
         prizeTrack: hasPrizeTrack(b.name, prizeTracks),
-        digital: isDigitalJudging(b.name),
+        // Digital on the sheet (not on site: no arrival, booth or chats),
+        // or a digital prize track sponsor (judging).
+        digital: sheetDigital || isDigitalJudging(b.name),
         summary,
       };
     });
@@ -1211,7 +1217,7 @@ function Details({
           )}
         </Item>
         <Item label={d.prize}>
-          {r.digital ? (
+          {r.digital && r.prizeTrack ? (
             d.prizeDigital
           ) : r.prizeTrack ? (
             d.prizeInPerson

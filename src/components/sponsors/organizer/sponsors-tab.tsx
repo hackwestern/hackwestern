@@ -45,7 +45,7 @@ import {
   type WorkshopInfo,
 } from "~/lib/run-of-show";
 import {
-  hasArrived,
+  fridayCounts,
   parseDayParam,
   round1State,
   slotTotals,
@@ -314,6 +314,18 @@ function RoomBadge({ roomNumber }: { roomNumber: string }) {
   );
 }
 
+/** A digital sponsor's Friday status: not on site, nothing to mark. */
+function DigitalTag({ name }: { name: string }) {
+  return (
+    <span title={dayCopy.digitalLabel(name)} className="inline-flex">
+      <DashboardTag className="w-fit bg-dashboard-bg-inset px-1.5 py-0 text-dashboard-text-medium">
+        {dayCopy.digital}
+        <span className="sr-only">{`: ${dayCopy.digitalLabel(name)}`}</span>
+      </DashboardTag>
+    </span>
+  );
+}
+
 function NotOnMaster() {
   return (
     <DashboardTag className="w-fit bg-dashboard-bg-task px-1.5 py-0 text-dashboard-text-task">
@@ -367,6 +379,8 @@ function withoutSheet(s: SponsorSummary): BoardSponsor {
     roomNumber: "",
     boothLocation: "",
     atCcWorkshop: null,
+    // Unknown without the sheet: in person, the safe default.
+    digital: false,
     onMasterSheet: true,
     fromSheet: false,
   };
@@ -513,7 +527,10 @@ export function SponsorsTab({
       number
     >;
     for (const s of sponsors) {
-      if (s.fromSheet && s.status in counts) counts[s.status] += 1;
+      // Digital sponsors have no arrival status to count.
+      if (s.fromSheet && !s.digital && s.status in counts) {
+        counts[s.status] += 1;
+      }
     }
     return counts;
   }, [sponsors]);
@@ -522,7 +539,10 @@ export function SponsorsTab({
   const shownStatus = day === "Friday" ? statusFilter : "ALL";
   const filtered = useMemo(() => {
     return sponsors.filter((sponsor) => {
-      if (shownStatus !== "ALL" && sponsor.status !== shownStatus) {
+      if (
+        shownStatus !== "ALL" &&
+        (sponsor.digital || sponsor.status !== shownStatus)
+      ) {
         return false;
       }
       if (!query.trim()) return true;
@@ -546,26 +566,20 @@ export function SponsorsTab({
   // Totals for the picked day only. `warn` turns a number orange while
   // someone still needs to act.
   type Stat = { label: string; value: string | number; warn: boolean };
+  // Digital sponsors aren't expected to arrive or get a portal link.
+  const friday = fridayCounts(sponsors, registered);
   const stats: Stat[] =
     day === "Friday"
       ? [
           { label: copy.stats.total, value: sponsors.length, warn: false },
           {
             label: dayCopy.stats.Friday.arrived,
-            value: sheetDown
-              ? copy.none
-              : of(
-                  sponsors.filter((s) => hasArrived(s.status)).length,
-                  sponsors.length,
-                ),
+            value: sheetDown ? copy.none : of(friday.arrived, friday.expected),
             warn: false,
           },
           {
             label: dayCopy.stats.Friday.linkGiven,
-            value: of(
-              registered.filter((s) => s.linkGivenAt).length,
-              registered.length,
-            ),
+            value: of(friday.linkGiven, friday.linkExpected),
             warn: false,
           },
           {
@@ -710,16 +724,21 @@ export function SponsorsTab({
             key: "status",
             header: copy.columns.status,
             cell: (sponsor) =>
-              sponsor.fromSheet
-                ? statusPicker(sponsor)
-                : muted(dayCopy.noSheet),
+              !sponsor.fromSheet ? (
+                muted(dayCopy.noSheet)
+              ) : sponsor.digital ? (
+                <DigitalTag name={sponsor.name} />
+              ) : (
+                statusPicker(sponsor)
+              ),
           },
           {
             key: "link",
             header: dayCopy.columns.link,
             cell: (sponsor, summary) => (
               <span className="flex flex-wrap items-center gap-1.5">
-                {summary && sponsor.sponsorId && (
+                {sponsor.digital && muted(dayCopy.digitalNoLink)}
+                {summary && sponsor.sponsorId && !sponsor.digital && (
                   <LinkGivenToggle
                     name={sponsor.name}
                     given={summary.linkGivenAt !== null}

@@ -146,6 +146,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
           roomNumber: info?.roomNumber ?? "TBD",
           boothLocation: info?.boothLocation ?? "TBD",
           atCcWorkshop: info?.atCcWorkshop ?? null,
+          digital: info?.digital ?? false,
           onMasterSheet: true,
         };
       });
@@ -169,6 +170,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
           roomNumber: info?.roomNumber ?? "TBD",
           boothLocation: info?.boothLocation ?? "TBD",
           atCcWorkshop: info?.atCcWorkshop ?? null,
+          digital: info?.digital ?? false,
           onMasterSheet: false,
         });
       }
