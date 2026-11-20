@@ -1,26 +1,32 @@
 import { useEffect, useState } from "react";
-import { CircleCheck, ScanLine, Search, X } from "lucide-react";
-import { DashboardButton } from "~/components/internals/dashboard-button";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { ChevronLeft, ChevronRight, CircleCheck, Info, Search, X } from "lucide-react";
+import { toast } from "sonner";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
 import { HackerLinks } from "~/components/sponsors/hacker-links";
+import { btn, card, Note, seg } from "~/components/sponsors/portal-ui";
 import { LoadError, ScheduleSkeleton } from "~/components/sponsors/schedule-states";
-import { pressable } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
 import { cn } from "~/lib/utils";
 import type { InterestedHacker, ScannedHacker } from "~/server/api/routers/sponsor-shortlist";
 import { api } from "~/utils/api";
-import { cardClass, LinkButton, StepFooter, useAnnounce } from "./shared";
+import { LinkButton, useAnnounce } from "./shared";
 
 const copy = sponsorSetupCopy.shortlist;
 
 type View = "one" | "list";
-type Filter = "shortlisted" | "not" | "all";
+type Filter = "all" | "not" | "shortlisted";
+/** Hackers per page in the list (mock sponsor-chats-v3). */
+const PAGE = 10;
 
 /**
- * The shortlist flow: one list, made by one person on the sponsor login
- * (no "who's shortlisting" picker). Opens once chatting preferences are
- * submitted; capped at the sponsor's hacker seats. Scanned hackers are
- * listed first: we invite them first anyway.
+ * The shortlist flow (mock sponsor-chats-v3): one list, made by one person
+ * on the sponsor login. Opens once availability is sent; capped at the
+ * sponsor's hacker seats. People met at the booth are pinned first in both
+ * views: they're invited first, so they can't be shortlisted. The list
+ * searches the sponsor's candidates by name, school or program, and every
+ * other admitted hacker by name (sponsorShortlist.search).
  */
 export function ShortlistFlow({
   sponsor,
@@ -37,18 +43,24 @@ export function ShortlistFlow({
   reviewHref: string;
   homeHref: string;
 }) {
+  const router = useRouter();
   const utils = api.useUtils();
   const q = api.sponsorShortlist.list.useQuery({ sponsor }, { retry: 1, refetchOnWindowFocus: false });
+  const info = api.sponsorPortal.getSponsorPortalInfo.useQuery(
+    { sponsor },
+    { refetchOnWindowFocus: false, retry: false },
+  );
   const { announce, clear, region } = useAnnounce();
   // "<name> shortlisted." belongs to the step it happened on.
   useEffect(() => clear(), [step, clear]);
   const [view, setView] = useState<View>("one");
-  const [filter, setFilter] = useState<Filter>("shortlisted");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [page, setPage] = useState(0);
   const [skipped, setSkipped] = useState<Set<string>>(() => new Set());
   const [error, setError] = useState<string | null>(null);
-  // Name search over every admitted hacker (not just the candidates).
   const [query, setQuery] = useState("");
   const term = useDebounced(query.trim(), 250);
+  // Name search over every admitted hacker (not just the candidates).
   const search = api.sponsorShortlist.search.useQuery(
     { sponsor, q: term },
     { enabled: term.length >= 2, retry: 1, refetchOnWindowFocus: false },
@@ -70,7 +82,8 @@ export function ShortlistFlow({
   const submit = api.sponsorShortlist.submit.useMutation({
     onSuccess: async () => {
       await refresh();
-      announce(copy.submitted);
+      toast(sponsorSetupCopy.page.shortlistToast);
+      await router.push(homeHref);
     },
     onError,
   });
@@ -82,7 +95,7 @@ export function ShortlistFlow({
 
   if (!data.prefsSubmitted) {
     return (
-      <section className={cardClass}>
+      <section className={card}>
         <p className="m-0 text-base text-dashboard-text-medium">{copy.locked}</p>
         <LinkButton href={prefsHref}>{copy.goPrefs}</LinkButton>
       </section>
@@ -111,354 +124,537 @@ export function ShortlistFlow({
     }
   };
 
-  const seats = (
-    <div className="flex flex-col gap-1">
-      {/* Over the cap: only the over-cap line, never "3 of 1" (B5). */}
-      {over ? (
-        <p role="alert" className="m-0 text-xl font-bold text-dashboard-text-warning">
-          {sponsorSetupCopy.errors.overCap(data.picked, max)}
-        </p>
-      ) : (
-        <p className="m-0 text-base text-dashboard-text-medium">
-          <span className="text-xl font-bold text-dashboard-text-heavy">{copy.seats(data.picked, max)}</span>{" "}
-          {copy.seatsSuffix}
-        </p>
-      )}
-      <p className="m-0 text-sm text-dashboard-text-light">
-        {copy.capLine(data.seats, data.scanned.length, max)}
+  const seatsLine = (suffix: string) =>
+    over ? (
+      <p role="alert" className="m-0 text-lg font-bold text-dashboard-text-warning">
+        {sponsorSetupCopy.errors.overCap(data.picked, max)}
       </p>
-      {data.sent && <p className="m-0 text-sm text-dashboard-text-medium">{copy.sentNote}</p>}
-    </div>
-  );
+    ) : (
+      <p className="m-0 text-[15px] tabular-nums text-dashboard-text-medium">
+        <b className="text-xl text-dashboard-text-heavy">{copy.seats(data.picked, max)}</b> {suffix}
+      </p>
+    );
 
-  const scannedSection = data.scanned.length > 0 && (
-    <section aria-labelledby="scanned-heading" className="flex flex-col gap-2 rounded-dashboard-md bg-dashboard-bg-highlight p-3">
-      <h3 id="scanned-heading" className="m-0 flex items-center gap-2 text-base font-semibold text-dashboard-text-heavy">
-        <ScanLine aria-hidden className="size-4" />
-        {copy.scannedHeading}
-      </h3>
-      <p className="m-0 text-sm text-dashboard-text-medium">{copy.scannedNote}</p>
-      <ul className="m-0 flex list-none flex-col gap-2 p-0">
-        {data.scanned.map((h) => (
-          <ScannedRow key={h.userId} hacker={h} />
-        ))}
-      </ul>
-    </section>
-  );
-
+  // Submitted: the toggles are off until they tap Edit (the server keeps a
+  // sent shortlist as it is).
   const submittedBanner = submitted && (
-    <div className="flex flex-col gap-3 rounded-dashboard-md bg-dashboard-bg-highlight p-3 sm:flex-row sm:items-center sm:justify-between">
-      <p className="m-0 flex items-center gap-2 text-base font-semibold text-dashboard-text-heavy">
+    <div className="flex flex-col gap-3 rounded-dashboard-lg bg-dashboard-bg-highlight p-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="m-0 flex items-center gap-2 text-base font-semibold">
         <CircleCheck aria-hidden className="size-5 shrink-0 text-dashboard-status-live" />
         {copy.lockedSubmitted}
       </p>
-      <DashboardButton
-        variant="outline"
-        className={cn("h-11 text-base", pressable)}
+      <button
+        type="button"
+        className={btn.outline}
         aria-disabled={reopen.isPending || undefined}
         onClick={() => !reopen.isPending && reopen.mutate({ sponsor })}
       >
         {copy.edit}
-      </DashboardButton>
+      </button>
+    </div>
+  );
+
+  const footer = (
+    <div className="flex flex-col gap-3 border-t border-dashboard-border-default pt-4 sm:flex-row sm:items-center sm:justify-between">
+      <Link href={step === 1 ? homeHref : pickHref} className={cn(btn.outline, "order-2 sm:order-1")}>
+        {step === 1 ? sponsorSetupCopy.back : sponsorSetupCopy.backStep}
+      </Link>
+      <div className="order-1 flex flex-col gap-2 sm:order-2 sm:flex-row sm:items-center">
+        {step === 2 && over && (
+          <p className="m-0 text-sm text-dashboard-text-light">{sponsorSetupCopy.errors.overCap(data.picked, max)}</p>
+        )}
+        <Link href={homeHref} className={btn.outline}>
+          {copy.skipForNow}
+        </Link>
+        {step === 1 ? (
+          <Link href={reviewHref} className={btn.group}>
+            {copy.reviewNext}
+          </Link>
+        ) : (
+          !submitted && (
+            <button
+              type="button"
+              className={btn.group}
+              aria-disabled={submit.isPending || over || undefined}
+              onClick={() => !submit.isPending && !over && submit.mutate({ sponsor })}
+            >
+              {submit.isPending ? copy.submitting : copy.submit}
+            </button>
+          )
+        )}
+      </div>
     </div>
   );
 
   if (step === 2) {
     return (
-      <section className={cardClass} aria-labelledby="sl-review">
-        {region}
-        <h2 id="sl-review" className="m-0 text-xl font-semibold text-dashboard-text-heavy">{copy.reviewHeading}</h2>
-        {submittedBanner}
-        {seats}
-        {scannedSection}
-        {picked.length === 0 ? (
-          <p className="m-0 text-base text-dashboard-text-medium">{copy.reviewEmpty}</p>
-        ) : (
-          <ul className="m-0 flex list-none flex-col p-0">
-            {picked.map((h) => (
-              <HackerRow key={h.userId} hacker={h} disabled={busy} hidden={submitted} canAdd={!full} onToggle={() => toggle(h)} />
-            ))}
-          </ul>
-        )}
-        {error && <p role="alert" className="m-0 text-sm font-semibold text-dashboard-text-warning">{error}</p>}
-        <StepFooter
-          back={<LinkButton href={pickHref} variant="outline">{sponsorSetupCopy.backStep}</LinkButton>}
-          primary={
-            submitted ? (
-              <LinkButton href={homeHref}>{sponsorSetupCopy.back}</LinkButton>
+      <>
+        <section className={cn(card, "gap-4")} aria-labelledby="sl-review">
+          {region}
+          <h2 id="sl-review" className="m-0 text-[22px] font-bold leading-tight">
+            {copy.reviewHeading}
+          </h2>
+          {submittedBanner}
+          <div className="flex flex-col gap-2">
+            <h3 className="m-0 text-base font-semibold">
+              {copy.reviewMetHeading} <span className="font-medium tabular-nums text-dashboard-text-light">· {data.scanned.length}</span>
+            </h3>
+            <p className="m-0 text-sm">{copy.metNote}</p>
+            {data.scanned.length ? (
+              <div className="grid gap-3 lg:grid-cols-2">
+                {data.scanned.map((h) => (
+                  <MetCard key={h.userId} hacker={h} />
+                ))}
+              </div>
             ) : (
-              <DashboardButton
-                className={cn("min-h-11 md:h-11", pressable, over && "opacity-dashboard-disabled")}
-                aria-disabled={submit.isPending || over || undefined}
-                onClick={() => !submit.isPending && !over && submit.mutate({ sponsor })}
-              >
-                {submit.isPending ? copy.submitting : copy.submit}
-              </DashboardButton>
-            )
-          }
-        />
-      </section>
+              <p className="m-0 text-sm text-dashboard-text-light">{copy.reviewMetNone}</p>
+            )}
+          </div>
+          <div className="flex flex-col gap-2">
+            <h3 className="m-0 text-base font-semibold">
+              {copy.yourShortlist} <span className="font-medium tabular-nums text-dashboard-text-light">· {picked.length}</span>
+            </h3>
+            {picked.length === 0 ? (
+              <Note icon={<Info aria-hidden />}>{copy.reviewEmpty}</Note>
+            ) : (
+              <div className="grid gap-3 lg:grid-cols-2">
+                {picked.map((h) => (
+                  <HackerCard
+                    key={h.userId}
+                    hacker={h}
+                    action={
+                      !submitted && (
+                        <button
+                          type="button"
+                          aria-label={copy.removeLabel(h.name)}
+                          disabled={busy}
+                          onClick={() => toggle(h)}
+                          className={cn(btn.outline, "size-11 shrink-0 px-0")}
+                        >
+                          <X aria-hidden />
+                        </button>
+                      )
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+          {seatsLine(copy.used)}
+          {over && <p className="m-0 text-sm font-semibold text-dashboard-notice-danger">{copy.overWhy(data.picked, max)}</p>}
+          {error && <p role="alert" className="m-0 text-sm font-semibold text-dashboard-notice-danger">{error}</p>}
+        </section>
+        {footer}
+      </>
     );
   }
 
+  // One at a time: people met at the booth first ("Invited first", Next
+  // only), then everyone not yet shortlisted or skipped.
+  const metQueue = data.scanned.filter((h) => !skipped.has(h.userId));
   const queue = data.hackers.filter((h) => !h.shortlisted && !skipped.has(h.userId));
+  const total = data.scanned.length + data.hackers.length;
+  const left = metQueue.length + queue.length;
+  const met = metQueue[0];
   const current = queue[0];
-  const listed = data.hackers.filter((h) =>
-    filter === "all" ? true : filter === "shortlisted" ? h.shortlisted : !h.shortlisted,
+
+  // List: met people pinned on page 1, then the filter and search.
+  const needle = query.trim().toLowerCase();
+  const matches = (h: { name: string; school?: string | null; program?: string | null }) =>
+    !needle || [h.name, h.school, h.program].filter(Boolean).join(" ").toLowerCase().includes(needle);
+  const counts = {
+    all: data.hackers.length + data.scanned.length,
+    not: data.hackers.filter((h) => !h.shortlisted).length + data.scanned.length,
+    shortlisted: data.hackers.filter((h) => h.shortlisted).length,
+  };
+  const metRows = filter === "shortlisted" ? [] : data.scanned.filter(matches);
+  const rest = data.hackers.filter(
+    (h) => (filter === "all" || (filter === "shortlisted") === h.shortlisted) && matches(h),
   );
+  const rows: ({ kind: "met"; h: ScannedHacker } | { kind: "pool"; h: InterestedHacker })[] = [
+    ...metRows.map((h) => ({ kind: "met" as const, h })),
+    ...rest.map((h) => ({ kind: "pool" as const, h })),
+  ];
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE));
+  const pg = Math.min(page, pages - 1);
+  const slice = rows.slice(pg * PAGE, pg * PAGE + PAGE);
+  const metSlice = slice.flatMap((r) => (r.kind === "met" ? [r.h] : []));
+  const poolSlice = slice.flatMap((r) => (r.kind === "pool" ? [r.h] : []));
+  const known = new Set([...data.hackers, ...data.scanned].map((h) => h.userId));
+  const others = (search.data ?? []).filter((h) => !known.has(h.userId));
+  const toggleButton = (h: InterestedHacker) => {
+    const blocked = busy || submitted || (!h.shortlisted && full);
+    return (
+      <button
+        type="button"
+        aria-pressed={h.shortlisted}
+        aria-disabled={blocked || undefined}
+        aria-describedby={!h.shortlisted && full ? "sl-capwhy" : undefined}
+        aria-label={h.shortlisted ? copy.removeLabel(h.name) : copy.addLabel(h.name)}
+        onClick={() => !blocked && toggle(h)}
+        className={cn(
+          btn.outline,
+          btn.sm,
+          "shrink-0",
+          h.shortlisted && "border-dashboard-group-border bg-dashboard-group-bg text-dashboard-group-text",
+        )}
+      >
+        {h.shortlisted ? copy.toggleOn : copy.toggleOff}
+      </button>
+    );
+  };
 
   return (
-    <section className={cardClass} aria-labelledby="sl-pick">
-      {region}
-      <h2 id="sl-pick" className="sr-only">{copy.steps[0]}</h2>
-      <ol className="m-0 flex list-none flex-col gap-2 rounded-dashboard-md border border-dashboard-border-default p-3">
-        {copy.how.map((line, i) => (
-          <li key={line} className="flex items-start gap-2 text-base text-dashboard-text-medium">
-            <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-dashboard-action-primary text-xs font-semibold text-dashboard-text-inverse">
-              {i + 1}
-            </span>
-            {line}
-          </li>
-        ))}
-      </ol>
-      {submittedBanner}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {seats}
-        <div role="radiogroup" aria-label={copy.viewLabel} className="grid grid-cols-2 gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1">
-          {(["one", "list"] as const).map((v) => (
-            <button
-              key={v}
-              type="button"
-              role="radio"
-              aria-checked={view === v}
-              onClick={() => setView(v)}
-              className={cn(
-                "min-h-11 rounded-dashboard-md px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
-                view === v ? "bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card" : "text-dashboard-text-medium",
-                pressable,
-              )}
-            >
-              {v === "one" ? copy.oneAtATime : copy.list}
-            </button>
+    <>
+      <section className={cn(card, "gap-4")} aria-labelledby="sl-pick">
+        {region}
+        <h2 id="sl-pick" className="m-0 text-[22px] font-bold leading-tight">
+          {copy.pickHeading}
+        </h2>
+        <ol
+          aria-label={copy.howLabel}
+          className="m-0 flex list-none flex-col gap-2 rounded-dashboard-lg border border-dashboard-group-border bg-dashboard-bg-surface p-3.5"
+        >
+          {copy.how.map((line, i) => (
+            <li key={line} className="flex items-start gap-2.5 text-[15px]">
+              <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-dashboard-group-text text-[13px] font-extrabold tabular-nums text-dashboard-text-inverse">
+                {i + 1}
+              </span>
+              {line}
+            </li>
           ))}
-        </div>
-      </div>
-      {max === 0 && <p className="m-0 text-base text-dashboard-text-warning">{copy.noSeats}</p>}
-      {full && !over && max > 0 && <p className="m-0 text-sm text-dashboard-text-medium">{copy.full}</p>}
-
-      <div className="relative w-full">
-        <Search
-          aria-hidden
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-dashboard-text-light"
-        />
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Escape" && query) {
-              e.preventDefault();
-              setQuery("");
-            }
-          }}
-          aria-label={copy.search.label}
-          aria-describedby="sl-search-hint"
-          placeholder={copy.search.placeholder}
-          // 16px text so phones don't zoom in on focus.
-          className="h-11 w-full appearance-none rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-surface pl-9 pr-11 text-base text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [&::-webkit-search-cancel-button]:hidden"
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => setQuery("")}
-            aria-label={copy.search.clear}
-            className="absolute right-0 top-0 inline-flex size-11 items-center justify-center rounded-dashboard-lg text-dashboard-text-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
-          >
-            <X aria-hidden className="size-4" />
-          </button>
-        )}
-      </div>
-      <p id="sl-search-hint" className="m-0 -mt-2 text-sm text-dashboard-text-light">
-        {copy.search.hint}
-      </p>
-
-      {query.trim().length >= 2 ? (
-        <SearchResults
-          term={term}
-          pending={term !== query.trim() || search.isFetching}
-          failed={search.isError}
-          results={search.data}
-          busy={busy}
-          submitted={submitted}
-          full={full}
-          onToggle={toggle}
-        />
-      ) : (
-        <>
-      {scannedSection}
-
-      {view === "one" ? (
-        data.hackers.length === 0 ? (
-          <p className="m-0 text-base text-dashboard-text-medium">{copy.nobody}</p>
-        ) : current ? (
-          <div className="mx-auto flex w-full max-w-xl flex-col gap-3">
-            <p className="m-0 text-sm text-dashboard-text-light">{copy.left(queue.length)}</p>
-            <HackerCard hacker={current} />
-            <div className="grid grid-cols-2 gap-2">
-              <DashboardButton
-                variant="outline"
-                className={cn("h-12 text-base font-semibold", pressable)}
-                onClick={() => setSkipped((s) => new Set(s).add(current.userId))}
-              >
-                {copy.skip}
-              </DashboardButton>
-              <DashboardButton
-                className={cn("h-12 md:h-12", pressable, (full || submitted) && "opacity-dashboard-disabled")}
-                aria-disabled={busy || full || submitted || undefined}
-                aria-label={copy.addLabel(current.name)}
-                onClick={() => !busy && !full && !submitted && toggle(current)}
-              >
-                {copy.add}
-              </DashboardButton>
-            </div>
-          </div>
-        ) : (
-          <p className="m-0 text-base text-dashboard-text-medium">{copy.allSeen}</p>
-        )
-      ) : (
-        <div className="flex flex-col gap-3">
-          <div role="radiogroup" aria-label={copy.filterLabel} className="flex flex-wrap gap-2">
-            {(["shortlisted", "not", "all"] as const).map((f) => (
-              <button
-                key={f}
-                type="button"
-                role="radio"
-                aria-checked={filter === f}
-                onClick={() => setFilter(f)}
-                className={cn(
-                  // DashboardChip's look, kept as radios.
-                  "min-h-11 whitespace-nowrap rounded-dashboard-lg px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
-                  filter === f
-                    ? "bg-dashboard-action-primary text-dashboard-text-inverse"
-                    : "bg-dashboard-bg-nav text-dashboard-text-heavy [@media(hover:hover)]:hover:bg-dashboard-bg-navSelected",
-                  pressable,
-                )}
-              >
-                {copy.filters[f]}
+        </ol>
+        {submittedBanner}
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          {seatsLine(copy.seatsSuffix)}
+          <div role="group" aria-label={copy.viewLabel} className={seg.frame}>
+            {(["one", "list"] as const).map((v) => (
+              <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} className={cn(seg.button(view === v), "px-3")}>
+                {v === "one" ? copy.oneAtATime : copy.list}
               </button>
             ))}
           </div>
-          {listed.length === 0 ? (
-            <p className="m-0 text-base text-dashboard-text-medium">
-              {filter === "shortlisted" ? copy.noneShortlisted : filter === "not" ? copy.noneLeft : copy.nobody}
-            </p>
-          ) : (
-            <ul className="m-0 flex list-none flex-col p-0">
-              {listed.map((h) => (
-                <HackerRow key={h.userId} hacker={h} disabled={busy} hidden={submitted} canAdd={!full} onToggle={() => toggle(h)} />
-              ))}
-            </ul>
-          )}
         </div>
-      )}
+        {max === 0 && <p className="m-0 text-base text-dashboard-text-warning">{copy.noSeats}</p>}
+        <p id="sl-capwhy" hidden={!(full && !over && max > 0)} className="m-0 text-sm font-semibold text-dashboard-text-warning">
+          {copy.capWhy(max)}
+        </p>
 
-        </>
-      )}
+        {view === "one" ? (
+          met ?? current ? (
+            <div className="mx-auto flex w-full max-w-[560px] flex-col gap-3">
+              <p className="m-0 text-sm tabular-nums text-dashboard-text-light">
+                {copy.oneOf(total - left + 1, total, left)}
+              </p>
+              {met ? (
+                <>
+                  <BigCard name={met.name} github={met.github} sub={met.school} study={studyLine(met)} links={met} tag={metTag(met)} />
+                  <button
+                    type="button"
+                    className={cn(btn.group, "min-h-14 text-lg font-bold")}
+                    aria-label={copy.nextMetLabel(met.name)}
+                    onClick={() => setSkipped((s) => new Set(s).add(met.userId))}
+                  >
+                    {copy.next}
+                  </button>
+                </>
+              ) : (
+                current && (
+                  <>
+                    <BigCard
+                      name={current.name}
+                      github={current.github}
+                      sub={current.shared ? (current.school ?? current.team) : copy.notShared}
+                      study={studyLine({ ...current, school: null })}
+                      links={current}
+                    />
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        className={cn(btn.outline, "min-h-14 text-lg font-bold")}
+                        aria-label={copy.skipLabel(current.name)}
+                        onClick={() => setSkipped((s) => new Set(s).add(current.userId))}
+                      >
+                        {copy.skip}
+                      </button>
+                      <button
+                        type="button"
+                        className={cn(btn.group, "min-h-14 text-lg font-bold")}
+                        aria-disabled={busy || full || submitted || undefined}
+                        aria-describedby="sl-capwhy"
+                        aria-label={copy.addLabel(current.name)}
+                        onClick={() => !busy && !full && !submitted && toggle(current)}
+                      >
+                        {copy.add}
+                      </button>
+                    </div>
+                  </>
+                )
+              )}
+            </div>
+          ) : (
+            <Note icon={<Info aria-hidden />}>{data.hackers.length ? copy.allSeen : copy.nobody}</Note>
+          )
+        ) : (
+          <div className="flex flex-col gap-4">
+            <p className="m-0 text-base">
+              <b className="tabular-nums">{copy.poolCount(data.hackers.length)}</b>{" "}
+              {copy.poolOf(info.data?.sponsorName ?? "")}
+            </p>
+            <div role="group" aria-label={copy.filterLabel} className={seg.frame}>
+              {(["all", "not", "shortlisted"] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  aria-pressed={filter === f}
+                  onClick={() => {
+                    setFilter(f);
+                    setPage(0);
+                  }}
+                  className={cn(seg.button(filter === f), "text-sm leading-tight")}
+                >
+                  {copy.filters[f]}{" "}
+                  <span className="ml-1 rounded-full bg-dashboard-bg-surface px-1.5 text-xs tabular-nums">{counts[f]}</span>
+                </button>
+              ))}
+            </div>
+            <div className="relative w-full">
+              <Search aria-hidden className="pointer-events-none absolute left-3 top-1/2 size-[18px] -translate-y-1/2 text-dashboard-text-light" />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setPage(0);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape" && query) {
+                    e.preventDefault();
+                    setQuery("");
+                  }
+                }}
+                aria-label={copy.listSearchLabel}
+                aria-describedby="sl-search-hint"
+                placeholder={copy.listSearch}
+                // 16px text so phones don't zoom in on focus.
+                className="h-11 w-full appearance-none rounded-dashboard-lg border border-dashboard-border-control bg-dashboard-bg-surface pl-10 pr-11 text-base placeholder:text-dashboard-text-placeholder focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [&::-webkit-search-cancel-button]:hidden"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  aria-label={copy.search.clear}
+                  className="absolute right-0 top-0 inline-flex size-11 items-center justify-center rounded-dashboard-lg text-dashboard-text-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+                >
+                  <X aria-hidden className="size-4" />
+                </button>
+              )}
+            </div>
+            <p id="sl-search-hint" className="m-0 -mt-2 text-sm text-dashboard-text-light">
+              {copy.search.hint}
+            </p>
+            {metSlice.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <h3 className="m-0 text-base font-semibold">
+                  {copy.metHeading} <span className="font-medium tabular-nums text-dashboard-text-light">· {data.scanned.length}</span>
+                </h3>
+                <p className="m-0 text-sm">{copy.metNote}</p>
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {metSlice.map((h) => (
+                    <MetCard key={h.userId} hacker={h} />
+                  ))}
+                </div>
+              </div>
+            )}
+            {poolSlice.length > 0 ? (
+              <div className="grid gap-3 lg:grid-cols-2">
+                {poolSlice.map((h) => (
+                  <HackerCard key={h.userId} hacker={h} on={h.shortlisted} action={toggleButton(h)} />
+                ))}
+              </div>
+            ) : (
+              metSlice.length === 0 && (
+                <Note icon={<Info aria-hidden />}>
+                  {needle ? copy.noMatch : filter === "shortlisted" ? copy.noneShortlisted : filter === "not" ? copy.noneLeft : copy.nobody}
+                </Note>
+              )
+            )}
+            {rows.length > PAGE && (
+              <nav aria-label={copy.pager.label} className="flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  className={cn(btn.outline, "px-3")}
+                  disabled={pg === 0}
+                  aria-label={copy.pager.previousLabel}
+                  onClick={() => setPage(pg - 1)}
+                >
+                  <ChevronLeft aria-hidden />
+                  {copy.pager.previous}
+                </button>
+                <p aria-live="polite" className="m-0 text-sm tabular-nums">
+                  {copy.pager.range(pg * PAGE + 1, pg * PAGE + slice.length, rows.length)}
+                </p>
+                <button
+                  type="button"
+                  className={cn(btn.outline, "px-3")}
+                  disabled={pg >= pages - 1}
+                  aria-label={copy.pager.nextLabel}
+                  onClick={() => setPage(pg + 1)}
+                >
+                  {copy.pager.next}
+                  <ChevronRight aria-hidden />
+                </button>
+              </nav>
+            )}
+            {term.length >= 2 && (
+              <section aria-label={copy.search.label} aria-busy={search.isFetching || undefined} className="flex flex-col gap-2">
+                <h3 className="m-0 text-base font-semibold">{copy.othersHeading}</h3>
+                <p role="status" className="m-0 text-sm text-dashboard-text-light">
+                  {search.isError
+                    ? copy.search.failed
+                    : !search.data
+                      ? copy.search.searching
+                      : others.length === 0
+                        ? copy.search.none(term)
+                        : copy.search.results(others.length)}
+                </p>
+                {others.length > 0 && (
+                  <div className="grid gap-3 lg:grid-cols-2">
+                    {others.map((h) => (
+                      <HackerCard
+                        key={h.userId}
+                        hacker={h}
+                        on={h.shortlisted}
+                        action={
+                          h.scanned ? (
+                            <span className="shrink-0 rounded-full bg-dashboard-notice-cautionBg px-2 py-0.5 text-xs font-semibold text-dashboard-text-warning">
+                              {copy.scannedTag}
+                            </span>
+                          ) : !h.shared ? (
+                            <span className="max-w-40 shrink-0 text-right text-xs text-dashboard-text-light">{copy.search.cantInvite}</span>
+                          ) : (
+                            toggleButton(h)
+                          )
+                        }
+                      />
+                    ))}
+                  </div>
+                )}
+                {(search.data?.length ?? 0) >= SEARCH_LIMIT && (
+                  <p className="m-0 text-sm text-dashboard-text-light">{copy.search.more}</p>
+                )}
+              </section>
+            )}
+          </div>
+        )}
 
-      {error && <p role="alert" className="m-0 text-sm font-semibold text-dashboard-text-warning">{error}</p>}
-
-      <StepFooter
-        back={<LinkButton href={homeHref} variant="outline">{sponsorSetupCopy.back}</LinkButton>}
-        primary={<LinkButton href={reviewHref}>{copy.reviewNext}</LinkButton>}
-      />
-    </section>
+        {error && <p role="alert" className="m-0 text-sm font-semibold text-dashboard-notice-danger">{error}</p>}
+      </section>
+      {footer}
+    </>
   );
 }
 
+/** Most results the name search returns (sponsorShortlist.search). */
+const SEARCH_LIMIT = 20;
+
 /** "Western University · Computer Science · 3rd year", when shared. */
-function studyLine(h: { school?: string | null; program?: string | null; year?: string | null }) {
-  return [h.school, h.program, h.year ? copy.year(h.year) : null].filter(Boolean).join(" · ");
+function studyLine(h: { school?: string | null; program?: string | null; year?: string | null }): string | null {
+  const line = [h.school, h.program, h.year ? copy.year(h.year) : null].filter(Boolean).join(" · ");
+  return line.length > 0 ? line : null;
 }
 
-function HackerCard({ hacker }: { hacker: InterestedHacker }) {
+function metTag(h: ScannedHacker) {
   return (
-    <article className="flex flex-col gap-3 rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface p-4">
-      <div className="flex items-center gap-3">
-        <HackerAvatar name={hacker.name} github={hacker.github} size="lg" />
-        <div className="flex min-w-0 flex-col">
-          <h3 className="m-0 break-words text-lg font-semibold text-dashboard-text-heavy">{hacker.name}</h3>
-          <span className="text-sm text-dashboard-text-light">
-            {hacker.shared ? (hacker.team ?? copy.noTeam) : copy.notShared}
-          </span>
+    <p className="m-0 flex flex-wrap items-center gap-2">
+      <span className="rounded-full bg-dashboard-notice-cautionBg px-2 py-0.5 text-xs font-semibold text-dashboard-text-warning">
+        {h.repName ? `${copy.scannedTag} · ${h.repName.split(/\s+/)[0]}` : copy.scannedTag}
+      </span>
+      <span className="text-sm text-dashboard-text-light">{copy.invitedFirst}</span>
+    </p>
+  );
+}
+
+/** One at a time's big card. */
+function BigCard({
+  name,
+  github,
+  sub,
+  study,
+  links,
+  tag,
+}: {
+  name: string;
+  github: string | null;
+  sub: string | null | undefined;
+  study: string | null;
+  links: Parameters<typeof HackerLinks>[0]["links"];
+  tag?: React.ReactNode;
+}) {
+  return (
+    <article aria-label={name} className="flex flex-col gap-2.5 rounded-dashboard-lg border border-dashboard-border-card bg-dashboard-bg-surface p-[18px] shadow-dashboard-card">
+      <div className="flex items-start gap-3">
+        <HackerAvatar name={name} github={github} size="lg" />
+        <div className="min-w-0 flex-1">
+          <b className="block break-words text-xl">{name}</b>
+          {sub && <span className="block text-[13px] text-dashboard-text-light">{sub}</span>}
         </div>
       </div>
-      {studyLine(hacker) && <p className="m-0 text-base text-dashboard-text-medium">{studyLine(hacker)}</p>}
-      <HackerLinks name={hacker.name} links={hacker} />
+      {tag}
+      {study && <p className="m-0 text-sm">{study}</p>}
+      <HackerLinks name={name} links={links} icons />
     </article>
   );
 }
 
-function HackerRow({
+function HackerCard({
   hacker,
-  disabled,
-  hidden,
-  canAdd,
-  onToggle,
-  note,
+  action,
+  on = false,
 }: {
   hacker: InterestedHacker;
-  /** In place of the Add button: why this hacker can't be added. */
-  note?: string | null;
-  disabled: boolean;
-  /** Submitted: no Shortlist / Remove until they tap Edit shortlist. */
-  hidden: boolean;
-  canAdd: boolean;
-  onToggle: () => void;
+  action?: React.ReactNode;
+  on?: boolean;
 }) {
-  const blocked = disabled || (!hacker.shortlisted && !canAdd);
+  const line = hacker.shared ? (studyLine(hacker) ?? hacker.team ?? copy.noTeam) : copy.notShared;
   return (
-    <li className="flex flex-col gap-2 border-b border-dashboard-border-subtle py-3 last:border-b-0">
-      <div className="flex items-center gap-3">
-        <HackerAvatar name={hacker.name} github={hacker.github} />
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="break-words text-base font-semibold text-dashboard-text-heavy">{hacker.name}</span>
-          <span className="text-sm text-dashboard-text-light">
-            {hacker.shared ? (hacker.team ?? copy.noTeam) : copy.notShared}
-          </span>
-          {studyLine(hacker) && <span className="text-sm text-dashboard-text-medium">{studyLine(hacker)}</span>}
-        </span>
-        {note && !hacker.shortlisted ? (
-          <span className="max-w-40 shrink-0 text-right text-xs text-dashboard-text-light">{note}</span>
-        ) : !hidden && (
-        <DashboardButton
-          variant={hacker.shortlisted ? "outline" : "small"}
-          className={cn("h-11 shrink-0", pressable, blocked && "opacity-dashboard-disabled")}
-          aria-disabled={blocked || undefined}
-          aria-label={hacker.shortlisted ? copy.removeLabel(hacker.name) : copy.addLabel(hacker.name)}
-          onClick={() => !blocked && onToggle()}
-        >
-          {hacker.shortlisted ? copy.remove : copy.add}
-        </DashboardButton>
-        )}
+    <article
+      aria-label={hacker.name}
+      className={cn(
+        "flex min-w-0 flex-col gap-2 rounded-dashboard-lg border bg-dashboard-bg-surface p-3",
+        on ? "border-dashboard-group-border bg-dashboard-group-subtle" : "border-dashboard-border-card",
+      )}
+    >
+      <div className="flex min-w-0 items-start gap-3">
+        <HackerAvatar name={hacker.name} github={hacker.github} size="sm" />
+        <div className="min-w-0 flex-1">
+          <b className="block break-words">{hacker.name}</b>
+          <span className="block break-words text-[13px] text-dashboard-text-light">{line}</span>
+        </div>
+        {action}
       </div>
-      <HackerLinks name={hacker.name} links={hacker} />
-    </li>
+      <HackerLinks name={hacker.name} links={hacker} icons />
+    </article>
   );
 }
 
-function ScannedRow({ hacker }: { hacker: ScannedHacker }) {
+function MetCard({ hacker }: { hacker: ScannedHacker }) {
   return (
-    <li className="flex items-center gap-3 rounded-dashboard-md bg-dashboard-bg-surface p-2">
-      <HackerAvatar name={hacker.name} github={hacker.github} size="sm" />
-      <span className="flex min-w-0 flex-col">
-        <span className="break-words text-base font-semibold text-dashboard-text-heavy">{hacker.name}</span>
-        <span className="text-xs text-dashboard-text-light">
-          {[copy.scannedTag, hacker.repName ? copy.scannedBy(hacker.repName) : null, studyLine(hacker) || null]
-            .filter(Boolean)
-            .join(" · ")}
+    <article aria-label={hacker.name} className="flex min-w-0 flex-col gap-2 rounded-dashboard-lg border border-dashboard-border-card bg-dashboard-bg-surface p-3">
+      <div className="flex min-w-0 items-start gap-3">
+        <HackerAvatar name={hacker.name} github={hacker.github} size="sm" />
+        <div className="min-w-0 flex-1">
+          <b className="block break-words">{hacker.name}</b>
+          <span className="block break-words text-[13px] text-dashboard-text-light">
+            {hacker.shared ? (studyLine(hacker) ?? hacker.team ?? copy.noTeam) : copy.notShared}
+          </span>
+        </div>
+        <span className="shrink-0 rounded-full bg-dashboard-notice-cautionBg px-2 py-0.5 text-xs font-semibold text-dashboard-text-warning">
+          {hacker.repName ? `${copy.scannedTag} · ${hacker.repName.split(/\s+/)[0]}` : copy.scannedTag}
         </span>
-      </span>
-    </li>
+      </div>
+      <HackerLinks name={hacker.name} links={hacker} icons />
+    </article>
   );
 }
 
@@ -470,67 +666,4 @@ function useDebounced<T>(value: T, ms: number): T {
     return () => clearTimeout(id);
   }, [value, ms]);
   return settled;
-}
-
-type SearchHacker = InterestedHacker & { scanned: boolean };
-
-/** Most results the search returns (sponsorShortlist.search). */
-const SEARCH_LIMIT = 20;
-
-/**
- * Name search results over every admitted hacker. Hackers they scanned
- * already have a seat; hackers who don't share can't be invited, so
- * neither gets an Add button.
- */
-function SearchResults({
-  term,
-  pending,
-  failed,
-  results,
-  busy,
-  submitted,
-  full,
-  onToggle,
-}: {
-  term: string;
-  pending: boolean;
-  failed: boolean;
-  results: SearchHacker[] | undefined;
-  busy: boolean;
-  submitted: boolean;
-  full: boolean;
-  onToggle: (h: InterestedHacker) => void;
-}) {
-  const s = copy.search;
-  return (
-    <section aria-label={s.label} aria-busy={pending || undefined} className="flex flex-col gap-2">
-      <p role="status" className="m-0 text-sm text-dashboard-text-light">
-        {failed
-          ? s.failed
-          : !results
-            ? s.searching
-            : results.length === 0
-              ? s.none(term)
-              : s.results(results.length)}
-      </p>
-      {results && results.length > 0 && (
-        <ul className={cn("m-0 flex list-none flex-col p-0", pending && "opacity-dashboard-disabled")}>
-          {results.map((h) => (
-            <HackerRow
-              key={h.userId}
-              hacker={h}
-              disabled={busy}
-              hidden={submitted}
-              canAdd={!full}
-              onToggle={() => onToggle(h)}
-              note={h.scanned ? copy.scannedTag : !h.shared ? s.cantInvite : null}
-            />
-          ))}
-        </ul>
-      )}
-      {results && results.length >= SEARCH_LIMIT && (
-        <p className="m-0 text-sm text-dashboard-text-light">{s.more}</p>
-      )}
-    </section>
-  );
 }

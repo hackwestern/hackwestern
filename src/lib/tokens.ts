@@ -307,6 +307,12 @@ export const dashboardColors = {
     tint: "rgba(107,69,194,0.13)",
     tintHover: "rgba(107,69,194,0.2)",
   },
+  // Profile link logos on hacker cards, in each brand's own colour.
+  brand: {
+    linkedin: "#0a66c2",
+    github: "#181717",
+    devpost: "#003e54",
+  },
   notice: {
     welcomeBg: "#fff8ec", // Home's welcome card
     welcomeBorder: "#f3dfbd",
