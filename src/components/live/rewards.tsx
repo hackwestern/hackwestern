@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import { api, type RouterOutputs } from "~/utils/api";
 import { cn } from "~/lib/utils";
 import { DashboardButton } from "~/components/internals/dashboard-button";
+import { DashboardChip } from "~/components/internals/dashboard-chip";
 import {
   Table,
   TableBody,
@@ -40,7 +41,17 @@ const COLUMNS = [
   { header: "Redeemed", mobile: false },
 ];
 
+// No quantity means unlimited, so it is always in stock
+const STOCK_FILTERS = [
+  { value: "all", label: "All" },
+  { value: "in_stock", label: "In stock" },
+  { value: "sold_out", label: "Sold out" },
+] as const;
+type StockFilter = (typeof STOCK_FILTERS)[number]["value"];
+const isSoldOut = (r: Reward) => r.quantity !== null && r.quantity <= 0;
+
 const Rewards = () => {
+  const [filter, setFilter] = useState<StockFilter>("all");
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const toggleExpanded = (id: number) =>
@@ -69,16 +80,39 @@ const Rewards = () => {
 
   const query = search.trim().toLowerCase();
   const rows = (rewards ?? []).filter(
-    (r) => !query || r.name.toLowerCase().includes(query),
+    (r) =>
+      (filter === "all" || (filter === "sold_out") === isSoldOut(r)) &&
+      (!query || r.name.toLowerCase().includes(query)),
   );
 
   return (
     <div className="flex w-full flex-col gap-6 font-figtree md:min-h-0 md:flex-1">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-end">
-        <SearchBox label="Search rewards" value={search} onChange={setSearch} />
-        <DashboardButton onClick={() => setEditing("new")}>
-          New reward
-        </DashboardButton>
+      <div className="flex flex-col-reverse gap-4 md:flex-row md:items-center md:justify-between">
+        <div
+          role="group"
+          aria-label="Filter rewards"
+          className="flex flex-wrap gap-2"
+        >
+          {STOCK_FILTERS.map((f) => (
+            <DashboardChip
+              key={f.value}
+              selected={filter === f.value}
+              onClick={() => setFilter(f.value)}
+            >
+              {f.label}
+            </DashboardChip>
+          ))}
+        </div>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center">
+          <SearchBox
+            label="Search rewards"
+            value={search}
+            onChange={setSearch}
+          />
+          <DashboardButton onClick={() => setEditing("new")}>
+            New reward
+          </DashboardButton>
+        </div>
       </div>
 
       {setStatus.error && (
