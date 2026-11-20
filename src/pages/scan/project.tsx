@@ -16,7 +16,8 @@ type Result =
   | { kind: "error"; message: string };
 
 // Hardware return: scan a hacker's badge to see whether their team submitted
-// a project. The last result stays on screen until the next scan.
+// a project. Each result covers the screen until the organizer taps Next,
+// like check-in.
 const ProjectCheckPage = () => {
   const router = useRouter();
   const utils = api.useUtils();
@@ -119,9 +120,19 @@ const ProjectCheckPage = () => {
             : "Couldn't check this code. Try again.",
       });
     } finally {
+      // Scanning stays paused (busyRef) until Next
       setChecking(false);
-      busyRef.current = false;
     }
+  };
+
+  const next = () => {
+    setResult(null);
+    // Don't re-read the badge that's probably still in front of the camera
+    lastScanRef.current = lastScanRef.current && {
+      ...lastScanRef.current,
+      at: Date.now(),
+    };
+    busyRef.current = false;
   };
 
   useEffect(() => {
@@ -180,72 +191,89 @@ const ProjectCheckPage = () => {
         )}
       </div>
 
-      <ResultCard result={result} checking={checking} />
+      <section className="bg-dashboard-bg-surface px-6 py-5 text-base font-medium text-dashboard-text-medium">
+        {checking ? "Checking…" : "Waiting for a scan."}
+      </section>
+      {result && <HeldResult result={result} onNext={next} />}
     </div>
   );
 };
 
-const ResultCard = ({
+// Covers the camera until Next is tapped (or Enter, since Next has focus)
+const HeldResult = ({
   result,
-  checking,
+  onNext,
 }: {
-  result: Result | null;
-  checking: boolean;
+  result: Result;
+  onNext: () => void;
 }) => {
-  if (!result) {
-    return (
-      <section className="bg-dashboard-bg-surface px-6 py-5 text-base font-medium text-dashboard-text-medium">
-        {checking ? "Checking…" : "Waiting for a scan."}
-      </section>
-    );
-  }
-
-  if (result.kind === "error") {
-    return (
-      <section
-        aria-live="polite"
-        className="flex flex-col gap-1 bg-red-50 px-6 py-5 text-red-800"
-      >
-        <p className="text-xl font-bold">Couldn&apos;t check</p>
-        <p className="text-base font-medium">{result.message}</p>
-      </section>
-    );
-  }
-
-  const { name, submitted, team } = result.data;
+  const ok = result.kind === "status" && result.data.submitted;
+  const title =
+    result.kind === "error"
+      ? "Couldn’t check"
+      : ok
+        ? "✓ Project submitted"
+        : "✗ No submitted project";
   return (
-    <section
-      aria-live="polite"
-      className={cn(
-        "flex flex-col gap-1 px-6 py-5",
-        submitted
-          ? "bg-dashboard-status-live/10 text-dashboard-status-live"
-          : "bg-red-50 text-red-800",
-        checking && "opacity-60",
-      )}
+    <div
+      role="alertdialog"
+      aria-live="assertive"
+      aria-label={title}
+      className="fixed inset-0 z-50 bg-dashboard-bg-surface font-figtree"
     >
-      <p className="text-2xl font-bold">
-        {submitted ? "✓ Project submitted" : "✗ No submitted project"}
-      </p>
-      <p className="text-lg font-semibold text-dashboard-text-heavy">{name}</p>
-      <p className="text-base font-medium text-dashboard-text-medium">
-        {!team
-          ? "Not on a team."
-          : submitted
-            ? `Team: ${team.name}`
-            : `Team “${team.name}” hasn't submitted.`}
-      </p>
-      {submitted && team?.devpostUrl && (
-        <a
-          href={team.devpostUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-base font-semibold text-dashboard-action-primary underline"
+      <div
+        className={cn(
+          "flex h-full w-full flex-col gap-6 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))]",
+          ok ? "bg-dashboard-status-live/15" : "bg-red-100",
+        )}
+      >
+        <p
+          className={cn(
+            "text-2xl font-bold",
+            ok ? "text-dashboard-status-live" : "text-red-800",
+          )}
         >
-          Open on Devpost
-        </a>
-      )}
-    </section>
+          {title}
+        </p>
+        <div className="flex flex-1 flex-col justify-center gap-4">
+          {result.kind === "error" ? (
+            <p className="text-xl font-semibold text-red-800">
+              {result.message}
+            </p>
+          ) : (
+            <>
+              <p className="break-words text-[44px] font-bold leading-[1.1] text-dashboard-text-heavy md:text-[64px]">
+                {result.data.name}
+              </p>
+              <p className="text-xl font-semibold text-dashboard-text-medium">
+                {!result.data.team
+                  ? "Not on a team."
+                  : ok
+                    ? `Team: ${result.data.team.name}`
+                    : `Team “${result.data.team.name}” hasn't submitted.`}
+              </p>
+              {ok && result.data.team?.devpostUrl && (
+                <a
+                  href={result.data.team.devpostUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-lg font-semibold text-dashboard-action-primary underline"
+                >
+                  Open on Devpost
+                </a>
+              )}
+            </>
+          )}
+        </div>
+        <DashboardButton
+          autoFocus
+          onClick={onNext}
+          className="h-16 w-full text-xl font-semibold"
+        >
+          Next
+        </DashboardButton>
+      </div>
+    </div>
   );
 };
 
