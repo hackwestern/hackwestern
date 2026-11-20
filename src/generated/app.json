@@ -199,6 +199,14 @@
       "serverGuards": []
     },
     {
+      "auth": "none-detected",
+      "dynamic": false,
+      "file": "src/pages/live-access.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/live-access",
+      "serverGuards": []
+    },
+    {
       "auth": "client-side-session",
       "dynamic": false,
       "file": "src/pages/live.tsx",
