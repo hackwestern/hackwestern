@@ -1,0 +1,1072 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screenshot-only mocks</title>
+<style>
+  :root { --bg:#f7f7f5; --card:#fff; --ink:#1d1d1f; --muted:#6e6e73; --line:#e5e5e0; --accent:#2563eb; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111113; --card:#1c1c1f; --ink:#f2f2f2; --muted:#a1a1a6; --line:#2c2c30; --accent:#60a5fa; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  header { position:sticky; top:0; z-index:2; background:var(--bg); border-bottom:1px solid var(--line); padding:16px; }
+  header h1 { margin:0 0 4px; font-size:20px; }
+  header p { margin:0 0 10px; color:var(--muted); font-size:13px; }
+  input { width:100%; max-width:420px; font:inherit; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--ink); }
+  main { padding:8px 16px 48px; max-width:1400px; margin:0 auto; }
+  h2 { font-size:15px; margin:28px 0 12px; }
+  .count { color:var(--muted); font-weight:400; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px; }
+  .card { position:relative; background:var(--card); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .card:hover, .card:focus-within { border-color:var(--accent); }
+  .build { position:absolute; top:8px; left:8px; z-index:1; padding:3px 9px; border-radius:999px; font-size:12px; font-weight:700; color:#fff; box-shadow:0 1px 3px rgba(0,0,0,.25); }
+  .build-building { background:#b45309; }
+  .build-built { background:#1d4ed8; }
+  .build-live { background:#15803d; }
+  .card.liked { border-color:#e11d48; box-shadow:0 0 0 1px #e11d48; }
+  .link { display:flex; flex-direction:column; color:inherit; text-decoration:none; outline:none; }
+  .like { position:absolute; top:8px; right:8px; width:44px; height:44px; border-radius:22px; border:1px solid var(--line); background:var(--card); color:var(--muted); font-size:22px; line-height:1; cursor:pointer; }
+  .like[aria-pressed="true"] { color:#e11d48; border-color:#e11d48; }
+  .like:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  .tools { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .tools button { font:inherit; font-size:14px; padding:9px 12px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; min-height:44px; }
+  .tools button[aria-pressed="true"] { border-color:#e11d48; color:#e11d48; }
+  #msg { color:var(--muted); font-size:13px; }
+  .seg { display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .seg button { border:0; border-radius:0; min-height:44px; }
+  .seg button[aria-pressed="true"] { background:var(--accent); color:#fff; }
+  .style { margin-top:6px; font-size:12px; color:var(--muted); }
+  .chip { display:inline-block; font-weight:600; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:999px; padding:1px 8px; margin-right:2px; }
+  select { font:inherit; font-size:14px; padding:9px 10px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); min-height:44px; }
+  .thumb { aspect-ratio:16/10; background:var(--line); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .thumb img { width:100%; height:100%; object-fit:cover; object-position:top left; }
+  .thumb span { color:var(--muted); font-size:13px; }
+  .meta { padding:10px 12px 12px; }
+  .name { font-weight:600; font-size:14px; word-break:break-word; }
+  .blurb { color:var(--muted); font-size:13px; margin-top:4px; }
+  .date { color:var(--muted); font-size:12px; margin-top:6px; }
+  .hidden { display:none !important; }
+  header a { color:var(--accent); }
+</style></head>
+<body>
+<header>
+  <h1>Screenshot-only mocks</h1>
+  <p>36 screenshot folders, grouped by topic, newest first. <a href="index.html">← HTML mocks (64)</a> · <a href="CHANGES.md">Change log: every change asked for, and its status</a> Built Nov 19, 8:25 p.m..</p>
+  <div class="tools">
+    <input id="q" type="search" placeholder="Filter by name" aria-label="Filter mocks by name">
+    <select id="buildFilter" aria-label="Filter by build status"><option value="">Any build status</option><option value="building">Being built</option><option value="built">Built, not live</option><option value="live">Live</option><option value="none">Not built</option></select>
+    <select id="styleFilter" aria-label="Filter by style"><option value="">All styles</option><option>Screenshots of the app</option></select>
+    <div class="seg" role="group" aria-label="Sort mocks">
+      <button id="sortTopic" type="button" aria-pressed="true">Topic</button>
+      <button id="sortRecent" type="button" aria-pressed="false">Most recent</button>
+    </div>
+    <button id="onlyLiked" type="button" aria-pressed="false">♥ Liked only (<span id="likedCount">0</span>)</button>
+    <button id="copyLikes" type="button">Copy my likes</button>
+    <span id="msg" role="status"></span>
+  </div>
+</header>
+<main><div id="byTopic"><section><h2>Sponsor coffee chats: shortlist and earlier <span class="count">5</span></h2><div class="grid">
+      <div class="card" data-name="sponsor-coffee-chats-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-coffee-chats-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-coffee-chats-v2/1-page-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-coffee-chats-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 12:57 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-coffee-chats-v2">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-coffee-chats-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-coffee-chats-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-coffee-chats-v1/empty-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-coffee-chats-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:08 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-coffee-chats-v1">♡</button>
+      </div>
+      <div class="card" data-name="coffee-chat-reps-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="coffee-chat-reps-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="coffee-chat-reps-v1/schedule-375.png" alt=""></div>
+          <div class="meta">
+            <div class="name">coffee-chat-reps-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 7:25 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like coffee-chat-reps-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-interest-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-interest-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-interest-v1/form-empty-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-interest-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 7:19 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-interest-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-hackers-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-hackers-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-hackers-v1/hackers-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-hackers-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 7:19 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-hackers-v1">♡</button>
+      </div></div></section><section><h2>Organizer: sponsors home table <span class="count">2</span></h2><div class="grid">
+      <div class="card" data-name="sponsors-day-tab-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsors-day-tab-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsors-day-tab-v1/friday-1280-after-toggle.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsors-day-tab-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 2:31 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsors-day-tab-v1">♡</button>
+      </div>
+      <div class="card" data-name="organizer-redesign-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="organizer-redesign-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="organizer-redesign-v1/after-coffee-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">organizer-redesign-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 17, 11:45 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like organizer-redesign-v1">♡</button>
+      </div></div></section><section><h2>Organizer: coffee chat board <span class="count">9</span></h2><div class="grid">
+      <div class="card" data-name="room-holds-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="room-holds-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="room-holds-v1/rooms-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">room-holds-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 5:24 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like room-holds-v1">♡</button>
+      </div>
+      <div class="card" data-name="room-blocks-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="room-blocks-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="room-blocks-v2/block-dialog-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">room-blocks-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 5:24 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like room-blocks-v2">♡</button>
+      </div>
+      <div class="card" data-name="availability-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="availability-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="availability-v1/desktop-friday-grid.png" alt=""></div>
+          <div class="meta">
+            <div class="name">availability-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 4:24 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like availability-v1">♡</button>
+      </div>
+      <div class="card" data-name="room-booking-ref" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="room-booking-ref/">
+          
+          <div class="thumb"><img loading="lazy" src="room-booking-ref/reference.png" alt=""></div>
+          <div class="meta">
+            <div class="name">room-booking-ref</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 17, 10:58 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like room-booking-ref">♡</button>
+      </div>
+      <div class="card" data-name="coffee-chat-board-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="coffee-chat-board-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="coffee-chat-board-v2/1-table-panel-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">coffee-chat-board-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 2:46 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like coffee-chat-board-v2">♡</button>
+      </div>
+      <div class="card" data-name="coffee-chat-board-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="coffee-chat-board-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="coffee-chat-board-v1/1-table-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">coffee-chat-board-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 1:29 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like coffee-chat-board-v1">♡</button>
+      </div>
+      <div class="card" data-name="coffee-chat-live-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="coffee-chat-live-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="coffee-chat-live-v2/accepted-375.png" alt=""></div>
+          <div class="meta">
+            <div class="name">coffee-chat-live-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:08 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like coffee-chat-live-v2">♡</button>
+      </div>
+      <div class="card" data-name="coffee-chat-live-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="coffee-chat-live-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="coffee-chat-live-v1/accepted-375.png" alt=""></div>
+          <div class="meta">
+            <div class="name">coffee-chat-live-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:08 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like coffee-chat-live-v1">♡</button>
+      </div>
+      <div class="card" data-name="coffee-chat-organizer-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="coffee-chat-organizer-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="coffee-chat-organizer-v1/organizer-after-actions-375.png" alt=""></div>
+          <div class="meta">
+            <div class="name">coffee-chat-organizer-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 7:25 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like coffee-chat-organizer-v1">♡</button>
+      </div></div></section><section><h2>Judging <span class="count">1</span></h2><div class="grid">
+      <div class="card" data-name="sponsor-judging-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-judging-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-judging-v1/browse-desktop.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-judging-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 2:41 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-judging-v1">♡</button>
+      </div></div></section><section><h2>Schedule and run of show <span class="count">7</span></h2><div class="grid">
+      <div class="card" data-name="schedule-redesign-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="schedule-redesign-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="schedule-redesign-v1/after-0-organizer-grid-default-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">schedule-redesign-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 17, 11:40 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like schedule-redesign-v1">♡</button>
+      </div>
+      <div class="card" data-name="run-of-show-grid-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="run-of-show-grid-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="run-of-show-grid-v2/1-organizer-banner-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">run-of-show-grid-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 2:39 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like run-of-show-grid-v2">♡</button>
+      </div>
+      <div class="card" data-name="run-of-show-grid-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="run-of-show-grid-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="run-of-show-grid-v1/1-organizer-friday-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">run-of-show-grid-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 1:25 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like run-of-show-grid-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-schedule-v4" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-schedule-v4/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-schedule-v4/organizer-schedule-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-schedule-v4</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 12:35 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-schedule-v4">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-schedule-v3" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-schedule-v3/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-schedule-v3/fri-with-hackathon-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-schedule-v3</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:51 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-schedule-v3">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-schedule-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-schedule-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-schedule-v2/schedule-sun-375.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-schedule-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 14, 11:22 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-schedule-v2">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-schedule-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-schedule-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-schedule-v1/home-375.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-schedule-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 14, 11:19 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-schedule-v1">♡</button>
+      </div></div></section><section><h2>Help, tasks and notifications <span class="count">6</span></h2><div class="grid">
+      <div class="card" data-name="notification-center-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="notification-center-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="notification-center-v1/bell-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">notification-center-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 2:18 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like notification-center-v1">♡</button>
+      </div>
+      <div class="card" data-name="task-pings-tab-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="task-pings-tab-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="task-pings-tab-v1/legacy-help-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">task-pings-tab-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 12:23 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like task-pings-tab-v1">♡</button>
+      </div>
+      <div class="card" data-name="task-reminders-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="task-reminders-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="task-reminders-v1/team-tasks-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">task-reminders-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 1:34 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like task-reminders-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-help-v3" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-help-v3/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-help-v3/1-sheet-empty-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-help-v3</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:01 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-help-v3">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-help-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-help-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-help-v2/1-idle-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-help-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 7:25 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-help-v2">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-help-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-help-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-help-v1/1-idle-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-help-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 7:25 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-help-v1">♡</button>
+      </div></div></section><section><h2>Sponsor portal pages <span class="count">5</span></h2><div class="grid">
+      <div class="card" data-name="sponsor-tour-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-tour-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-tour-v1/01-offer-desktop.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-tour-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 7:14 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-tour-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-redesign-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-redesign-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-redesign-v1/after-candidates-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-redesign-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 17, 11:50 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-redesign-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-rooms-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-rooms-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-rooms-v1/1-rooms-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-rooms-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 12:52 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-rooms-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-scan-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-scan-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-scan-v2/1-scanning-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-scan-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:08 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-scan-v2">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-scan-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-scan-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-scan-v1/1-scanning-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-scan-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:08 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-scan-v1">♡</button>
+      </div></div></section><section><h2>Hacker side <span class="count">1</span></h2><div class="grid">
+      <div class="card" data-name="hacker-coffee-chats-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="hacker-coffee-chats-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="hacker-coffee-chats-v1/accepted-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">hacker-coffee-chats-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:08 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like hacker-coffee-chats-v1">♡</button>
+      </div></div></section></div><div id="byRecent" hidden><section><h2>Most recently built <span class="count">36</span></h2><div class="grid">
+      <div class="card" data-name="sponsors-day-tab-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsors-day-tab-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsors-day-tab-v1/friday-1280-after-toggle.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsors-day-tab-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 2:31 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsors-day-tab-v1">♡</button>
+      </div>
+      <div class="card" data-name="notification-center-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="notification-center-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="notification-center-v1/bell-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">notification-center-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 2:18 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like notification-center-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-tour-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-tour-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-tour-v1/01-offer-desktop.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-tour-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 7:14 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-tour-v1">♡</button>
+      </div>
+      <div class="card" data-name="room-holds-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="room-holds-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="room-holds-v1/rooms-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">room-holds-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 5:24 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like room-holds-v1">♡</button>
+      </div>
+      <div class="card" data-name="room-blocks-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="room-blocks-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="room-blocks-v2/block-dialog-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">room-blocks-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 5:24 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like room-blocks-v2">♡</button>
+      </div>
+      <div class="card" data-name="availability-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="availability-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="availability-v1/desktop-friday-grid.png" alt=""></div>
+          <div class="meta">
+            <div class="name">availability-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 4:24 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like availability-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-judging-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-judging-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-judging-v1/browse-desktop.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-judging-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 2:41 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-judging-v1">♡</button>
+      </div>
+      <div class="card" data-name="task-pings-tab-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="task-pings-tab-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="task-pings-tab-v1/legacy-help-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">task-pings-tab-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 18, 12:23 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like task-pings-tab-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-redesign-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-redesign-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-redesign-v1/after-candidates-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-redesign-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 17, 11:50 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-redesign-v1">♡</button>
+      </div>
+      <div class="card" data-name="organizer-redesign-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="organizer-redesign-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="organizer-redesign-v1/after-coffee-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">organizer-redesign-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 17, 11:45 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like organizer-redesign-v1">♡</button>
+      </div>
+      <div class="card" data-name="schedule-redesign-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="schedule-redesign-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="schedule-redesign-v1/after-0-organizer-grid-default-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">schedule-redesign-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 17, 11:40 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like schedule-redesign-v1">♡</button>
+      </div>
+      <div class="card" data-name="room-booking-ref" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="room-booking-ref/">
+          
+          <div class="thumb"><img loading="lazy" src="room-booking-ref/reference.png" alt=""></div>
+          <div class="meta">
+            <div class="name">room-booking-ref</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 17, 10:58 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like room-booking-ref">♡</button>
+      </div>
+      <div class="card" data-name="coffee-chat-board-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="coffee-chat-board-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="coffee-chat-board-v2/1-table-panel-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">coffee-chat-board-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 2:46 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like coffee-chat-board-v2">♡</button>
+      </div>
+      <div class="card" data-name="run-of-show-grid-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="run-of-show-grid-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="run-of-show-grid-v2/1-organizer-banner-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">run-of-show-grid-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 2:39 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like run-of-show-grid-v2">♡</button>
+      </div>
+      <div class="card" data-name="task-reminders-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="task-reminders-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="task-reminders-v1/team-tasks-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">task-reminders-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 1:34 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like task-reminders-v1">♡</button>
+      </div>
+      <div class="card" data-name="coffee-chat-board-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="coffee-chat-board-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="coffee-chat-board-v1/1-table-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">coffee-chat-board-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 1:29 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like coffee-chat-board-v1">♡</button>
+      </div>
+      <div class="card" data-name="run-of-show-grid-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="run-of-show-grid-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="run-of-show-grid-v1/1-organizer-friday-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">run-of-show-grid-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 1:25 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like run-of-show-grid-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-coffee-chats-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-coffee-chats-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-coffee-chats-v2/1-page-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-coffee-chats-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 12:57 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-coffee-chats-v2">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-rooms-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-rooms-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-rooms-v1/1-rooms-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-rooms-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 12:52 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-rooms-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-schedule-v4" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-schedule-v4/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-schedule-v4/organizer-schedule-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-schedule-v4</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 16, 12:35 a.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-schedule-v4">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-schedule-v3" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-schedule-v3/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-schedule-v3/fri-with-hackathon-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-schedule-v3</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:51 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-schedule-v3">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-scan-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-scan-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-scan-v2/1-scanning-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-scan-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:08 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-scan-v2">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-scan-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-scan-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-scan-v1/1-scanning-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-scan-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:08 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-scan-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-coffee-chats-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-coffee-chats-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-coffee-chats-v1/empty-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-coffee-chats-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:08 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-coffee-chats-v1">♡</button>
+      </div>
+      <div class="card" data-name="hacker-coffee-chats-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="hacker-coffee-chats-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="hacker-coffee-chats-v1/accepted-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">hacker-coffee-chats-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:08 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like hacker-coffee-chats-v1">♡</button>
+      </div>
+      <div class="card" data-name="coffee-chat-live-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="coffee-chat-live-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="coffee-chat-live-v2/accepted-375.png" alt=""></div>
+          <div class="meta">
+            <div class="name">coffee-chat-live-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:08 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like coffee-chat-live-v2">♡</button>
+      </div>
+      <div class="card" data-name="coffee-chat-live-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="coffee-chat-live-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="coffee-chat-live-v1/accepted-375.png" alt=""></div>
+          <div class="meta">
+            <div class="name">coffee-chat-live-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:08 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like coffee-chat-live-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-help-v3" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-help-v3/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-help-v3/1-sheet-empty-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-help-v3</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 8:01 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-help-v3">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-help-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-help-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-help-v2/1-idle-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-help-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 7:25 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-help-v2">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-help-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-help-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-help-v1/1-idle-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-help-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 7:25 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-help-v1">♡</button>
+      </div>
+      <div class="card" data-name="coffee-chat-reps-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="coffee-chat-reps-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="coffee-chat-reps-v1/schedule-375.png" alt=""></div>
+          <div class="meta">
+            <div class="name">coffee-chat-reps-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 7:25 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like coffee-chat-reps-v1">♡</button>
+      </div>
+      <div class="card" data-name="coffee-chat-organizer-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="coffee-chat-organizer-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="coffee-chat-organizer-v1/organizer-after-actions-375.png" alt=""></div>
+          <div class="meta">
+            <div class="name">coffee-chat-organizer-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 7:25 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like coffee-chat-organizer-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-interest-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-interest-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-interest-v1/form-empty-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-interest-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 7:19 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-interest-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-hackers-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-hackers-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-hackers-v1/hackers-1280.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-hackers-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 15, 7:19 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-hackers-v1">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-schedule-v2" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-schedule-v2/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-schedule-v2/schedule-sun-375.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-schedule-v2</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 14, 11:22 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-schedule-v2">♡</button>
+      </div>
+      <div class="card" data-name="sponsor-schedule-v1" data-style="Screenshots of the app" data-build="none">
+        <a class="link" href="sponsor-schedule-v1/">
+          
+          <div class="thumb"><img loading="lazy" src="sponsor-schedule-v1/home-375.png" alt=""></div>
+          <div class="meta">
+            <div class="name">sponsor-schedule-v1</div>
+            <div class="style" title="Screenshots of the real app (before and after a change), not a separate mock style."><span class="chip">Screenshots of the app</span> <span class="src">Screenshots of the real app (before and after a change), not a separate mock style.</span></div>
+            
+            <div class="date">Nov 14, 11:19 p.m. · Screenshots only</div>
+          </div>
+        </a>
+        <button class="like" type="button" aria-pressed="false" aria-label="Like sponsor-schedule-v1">♡</button>
+      </div></div></section></div></main>
+<script>
+  // Likes live in this browser only (localStorage), keyed by mock folder name,
+  // so they survive rebuilding this page. "Copy my likes" gives a list to paste.
+  const KEY = "hw-mock-likes";
+  const load = () => { try { return new Set(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch { return new Set(); } };
+  const save = (s) => { try { localStorage.setItem(KEY, JSON.stringify([...s])); } catch {} };
+  let likes = load();
+  const q = document.getElementById("q");
+  const onlyBtn = document.getElementById("onlyLiked");
+  const msg = document.getElementById("msg");
+
+  function paint() {
+    document.querySelectorAll(".card").forEach((c) => {
+      const on = likes.has(c.dataset.name);
+      c.classList.toggle("liked", on);
+      const b = c.querySelector(".like");
+      b.setAttribute("aria-pressed", String(on));
+      b.textContent = on ? "♥" : "♡";
+    });
+    document.getElementById("likedCount").textContent = likes.size;
+    filter();
+  }
+  function filter() {
+    const t = q.value.trim().toLowerCase();
+    const only = onlyBtn.getAttribute("aria-pressed") === "true";
+    const st = document.getElementById("styleFilter").value;
+    const bs = document.getElementById("buildFilter").value;
+    document.querySelectorAll(".card").forEach((c) =>
+      c.classList.toggle("hidden", (!!t && !c.dataset.name.includes(t)) || (only && !likes.has(c.dataset.name)) || (!!st && c.dataset.style !== st) || (!!bs && c.dataset.build !== bs)));
+    document.querySelectorAll("section").forEach((s) => s.classList.toggle("hidden", !s.querySelector(".card:not(.hidden)")));
+  }
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest(".like");
+    if (!b) return;
+    const name = b.closest(".card").dataset.name;
+    likes.has(name) ? likes.delete(name) : likes.add(name);
+    save(likes); paint();
+  });
+  q.addEventListener("input", filter);
+  document.getElementById("styleFilter").addEventListener("change", filter);
+  document.getElementById("buildFilter").addEventListener("change", filter);
+  onlyBtn.addEventListener("click", () => {
+    onlyBtn.setAttribute("aria-pressed", String(onlyBtn.getAttribute("aria-pressed") !== "true"));
+    filter();
+  });
+  document.getElementById("copyLikes").addEventListener("click", async () => {
+    const text = likes.size ? "Liked mocks:\n" + [...likes].sort().map((n) => "- " + n).join("\n") : "No liked mocks yet.";
+    try { await navigator.clipboard.writeText(text); msg.textContent = "Copied. Paste it to Claude."; }
+    catch { window.prompt("Copy your likes:", text); }
+    setTimeout(() => (msg.textContent = ""), 3000);
+  });
+  // Sort view: Topic (grouped) or Most recent (flat, newest first). Remembered per browser.
+  const SORT_KEY = "hw-mock-sort";
+  const topicBtn = document.getElementById("sortTopic");
+  const recentBtn = document.getElementById("sortRecent");
+  function setSort(mode) {
+    const recent = mode === "recent";
+    document.getElementById("byTopic").hidden = recent;
+    document.getElementById("byRecent").hidden = !recent;
+    topicBtn.setAttribute("aria-pressed", String(!recent));
+    recentBtn.setAttribute("aria-pressed", String(recent));
+    try { localStorage.setItem(SORT_KEY, mode); } catch {}
+  }
+  topicBtn.addEventListener("click", () => setSort("topic"));
+  recentBtn.addEventListener("click", () => setSort("recent"));
+  let savedSort = "topic";
+  try { savedSort = localStorage.getItem(SORT_KEY) || "topic"; } catch {}
+  setSort(savedSort);
+  paint();
+</script>
+</body></html>
