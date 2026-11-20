@@ -392,7 +392,7 @@ const SIDEBAR_ICONS: Record<string, LucideIcon> = {
   sponsors: Handshake,
   scan: ScanLine,
   judge: Gavel,
-  "scavenger-hunt": Trophy,
+  "bonus-tasks": Trophy,
 };
 
 const SidebarIcon = ({

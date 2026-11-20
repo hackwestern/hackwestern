@@ -21,9 +21,9 @@ const FILTERS = [
 type Filter = (typeof FILTERS)[number][0];
 
 const EMPTY_MESSAGE: Record<Filter, string> = {
-  all: "No scavenger hunt tasks yet. Check back soon!",
-  todo: "You've done every task. Nice work!",
-  done: "You haven't been scanned for any tasks yet.",
+  all: "No bonus tasks yet. Check back soon!",
+  todo: "You've done every bonus task. Nice work!",
+  done: "You haven't been scanned for any bonus tasks yet.",
 };
 
 const ScavengerHunt = ({ isOrganizer = false }: { isOrganizer?: boolean }) => {
@@ -47,9 +47,11 @@ const ScavengerHunt = ({ isOrganizer = false }: { isOrganizer?: boolean }) => {
   return (
     <div className="flex w-full flex-col gap-6 font-figtree">
       <p className="text-sm font-medium leading-default text-dashboard-text-light md:text-base">
-        Complete tasks around the venue and find an organizer to scan your
-        hacker pass. Each task counts once. Redeem your points for prizes at the
-        help desk.
+        These are <strong className="text-dashboard-text-heavy">bonus</strong>{" "}
+        scavenger hunt tasks. Complete them around the venue and find an
+        organizer to scan your hacker pass. Each one counts once. Meals,
+        workshops and activities still earn points separately, and your full
+        total is under Your Points on Home.
       </p>
 
       {showProgress && all.length > 0 && (
@@ -57,7 +59,7 @@ const ScavengerHunt = ({ isOrganizer = false }: { isOrganizer?: boolean }) => {
           <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
             <div className="flex flex-col gap-1">
               <span className="text-xs font-semibold uppercase leading-default text-dashboard-text-light">
-                Tasks done
+                Bonus tasks done
               </span>
               <span className="text-2xl font-bold leading-default text-dashboard-text-heavy">
                 {done.length}
@@ -69,7 +71,7 @@ const ScavengerHunt = ({ isOrganizer = false }: { isOrganizer?: boolean }) => {
             </div>
             <div className="flex flex-col items-end gap-1">
               <span className="text-xs font-semibold uppercase leading-default text-dashboard-text-light">
-                Points earned
+                Bonus points earned
               </span>
               <span className="text-2xl font-bold leading-default text-dashboard-action-primary">
                 {earned}
@@ -82,7 +84,7 @@ const ScavengerHunt = ({ isOrganizer = false }: { isOrganizer?: boolean }) => {
           </div>
           <div
             role="progressbar"
-            aria-label="Tasks done"
+            aria-label="Bonus tasks done"
             aria-valuemin={0}
             aria-valuemax={all.length}
             aria-valuenow={done.length}
@@ -196,11 +198,7 @@ const ScavengerHunt = ({ isOrganizer = false }: { isOrganizer?: boolean }) => {
                           </span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-dashboard-text-light">
-                          <span
-                            aria-hidden="true"
-                            className="size-3.5 rounded-full border-2 border-dashboard-border-muted"
-                          />
+                        <span className="whitespace-nowrap text-xs font-medium text-dashboard-text-light">
                           <span className="sr-only sm:not-sr-only">To do</span>
                         </span>
                       )}

@@ -27,7 +27,7 @@ export const SidebarNav = ({
         <SectionLink tab="menu" name="Food Menu" />
         <SectionLink tab="mentors" name="Mentors" />
         <SectionLink tab="sponsors" name="Sponsors" />
-        <SectionLink tab="scavenger-hunt" name="Scavenger Hunt" />
+        <SectionLink tab="bonus-tasks" name="Bonus Tasks" />
         {isOrganizer && (
           // Mobile-only scan page
           <div className="md:hidden">
