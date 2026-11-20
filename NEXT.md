@@ -7,7 +7,7 @@ Organizer Home (v3 day view) is built and pushed (fcc1209e, bbb15965); screensho
 Fixed and committed locally, not pushed: coffee board crash all Sunday (saturdayAt past midnight, d202a437), /sponsors//scan links (5de1b754), Sponsor Day-Of tier test (dea59bd2). Tests: 1848 pass, only Apple Wallet fails (no local keys).
 Still open:
 1. Push the local commits to PR #1165 (Jazz to say go).
-2. Before Fri 5 PM: merge PR #1165 to main; run prod migrations 0059, 0060, 0061 (judging), 0062 (coffee board). Vercel Preview needs 0061/0062 too; check its DATABASE_URL isn't production first.
+2. Before Fri 5 PM: merge PR #1165 to main; run prod migrations 0059, 0060, 0061 (judging), 0062 (coffee board), 0063 (top 5 drafts). Vercel Preview needs 0061/0062 too; check its DATABASE_URL isn't production first.
 3. Sponsor portal (mock sponsor-chats-v3): the coffee-prefs session is still building it; merge coffee-prefs in again when it commits. coffee-prefs still has the Sunday crash until then.
 4. Coffee board v12 (merged here): Jazz to click through on :3013 and answer (a) toast vs dialog for refused drops, (b) "goes to the front of the line" wording.
 5. Demo switcher: branch demo-switcher in ../hackwestern-demo, :3018, not reviewed yet. Local only.

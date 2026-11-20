@@ -4,11 +4,11 @@ Go through each line, tick it when it works, and write what broke next to it. Ea
 
 **Where:** your server http://localhost:3013, or the public link https://desktop-h6d0rg9.tailc07d02.ts.net. Sign in as an organizer with /api/dev/login?key=snap-local.
 
-**Notifications locally:** Slack DMs and emails don't really send on :3013 (no Slack token, invites in dry mode). To test real Slack DMs, use the Vercel preview or production once their database is migrated (0059 to 0062).
+**Notifications locally:** Slack DMs and emails don't really send on :3013 (no Slack token, invites in dry mode). To test real Slack DMs, use the Vercel preview or production once their database is migrated (0059 to 0063).
 
 ## Before you start
 
-- [ ] Lucas's latest push (Nov 19, about 2 minutes before this was written) breaks the build: 43 type errors, mostly `sponsor-shell.tsx` and the sponsor judging pages. The Vercel preview won't build until it's fixed. Your local :3013 doesn't have his push.
+- [ ] PR #1165 builds on Vercel (Lucas's half-merged push was fixed on Nov 20).
 - [ ] Sponsor Day-Of tab is called exactly "Sponsor Day-Of". Renaming it breaks the app.
 - [ ] Tiers are filled in on Sponsor Day-Of, and Chatting hours shows 4 / 3 / 2.
 - [ ] Scotiabank's "Custom API / Prize Track" box is ticked (otherwise it's left off judging).
@@ -84,7 +84,7 @@ Go through each line, tick it when it works, and write what broke next to it. Ea
 
 ## Before Friday 5 PM
 
-- [ ] Lucas's broken push fixed and PR #1165 builds on Vercel.
+- [ ] PR #1165 builds on Vercel.
 - [ ] PR #1165 merged to main.
-- [ ] Production migrations run: 0059, 0060, 0061 (judging), 0062 (coffee board).
+- [ ] Production migrations run: 0059, 0060, 0061 (judging), 0062 (coffee board), 0063 (top 5 drafts).
 - [ ] Production has the Slack token and run-of-show sheet login; coffee invite rounds switched on Saturday morning.
