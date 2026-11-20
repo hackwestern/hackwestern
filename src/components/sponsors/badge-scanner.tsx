@@ -1,15 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  CameraOff,
-  Check,
-  CircleCheck,
-  Coffee,
-  ScanLine,
-  UserX,
-} from "lucide-react";
+import { CameraOff, Check, Hash, Plus, ScanLine, UserX } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { HackerAvatar } from "~/components/sponsors/hacker-avatar";
+import { btn, card } from "~/components/sponsors/portal-ui";
 import { hoverTint, pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
 import { sponsorScanCopy } from "~/content/sponsor-scan";
@@ -155,9 +149,12 @@ function CameraPanel({
   onScan: (text: string) => void;
   onTyped: (text: string) => void;
 }) {
+  // The mock's two cards: the camera (with "Enter a hacker code instead"),
+  // or the typed code (with "Use the camera").
+  const [typing, setTyping] = useState(false);
   const [active, setActive] = useState(true);
   const { videoRef, status, retry } = useQrScanner({
-    active,
+    active: active && !typing,
     onResult: (text) => {
       setActive(false);
       onScan(text);
@@ -169,6 +166,7 @@ function CameraPanel({
   // Say what the camera is doing; on failure, also move focus to the
   // heading that explains it.
   useEffect(() => {
+    if (typing) return;
     if (status === "starting") announce(copy.camera.starting);
     else if (status === "scanning") announce(copy.camera.scanning);
     else if (failed) {
@@ -177,64 +175,68 @@ function CameraPanel({
       announce(cameraProblem(status).body);
       onFocusHeading();
     }
-  }, [status, failed, announce, onFocusHeading]);
+  }, [status, failed, typing, announce, onFocusHeading]);
+
+  if (typing || failed) {
+    return (
+      <section className={cn(card, "gap-3.5", enterMotion)}>
+        <StepHeading headingRef={headingRef}>
+          {failed && !typing ? cameraProblem(status).title : copy.manual.heading}
+        </StepHeading>
+        {failed && !typing && (
+          <div className="flex items-start gap-3 rounded-dashboard-lg bg-dashboard-bg-inset p-4">
+            <CameraOff aria-hidden className="mt-0.5 size-5 shrink-0 text-dashboard-text-warning" />
+            <p className="m-0 text-base text-dashboard-text-medium">{cameraProblem(status).body}</p>
+          </div>
+        )}
+        <ManualEntry onSubmit={onTyped} />
+        {(typing || status !== "unavailable") && (
+          <button
+            type="button"
+            className={cn(btn.link, "self-start")}
+            onClick={() => {
+              setTyping(false);
+              if (failed) retry();
+            }}
+          >
+            <ScanLine aria-hidden />
+            {failed && !typing ? copy.camera.retry : copy.manual.useCamera}
+          </button>
+        )}
+      </section>
+    );
+  }
 
   return (
-    <DashboardPanel className={cn("gap-4 p-4 sm:p-6", enterMotion)}>
-      <StepHeading headingRef={headingRef}>
-        {failed ? cameraProblem(status).title : copy.camera.heading}
-      </StepHeading>
-      {failed ? (
-        <div className="flex flex-col items-start gap-3">
-          <div className="flex items-start gap-3 rounded-dashboard-lg bg-dashboard-bg-inset p-4">
-            <CameraOff
-              aria-hidden
-              className="mt-0.5 size-5 shrink-0 text-dashboard-text-warning"
-            />
-            <p className="m-0 text-base text-dashboard-text-medium">
-              {cameraProblem(status).body}
-            </p>
-          </div>
-          {status !== "unavailable" && (
-            <DashboardButton
-              variant="outline"
-              className={cn("h-11", pressable)}
-              onClick={retry}
-            >
-              {copy.camera.retry}
-            </DashboardButton>
-          )}
-        </div>
-      ) : (
-        <div className="relative mx-auto aspect-square w-full max-w-[420px] overflow-hidden rounded-dashboard-lg bg-dashboard-text-heavy">
-          <video
-            ref={videoRef}
-            aria-label={copy.camera.label}
-            muted
-            playsInline
-            className="size-full object-cover"
-          />
-          {/* Aiming frame */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-[14%] rounded-dashboard-lg border-2 border-dashboard-text-inverse/80"
-          />
-          <p
-            aria-hidden
-            className="absolute inset-x-0 bottom-3 m-0 flex items-center justify-center gap-2 text-sm font-semibold text-dashboard-text-inverse"
-          >
-            <ScanLine
-              aria-hidden
-              className="size-4 motion-safe:animate-pulse"
-            />
-            {status === "scanning"
-              ? copy.camera.scanning
-              : copy.camera.starting}
-          </p>
-        </div>
-      )}
-      <ManualEntry onSubmit={onTyped} />
-    </DashboardPanel>
+    <section aria-label={copy.camera.label} className={cn(card, "gap-3.5", enterMotion)}>
+      <h2 ref={headingRef} tabIndex={-1} className="sr-only">
+        {copy.camera.heading}
+      </h2>
+      <div className="relative w-full overflow-hidden rounded-dashboard-lg bg-dashboard-text-heavy max-md:aspect-square md:h-[300px]">
+        <video
+          ref={videoRef}
+          aria-label={copy.camera.label}
+          muted
+          playsInline
+          className="size-full object-cover"
+        />
+        {/* Aiming frame */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-[14%] top-[14%] bottom-[22%] rounded-dashboard-2xl border-2 border-dashboard-text-inverse/80 md:inset-x-[23%]"
+        />
+        <p
+          aria-hidden
+          className="absolute inset-x-0 bottom-3 m-0 flex items-center justify-center gap-2 text-sm font-medium text-dashboard-text-inverse"
+        >
+          {status === "scanning" ? copy.camera.heading : copy.camera.starting}
+        </p>
+      </div>
+      <button type="button" className={cn(btn.link, "self-start")} onClick={() => setTyping(true)}>
+        <Hash aria-hidden />
+        {copy.manual.open}
+      </button>
+    </section>
   );
 }
 
@@ -244,7 +246,7 @@ function ManualEntry({ onSubmit }: { onSubmit: (text: string) => void }) {
   const [empty, setEmpty] = useState(false);
   return (
     <form
-      className="flex flex-col gap-1.5 border-t border-dashboard-border-subtle pt-4"
+      className="flex flex-col gap-1.5"
       onSubmit={(event) => {
         event.preventDefault();
         if (!value.trim()) {
@@ -254,53 +256,36 @@ function ManualEntry({ onSubmit }: { onSubmit: (text: string) => void }) {
         onSubmit(value);
       }}
     >
-      <label
-        htmlFor="hacker-code"
-        className="text-sm font-semibold text-dashboard-text-heavy"
-      >
+      <label htmlFor="hacker-code" className="text-sm font-semibold text-dashboard-text-heavy">
         {copy.manual.label}
       </label>
-      <p
-        id="hacker-code-hint"
-        className="m-0 text-sm text-dashboard-text-light"
-      >
+      <input
+        id="hacker-code"
+        type="text"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        maxLength={255}
+        value={value}
+        onChange={(event) => {
+          setValue(event.target.value);
+          setEmpty(false);
+        }}
+        aria-describedby={empty ? "hacker-code-hint hacker-code-error" : "hacker-code-hint"}
+        aria-invalid={empty || undefined}
+        className="h-11 w-full min-w-0 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-base text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+      />
+      <p id="hacker-code-hint" className="m-0 text-[13px] text-dashboard-text-light">
         {copy.manual.hint}
       </p>
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <input
-          id="hacker-code"
-          type="text"
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          maxLength={255}
-          value={value}
-          onChange={(event) => {
-            setValue(event.target.value);
-            setEmpty(false);
-          }}
-          aria-describedby={
-            empty ? "hacker-code-hint hacker-code-error" : "hacker-code-hint"
-          }
-          aria-invalid={empty || undefined}
-          className="h-11 w-full min-w-0 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-base text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary sm:flex-1"
-        />
-        <DashboardButton
-          type="submit"
-          variant="outline"
-          className={cn("h-11 w-full sm:w-auto", pressable)}
-        >
-          {copy.manual.submit}
-        </DashboardButton>
-      </div>
       {empty && (
-        <p
-          id="hacker-code-error"
-          className="m-0 text-sm font-semibold text-dashboard-text-warning"
-        >
+        <p id="hacker-code-error" className="m-0 text-sm font-semibold text-dashboard-notice-danger">
           {copy.manual.empty}
         </p>
       )}
+      <button type="submit" className={cn(btn.primary, "mt-2 w-full")}>
+        {copy.manual.submit}
+      </button>
     </form>
   );
 }
@@ -383,16 +368,25 @@ function HackerStep({
   // Scanned before: start from the rep already credited, not "Anyone".
   const creditedRep = scanQ.data?.repName ?? null;
   const repList = setupQ.data?.reps;
+  // Once only: a later refetch must not put back the rep they just changed.
+  const preselected = useRef(false);
   useEffect(() => {
-    if (!creditedRep || !repList) return;
+    if (preselected.current || !creditedRep || !repList) return;
+    preselected.current = true;
     const match = repList.find((r) => r.name === creditedRep);
     if (match) setRepId(match.id);
   }, [creditedRep, repList]);
+  // The first save adds them (announce it, focus the new heading); later
+  // saves only change "Who talked to them?" and leave focus on the pick.
+  const firstSave = useRef(true);
   const record = api.coffeeChatSetup.recordScan.useMutation({
     onSuccess: () => {
-      if (hackerQ.data) announce(metCopy.added(hackerQ.data.firstName));
       void utils.coffeeChatSetup.get.invalidate({ sponsor });
       void utils.coffeeChatSetup.scanOf.invalidate({ sponsor });
+      if (!firstSave.current) return;
+      firstSave.current = false;
+      preselected.current = true;
+      if (hackerQ.data) announce(metCopy.added(hackerQ.data.firstName));
       onFocusHeading();
     },
     onError: () => announce(metCopy.error),
@@ -437,153 +431,129 @@ function HackerStep({
 
   const hacker = hackerQ.data;
   const reps = setupQ.data?.reps ?? [];
+  const live = !!setupQ.data?.confirmed;
   const already = scanQ.data ?? null;
-  const chip = (on: boolean) =>
-    cn(
-      "min-h-11 rounded-full border px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
-      // Picked: tinted, not filled, so "Add to my list" stays the one
-      // filled button on the card.
-      on
-        ? "inline-flex items-center gap-1.5 border-2 border-dashboard-action-primary bg-dashboard-bg-highlight text-dashboard-text-active"
-        : cn(
-            "border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-medium",
-            hoverTint,
-          ),
-      pressable,
-    );
-  const tick = (on: boolean) =>
-    on ? <Check aria-hidden className="size-4 shrink-0" /> : null;
-
-  if (record.isSuccess) {
-    return (
-      <DashboardPanel className={cn("gap-4", enterMotion)}>
-        <div className="flex items-center gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-highlight">
-            <CircleCheck
-              aria-hidden
-              className="size-6 text-dashboard-status-live"
-            />
-          </span>
-          <StepHeading headingRef={headingRef}>
-            {metCopy.added(hacker.firstName)}
-          </StepHeading>
-        </div>
-        <TextButton onClick={onScanNext}>
-          <ScanLine aria-hidden className="size-5" />
-          {copy.scanNext}
-        </TextButton>
-      </DashboardPanel>
-    );
-  }
-
-  return (
-    <DashboardPanel className={cn("gap-5", enterMotion)}>
-      <div className="flex items-start gap-3">
-        {/* GitHub photo only when they shared their profile (links is
-            null otherwise). */}
-        <HackerAvatar
-          name={hacker.firstName}
-          github={hacker.links?.github}
-          size="lg"
-        />
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
-            <Coffee aria-hidden className="size-4" strokeWidth={1.67} />
-            {copy.card.eyebrow}
-          </span>
-          <StepHeading headingRef={headingRef}>
-            {metCopy.heading(hacker.firstName)}
-          </StepHeading>
-          {already && (
-            <p className="m-0 text-base font-semibold text-dashboard-text-heavy">
-              {metCopy.already(
-                whenEastern(already.scannedAt),
-                already.repName,
-              )}
-            </p>
-          )}
-        </div>
+  const added = record.isSuccess;
+  const initials = (name: string) =>
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase();
+  const who = (
+    <div className="flex min-w-0 items-center gap-3">
+      {/* GitHub photo only when they shared their profile (links is null
+          otherwise). */}
+      <HackerAvatar name={hacker.firstName} github={hacker.links?.github} size="lg" />
+      <div className="flex min-w-0 flex-col">
+        <b className="break-words text-lg">{hacker.firstName}</b>
+        <span className="text-sm tabular-nums text-dashboard-text-light">{code}</span>
       </div>
+    </div>
+  );
 
-      {reps.length > 0 && (
-        <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
-          <legend className="mb-2 p-0 text-sm font-semibold text-dashboard-text-heavy">
-            {metCopy.metLegend}
-          </legend>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              aria-pressed={repId === null}
-              className={chip(repId === null)}
-              onClick={() => setRepId(null)}
-            >
-              {tick(repId === null)}
-              {metCopy.noRep}
-            </button>
-            {reps.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                aria-pressed={repId === r.id}
-                className={chip(repId === r.id)}
-                onClick={() => setRepId(r.id)}
-              >
-                {tick(repId === r.id)}
-                {r.name}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-      )}
-
-      {record.isError && (
-        <p
-          role="alert"
-          className="m-0 text-sm font-semibold text-dashboard-text-warning"
-        >
-          {metCopy.error}
-        </p>
-      )}
-
-      <div className="flex flex-col items-stretch gap-1 sm:flex-row sm:items-center sm:gap-4">
-        <DashboardButton
-          className={cn("h-12 text-base md:h-12", pressable)}
+  if (!added) {
+    return (
+      <section aria-labelledby="scan-found" className={cn(card, "gap-4", enterMotion)}>
+        <h2 id="scan-found" ref={headingRef} tabIndex={-1} className="sr-only">
+          {metCopy.heading(hacker.firstName)}
+        </h2>
+        {who}
+        {already && (
+          <p className="m-0 text-sm font-semibold">{metCopy.already(whenEastern(already.scannedAt), already.repName)}</p>
+        )}
+        {record.isError && (
+          <p role="alert" className="m-0 text-sm font-semibold text-dashboard-notice-danger">
+            {metCopy.error}
+          </p>
+        )}
+        <button
+          type="button"
+          className={cn(btn.primary, btn.lg, "w-full")}
           aria-disabled={record.isPending || undefined}
           onClick={() => {
             if (record.isPending) return;
             record.mutate({ sponsor, userId: hacker.userId, repId });
           }}
         >
-          {record.isPending
-            ? metCopy.adding
-            : already
-              ? metCopy.save
-              : metCopy.add}
-        </DashboardButton>
-        <TextButton onClick={onScanNext}>{copy.cancel}</TextButton>
-      </div>
-    </DashboardPanel>
-  );
-}
+          <Plus aria-hidden />
+          {record.isPending ? metCopy.adding : metCopy.add}
+        </button>
+        <button type="button" className={cn(btn.link, "self-start")} onClick={onScanNext}>
+          {copy.notThem}
+        </button>
+      </section>
+    );
+  }
 
-/** A plain text button: the secondary action next to the one filled button. */
-function TextButton({
-  onClick,
-  children,
-}: {
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "inline-flex min-h-11 w-fit items-center justify-center gap-2 self-center rounded-dashboard-md px-2 text-base font-semibold text-dashboard-text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary sm:self-auto [@media(hover:hover)]:hover:underline",
-        pressable,
+    <section aria-live="polite" className={cn(card, "gap-3.5", enterMotion)}>
+      <div className="flex items-center gap-4">
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-dashboard-action-primary text-dashboard-text-inverse">
+          <Check aria-hidden className="size-6" strokeWidth={2.5} />
+        </span>
+        <div className="min-w-0">
+          <StepHeading headingRef={headingRef}>{metCopy.onList(hacker.firstName)}</StepHeading>
+        </div>
+      </div>
+      <p className="m-0 text-sm">{live ? metCopy.invitedFirstLive : metCopy.invitedFirst}</p>
+      {reps.length > 0 && (
+        <div role="group" aria-labelledby="scan-who" className="flex flex-col gap-2 border-t border-dashboard-border-subtle pt-3.5">
+          <h3 id="scan-who" className="m-0 text-base font-semibold">
+            {metCopy.metLegend} <span className="font-medium text-dashboard-text-light">{metCopy.optional}</span>
+          </h3>
+          <div className="flex flex-col gap-2">
+            {reps.map((r) => {
+              const on = repId === r.id;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  aria-pressed={on}
+                  disabled={record.isPending}
+                  onClick={() => {
+                    const next = on ? null : r.id;
+                    setRepId(next);
+                    record.mutate({ sponsor, userId: hacker.userId, repId: next });
+                  }}
+                  className={cn(
+                    "flex min-h-14 items-center gap-3 rounded-dashboard-lg border px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                    on
+                      ? "border-2 border-dashboard-action-primary bg-dashboard-bg-highlight"
+                      : cn("border-dashboard-border-control bg-dashboard-bg-surface", hoverTint),
+                    pressable,
+                  )}
+                >
+                  <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-inset text-xs font-bold text-dashboard-text-medium">
+                    {initials(r.name)}
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <b className="font-semibold">{r.name}</b>
+                    <span className="text-[13px] text-dashboard-text-medium">
+                      {metCopy.chatWith(r.name.split(/\s+/)[0] ?? r.name)}
+                    </span>
+                  </span>
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "flex size-6 shrink-0 items-center justify-center rounded-full border-2",
+                      on ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse" : "border-dashboard-border-control",
+                    )}
+                  >
+                    {on && <Check className="size-3.5" strokeWidth={3} />}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       )}
-    >
-      {children}
-    </button>
+      <button type="button" className={cn(btn.primary, "w-full")} onClick={onScanNext}>
+        <ScanLine aria-hidden />
+        {copy.scanNext}
+      </button>
+    </section>
   );
 }

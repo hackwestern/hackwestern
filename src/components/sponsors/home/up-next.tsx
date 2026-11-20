@@ -93,7 +93,7 @@ export function UpNext({
               setLess(v);
               writeStored(LESS_KEY, v ? "less" : "all");
             }}
-            className={cn(quietBtn, "-mr-1 -mt-2 px-2", pressable)}
+            className={cn(quietBtn, "-mr-1 -mt-2 min-w-11 justify-center px-2", pressable)}
           >
             <ChevronDown
               aria-hidden
@@ -297,7 +297,7 @@ function Row({
               : step.note
                 ? "border-dashed border-dashboard-border-control bg-dashboard-bg-inset text-dashboard-text-light"
                 : highlight
-                  ? "border-dashboard-action-primary shadow-[0_0_0_4px_rgba(11,107,196,0.18)]"
+                  ? "border-dashboard-action-primary shadow-[0_0_0_4px_theme(colors.dashboard.action.halo)]"
                   : "border-dashboard-border-control",
           )}
         >

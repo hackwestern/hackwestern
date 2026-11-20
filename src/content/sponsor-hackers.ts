@@ -79,6 +79,9 @@ export const sponsorHackersCopy = {
     linkedIn: "LinkedIn",
     devpost: "Devpost",
     extra: "Link",
+    /** Icon buttons' names on the shortlist (mock sponsor-chats-v3). */
+    resumeIcon: "Résumé",
+    extraIcon: "Website",
     opensIn: (link: string, name: string) =>
       `${name}'s ${link} (opens in a new tab)`,
   },

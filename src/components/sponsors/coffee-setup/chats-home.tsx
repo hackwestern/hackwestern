@@ -52,11 +52,17 @@ export function ChatsHome({
     { sponsor },
     { enabled: !!data.submittedAt, retry: 1, refetchOnWindowFocus: false },
   );
-  const picked = shortlistQ.data?.picked ?? 0;
+  // Unknown while the shortlist loads, so "(0)" or "Skipped" never flash.
+  const picked = shortlistQ.data?.picked;
 
   return (
     <div className="flex flex-col gap-5" data-stage={stage}>
-      <StepsLine stage={stage} reps={data.reps.length} picked={picked} />
+      <StepsLine
+        stage={stage}
+        reps={data.reps.length}
+        picked={picked ?? 0}
+        shortlistSent={!!data.shortlistSubmittedAt}
+      />
       {stage === "new" && (
         <section aria-labelledby="stage-new" className={cn(card, "gap-3.5 border-t-[6px] border-dashboard-action-primary")}>
           <p className="m-0 text-xs font-extrabold uppercase tracking-wide text-dashboard-text-active">
@@ -138,7 +144,17 @@ export function ChatsHome({
   );
 }
 
-function StepsLine({ stage, reps, picked }: { stage: ChatsStage; reps: number; picked: number }) {
+function StepsLine({
+  stage,
+  reps,
+  picked,
+  shortlistSent,
+}: {
+  stage: ChatsStage;
+  reps: number;
+  picked: number;
+  shortlistSent: boolean;
+}) {
   const s = copy.steps;
   const one = stage === "new" ? "cur" : "done";
   const two = stage === "new" ? "lock" : stage === "prefs" ? "cur" : "done";
@@ -150,11 +166,9 @@ function StepsLine({ stage, reps, picked }: { stage: ChatsStage; reps: number; p
         ? picked
           ? s.optionalPicked(picked)
           : s.optional
-        : stage === "short"
+        : stage === "short" || shortlistSent
           ? s.sent
-          : picked
-            ? s.sent
-            : s.skipped;
+          : s.skipped;
   const item = (state: "cur" | "done" | "lock", n: number, title: string, sub: string) => (
     <li
       aria-current={state === "cur" ? "step" : undefined}
@@ -166,7 +180,7 @@ function StepsLine({ stage, reps, picked }: { stage: ChatsStage; reps: number; p
           "flex size-7 shrink-0 items-center justify-center rounded-full border-[1.5px] text-sm font-bold tabular-nums",
           state === "lock" && "border-dashed border-dashboard-border-control bg-dashboard-bg-inset text-dashboard-text-light",
           state === "cur" &&
-            "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse shadow-[0_0_0_4px_rgba(11,107,196,0.16)]",
+            "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse shadow-[0_0_0_4px_theme(colors.dashboard.action.halo)]",
           state === "done" && "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse",
         )}
       >
@@ -193,7 +207,7 @@ function StepsLine({ stage, reps, picked }: { stage: ChatsStage; reps: number; p
     >
       {item(one, 1, s.one, sub1)}
       <li aria-hidden className="font-semibold leading-7 text-dashboard-text-light">
-        →
+        {s.arrow}
       </li>
       {item(two, 2, s.two, sub2)}
     </ol>

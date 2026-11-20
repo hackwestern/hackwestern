@@ -10,15 +10,20 @@ import { sponsorCard, tapRow } from "./sponsor-shell-styles";
 export function BoothLayout({
   sponsorName,
   title,
+  lead,
 }: {
   sponsorName?: string | null;
   /** A heading inside the card (the Map page's "Your booth"). */
   title?: React.ReactNode;
+  /** Under the heading, in place of the caption (the Map page's
+   * "Right wall, middle booth, between …"); the own booth then says "· you". */
+  lead?: React.ReactNode;
 }) {
   const mine = boothFor(sponsorName);
   return (
     <figure className={cn("m-0 flex flex-col gap-3", sponsorCard)}>
       {title}
+      {lead}
       <div
         role="img"
         aria-label={
@@ -42,20 +47,20 @@ export function BoothLayout({
                 style={{ gridColumn: b.col, gridRow: b.row }}
                 className={cn(
                   // Company names stay on one line (Jazz, v6).
-                  "flex min-w-0 items-center justify-center whitespace-nowrap rounded-dashboard-lg border px-0.5 text-center text-dashboard-micro font-semibold leading-tight sm:text-xs",
+                  "flex min-w-0 items-center justify-center whitespace-nowrap rounded-dashboard-lg border px-0.5 text-center text-[length:theme(fontSize.dashboard-micro)] font-semibold leading-tight sm:text-xs",
                   tapRow,
                   isMine
                     ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse shadow-dashboard-card"
                     : "border-dashboard-border-default bg-dashboard-bg-surface text-dashboard-text-medium",
                 )}
               >
-                {b.sponsor}
+                {isMine && lead ? copy.booths.you(b.sponsor) : b.sponsor}
               </div>
             );
           })}
         </div>
       </div>
-      {mine && (
+      {mine && !lead && (
         <figcaption className="m-0 text-sm font-medium text-dashboard-text-light">
           {copy.booths.yours(mine.sponsor)}
         </figcaption>

@@ -220,6 +220,7 @@ export function TeamStep({
                 </button>
                 <DashboardButton
                   variant="link"
+                  className="min-w-11 md:min-h-11"
                   aria-label={copy.editLabel(rep.name)}
                   onClick={() => setEditing(rep.id)}
                 >
@@ -227,7 +228,7 @@ export function TeamStep({
                 </DashboardButton>
                 <DashboardButton
                   variant="link"
-                  className="text-dashboard-notice-danger"
+                  className="min-w-11 text-dashboard-notice-danger md:min-h-11"
                   aria-label={copy.removeLabel(rep.name)}
                   disabled={remove.isPending}
                   onClick={() => {

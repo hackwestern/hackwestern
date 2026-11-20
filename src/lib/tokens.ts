@@ -266,6 +266,7 @@ export const dashboardColors = {
   },
   action: {
     primary: "#0b6bc4", // primary buttons, selected filters, tags, progress
+    halo: "rgba(11,107,196,0.18)", // glow around the current step dot
   },
   border: {
     default: "#cdddeb", // navigation, secondary buttons
@@ -306,6 +307,12 @@ export const dashboardColors = {
     line: "#6b45c2",
     tint: "rgba(107,69,194,0.13)",
     tintHover: "rgba(107,69,194,0.2)",
+  },
+  // Profile link logos on hacker cards, in each brand's own colour.
+  brand: {
+    linkedin: "#0a66c2",
+    github: "#181717",
+    devpost: "#003e54",
   },
   notice: {
     welcomeBg: "#fff8ec", // Home's welcome card

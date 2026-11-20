@@ -11,6 +11,14 @@ export const sponsorVenueCopy = {
     booth: "Your booth",
     boothAt: (where: string) => `Your booth · ${where}`,
     floorsHeading: "Floor plans",
+    /** The floor plans (mock sponsor-chats-v3, the /live maps). */
+    levels: { floor1: "Level 1", floor2: "Level 2" } as Record<string, string>,
+    levelsLabel: "Floor",
+    hint: "* Tap the map to open it full size",
+    mapAlt: (level: string) => `${level} map`,
+    openFull: (level: string) => `Open the ${level} map full size`,
+    venue:
+      "Venue: Ronald D. Schmeichel Building for Entrepreneurship and Innovation, 1151 Richmond St, London. Rooms 1348–1358 are in the Ivey building, a 15-minute walk from the Sponsor Bay.",
   },
   mapButton: "Map",
   mapButtonLabel: "Open the venue map",
@@ -66,6 +74,29 @@ export const sponsorVenueCopy = {
     labelMine: (sponsor: string) =>
       `Sponsor Bay booth layout around the projector screen. Your booth, ${sponsor}, is highlighted.`,
     yours: (sponsor: string) => `Your booth is highlighted: ${sponsor}.`,
+    /** Inside your own booth on the Map. */
+    you: (sponsor: string) => `${sponsor} · you`,
+    /** "Right wall, middle booth" */
+    spot: (side: "top" | "left" | "right" | "bottom", place: "first" | "middle" | "last" | "only") => {
+      const wall = side === "top" ? "Top row" : side === "bottom" ? "Bottom row" : side === "left" ? "Left wall" : "Right wall";
+      const across = side === "top" || side === "bottom";
+      const where =
+        place === "only"
+          ? "booth"
+          : place === "middle"
+            ? "middle booth"
+            : place === "first"
+              ? across
+                ? "left booth"
+                : "top booth"
+              : across
+                ? "right booth"
+                : "bottom booth";
+      return `${wall}, ${where}`;
+    },
+    /** ", between CSE and Scotiabank." / ", next to CSE." */
+    neighbours: (names: string[]) =>
+      names.length === 2 ? `, between ${names[0]} and ${names[1]}.` : names.length === 1 ? `, next to ${names[0]}.` : ".",
   },
   judgingLocked: {
     badge: "Opens Sunday 9:00 AM",
@@ -75,6 +106,6 @@ export const sponsorVenueCopy = {
       "This will be unlocked on Sunday at 9:00 AM. Please come to the sponsor judging debrief at 8:30 AM. There will be coffee!",
     /** The judging page itself before it opens (same rule as the nav). */
     pageTitle: "Judging opens Sunday 9:00 AM",
-    home: "Back to Today",
+    home: "Back to Home",
   },
 } as const;

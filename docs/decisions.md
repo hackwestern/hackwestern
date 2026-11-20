@@ -873,3 +873,16 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Why:** hackers need to know they were picked, and when to present, without waiting for an organizer to press Notify teams.
 **Still manual:** after a room change, the judging board's "Notify teams" to-do tells teams their new room.
 **Alternatives:** organizers press Notify teams (the old flow); also messaging winners (Jazz: no).
+## 2026-11-19: Sponsor portal built to mock sponsor-chats-v3: judgment calls (build)
+
+**Decision:** The sponsor portal now follows sponsor-chats-v3 (shell, Home, Chats one stage at a time, Send availability, shortlist, Scan, Schedule, Map). Where the mock and the app's data disagree, the build does this:
+- **Up next agenda:** the Friday–Sunday steps (times, rooms, "Open your booth"…) live in `src/content/sponsor-home.ts`, copied from the run of show as of today. The sponsor's own workshop row, Saturday's coffee chat rows, done ticks and Sunday's judging room come from their data. Unsent availability stays "Now" after its 5:00 slot instead of reading as done (it's required); the optional shortlist goes by the clock.
+- **Tier:** the welcome line reads an optional "Tier" column on Sponsor Day-Of ("Gold", "Gold Sponsor"). The sheet has no such column yet, so every sponsor currently sees "Thank you so much for sponsoring Hack Western 13." Adding the column turns on "for being a Gold sponsor".
+- **Guided tour off:** no How to button, no "New here?" offer, no "Show me how" in Help (the mock has none, and its targets were gone). The tour code stays in `src/components/sponsors/tour/`, unused.
+- **Status card off:** the "Where things stand" card left the Chats screens (the mock replaces it with the 2-step line and one-line done steps). Organizer moves of sent chats are no longer called out there.
+- **Shortlist cards:** show what the app has (name, school, program, year, team, profile links as icons). The mock's skills, interests and "wants …" role have no data source. The list searches the sponsor's candidates by name, school or program, and every other admitted hacker by name (the existing search) under "Other hackers at Hack Western".
+- **Scan:** hackers are found by their three-word hacker code (the real badge), so the mock's "Enter a hacker ID instead" reads "Enter a hacker code instead". Picking "Who talked to them?" saves the rep right away.
+- **Schedule:** coffee chats now come from the session setup (sent chats with invites), not the old room-booking table, which no longer holds sponsor chats.
+- **Map:** uses the mock's floor plans (the /live maps, `public/sponsor-map/v3/`), tap to open full size. No desktop pinch/zoom buttons yet, and no room pins on these images.
+**Why:** Jazz asked for the mock's exact flow and information with real data only; each item above is the closest match the data allows.
+**Alternatives:** keep the tour and status card alongside the mock's layout; invent skills/tier values (ruled out: no fake data); a schema change for tier (the sheet column is enough).

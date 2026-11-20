@@ -445,6 +445,12 @@ function warnOnce(message: string): void {
  * Null when the tab has no "Status" column yet (the sheet before the
  * 2026-11-19 merge), so the caller can fall back to the old tab.
  */
+/** "Gold Sponsor" -> "Gold"; placeholders ("-", "N/A", "TBD", "Sponsor") -> "". */
+export function normalizeTier(raw: string): string {
+  const tier = raw.trim().replace(/\s*sponsors?$/i, "").trim();
+  return /^(|-+|—|n\/?a|tbd|none)$/i.test(tier) ? "" : tier;
+}
+
 export function sponsorInfoFromDayOf(
   dayOf: SponsorDayOfTab,
 ): Map<string, SponsorInfoRecord> | null {
@@ -477,7 +483,7 @@ export function sponsorInfoFromDayOf(
     if (map.has(key)) continue;
     map.set(key, {
       status: normalizeSponsorStatus(at(row, c.status)),
-      tier: at(row, c.tier).replace(/\s+sponsors?$/i, ""),
+      tier: normalizeTier(at(row, c.tier)),
       roomNumber: normalizeRoomNumber(at(row, c.judgingRoom)),
       boothLocation: normalizeBoothLocation(at(row, c.booth)),
       hwContact: normalizeHwContact(at(row, c.hwLead)),

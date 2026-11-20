@@ -2,17 +2,19 @@
 // Keep wording here, not in components.
 
 export const sponsorScanCopy = {
-  seoTitle: "Scan a badge",
+  seoTitle: "Scan a hacker",
   eyebrow: "Coffee chats",
-  title: "Scan a hacker's badge",
+  title: "Scan a hacker",
   // When opened with ?hacker= (a hacker code or user id).
   offerTitle: "Add a hacker you met",
   offerIntro: "Add them to your list and we'll invite them to a coffee chat first.",
   intro:
-    "Point your camera at the QR code on a hacker's badge or their live site. Add them to your list and we'll invite them to a coffee chat first.",
+    "Scan hackers you meet at your booth. They're invited to chat before anyone on your shortlist.",
+  /** Once chats are confirmed (mock sponsor-chats-v3). */
+  introLive: "Scan a hacker you meet and we'll invite them to the next open seat in your chats.",
 
   camera: {
-    heading: "Hold the QR code inside the frame",
+    heading: "Point at the QR code on their pass",
     label: "Camera view",
     starting: "Starting camera…",
     scanning: "Looking for a QR code",
@@ -32,9 +34,12 @@ export const sponsorScanCopy = {
   },
 
   manual: {
-    label: "Type their hacker code",
+    open: "Enter a hacker code instead",
+    heading: "Enter a hacker code",
+    useCamera: "Use the camera",
+    label: "Hacker code",
     hint: "The three words on their badge or wallet pass, like brave-otter-kite.",
-    submit: "Look up",
+    submit: "Find hacker",
     empty: "Type a hacker code first.",
   },
 
@@ -51,7 +56,8 @@ export const sponsorScanCopy = {
     lookupError: "Couldn't look them up. Try again.",
   },
 
-  scanNext: "Scan next",
+  scanNext: "Scan the next hacker",
+  notThem: "Not them? Scan again",
   cancel: "Not now",
 
   hubLink: "Scan a badge",

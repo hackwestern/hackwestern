@@ -44,3 +44,24 @@ export function boothFor(
   const k = key(sponsorName);
   return booths.find((b) => key(b.sponsor) === k) ?? null;
 }
+
+/**
+ * Where a booth sits along its wall (first / middle / last, in reading
+ * order) and the booths either side of it on the same wall.
+ */
+export function boothSpot(
+  booth: Booth,
+  booths: readonly Booth[] = SPONSOR_BAY_BOOTHS,
+): { place: "first" | "middle" | "last" | "only"; neighbours: string[] } {
+  const across = booth.side === "top" || booth.side === "bottom";
+  const wall = booths
+    .filter((b) => b.side === booth.side)
+    .sort((a, b) => (across ? a.col - b.col : a.row - b.row));
+  const i = wall.findIndex((b) => b.sponsor === booth.sponsor);
+  const place =
+    wall.length === 1 ? "only" : i === 0 ? "first" : i === wall.length - 1 ? "last" : "middle";
+  const neighbours = [wall[i - 1], wall[i + 1]]
+    .filter((b): b is Booth => !!b && (across ? Math.abs(b.col - booth.col) === 1 : Math.abs(b.row - booth.row) === 1))
+    .map((b) => b.sponsor);
+  return { place, neighbours };
+}

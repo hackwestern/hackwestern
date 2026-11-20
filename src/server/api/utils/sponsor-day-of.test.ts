@@ -10,6 +10,7 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
 
 import {
   fetchAllSponsorInfo,
+  normalizeTier,
   parseSponsorDayOfColumns,
   parseSponsorDayOfRows,
   sheetSponsorsFromDayOf,
@@ -130,6 +131,8 @@ describe("Sponsor Day-Of reads", () => {
     expect([...info.keys()]).toEqual(["acme", "globex", "initech"]);
     expect(info.get("acme")).toEqual({
       status: "Checked in",
+      // No "Tier" column in this header: no tier.
+      tier: "",
       roomNumber: "Rm 9",
       boothLocation: "Booth 3",
       hwContact: "Pat Lead",
@@ -157,6 +160,20 @@ describe("Sponsor Day-Of reads", () => {
       roomNumber: "Remote",
       hasPrizeTrack: true,
     });
+  });
+
+  test("an optional Tier column feeds the portal's welcome line", () => {
+    const withTier = parseSponsorDayOfRows("Sponsor Day-Of", [
+      ["Sponsor Name", "Status", "Tier"],
+      ["Acme", "Checked in", "Gold Sponsor"],
+      ["Globex", "Checked in", ""],
+    ])!;
+    const info = sponsorInfoFromDayOf(withTier)!;
+    expect(info.get("acme")?.tier).toBe("Gold");
+    expect(info.get("globex")?.tier).toBe("");
+    expect(normalizeTier("N/A")).toBe("");
+    expect(normalizeTier(" Sponsor ")).toBe("");
+    expect(normalizeTier("Title Sponsors")).toBe("Title");
   });
 
   test("no Status column means the sheet isn't merged yet", () => {
