@@ -337,6 +337,13 @@
       "when": 1795139858424,
       "tag": "0047_scavenger_reward_status",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1795141253433,
+      "tag": "0048_redemption_cost_points",
+      "breakpoints": true
     }
   ]
 }

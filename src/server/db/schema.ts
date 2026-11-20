@@ -1396,6 +1396,7 @@ export const scavengerHuntRedemptions = pgTable(
     rewardId: integer("reward_id")
       .notNull()
       .references(() => scavengerHuntRewards.id),
+    costPoints: smallint("cost_points").notNull(),
     scannerId: varchar("scanner_id", { length: 255 }).references(
       () => users.id,
       { onDelete: "set null" },

@@ -995,6 +995,7 @@ describe("scavengerHuntRouter scan endpoints", () => {
           userId: testUser1.user.id,
           rewardId: reward.id,
           scannerId: organizerSession.user.id,
+          costPoints: reward.costPoints,
         });
         await db.insert(scavengerHuntScans).values({
           userId: testUser2.user.id,
@@ -1657,7 +1658,7 @@ describe("scavengerHuntRouter reward endpoints", () => {
     const reward = await insertTestReward({ name: "RWD-TEST Mug" });
     await db
       .insert(scavengerHuntRedemptions)
-      .values({ userId: session.user.id, rewardId: reward.id });
+      .values({ userId: session.user.id, rewardId: reward.id, costPoints: 10 });
     expect((await findMine())[0]?.redemptions).toBe(1);
 
     await organizerCaller.scavengerHunt.deleteReward({ id: reward.id });
@@ -1942,6 +1943,31 @@ describe("scavengerHuntRouter deleting scans", () => {
     expect(await myPoints()).toEqual({ balance: 70, earned: 70 });
   });
 
+  test("deleting a redemption refunds the price paid, not the current price", async () => {
+    const reward = await insertTestReward({
+      name: "DEL-TEST Hoodie",
+      costPoints: 40,
+    });
+    const result = await organizerCaller.scavengerHunt.redeemForUser({
+      userId: session.user.id,
+      rewardId: reward.id,
+    });
+    expect(result.pointsUsed).toBe(40);
+    await organizerCaller.scavengerHunt.saveReward({
+      id: reward.id,
+      costPoints: 70,
+    });
+    const [redemption] = await db.query.scavengerHuntRedemptions.findMany({
+      where: eq(scavengerHuntRedemptions.rewardId, reward.id),
+    });
+    expect(redemption?.costPoints).toBe(40);
+
+    await organizerCaller.scavengerHunt.deleteRedemption({
+      id: redemption!.id,
+    });
+    expect(await myPoints()).toEqual({ balance: 100, earned: 100 });
+  });
+
   test("deleting a redemption refunds the cost and restocks the reward", async () => {
     const reward = await insertTestReward({
       name: "DEL-TEST Mug",
@@ -1950,7 +1976,11 @@ describe("scavengerHuntRouter deleting scans", () => {
     });
     const [redemption] = await db
       .insert(scavengerHuntRedemptions)
-      .values({ userId: session.user.id, rewardId: reward.id })
+      .values({
+        userId: session.user.id,
+        rewardId: reward.id,
+        costPoints: reward.costPoints,
+      })
       .returning();
 
     await organizerCaller.scavengerHunt.deleteRedemption({
@@ -1975,7 +2005,11 @@ describe("scavengerHuntRouter deleting scans", () => {
     });
     const [redemption] = await db
       .insert(scavengerHuntRedemptions)
-      .values({ userId: session.user.id, rewardId: reward.id })
+      .values({
+        userId: session.user.id,
+        rewardId: reward.id,
+        costPoints: reward.costPoints,
+      })
       .returning();
     await organizerCaller.scavengerHunt.deleteRedemption({
       id: redemption!.id,

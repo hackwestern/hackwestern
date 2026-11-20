@@ -242,6 +242,7 @@ const redeemPrize = async (
         userId: userId,
         rewardId: rewardId,
         scannerId,
+        costPoints,
       });
       return costPoints;
     });
@@ -962,7 +963,7 @@ export const scavengerHuntRouter = createTRPCRouter({
         createdAt: scavengerHuntRedemptions.createdAt,
         rewardName: scavengerHuntRewards.name,
         rewardDescription: scavengerHuntRewards.description,
-        costPoints: scavengerHuntRewards.costPoints,
+        costPoints: scavengerHuntRedemptions.costPoints,
       })
       .from(scavengerHuntRedemptions)
       .innerJoin(
@@ -1105,7 +1106,7 @@ export const scavengerHuntRouter = createTRPCRouter({
       }, "Failed to delete scan");
     }),
 
-  // Refunds the reward's current cost and puts the reward back in stock
+  // Refunds the price paid and puts the reward back in stock
   deleteRedemption: protectedOrganizerProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
@@ -1117,6 +1118,7 @@ export const scavengerHuntRouter = createTRPCRouter({
             .returning({
               userId: scavengerHuntRedemptions.userId,
               rewardId: scavengerHuntRedemptions.rewardId,
+              costPoints: scavengerHuntRedemptions.costPoints,
             });
           if (!redemption) {
             throw new TRPCError({
@@ -1124,18 +1126,17 @@ export const scavengerHuntRouter = createTRPCRouter({
               message: "This redemption was already deleted. Refresh the page.",
             });
           }
-          const [reward] = await tx
+          await tx
             .update(scavengerHuntRewards)
             .set({
               quantity: sql`${scavengerHuntRewards.quantity} + 1`,
             })
-            .where(eq(scavengerHuntRewards.id, redemption.rewardId))
-            .returning({ costPoints: scavengerHuntRewards.costPoints });
+            .where(eq(scavengerHuntRewards.id, redemption.rewardId));
           // Redeeming took points from the balance only, so only the balance goes back
           await tx
             .update(users)
             .set({
-              scavengerHuntBalance: sql`coalesce(${users.scavengerHuntBalance}, 0) + ${reward?.costPoints ?? 0}`,
+              scavengerHuntBalance: sql`coalesce(${users.scavengerHuntBalance}, 0) + ${redemption.costPoints}`,
             })
             .where(eq(users.id, redemption.userId));
         });
