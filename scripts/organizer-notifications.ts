@@ -10,12 +10,12 @@ import {
 import {
   ORGANIZER_HEARTBEAT_AFTER_MS,
   loadOrganizerData,
+  slackId,
   setting,
   type Config as OrganizerConfig,
   type OrganizerData,
 } from "~/server/slack/organizer-load";
 import {
-  KNOWN_SLACK_IDS,
   planTeamPosts,
   type Person,
 } from "~/server/slack/organizer-schedule";
@@ -46,49 +46,6 @@ async function settings(): Promise<Config> {
 
 const load = loadOrganizerData;
 type Data = OrganizerData;
-
-const lookups = new Map<string, string | null>();
-
-/** Slack user id: ORGANIZER_SLACK_IDS / KNOWN_SLACK_IDS, else contact emails. */
-async function slackId(
-  config: Config,
-  token: string,
-  person: Person | undefined,
-  name: string,
-): Promise<string | null> {
-  const overrides = {
-    ...KNOWN_SLACK_IDS,
-    ...(JSON.parse(setting(config.ORGANIZER_SLACK_IDS) ?? "{}") as Record<
-      string,
-      string
-    >),
-  };
-  const override = overrides[name]?.trim();
-  if (override && /^[UW][A-Z0-9]+$/.test(override)) return override;
-  for (const email of override ? [override] : (person?.emails ?? [])) {
-    if (!lookups.has(email)) {
-      try {
-        const res = await slackApi<SlackResponse & { user?: { id?: string } }>(
-          token,
-          "users.lookupByEmail",
-          { email },
-          fetch,
-          10_000,
-        );
-        lookups.set(email, res.user?.id ?? null);
-      } catch (error) {
-        if (
-          !(error instanceof SlackApiError && error.code === "users_not_found")
-        )
-          throw error;
-        lookups.set(email, null);
-      }
-    }
-    const id = lookups.get(email);
-    if (id) return id;
-  }
-  return null;
-}
 
 async function openDm(token: string, user: string): Promise<string> {
   const res = await slackApi<SlackResponse & { channel?: { id?: string } }>(

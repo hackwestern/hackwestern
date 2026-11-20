@@ -4,7 +4,9 @@ import {
   BOT_STALE_MS,
   botHealth,
   isHeartbeatDm,
+  organizerHealth,
   pingRows,
+  type PingRow,
   type ScheduledMessage,
 } from "./organizer-ping-log";
 import { ORGANIZER_HEARTBEAT_AFTER_MS } from "./organizer-load";
@@ -88,5 +90,53 @@ describe("botHealth", () => {
       botHealth([heartbeat(new Date(NOW - BOT_STALE_MS - 1000))], NOW).healthy,
     ).toBe(false);
     expect(botHealth([], NOW)).toEqual({ lastCheckIn: null, healthy: false });
+  });
+});
+
+describe("organizerHealth", () => {
+  const row = (to: string, minutes: number, status: PingRow["status"]) =>
+    ({
+      to,
+      postAt: at(minutes),
+      title: "Coming up: X",
+      text: "",
+      status,
+    }) as PingRow;
+
+  test("counts received, missed, upcoming and at-risk pings per person", () => {
+    const health = organizerHealth(
+      [
+        row("Jasmine", -30, "sent"),
+        row("Jasmine", 20, "queued"),
+        row("Noah", -10, "sent"),
+        row("Noah", 40, "notQueued"),
+        row("Aniya", -5, "sent"),
+        row("#Events", -2, "sent"),
+      ],
+      new Map([
+        ["Noah", "noSlack" as const],
+        ["Jasmine", "ok" as const],
+      ]),
+      NOW,
+    );
+    const by = new Map(health.people.map((p) => [p.name, p]));
+    expect(by.get("Jasmine")).toMatchObject({
+      received: 1,
+      upcoming: 1,
+      missed: 0,
+      atRisk: 0,
+    });
+    expect(by.get("Noah")).toMatchObject({
+      reach: "noSlack",
+      received: 0,
+      missed: 1,
+      atRisk: 1,
+    });
+    expect(by.get("#Events")).toMatchObject({ reach: "ok", received: 1 });
+    // Problems sort first.
+    expect(health.people[0]!.name).toBe("Noah");
+    expect(health.lastSent?.to).toBe("#Events");
+    expect(health.nextUp?.to).toBe("Jasmine");
+    expect(health.sentLastHour).toBe(3);
   });
 });
