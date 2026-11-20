@@ -1061,6 +1061,87 @@ export const scavengerHuntRouter = createTRPCRouter({
       }
     }),
 
+  // Takes back the points the scan gave, at the item's current points
+  deleteScan: protectedOrganizerProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        itemId: z.number(),
+        activityType: z.enum(scavengerHuntActivityType.enumValues),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      return withErrorHandling(async () => {
+        await db.transaction(async (tx) => {
+          const [scan] = await tx
+            .delete(scavengerHuntScans)
+            .where(
+              and(
+                eq(scavengerHuntScans.userId, input.userId),
+                eq(scavengerHuntScans.itemId, input.itemId),
+                eq(scavengerHuntScans.activityType, input.activityType),
+              ),
+            )
+            .returning({ itemId: scavengerHuntScans.itemId });
+          if (!scan) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "This scan was already deleted. Refresh the page.",
+            });
+          }
+          const item = await tx.query.scavengerHuntItems.findFirst({
+            columns: { points: true, winPoints: true },
+            where: eq(scavengerHuntItems.id, input.itemId),
+          });
+          // A win scan on an item that is no longer winnable is worth 0
+          const points =
+            input.activityType === "win"
+              ? (item?.winPoints ?? 0)
+              : (item?.points ?? 0);
+          if (points !== 0) {
+            await addPoints(tx, input.userId, -points, true);
+          }
+        });
+      }, "Failed to delete scan");
+    }),
+
+  // Refunds the reward's current cost and puts the reward back in stock
+  deleteRedemption: protectedOrganizerProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      return withErrorHandling(async () => {
+        await db.transaction(async (tx) => {
+          const [redemption] = await tx
+            .delete(scavengerHuntRedemptions)
+            .where(eq(scavengerHuntRedemptions.id, input.id))
+            .returning({
+              userId: scavengerHuntRedemptions.userId,
+              rewardId: scavengerHuntRedemptions.rewardId,
+            });
+          if (!redemption) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "This redemption was already deleted. Refresh the page.",
+            });
+          }
+          const [reward] = await tx
+            .update(scavengerHuntRewards)
+            .set({
+              quantity: sql`${scavengerHuntRewards.quantity} + 1`,
+            })
+            .where(eq(scavengerHuntRewards.id, redemption.rewardId))
+            .returning({ costPoints: scavengerHuntRewards.costPoints });
+          // Redeeming took points from the balance only, so only the balance goes back
+          await tx
+            .update(users)
+            .set({
+              scavengerHuntBalance: sql`coalesce(${users.scavengerHuntBalance}, 0) + ${reward?.costPoints ?? 0}`,
+            })
+            .where(eq(users.id, redemption.userId));
+        });
+      }, "Failed to delete redemption");
+    }),
+
   // Get All Scans (only accessible to organizers)
   getAllScans: protectedOrganizerProcedure
     .input(
@@ -1270,6 +1351,12 @@ export const scavengerHuntRouter = createTRPCRouter({
         // Format the data for display
         const scanRows = pageScans.map((scan) => ({
           id: `${scan.userId}-${scan.itemId}-${scan.activityType}`,
+          target: {
+            kind: "scan" as const,
+            userId: scan.userId,
+            itemId: scan.itemId,
+            activityType: scan.activityType,
+          },
           hackerName: scan.userName ?? scan.userEmail ?? scan.userId,
           event: `${scan.itemName}${scan.activityType === "win" ? " (Win)" : ""}`,
           type: scan.itemType as string,
@@ -1285,6 +1372,7 @@ export const scavengerHuntRouter = createTRPCRouter({
         }));
         const redemptionRows = pageRedemptions.map((redemption) => ({
           id: `redemption-${redemption.id}`,
+          target: { kind: "redemption" as const, id: redemption.id },
           hackerName:
             redemption.userName ?? redemption.userEmail ?? redemption.userId,
           event: `${redemption.rewardName} (Reward)`,

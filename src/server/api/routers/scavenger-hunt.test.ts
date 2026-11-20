@@ -1844,3 +1844,158 @@ describe("scavengerHuntRouter reward endpoints", () => {
     );
   });
 });
+
+describe("scavengerHuntRouter deleting scans", () => {
+  // Tests here change the hacker's points, so each one puts them back
+  let points: {
+    scavengerHuntBalance: number | null;
+    scavengerHuntEarned: number | null;
+  };
+  beforeEach(async () => {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+    });
+    points = {
+      scavengerHuntBalance: user!.scavengerHuntBalance,
+      scavengerHuntEarned: user!.scavengerHuntEarned,
+    };
+    await db
+      .update(users)
+      .set({ scavengerHuntBalance: 100, scavengerHuntEarned: 100 })
+      .where(eq(users.id, session.user.id));
+  });
+
+  afterEach(async () => {
+    await db.update(users).set(points).where(eq(users.id, session.user.id));
+    const items = await db.query.scavengerHuntItems.findMany({
+      where: (t, { like }) => like(t.name, "DEL-TEST%"),
+    });
+    for (const item of items) {
+      await db
+        .delete(scavengerHuntScans)
+        .where(eq(scavengerHuntScans.itemId, item.id));
+      await db
+        .delete(scavengerHuntItems)
+        .where(eq(scavengerHuntItems.id, item.id));
+    }
+    const rewards = await db.query.scavengerHuntRewards.findMany({
+      where: (t, { like }) => like(t.name, "DEL-TEST%"),
+    });
+    for (const reward of rewards) {
+      await db
+        .delete(scavengerHuntRedemptions)
+        .where(eq(scavengerHuntRedemptions.rewardId, reward.id));
+      await db
+        .delete(scavengerHuntRewards)
+        .where(eq(scavengerHuntRewards.id, reward.id));
+    }
+  });
+
+  const myPoints = async () => {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+    });
+    return {
+      balance: user?.scavengerHuntBalance,
+      earned: user?.scavengerHuntEarned,
+    };
+  };
+
+  test("deleting a scan takes back its points", async () => {
+    const item = await insertTestItem(
+      { points: 10, winPoints: 30 },
+      "DEL-TEST Cup Stacking",
+    );
+    await db.insert(scavengerHuntScans).values([
+      {
+        userId: session.user.id,
+        itemId: item.id,
+        scannerId: organizerSession.user.id,
+        activityType: "attendance",
+      },
+      {
+        userId: session.user.id,
+        itemId: item.id,
+        scannerId: organizerSession.user.id,
+        activityType: "win",
+      },
+    ]);
+
+    await organizerCaller.scavengerHunt.deleteScan({
+      userId: session.user.id,
+      itemId: item.id,
+      activityType: "win",
+    });
+    expect(await myPoints()).toEqual({ balance: 70, earned: 70 });
+    const left = await db.query.scavengerHuntScans.findMany({
+      where: eq(scavengerHuntScans.itemId, item.id),
+    });
+    expect(left.map((s) => s.activityType)).toEqual(["attendance"]);
+
+    await expect(
+      organizerCaller.scavengerHunt.deleteScan({
+        userId: session.user.id,
+        itemId: item.id,
+        activityType: "win",
+      }),
+    ).rejects.toThrow("already deleted");
+    expect(await myPoints()).toEqual({ balance: 70, earned: 70 });
+  });
+
+  test("deleting a redemption refunds the cost and restocks the reward", async () => {
+    const reward = await insertTestReward({
+      name: "DEL-TEST Mug",
+      costPoints: 25,
+      quantity: 4,
+    });
+    const [redemption] = await db
+      .insert(scavengerHuntRedemptions)
+      .values({ userId: session.user.id, rewardId: reward.id })
+      .returning();
+
+    await organizerCaller.scavengerHunt.deleteRedemption({
+      id: redemption!.id,
+    });
+    expect(await myPoints()).toEqual({ balance: 125, earned: 100 });
+    const after = await db.query.scavengerHuntRewards.findFirst({
+      where: eq(scavengerHuntRewards.id, reward.id),
+    });
+    expect(after?.quantity).toBe(5);
+
+    await expect(
+      organizerCaller.scavengerHunt.deleteRedemption({ id: redemption!.id }),
+    ).rejects.toThrow("already deleted");
+  });
+
+  test("an unlimited reward stays unlimited", async () => {
+    const reward = await insertTestReward({
+      name: "DEL-TEST Sticker",
+      costPoints: 5,
+      quantity: null,
+    });
+    const [redemption] = await db
+      .insert(scavengerHuntRedemptions)
+      .values({ userId: session.user.id, rewardId: reward.id })
+      .returning();
+    await organizerCaller.scavengerHunt.deleteRedemption({
+      id: redemption!.id,
+    });
+    const after = await db.query.scavengerHuntRewards.findFirst({
+      where: eq(scavengerHuntRewards.id, reward.id),
+    });
+    expect(after?.quantity).toBeNull();
+  });
+
+  test("hackers can't delete scans", async () => {
+    await expect(
+      caller.scavengerHunt.deleteScan({
+        userId: session.user.id,
+        itemId: 1,
+        activityType: "attendance",
+      }),
+    ).rejects.toThrow(TRPCError);
+    await expect(
+      caller.scavengerHunt.deleteRedemption({ id: 1 }),
+    ).rejects.toThrow(TRPCError);
+  });
+});
