@@ -1,0 +1,176 @@
+# Judging engine
+
+How general judging is laid out and run on the day. The engine is the backend
+(schema + `judging` tRPC router + `src/server/judging/`); every screen (judge
+app, table map, organizer console, hacker Home) reads from it.
+
+Out of scope for the engine: how teams and judges get into the system (hackers
+create and submit teams; organizers add judges on the roster), sponsor judging
+(sponsor rooms, run separately), and the screens themselves.
+
+## Model in one paragraph
+
+The room has a fixed number of physical tables (70 by default), numbered along
+a snake. Every submitted team is seated at one table. Every judge owns a fixed
+**section** of consecutive tables along the snake. Each table falls inside the
+sections of exactly **3 different judges**, so every team gets 3 scores. The
+sections never move; to put a team in a different judge's lineup, organizers
+swap teams between tables.
+
+## Tables and the snake
+
+- Organizers set two numbers: **table count** (default 70) and **rows**
+  (default 5). Tables per row = ceil(table count / rows).
+- Tables are numbered along the snake: row 1 left to right, row 2 right to
+  left, and so on. Walking 1, 2, 3, ... traces the snake with no backtracking.
+- Position of table `n` (1-based) on the grid:
+
+  ```
+  perRow = ceil(tableCount / rows)
+  row    = floor((n - 1) / perRow)
+  idx    = (n - 1) mod perRow
+  col    = row is even ? idx : perRow - 1 - idx
+  ```
+
+  70 tables in 5 rows:
+
+  ```
+   1  2  3  4  5  6  7  8  9 10 11 12 13 14   ->
+  28 27 26 25 24 23 22 21 20 19 18 17 16 15   <-
+  29 30 31 32 33 34 35 36 37 38 39 40 41 42   ->
+  56 55 54 53 52 51 50 49 48 47 46 45 44 43   <-
+  57 58 59 60 61 62 63 64 65 66 67 68 69 70   ->
+  ```
+
+- Tables can be switched off (`is_active = false`); switched-off tables get no
+  team and no judges.
+- Changing the table setup clears any plan that hasn't started, so auto-assign
+  must be re-run.
+
+## Seating
+
+- Every submitted team (`submission_status` = `submitted` or `late`) gets one
+  active table. One team per table.
+- **Random by default**; a flag seats in **submission order** instead
+  (earliest `submitted_at` gets table 1).
+- More submitted teams than active tables is an error. Fewer leaves the last
+  tables empty.
+- Seating can be re-run until judging starts.
+
+## Auto-assign: judge sections
+
+- Every active table needs **3 judges** (`judges_per_table`). Judges are taken
+  in **the order they were added** (`judge.created_at`).
+- Only organizer-type judges get sections. Sponsor judges judge in their
+  sponsor rooms (and the ranking ignores sponsored marks), so they're left out
+  of auto-assign, hand-offs and top-ups.
+- Lay the snake out 3 times end to end (1..70, 1..70, 1..70 = 210 visits) and
+  cut it into one consecutive run per judge, as evenly as possible. Judge `k`
+  (0-based, of `J`) gets slots `floor(k * S / J)` up to `floor((k + 1) * S / J)`,
+  where `S = tables * 3`; slot `s` is table `(s mod tables) + 1`.
+- Result: every table is covered by exactly 3 different judges, no judge sees a
+  table twice, and each judge walks a short stretch of the snake.
+- Section size adapts to the judge count: 35 judges -> 6 tables each, 30 -> 7,
+  21 -> 10. Fewer than 3 judges is an error (a table can't get 3 different
+  judges).
+- A judge's stops are written in walking order (`position` 1, 2, 3, ...). A run
+  that crosses the end of a pass wraps from the last table back to table 1.
+- All judges judge at the same time. They start at different tables, and
+  because the passes are offset, no two judges are at the same table in the
+  same round if they keep pace. With 6 tables each, the room is done in 6
+  rounds.
+- Sections cover every active table whether or not a team shows up. An empty
+  table is on the team; the judge reports it absent.
+- Auto-assign can be re-run (it replaces the plan) until judging starts.
+
+Example, 70 tables and 35 judges:
+
+```
+J1 [1-6]   J2 [7-12]  ...  J11 [61-66]  J12 [67-70, 1-2]
+J13 [3-8]  J14 [9-14] ...  J23 [63-68]  J24 [69-70, 1-4]
+J25 [5-10] J26 [11-16] ... J35 [65-70]
+Table 1 is judged by J1, J12 and J24.
+```
+
+## Judging starts
+
+Judging has started once any stop is `in_progress`, `done` or `team_absent`.
+After that, table setup, seating and auto-assign are locked; only the day-of
+fixes below are allowed.
+
+## A stop's lifecycle
+
+```
+assigned --start--> in_progress --submit--> done        (team_mark written)
+    |                    \--------absent--> team_absent
+    \--organizer cancels--> cancelled
+```
+
+- A judge has at most one stop `in_progress` at a time.
+- Submitting writes the `team_mark` (score + breakdown) for the team seated at
+  the table and marks the stop `done` in one transaction.
+- Start and submit also send the `teamId` the judge's screen showed. If a
+  different team is seated there now (an organizer swapped them in the
+  meantime), the request is refused so the score can't land on the wrong team;
+  the judge refreshes and scores the team that's there.
+- Score format (from the judge app): `score` 0-10, plus
+  `score_breakdown = { ratings: { criterionId: 0-10 in half steps }, notes?, superLike? }`.
+- Organizers deleting a mark reopens its stop (`done` -> `assigned`).
+
+## Table live status
+
+`judging_table.status` is kept in sync by a Postgres trigger on
+`judging_assignment` and `team.judging_table_id`:
+
+| Status         | Rule (first match wins)                                   |
+| -------------- | --------------------------------------------------------- |
+| `empty`        | No team seated                                            |
+| `being_judged` | A stop at the table is `in_progress`                      |
+| `waiting`      | A stop is still `assigned`, or the table has no stops yet |
+| `finished`     | Every stop is `done`, `team_absent` or `cancelled`        |
+
+## Day-of fixes (organizers)
+
+- **Swap two teams' tables** (moves a team into other judges' sections).
+  Locked once either table has a stop in progress or finished.
+- **Move a team** to an empty active table (same lock).
+- **Hand off a judge:** a judge who leaves gives all their unfinished stops to
+  another judge in one action. Refused if the receiving judge already has one
+  of those tables or has already scored a team seated at one.
+- **Add a judge to a table:** top-up when a table needs another score.
+- **Cancel a stop**, or **mark a team absent**.
+- Judges added after auto-assign are **floaters** (no stops) until auto-assign
+  is re-run or an organizer adds them to tables.
+
+## Reads
+
+- Organizers: table setup and settings, every table with its team, status and
+  judges done of 3, every judge's stops, floaters, totals by status.
+- Judges: their stops in walking order with table number, grid position,
+  seated team and their score if given, plus which stop is next.
+- Hackers: their table number and grid position, and "N of 3 judges done".
+
+## Cheat check
+
+The cheat-check sweep starts automatically once judging is complete: at least
+one stop exists and every stop is `done`, `team_absent` or `cancelled`.
+Organizers can still start a sweep by hand.
+
+## Normalization
+
+Unchanged. `judging.admin.getLatestRanking` computes each team's normalized
+score from `team_mark` at read time (regular-round marks from organizer-type
+judges).
+
+## Trying it locally
+
+```bash
+npm run db:start && npm run db:migrate
+npm run seed:judging -- --tables 70 --rows 5 --teams 60 --judges 35 --yes
+```
+
+The seed wipes the judging tables and all teams on your local database, then
+builds a ready room through the engine: tables, every team seated (add
+`--in-order` for submission order) and every judge given a section. Seeded
+accounts sign in at `/login` as `judge<n>@judging.hackwestern.dev` and
+`organizer@judging.hackwestern.dev` with password `hw13-judging`.

@@ -28,10 +28,10 @@ export function ControlJudges({
   now: number;
   myId: string | undefined;
 }) {
-  const utils = api.useUtils();
   const [picked, setPicked] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<Status>(null);
-  const assign = api.judging.admin.assignJudgeForTeam.useMutation();
+  const utils = api.useUtils();
+  const assign = api.judging.admin.addJudgeToTable.useMutation();
 
   const teams = queue?.teams ?? [];
   const holdByJudge = new Map(
@@ -159,19 +159,19 @@ export function ControlJudges({
                             if (!team) return;
                             setStatus(null);
                             assign.mutate(
-                              { judgeId: j.id, teamId: team.teamId },
+                              { judgeId: j.id, tableId: team.tableId },
                               {
                                 onSuccess: () => {
                                   setStatus({
                                     tone: "ok",
-                                    text: `Sent ${team.teamName} to ${name}.`,
+                                    text: `Added ${name} to table ${team.tableNumber} (${team.teamName}).`,
                                   });
                                   void utils.judging.admin.invalidate();
                                 },
                                 onError: (e) =>
                                   setStatus({
                                     tone: "error",
-                                    text: `Couldn't send ${team.teamName} to ${name}. ${errorText(e)}`,
+                                    text: `Couldn't add ${name} to table ${team.tableNumber}. ${errorText(e)}`,
                                   }),
                               },
                             );

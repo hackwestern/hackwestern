@@ -17,7 +17,13 @@ describe("judging criteria columns", () => {
   });
 
   test("round-trips ratings through the columns", () => {
-    const ratings = { impact: 8.5, creativity: 7, design: 0, adventurous: 10 };
+    const ratings = {
+      impact: 8.5,
+      creativity: 7,
+      technical: 9.5,
+      design: 0,
+      adventurous: 10,
+    };
     expect(ratingsFromColumns(columnsFromRatings(ratings))).toEqual(ratings);
   });
 
@@ -26,6 +32,7 @@ describe("judging criteria columns", () => {
     expect(cols).toEqual({
       impactRating: 6,
       creativityRating: null,
+      technicalRating: null,
       designRating: null,
       adventurousRating: null,
     });

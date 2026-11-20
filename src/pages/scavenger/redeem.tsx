@@ -5,6 +5,12 @@ import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
 import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
+import { ArrowLeft, ChevronRight, Gift } from "lucide-react";
+import { DashboardButton } from "~/components/internals/dashboard-button";
+import { DashboardTag } from "~/components/internals/dashboard-tag";
+import Sidebar from "~/components/live/sidebar";
+import Topbar from "~/components/live/topbar";
+import { cn } from "~/lib/utils";
 
 // Function to stop all camera streams
 const stopAllCameraStreams = () => {
@@ -68,71 +74,84 @@ const RedeemPage = () => {
   };
 
   return (
-    <div
-      className="flex min-h-screen flex-col"
-      style={{ backgroundColor: "#f5f2f6" }}
-    >
-      {/* Header */}
-      <header className="flex items-center p-4">
-        <button
-          onClick={() => {
-            void router.push("/scavenger");
-          }}
-          className="font-secondary text-heavy transition-colors hover:text-emphasis"
-        >
-          Back
-        </button>
-      </header>
+    <div className="flex h-screen w-screen flex-col bg-dashboard-bg-page md:flex-row">
+      <Topbar title="Redeem" isOrganizer />
+      <Sidebar isOrganizer />
+      <main className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-4 pb-10 pt-6 font-figtree md:gap-10 md:p-12">
+        {/* Header */}
+        <header className="flex flex-col items-start gap-4">
+          <DashboardButton
+            variant="tertiary"
+            onClick={() => {
+              void router.push("/scavenger");
+            }}
+          >
+            <ArrowLeft />
+            Back
+          </DashboardButton>
+          <h1 className="dashboard-h1">Select prize to redeem</h1>
+        </header>
 
-      {/* Main Content */}
-      <main className="w-full flex-1 space-y-6 p-6">
-        <h1 className="font-dico text-left text-3xl font-medium text-heavy">
-          Select prize to redeem
-        </h1>
-
-        {isLoading && (
-          <div className="text-center font-secondary text-medium">
-            Loading prizes...
-          </div>
-        )}
-
-        {!isLoading && (!rewards || rewards.length === 0) && (
-          <div className="text-center font-secondary text-medium">
-            No prizes available
-          </div>
-        )}
-
-        {!isLoading && rewards && rewards.length > 0 && (
-          <div className="space-y-3">
-            {rewards.map((reward) => (
-              <button
-                key={reward.id}
-                onClick={() => handleRewardClick(reward.id)}
-                className="flex w-full items-center justify-between rounded-lg bg-white px-4 py-3 text-left font-secondary shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
-              >
-                <div className="flex-1">
-                  <div className="font-semibold text-heavy">
-                    {formatTitle(reward.name)}
-                  </div>
-                  {reward.description && (
-                    <div className="text-sm text-medium">
-                      {formatTitle(reward.description)}
-                    </div>
+        {/* Main Content */}
+        <div className="flex flex-col gap-2 md:max-w-[640px]">
+          {isLoading || !rewards || rewards.length === 0 ? (
+            <p className="rounded-dashboard-sm bg-dashboard-bg-inset p-5 text-sm font-medium italic leading-default text-dashboard-text-medium">
+              {isLoading ? "Loading prizes..." : "No prizes available"}
+            </p>
+          ) : (
+            rewards.map((reward) => {
+              const soldOut = reward.quantity !== null && reward.quantity <= 0;
+              return (
+                <button
+                  key={reward.id}
+                  type="button"
+                  disabled={soldOut}
+                  onClick={() => handleRewardClick(reward.id)}
+                  className={cn(
+                    "flex h-[69px] w-full items-center gap-3 rounded-dashboard-2xl border border-dashboard-border-faint bg-dashboard-bg-surface p-3 text-left font-medium leading-default shadow-dashboard-card transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
+                    soldOut
+                      ? "cursor-pixel-default opacity-dashboard-disabled"
+                      : "cursor-pixel-hover hover:bg-dashboard-bg-highlight",
                   )}
-                  <div className="mt-1 text-sm font-medium text-heavy">
-                    {reward.costPoints} points
-                  </div>
-                </div>
-                <div className="ml-4 text-right">
-                  <div className="font-semibold text-heavy">
-                    {reward.quantity ?? "∞"}
-                  </div>
-                  <div className="text-xs text-medium">left</div>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="flex size-[45px] shrink-0 items-center justify-center rounded-dashboard-iconBadge bg-dashboard-bg-nav text-dashboard-action-primary"
+                  >
+                    <Gift className="size-5" strokeWidth={1.67} />
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-[5px]">
+                    <span className="truncate text-base text-dashboard-text-heavy">
+                      {formatTitle(reward.name)}
+                    </span>
+                    {reward.description && (
+                      <span className="truncate text-sm text-dashboard-text-light">
+                        {formatTitle(reward.description)}
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex shrink-0 flex-col items-end gap-1">
+                    <DashboardTag>{reward.costPoints} pts</DashboardTag>
+                    <span className="text-xs text-dashboard-text-light">
+                      {reward.quantity === null
+                        ? "Unlimited"
+                        : soldOut
+                          ? "Out of stock"
+                          : `${reward.quantity} left`}
+                    </span>
+                  </span>
+                  {!soldOut && (
+                    <ChevronRight
+                      aria-hidden="true"
+                      className="size-5 shrink-0 text-dashboard-text-light"
+                    />
+                  )}
+                </button>
+              );
+            })
+          )}
+        </div>
       </main>
     </div>
   );

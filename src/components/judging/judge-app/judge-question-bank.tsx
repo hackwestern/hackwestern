@@ -33,6 +33,13 @@ const QUESTION_BANK: QuestionGroup[] = [
     ],
   },
   {
+    title: "Technical Complexity",
+    questions: [
+      "Placeholder: What was the hardest part to build?",
+      "Placeholder: How does the data move through your system?",
+    ],
+  },
+  {
     title: "Design/Polish",
     questions: [
       "Placeholder: Who did you design this for?",

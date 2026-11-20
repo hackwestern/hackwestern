@@ -6,6 +6,7 @@ import { SearchAutocomplete } from "../internals/search-autocomplete";
 import { Button } from "../ui/button";
 import { SectionLink, IconlessLink } from "./navlinks";
 import * as tokens from "~/lib/tokens";
+import { SCHEDULE_ENABLED } from "~/constants/live";
 
 export const SidebarNav = ({
   isOrganizer = false,
@@ -17,7 +18,11 @@ export const SidebarNav = ({
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1.5">
         <SectionLink tab="home" name="Home" />
-        <SectionLink tab="schedule" name="Schedule" />
+        <SectionLink
+          tab="schedule"
+          name="Schedule"
+          locked={!SCHEDULE_ENABLED}
+        />
         <SectionLink tab="map" name="Map" />
         <SectionLink tab="menu" name="Food Menu" />
         <SectionLink tab="mentors" name="Mentors" />

@@ -8,10 +8,7 @@ import { isAdmittedStatus } from "~/lib/admission";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardChip } from "~/components/internals/dashboard-chip";
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import {
-  ActivityCard,
-  activityKindFromCode,
-} from "~/components/internals/activity-card";
+import { ActivityCard } from "~/components/internals/activity-card";
 import { ExternalLink } from "lucide-react";
 import AllScans from "~/components/live/all-scans";
 import { HackerChecklist } from "~/components/live/hacker-checklist";
@@ -97,17 +94,10 @@ const HackerHome = () => {
       return false;
     }
     if (activeTab === "meals") {
-      return scan.itemCode?.endsWith("_meal");
+      return scan.itemType === "meal";
     }
     if (activeTab === "activities") {
-      return (
-        scan.itemCode?.endsWith("_act") ||
-        scan.itemCode?.endsWith("_att") ||
-        scan.itemCode?.endsWith("_win") ||
-        scan.itemCode?.endsWith("_ws") ||
-        scan.itemCode?.endsWith("_sw") ||
-        scan.itemCode?.endsWith("_bonus")
-      );
+      return scan.itemType !== "meal";
     }
     return true;
   });
@@ -210,8 +200,8 @@ const HackerHome = () => {
                   return (
                     <ActivityCard
                       key={scan.id}
-                      kind={activityKindFromCode(scan.itemCode)}
-                      title={formatTitle(scan.itemDescription ?? scan.itemCode)}
+                      kind={scan.itemType === "meal" ? "meal" : "activity"}
+                      title={formatTitle(scan.itemName)}
                       meta={`${time} · ${scan.points > 0 ? "+" : ""}${scan.points} pts`}
                     />
                   );

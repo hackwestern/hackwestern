@@ -26,7 +26,7 @@ export interface Rubric {
 
 export type Ratings = Record<string, number | undefined>;
 
-/** The default rubric: four criteria, equal weight. */
+/** The default rubric: five criteria, equal weight. */
 export const DEFAULT_RUBRIC: Rubric = {
   title: "General judging rubric",
   weighted: false,
@@ -43,6 +43,13 @@ export const DEFAULT_RUBRIC: Rubric = {
       name: "Creativity",
       description:
         "How original is the approach? Does the team use technology, design or ideas in an unexpected way?",
+      weight: 1,
+    },
+    {
+      id: "technical",
+      name: "Technical Complexity",
+      description:
+        "How technically challenging is the project? Did the team push the boundaries with complex algorithms, integrations, or hardware?",
       weight: 1,
     },
     {

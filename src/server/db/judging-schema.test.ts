@@ -84,6 +84,7 @@ describe("team_mark rubric columns", () => {
         score: 7.5,
         impactRating: 8.5,
         creativityRating: 7,
+        technicalRating: 9,
         designRating: 6,
         adventurousRating: 8.5,
         notes: "Great live demo; auth was mocked.",
@@ -93,6 +94,7 @@ describe("team_mark rubric columns", () => {
     expect(withRubric).toMatchObject({
       impactRating: 8.5,
       creativityRating: 7,
+      technicalRating: 9,
       designRating: 6,
       adventurousRating: 8.5,
       notes: "Great live demo; auth was mocked.",
@@ -106,6 +108,7 @@ describe("team_mark rubric columns", () => {
     expect(sliderOnly).toMatchObject({
       impactRating: null,
       creativityRating: null,
+      technicalRating: null,
       designRating: null,
       adventurousRating: null,
       notes: null,

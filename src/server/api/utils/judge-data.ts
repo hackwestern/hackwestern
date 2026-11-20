@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, isNotNull, or } from "drizzle-orm";
+import { asc, eq, inArray, isNotNull, or } from "drizzle-orm";
 
 import {
   type ComparisonData,
@@ -6,13 +6,8 @@ import {
 } from "~/server/api/utils/judge-comparison";
 import { ratingsFromColumns } from "~/lib/judging-criteria";
 import { db } from "~/server/db";
-import {
-  judgingAssignments,
-  judgingQueue,
-  judgingSkips,
-  teamMarks,
-  teams,
-} from "~/server/db/schema";
+import { getMyStops } from "~/server/judging/reads";
+import { teamMarks, teams } from "~/server/db/schema";
 
 export interface JudgeTableRow {
   number: number;
@@ -125,74 +120,32 @@ export async function loadJudgeData(
   };
 }
 
-const QUEUE_PREVIEW_LIMIT = 50;
-
-// NOTE: follows the order of pickNextTeam in routers/judging.ts (Kevin Li's
-// queue engine, which MAY BE REPLACED). Update this together with it.
+/** The teams at the judge's stops still to do, in walking order. */
 async function loadQueueTeams(judgeId: string): Promise<QueueTeam[]> {
-  const stops = await db
-    .select({ teamId: judgingAssignments.teamId })
-    .from(judgingAssignments)
-    .where(
-      and(
-        eq(judgingAssignments.judgeId, judgeId),
-        inArray(judgingAssignments.status, ["assigned", "in_progress"]),
-      ),
-    )
-    .orderBy(asc(judgingAssignments.position));
-
-  let ids = stops.map((s) => s.teamId);
-  if (ids.length === 0) {
-    const [waiting, marked, skipped] = await Promise.all([
-      db
-        .select({ teamId: judgingQueue.teamId })
-        .from(judgingQueue)
-        .where(
-          and(
-            gt(judgingQueue.roundsRemaining, 0),
-            eq(judgingQueue.status, "waiting"),
-          ),
-        )
-        .orderBy(
-          desc(judgingQueue.roundsRemaining),
-          asc(judgingQueue.enqueuedAt),
-        ),
-      db
-        .select({ teamId: teamMarks.teamId })
-        .from(teamMarks)
-        .where(eq(teamMarks.judgeId, judgeId)),
-      db
-        .select({ teamId: judgingSkips.teamId })
-        .from(judgingSkips)
-        .where(eq(judgingSkips.judgeId, judgeId)),
-    ]);
-    const seen = new Set([...marked, ...skipped].map((r) => r.teamId));
-    ids = waiting
-      .map((w) => w.teamId)
-      .filter((id) => !seen.has(id))
-      .slice(0, QUEUE_PREVIEW_LIMIT);
-  }
-  if (ids.length === 0) return [];
+  const { stops } = await getMyStops(judgeId);
+  const pending = stops.flatMap((s) =>
+    (s.status === "assigned" || s.status === "in_progress") && s.team
+      ? [s.team]
+      : [],
+  );
+  if (pending.length === 0) return [];
 
   const rows = await db.query.teams.findMany({
-    where: inArray(teams.id, ids),
-    columns: { id: true, name: true },
+    where: inArray(
+      teams.id,
+      pending.map((t) => t.id),
+    ),
+    columns: { id: true },
     with: { members: { columns: { name: true } } },
   });
-  const byId = new Map(rows.map((t) => [t.id, t]));
-  return ids.flatMap((id) => {
-    const t = byId.get(id);
-    if (!t) return [];
-    return [
-      {
-        id: t.id,
-        name: t.name,
-        members: t.members
-          .map((m) => m.name?.trim() ?? "")
-          .filter((n) => n !== ""),
-      },
-    ];
-  });
+  const membersById = new Map(rows.map((t) => [t.id, t.members]));
+  return pending.map((t) => ({
+    id: t.id,
+    name: t.name,
+    members: (membersById.get(t.id) ?? [])
+      .map((m) => m.name?.trim() ?? "")
+      .filter((n) => n !== ""),
+  }));
 }
 
 /**
@@ -211,6 +164,7 @@ async function loadComparison(
       score: teamMarks.score,
       impactRating: teamMarks.impactRating,
       creativityRating: teamMarks.creativityRating,
+      technicalRating: teamMarks.technicalRating,
       designRating: teamMarks.designRating,
       adventurousRating: teamMarks.adventurousRating,
       superLike: teamMarks.superLike,

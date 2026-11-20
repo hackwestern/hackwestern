@@ -28,3 +28,36 @@ export function formatRsvpDeadline() {
     });
   return `${fmt({ weekday: "long", month: "long", day: "numeric" })} at ${fmt({ hour: "numeric", minute: "2-digit" })} ET`;
 }
+
+export const formatEventTime = (
+  date: Date,
+  options: Intl.DateTimeFormatOptions,
+) => date.toLocaleString("en-US", { timeZone: "America/Toronto", ...options });
+
+// Hackathon start/end come from HACK_START / HACK_END (ISO strings, inlined
+// at build time by next.config.js). Defaults: the event weekend, Fri Nov 20 -
+// Sun Nov 22 EST.
+function parseEnvDate(value: string | undefined, fallback: string) {
+  const d = new Date(value?.trim() ? value : fallback);
+  return Number.isNaN(d.getTime()) ? new Date(fallback) : d;
+}
+
+export const HACKATHON_START = parseEnvDate(
+  process.env.NEXT_PUBLIC_HACK_START,
+  "2026-11-20T00:00:00-05:00",
+);
+export const HACKATHON_END = parseEnvDate(
+  process.env.NEXT_PUBLIC_HACK_END,
+  "2026-11-23T00:00:00-05:00",
+);
+
+const WARNING_LEAD_MS = 7 * 24 * 60 * 60 * 1000;
+
+// The internal-tools warning shows from a week before the hackathon starts
+// until it ends.
+export function isDuringHackathon(now = Date.now()) {
+  return (
+    now >= HACKATHON_START.getTime() - WARNING_LEAD_MS &&
+    now < HACKATHON_END.getTime()
+  );
+}

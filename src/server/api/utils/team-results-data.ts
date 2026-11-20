@@ -26,6 +26,7 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
       score: teamMarks.score,
       impactRating: teamMarks.impactRating,
       creativityRating: teamMarks.creativityRating,
+      technicalRating: teamMarks.technicalRating,
       designRating: teamMarks.designRating,
       adventurousRating: teamMarks.adventurousRating,
       notes: teamMarks.notes,

@@ -1,6 +1,6 @@
 {
-  "id": "9595b64b-56db-4ae3-85dd-abbe8d433b94",
-  "prevId": "6d10fef5-ab10-4d04-abf6-920b2c0d8d81",
+  "id": "cae06192-d2da-45dc-8ea8-b499fe65d13b",
+  "prevId": "b7f10dcd-b1b3-4c89-9c99-31b997c49b68",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1094,6 +1094,13 @@
           "type": "real",
           "primaryKey": false,
           "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -1134,9 +1141,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "team_id": {
-          "name": "team_id",
-          "type": "varchar(255)",
+        "judging_table_id": {
+          "name": "judging_table_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
@@ -1203,8 +1210,8 @@
           "method": "btree",
           "with": {}
         },
-        "judging_assignment_judge_team_idx": {
-          "name": "judging_assignment_judge_team_idx",
+        "judging_assignment_judge_table_idx": {
+          "name": "judging_assignment_judge_table_idx",
           "columns": [
             {
               "expression": "judge_id",
@@ -1213,7 +1220,7 @@
               "nulls": "last"
             },
             {
-              "expression": "team_id",
+              "expression": "judging_table_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1225,17 +1232,33 @@
           "method": "btree",
           "with": {}
         },
-        "judging_assignment_team_idx": {
-          "name": "judging_assignment_team_idx",
+        "judging_assignment_table_idx": {
+          "name": "judging_assignment_table_idx",
           "columns": [
             {
-              "expression": "team_id",
+              "expression": "judging_table_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "judging_assignment_one_in_progress_idx": {
+          "name": "judging_assignment_one_in_progress_idx",
+          "columns": [
+            {
+              "expression": "judge_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"judging_assignment\".\"status\" = 'in_progress'",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -1255,12 +1278,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "judging_assignment_team_id_team_id_fk": {
-          "name": "judging_assignment_team_id_team_id_fk",
+        "judging_assignment_judging_table_id_judging_table_id_fk": {
+          "name": "judging_assignment_judging_table_id_judging_table_id_fk",
           "tableFrom": "judging_assignment",
-          "tableTo": "team",
+          "tableTo": "judging_table",
           "columnsFrom": [
-            "team_id"
+            "judging_table_id"
           ],
           "columnsTo": [
             "id"
@@ -1288,148 +1311,40 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.judging_queue": {
-      "name": "judging_queue",
+    "public.judging_settings": {
+      "name": "judging_settings",
       "schema": "",
       "columns": {
-        "team_id": {
-          "name": "team_id",
-          "type": "varchar(255)",
+        "id": {
+          "name": "id",
+          "type": "integer",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": 1
         },
-        "seen_judges": {
-          "name": "seen_judges",
+        "table_count": {
+          "name": "table_count",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": 0
+          "default": 70
         },
-        "rounds_remaining": {
-          "name": "rounds_remaining",
+        "rows": {
+          "name": "rows",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": 0
+          "default": 5
         },
-        "enqueued_at": {
-          "name": "enqueued_at",
-          "type": "timestamp (3)",
+        "judges_per_table": {
+          "name": "judges_per_table",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "default": 3
         },
-        "status": {
-          "name": "status",
-          "type": "judging_queue_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'waiting'"
-        },
-        "current_judge_id": {
-          "name": "current_judge_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "assigned_at": {
-          "name": "assigned_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "judging_queue_priority_idx": {
-          "name": "judging_queue_priority_idx",
-          "columns": [
-            {
-              "expression": "rounds_remaining",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last"
-            },
-            {
-              "expression": "enqueued_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "judging_queue_current_judge_idx": {
-          "name": "judging_queue_current_judge_idx",
-          "columns": [
-            {
-              "expression": "current_judge_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "judging_queue_team_id_team_id_fk": {
-          "name": "judging_queue_team_id_team_id_fk",
-          "tableFrom": "judging_queue",
-          "tableTo": "team",
-          "columnsFrom": [
-            "team_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "judging_queue_current_judge_id_judge_id_fk": {
-          "name": "judging_queue_current_judge_id_judge_id_fk",
-          "tableFrom": "judging_queue",
-          "tableTo": "judge",
-          "columnsFrom": [
-            "current_judge_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.judging_skip": {
-      "name": "judging_skip",
-      "schema": "",
-      "columns": {
-        "team_id": {
-          "name": "team_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "judge_id": {
-          "name": "judge_id",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp (3)",
           "primaryKey": false,
           "notNull": true,
@@ -1437,46 +1352,16 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "judging_skip_team_id_team_id_fk": {
-          "name": "judging_skip_team_id_team_id_fk",
-          "tableFrom": "judging_skip",
-          "tableTo": "team",
-          "columnsFrom": [
-            "team_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "judging_skip_judge_id_judge_id_fk": {
-          "name": "judging_skip_judge_id_judge_id_fk",
-          "tableFrom": "judging_skip",
-          "tableTo": "judge",
-          "columnsFrom": [
-            "judge_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "judging_skip_team_id_judge_id_pk": {
-          "name": "judging_skip_team_id_judge_id_pk",
-          "columns": [
-            "team_id",
-            "judge_id"
-          ]
-        }
-      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "judging_settings_singleton": {
+          "name": "judging_settings_singleton",
+          "value": "\"judging_settings\".\"id\" = 1"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.judging_table": {
@@ -1823,6 +1708,37 @@
           "primaryKey": false,
           "notNull": false
         },
+        "type": {
+          "name": "type",
+          "type": "scavenger_hunt_item_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "win_points": {
+          "name": "win_points",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "starts_at": {
+          "name": "starts_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ends_at": {
+          "name": "ends_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "room": {
+          "name": "room",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "deleted_at": {
           "name": "deleted_at",
           "type": "timestamp (3)",
@@ -1843,7 +1759,12 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "scavenger_hunt_item_win_points_activity_only": {
+          "name": "scavenger_hunt_item_win_points_activity_only",
+          "value": "\"scavenger_hunt_item\".\"win_points\" IS NULL OR \"scavenger_hunt_item\".\"type\" = 'activity'"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.scavenger_hunt_redemption": {
@@ -1992,6 +1913,14 @@
           "primaryKey": false,
           "notNull": true
         },
+        "activity_type": {
+          "name": "activity_type",
+          "type": "scavenger_hunt_activity_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'attendance'"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp (3)",
@@ -2074,11 +2003,12 @@
         }
       },
       "compositePrimaryKeys": {
-        "scavenger_hunt_scan_user_id_item_id_pk": {
-          "name": "scavenger_hunt_scan_user_id_item_id_pk",
+        "scavenger_hunt_scan_user_id_item_id_activity_type_pk": {
+          "name": "scavenger_hunt_scan_user_id_item_id_activity_type_pk",
           "columns": [
             "user_id",
-            "item_id"
+            "item_id",
+            "activity_type"
           ]
         }
       },
@@ -2591,42 +2521,11 @@
           "primaryKey": false,
           "notNull": true
         },
-        "impact_rating": {
-          "name": "impact_rating",
-          "type": "real",
+        "score_breakdown": {
+          "name": "score_breakdown",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
-        },
-        "creativity_rating": {
-          "name": "creativity_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "design_rating": {
-          "name": "design_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "adventurous_rating": {
-          "name": "adventurous_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "super_like": {
-          "name": "super_like",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "round_type": {
           "name": "round_type",
@@ -3178,7 +3077,7 @@
       "name": "cheat_sweep_trigger",
       "schema": "public",
       "values": [
-        "queue_drain",
+        "judging_complete",
         "manual"
       ]
     },
@@ -3266,14 +3165,6 @@
         "cancelled"
       ]
     },
-    "public.judging_queue_status": {
-      "name": "judging_queue_status",
-      "schema": "public",
-      "values": [
-        "waiting",
-        "assigned"
-      ]
-    },
     "public.judging_table_status": {
       "name": "judging_table_status",
       "schema": "public",
@@ -3331,6 +3222,25 @@
       "values": [
         "regular",
         "sponsored"
+      ]
+    },
+    "public.scavenger_hunt_activity_type": {
+      "name": "scavenger_hunt_activity_type",
+      "schema": "public",
+      "values": [
+        "attendance",
+        "win"
+      ]
+    },
+    "public.scavenger_hunt_item_type": {
+      "name": "scavenger_hunt_item_type",
+      "schema": "public",
+      "values": [
+        "meal",
+        "workshop",
+        "sponsor_workshop",
+        "activity",
+        "bonus"
       ]
     },
     "public.sexual_orientation": {

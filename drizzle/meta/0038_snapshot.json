@@ -1,5 +1,5 @@
 {
-  "id": "6d10fef5-ab10-4d04-abf6-920b2c0d8d81",
+  "id": "b7f10dcd-b1b3-4c89-9c99-31b997c49b68",
   "prevId": "631b9a6a-ce42-4790-82a9-ca082691266c",
   "version": "7",
   "dialect": "postgresql",
@@ -1823,6 +1823,37 @@
           "primaryKey": false,
           "notNull": false
         },
+        "type": {
+          "name": "type",
+          "type": "scavenger_hunt_item_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "win_points": {
+          "name": "win_points",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "starts_at": {
+          "name": "starts_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ends_at": {
+          "name": "ends_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "room": {
+          "name": "room",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "deleted_at": {
           "name": "deleted_at",
           "type": "timestamp (3)",
@@ -1843,7 +1874,12 @@
         }
       },
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "scavenger_hunt_item_win_points_activity_only": {
+          "name": "scavenger_hunt_item_win_points_activity_only",
+          "value": "\"scavenger_hunt_item\".\"win_points\" IS NULL OR \"scavenger_hunt_item\".\"type\" = 'activity'"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.scavenger_hunt_redemption": {
@@ -1992,6 +2028,14 @@
           "primaryKey": false,
           "notNull": true
         },
+        "activity_type": {
+          "name": "activity_type",
+          "type": "scavenger_hunt_activity_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'attendance'"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp (3)",
@@ -2074,11 +2118,12 @@
         }
       },
       "compositePrimaryKeys": {
-        "scavenger_hunt_scan_user_id_item_id_pk": {
-          "name": "scavenger_hunt_scan_user_id_item_id_pk",
+        "scavenger_hunt_scan_user_id_item_id_activity_type_pk": {
+          "name": "scavenger_hunt_scan_user_id_item_id_activity_type_pk",
           "columns": [
             "user_id",
-            "item_id"
+            "item_id",
+            "activity_type"
           ]
         }
       },
@@ -2590,43 +2635,6 @@
           "type": "real",
           "primaryKey": false,
           "notNull": true
-        },
-        "impact_rating": {
-          "name": "impact_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "creativity_rating": {
-          "name": "creativity_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "design_rating": {
-          "name": "design_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "adventurous_rating": {
-          "name": "adventurous_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "super_like": {
-          "name": "super_like",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "score_breakdown": {
           "name": "score_breakdown",
@@ -3337,6 +3345,25 @@
       "values": [
         "regular",
         "sponsored"
+      ]
+    },
+    "public.scavenger_hunt_activity_type": {
+      "name": "scavenger_hunt_activity_type",
+      "schema": "public",
+      "values": [
+        "attendance",
+        "win"
+      ]
+    },
+    "public.scavenger_hunt_item_type": {
+      "name": "scavenger_hunt_item_type",
+      "schema": "public",
+      "values": [
+        "meal",
+        "workshop",
+        "sponsor_workshop",
+        "activity",
+        "bonus"
       ]
     },
     "public.sexual_orientation": {
