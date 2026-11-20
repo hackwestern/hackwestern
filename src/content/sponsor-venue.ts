@@ -7,46 +7,23 @@ export const sponsorVenueCopy = {
   page: {
     seoTitle: "Map",
     heading: "Map",
-    lead: "Your booth in the Sponsor Bay, then the venue floor plans.",
+    lead: "Your booth in the Sponsor Bay, then the venue map with your rooms outlined.",
     booth: "Your booth",
     boothAt: (where: string) => `Your booth · ${where}`,
-    floorsHeading: "Floor plans",
-    /** The floor plans (mock sponsor-chats-v3, the /live maps). */
-    levels: { floor1: "Level 1", floor2: "Level 2" } as Record<string, string>,
-    levelsLabel: "Floor",
-    hint: "* Tap the map to open it full size",
-    mapAlt: (level: string) => `${level} map`,
-    openFull: (level: string) => `Open the ${level} map full size`,
+    /** Rooms outlined on the venue map and listed under it. */
+    marksLabel: "Your rooms",
+    marks: {
+      booth: "Your booth",
+      workshop: "Your workshop",
+      chats: "Your coffee chats",
+      lounge: "Sponsor lounge",
+      belongings: "Belongings overnight",
+    },
     venue:
       "Venue: Ronald D. Schmeichel Building for Entrepreneurship and Innovation, 1151 Richmond St, London. Rooms 1348–1358 are in the Ivey building, a 15-minute walk from the Sponsor Bay.",
   },
   mapButton: "Map",
   mapButtonLabel: "Open the venue map",
-  map: {
-    title: "Venue map",
-    description:
-      "Floor plans with the rooms sponsors use. Pins are approximate.",
-    close: "Close map",
-    floors: "Floor",
-    floorAlt: (floor: string) => `${floor} floor plan`,
-    keyPlaces: "Key places",
-  },
-  // Rooms highlighted on the map and listed under it. `room` is a pin id in
-  // src/lib/sponsor-map-rooms.ts.
-  places: [
-    { room: "2110", name: "Sponsor lounge", where: "Rm 2110 · Floor 2" },
-    {
-      room: "2244",
-      name: "Belongings overnight",
-      where: "Rm 2244 · Floor 2",
-    },
-    { room: "1235", name: "Sponsor Bay (booths)", where: "Floor 1" },
-    {
-      room: "2242",
-      name: "Coffee chats",
-      where: "Rm 2241 to 2243 (Floor 2) and Rm 1348 to 1358 (Floor 1)",
-    },
-  ],
   important: {
     heading: "Important things to remember",
     lounge: {
