@@ -1,4 +1,5 @@
 import { House } from "lucide-react";
+import { IveyWalkNote } from "~/components/ivey-walk-note";
 import { card, CardTitle } from "~/components/sponsors/portal-ui";
 import { sponsorHomeCopy } from "~/content/sponsor-home";
 
@@ -20,7 +21,14 @@ const unique = (rooms: string[]) => [...new Set(rooms)];
  * chats, the coffee chat row says when rooms are assigned; after, it lists
  * the real rooms, then each rep's.
  */
-export function KeyRooms({ chats }: { chats: KeyRoomChat[] | null }) {
+export function KeyRooms({
+  chats,
+  mapHref,
+}: {
+  chats: KeyRoomChat[] | null;
+  /** The portal map opened on Ivey, for the Ivey walk note's Check map. */
+  mapHref?: string;
+}) {
   const ordered = [...(chats ?? [])].sort((a, b) =>
     a.start.localeCompare(b.start),
   );
@@ -77,6 +85,13 @@ export function KeyRooms({ chats }: { chats: KeyRoomChat[] | null }) {
                     </span>
                   ))}
                 </span>
+                {ivey.length > 0 && (
+                  <IveyWalkNote
+                    who="sponsor"
+                    mapHref={mapHref ?? null}
+                    className="mt-1 text-[13px]"
+                  />
+                )}
               </>
             ) : (
               <span className="text-[13px] text-dashboard-text-light">

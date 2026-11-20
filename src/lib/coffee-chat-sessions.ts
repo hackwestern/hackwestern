@@ -212,3 +212,9 @@ export function chatsBySession(
   }
   return out;
 }
+
+/** "Rm 1348" (a chat's stored room) -> "ivey"; null when it isn't a session room. */
+export function buildingOfRoomLabel(room: string | null): Building | null {
+  const id = /(\d{4})/.exec(room ?? "")?.[1];
+  return id ? buildingOf(id) : null;
+}

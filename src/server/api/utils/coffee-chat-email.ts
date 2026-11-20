@@ -1,8 +1,12 @@
 import { coffeeChatInvitesCopy } from "~/content/coffee-chat-invites";
 import { LIVE_URL, coffeeChatNotifyCopy } from "~/content/coffee-chat-notify";
+import { iveyWalkCopy } from "~/content/ivey-walk";
 import { env } from "~/env";
 import { formatCoffeeChatTime } from "~/lib/coffee-chats";
-import { inviteText } from "~/server/api/utils/coffee-chat-invite-text";
+import {
+  buildingOfRoomLabel,
+  inviteText,
+} from "~/server/api/utils/coffee-chat-invite-text";
 import type { CoffeeChatNotice } from "~/server/api/utils/coffee-chat-notify";
 import { sendViaMailjet } from "~/server/mail-mailjet";
 import {
@@ -78,6 +82,15 @@ export function sessionInviteEmail(chat: OfferDetails) {
       ? ([[inv.answerByLabel, answerBy]] as [string, string][])
       : []),
   ];
+  // Ivey: the walk warning and a map link, after the details.
+  const ivey = buildingOfRoomLabel(chat.room) === "ivey";
+  const iveyText = ivey
+    ? [
+        iveyWalkCopy.withEmoji(iveyWalkCopy.hacker),
+        `${iveyWalkCopy.mapLink}: ${iveyWalkCopy.hackerMapUrl}`,
+        "",
+      ]
+    : [];
   const text = [
     copy.greeting(chat.hackerFirstName),
     "",
@@ -86,6 +99,7 @@ export function sessionInviteEmail(chat: OfferDetails) {
     "",
     ...lines.map(([k, v]) => `${k}: ${v}`),
     "",
+    ...iveyText,
     `${copy.action}: ${LIVE_URL}`,
     "",
     deadline,
@@ -105,6 +119,13 @@ export function sessionInviteEmail(chat: OfferDetails) {
         .map(([k, v]) => `<strong>${escapeHtml(k)}:</strong> ${escapeHtml(v)}`)
         .join("<br>"),
     ),
+    ...(ivey
+      ? [
+          p(
+            `<strong>${escapeHtml(iveyWalkCopy.withEmoji(iveyWalkCopy.hacker))}</strong> <a href="${escapeHtml(iveyWalkCopy.hackerMapUrl)}">${escapeHtml(iveyWalkCopy.mapLink)}</a>`,
+          ),
+        ]
+      : []),
     emailButton(LIVE_URL, copy.action),
     p(escapeHtml(deadline)),
     p(escapeHtml(copy.signoff)),

@@ -8,6 +8,8 @@
  * What a chat is called: "Group Coffee Chat" (more than one hacker per
  * chat) or "1-on-1 Coffee Chat"; "coffee chat" when unknown (null).
  */
+import { iveyWalkCopy } from "~/content/ivey-walk";
+
 export const coffeeChatName = (group: boolean | null | undefined) =>
   group == null
     ? "coffee chat"
@@ -41,6 +43,8 @@ export const coffeeChatInvitesCopy = {
       where: string;
       answerBy: string;
       group?: boolean | null;
+      /** At Ivey: the walk warning (src/content/ivey-walk.ts) follows Where. */
+      ivey?: boolean;
     }) =>
       [
         p.rep
@@ -48,6 +52,14 @@ export const coffeeChatInvitesCopy = {
           : `*${p.sponsor}* invited you to a ${coffeeChatName(p.group)}.`,
         `*When:* ${p.when}`,
         `*Where:* ${p.where}`,
+        ...(p.ivey
+          ? [
+              iveyWalkCopy.slackLine(
+                iveyWalkCopy.hacker,
+                iveyWalkCopy.hackerMapUrl,
+              ),
+            ]
+          : []),
         `*Answer by:* ${p.answerBy}. If you don't, your seat goes to someone else.`,
       ].join("\n"),
   },

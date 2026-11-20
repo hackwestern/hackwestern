@@ -6,7 +6,10 @@ import {
   coffeeChatChangeText,
   type CoffeeChatChangeEvent,
 } from "~/server/api/utils/coffee-chat-change-text";
-import { inviteText } from "~/server/api/utils/coffee-chat-invite-text";
+import {
+  buildingOfRoomLabel,
+  inviteText,
+} from "~/server/api/utils/coffee-chat-invite-text";
 import type { CoffeeChatNotice } from "~/server/api/utils/coffee-chat-notify";
 import { escapeSlackText } from "~/server/slack/client";
 import { dmHacker } from "~/server/slack/dm";
@@ -60,6 +63,7 @@ function sessionInviteBody(chat: ChatDetails): string {
     where: escapeSlackText(where),
     answerBy: answerBy ?? when,
     group: chat.group,
+    ivey: buildingOfRoomLabel(chat.room) === "ivey",
   });
   return chat.reconfirm ? `${invitesCopy.slack.reconfirm}\n${body}` : body;
 }

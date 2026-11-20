@@ -66,6 +66,9 @@ export const coffeeChatNotifyCopy = {
     /** chat = "Group Coffee Chat" / "1-on-1 Coffee Chat" (coffeeChatName). */
     lead: (chat: string, sponsor: string, minutesLeft: number) =>
       `☕ Your ${chat} with *${sponsor}* starts in ${minutesLeft} min!`,
+    /** At Ivey (30 minutes ahead; the walk warning follows, ivey-walk.ts). */
+    leadIvey: (chat: string, sponsor: string, minutesLeft: number) =>
+      `☕ Your ${chat} with *${sponsor}* is in ${minutesLeft} min!`,
     when: (time: string, minutes: number) =>
       `🕒 Saturday ${time} · ${minutes} min`,
     where: (room: string) => `📍 ${room}`,

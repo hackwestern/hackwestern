@@ -568,6 +568,57 @@ describe("review fixes: unfinished claims and late cancels", () => {
   });
 });
 
+describe("Ivey chats (a 15-minute walk): 30 minutes ahead, with the walk warning", () => {
+  const ivey = { ...accepted, room: "Rm 1348" };
+
+  test("text: is in 30 min, the time, the room, then the warning with a map link", () => {
+    expect(reminderText({ ...CONTENT, room: "Rm 1348" }, 30)).toBe(
+      "☕ Your Group Coffee Chat with *Acme* is in 30 min!\n🕒 Saturday 10:00 AM · 30 min\n📍 Rm 1348, Ivey building (15-min walk)\n⚠️ This chat is in a different building (Ivey), a 15-minute walk away. Leave now. <https://www.hackwestern.com/live?tab=map&amp;building=ivey|Check map>",
+    );
+  });
+
+  test("not at Ivey: no warning and no map link", () => {
+    expect(reminderText(CONTENT, 15)).not.toMatch(/Ivey|map/);
+  });
+
+  test("scheduled 30 minutes before", () => {
+    const d = desiredReminder(ivey, at("09:00"))!;
+    expect(d.mode).toBe("schedule");
+    expect(d.postAt).toEqual(at("09:30"));
+    expect(d.text).toMatch(/is in 30 min!/);
+  });
+
+  test("accepted under ~32 minutes before: posted now with the real minutes", () => {
+    const late = desiredReminder(ivey, at("09:29"))!;
+    expect(late.mode).toBe("now");
+    expect(late.text).toMatch(/is in 31 min!/);
+    const later = desiredReminder(ivey, at("09:45"))!;
+    expect(later.mode).toBe("now");
+    expect(later.text).toMatch(/is in 15 min!/);
+    expect(desiredReminder(ivey, at("10:00"))).toBeNull();
+  });
+
+  test("a reminder scheduled before this change (15 min, same room) is rescheduled", () => {
+    const want = desiredReminder(ivey, at("09:00"))!;
+    // Non-Ivey keys didn't change, so those reminders are kept.
+    expect(want.contentKey).not.toBe(
+      desiredReminder(accepted, at("09:00"))!.contentKey,
+    );
+    expect(desiredReminder(accepted, at("09:00"))!.postAt).toEqual(at("09:45"));
+  });
+
+  test("sync schedules it at start - 30 min", async () => {
+    const { chat } = await makeChat({ room: "Rm 1352" });
+    const slack = mockSlack();
+    await syncCoffeeChatReminder(chat.id, deps(slack, at("09:00")));
+    const [call] = slack.of("chat.scheduleMessage");
+    expect(Number(call!.args.get("post_at"))).toBe(
+      at("10:30").getTime() / 1000,
+    );
+    expect(call!.args.get("text")).toMatch(/Leave now\./);
+  });
+});
+
 describe("syncAllCoffeeChatReminders (backfill)", () => {
   test("idempotent: a second sweep schedules nothing new", async () => {
     // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table

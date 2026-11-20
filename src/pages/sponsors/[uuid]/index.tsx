@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { ContactsCard } from "~/components/sponsors/home/contacts-card";
+import { iveyWalkCopy } from "~/content/ivey-walk";
 import { KeyRooms } from "~/components/sponsors/home/key-rooms";
 import { UpNext } from "~/components/sponsors/home/up-next";
 import { WelcomeCard } from "~/components/sponsors/home/welcome-card";
@@ -125,6 +126,7 @@ export default function SponsorHubPage() {
           yourChats: `${base}/coffee-chats`,
           judging: `${base}/picks`,
         }}
+        mapHref={iveyWalkCopy.sponsorMapPath(id)}
       />
       <KeyRooms
         chats={
@@ -137,6 +139,7 @@ export default function SponsorHubPage() {
               }))
             : null
         }
+        mapHref={iveyWalkCopy.sponsorMapPath(id)}
       />
     </SponsorShell>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, TriangleAlert } from "lucide-react";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
+import { iveyWalkCopy } from "~/content/ivey-walk";
 import {
   cellAt,
   chatsInCell,
@@ -114,7 +115,19 @@ export function RoomsGrid({
             scope="row"
             className="sticky left-0 z-[2] w-[78px] whitespace-nowrap bg-dashboard-bg-surface pr-1 text-left text-sm font-semibold"
           >
-            {r.id}
+            <span className="inline-flex items-center gap-1">
+              {r.id}
+              {/* Ivey rows: the walk note as an icon with a tooltip and label. */}
+              {r.building === "ivey" && (
+                <TriangleAlert
+                  role="img"
+                  aria-label={iveyWalkCopy.board}
+                  className="size-3.5 flex-none text-dashboard-text-warning"
+                >
+                  <title>{iveyWalkCopy.board}</title>
+                </TriangleAlert>
+              )}
+            </span>
           </th>
           {COFFEE_SESSIONS.map((s) => (
             <td key={s.id} className="h-[66px] p-0">

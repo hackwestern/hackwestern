@@ -46,6 +46,8 @@ export type AgendaStep = {
   /** Saturday's coffee chat placeholder, replaced by the real chats once
    * organizers send them. */
   chatsPlaceholder?: boolean;
+  /** A coffee chat at Ivey: shows the walk note (src/content/ivey-walk.ts). */
+  ivey?: boolean;
 };
 
 export const AGENDA: AgendaStep[] = [

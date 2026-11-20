@@ -257,3 +257,34 @@ describe("session invite names the chat (Group / 1-on-1)", () => {
     );
   });
 });
+
+describe("Ivey invites carry the walk warning and a map link", () => {
+  const session = {
+    ...CHAT,
+    placementId: "22222222-2222-4222-8222-222222222222",
+    repName: "Riley",
+    group: false,
+  };
+
+  test("Slack DM and email at Ivey", () => {
+    const dm = JSON.stringify(
+      coffeeChatDmMessage({ ...session, room: "Rm 1348" }).blocks,
+    );
+    expect(dm).toContain(
+      "⚠️ This chat is in a different building (Ivey), a 15-minute walk away. <https://www.hackwestern.com/live?tab=map&amp;building=ivey|Check map>",
+    );
+    const email = sessionInviteEmail({ ...session, room: "Rm 1348" });
+    expect(email.text).toContain(
+      "⚠️ This chat is in a different building (Ivey), a 15-minute walk away.",
+    );
+    expect(email.html).toContain(
+      '<a href="https://www.hackwestern.com/live?tab=map&amp;building=ivey">Check map</a>',
+    );
+  });
+
+  test("not at Ivey: no warning", () => {
+    const dm = JSON.stringify(coffeeChatDmMessage(session).blocks);
+    expect(dm).not.toContain("different building");
+    expect(sessionInviteEmail(session).text).not.toContain("Check map");
+  });
+});

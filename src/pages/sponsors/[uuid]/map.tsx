@@ -9,7 +9,8 @@ import {
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { sponsorVenueCopy as copy } from "~/content/sponsor-venue";
 import { boothFor, boothSpot } from "~/lib/sponsor-bay-layout";
-import { roomsForLocation } from "~/lib/venue-map";
+import { floorForQuery, roomsForLocation } from "~/lib/venue-map";
+import { IveyWalkNote } from "~/components/ivey-walk-note";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
@@ -97,11 +98,18 @@ export default function SponsorMapPage() {
         }
       />
       <div data-tour="map-floors" className="min-w-0">
+        {/* ?building=ivey (the Ivey walk "Check map" link) opens on Ivey. */}
         <VenueMap
+          key={String(router.query.building ?? "")}
+          initialFloor={floorForQuery(router.query.building)}
           highlights={highlights}
           highlightsLabel={copy.page.marksLabel}
         />
       </div>
+      {setup.data?.confirmed &&
+        setup.data.chats.some((c) => c.building === "ivey") && (
+          <IveyWalkNote who="sponsor" mapHref={null} />
+        )}
       <p className="m-0 text-sm">{copy.page.venue}</p>
     </>,
   );
