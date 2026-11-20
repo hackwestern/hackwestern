@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import Link from "next/link";
-import { ArrowRight, Check, ChevronLeft, CircleAlert, Clock } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, ChevronLeft, CircleAlert, Clock, Users } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { pressable } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorSetupCopy as copy } from "~/content/sponsor-coffee-setup";
@@ -288,7 +288,7 @@ export function BackToChats({ href }: { href: string }) {
     <Link
       href={href}
       className={cn(
-        "inline-flex min-h-11 w-fit items-center gap-1 rounded-dashboard-md px-1 text-base font-semibold text-dashboard-text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+        "inline-flex min-h-11 w-fit items-center gap-1 rounded-dashboard-md px-2 text-sm font-semibold text-dashboard-text-link focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
         pressable,
       )}
     >
@@ -298,88 +298,122 @@ export function BackToChats({ href }: { href: string }) {
   );
 }
 
-/** The flow's header card plus its numbered step rail. */
+/**
+ * A flow's header (mock sponsor-chats-v3): a tinted card with the step's
+ * icon, "Step 1 of 2 · Required" and the h1, then the "Part 1 of 3" rail
+ * with a segment and a numbered label per part. Blue for Send
+ * availability, purple for the shortlist.
+ */
 export function FlowHeader({
+  kind,
   tag,
   title,
-  body,
   steps,
   current,
   hrefFor,
+  railLabel,
 }: {
+  kind: "prefs" | "shortlist";
   tag: string;
   title: string;
-  body: string;
   steps: readonly string[];
   /** 1-based. */
   current: number;
   hrefFor: (step: number) => string | null;
+  railLabel: string;
 }) {
+  const purple = kind === "shortlist";
+  const Icon = purple ? Users : CalendarDays;
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1 rounded-dashboard-lg border-l-4 border-dashboard-action-primary bg-dashboard-bg-highlight px-4 py-4 sm:px-6">
-        <span className="text-xs font-bold uppercase tracking-wider text-dashboard-text-active">{tag}</span>
-        <h1 className="dashboard-h1 m-0 text-dashboard-text-active">{title}</h1>
-        <p className="m-0 text-base text-dashboard-text-medium">{body}</p>
-      </div>
-      <nav aria-label={copy.rail.label} className="flex flex-col gap-2">
+    <div className="flex flex-col gap-8">
+      <header
+        className={cn(
+          "flex items-center gap-4 rounded-dashboard-lg border-l-4 px-4 py-4 sm:px-6",
+          purple
+            ? "border-dashboard-group-text bg-dashboard-group-bg text-dashboard-group-text"
+            : "border-dashboard-action-primary bg-dashboard-bg-highlight text-dashboard-text-active",
+        )}
+      >
+        <Icon aria-hidden className="size-6 shrink-0" strokeWidth={1.8} />
+        <div className="min-w-0">
+          <p className="m-0 text-xs font-bold uppercase tracking-wider">{tag}</p>
+          <h1 className="m-0 text-[28px] font-extrabold leading-tight tracking-tight md:text-sm-display">{title}</h1>
+        </div>
+      </header>
+      <div className="flex flex-col gap-2.5">
         <span className="text-sm text-dashboard-text-medium">{copy.rail.stepOf(current, steps.length)}</span>
-        <ol className="m-0 grid list-none gap-2 p-0" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
-          {steps.map((label, i) => {
-            const n = i + 1;
-            const href = hrefFor(n);
-            const state = n < current ? "done" : n === current ? "current" : "todo";
-            const inner = (
-              <>
-                <span
-                  aria-hidden
-                  className={cn(
-                    "h-1.5 w-full rounded-full",
-                    state === "todo" ? "bg-dashboard-bg-nav" : "bg-dashboard-action-primary",
-                  )}
-                />
-                <span className="flex items-center gap-1.5">
+        <div aria-hidden className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
+          {steps.map((label, i) => (
+            <i
+              key={label}
+              className={cn(
+                "h-1.5 rounded-full",
+                i < current
+                  ? purple
+                    ? "bg-dashboard-group-text"
+                    : "bg-dashboard-action-primary"
+                  : "bg-dashboard-bg-nav",
+              )}
+            />
+          ))}
+        </div>
+        <nav aria-label={railLabel}>
+          <ol className="m-0 grid list-none gap-1.5 p-0" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
+            {steps.map((label, i) => {
+              const n = i + 1;
+              const href = hrefFor(n);
+              const state = n < current ? "done" : n === current ? "current" : "todo";
+              const inner = (
+                <>
                   <span
                     aria-hidden
                     className={cn(
-                      "flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+                      "flex size-5 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
                       state === "todo"
-                        ? "border border-dashboard-border-control text-dashboard-text-light"
-                        : "bg-dashboard-action-primary text-dashboard-text-inverse",
+                        ? "border-dashboard-border-control text-dashboard-text-light"
+                        : purple
+                          ? "border-dashboard-group-text bg-dashboard-group-text text-dashboard-text-inverse"
+                          : "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse",
                     )}
                   >
-                    {state === "done" ? <Check className="size-3" /> : n}
+                    {state === "done" ? <Check className="size-3" strokeWidth={3} /> : n}
                   </span>
                   <span
                     className={cn(
-                      "hidden text-sm sm:inline",
-                      state === "current" ? "font-semibold text-dashboard-text-active" : "text-dashboard-text-medium",
+                      "min-w-0 text-sm",
+                      state === "current"
+                        ? cn("font-semibold", purple ? "text-dashboard-group-text" : "text-dashboard-text-active")
+                        : state === "done"
+                          ? "text-dashboard-text-heavy"
+                          : "text-dashboard-text-medium",
                     )}
                   >
                     {label}
                   </span>
-                  <span className="sr-only sm:hidden">{label}</span>
-                  {state !== "todo" && (
-                    <span className="sr-only">, {state === "done" ? copy.rail.done : copy.rail.current}</span>
+                  {state === "done" && <span className="sr-only">, {copy.rail.done}</span>}
+                </>
+              );
+              const cls = "flex min-h-11 items-center gap-1.5 rounded-dashboard-sm";
+              return (
+                <li key={label}>
+                  {href && state !== "current" ? (
+                    <Link
+                      href={href}
+                      className={cn(cls, "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary")}
+                    >
+                      {inner}
+                    </Link>
+                  ) : (
+                    <span aria-current={state === "current" ? "step" : undefined} aria-disabled={!href || undefined} className={cls}>
+                      {inner}
+                    </span>
                   )}
-                </span>
-              </>
-            );
-            return (
-              <li key={label} aria-current={state === "current" ? "step" : undefined}>
-                {href && state !== "current" ? (
-                  <Link href={href} className="flex min-h-11 flex-col gap-1.5 rounded-dashboard-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary">
-                    {inner}
-                  </Link>
-                ) : (
-                  <div className="flex min-h-11 flex-col gap-1.5">{inner}</div>
-                )}
-              </li>
-            );
-          })}
-        </ol>
-        <p className="m-0 text-base font-semibold text-dashboard-text-heavy sm:hidden">{steps[current - 1]}</p>
-      </nav>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+      </div>
     </div>
   );
 }

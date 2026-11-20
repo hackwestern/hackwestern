@@ -1,12 +1,11 @@
+import Link from "next/link";
 import { useRouter } from "next/router";
+import { ScanLine } from "lucide-react";
+import { btn } from "~/components/sponsors/portal-ui";
 import { ChatsHome } from "~/components/sponsors/coffee-setup/chats-home";
 import { PrefsStep } from "~/components/sponsors/coffee-setup/prefs-step";
 import { ReviewStep } from "~/components/sponsors/coffee-setup/review-step";
-import {
-  BackToChats,
-  FlowHeader,
-  SetupStatus,
-} from "~/components/sponsors/coffee-setup/shared";
+import { BackToChats, FlowHeader } from "~/components/sponsors/coffee-setup/shared";
 import { ShortlistFlow } from "~/components/sponsors/coffee-setup/shortlist-flow";
 import { TeamStep } from "~/components/sponsors/coffee-setup/team-step";
 import {
@@ -16,6 +15,7 @@ import {
 } from "~/components/sponsors/schedule-states";
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { sponsorSetupCopy as copy } from "~/content/sponsor-coffee-setup";
+import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
@@ -36,12 +36,10 @@ function screenOf(query: Record<string, string | string[] | undefined>): Screen 
 }
 
 // The sponsor's coffee chats (session model, docs/specs/coffee-chat-
-// sessions.md; design mocks/sponsor-portal-flow-hacker-v6): the Chats home,
-// then two separate flows picked by ?flow=: chatting preferences (Your
-// team → preferences → Review & submit) and the shortlist (pick → Review
-// & submit). Every screen opens with the status card, because sponsors
-// come back hours after organizers act. Once organizers send, "Your chats"
-// leads the home and setup folds into links (ChatsHome).
+// sessions.md; design mocks/sponsor-chats-v3): the Chats page, one stage at
+// a time, then two flows picked by ?flow=: Send availability (Your team →
+// Availability → Review & submit) and the shortlist (Shortlist hackers →
+// Review & submit).
 export default function SponsorCoffeeChatsPage() {
   const router = useRouter();
   const id = typeof router.query.uuid === "string" ? router.query.uuid : "";
@@ -51,21 +49,31 @@ export default function SponsorCoffeeChatsPage() {
     { enabled: validUuid, retry: 1, refetchInterval: 60_000, refetchOnWindowFocus: false },
   );
 
-  // Chats home: "Coffee chats" is the page heading. The flows have their
-  // own h1 (FlowHeader), so the header shows "Back to Chats" instead.
+  // Chats: "Coffee chats" is the page heading, with "Scan a hacker" on its
+  // right from tablets up. The flows have their own h1 (FlowHeader) under
+  // "Back to Coffee chats".
   const base = `/sponsors/${id}/coffee-chats`;
   const inFlow = router.query.flow === "prefs" || router.query.flow === "shortlist";
   const shell = (children: React.ReactNode) =>
     inFlow ? (
-      <SponsorShell
-        title={copy.seoTitle}
-        barTitle={copy.home.title}
-        headerStart={<BackToChats href={base} />}
-      >
+      <SponsorShell title={copy.seoTitle}>
+        <BackToChats href={base} />
         {children}
       </SponsorShell>
     ) : (
-      <SponsorShell title={copy.seoTitle} heading={copy.home.title}>
+      <SponsorShell
+        title={copy.seoTitle}
+        heading={copy.home.title}
+        headerEnd={
+          <Link
+            href={`/sponsors/${id}/scan`}
+            className={cn(btn.primary, "min-h-14 rounded-dashboard-2xl px-6 text-[17px] font-bold [&_svg]:size-6")}
+          >
+            <ScanLine aria-hidden />
+            {copy.page.scan}
+          </Link>
+        }
+      >
         {children}
       </SponsorShell>
     );
@@ -77,20 +85,16 @@ export default function SponsorCoffeeChatsPage() {
   const prefsHref = (step: number) => `${base}?flow=prefs&step=${step}`;
   const shortlistHref = (step: number) => `${base}?flow=shortlist&step=${step}`;
   const screen = screenOf(router.query);
-  const status = <SetupStatus sponsor={id} data={data} />;
 
   if (screen.flow === "prefs") {
     const f = copy.prefsFlow;
     return shell(
       <>
-        <div className="md:hidden">
-          <BackToChats href={base} />
-        </div>
-        <SetupStatus sponsor={id} data={data} flowStep={screen.step} />
         <FlowHeader
+          kind="prefs"
+          railLabel={f.railLabel}
           tag={f.tag}
           title={f.title}
-          body={f.body}
           steps={f.steps}
           current={screen.step}
           // Steps 2 and 3 need a team.
@@ -108,7 +112,7 @@ export default function SponsorCoffeeChatsPage() {
             data={data}
             teamHref={prefsHref(1)}
             prefsHref={prefsHref(2)}
-            shortlistHref={shortlistHref(1)}
+            homeHref={base}
           />
         )}
       </>,
@@ -119,14 +123,11 @@ export default function SponsorCoffeeChatsPage() {
     const f = copy.shortlist;
     return shell(
       <>
-        <div className="md:hidden">
-          <BackToChats href={base} />
-        </div>
-        {status}
         <FlowHeader
+          kind="shortlist"
+          railLabel={f.railLabel}
           tag={f.tag}
           title={f.title}
-          body={f.body}
           steps={f.steps}
           current={screen.step}
           hrefFor={(n) => (data.submittedAt ? shortlistHref(n) : null)}
@@ -144,16 +145,13 @@ export default function SponsorCoffeeChatsPage() {
   }
 
   return shell(
-    <>
-      <ChatsHome
-        status={status}
-        sponsor={id}
-        data={data}
-        prefsHref={data.submittedAt ? prefsHref(3) : prefsHref(1)}
-        teamHref={prefsHref(1)}
-        shortlistHref={shortlistHref(data.shortlistSubmittedAt ? 2 : 1)}
-        scanHref={`/sponsors/${id}/scan`}
-      />
-    </>,
+    <ChatsHome
+      sponsor={id}
+      data={data}
+      startHref={data.reps.some((r) => r.isPrimary) ? prefsHref(2) : prefsHref(1)}
+      changeHref={prefsHref(2)}
+      teamHref={prefsHref(1)}
+      shortlistHref={shortlistHref(1)}
+    />,
   );
 }

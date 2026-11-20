@@ -50,6 +50,66 @@ export const sponsorSetupCopy = {
   /** Above a table wider than the screen (ScrollHint). */
   scrollHint: "Scroll for later times",
 
+  /**
+   * The Chats page, one stage at a time (mock sponsor-chats-v3): a 2-step
+   * line, then one card per stage; finished steps shrink to one line.
+   */
+  page: {
+    scan: "Scan a hacker",
+    steps: {
+      label: "Coffee chat setup, 2 steps",
+      one: "Send availability",
+      two: "Hackers you'd like to meet",
+      required: "Required",
+      inProgress: "In progress",
+      sent: "Sent",
+      unlocks: "Unlocks after step 1",
+      optional: "Optional",
+      optionalPicked: (n: number) => `Optional · ${n} picked`,
+      skipped: "Skipped",
+      state: { cur: "current step", done: "done", lock: "locked" },
+    },
+    stageNew: {
+      kick: "Step 1 · Required",
+      title: "Send availability",
+      body: "Tell us who on your team is chatting and when they're free, and we'll send back your chat times by 10 PM Friday.",
+      start: "Start",
+      continue: "Continue",
+    },
+    availabilitySent: "Availability sent",
+    change: "Change",
+    changeLabel: "Change your availability",
+    shortlistSent: "Shortlist sent",
+    edit: "Edit",
+    editLabel: "Edit your shortlist",
+    stagePrefs: {
+      kick: "Step 2 · Optional",
+      title: "Pick hackers you'd like to meet (optional)",
+      note: "People you met at your booth are invited first.",
+      seatsWord: (n: number) => (n === 1 ? "seat" : "seats"),
+      picked: (n: number, cap: number) => `${n} of ${cap}`,
+      pickedSuffix: "seats picked",
+      due: "submit by 9:30 PM",
+      start: "Start shortlist",
+      continue: "Continue shortlist",
+      skip: "Skip it and we'll invite hackers who asked to chat with you.",
+    },
+    stageShort: {
+      title: "We'll confirm your chat times by 10 PM tonight.",
+      body: "Then every chat shows here: who, when and which room.",
+    },
+    summary: {
+      label: "Your hackers",
+      confirmed: "hackers confirmed",
+      waiting: "waiting",
+      line: (chats: number) => `Saturday, Nov 21 · ${plural(chats, "chat")} · rooms below`,
+    },
+    changeAsk: "Change your team or times",
+    /** After Send availability, back on the Chats page. */
+    sentToast: "Availability sent. We'll confirm your chat times by 10 PM Friday.",
+    shortlistToast: "Shortlist sent.",
+  },
+
   home: {
     title: "Coffee chats",
     intro: "First, tell us when your reps can chat. Then, if you like, pick hackers to meet.",
@@ -155,7 +215,7 @@ export const sponsorSetupCopy = {
     cancel: "Keep it as is",
   },
 
-  back: "Back to Chats",
+  back: "Back to Coffee chats",
   backStep: "Back",
   /** Opens the portal Help (HW lead + emergency contact). */
   help: {
@@ -163,29 +223,34 @@ export const sponsorSetupCopy = {
     contact: "Ask an organizer",
   },
   rail: {
-    stepOf: (n: number, total: number) => `Step ${n} of ${total}`,
+    stepOf: (n: number, total: number) => `Part ${n} of ${total}`,
     label: "Steps",
     done: "done",
     current: "current step",
   },
 
   prefsFlow: {
-    tag: "Required",
-    title: "Chatting preferences",
-    body: "When and how your reps will chat.",
-    steps: ["Your team", "Give us your chatting preferences", "Review & submit preferences"],
+    tag: "Step 1 of 2 · Required",
+    title: "Send availability",
+    steps: ["Your team", "Availability", "Review & submit"],
+    railLabel: "Send availability parts",
+    /** Changing availability that was already sent. */
+    changing: "Changing the availability you sent",
+    editNote:
+      "You're changing availability you already sent. Invites go out by 10 PM Friday, so nobody is affected yet.",
   },
 
   team: {
     heading: (sponsor: string) => `Add each rep from ${sponsor}.`,
     crownNote:
-      "The crown marks your main contact. Organizers call this person. The first rep you add gets it; tap Make main contact on another rep to move it.",
+      "The crown marks your primary contact. Organizers and Help use their name and phone. The first rep you add gets it; tap another rep's crown to move it.",
     count: (n: number) => `Reps · ${n}`,
     empty: "No reps yet. Add the people from your team who'll chat with hackers.",
     name: "Name",
     phone: "Phone",
-    namePlaceholder: "e.g. Dana W.",
-    phonePlaceholder: "e.g. 519-555-0142",
+    namePlaceholder: "e.g. Sam R.",
+    phonePlaceholder: "555-0100",
+    phoneHint: "So our team can text or call them on the day",
     add: "Add rep",
     save: "Save rep",
     saving: "Saving…",
@@ -194,13 +259,13 @@ export const sponsorSetupCopy = {
     editLabel: (name: string) => `Edit ${name}`,
     remove: "Remove",
     removeLabel: (name: string) => `Remove ${name}`,
-    primary: "Main contact",
-    primaryContact: "Main contact",
-    /** The crown button's visible text on a rep who isn't the main contact. */
-    makePrimaryShort: "Make main contact",
-    makePrimary: (name: string) => `Make ${name} the main contact`,
-    isPrimary: (name: string) => `${name} is the main contact`,
-    nowPrimary: (name: string) => `${name} is now the main contact.`,
+    primary: "Primary",
+    primaryContact: "Primary contact",
+    /** The crown button's tooltip on a rep who isn't the primary contact. */
+    makePrimaryShort: "Make primary contact",
+    makePrimary: (name: string) => `Make ${name} the primary contact`,
+    isPrimary: (name: string) => `${name} is the primary contact`,
+    nowPrimary: (name: string) => `${name} is now the primary contact.`,
     added: (name: string) => `${name} added.`,
     removed: (name: string) => `${name} removed.`,
     undo: "Undo",
@@ -211,12 +276,12 @@ export const sponsorSetupCopy = {
     needPhone: "Add a phone number we can call or text.",
     shortPhone: "That phone number looks too short.",
     full: (max: number) => `You can add up to ${max} reps.`,
-    next: "Next: When they're free",
+    next: "Next: Availability",
     needRep: "Add at least one rep to continue.",
   },
 
   prefs: {
-    heading: "Give us your chatting preferences",
+    heading: "When your team is free",
     intro:
       "Three quick questions. This is when your team is free, not a booking: organizers pick your final chat times from it.",
     q1: "How many hackers per chat?",
@@ -225,10 +290,11 @@ export const sponsorSetupCopy = {
       n === 1 ? "1-on-1 · 15 min · 4 hackers an hour per rep" : `Groups of ${n} · 30 min · ${n * 2} hackers an hour per rep`,
     /** Under the hackers-per-chat pick; follows the pick. */
     roomCap: (n: number) => `Each chat: 1 rep + ${plural(n, "hacker")}`,
+    formatHint: "1-on-1 chats are 15 min. Groups are 30 min, up to 1 rep and 5 hackers.",
     q2: "When is each rep free?",
     q2Hint: "Untick any time a rep isn't free.",
     editTeam: "Edit your team",
-    yourDay: "Your events",
+    yourDay: "Your day",
     yourWorkshop: "Your workshop",
     /** Legend for the hatched cells, shown only when the grid has one. */
     legend: "Your workshop, with 15 minutes' travel time either side",
@@ -250,7 +316,7 @@ export const sponsorSetupCopy = {
     /** Screen-reader session name for a cut session: "1–2, 1:00–1:30 only". */
     partialLabel: (session: string, only: string) => `${session}, ${only}`,
     q3: "How many chats?",
-    q3Hint: "For each rep. Organizers won't schedule a rep for more than this. 0 means they won't chat.",
+    q3Hint: "For each rep. 0 is fine for someone who's only at the booth. Organizers won't schedule a rep for more than this.",
     fewer: (name: string) => `Fewer chats for ${name}`,
     more: (name: string) => `More chats for ${name}`,
     chatsLabel: (name: string) => `Chats for ${name}`,
@@ -268,7 +334,7 @@ export const sponsorSetupCopy = {
   },
 
   review: {
-    heading: "Review & submit preferences",
+    heading: "Review & submit",
     allGood: "Everything checks out.",
     whenFree: "When your team is free",
     summary: (hackersPerChat: number, minutes: number, chats: number, hackers: number) =>
@@ -282,7 +348,7 @@ export const sponsorSetupCopy = {
         ? `${chatsAndTime(chats, minutes)} · asked for ${wanted}`
         : chatsAndTime(chats, minutes),
     contactLine: (name: string, phone: string) =>
-      `Organizers call ${name} at ${phone}.`,
+      `Organizers and Help call ${name} at ${phone}.`,
     workshop: "Your workshop · Sat",
     workshopLine: (when: string, title: string, location: string | null) =>
       [when, title, location].filter(Boolean).join(" · "),
@@ -292,23 +358,24 @@ export const sponsorSetupCopy = {
     fixChats: (name: string) => `Change ${firstName(name)}'s chats`,
     fixTeam: "Edit your team",
     fixFree: "Change times",
-    submitNote: "This is when your team is free. We'll confirm your final chat times.",
-    submit: "Submit preferences",
+    submitNote: "This is when your team is free. We'll send back your chat times by 10 PM Friday.",
+    submit: "Send availability",
+    savedToast: "Changes saved",
     submitting: "Submitting…",
     submitted: "Preferences submitted",
     submittedBody:
       "Thanks! Organizers will pick your final chat times from this. You can still make changes.",
-    resubmit: "Submit changes",
+    resubmit: "Save changes",
     shortlistNext: "Next: Shortlist hackers",
     noChats: "No rep has a chat at a time they're free. Tick a session or add chats.",
-    noPrimary: "Pick a main contact (the crown) in Your team.",
+    noPrimary: "Mark one rep as the primary contact (tap the crown) in Your team.",
   },
 
   shortlist: {
-    tag: "Optional",
-    title: "Shortlist",
-    body: "Hackers you'd like to meet.",
-    steps: ["Shortlist hackers", "Review & submit shortlist"],
+    tag: "Step 2 of 2 · Optional",
+    title: "Hackers you'd like to meet",
+    railLabel: "Shortlist parts",
+    steps: ["Shortlist hackers", "Review & submit"],
     how: ["Shortlist hackers you'd like to meet here.", "Submit your shortlist when you're happy with it."],
     locked: "Submit your chatting preferences first. Your seats come from them.",
     goPrefs: "Go to chatting preferences",
@@ -395,7 +462,21 @@ export const sponsorSetupCopy = {
     /** When chats in a cut (or short) session run: "2:30–3:00". */
     between: (start: string, end: string) => `${start}–${end}`,
     hackers: (n: number) => (n === 0 ? "No hackers yet" : plural(n, "hacker")),
-    status: { pending: "Invited", accepted: "Confirmed" } as Record<string, string>,
+    status: { pending: "Waiting", accepted: "Accepted" } as Record<string, string>,
+    /** Short session heads across the calendar: "10–11". */
+    sessionsShort: {
+      "10": "10–11",
+      "11": "11–12",
+      "13": "1–2",
+      "14": "2–3",
+      "15": "3–4",
+      "16": "4–5",
+    } as Record<string, string>,
+    calendarLabel: "Your chats calendar, Saturday. Scrolls sideways",
+    workshopTime: (when: string) => when,
+    hackersLabel: "Hackers",
+    accepted: "Accepted",
+    waiting: "Waiting",
     repChats: (n: number) => plural(n, "chat"),
     emptyRep: "No chats for this rep.",
   },
@@ -422,7 +503,7 @@ export const sponsorSetupCopy = {
     shortPhone: "That phone number looks too short.",
     badSession: "That isn't one of the chat sessions.",
     noReps: "Add at least one rep in Your team first.",
-    noPrimary: "Pick a main contact (the crown) in Your team.",
+    noPrimary: "Mark one rep as the primary contact (tap the crown) in Your team.",
     noChats: "No rep has a chat at a time they're free. Tick a session or add chats.",
     notAHacker: "That isn't a Hack Western hacker's badge.",
     prefsFirst: "Submit your chatting preferences first.",

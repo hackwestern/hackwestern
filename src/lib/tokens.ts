@@ -317,6 +317,7 @@ export const dashboardColors = {
     okText: "#106b31",
     danger: "#b42318", // Remove, Change anyway, field errors
     workshopBg: "#fff4f8", // your workshop row in Your chats
+    workshopLine: "#c2389e", // your workshop block's edge
   },
 } as const;
 

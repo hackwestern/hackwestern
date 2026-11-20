@@ -1,66 +1,82 @@
 import { useState } from "react";
-import { Coffee } from "lucide-react";
+import { Coffee, MapPin } from "lucide-react";
+import { card, CardTitle, chip, seg } from "~/components/sponsors/portal-ui";
 import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
 import { COFFEE_SESSIONS } from "~/lib/coffee-chat-sessions";
+import { roomLabel } from "~/lib/sponsor-home";
 import { cn } from "~/lib/utils";
-import { pressable } from "~/components/sponsors/sponsor-shell-styles";
-import { hatch, workshopWhen } from "./availability-grid";
-import { cardClass, ScrollHint, sessionLabel, shortClock, type SetupData } from "./shared";
+import { hatch } from "./availability-grid";
+import { shortClock, type SetupData } from "./shared";
 
 const copy = sponsorSetupCopy.chats;
 
 type Chat = SetupData["chats"][number];
+type Hacker = Chat["hackers"][number];
+
+/** Accepted: a filled green dot. Waiting: an open ring. */
+function StatusDot({ status }: { status: Hacker["status"] }) {
+  return (
+    <i
+      aria-hidden
+      className={cn(
+        "inline-block size-2.5 shrink-0 rounded-full",
+        status === "accepted"
+          ? "bg-dashboard-status-live"
+          : "border-2 border-dashboard-action-primary bg-dashboard-bg-surface",
+      )}
+    />
+  );
+}
 
 /**
- * "Your chats" once organizers send: sessions x reps with room and
- * building, filterable by rep; Calendar (default) or List.
+ * Your chats once organizers send (mock sponsor-chats-v3): rep chips, a
+ * Calendar / List switch, then a Saturday calendar with the sessions across
+ * and one row per rep (your workshop on top). Hackers show only as Accepted
+ * or Waiting: declined people and empty seats aren't shown.
  */
 export function YourChats({ data }: { data: SetupData }) {
   const [rep, setRep] = useState<string | null>(null);
   const [view, setView] = useState<"calendar" | "list">("calendar");
-  const reps = data.reps.filter((r) => rep === null || r.id === rep);
+  const chatReps = data.reps.filter((r) => data.chats.some((c) => c.repId === r.id));
+  const reps = chatReps.filter((r) => rep === null || r.id === rep);
   const chatAt = (repId: string, sessionId: string) =>
     data.chats.find((c) => c.repId === repId && c.sessionId === sessionId);
-  const when = workshopWhen(data);
-  const chip = (on: boolean) =>
-    cn(
-      // DashboardChip's look (the mock's rep chips), kept as radios.
-      "min-h-11 whitespace-nowrap rounded-dashboard-lg px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
-      on
-        ? "bg-dashboard-action-primary text-dashboard-text-inverse"
-        : "bg-dashboard-bg-nav text-dashboard-text-heavy [@media(hover:hover)]:hover:bg-dashboard-bg-navSelected",
-      pressable,
-    );
+  const workshop = data.workshops[0] ?? null;
+  const firstBlocked = COFFEE_SESSIONS.findIndex((s) => data.blocked.includes(s.id));
+  const blockedCount = COFFEE_SESSIONS.filter((s) => data.blocked.includes(s.id)).length;
+  const cell = "min-w-0 border-l border-t border-dashboard-border-subtle p-1.5 text-xs";
+  // The rep column stays put while the sessions scroll sideways.
+  const nameCell =
+    "sticky left-0 z-[2] min-w-0 border-t border-dashboard-border-subtle bg-dashboard-bg-surface p-1.5 text-xs shadow-[1px_0_0_theme(colors.dashboard.border.default)]";
 
   return (
-    <section className={cardClass} aria-labelledby="your-chats">
-      <h2 id="your-chats" className="m-0 flex items-center gap-2 text-xl font-semibold text-dashboard-text-heavy">
-        <Coffee aria-hidden className="size-5" />
+    <section className={card} aria-labelledby="your-chats">
+      <CardTitle id="your-chats" icon={<Coffee aria-hidden />} className="text-lg">
         {copy.heading}
-      </h2>
-      <div role="radiogroup" aria-label={copy.filterLabel} className="flex flex-wrap gap-2">
-        <button type="button" role="radio" aria-checked={rep === null} className={chip(rep === null)} onClick={() => setRep(null)}>
-          {copy.everyone}
-        </button>
-        {data.reps.map((r) => (
-          <button key={r.id} type="button" role="radio" aria-checked={rep === r.id} className={chip(rep === r.id)} onClick={() => setRep(r.id)}>
-            {r.name}
-          </button>
-        ))}
+      </CardTitle>
+      <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:justify-between">
+        <div role="group" aria-label={copy.filterLabel} className="flex flex-wrap gap-2">
+          {[{ id: null, name: copy.everyone }, ...chatReps].map((r) => (
+            <button
+              key={r.id ?? "all"}
+              type="button"
+              aria-pressed={rep === r.id}
+              className={chip(rep === r.id)}
+              onClick={() => setRep(r.id)}
+            >
+              {r.name}
+            </button>
+          ))}
+        </div>
       </div>
-      <div role="radiogroup" aria-label={copy.viewLabel} className="grid w-fit grid-cols-2 gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1">
+      <div role="group" aria-label={copy.viewLabel} className={cn(seg.frame, "w-fit")}>
         {(["calendar", "list"] as const).map((v) => (
           <button
             key={v}
             type="button"
-            role="radio"
-            aria-checked={view === v}
+            aria-pressed={view === v}
             onClick={() => setView(v)}
-            className={cn(
-              "min-h-11 rounded-dashboard-md px-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
-              view === v ? "bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card" : "text-dashboard-text-medium",
-              pressable,
-            )}
+            className={cn(seg.button(view === v), "px-3")}
           >
             {copy[v]}
           </button>
@@ -68,114 +84,174 @@ export function YourChats({ data }: { data: SetupData }) {
       </div>
 
       {view === "calendar" ? (
-        // Sessions down the side, reps across: all six sessions show at
-        // phone width, and only a wide team scrolls (with a hint).
-        <ScrollHint label={copy.heading}>
-          <table className="w-full border-collapse text-sm" style={{ minWidth: `${4.5 + reps.length * 7.5}rem` }}>
-            <thead>
-              <tr className="bg-dashboard-bg-inset">
-                <th scope="col" className="sticky left-0 z-10 w-20 bg-dashboard-bg-inset p-2 text-left font-medium text-dashboard-text-light">
-                  {sponsorSetupCopy.daySubtitle}
-                </th>
-                {reps.map((r) => {
-                  const total = data.chats.filter((c) => c.repId === r.id).reduce((n, c) => n + c.chats, 0);
+        <>
+          <p className="m-0 flex gap-4 text-[13px] text-dashboard-text-medium">
+            <span className="inline-flex items-center gap-1.5">
+              <StatusDot status="accepted" />
+              {copy.accepted}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <StatusDot status="pending" />
+              {copy.waiting}
+            </span>
+          </p>
+          <div
+            role="region"
+            tabIndex={0}
+            aria-label={copy.calendarLabel}
+            className="overflow-x-auto rounded-dashboard-md border border-dashboard-border-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+          >
+            <div
+              className="grid min-w-[812px]"
+              style={{ gridTemplateColumns: `104px repeat(${COFFEE_SESSIONS.length}, minmax(0,1fr))` }}
+            >
+              <div className="sticky left-0 z-[3] bg-dashboard-bg-inset p-1.5 text-xs font-semibold text-dashboard-text-light shadow-[1px_0_0_theme(colors.dashboard.border.default)]">
+                {sponsorSetupCopy.daySubtitle}
+              </div>
+              {COFFEE_SESSIONS.map((s) => (
+                <div
+                  key={s.id}
+                  className="border-l border-dashboard-border-subtle bg-dashboard-bg-inset p-1.5 text-center text-[13px] font-bold tabular-nums"
+                >
+                  {copy.sessionsShort[s.id] ?? s.id}
+                </div>
+              ))}
+              {/* Your workshop row */}
+              <div className={cn(nameCell, "flex items-center text-sm font-bold")}>{copy.yourWorkshop}</div>
+              {COFFEE_SESSIONS.map((s, i) => {
+                if (data.blocked.includes(s.id)) {
+                  if (i !== firstBlocked) return null;
                   return (
-                    <th key={r.id} scope="col" className="p-2 text-left align-bottom">
-                      <span className="block break-words font-semibold text-dashboard-text-heavy">{r.name}</span>
-                      <span className="block text-xs font-normal text-dashboard-text-light">{copy.repChats(total)}</span>
-                    </th>
+                    <div
+                      key={s.id}
+                      className={cn(cell, "bg-dashboard-notice-workshopBg")}
+                      style={{ gridColumn: `span ${blockedCount}` }}
+                    >
+                      {workshop && (
+                        <div className="flex flex-col gap-0.5 rounded-dashboard-sm border-l-4 border-dashboard-notice-workshopLine bg-dashboard-schedule-pink p-1.5 text-xs text-dashboard-text-medium">
+                          <b className="text-[13px] text-dashboard-text-heavy">{workshop.title}</b>
+                          <span className="tabular-nums">
+                            {shortClock(workshop.start)}–{shortClock(workshop.end)}
+                          </span>
+                          {workshop.location && <span>{roomLabel(workshop.location)}</span>}
+                        </div>
+                      )}
+                    </div>
                   );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {COFFEE_SESSIONS.map((s) => {
-                const blocked = data.blocked.includes(s.id);
-                return (
-                  <tr key={s.id} className="border-t border-dashboard-border-subtle">
-                    <th scope="row" className="sticky left-0 z-10 w-20 bg-dashboard-bg-surface p-2 text-left align-top font-semibold text-dashboard-text-heavy">
-                      {sessionLabel(s.id)}
-                    </th>
-                    {reps.map((r) => {
-                      const c = chatAt(r.id, s.id);
-                      if (c) {
-                        return (
-                          <td key={r.id} className="p-1 align-top">
-                            <ChatCard chat={c} data={data} />
-                          </td>
-                        );
-                      }
-                      if (blocked) {
-                        return (
-                          <td key={r.id} className={cn("p-2 text-xs font-semibold text-dashboard-text-medium", hatch)}>
-                            {copy.workshop}
-                            {when && ` ${when}`}
-                          </td>
-                        );
-                      }
-                      return (
-                        <td key={r.id} className="p-2 align-top text-dashboard-text-light">
-                          <span aria-hidden>{copy.none}</span>
-                          <span className="sr-only">{copy.noneLabel(r.name, sessionLabel(s.id))}</span>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                );
+                }
+                return <div key={s.id} className={cell} />;
               })}
-            </tbody>
-          </table>
-        </ScrollHint>
+              {reps.map((r) => {
+                const total = data.chats.filter((c) => c.repId === r.id).reduce((n, c) => n + c.chats, 0);
+                return [
+                  <div key={`${r.id}-name`} className={cn(nameCell, "flex flex-col justify-center")}>
+                    <b className="break-words text-sm font-bold">{r.name}</b>
+                    <span className="font-semibold text-dashboard-text-light">{copy.repChats(total)}</span>
+                  </div>,
+                  ...COFFEE_SESSIONS.map((s) => {
+                    const c = chatAt(r.id, s.id);
+                    if (c) {
+                      return (
+                        <div key={`${r.id}-${s.id}`} className={cell}>
+                          <ChatBlock chat={c} data={data} />
+                        </div>
+                      );
+                    }
+                    if (data.blocked.includes(s.id)) {
+                      return (
+                        <div
+                          key={`${r.id}-${s.id}`}
+                          className={cn(cell, hatch, "flex items-center justify-center text-center text-[11.5px] text-dashboard-text-medium")}
+                        >
+                          {copy.workshop}
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={`${r.id}-${s.id}`} className={cn(cell, "flex items-center justify-center text-dashboard-text-light")}>
+                        <span aria-hidden>–</span>
+                        <span className="sr-only">{copy.noneLabel(r.name, copy.sessionsShort[s.id] ?? s.id)}</span>
+                      </div>
+                    );
+                  }),
+                ];
+              })}
+            </div>
+          </div>
+        </>
       ) : (
-        <ul className="m-0 flex list-none flex-col gap-3 p-0">
-          {reps.map((r) => {
-            const mine = data.chats.filter((c) => c.repId === r.id);
-            return (
-              <li key={r.id} className="flex flex-col gap-2">
-                <h3 className="m-0 text-base font-semibold text-dashboard-text-heavy">{r.name}</h3>
-                {mine.length === 0 ? (
-                  <p className="m-0 text-sm text-dashboard-text-light">{copy.emptyRep}</p>
-                ) : (
-                  <ul className="m-0 flex list-none flex-col gap-2 p-0">
-                    {mine.map((c) => (
-                      <li key={c.placementId} className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-4">
-                        <span className="w-28 shrink-0 font-semibold tabular-nums text-dashboard-text-heavy">
-                          {shortClock(c.start)}–{shortClock(c.end)}
-                        </span>
-                        <ChatCard chat={c} data={data} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <div className="flex flex-col gap-4">
+          {[...data.chats]
+            .filter((c) => rep === null || c.repId === rep)
+            .sort((a, b) => a.start.localeCompare(b.start))
+            .map((c) => {
+              const name = data.reps.find((r) => r.id === c.repId)?.name ?? "";
+              return (
+                <div key={c.placementId} className="flex flex-col gap-1.5 border-t border-dashboard-border-subtle pt-3 first:border-t-0 first:pt-0">
+                  <div className="flex flex-wrap items-baseline gap-x-3">
+                    <b className="font-semibold">{name}</b>
+                    <span className="text-sm tabular-nums text-dashboard-text-light">
+                      {shortClock(c.start)}–{shortClock(c.end)} · {copy.chatCount(c.chats)} ·{" "}
+                      {copy.format(data.hackersPerChat, data.chatMinutes)}
+                    </span>
+                  </div>
+                  <p className="m-0 flex items-center gap-1.5 text-sm text-dashboard-text-medium">
+                    <MapPin aria-hidden className="size-4 shrink-0 text-dashboard-text-light" />
+                    {copy.room(c.room)} · {copy.building(c.building)}
+                  </p>
+                  {c.hackers.length === 0 ? (
+                    <p className="m-0 text-sm text-dashboard-text-light">{copy.hackers(0)}</p>
+                  ) : (
+                    <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+                      {c.hackers.map((h, i) => (
+                        <li key={`${h.firstName}-${i}`} className="inline-flex items-center gap-2 text-sm">
+                          {h.firstName}
+                          <span
+                            className={cn(
+                              "rounded-full px-2 py-0.5 text-xs font-semibold",
+                              h.status === "accepted"
+                                ? "bg-dashboard-notice-okBg text-dashboard-notice-okText"
+                                : "bg-dashboard-bg-highlight text-dashboard-text-active",
+                            )}
+                          >
+                            {copy.status[h.status]}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              );
+            })}
+        </div>
       )}
     </section>
   );
 }
 
-function ChatCard({ chat, data }: { chat: Chat; data: SetupData }) {
-  // A session cut by their workshop starts late or ends early: say when.
+function ChatBlock({ chat, data }: { chat: Chat; data: SetupData }) {
+  // A session cut by their workshop (or not full) starts late or ends early: say when.
   const fullHour =
     chat.start.endsWith(":00") &&
     chat.end === `${String(Number(chat.start.slice(0, 2)) + 1).padStart(2, "0")}:00`;
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-0.5 rounded-dashboard-sm border-l-4 border-dashboard-action-primary bg-dashboard-bg-highlight p-2 text-xs text-dashboard-text-medium">
-      <span className="text-sm font-semibold text-dashboard-text-heavy">
+    <div className="flex h-full min-w-0 flex-col gap-0.5 rounded-dashboard-sm border-l-4 border-dashboard-action-primary bg-dashboard-bg-highlight p-2 text-[11.5px] text-dashboard-text-medium">
+      <b className="text-xs font-bold text-dashboard-text-heavy">
         {copy.room(chat.room)} · {copy.building(chat.building)}
-      </span>
+      </b>
       <span>
-        {copy.format(data.hackersPerChat, data.chatMinutes)} · {copy.chatCount(chat.chats)}
+        {copy.chatCount(chat.chats)} · {copy.format(data.hackersPerChat, data.chatMinutes)}
         {!fullHour && ` · ${copy.between(shortClock(chat.start), shortClock(chat.end))}`}
       </span>
-      <span className="font-semibold text-dashboard-text-heavy">{copy.hackers(chat.hackers.length)}</span>
       {chat.hackers.length > 0 && (
-        <ul className="m-0 list-none p-0">
+        <ul aria-label={copy.hackersLabel} className="m-0 mt-0.5 flex list-none flex-col gap-0.5 p-0">
           {chat.hackers.map((h, i) => (
-            <li key={`${h.firstName}-${i}`}>
-              {h.firstName} · {copy.status[h.status] ?? h.status}
+            <li key={`${h.firstName}-${i}`} className="flex items-center gap-1.5 text-dashboard-text-heavy">
+              <StatusDot status={h.status} />
+              <span>
+                {h.firstName}
+                <span className="sr-only"> · {copy.status[h.status]}</span>
+              </span>
             </li>
           ))}
         </ul>

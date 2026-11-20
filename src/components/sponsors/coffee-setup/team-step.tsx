@@ -209,13 +209,14 @@ export function TeamStep({
                   className={cn(
                     "inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-dashboard-md border px-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
                     rep.isPrimary
-                      ? "border-dashboard-border-task bg-dashboard-bg-task text-dashboard-text-task"
+                      ? "border-dashboard-notice-cautionBorder bg-dashboard-notice-cautionBg text-dashboard-text-warning [&_svg]:fill-dashboard-notice-star"
                       : "border-dashboard-border-control bg-dashboard-bg-surface text-dashboard-text-light",
                     pressable,
                   )}
+                  title={rep.isPrimary ? copy.primaryContact : copy.makePrimaryShort}
                 >
                   <Crown aria-hidden className="size-4" />
-                  {rep.isPrimary ? copy.primary : copy.makePrimaryShort}
+                  {rep.isPrimary && copy.primary}
                 </button>
                 <DashboardButton
                   variant="link"
@@ -226,7 +227,7 @@ export function TeamStep({
                 </DashboardButton>
                 <DashboardButton
                   variant="link"
-                  className="text-dashboard-text-warning"
+                  className="text-dashboard-notice-danger"
                   aria-label={copy.removeLabel(rep.name)}
                   disabled={remove.isPending}
                   onClick={() => {
@@ -361,6 +362,7 @@ function RepForm({
           placeholder={copy.phonePlaceholder}
           onChange={(e) => setPhone(e.target.value)}
         />
+        <span className="text-[13px] font-normal text-dashboard-text-light">{copy.phoneHint}</span>
       </label>
       <div className="flex gap-2">
         <DashboardButton type="submit" aria-disabled={busy || undefined} className={cn("min-h-11 md:h-11", pressable)}>
