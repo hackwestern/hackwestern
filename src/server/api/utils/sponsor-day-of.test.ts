@@ -140,6 +140,8 @@ describe("Sponsor Day-Of reads", () => {
       hasPrizeTrack: true,
       // This header has no "At CC workshop" column yet: unknown, not false.
       atCcWorkshop: null,
+      // Nor a "Tier" column: blank, so the portal leaves the tier out.
+      tier: "",
     });
     // Blank cells read as before: Not arrived, TBD, an em dash, empty.
     expect(info.get("globex")).toMatchObject({
