@@ -295,6 +295,20 @@
       "when": 1795050965855,
       "tag": "0041_organizer_clock",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1795131058475,
+      "tag": "0042_redemption_scanner",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1795138790500,
+      "tag": "0043_team_import_flags",
+      "breakpoints": true
     }
   ]
 }

@@ -10910,7 +10910,8 @@
               "activities",
               "attendance",
               "wins",
-              "bonus"
+              "bonus",
+              "rewards"
             ],
             "type": "string"
           },
@@ -10948,9 +10949,13 @@
             "items": {
               "properties": {
                 "activityType": {
-                  "enum": [
-                    "attendance",
-                    "win"
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
                   ]
                 },
                 "createdAt": {
@@ -10977,13 +10982,7 @@
                   "type": "string"
                 },
                 "type": {
-                  "enum": [
-                    "meal",
-                    "workshop",
-                    "sponsor_workshop",
-                    "activity",
-                    "bonus"
-                  ]
+                  "type": "string"
                 }
               },
               "required": [
@@ -11382,6 +11381,16 @@
             "rewardId": {
               "type": "number"
             },
+            "scannerId": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
             "userId": {
               "type": "string"
             }
@@ -11390,6 +11399,7 @@
             "userId",
             "createdAt",
             "id",
+            "scannerId",
             "rewardId"
           ],
           "type": "object"
@@ -11430,6 +11440,16 @@
             "rewardId": {
               "type": "number"
             },
+            "scannerId": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
             "userId": {
               "type": "string"
             }
@@ -11438,6 +11458,7 @@
             "userId",
             "createdAt",
             "id",
+            "scannerId",
             "rewardId"
           ],
           "type": "object"
@@ -11864,63 +11885,6 @@
       "path": "scavengerHunt.getUserById",
       "source": "src/server/api/routers/scavenger-hunt.ts",
       "type": "query"
-    },
-    {
-      "auth": "protected",
-      "errors": [
-        {
-          "code": "UNAUTHORIZED",
-          "httpStatus": 401,
-          "source": "auth middleware"
-        },
-        {
-          "code": "BAD_REQUEST",
-          "httpStatus": 400,
-          "source": "input validation (data.zodError populated)"
-        },
-        {
-          "code": "NOT_FOUND",
-          "httpStatus": 404,
-          "message": "Reward not found",
-          "source": "handler"
-        },
-        {
-          "code": "INTERNAL_SERVER_ERROR",
-          "httpStatus": 500,
-          "source": "unhandled"
-        }
-      ],
-      "http": "POST /api/trpc/scavengerHunt.redeem",
-      "input": {
-        "additionalProperties": false,
-        "properties": {
-          "rewardId": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "rewardId"
-        ],
-        "type": "object"
-      },
-      "output": {
-        "properties": {
-          "message": {
-            "type": "string"
-          },
-          "success": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "success",
-          "message"
-        ],
-        "type": "object"
-      },
-      "path": "scavengerHunt.redeem",
-      "source": "src/server/api/routers/scavenger-hunt.ts",
-      "type": "mutation"
     },
     {
       "auth": "organizer",

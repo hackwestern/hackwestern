@@ -1,5 +1,7 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
+import { DashboardButton } from "~/components/internals/dashboard-button";
 import { authRedirectOrganizer } from "~/utils/redirect";
 import type { GetServerSidePropsContext } from "next";
 
@@ -53,35 +55,25 @@ export default function RedeemErrorPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
-      <div className="w-full max-w-md space-y-6 rounded-lg border border-border bg-card p-8 text-center">
+    <div className="flex h-dvh w-full flex-col items-center justify-center bg-dashboard-bg-nav p-6 font-figtree">
+      <div className="flex w-full max-w-md flex-col items-center gap-6 rounded-[10px] border border-dashboard-border-subtle bg-dashboard-bg-surface p-8 text-center shadow-dashboard-card">
         {/* Error Icon */}
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-          <svg
-            className="h-8 w-8 text-red-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
+        <div className="flex size-16 items-center justify-center rounded-full bg-dashboard-status-iconBadge">
+          <X className="size-8 text-dashboard-status-warning" />
         </div>
 
         {/* Error Message */}
-        <h1 className="font-dico text-3xl font-medium text-heavy">
+        <h1 className="text-[32px] font-bold leading-[1.2] text-dashboard-text-heavy">
           Redemption Failed
         </h1>
 
         {/* Reward Name */}
         {rewardName && (
-          <div className="space-y-1">
-            <p className="font-secondary text-sm text-medium">Reward:</p>
-            <p className="font-secondary text-lg font-medium text-heavy">
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-medium text-dashboard-text-light">
+              Reward
+            </p>
+            <p className="text-lg font-semibold text-dashboard-text-heavy">
               {formatTitle(rewardName)}
             </p>
           </div>
@@ -89,29 +81,28 @@ export default function RedeemErrorPage() {
 
         {/* User Name */}
         {userName && (
-          <div className="space-y-1">
-            <p className="font-secondary text-sm text-medium">User:</p>
-            <p className="font-secondary text-lg font-medium text-heavy">
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-medium text-dashboard-text-light">
+              Hacker
+            </p>
+            <p className="text-lg font-semibold text-dashboard-text-heavy">
               {userName}
             </p>
           </div>
         )}
 
         {/* Error Details */}
-        <div className="space-y-1">
-          <p className="font-secondary text-sm text-medium">Error:</p>
-          <p className="font-secondary text-sm text-red-600">
+        <div className="flex flex-col gap-1">
+          <p className="text-sm font-medium text-dashboard-text-light">Error</p>
+          <p className="text-sm font-medium text-dashboard-status-warning">
             {getErrorMessage()}
           </p>
         </div>
 
         {/* Back Button */}
-        <button
-          onClick={handleBackToRewards}
-          className="w-full rounded-lg bg-primary px-6 py-3 font-secondary font-medium text-primary-foreground transition-colors hover:bg-primary-700"
-        >
+        <DashboardButton className="w-full" onClick={handleBackToRewards}>
           Back to Rewards
-        </button>
+        </DashboardButton>
       </div>
     </div>
   );
