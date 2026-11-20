@@ -9,14 +9,15 @@ import { api } from "~/utils/api";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import dynamic from "next/dynamic";
 
-// Agentation: dev-only toolbar to click elements and leave notes for the
-// coding agent (synced live through the agentation MCP server on :4747).
-// Client-only and never in production builds.
+// Agentation: a toolbar to click elements and leave notes for the coding
+// agent. In development it syncs live to the agentation MCP server on :4747.
+// NEXT_PUBLIC_AGENTATION=1 (set only when building the laptop test copy for
+// the spon team) also turns it on in a production build, without sync:
+// testers copy their notes and send them. Never set on Vercel.
+const AGENTATION_DEV = process.env.NODE_ENV === "development";
 const Agentation =
-  process.env.NODE_ENV === "development"
-    ? dynamic(() => import("agentation").then((m) => m.Agentation), {
-        ssr: false,
-      })
+  AGENTATION_DEV || process.env.NEXT_PUBLIC_AGENTATION === "1"
+    ? dynamic(() => import("agentation").then((m) => m.Agentation), { ssr: false })
     : null;
 
 import "~/styles/globals.css";
@@ -96,7 +97,12 @@ const MyApp: AppType<{ session: Session | null }> = ({
       </main>
       <Toaster style={{ zIndex: 90 }} />
       <CustomToaster />
-      {Agentation && <Agentation endpoint="http://localhost:4747" />}
+      {Agentation &&
+        (AGENTATION_DEV ? (
+          <Agentation endpoint="http://localhost:4747" />
+        ) : (
+          <Agentation />
+        ))}
     </SessionProvider>
   );
 };
