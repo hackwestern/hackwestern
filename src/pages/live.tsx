@@ -13,8 +13,6 @@ import EventLogistics from "~/components/live/event-logistics";
 import ContactUs from "~/components/live/contact-us";
 import CoffeeChatRequests from "~/components/live/coffee-chat-requests";
 import CoffeeChats from "~/components/live/coffee-chats";
-import SponsorPresentations from "~/components/live/sponsor-presentations";
-import NotificationCenter from "~/components/live/notification-center";
 import Sidebar from "~/components/live/sidebar";
 import Topbar from "~/components/live/topbar";
 import { authOptions } from "~/server/auth";
@@ -44,7 +42,6 @@ const Live = ({ isOrganizer }: { isOrganizer: boolean }) => {
         <Topbar
           title={pageTitle}
           isOrganizer={isOrganizer}
-          actions={!isOrganizer && <NotificationCenter />}
         />
         <Sidebar isOrganizer={isOrganizer} />
         <main className="flex min-w-0 flex-1 flex-col gap-8 overflow-y-auto p-5 md:gap-10 md:p-12">
@@ -52,10 +49,8 @@ const Live = ({ isOrganizer }: { isOrganizer: boolean }) => {
             <h1 className={isGreeting ? "dashboard-display" : "dashboard-h1"}>
               {isGreeting ? `Hi, ${firstName}!` : pageTitle}
             </h1>
-            {!isOrganizer && <NotificationCenter />}
           </div>
           {!isOrganizer && <CoffeeChatRequests showSummary={tab === "home"} />}
-          {!isOrganizer && tab === "home" && <SponsorPresentations />}
           <TabComponent tab={tab} isOrganizer={isOrganizer} />
         </main>
       </div>

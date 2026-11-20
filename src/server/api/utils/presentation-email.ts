@@ -1,4 +1,3 @@
-import { LIVE_URL } from "~/content/coffee-chat-notify";
 import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
 import { env } from "~/env";
 import {
@@ -7,7 +6,6 @@ import {
   PRESENTATION_QA_MINUTES,
 } from "~/lib/sponsor-presentations";
 import {
-  emailButton,
   emailParagraph,
   emailShell,
   escapeHtml,
@@ -49,8 +47,6 @@ export function presentationEmail(
     "",
     ...lines,
     "",
-    `${copy.action}: ${LIVE_URL}`,
-    "",
     copy.signoff,
     "",
   ].join("\n");
@@ -58,7 +54,6 @@ export function presentationEmail(
     emailParagraph(escapeHtml(greeting)),
     emailParagraph(escapeHtml(intro)),
     emailParagraph(lines.map(escapeHtml).join("<br>")),
-    emailButton(LIVE_URL, copy.action),
     emailParagraph(escapeHtml(copy.signoff)),
   ]);
   return { subject: copy.subject(teamName), html, text };

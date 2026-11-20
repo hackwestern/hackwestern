@@ -195,7 +195,7 @@ export const sponsorPresentationsCopy = {
     line: (time: string, sponsor: string, room: string) =>
       `• ${time}: ${sponsor}, ${room}`,
     footer: (pitch: number, qa: number) =>
-      `Each presentation is a ${pitch} min pitch and ${qa} min of Q&A. Be at the room a few minutes early. Your times are also on`,
+      `Each presentation is a ${pitch} min pitch and ${qa} min of Q&A. Be at the room a few minutes early.`,
     /** The button: one member's tap confirms for the whole team. */
     confirmButton: "Confirm our times",
     confirmHint: "One person confirming is enough for your team.",
@@ -203,8 +203,8 @@ export const sponsorPresentationsCopy = {
       confirmed: "Thanks! Your team's times are confirmed.",
       notYours: "These times aren't linked to your Slack account.",
       changed:
-        "Your times have changed since this message. Check the newest message or your Live page.",
-      failed: "Something went wrong. Please confirm on your Live page.",
+        "Your times have changed since this message. Check the newest message from us.",
+      failed: "Something went wrong. Try again in a minute, or tell an organizer.",
     },
   },
 
@@ -218,7 +218,6 @@ export const sponsorPresentationsCopy = {
       `Here are ${team}'s sponsor presentations on Sunday. Each one is a ${pitch} min pitch and ${qa} min of Q&A, so be at the room a few minutes early.`,
     line: (time: string, sponsor: string, room: string) =>
       `${time}: ${sponsor}, ${room}`,
-    action: "See your times on your Live page",
     signoff: "The Hack Western 13 Team",
   },
 

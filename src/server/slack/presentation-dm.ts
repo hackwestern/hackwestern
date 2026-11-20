@@ -1,4 +1,3 @@
-import { LIVE_URL } from "~/content/coffee-chat-notify";
 import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
 import {
   formatPresentationTime,
@@ -76,7 +75,7 @@ export function presentationDmMessage(
         elements: [
           {
             type: "mrkdwn",
-            text: `${copy.footer(PRESENTATION_PITCH_MINUTES, PRESENTATION_QA_MINUTES)} <${LIVE_URL}|${LIVE_URL}>`,
+            text: copy.footer(PRESENTATION_PITCH_MINUTES, PRESENTATION_QA_MINUTES),
           },
         ],
       },

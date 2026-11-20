@@ -16,12 +16,12 @@ Go through each line, tick it when it works, and write what broke next to it. Ea
 ## Notifications (hackers)
 
 - [ ] **Shortlist → every member told.** A sponsor sends a round 1 shortlist (sponsor portal, Judging). Every member of each shortlisted team gets a Slack DM with their presentation times, and an email if Slack can't find them. Nobody gets two.
-- [ ] **/live bell.** Each of those hackers sees their times in the bell on /live, with a "Confirm our times" button.
 - [ ] **Confirm on Slack.** One team member taps "Confirm our times" in the DM. The DM changes to "Thanks! Your team's times are confirmed." The judging board shows the team as Accepted.
-- [ ] **Confirm on /live.** Same, from the bell or the presentations card on /live. One person confirming covers the whole team.
+- [ ] **One confirm covers the team.** After one member confirms, the others' DMs don't need a reply, and the board stays Accepted.
+- [ ] **Nothing on /live.** /live has no notification bell and no presentations card (Slack only).
 - [ ] **Old button refused.** After a room change, tapping Confirm in the old DM says the times changed.
 - [ ] **Room change.** Changing a sponsor's room on the judging board keeps every time, and those teams go back to "Invite not sent" until "Notify teams" is pressed.
-- [ ] **Coffee chat invites.** Send on the coffee board invites hackers by Slack DM with Accept / Decline. Accepting and declining work from Slack and from /live. A decline offers the seat to the next person at once.
+- [ ] **Coffee chat invites.** Send on the coffee board invites hackers by Slack DM with Accept / Decline. Accepting and declining work from Slack. A decline offers the seat to the next person at once.
 - [ ] **Nothing on top 5.** No message goes out when a team places in a sponsor's top 5.
 
 ## Organizer dashboard (/internal/sponsors)

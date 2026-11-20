@@ -886,3 +886,9 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 - **Map:** uses the mock's floor plans (the /live maps, `public/sponsor-map/v3/`), tap to open full size. No desktop pinch/zoom buttons yet, and no room pins on these images.
 **Why:** Jazz asked for the mock's exact flow and information with real data only; each item above is the closest match the data allows.
 **Alternatives:** keep the tour and status card alongside the mock's layout; invent skills/tier values (ruled out: no fake data); a schema change for tier (the sheet column is enough).
+
+## 2026-11-19: Notifications are Slack only (Jazz)
+
+**Decision:** Hackers hear about things by Slack DM only (email still covers anyone Slack can't find). /live has no notification bell and no "Sponsor presentations" card, and teams confirm their presentation times with the button in the Slack DM, not on /live. The DM and email no longer link to /live. The bell, the card and the /live Confirm button are in src/components/live/_to_delete/. The coffee chats section on /live stays for now.
+**Why:** one place for notifications; hackers already live in Slack during the event.
+**Supersedes:** the /live notification center (2026-11-18) and confirming on /live (judging board, 2026-11-19).
