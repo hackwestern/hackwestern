@@ -93,7 +93,7 @@ export function UpNext({
               setLess(v);
               writeStored(LESS_KEY, v ? "less" : "all");
             }}
-            className={cn(quietBtn, "-mr-1 -mt-2 px-2", pressable)}
+            className={cn(quietBtn, "-mr-1 -mt-2 min-w-11 justify-center px-2", pressable)}
           >
             <ChevronDown
               aria-hidden
