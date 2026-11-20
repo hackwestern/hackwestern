@@ -97,13 +97,6 @@ export const MentorsList: Mentor[] = [
     linkedin: "https://www.linkedin.com/in/am-uwo/",
   },
   {
-    name: "Ian Korovinsky",
-    skills: ["Backend", "ML infrastructure", "Product", "Hackathon strategy"],
-    tags: ["Software Engineering", "AI", "Product Management"],
-    image: "/landing/mentors/iank.webp",
-    linkedin: "https://www.linkedin.com/in/ian-korovinsky/",
-  },
-  {
     name: "Luke Blommesteyn",
     skills: ["Machine learning", "Computer vision", "LLMs", "Data"],
     tags: ["Software Engineering", "AI"],
@@ -130,5 +123,33 @@ export const MentorsList: Mentor[] = [
     tags: ["Product Management", "AI"],
     image: "/landing/mentors/virajp.webp",
     linkedin: "https://www.linkedin.com/in/virajpatell/",
+  },
+  {
+    name: "Xander Chin",
+    skills: ["Distributed systems", "ML accelerators", "Robotics", "Python"],
+    tags: ["Software Engineering", "AI", "Hardware", "Embedded & Systems"],
+    image: "/landing/mentors/xanderc.webp",
+    linkedin: "https://www.linkedin.com/in/xanderchinxyz/",
+  },
+  {
+    name: "Surya Sure",
+    skills: ["Distributed systems", "ML inference", "ML accelerators"],
+    tags: ["Software Engineering", "AI", "Hardware"],
+    image: "/landing/mentors/suryas.webp",
+    linkedin: "https://www.linkedin.com/in/suryasure/",
+  },
+  {
+    name: "Evan Lin",
+    skills: ["Distributed systems", "ML accelerators", "React", "NLP"],
+    tags: ["Software Engineering", "AI", "Hardware"],
+    image: "/landing/mentors/evanl.webp",
+    linkedin: "https://www.linkedin.com/in/evanliin/",
+  },
+  {
+    name: "Saksham Batra",
+    skills: ["Data science", "Machine learning", "PyTorch", "Python"],
+    tags: ["Software Engineering", "AI"],
+    image: "/landing/mentors/sakshamb.webp",
+    linkedin: "https://www.linkedin.com/in/saksham-batra1/",
   },
 ];
