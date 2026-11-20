@@ -164,8 +164,8 @@ export function ShortlistFlow({
       </p>
     );
 
-  // Submitted: the toggles are off until they tap Edit (the server keeps a
-  // sent shortlist as it is).
+  // Submitted: the toggles are off and it stays that way for sponsors
+  // (submitted once); organizers can tap Edit to reopen it.
   const submittedBanner = submitted && (
     <div className="flex flex-col gap-3 rounded-dashboard-lg bg-dashboard-bg-highlight p-3 sm:flex-row sm:items-center sm:justify-between">
       <p className="m-0 flex items-center gap-2 text-base font-semibold">
@@ -175,14 +175,17 @@ export function ShortlistFlow({
         />
         {copy.lockedSubmitted}
       </p>
-      <button
-        type="button"
-        className={btn.outline}
-        aria-disabled={reopen.isPending || undefined}
-        onClick={() => !reopen.isPending && reopen.mutate({ sponsor })}
-      >
-        {copy.edit}
-      </button>
+      {/* Submitted once: only an organizer on the portal link can reopen it. */}
+      {data.canEditSubmitted && (
+        <button
+          type="button"
+          className={btn.outline}
+          aria-disabled={reopen.isPending || undefined}
+          onClick={() => !reopen.isPending && reopen.mutate({ sponsor })}
+        >
+          {copy.edit}
+        </button>
+      )}
     </div>
   );
 

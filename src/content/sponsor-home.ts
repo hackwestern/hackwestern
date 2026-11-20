@@ -110,8 +110,8 @@ export const AGENDA: AgendaStep[] = [
   {
     id: "f8",
     day: 0,
-    start: 1325,
-    end: 1325,
+    start: 1320,
+    end: 1320,
     title: "We confirm your chat times and invite hackers",
     sub: "Nothing to do.",
   },

@@ -147,22 +147,24 @@ export default function SponsorJudgingPage() {
     const locked = sponsorVenueCopy.judgingLocked;
     return (
       <SponsorShell title={copy.seoTitle}>
-        <DashboardPanel className="items-start gap-3">
-          <h1 className="dashboard-h1 m-0 flex items-center gap-2">
-            <Lock aria-hidden className="size-6 shrink-0" />
-            {locked.pageTitle}
-          </h1>
-          <p className="m-0 text-base text-dashboard-text-medium">
-            {locked.message}
-          </p>
-          <DashboardButton
-            asChild
-            variant="outline"
-            className={cn("h-11", pressable)}
-          >
-            <Link href={`/sponsors/${uuid}`}>{locked.home}</Link>
-          </DashboardButton>
-        </DashboardPanel>
+        <div data-tour="judging-locked">
+          <DashboardPanel className="items-start gap-3">
+            <h1 className="dashboard-h1 m-0 flex items-center gap-2">
+              <Lock aria-hidden className="size-6 shrink-0" />
+              {locked.pageTitle}
+            </h1>
+            <p className="m-0 text-base text-dashboard-text-medium">
+              {locked.message}
+            </p>
+            <DashboardButton
+              asChild
+              variant="outline"
+              className={cn("h-11", pressable)}
+            >
+              <Link href={`/sponsors/${uuid}`}>{locked.home}</Link>
+            </DashboardButton>
+          </DashboardPanel>
+        </div>
       </SponsorShell>
     );
   }
@@ -235,7 +237,7 @@ export default function SponsorJudgingPage() {
 
   return (
     <SponsorShell title={copy.seoTitle}>
-      <div className="flex flex-col gap-2">
+      <div data-tour="judging-intro" className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-1.5">
           <DashboardTag>{data.sponsorName}</DashboardTag>
           {data.sponsorTrack && (
@@ -302,6 +304,7 @@ export default function SponsorJudgingPage() {
         <div
           role="tablist"
           aria-label={copy.steps.label}
+          data-tour="judging-stages"
           className="grid grid-cols-2 gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1 sm:grid-cols-4"
           onKeyDown={(e) => {
             if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -338,6 +341,7 @@ export default function SponsorJudgingPage() {
                 type="button"
                 role="tab"
                 id={`step-${s}`}
+                data-tour={`judging-tab-${s}`}
                 aria-selected={on}
                 aria-controls={`panel-${s}`}
                 aria-disabled={isLocked}

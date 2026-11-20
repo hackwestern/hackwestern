@@ -135,21 +135,38 @@ export function TourOverlay({
     calloutRef.current?.focus({ preventScroll: true });
     setAnnouncement("");
     const id = requestAnimationFrame(() =>
-      setAnnouncement(copy.announce(index + 1, total, step.title, step.body)),
+      setAnnouncement(
+        `${copy.announce(index + 1, total, step.title, step.body)}${
+          index === 0 ? ` ${copy.keys}` : ""
+        }`,
+      ),
     );
     return () => cancelAnimationFrame(id);
   }, [index, total, step.title, step.body]);
 
   // Escape closes the innermost thing only: when focus is inside another
   // dialog (the venue map, even with the tour drawn inside it), that dialog
-  // closes first and the next Escape closes the tour.
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  // closes first and the next Escape closes the tour. The arrow keys move
+  // Next and Back, except while typing or inside another dialog.
+  const keysRef = useRef({ onClose, onNext, onBack, first: index === 0 });
+  keysRef.current = { onClose, onNext, onBack, first: index === 0 };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || e.defaultPrevented) return;
-      if (e.target instanceof Element && insideOtherDialog(e.target)) return;
-      closeRef.current();
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      const t = e.target instanceof Element ? e.target : null;
+      if (t && insideOtherDialog(t)) return;
+      const keys = keysRef.current;
+      if (e.key === "Escape") {
+        keys.onClose();
+        return;
+      }
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      if (t?.closest("input, textarea, select, [contenteditable='true']")) {
+        return;
+      }
+      e.preventDefault();
+      if (e.key === "ArrowRight") keys.onNext();
+      else if (!keys.first) keys.onBack();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);

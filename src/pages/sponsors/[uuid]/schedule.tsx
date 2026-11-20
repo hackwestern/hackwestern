@@ -187,20 +187,31 @@ export default function SponsorSchedulePage() {
           </p>
         </div>
       )}
-      <DayGrid
-        day={shownDay}
-        entries={entries}
-        now={now}
-        headerStart={<DayPicker value={shownDay} onChange={setDay} large />}
-        headerEnd={
-          <HackathonToggle
-            showHackathon={showHackathon}
-            onShowHackathonChange={setShowHackathon}
-          />
-        }
-        sponsorName={data.sponsorName}
-        workshops={data.workshops}
-      />
+      <div data-tour="schedule-grid" className="min-w-0">
+        <DayGrid
+          day={shownDay}
+          entries={entries}
+          now={now}
+          headerStart={
+            <DayPicker
+              value={shownDay}
+              onChange={setDay}
+              large
+              tourId="schedule-days"
+            />
+          }
+          headerEnd={
+            <span data-tour="schedule-hackathon" className="inline-flex">
+              <HackathonToggle
+                showHackathon={showHackathon}
+                onShowHackathonChange={setShowHackathon}
+              />
+            </span>
+          }
+          sponsorName={data.sponsorName}
+          workshops={data.workshops}
+        />
+      </div>
     </>,
   );
 }

@@ -93,8 +93,8 @@ const TabComponent = ({
       return <Activities />;
     case "rewards":
       return <Rewards />;
-    // Not in the nav (Slack only, Jazz 2026-11-20): reachable only from the
-    // coffee chat email, so hackers Slack can't find can still answer.
+    // Back in the hacker nav (Jazz 2026-11-20): hackers answer on Slack, but
+    // need one place to look up their chats. Organizers use the coffee board.
     case "coffee-chats":
       return isOrganizer ? <Home isOrganizer /> : <CoffeeChats />;
     default:

@@ -38,6 +38,10 @@ import {
   type SponsorSetup,
 } from "~/server/api/utils/coffee-chat-setup";
 import { BOARD_LOCK_KEY } from "~/server/api/utils/coffee-chat-sessions-board";
+import {
+  assertNotLocked,
+  isOrganizerCaller,
+} from "~/server/api/utils/submit-lock";
 import { mirrorCoffeeChatSetupLater } from "~/server/api/utils/coffee-chat-setup-sheet-mirror";
 import { db } from "~/server/db";
 import {
@@ -104,7 +108,14 @@ async function lockForWrite(
   tx: Tx,
   sponsorId: string,
   confirmAfterInvites = false,
-  { bump = true } = {},
+  {
+    bump = true,
+    organizer = false,
+  }: {
+    bump?: boolean;
+    /** A signed-in organizer may still edit after the sponsor submitted. */
+    organizer?: boolean;
+  } = {},
 ) {
   const sponsor = await findSponsor(sponsorId, tx);
   // Board lock first, then the sponsor row: the same order as every
@@ -118,6 +129,14 @@ async function lockForWrite(
     .from(sponsorJudgingSponsors)
     .where(eq(sponsorJudgingSponsors.id, sponsor.id))
     .for("update");
+  // Submitted once: after Send availability the sponsor can't change their
+  // team or preferences here (read under the lock, so a submit in another
+  // tab counts). Organizers still can.
+  const [prefs] = await tx
+    .select({ submittedAt: coffeeChatPrefs.submittedAt })
+    .from(coffeeChatPrefs)
+    .where(eq(coffeeChatPrefs.sponsorId, sponsor.id));
+  assertNotLocked(prefs?.submittedAt, organizer, errors.availabilityLocked);
   const [sent] = await tx
     .select({ id: coffeeChatPlacements.id })
     .from(coffeeChatPlacements)
@@ -301,7 +320,7 @@ async function yourChats(setup: SponsorSetup): Promise<YourChat[]> {
 export const coffeeChatSetupRouter = createTRPCRouter({
   get: publicProcedure
     .input(z.object({ sponsor: sponsorInput }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const sponsor = await findSponsor(input.sponsor);
       const setup = await loadSponsorSetup(sponsor);
       const [scanned, chats] = await Promise.all([
@@ -334,6 +353,9 @@ export const coffeeChatSetupRouter = createTRPCRouter({
       });
       return {
         ...setup,
+        /** A signed-in organizer: may still edit after the sponsor
+         * submitted (sponsors submit once). */
+        canEditSubmitted: await isOrganizerCaller(ctx),
         scannedCount: scanned[0]?.n ?? 0,
         chats,
         /** Latest Send by organizers that covers this sponsor, or null. */
@@ -368,11 +390,14 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         ...confirmInput,
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const organizer = await isOrganizerCaller(ctx);
       const sponsor = await findSponsor(input.sponsor);
       const setup = await loadSponsorSetup(sponsor);
       const added = await db.transaction(async (tx) => {
-        await lockForWrite(tx, sponsor.id, input.confirmAfterInvites);
+        await lockForWrite(tx, sponsor.id, input.confirmAfterInvites, {
+          organizer,
+        });
         const existing = await tx
           .select({
             id: coffeeChatReps.id,
@@ -437,12 +462,14 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         ...confirmInput,
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const organizer = await isOrganizerCaller(ctx);
       const { jobs, ...result } = await db.transaction(async (tx) => {
         const sponsor = await lockForWrite(
           tx,
           input.sponsor,
           input.confirmAfterInvites,
+          { organizer },
         );
         const rep = await repOf(tx, sponsor.id, input.repId);
         await tx
@@ -472,12 +499,14 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         ...confirmInput,
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const organizer = await isOrganizerCaller(ctx);
       const { jobs, ...result } = await db.transaction(async (tx) => {
         const sponsor = await lockForWrite(
           tx,
           input.sponsor,
           input.confirmAfterInvites,
+          { organizer },
         );
         const rep = await repOf(tx, sponsor.id, input.repId);
         const placements = await tx
@@ -526,12 +555,14 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         ...confirmInput,
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const organizer = await isOrganizerCaller(ctx);
       const result = await db.transaction(async (tx) => {
         const sponsor = await lockForWrite(
           tx,
           input.sponsor,
           input.confirmAfterInvites,
+          { organizer },
         );
         await repOf(tx, sponsor.id, input.repId);
         await tx
@@ -576,7 +607,8 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         ...confirmInput,
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const organizer = await isOrganizerCaller(ctx);
       const sponsor = await findSponsor(input.sponsor);
       const setup = await loadSponsorSetup(sponsor);
       // Every rep's chats (the ones sent, else what's saved) can't add up to
@@ -592,6 +624,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
           tx,
           sponsor.id,
           input.confirmAfterInvites,
+          { organizer },
         );
         const reps = await tx
           .select({ id: coffeeChatReps.id })
@@ -652,13 +685,15 @@ export const coffeeChatSetupRouter = createTRPCRouter({
    */
   submitPrefs: publicProcedure
     .input(z.object({ sponsor: sponsorInput, ...confirmInput }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const organizer = await isOrganizerCaller(ctx);
       const sponsor = await findSponsor(input.sponsor);
       const now = new Date();
       await db.transaction(async (tx) => {
         // A submit isn't an edit: updated_at stays (organizer board's
         // "Changed after invites" flag).
         await lockForWrite(tx, sponsor.id, input.confirmAfterInvites, {
+          organizer,
           bump: false,
         });
         // Checked under the lock, so a rep edit in another tab can't slip in.

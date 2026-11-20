@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
-import { MapPin } from "lucide-react";
+import { MapPin, TriangleAlert } from "lucide-react";
 import { BoothLayout } from "~/components/sponsors/booth-layout";
+import { Note } from "~/components/sponsors/portal-ui";
 import VenueMap, { type VenueMapHighlight } from "~/components/live/venue-map";
 import {
   InvalidLink,
@@ -76,27 +77,29 @@ export default function SponsorMapPage() {
 
   return shell(
     <>
-      <BoothLayout
-        sponsorName={info.data?.sponsorName}
-        title={
-          <h2 className="m-0 flex items-center gap-2.5 text-base font-semibold">
-            <MapPin
-              aria-hidden
-              className="size-5 shrink-0 text-dashboard-action-primary"
-            />
-            {where ? copy.page.boothAt(where) : copy.page.booth}
-          </h2>
-        }
-        lead={
-          mine &&
-          spot && (
-            <p className="m-0">
-              <b>{copy.booths.spot(mine.side, spot.place)}</b>
-              {copy.booths.neighbours(spot.neighbours)}
-            </p>
-          )
-        }
-      />
+      <div data-tour="map-booth" className="min-w-0">
+        <BoothLayout
+          sponsorName={info.data?.sponsorName}
+          title={
+            <h2 className="m-0 flex items-center gap-2.5 text-base font-semibold">
+              <MapPin
+                aria-hidden
+                className="size-5 shrink-0 text-dashboard-action-primary"
+              />
+              {where ? copy.page.boothAt(where) : copy.page.booth}
+            </h2>
+          }
+          lead={
+            mine &&
+            spot && (
+              <p className="m-0">
+                <b>{copy.booths.spot(mine.side, spot.place)}</b>
+                {copy.booths.neighbours(spot.neighbours)}
+              </p>
+            )
+          }
+        />
+      </div>
       <div data-tour="map-floors" className="min-w-0">
         {/* ?building=ivey (the Ivey walk "Check map" link) opens on Ivey. */}
         <VenueMap
@@ -110,7 +113,14 @@ export default function SponsorMapPage() {
         setup.data.chats.some((c) => c.building === "ivey") && (
           <IveyWalkNote who="sponsor" mapHref={null} />
         )}
-      <p className="m-0 text-sm">{copy.page.venue}</p>
+      <Note icon={<TriangleAlert aria-hidden />} tone="strong">
+        <p className="m-0 font-bold">{copy.page.venue.lead}</p>
+        <ul className="m-0 mt-1 flex list-disc flex-col gap-1 pl-5">
+          {copy.page.venue.lines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      </Note>
     </>,
   );
 }

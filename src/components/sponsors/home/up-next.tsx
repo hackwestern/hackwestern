@@ -82,7 +82,11 @@ export function UpNext({
   };
 
   return (
-    <section aria-labelledby="upnext-heading" className={card}>
+    <section
+      aria-labelledby="upnext-heading"
+      data-tour="home-upnext"
+      className={card}
+    >
       <div className="flex items-start justify-between gap-3">
         <h2
           id="upnext-heading"
@@ -410,6 +414,8 @@ function Row({
         {action && hrefs && (
           <Link
             href={hrefs[action]}
+            // The tour points at the first one on the page.
+            data-tour="home-upnext-action"
             className={cn(highlight ? btn.primary : btn.outline, btn.sm)}
           >
             {action === "scan" && <ScanLine aria-hidden />}

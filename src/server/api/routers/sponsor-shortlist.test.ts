@@ -21,6 +21,13 @@ import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 // Sponsors aren't logged in: their private UUID is the credential.
 const anon = createCaller(createInnerTRPCContext({ session: null }));
 
+/** A signed-in organizer on the sponsor's portal link. */
+async function organizer() {
+  return createCaller(
+    createInnerTRPCContext({ session: await mockOrganizerSession(db) }),
+  );
+}
+
 async function sponsor() {
   const [row] = await db
     .insert(sponsorJudgingSponsors)
@@ -224,7 +231,8 @@ describe("sponsorShortlist: seats, submit, scanned", () => {
     await anon.sponsorShortlist.add({ sponsor: mine.id, userId: a });
     await anon.sponsorShortlist.remove({ sponsor: mine.id, userId: a });
     await anon.sponsorShortlist.submit({ sponsor: mine.id });
-    await anon.sponsorShortlist.reopen({ sponsor: mine.id });
+    // Reopening a submitted shortlist is an organizer's (sponsors submit once).
+    await (await organizer()).sponsorShortlist.reopen({ sponsor: mine.id });
     expect(await updatedAt()).toBe(before);
   });
 
@@ -272,21 +280,60 @@ describe("sponsorShortlist: seats, submit, scanned", () => {
     await anon.sponsorShortlist.submit({ sponsor: mine.id });
   });
 
-  test("submit locks the list; reopen unlocks it", async () => {
+  test("submitted once: a sponsor can't edit, re-submit or reopen it", async () => {
     const mine = await sponsor();
     await withSeats(mine.id, 4);
     const a = await hackerRanking(mine.id, true);
     await anon.sponsorShortlist.submit({ sponsor: mine.id });
     const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
     expect(res.submittedAt).toBeInstanceOf(Date);
+    expect(res.canEditSubmitted).toBe(false);
     await expect(
       anon.sponsorShortlist.add({ sponsor: mine.id, userId: a }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
-    await anon.sponsorShortlist.reopen({ sponsor: mine.id });
-    await anon.sponsorShortlist.add({ sponsor: mine.id, userId: a });
+    await expect(
+      anon.sponsorShortlist.remove({ sponsor: mine.id, userId: a }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    await expect(
+      anon.sponsorShortlist.submit({ sponsor: mine.id }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    const refused = await anon.sponsorShortlist
+      .reopen({ sponsor: mine.id })
+      .then(
+        () => null,
+        (e: { code?: string; message: string }) => e,
+      );
+    expect(refused?.code).toBe("FORBIDDEN");
+    expect(refused?.message).toContain("ask your point of contact");
+    const after = await anon.sponsorShortlist.list({ sponsor: mine.id });
+    expect(after.submittedAt).toEqual(res.submittedAt);
+  });
+
+  test("an organizer can reopen a submitted shortlist, edit and submit it", async () => {
+    const mine = await sponsor();
+    await withSeats(mine.id, 4);
+    const a = await hackerRanking(mine.id, true);
+    await anon.sponsorShortlist.submit({ sponsor: mine.id });
+    const org = await organizer();
+    expect(
+      (await org.sponsorShortlist.list({ sponsor: mine.id })).canEditSubmitted,
+    ).toBe(true);
+    await org.sponsorShortlist.reopen({ sponsor: mine.id });
+    await org.sponsorShortlist.add({ sponsor: mine.id, userId: a });
     const after = await anon.sponsorShortlist.list({ sponsor: mine.id });
     expect(after.submittedAt).toBeNull();
     expect(after.hackers.find((h) => h.userId === a)?.shortlisted).toBe(true);
+  });
+
+  test("never submitted (skipped): still open, nothing locks", async () => {
+    const mine = await sponsor();
+    await withSeats(mine.id, 4);
+    const a = await hackerRanking(mine.id, true);
+    await anon.sponsorShortlist.reopen({ sponsor: mine.id });
+    await anon.sponsorShortlist.add({ sponsor: mine.id, userId: a });
+    const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
+    expect(res.submittedAt).toBeNull();
+    expect(res.hackers.find((h) => h.userId === a)?.shortlisted).toBe(true);
   });
 
   test("scanned hackers are listed first, on their own, first name only without consent", async () => {

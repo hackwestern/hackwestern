@@ -140,7 +140,7 @@ export const coffeeChatCopy = {
     navBadge: (n: number) =>
       `${n} ${n === 1 ? "chat" : "chats"} waiting for your answer`,
     intro:
-      "Sponsors who meet you can offer a short chat on Saturday. Answer here before the reply-by time.",
+      "Sponsors who meet you can offer a short chat on Saturday. Answer here or on Slack before the reply-by time.",
     codeHeading: "Your hacker code",
     codeHint: "Sponsors can scan your badge or type this code.",
     noCode:
