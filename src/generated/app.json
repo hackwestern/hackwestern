@@ -8728,14 +8728,38 @@
                 ]
               },
               "ratings": {
-                "additionalProperties": {
-                  "maximum": 10,
-                  "minimum": 0,
-                  "multipleOf": 0.5,
-                  "type": "number"
-                },
-                "propertyNames": {
-                  "maxLength": 64
+                "additionalProperties": false,
+                "properties": {
+                  "adventurous": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "creativity": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "design": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "impact": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "technical": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  }
                 },
                 "type": "object"
               },
@@ -8896,36 +8920,28 @@
                         "id": {
                           "type": "number"
                         },
-                        "score": {
-                          "type": "number"
-                        },
-                        "scoreBreakdown": {
+                        "notes": {
                           "anyOf": [
                             {
                               "type": "null"
                             },
                             {
-                              "properties": {
-                                "notes": {
-                                  "description": "max depth reached"
-                                },
-                                "ratings": {
-                                  "additionalProperties": {
-                                    "description": "max depth reached"
-                                  },
-                                  "properties": {},
-                                  "type": "object"
-                                },
-                                "superLike": {
-                                  "description": "max depth reached"
-                                }
-                              },
-                              "required": [
-                                "ratings"
-                              ],
-                              "type": "object"
+                              "type": "string"
                             }
                           ]
+                        },
+                        "ratings": {
+                          "additionalProperties": {
+                            "type": "number"
+                          },
+                          "properties": {},
+                          "type": "object"
+                        },
+                        "score": {
+                          "type": "number"
+                        },
+                        "superLike": {
+                          "type": "boolean"
                         },
                         "teamId": {
                           "type": "string"
@@ -8935,7 +8951,9 @@
                         "id",
                         "teamId",
                         "score",
-                        "scoreBreakdown"
+                        "ratings",
+                        "notes",
+                        "superLike"
                       ],
                       "type": "object"
                     }
@@ -9121,6 +9139,23 @@
             "judgeId": {
               "type": "string"
             },
+            "notes": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "ratings": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "properties": {},
+              "type": "object"
+            },
             "roundType": {
               "enum": [
                 "sponsored",
@@ -9130,53 +9165,8 @@
             "score": {
               "type": "number"
             },
-            "scoreBreakdown": {
-              "anyOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "properties": {
-                    "notes": {
-                      "anyOf": [
-                        {
-                          "type": "undefined"
-                        },
-                        {
-                          "type": "null"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "ratings": {
-                      "additionalProperties": {
-                        "type": "number"
-                      },
-                      "properties": {},
-                      "type": "object"
-                    },
-                    "superLike": {
-                      "anyOf": [
-                        {
-                          "type": "undefined"
-                        },
-                        {
-                          "const": false
-                        },
-                        {
-                          "const": true
-                        }
-                      ]
-                    }
-                  },
-                  "required": [
-                    "ratings"
-                  ],
-                  "type": "object"
-                }
-              ]
+            "superLike": {
+              "type": "boolean"
             },
             "team": {
               "properties": {
@@ -9239,12 +9229,14 @@
             }
           },
           "required": [
+            "ratings",
             "createdAt",
             "id",
             "teamId",
+            "notes",
             "judgeId",
             "score",
-            "scoreBreakdown",
+            "superLike",
             "roundType",
             "team"
           ],
@@ -9558,14 +9550,38 @@
                 ]
               },
               "ratings": {
-                "additionalProperties": {
-                  "maximum": 10,
-                  "minimum": 0,
-                  "multipleOf": 0.5,
-                  "type": "number"
-                },
-                "propertyNames": {
-                  "maxLength": 64
+                "additionalProperties": false,
+                "properties": {
+                  "adventurous": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "creativity": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "design": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "impact": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  },
+                  "technical": {
+                    "maximum": 10,
+                    "minimum": 0,
+                    "multipleOf": 0.5,
+                    "type": "number"
+                  }
                 },
                 "type": "object"
               },
