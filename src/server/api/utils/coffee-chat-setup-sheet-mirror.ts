@@ -14,6 +14,7 @@ import {
   runOfShowSpreadsheetId,
   sheetWritesEnabled,
 } from "~/server/api/utils/run-of-show-sheet";
+import { coffeeChatSponsorNames } from "~/server/api/utils/sponsor-sheets";
 import { db } from "~/server/db";
 import {
   coffeeChatPrefs,
@@ -61,6 +62,8 @@ export type SetupSponsor = {
   /** In the order the sponsor listed them. */
   reps: readonly SetupRep[];
   shortlistCount: number;
+  /** Ticked "Coffee Chats & Interviews" on Sponsor Day-Of: gets a row even before saving anything. */
+  doesCoffeeChats?: boolean;
 };
 
 /** "Fri 8:12 PM" in Toronto time. */
@@ -150,7 +153,7 @@ export function setupSheetRows(
   }
   const extra = sponsors
     .filter(
-      (s) => !seen.has(key(s.name)) && (s.pref !== null || s.reps.length > 0),
+      (s) => !seen.has(key(s.name)) && (s.doesCoffeeChats === true || s.pref !== null || s.reps.length > 0),
     )
     .map((s) => s.name)
     .sort((a, b) => a.localeCompare(b));
@@ -162,7 +165,7 @@ export function setupSheetRows(
 
 /** Every registered sponsor's setup from the DB. */
 export async function loadSetupSponsors(): Promise<SetupSponsor[]> {
-  const [sponsors, prefs, reps, repSessions, shortlists] = await Promise.all([
+  const [sponsors, prefs, reps, repSessions, shortlists, ticked] = await Promise.all([
     db
       .select({
         id: sponsorJudgingSponsors.id,
@@ -183,6 +186,7 @@ export async function loadSetupSponsors(): Promise<SetupSponsor[]> {
       .select({ sponsorId: sponsorShortlists.sponsorId, n: count() })
       .from(sponsorShortlists)
       .groupBy(sponsorShortlists.sponsorId),
+    coffeeChatSponsorNames(),
   ]);
   const prefOf = new Map(prefs.map((p) => [p.sponsorId, p]));
   const shortlistOf = new Map(
@@ -218,6 +222,7 @@ export async function loadSetupSponsors(): Promise<SetupSponsor[]> {
           sessions: sessionsOf.get(r.id) ?? [],
         })),
       shortlistCount: shortlistOf.get(s.id) ?? 0,
+      doesCoffeeChats: ticked?.has(s.name.toLowerCase()) ?? false,
     };
   });
 }
@@ -338,7 +343,7 @@ export function setupSheetWrites(
   });
   const appends = sponsors
     .filter(
-      (s) => !seen.has(key(s.name)) && (s.pref !== null || s.reps.length > 0),
+      (s) => !seen.has(key(s.name)) && (s.doesCoffeeChats === true || s.pref !== null || s.reps.length > 0),
     )
     .map((s) => s.name)
     .sort((a, b) => a.localeCompare(b))

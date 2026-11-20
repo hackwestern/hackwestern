@@ -341,7 +341,7 @@ export async function loadCandidates(
   const out = new Map<string, { userId: string; source: InviteSource }[]>();
   if (sponsorIds.length === 0) return out;
   const ids = [...sponsorIds];
-  const [front, scans, shortlist, interested] = await Promise.all([
+  const [front, scans, shortlist, interested, pool] = await Promise.all([
     conn
       .select({
         sponsorId: coffeeChatLine.sponsorId,
@@ -383,10 +383,27 @@ export async function loadCandidates(
         asc(sponsorInterests.updatedAt),
         asc(sponsorInterests.userId),
       ),
+    // Everyone on the interest list (any sponsor), best rank first: every
+    // sponsor's line ends with them, so seats keep filling (Jazz, 2026-11-20).
+    conn
+      .select({
+        userId: sponsorInterests.userId,
+        best: sql<number>`min(${sponsorInterests.rank})`.mapWith(Number),
+        first: sql<Date>`min(${sponsorInterests.updatedAt})`,
+      })
+      .from(sponsorInterests)
+      .groupBy(sponsorInterests.userId)
+      .orderBy(
+        sql`min(${sponsorInterests.rank})`,
+        sql`min(${sponsorInterests.updatedAt})`,
+        asc(sponsorInterests.userId),
+      ),
   ]);
   const userIds = [
     ...new Set(
-      [...front, ...scans, ...shortlist, ...interested].map((r) => r.userId),
+      [...front, ...scans, ...shortlist, ...interested, ...pool].map(
+        (r) => r.userId,
+      ),
     ),
   ];
   if (userIds.length === 0) return out;
@@ -419,6 +436,10 @@ export async function loadCandidates(
   add(scans, "scanned");
   add(shortlist, "shortlist");
   add(interested, "interested");
+  add(
+    ids.flatMap((sponsorId) => pool.map((r) => ({ sponsorId, userId: r.userId }))),
+    "anyone",
+  );
   return out;
 }
 

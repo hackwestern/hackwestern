@@ -1012,3 +1012,13 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Why:** Jazz wants whoever is on shift to be able to send, and one time for sponsors to remember.
 
 **Update (merge with Lucas, 2026-11-20):** Lucas's "verified slack msgs" changed sponsorCandidates to list every admitted hacker who shares, ordered form preference, then in-app preference, then everyone else. That already covers "hackers wanted + 20, at least 40", and shortlisting someone found by search depends on it, so the cap isn't applied to the list. shortlistPoolSize stays in src/lib for a follow-up that sizes only the review queue. Lucas also removed the Noah-only Send check (coffee-chat-sender.ts moved to _to_delete).
+
+## 2026-11-20: Seats keep filling from the whole interest list (Jazz)
+
+**Decision:** After a sponsor's own line (organizer-first, scanned, shortlist, interested in that sponsor), every sponsor's line continues with everyone who filled out the interest list for any sponsor, best rank first (invite source "anyone", shown as "From the interest list"). The 2-chat cap, no overlapping chats and one chat per sponsor still hold.
+**Why:** seats were left empty ("no hacker left in line is free then") while interested hackers were free.
+
+## 2026-11-20: Sponsor Day-Of's "Coffee Chats & Interviews" checkbox decides who does coffee chats (Jazz)
+
+**Decision:** The coffee board and the Coffee Chat Setup mirror read the "Coffee Chats & Interviews" checkbox on Sponsor Day-Of instead of names typed in Coffee Chat Setup column A. Ticked sponsors get a Coffee Chat Setup row written by the app. Column A is only a fallback if the checkbox column is missing or the sheet can't be read. Coffee Chat Setup is fully app-written and locked.
+**Why:** two hand-kept lists of the same thing could disagree; the contract checkbox already exists.

@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import {
   afterAll,
   afterEach,
@@ -510,20 +510,34 @@ describe("Saturday rounds", () => {
     ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
-  test("round 2 at 10:00: a decline with no one left stays empty; expired seats refill as round 1 closes; drafts never touched", async () => {
+  test("round 2 at 10:00: declines and expired seats refill from the interest pool until no one is left; drafts never touched", async () => {
     process.env.COFFEE_INVITES_ENABLED = "1";
     const before = await chatsOf(alpha.id);
     const h1 = before.find((c) => c.userId === ids.h1)!;
     const h5 = before.find((c) => c.userId === ids.h5)!;
-    // h1 declines Saturday morning: everyone else Alpha could ask already
-    // holds an Alpha seat, so nobody is invited in its place.
+    const liveOf = async () =>
+      (await chatsOf(alpha.id))
+        .filter((c) => c.status === "pending" || c.status === "accepted")
+        .map((c) => [c.slotTime, keyOf(c.userId), c.source]);
+    // h1 declines Saturday morning. Alpha's own line is used up (the rest
+    // hold Alpha seats, h8 isn't admitted), so the seat goes to the interest
+    // pool: g1 (Beta's list) is first by best rank, then time, then id.
+    dm.mockClear();
     await respondToCoffeeChat(
       ids.h1!,
       { chatId: h1.id, answer: "decline" },
       at("08:00"),
       0,
     );
-    expect(await chatsOf(alpha.id)).toHaveLength(before.length);
+    const g1 = (await chatsOf(alpha.id)).find((c) => c.userId === ids.g1)!;
+    expect(g1).toMatchObject({
+      slotTime: "11:30",
+      source: "anyone",
+      status: "pending",
+      round: 1,
+      expiresAt: at("10:00"),
+    });
+    expect(dm).toHaveBeenCalledTimes(1);
     await respondToCoffeeChat(
       ids.h5!,
       { chatId: h5.id, answer: "accept" },
@@ -534,60 +548,84 @@ describe("Saturday rounds", () => {
     await interested(alpha.id, ["h9"]);
 
     // Round 1 closes at 10:00 and round 2 opens at once (not 10:30).
+    dm.mockClear();
     vi.setSystemTime(at("10:00"));
     const out = await runDueInviteRounds(at("10:00"));
     expect(out.status).toBe("ran");
     const rows = await chatsOf(alpha.id);
     const round2 = rows.filter((c) => c.round === 2);
-    // h9 takes the earliest empty seat: 11:15 (h6 let it expire), answer by
-    // round 2's close, 10:30. 11:30 (declined by h1), 11:45 and 1:xx have no
-    // one left: those who let them expire aren't asked again.
+    // h6, g1, h2, h3 and h4 let theirs expire, and aren't asked again. h9
+    // (Alpha's own line) takes the earliest empty seat, 11:15; then the pool:
+    // g2, g3, g4 (g1 is blocked). All answer by round 2's close, 10:30.
+    // 1:15 is left: everyone left in the pool is blocked or holds an Alpha
+    // seat.
     expect(
       round2.map((c) => [
         c.slotTime,
         keyOf(c.userId),
+        c.source,
         c.expiresAt?.toISOString(),
       ]),
-    ).toEqual([["11:15", "h9", at("10:30").toISOString()]]);
+    ).toEqual([
+      ["11:15", "h9", "interested", at("10:30").toISOString()],
+      ["11:30", "g2", "anyone", at("10:30").toISOString()],
+      ["11:45", "g3", "anyone", at("10:30").toISOString()],
+      ["13:00", "g4", "anyone", at("10:30").toISOString()],
+    ]);
     expect(
       out.status === "ran" &&
         out.result.status === "ok" &&
         out.result.unfilled.map((u) => u.open),
-    ).toEqual([1, 1, 1, 1]);
+    ).toEqual([1]);
     // Delivered by the round's sweep.
-    expect(dm).toHaveBeenCalledTimes(1);
-    expect(round2[0]!.notifiedAt).not.toBeNull();
+    expect(dm).toHaveBeenCalledTimes(4);
+    for (const c of round2) expect(c.notifiedAt).not.toBeNull();
     expect(
       rows
         .filter((c) => c.status === "expired")
         .map((c) => keyOf(c.userId))
         .sort(),
-    ).toEqual(["h2", "h3", "h4", "h6"]);
+    ).toEqual(["g1", "h2", "h3", "h4", "h6"]);
     // Gamma was never sent: no invites, even though h9 etc. are interested.
     expect(await chatsOf(gamma.id)).toEqual([]);
 
-    // Running again changes nothing: every empty seat has no one left.
+    // Running again changes nothing: no one is left for the 1:15 seat.
     resetInviteRoundThrottle();
     const again = await runDueInviteRounds(at("10:10"));
     expect(
       again.status === "ran" &&
-        again.result.status === "ok" &&
-        again.result.created,
-    ).toEqual([]);
+        again.result.status === "ok" && [
+          again.result.created,
+          again.result.unfilled.map((u) => u.open),
+        ],
+    ).toEqual([[], [1]]);
 
-    // h9 declines: nobody is left, so the seat stays empty (and the next
-    // round doesn't invent anyone either).
+    // h9 declines: nobody is left (every pool hacker is blocked or holds an
+    // Alpha seat), so the seat stays empty.
     await respondToCoffeeChat(
       ids.h9!,
       { chatId: round2[0]!.id, answer: "decline" },
       at("10:15"),
       0,
     );
+    expect(await liveOf()).toEqual([
+      ["11:00", "h5", "scanned"],
+      ["11:30", "g2", "anyone"],
+      ["11:45", "g3", "anyone"],
+      ["13:00", "g4", "anyone"],
+    ]);
+    // Round 3: g2, g3 and g4 let theirs expire. Everyone in the pool has
+    // now had an Alpha invite, so no one is invented: five seats stay empty.
     resetInviteRoundThrottle();
     const r3 = await runDueInviteRounds(at("10:30"));
     expect(
-      r3.status === "ran" && r3.result.status === "ok" && r3.result.created,
-    ).toEqual([]);
+      r3.status === "ran" &&
+        r3.result.status === "ok" && [
+          r3.result.created,
+          r3.result.unfilled.map((u) => u.open),
+        ],
+    ).toEqual([[], [1, 1, 1, 1, 1]]);
+    expect(await liveOf()).toEqual([["11:00", "h5", "scanned"]]);
     vi.setSystemTime(FRI_10PM);
   });
 
@@ -672,7 +710,10 @@ describe("Saturday rounds", () => {
     expect(out.status).toBe("ran");
     expect(await live()).toEqual([["t5", "interested", 4, at("11:42")]]);
 
-    // t5 declines: nobody is left. Nobody who said no is asked again.
+    // t5 declines: Theta's own line is used up, so the chain goes on into
+    // the interest pool. g1 (Beta's list, best rank first, then time, then
+    // id) is free at 3:00 and was never asked by Theta. Nobody who said no
+    // to Theta is asked again.
     await respondToCoffeeChat(
       ids.t5!,
       {
@@ -683,7 +724,7 @@ describe("Saturday rounds", () => {
       at("11:20"),
       0,
     );
-    expect(await live()).toEqual([]);
+    expect(await live()).toEqual([["g1", "anyone", 4, at("11:50")]]);
     const all = await chatsOf(theta.id);
     expect(all.map((c) => keyOf(c.userId))).toEqual([
       "t1",
@@ -691,6 +732,7 @@ describe("Saturday rounds", () => {
       "t3",
       "t4",
       "t5",
+      "g1",
     ]);
     // Clean up so later tests (and their counts) don't see Theta.
     await db.delete(coffeeChats).where(eq(coffeeChats.sponsorId, theta.id));
@@ -713,16 +755,30 @@ describe("Saturday rounds", () => {
 });
 
 test("expired rows are written back", async () => {
-  const rows = await db
-    .select()
-    .from(coffeeChats)
-    .where(
-      and(
-        eq(coffeeChats.sponsorId, alpha.id),
-        eq(coffeeChats.status, "pending"),
-      ),
-    );
-  expect(rows).toEqual([]);
+  // The last round ran at 11:30: no Alpha invite is still pending past its
+  // answer-by. Pending ones left are pool invites with time to answer.
+  const rows = await chatsOf(alpha.id);
+  expect(
+    rows.filter(
+      (c) => c.status === "pending" && c.expiresAt! <= at("11:30"),
+    ),
+  ).toEqual([]);
+  expect(
+    rows
+      .filter((c) => c.status === "pending")
+      .every((c) => c.source === "anyone" && c.expiresAt! > at("11:30")),
+  ).toBe(true);
+  // The 11:12 round's pool invites: t3's 11:45 seat answered by its last
+  // call (11:25) and was written back as expired; t4 and t5 still have time.
+  expect(
+    rows
+      .filter((c) => c.round === 4)
+      .map((c) => [c.slotTime, keyOf(c.userId), c.status]),
+  ).toEqual([
+    ["11:45", "t3", "expired"],
+    ["13:00", "t4", "pending"],
+    ["13:15", "t5", "pending"],
+  ]);
 });
 
 describe("coffeeChatInvites router", () => {
@@ -774,12 +830,24 @@ describe("coffeeChatInvites router", () => {
     // Declined and expired invites aren't listed: they were replaced.
     expect(a.chats[1]!.invites).toEqual([]);
     expect(a.chats[2]!.invites).toEqual([]);
+    expect(a.chats[3]!.invites).toEqual([]);
+    // The 11:12 round gave 1:00 and 1:15 to the interest pool (Theta's t4
+    // and t5): pool invites count like any other.
+    expect(
+      a.chats.slice(4).map((c) =>
+        c.invites.map((i) => [i.name, i.status, i.source, i.round]),
+      ),
+    ).toEqual([
+      [["t4 P.", "pending", "anyone", 4]],
+      [["t5 P.", "pending", "anyone", 4]],
+    ]);
+    expect(a.chats[4]).toMatchObject({ filled: 1, accepted: 0, unfilled: 0 });
     // The kill switch is off: no round fills seats, so none is flagged.
     expect(a.chats[1]).toMatchObject({ filled: 0, unfilled: 0 });
     expect(a.totals).toEqual({
       seats: 6,
       accepted: 1,
-      pending: 0,
+      pending: 2,
       unfilled: 0,
     });
 
@@ -787,12 +855,13 @@ describe("coffeeChatInvites router", () => {
     process.env.COFFEE_INVITES_ENABLED = "dry";
     const on = (await statusOf()).sponsors[0]!;
     expect(on.chats[1]).toMatchObject({ filled: 0, unfilled: 1 });
-    expect(on.totals.unfilled).toBe(5);
+    expect(on.chats.map((c) => c.unfilled)).toEqual([0, 1, 1, 1, 0, 0]);
+    expect(on.totals.unfilled).toBe(3);
     // Sat 10:46: 11:15's last call (10:55) leaves under 10 minutes, so its
     // seat can't be offered any more and isn't flagged.
     vi.setSystemTime(at("10:46"));
     const late = (await statusOf()).sponsors[0]!;
-    expect(late.chats.map((c) => c.unfilled)).toEqual([0, 0, 1, 1, 1, 1]);
+    expect(late.chats.map((c) => c.unfilled)).toEqual([0, 0, 1, 1, 0, 0]);
     vi.setSystemTime(FRI_10PM);
     // The run of show unreadable: no round runs, so nothing is flagged.
     vi.mocked(getRunOfShow).mockRejectedValueOnce(new Error("sheet down"));
@@ -946,26 +1015,40 @@ describe("delivery: each invite once, retried until it goes out", () => {
     await interested(eps.id, ["e1"]);
     vi.setSystemTime(at("11:25"));
 
-    // Dry run, kill switch off: counts only.
+    // Dry run, kill switch off: counts only. Other sponsors' expired seats
+    // refill from the interest pool in this round too, so it plans more
+    // than Eps's one seat.
     const before = await db.select().from(coffeeChats);
     const preview = await previewDueInviteRound(at("11:25"));
-    expect(preview).toMatchObject({ status: "ok", round: 4, invites: 1 });
+    expect(preview).toMatchObject({ status: "ok", round: 4 });
+    expect(preview.invites).toBeGreaterThan(1);
     expect(await db.select().from(coffeeChats)).toEqual(before);
     expect(dm).not.toHaveBeenCalled();
 
-    // Round 4 (11:00-11:30) only ran at 11:25.
+    // Round 4 (11:00-11:30) only ran at 11:25. It writes exactly what the
+    // dry run counted.
     process.env.COFFEE_INVITES_ENABLED = "1";
     const out = await runDueInviteRounds(at("11:25"));
     expect(out.status).toBe("ran");
+    expect(
+      out.status === "ran" &&
+        out.result.status === "ok" && {
+          invites: out.result.created.length,
+          unfilled: out.result.unfilled.reduce((n, u) => n + u.open, 0),
+        },
+    ).toEqual({ invites: preview.invites, unfilled: preview.unfilled });
     const rows = await chatsOf(eps.id);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
+      userId: ids.e1,
+      source: "interested",
       round: 4,
       slotTime: "15:00",
       expiresAt: at("11:55"),
     });
     expect(rows[0]!.notifiedAt).not.toBeNull();
-    expect(dm).toHaveBeenCalledTimes(1);
+    // Every invite the round made was delivered by its sweep, once.
+    expect(dm).toHaveBeenCalledTimes(preview.invites);
 
     // Past the day's last chat: no lock, no board read.
     resetInviteRoundThrottle();

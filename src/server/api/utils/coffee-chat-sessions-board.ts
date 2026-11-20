@@ -39,6 +39,7 @@ import type { RunOfShowItem } from "~/lib/run-of-show";
 import { isDigitalJudging } from "~/lib/sponsor-prize-tracks";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
+import { coffeeChatSponsorNames } from "~/server/api/utils/sponsor-sheets";
 import { db } from "~/server/db";
 import {
   coffeeChatPlacements,
@@ -253,8 +254,15 @@ export async function loadBoardState(
         .from(coffeeChatRoomBookings)
         .orderBy(asc(coffeeChatRoomBookings.createdAt), asc(coffeeChatRoomBookings.id)),
     ]);
-  const ros = await readRunOfShow(registered.map((s) => s.name));
-  const sheetNames = new Set((ros?.sheetSponsors ?? []).map((n) => n.toLowerCase()));
+  const [ros, ticked] = await Promise.all([
+    readRunOfShow(registered.map((s) => s.name)),
+    coffeeChatSponsorNames(),
+  ]);
+  // Who does coffee chats: Sponsor Day-Of's "Coffee Chats & Interviews"
+  // checkbox (Jazz, 2026-11-20). Coffee Chat Setup column A only when that
+  // column is missing or the read failed.
+  const sheetNames =
+    ticked ?? new Set((ros?.sheetSponsors ?? []).map((n) => n.toLowerCase()));
   const prefOf = new Map(prefs.map((p) => [p.sponsorId, p]));
   const freeOf = new Map<string, string[]>();
   for (const rs of repSessions) {
@@ -263,7 +271,7 @@ export async function loadBoardState(
   }
   const sponsorOfRep = new Map(reps.map((r) => [r.id, r.sponsorId]));
 
-  // Sponsors doing coffee chats: in the Coffee Chat Setup tab, or with
+  // Sponsors doing coffee chats: ticked on Sponsor Day-Of, or with
   // preferences or reps saved. Digital sponsors (PCBWay) never do.
   const doing = registered.filter(
     (s) =>

@@ -318,6 +318,9 @@ export const INVITE_SOURCES = [
   "scanned",
   "shortlist",
   "interested",
+  // Anyone else who filled out the interest list (any sponsor), so seats
+  // keep filling after a sponsor's own line runs out (Jazz, 2026-11-20).
+  "anyone",
 ] as const;
 export type InviteSource = (typeof INVITE_SOURCES)[number];
 

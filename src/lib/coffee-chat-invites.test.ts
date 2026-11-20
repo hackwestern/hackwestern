@@ -797,3 +797,28 @@ describe("final call (one last hacker, 30 minutes before)", () => {
     expect(isFinalCallInvite(invites[0]!.expiresAt, min("11:00"), "near")).toBe(false);
   });
 });
+
+describe("anyone on the interest list fills what a sponsor's line can't", () => {
+  test("after the sponsor's own line, seats go to the interest list, in order", () => {
+    const { invites, unfilled } = plan({
+      chats: [chat({ placementId: "p", start: min("11:00"), seats: 3 })],
+      candidates: cands({
+        A: [["mine", "interested"], ["x", "anyone"], ["y", "anyone"], ["z", "anyone"]],
+      }),
+    });
+    expect(invites.map((i) => [i.userId, i.source])).toEqual([
+      ["mine", "interested"],
+      ["x", "anyone"],
+      ["y", "anyone"],
+    ]);
+    expect(unfilled).toEqual([]);
+  });
+  test("the 2-chat cap and no overlaps still hold for the interest list", () => {
+    const { invites } = plan({
+      chats: [chat({ placementId: "p", start: min("11:00") })],
+      candidates: cands({ A: [["busy", "anyone"], ["free", "anyone"]] }),
+      busy: [{ userId: "busy", sponsorId: "B", start: min("11:00"), minutes: 15 }],
+    });
+    expect(invites.map((i) => i.userId)).toEqual(["free"]);
+  });
+});
