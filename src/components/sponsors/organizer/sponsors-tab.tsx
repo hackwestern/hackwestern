@@ -143,9 +143,11 @@ function getNextStatus(current: SponsorStatus): SponsorStatus | null {
 export function CopyLinkButton({
   sponsorId,
   name,
+  showUrl = false,
 }: {
   sponsorId: string | null;
   name: string;
+  showUrl?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   useEffect(() => {
@@ -163,16 +165,45 @@ export function CopyLinkButton({
   }
 
   const url = `/sponsors/${sponsorId}`;
+  const absoluteUrl =
+    typeof window === "undefined"
+      ? url
+      : `${window.location.origin}${url}`;
+
+  const copyUrl = async () => {
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(absoluteUrl);
+      } else {
+        const input = document.createElement("textarea");
+        input.value = absoluteUrl;
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        input.remove();
+      }
+      setCopied(true);
+    } catch {
+      // Clipboard access can be denied by the browser or an insecure context.
+      // The visible URL and external-link button remain usable.
+    }
+  };
 
   return (
-    <div data-tour="org-copy-link" className="inline-flex items-center gap-1.5">
+    <div
+      data-tour="org-copy-link"
+      className="inline-flex flex-wrap items-center gap-1.5"
+    >
+      {showUrl && (
+        <code className="max-w-full break-all rounded-dashboard-sm bg-dashboard-bg-inset px-2 py-1 text-xs text-dashboard-text-medium">
+          {absoluteUrl}
+        </code>
+      )}
       <DashboardButton
         variant="small"
-        onClick={() => {
-          void navigator.clipboard
-            .writeText(`${window.location.origin}${url}`)
-            .then(() => setCopied(true));
-        }}
+        onClick={() => void copyUrl()}
         aria-label={copied ? copy.copiedLabel(name) : copy.copyLabel(name)}
         // Fixed width so "Copied" doesn't nudge the row.
         className="min-w-28"

@@ -58,6 +58,7 @@ import {
   sponsorJudgingSponsors,
   sponsorPresentations,
   sponsorShortlistSends,
+  sponsorTop5Drafts,
   sponsorTeamReviews,
   sponsorTeamScores,
   teams,
@@ -395,11 +396,15 @@ export const sponsorScoringRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const sponsor = await findTrackSponsor(input.sponsor);
       const track = await fetchSponsorTrack(sponsor.name);
-      const [eligible, scores, final, round, reps] = await Promise.all([
+      const [eligible, scores, final, draft, round, reps] = await Promise.all([
         listEligibleTeams(track),
         scoresFor(sponsor.id),
         db.query.sponsorFinalPicks.findFirst({
           where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
+        }),
+        // The top 5 being built (saved as they rank, before Submit).
+        db.query.sponsorTop5Drafts.findFirst({
+          where: eq(sponsorTop5Drafts.sponsorId, sponsor.id),
         }),
         roundFor(sponsor.id, sponsor.name),
         repNames(sponsor.id),
@@ -414,6 +419,9 @@ export const sponsorScoringRouter = createTRPCRouter({
         retrySheetSoon(sponsor.id, final.submittedAt);
       }
       const finalIds = final?.teamIds.filter((id) => visible.has(id)) ?? [];
+      const draftIds = draft?.teamIds
+        .slice(0, SPONSOR_FINAL_TOP)
+        .map((id) => (id && visible.has(id) ? id : null)) ?? null;
       return {
         sponsorName: sponsor.name,
         sponsorTrack: track,
@@ -429,6 +437,10 @@ export const sponsorScoringRouter = createTRPCRouter({
           ...round,
           slots: round.slots.filter((s) => visible.has(s.teamId)),
         },
+        /** Five place slots, preserving blank positions. */
+        top5Draft: draftIds
+          ? Array.from({ length: SPONSOR_FINAL_TOP }, (_, i) => draftIds[i] ?? null)
+          : null,
         final: final
           ? {
               teamIds: finalIds,
@@ -580,16 +592,25 @@ export const sponsorScoringRouter = createTRPCRouter({
     }),
 
   /**
-   * End round 1: snapshot the sponsor's current shortlist (eligible teams
-   * only, at most SHORTLIST_MAX: one per presentation slot) as the one
-   * organizers schedule from. Sending again replaces it;
-   * the schedule only changes when organizers schedule again.
+   * End round 1: one-time snapshot of the sponsor's current shortlist
+   * (eligible teams only, at most SHORTLIST_MAX: one per presentation slot)
+   * as the one organizers schedule from. Once sent, it cannot be replaced.
    */
   sendShortlist: publicProcedure
     .input(z.object({ sponsor: sponsorInput }))
     .mutation(async ({ input }) => {
       assertOpen();
       const sponsor = await findTrackSponsor(input.sponsor);
+      const alreadySent = await db.query.sponsorShortlistSends.findFirst({
+        where: eq(sponsorShortlistSends.sponsorId, sponsor.id),
+        columns: { sponsorId: true },
+      });
+      if (alreadySent) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Your shortlist has already been submitted.",
+        });
+      }
       const track = await fetchSponsorTrack(sponsor.name);
       const rows = await db
         .select({ teamId: sponsorTeamReviews.teamId })
@@ -641,11 +662,89 @@ export const sponsorScoringRouter = createTRPCRouter({
     }),
 
   /**
+   * Autosave the sponsor's partial Top 5 slot state. Empty places are
+   * represented by null, preserving place numbers and allowing resumption.
+   * This never submits a final ranking.
+   */
+  saveTop5Draft: publicProcedure
+    .input(
+      z.object({
+        sponsor: sponsorInput,
+        teamIds: z
+          .array(teamIdInput.nullable())
+          .length(SPONSOR_FINAL_TOP),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      assertOpen();
+      const sponsor = await findTrackSponsor(input.sponsor);
+      const alreadySubmitted =
+        await db.query.sponsorFinalPicks.findFirst({
+          where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
+          columns: { sponsorId: true },
+        });
+      if (alreadySubmitted) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Your Top 5 has already been submitted.",
+        });
+      }
+      const track = await fetchSponsorTrack(sponsor.name);
+      const round = await roundFor(sponsor.id, sponsor.name);
+      if (!round.round2Open) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Round 2 is not open",
+        });
+      }
+      // Same rule as submit: teams that presented, or for a remote sponsor
+      // (TinyFish, no presentations) its sent shortlist.
+      const rankable = round.remote
+        ? (round.shortlistSent?.teamIds ?? [])
+        : round.slots.map((slot) => slot.teamId);
+      if (rankable.length === 0) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "This sponsor has no presentation slots",
+        });
+      }
+
+      const allowed = new Set(rankable);
+      const chosen = input.teamIds.filter((id): id is string => id !== null);
+      if (new Set(chosen).size !== chosen.length) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Each place must contain a different team",
+        });
+      }
+      if (chosen.some((id) => !allowed.has(id))) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Only teams that presented to this sponsor can be picked",
+        });
+      }
+
+      const stored = input.teamIds.map((id) => id ?? "");
+      await db
+        .insert(sponsorTop5Drafts)
+        .values({
+          sponsorId: sponsor.id,
+          teamIds: stored,
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: sponsorTop5Drafts.sponsorId,
+          set: { teamIds: stored, updatedAt: new Date() },
+        });
+      return { teamIds: input.teamIds };
+    }),
+
+  /**
    * Submit the ranked top SPONSOR_FINAL_TOP (1st to 5th): exactly that
    * many, no repeats, all teams that presented to this sponsor and still
    * eligible. Only once organizers have opened round 2, and only for a
    * sponsor with a placed presentation slot (no slot: FORBIDDEN, Jazz
-   * 2026-11-18). Resubmitting replaces the last one while judging is open.
+   * 2026-11-18). One-time submission: cannot be replaced while judging is open.
    * Saved here first, then mirrored to the Sponsor Judging tab; if that
    * fails (or sheet writes are off) the submission still counts and
    * `sheetSynced` is false (the next `get` retries it).
@@ -662,6 +761,17 @@ export const sponsorScoringRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       assertOpen();
       const sponsor = await findTrackSponsor(input.sponsor);
+      const alreadySubmitted =
+        await db.query.sponsorFinalPicks.findFirst({
+          where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
+          columns: { sponsorId: true },
+        });
+      if (alreadySubmitted) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Your Top 5 has already been submitted.",
+        });
+      }
       const track = await fetchSponsorTrack(sponsor.name);
       const [eligible, round] = await Promise.all([
         eligibleTeamIds(track, input.teamIds),

@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { CheckCircle2, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
@@ -78,6 +79,7 @@ export function ShortlistSend({
   );
   const tooMany = shortlist.length > SHORTLIST_MAX;
   const sent = data.round.shortlistSent;
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const changed =
     sent !== null &&
     shortlist
@@ -151,6 +153,7 @@ export function ShortlistSend({
             <button
               type="button"
               aria-label={copy.shortlist.remove(team.name)}
+              disabled={sent !== null}
               onClick={() => onSave(team.id, { shortlisted: false })}
               className={iconButton}
             >
@@ -212,20 +215,54 @@ export function ShortlistSend({
                 send.isPending ||
                 shortlist.length === 0 ||
                 tooMany ||
-                (sent !== null && !changed)
+                sent !== null
               }
-              onClick={() => send.mutate({ sponsor })}
+              onClick={() => setConfirmOpen(true)}
               className="shrink-0 disabled:cursor-not-allowed disabled:opacity-dashboard-disabled"
             >
-              {send.isPending
-                ? copy.round.sending
-                : sent
-                  ? copy.round.resend
-                  : copy.round.send}
+              {send.isPending ? copy.round.sending : copy.round.send}
             </DashboardButton>
           </div>
         )}
       </div>
+
+      <Dialog.Root open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <Dialog.Content className="fixed z-50 inset-x-0 bottom-0 flex max-h-[92dvh] flex-col gap-4 overflow-y-auto rounded-t-dashboard-2xl bg-dashboard-bg-surface p-5 shadow-dashboard-card focus:outline-none sm:inset-0 sm:m-auto sm:h-fit sm:max-w-[560px] sm:rounded-dashboard-2xl sm:p-6">
+            <Dialog.Title className="m-0 text-xl font-semibold text-dashboard-text-heavy">
+              {copy.shortlistSubmitConfirm.title}
+            </Dialog.Title>
+            <Dialog.Description className="m-0 text-sm leading-relaxed text-dashboard-text-medium">
+              {copy.shortlistSubmitConfirm.body(shortlist.length)}
+            </Dialog.Description>
+            <ol className="m-0 max-h-60 list-decimal overflow-y-auto pl-5 text-sm font-medium text-dashboard-text-heavy">
+              {shortlist.map((team) => (
+                <li key={team.id} className="py-1">{team.name}</li>
+              ))}
+            </ol>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Dialog.Close asChild>
+                <DashboardButton variant="small" disabled={send.isPending}>
+                  Go back
+                </DashboardButton>
+              </Dialog.Close>
+              <DashboardButton
+                disabled={send.isPending}
+                onClick={() => {
+                  send.mutate({ sponsor }, {
+                    onSuccess: () => setConfirmOpen(false),
+                  });
+                }}
+              >
+                {send.isPending
+                  ? copy.round.sending
+                  : copy.shortlistSubmitConfirm.confirm}
+              </DashboardButton>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }

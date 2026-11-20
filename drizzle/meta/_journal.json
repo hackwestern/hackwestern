@@ -421,6 +421,13 @@
       "when": 1795138273246,
       "tag": "0062_coffee_board_v12",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1795151163336,
+      "tag": "0063_sponsor_top5_draft",
+      "breakpoints": true
     }
   ]
 }

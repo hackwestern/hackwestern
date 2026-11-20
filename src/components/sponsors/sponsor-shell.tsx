@@ -18,10 +18,8 @@ import {
   SponsorHelp,
   SponsorHelpProvider,
 } from "~/components/sponsors/help-button";
-import { useNow } from "~/components/sponsors/use-now";
 import { sponsorPortalCopy } from "~/content/sponsor-portal";
 import { sponsorVenueCopy } from "~/content/sponsor-venue";
-import { judgingUnlocked } from "~/lib/sponsor-judging-unlock";
 import { sponsorLogo } from "~/lib/sponsor-logos";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
@@ -64,8 +62,8 @@ type NavItem = {
  * as a raised round button in the middle. Help opens one dialog over the
  * page you're on.
  *
- * Judging only shows for prize track sponsors, greyed and locked until
- * Sunday 9:00 AM (or with ?preview=judging, which the nav links keep).
+ * Judging only shows for prize-track sponsors; it is never locked (Lucas,
+ * Nov 19: the Judging page has no Sunday 9:00 lock any more).
  */
 export function SponsorShell({
   title,
@@ -101,8 +99,6 @@ export function SponsorShell({
   const router = useRouter();
   const raw = router.query.uuid;
   const id = typeof raw === "string" && uuidRegex.test(raw) ? raw : "";
-  const preview = router.query.preview === "judging";
-  const now = useNow();
 
   const info = api.sponsorPortal.getSponsorPortalInfo.useQuery(
     { sponsor: id },
@@ -114,17 +110,10 @@ export function SponsorShell({
   // Before the router reads the URL (first render of these statically
   // optimised pages) the id is empty: never build "/sponsors//scan".
   const base = id ? `/sponsors/${id}` : "/sponsors";
-  const withPreview = (href: string) => {
-    if (!preview) return href;
-    const [path, frag] = href.split("#");
-    return `${path}?preview=judging${frag ? `#${frag}` : ""}`;
-  };
 
   // Hidden for sponsors without a prize track, and while we don't know yet,
   // so it never flashes in for someone who doesn't judge.
   const showJudging = info.data?.hasPrizeTrack === true;
-  // Same rule as the Judging page, so the nav shows it locked while the page is.
-  const judgingOpen = preview || judgingUnlocked(now);
 
   const scanItem: NavItem = {
     id: "scan",
@@ -139,7 +128,6 @@ export function SponsorShell({
         tabLabel: copy.judgingTab,
         icon: Trophy,
         href: `${base}/picks`,
-        locked: !judgingOpen,
       }
     : null;
   const home: NavItem = { id: "home", label: copy.home, icon: House, href: base };
@@ -194,7 +182,7 @@ export function SponsorShell({
           <aside className="hidden md:sticky md:top-0 md:flex md:h-dvh md:w-[300px] md:shrink-0 md:flex-col md:justify-between md:overflow-y-auto md:rounded-r-dashboard-lg md:border-r md:border-dashboard-border-default md:bg-dashboard-bg-nav md:px-6 md:py-12">
             <div className="flex flex-col">
               <Link
-                href={withPreview(base)}
+                href={base}
                 aria-label={copy.homeLink}
                 className="flex items-center gap-3 text-xl leading-default text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
               >
@@ -215,7 +203,7 @@ export function SponsorShell({
                   {sideMain.map((item) => (
                     <li key={item.id}>
                       <SideNavItem
-                        item={{ ...item, href: withPreview(item.href) }}
+                        item={item}
                         current={item.id === active}
                       />
                     </li>
@@ -234,7 +222,7 @@ export function SponsorShell({
                   {sideTasks.map((item) => (
                     <li key={item.id}>
                       <SideNavItem
-                        item={{ ...item, href: withPreview(item.href) }}
+                        item={item}
                         current={item.id === active}
                       />
                     </li>
@@ -256,7 +244,7 @@ export function SponsorShell({
           <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-2 border-b border-dashboard-border-default bg-dashboard-bg-nav px-4 pt-[env(safe-area-inset-top)] md:hidden">
             {id ? (
               <Link
-                href={withPreview(base)}
+                href={base}
                 aria-label={copy.homeLink}
                 className="flex min-h-11 min-w-11 shrink-0 items-center px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
               >
@@ -331,7 +319,7 @@ export function SponsorShell({
               {tabs.map((item) => (
                 <li key={item.id} className="flex min-w-0">
                   <TabItem
-                    item={{ ...item, href: withPreview(item.href) }}
+                    item={item}
                     current={item.id === active}
                   />
                 </li>

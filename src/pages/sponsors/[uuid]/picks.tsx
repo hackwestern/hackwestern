@@ -1,30 +1,63 @@
-import { useMemo, useRef, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Lock, MapPin } from "lucide-react";
 import { useRouter } from "next/router";
-import { Lock } from "lucide-react";
 
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { BrowseProjects } from "~/components/sponsors/judging/browse-projects";
+import { PresentationScoring } from "~/components/sponsors/judging/presentation-scoring";
+import {
+  JudgePicker,
+  JudgingAs,
+  useJudgeName,
+} from "~/components/sponsors/judging/judge-picker";
 import { ShortlistRanking } from "~/components/sponsors/judging/shortlist-ranking";
 import { ShortlistSend } from "~/components/sponsors/judging/shortlist-send";
 import { useSponsorJudging } from "~/components/sponsors/judging/use-sponsor-judging";
 import { pressable, SponsorShell } from "~/components/sponsors/sponsor-shell";
-import { useNow } from "~/components/sponsors/use-now";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
-import { sponsorVenueCopy } from "~/content/sponsor-venue";
-import { judgingUnlocked } from "~/lib/sponsor-judging-unlock";
 import {
   formatPresentationTime,
   judgingRound,
 } from "~/lib/sponsor-presentations";
+import { judgeKey } from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
+import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
 const copy = sponsorJudgingCopy;
-const STEPS = ["browse", "shortlist"] as const;
-type Step = (typeof STEPS)[number];
+type Step =
+  | "browse"
+  | "shortlist"
+  | "presentations"
+  | "top";
+const ALL_STEPS: readonly Step[] = [
+  "browse",
+  "shortlist",
+  "presentations",
+  "top",
+];
+
+function JudgingIdentity({
+  name,
+  reps,
+  scores,
+  onSwitch,
+}: {
+  name: string;
+  reps: readonly string[];
+  scores: readonly { judge: string }[];
+  onSwitch: () => void;
+}) {
+  const others = [...new Set([
+    ...reps,
+    ...scores.map((score) => score.judge),
+  ])].filter((candidate) => judgeKey(candidate) !== judgeKey(name));
+  return (
+    <JudgingAs name={name} others={others} onSwitch={onSwitch} />
+  );
+}
 
 // Sponsor judging (kept at Lucas's /sponsors/[uuid]/picks URL): each rep
 // picks their name, goes through the submitted projects one at a time or as
@@ -38,9 +71,17 @@ export default function SponsorJudgingPage() {
   const { query, reviews, scoresByTeam, save, setScore, saveState } =
     useSponsorJudging(uuid, validUuid);
   const data = query.data;
+  const judge = useJudgeName(uuid);
+  const [switchingJudge, setSwitchingJudge] = useState(false);
+  const portalInfo = api.sponsorPortal.getSponsorPortalInfo.useQuery(
+    { sponsor: uuid },
+    {
+      enabled: validUuid,
+      refetchOnWindowFocus: false,
+      retry: false,
+    },
+  );
 
-  // Ticks like the shell's nav, so the page unlocks at 9:00 without a reload.
-  const now = useNow();
   const [step, setStep] = useState<Step>("browse");
   const stepRefs = useRef(new Map<Step, HTMLButtonElement>());
 
@@ -66,6 +107,20 @@ export default function SponsorJudgingPage() {
         : null,
     [data, round],
   );
+  const roundTwoAvailable = round === "rank";
+  const locked = (s: Step) =>
+    s === "browse" || s === "shortlist"
+      ? roundTwoAvailable
+      : !roundTwoAvailable;
+
+  useEffect(() => {
+    if (roundTwoAvailable && (step === "browse" || step === "shortlist")) {
+      setStep("presentations");
+    } else if (!roundTwoAvailable && (step === "presentations" || step === "top")) {
+      setStep("browse");
+    }
+  }, [roundTwoAvailable, step]);
+
   const shortlistCount = !data
     ? 0
     : presented
@@ -73,41 +128,10 @@ export default function SponsorJudgingPage() {
       : data.teams.filter((t) => reviews.get(t.id)?.shortlisted).length;
 
   const chooseStep = (s: Step, focus = false) => {
+    if (locked(s)) return;
     setStep(s);
     if (focus) stepRefs.current.get(s)?.focus();
   };
-
-  // Same rule as the nav: locked until Sunday 9:00 AM, unless previewing.
-  // This lock is UI-only by design: the server enforces only the close
-  // time. Round 1 starts at 9:00 Sunday (docs/flows/sponsor-judging.md),
-  // so the page simply doesn't show judging before then.
-  if (
-    router.isReady &&
-    router.query.preview !== "judging" &&
-    !judgingUnlocked(now)
-  ) {
-    const locked = sponsorVenueCopy.judgingLocked;
-    return (
-      <SponsorShell title={copy.seoTitle}>
-        <DashboardPanel className="items-start gap-3">
-          <h1 className="dashboard-h1 m-0 flex items-center gap-2">
-            <Lock aria-hidden className="size-6 shrink-0" />
-            {locked.pageTitle}
-          </h1>
-          <p className="m-0 text-base text-dashboard-text-medium">
-            {locked.message}
-          </p>
-          <DashboardButton
-            asChild
-            variant="outline"
-            className={cn("h-11", pressable)}
-          >
-            <Link href={`/sponsors/${uuid}`}>{locked.home}</Link>
-          </DashboardButton>
-        </DashboardPanel>
-      </SponsorShell>
-    );
-  }
 
   if (!router.isReady || (validUuid && query.isLoading)) {
     return (
@@ -171,6 +195,8 @@ export default function SponsorJudgingPage() {
   const counts: Record<Step, number> = {
     browse: data.teams.length,
     shortlist: shortlistCount,
+    presentations: presented?.size ?? 0,
+    top: data.final?.teamIds.length ?? 0,
   };
 
   return (
@@ -183,27 +209,83 @@ export default function SponsorJudgingPage() {
               {copy.trackTag(data.sponsorTrack)}
             </DashboardTag>
           )}
+          {roundTwoAvailable ? (
+            <DashboardTag>{copy.steps.round2Stage}</DashboardTag>
+          ) : (
+            <DashboardTag>{copy.steps.round1Stage}</DashboardTag>
+          )}
         </div>
         <h1 className="dashboard-h1 m-0">{copy.title}</h1>
         <p className="m-0 text-base leading-relaxed text-dashboard-text-medium">
           {copy.intro(data.finalTop)}
         </p>
+        {portalInfo.data?.roomNumber &&
+          portalInfo.data.roomNumber !== "TBD" && (
+            <div className="mt-1 inline-flex w-fit items-center gap-2 rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface px-3 py-2 text-sm shadow-dashboard-card">
+              <MapPin
+                aria-hidden
+                className="size-4 shrink-0 text-dashboard-text-active"
+              />
+              <span className="text-dashboard-text-light">Judging room</span>
+              <span className="font-semibold text-dashboard-text-heavy">
+                {portalInfo.data.roomNumber}
+              </span>
+            </div>
+          )}
       </div>
 
-      {/* Browse | Shortlist, sticky so switching is one tap on a long list. */}
-      <div className="sticky top-0 z-20 -mx-4 bg-dashboard-bg-page/95 px-4 py-2 backdrop-blur-sm sm:-mx-5 sm:px-5">
+      {judge.ready &&
+        (!judge.name || switchingJudge) ? (
+          <JudgePicker
+            reps={data.reps}
+            current={judge.name}
+            onPick={(name) => {
+              judge.choose(name);
+              setSwitchingJudge(false);
+            }}
+          />
+        ) : judge.ready && judge.name ? (
+          <JudgingIdentity
+            name={judge.name}
+            reps={data.reps}
+            scores={data.scores}
+            onSwitch={() => setSwitchingJudge(true)}
+          />
+        ) : null}
+
+      {/* Four judging stages stay visible; unavailable stages stay locked. */}
+
+      {/* Four judging stages stay visible; unavailable stages stay locked. */}
+      <div className="-mx-4 px-4 py-2 sm:-mx-5 sm:px-5">
         <div
           role="tablist"
           aria-label={copy.steps.label}
-          className="grid grid-cols-2 gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1"
+          className="grid grid-cols-2 gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1 sm:grid-cols-4"
           onKeyDown={(e) => {
             if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
             e.preventDefault();
-            chooseStep(step === "browse" ? "shortlist" : "browse", true);
+            const at = ALL_STEPS.indexOf(step);
+            if (at < 0) return;
+            const delta = e.key === "ArrowRight" ? 1 : -1;
+            for (let n = 1; n <= ALL_STEPS.length; n++) {
+              const next =
+                ALL_STEPS[
+                  (at + delta * n + ALL_STEPS.length * 2) % ALL_STEPS.length
+                ];
+              if (next && !locked(next)) {
+                chooseStep(next, true);
+                break;
+              }
+            }
           }}
         >
-          {STEPS.map((s) => {
+          {ALL_STEPS.map((s) => {
             const on = step === s;
+            const isLocked = locked(s);
+            const stage =
+              s === "browse" || s === "shortlist"
+                ? copy.steps.round1
+                : copy.steps.round2;
             return (
               <button
                 key={s}
@@ -215,30 +297,50 @@ export default function SponsorJudgingPage() {
                 role="tab"
                 id={`step-${s}`}
                 data-tour={
-                  s === "shortlist" ? "judging-shortlist-tab" : undefined
+                  s === "shortlist"
+                    ? "judging-shortlist-tab"
+                    : s === "top"
+                      ? "judging-top-tab"
+                      : undefined
                 }
                 aria-selected={on}
                 aria-controls={`panel-${s}`}
+                aria-disabled={isLocked}
+                disabled={isLocked}
                 tabIndex={on ? 0 : -1}
                 onClick={() => chooseStep(s)}
                 className={cn(
-                  "inline-flex min-h-11 items-center justify-center gap-2 rounded-dashboard-md px-2 text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                  "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-dashboard-md px-2 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                  isLocked &&
+                    "cursor-not-allowed text-dashboard-text-placeholder opacity-70",
                   on
                     ? "bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card"
                     : "text-dashboard-text-medium [@media(hover:hover)]:hover:text-dashboard-text-heavy",
                   pressable,
                 )}
               >
-                {copy.steps[s]}
-                <span
-                  className={cn(
-                    "rounded-full px-2 text-xs tabular-nums leading-5",
-                    on
-                      ? "bg-dashboard-bg-highlight text-dashboard-text-active"
-                      : "bg-dashboard-bg-navSelected text-dashboard-text-medium",
+                <span className="inline-flex items-center gap-1">
+                  {isLocked && <Lock aria-hidden className="size-3.5" />}
+                  {copy.steps[s]}
+                  {!isLocked && (
+                    <span
+                      className={cn(
+                        "ml-0.5 rounded-full px-1.5 text-xs tabular-nums leading-5",
+                        on
+                          ? "bg-dashboard-bg-highlight text-dashboard-text-active"
+                          : "bg-dashboard-bg-navSelected text-dashboard-text-medium",
+                      )}
+                    >
+                      {counts[s]}
+                    </span>
                   )}
-                >
-                  {counts[s]}
+                </span>
+                <span className="text-[11px] font-medium leading-4 text-dashboard-text-light">
+                  {isLocked
+                    ? s === "browse" || s === "shortlist"
+                      ? copy.steps.round1Complete
+                      : copy.steps.lockedRound2
+                    : stage}
                 </span>
               </button>
             );
@@ -252,9 +354,9 @@ export default function SponsorJudgingPage() {
         aria-labelledby={`step-${step}`}
         className="flex flex-col gap-4"
       >
-        {step === "browse" ? (
+        {!judge.ready || !judge.name || switchingJudge ? null : step === "browse" ? (
           <BrowseProjects
-            sponsor={uuid}
+            me={judge.name}
             data={data}
             reviews={reviews}
             scoresByTeam={scoresByTeam}
@@ -262,7 +364,15 @@ export default function SponsorJudgingPage() {
             onSave={save}
             onScore={setScore}
           />
-        ) : presented ? (
+        ) : step === "presentations" && judge.name && presented ? (
+          <PresentationScoring
+            me={judge.name}
+            data={data}
+            scoresByTeam={scoresByTeam}
+            saveState={saveState}
+            onScore={setScore}
+          />
+        ) : step === "top" && presented ? (
           <ShortlistRanking
             sponsor={uuid}
             data={data}
