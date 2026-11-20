@@ -8,7 +8,11 @@ import {
   prizeTrackOf,
   remoteJudgingRoom,
 } from "~/lib/sponsor-prize-tracks";
-import { SPONSOR_FINAL_TOP, teamIdAndLink } from "~/lib/sponsor-scoring";
+import {
+  bareLink,
+  SPONSOR_FINAL_TOP,
+  teamIdAndLink,
+} from "~/lib/sponsor-scoring";
 import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import {
   googleBookingsSheet,
@@ -81,6 +85,8 @@ export type JudgingSheetInput = {
   teamNames: ReadonlyMap<string, string>;
   /** Devpost link by team id (absent or null = none). */
   teamLinks: ReadonlyMap<string, string | null>;
+  /** GitHub link by team id (absent or null = none). */
+  teamGithub: ReadonlyMap<string, string | null>;
   /** Member names by team id. */
   members: ReadonlyMap<string, readonly string[]>;
   /** How each scheduled team's members heard, by team id ("" = not yet). */
@@ -132,6 +138,14 @@ export function judgingSheetRows(input: JudgingSheetInput): string[][] {
   const teamName = (id: string) => input.teamNames.get(id) ?? id;
   const teamCell = (id: string) =>
     teamIdAndLink(id, input.teamLinks.get(id) ?? null);
+  // 1st to 5th place: the GitHub link on a second line, so the spon team
+  // can open the code as well as the Devpost page.
+  const placeCell = (id: string) => {
+    const github = bareLink(input.teamGithub.get(id));
+    return github
+      ? `${teamCell(id)}\n${sheetCopy.sponsors.github(github)}`
+      : teamCell(id);
+  };
   const membersOf = (id: string) => (input.members.get(id) ?? []).join(", ");
   const placedFor = (sponsorId: string) =>
     input.presentations.filter(
@@ -175,7 +189,7 @@ export function judgingSheetRows(input: JudgingSheetInput): string[][] {
             : status.locked;
     const places = Array.from({ length: SPONSOR_FINAL_TOP }, (_, i) => {
       const teamId = final?.teamIds[i];
-      return teamId ? teamCell(teamId) : "";
+      return teamId ? placeCell(teamId) : "";
     });
     rows.push([
       t.name,
@@ -272,6 +286,7 @@ export async function loadJudgingSheetInput(
       presentations: [],
       teamNames: new Map(),
       teamLinks: new Map(),
+      teamGithub: new Map(),
       members: new Map(),
       notified: new Map(),
       scoring: new Set(),
@@ -331,6 +346,7 @@ export async function loadJudgingSheetInput(
             id: teams.id,
             name: teams.name,
             devpostUrl: teams.devpostUrl,
+            githubUrl: teams.githubUrl,
           })
           .from(teams)
           .where(inArray(teams.id, teamIds))
@@ -393,6 +409,12 @@ export async function loadJudgingSheetInput(
       nameRows.map((t) => [
         t.id,
         t.devpostUrl?.trim() ? t.devpostUrl.trim() : null,
+      ]),
+    ),
+    teamGithub: new Map(
+      nameRows.map((t) => [
+        t.id,
+        t.githubUrl?.trim() ? t.githubUrl.trim() : null,
       ]),
     ),
     members: new Map(

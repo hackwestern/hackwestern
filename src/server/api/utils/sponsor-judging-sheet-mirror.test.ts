@@ -134,6 +134,10 @@ const fixture: JudgingSheetInput = {
     ["t2", "https://devpost.com/software/bravo/"],
     ["t3", null],
   ]),
+  teamGithub: new Map([
+    ["t1", "https://github.com/hw/alpha/"],
+    ["t3", "  "],
+  ]),
   members: new Map([
     ["t1", ["Ada Lovelace", "Alan Turing"]],
     ["t2", ["Grace Hopper"]],
@@ -183,8 +187,9 @@ describe("judgingSheetRows", () => {
           "t2, t1, t3",
           "Top 5 sent",
           ts("2026-11-22T12:05:00-05:00"),
-          // Team ID + Devpost link; no link = ID only; never invented.
-          "t1 · devpost.com/software/alpha",
+          // Team ID + Devpost link, then GitHub on a second line; a
+          // missing link is left out, never invented.
+          "t1 · devpost.com/software/alpha\nGitHub: github.com/hw/alpha",
           "t3",
           "t5",
           "t2 · devpost.com/software/bravo",
@@ -311,7 +316,7 @@ describe("judgingSheetRows", () => {
       "Entered by the spon team",
       ts("2026-11-23T09:05:00-05:00"),
       "t2 · devpost.com/software/bravo",
-      "t1 · devpost.com/software/alpha",
+      "t1 · devpost.com/software/alpha\nGitHub: github.com/hw/alpha",
       "t3",
     ]);
   });
