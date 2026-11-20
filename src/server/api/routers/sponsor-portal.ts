@@ -144,6 +144,7 @@ export const sponsorPortalRouter = createTRPCRouter({
           maxCoffeeChatMinutes,
           maxCoffeeChatBlocks: coffeeChatBlocksFor(maxCoffeeChatMinutes),
           coffeeChatBookedCount,
+          sheetFailed: false,
         };
       } catch (error) {
         console.error("sponsor portal: sheet read failed", error);
@@ -161,6 +162,9 @@ export const sponsorPortalRouter = createTRPCRouter({
           maxCoffeeChatMinutes: 0,
           maxCoffeeChatBlocks: coffeeChatBlocksFor(0),
           coffeeChatBookedCount: 0,
+          // The blanks above are unknowns, not real values: the page says
+          // it couldn't load rather than "not assigned".
+          sheetFailed: true,
         };
       }
     }),

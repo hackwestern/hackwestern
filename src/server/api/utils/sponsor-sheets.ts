@@ -254,8 +254,106 @@ export function sponsorDayOfRows(
   return out;
 }
 
+/**
+ * Sponsor Day-Of is read on almost every page and polled by organizer
+ * pages, which ran past Google's per-minute read limit (about 1 load in 3
+ * failed, 2026-11-20). So one read is shared for DAY_OF_TTL_MS, and when
+ * Google refuses, the last good copy is used instead of failing. Writes
+ * read fresh (`fresh`) and clear this, so they see the current rows.
+ */
+const DAY_OF_TTL_MS = 60_000;
+let dayOfCache: {
+  spreadsheetId: string;
+  at: number;
+  value: SponsorDayOfTab | null;
+} | null = null;
+let dayOfInFlight: Promise<SponsorDayOfTab | null> | null = null;
+
+/**
+ * One sheet read shared by every request for `ttlMs`, keeping the last good
+ * value when Google refuses (usually its per-minute read limit). Pages read
+ * the same tabs over and over; this keeps the app under the limit and stops
+ * a refused read from showing as blanks. Off in tests (they mock per test).
+ */
+const sharedReads = new Map<
+  string,
+  { at: number; value: unknown; inFlight: Promise<unknown> | null }
+>();
+
+export async function sharedSheetRead<T>(
+  key: string,
+  ttlMs: number,
+  load: () => Promise<T>,
+): Promise<T> {
+  if (process.env.VITEST) return load();
+  const entry = sharedReads.get(key);
+  if (entry && entry.at > 0 && Date.now() - entry.at < ttlMs) {
+    return entry.value as T;
+  }
+  if (entry?.inFlight) return entry.inFlight as Promise<T>;
+  const slot = entry ?? { at: 0, value: undefined, inFlight: null };
+  sharedReads.set(key, slot);
+  slot.inFlight = load()
+    .then((value) => {
+      slot.at = Date.now();
+      slot.value = value;
+      return value;
+    })
+    .catch((error: unknown) => {
+      if (slot.at > 0) {
+        console.warn(`Sheet read "${key}" failed; using the last good copy`, error);
+        return slot.value as T;
+      }
+      throw error;
+    })
+    .finally(() => {
+      slot.inFlight = null;
+    });
+  return slot.inFlight as Promise<T>;
+}
+
+/** After a write to Sponsor Day-Of: the next read goes to the sheet. */
+export function clearSponsorDayOfCache() {
+  dayOfCache = null;
+}
+
 /** Read the Sponsor Day-Of tab (falls back to "Contract Breakdown"). */
 export async function fetchSponsorDayOfTab(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+  { fresh = false }: { fresh?: boolean } = {},
+): Promise<SponsorDayOfTab | null> {
+  // Tests mock the sheet per test: no sharing between them.
+  if (fresh || process.env.VITEST) {
+    return readSponsorDayOfTab(sheets, spreadsheetId);
+  }
+  const cached = dayOfCache;
+  if (
+    cached?.spreadsheetId === spreadsheetId &&
+    Date.now() - cached.at < DAY_OF_TTL_MS
+  ) {
+    return cached.value;
+  }
+  dayOfInFlight ??= readSponsorDayOfTab(sheets, spreadsheetId)
+    .then((value) => {
+      dayOfCache = { spreadsheetId, at: Date.now(), value };
+      return value;
+    })
+    .catch((error: unknown) => {
+      // Google refused (often the per-minute limit): keep the last good copy.
+      if (cached?.spreadsheetId === spreadsheetId) {
+        console.warn("Sponsor Day-Of read failed; using the last good copy", error);
+        return cached.value;
+      }
+      throw error;
+    })
+    .finally(() => {
+      dayOfInFlight = null;
+    });
+  return dayOfInFlight;
+}
+
+async function readSponsorDayOfTab(
   sheets: SheetsClient,
   spreadsheetId: string,
 ): Promise<SponsorDayOfTab | null> {
@@ -335,6 +433,15 @@ export async function fetchColumnA(
  * ids). On duplicate names the first row wins, matching getChosenTeams.
  */
 export async function fetchAllChosenTeams(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+): Promise<Map<string, string[]>> {
+  return sharedSheetRead(`picks:${spreadsheetId}`, 60_000, () =>
+    readAllChosenTeams(sheets, spreadsheetId),
+  );
+}
+
+async function readAllChosenTeams(
   sheets: SheetsClient,
   spreadsheetId: string,
 ): Promise<Map<string, string[]>> {
@@ -597,8 +704,10 @@ export async function findTabTitle(
       (s) => s.properties?.title?.trim().toLowerCase() === titleLower,
     );
     return found?.properties?.title ?? null;
-  } catch {
-    return null;
+  } catch (error) {
+    // A real failure (quota, network, auth) is an error, not "no such tab":
+    // reporting it as missing made pages show blanks as if they were real.
+    throw error;
   }
 }
 

@@ -15,7 +15,7 @@ const copy = sponsorHomeCopy.contacts;
  * Contacts), each with Copy and Call. Same people as the Help dialog.
  */
 export function ContactsCard({ sponsor }: { sponsor: string }) {
-  const { loading, lead, emergency } = useHelpContacts(sponsor);
+  const { loading, failed, lead, emergency } = useHelpContacts(sponsor);
   const missing = sponsorHelpCopy.contacts;
   return (
     <section aria-labelledby="contacts-heading" className={card}>
@@ -30,7 +30,7 @@ export function ContactsCard({ sponsor }: { sponsor: string }) {
             label={copy.pointOfContact}
             name={lead?.name ?? null}
             phone={lead?.phone ?? null}
-            missingName={missing.noLead}
+            missingName={failed ? missing.loadFailed : missing.noLead}
             missingPhone={missing.noPhone}
           />
           <ContactLine

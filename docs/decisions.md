@@ -941,3 +941,9 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 
 **Decision:** 30 minutes before a coffee chat, a seat still waiting goes to one last hacker in line. If they don't answer, the seat stays empty. The rounds before that stay as they are.
 **Why:** one last try to fill the seat, without chasing hackers right up to the chat.
+
+## 2026-11-20: Sheet reads shared and cached (fix for "1 load in 3 fails")
+
+**Decision:** Sponsor Day-Of, the picks read and the coffee chat grid are each read from Google at most once a minute and shared by every request (sharedSheetRead). When Google refuses (its per-minute read limit, confirmed in the server log: "Read requests per minute per user"), the last good copy is used. A refused read is no longer reported as "tab not found", and the sponsor portal says it couldn't load instead of showing blanks as real ("contact not assigned"). Writes to Sponsor Day-Of read fresh and clear the copy, so changes show at once. Sheet edits show within a minute.
+**Why:** every page and every organizer poll read the sheet, which ran past Google's limit; on event day many people have pages open.
+**Alternatives:** asking Google for a higher quota (slow, not guaranteed); fewer refreshes only (not enough).

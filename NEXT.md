@@ -3,7 +3,7 @@
 ## Now
 Fix the run-through's problems, in this order (full report: the session of 2026-11-20; screenshots were in the session scratchpad, not kept):
 1. ~~Duplicate QNX~~ DONE (6602ae99): sheet cell renamed to "QNX", empty duplicate removed locally, names now match loosely (brackets ignored) in auto-sync and links. On production, check there's no "QNX (BlackBerry)" sponsor record; if there is, it's empty and can go.
-2. **Sheet reads fail about 1 load in 3.** `findTabTitle` (src/server/api/utils/sponsor-sheets.ts, ~line 586) turns any Google error into "tab not found", so the organizer list 500s and the sponsor portal shows wrong defaults ("contact not assigned", no tier). Likely the Sheets per-minute quota: Sponsor Day-Of reads aren't cached. Fix: rethrow real API errors, cache the Day-Of read (like the 60 s loaders), and have the portal show "couldn't load" instead of blanks.
+2. ~~Sheet reads failing~~ DONE: Sponsor Day-Of, picks and the coffee chat grid are read once a minute and shared (sharedSheetRead in sponsor-sheets.ts), with the last good copy when Google refuses; real errors aren't reported as a missing tab; the portal says "couldn't load" instead of blanks. 30/30 loads OK right after hitting Google's limit. If other pages still hit the limit, wrap their reads in sharedSheetRead too.
 3. ~~Phone Chats calendar zoom~~ DONE (6602ae99): checked 390 wide on Sun Life and Canada Life.
 4. **Sunday table on organizer Home disagrees with the judging board:** rooms (Scotiabank Rm 2110 vs free), TinyFish "Missing room" vs remote, and "Picks 0 of 5–15" for every sponsor even when shortlists are in.
 5. **Scan page link** "Back to Coffee chats" builds `/sponsors//coffee-chats` before the sponsor ID is read (same fix as 5de1b754).
