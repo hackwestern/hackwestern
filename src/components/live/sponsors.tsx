@@ -7,6 +7,7 @@ import {
   SPONSOR_TIERS,
   SPONSOR_THANK_YOU_TEXT,
 } from "~/constants/sponsors-live";
+import SponsorInterest from "~/components/live/sponsor-interest";
 
 const SponsorCard = ({
   name,
@@ -110,6 +111,7 @@ const SponsorCard = ({
 const Sponsors = () => {
   return (
     <div className="h-full overflow-auto pb-16 font-figtree">
+      <SponsorInterest className="mx-4 mb-12 mt-8 sm:mx-auto sm:max-w-2xl" />
       {/* Thank you text */}
       <div className="mb-12 text-center">
         <p className="mx-auto max-w-2xl text-base font-medium leading-normal text-dashboard-text-medium md:text-lg">

@@ -32,6 +32,8 @@ export const MentorsList: Mentor[] = [
     tags: ["Software Engineering", "Product Management", "Design", "AI"],
     image: "/landing/mentors/edwin_ngui.webp",
     linkedin: "https://www.linkedin.com/in/edwin-ngui/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CJHMNQ0RK&team=T0CD393939Q",
   },
   {
     // UNVERIFIED: not in this year's sheet, tags/skills are from last year
@@ -40,6 +42,8 @@ export const MentorsList: Mentor[] = [
     tags: ["Software Engineering", "Design"],
     image: "/landing/mentors/lecia_cheng.webp",
     linkedin: "https://www.linkedin.com/in/lecia-cheng/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CJVAVFW3F&team=T0CD393939Q",
   },
   // New this year
   {
@@ -47,6 +51,8 @@ export const MentorsList: Mentor[] = [
     skills: ["Python", "Machine learning", "C#", "REST APIs"],
     tags: ["Software Engineering", "Product Management", "AI"],
     image: "/landing/mentors/aidena.webp",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CJNQWPZQS&team=T0CD393939Q",
   },
   {
     name: "Shivansh Kushwaha",
@@ -54,19 +60,16 @@ export const MentorsList: Mentor[] = [
     tags: ["Software Engineering", "Product Management", "Design", "AI"],
     image: "/landing/mentors/shivanshk.webp",
     linkedin: "https://www.linkedin.com/in/shivkushwaha/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CJDU8AWEQ&team=T0CD393939Q",
   },
   {
     name: "Mohamed Toman",
     skills: ["Full-stack", "React", "Python", "Cloud", "Databases"],
     tags: ["Software Engineering"],
     linkedin: "https://www.linkedin.com/in/hadytoman/",
-  },
-  {
-    name: "Aleks Bursac",
-    skills: ["Product sense", "Next.js", "React Native", "Figma", "Demos"],
-    tags: ["Software Engineering", "Product Management", "Design"],
-    image: "/landing/mentors/aleksb.webp",
-    linkedin: "https://www.linkedin.com/in/aleksbrsc/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CJQT97ATT&team=T0CD393939Q",
   },
   {
     name: "William Liu",
@@ -74,12 +77,16 @@ export const MentorsList: Mentor[] = [
     tags: ["Software Engineering", "Product Management", "Design"],
     image: "/landing/mentors/williaml.webp",
     linkedin: "https://www.linkedin.com/in/liuwllm/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CJSMGJ3EY&team=T0CD393939Q",
   },
   {
     name: "Jaemin Han",
     skills: ["ML engineering", "Python", "PyTorch", "Pitching"],
     tags: ["Software Engineering", "AI"],
     linkedin: "https://www.linkedin.com/in/hanjaemin/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CHUSENRF1&team=T0CD393939Q",
     image: "/landing/mentors/jaeminh.webp",
   },
   {
@@ -88,6 +95,8 @@ export const MentorsList: Mentor[] = [
     tags: ["Software Engineering", "Embedded & Systems"],
     image: "/landing/mentors/rafayk.webp",
     linkedin: "https://www.linkedin.com/in/rafaykashif/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CJE5UCQ6Q&team=T0CD393939Q",
   },
   {
     name: "David Liu",
@@ -95,6 +104,8 @@ export const MentorsList: Mentor[] = [
     tags: ["Software Engineering", "Design", "AI"],
     image: "/landing/mentors/davidliu.webp",
     linkedin: "https://www.linkedin.com/in/davidmakesmoves/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CKC7ZB22U&team=T0CD393939Q",
   },
   {
     name: "Ali Mohammed-Ali",
@@ -102,13 +113,8 @@ export const MentorsList: Mentor[] = [
     tags: ["Software Engineering", "Design", "Hardware", "AI"],
     image: "/landing/mentors/alim.webp",
     linkedin: "https://www.linkedin.com/in/am-uwo/",
-  },
-  {
-    name: "Ian Korovinsky",
-    skills: ["Backend", "ML infrastructure", "Product", "Hackathon strategy"],
-    tags: ["Software Engineering", "AI", "Product Management"],
-    image: "/landing/mentors/iank.webp",
-    linkedin: "https://www.linkedin.com/in/ian-korovinsky/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CJGPV815H&team=T0CD393939Q",
   },
   {
     name: "Luke Blommesteyn",
@@ -116,6 +122,8 @@ export const MentorsList: Mentor[] = [
     tags: ["Software Engineering", "AI"],
     image: "/landing/mentors/lukeb.webp",
     linkedin: "https://www.linkedin.com/in/lblommesteyn/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CKHGRGLP2&team=T0CD393939Q",
   },
   {
     name: "Lukas Bozinov",
@@ -123,6 +131,8 @@ export const MentorsList: Mentor[] = [
     tags: ["Software Engineering", "AI", "Embedded & Systems"],
     image: "/landing/mentors/lukasb.webp",
     linkedin: "https://www.linkedin.com/in/lukasbozinov/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CJSMLB1PE&team=T0CD393939Q",
   },
   {
     name: "Shaun Ahuja",
@@ -130,6 +140,8 @@ export const MentorsList: Mentor[] = [
     tags: ["Software Engineering"],
     image: "/landing/mentors/shauna.webp",
     linkedin: "https://www.linkedin.com/in/shaun-ahuja/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CHPJ2QWMD&team=T0CD393939Q",
   },
   {
     name: "Viraj Patel",
@@ -137,5 +149,43 @@ export const MentorsList: Mentor[] = [
     tags: ["Product Management", "AI"],
     image: "/landing/mentors/virajp.webp",
     linkedin: "https://www.linkedin.com/in/virajpatell/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CJ41J2LLT&team=T0CD393939Q",
+  },
+  {
+    name: "Xander Chin",
+    skills: ["Distributed systems", "ML accelerators", "Robotics", "Python"],
+    tags: ["Software Engineering", "AI", "Hardware", "Embedded & Systems"],
+    image: "/landing/mentors/xanderc.webp",
+    linkedin: "https://www.linkedin.com/in/xanderchinxyz/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CKU8R460Y&team=T0CD393939Q",
+  },
+  {
+    name: "Surya Sure",
+    skills: ["Distributed systems", "ML inference", "ML accelerators"],
+    tags: ["Software Engineering", "AI", "Hardware"],
+    image: "/landing/mentors/suryas.webp",
+    linkedin: "https://www.linkedin.com/in/suryasure/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CJLQ6PMHV&team=T0CD393939Q",
+  },
+  {
+    name: "Evan Lin",
+    skills: ["Distributed systems", "ML accelerators", "React", "NLP"],
+    tags: ["Software Engineering", "AI", "Hardware"],
+    image: "/landing/mentors/evanl.webp",
+    linkedin: "https://www.linkedin.com/in/evanliin/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CJ1NF5PNZ&team=T0CD393939Q",
+  },
+  {
+    name: "Saksham Batra",
+    skills: ["Data science", "Machine learning", "PyTorch", "Python"],
+    tags: ["Software Engineering", "AI"],
+    image: "/landing/mentors/sakshamb.webp",
+    linkedin: "https://www.linkedin.com/in/saksham-batra1/",
+    slack:
+      "https://slack.com/app_redirect?channel=U0CJ548UP0W&team=T0CD393939Q",
   },
 ];

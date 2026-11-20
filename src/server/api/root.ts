@@ -14,7 +14,20 @@ import { teamFinderRouter } from "./routers/team-finder";
 import { sponsorJudgingRouter } from "./routers/sponsor-judging";
 import { sponsorDashboardRouter } from "./routers/sponsor-dashboard";
 import { sponsorPortalRouter } from "./routers/sponsor-portal";
+import { sponsorScheduleRouter } from "./routers/sponsor-schedule";
+import { sponsorHelpRouter } from "./routers/sponsor-help";
+import { sponsorOrganizerRouter } from "./routers/sponsor-organizer";
+import { coffeeChatRequestsRouter } from "./routers/coffee-chat-requests";
+import { coffeeChatSessionsRouter } from "./routers/coffee-chat-sessions";
+import { coffeeChatSetupRouter } from "./routers/coffee-chat-setup";
+import { coffeeChatInvitesRouter } from "./routers/coffee-chat-invites";
+import { sponsorInterestRouter } from "./routers/sponsor-interest";
+import { sponsorShortlistRouter } from "./routers/sponsor-shortlist";
+import { sponsorPresentationsRouter } from "./routers/sponsor-presentations";
+import { sponsorScoringRouter } from "./routers/sponsor-scoring";
 import { onboardingRouter } from "./routers/onboarding";
+import { taskRemindersRouter } from "./routers/task-reminders";
+import { notificationsRouter } from "./routers/notifications";
 
 /**
  * This is the primary router for your server.
@@ -37,7 +50,20 @@ export const appRouter = createTRPCRouter({
   sponsorJudging: sponsorJudgingRouter,
   sponsorDashboard: sponsorDashboardRouter,
   sponsorPortal: sponsorPortalRouter,
+  sponsorSchedule: sponsorScheduleRouter,
+  sponsorHelp: sponsorHelpRouter,
+  sponsorOrganizer: sponsorOrganizerRouter,
+  coffeeChatRequests: coffeeChatRequestsRouter,
+  coffeeChatSessions: coffeeChatSessionsRouter,
+  coffeeChatSetup: coffeeChatSetupRouter,
+  coffeeChatInvites: coffeeChatInvitesRouter,
+  sponsorInterest: sponsorInterestRouter,
+  sponsorShortlist: sponsorShortlistRouter,
+  sponsorPresentations: sponsorPresentationsRouter,
+  sponsorScoring: sponsorScoringRouter,
   onboarding: onboardingRouter,
+  taskReminders: taskRemindersRouter,
+  notifications: notificationsRouter,
 });
 
 // export type definition of API

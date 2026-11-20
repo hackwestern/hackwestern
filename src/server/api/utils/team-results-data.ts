@@ -1,11 +1,12 @@
 // src/server/api/utils/team-results-data.ts
-import { asc, eq, inArray, ne, or } from "drizzle-orm";
+import { asc, eq, inArray, ne, or, sql } from "drizzle-orm";
 
 import {
   type TeamResult,
   buildTeamResults,
 } from "~/server/api/utils/team-results";
-import { db } from "~/server/db";
+import { ratingsFromColumns } from "~/lib/judging-criteria";
+import { db, extractRows } from "~/server/db";
 import { judges, teamMarks, teams, users } from "~/server/db/schema";
 
 /**
@@ -23,7 +24,12 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
       judgeType: judges.type,
       roundType: teamMarks.roundType,
       score: teamMarks.score,
-      breakdown: teamMarks.scoreBreakdown,
+      impactRating: teamMarks.impactRating,
+      creativityRating: teamMarks.creativityRating,
+      technicalRating: teamMarks.technicalRating,
+      designRating: teamMarks.designRating,
+      adventurousRating: teamMarks.adventurousRating,
+      notes: teamMarks.notes,
     })
     .from(teamMarks)
     .innerJoin(judges, eq(judges.id, teamMarks.judgeId))
@@ -40,6 +46,19 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
     with: { judgingTable: { columns: { number: true } } },
   });
 
+  const scoreRows = extractRows<{
+    team_id: string;
+    super_likes: number | string;
+    normalized_score: number | string | null;
+    adventure_score: number | string | null;
+  }>(
+    await db.execute(
+      sql`SELECT team_id, super_likes, normalized_score, adventure_score FROM judging_team_scores`,
+    ),
+  );
+  const num = (v: number | string | null) => (v === null ? null : Number(v));
+  const scores = new Map(scoreRows.map((r) => [r.team_id, r]));
+
   return buildTeamResults(
     teamRows.map((t) => ({
       id: t.id,
@@ -47,6 +66,9 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
       table: t.judgingTable?.number ?? null,
       github: safeHttpUrl(t.githubUrl),
       devpost: safeHttpUrl(t.devpostUrl),
+      superLikes: Number(scores.get(t.id)?.super_likes ?? 0),
+      normalized: num(scores.get(t.id)?.normalized_score ?? null),
+      adventure: num(scores.get(t.id)?.adventure_score ?? null),
     })),
     marks.map((m) => ({
       teamId: m.teamId,
@@ -55,8 +77,8 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
       judgeType: m.judgeType,
       roundType: m.roundType,
       score: m.score,
-      breakdown: m.breakdown,
-      notes: m.breakdown?.notes ?? "",
+      ratings: ratingsFromColumns(m),
+      notes: m.notes ?? "",
     })),
   );
 }

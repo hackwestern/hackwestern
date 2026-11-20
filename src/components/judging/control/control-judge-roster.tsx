@@ -13,48 +13,70 @@ import { errorCode } from "~/components/judging/shared/judge-ui";
 import {
   BTN_DARK,
   BTN_OUTLINE,
+  CARD,
+  CARD_TITLE,
   FIELD,
   MUTED,
+  type Progress,
+  type QueueState,
   type Status,
   StatusLine,
+  TD,
+  TH,
+  errorText,
+  formatHold,
 } from "./control-shared";
 
-type JudgeKind = "organizer" | "sponsored";
-
-/** Must match the `track` enum in the database. */
-const TRACKS = [
-  "Best Use of Cohere",
-  "Best Use of AntiGravity",
-  "Best Domain",
-  "General",
-] as const;
-type Track = (typeof TRACKS)[number];
-
-// "organizer" is what the database calls a judge who can score any team.
-const KIND_LABEL: Record<JudgeKind, string> = {
-  organizer: "General",
-  sponsored: "Sponsored",
+const STOP_STYLE: Record<string, string> = {
+  done: "bg-[#e3f4e8] text-[#14532d]",
+  in_progress: "bg-[#e4effd] text-[#123d75]",
+  assigned: "bg-[#f1f3f8] text-[#2c3e55]",
+  team_absent: "bg-[#fdeceb] text-[#7a1a0f]",
 };
-
-const TH_CELL =
-  "px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide";
-const TD_CELL = "px-4 py-3 align-middle";
-
-type Filter = "all" | JudgeKind;
+const STOP_LABEL: Record<string, string> = {
+  done: "done",
+  in_progress: "now",
+  assigned: "upcoming",
+  team_absent: "absent",
+};
 
 /** Mean score of a judge's marks, or null when they have none. */
 const average = (sum: number, count: number) =>
   count > 0 ? Math.round(sum / count) : null;
 
-export function JudgeRoster() {
+export function JudgeRoster({
+  progress,
+  queue,
+  now,
+  myId,
+}: {
+  progress: Progress | undefined;
+  queue: QueueState | undefined;
+  now: number;
+  myId: string | undefined;
+}) {
   const utils = api.useUtils();
   const judgesQuery = api.judging.admin.getAllJudges.useQuery(undefined, {
     // Keeps "judging a team" roughly live without a manual refresh.
     refetchInterval: 15_000,
   });
   const addJudge = api.judging.admin.addJudgeByEmail.useMutation();
+  const send = api.judging.admin.addJudgeToTable.useMutation();
+  const [picked, setPicked] = useState<Record<string, string>>({});
 
-  const [filter, setFilter] = useState<Filter>("all");
+  const waiting = (queue?.teams ?? []).filter((t) => !t.currentJudgeId);
+  const holdByJudge = new Map(
+    (queue?.teams ?? []).flatMap((t) =>
+      t.currentJudgeId ? [[t.currentJudgeId, t] as const] : [],
+    ),
+  );
+  const teamAtTable = new Map(
+    (progress?.tables ?? []).map((t) => [t.number, t.team?.name ?? null]),
+  );
+  const stopsByJudge = new Map(
+    (progress?.judges ?? []).map((j) => [j.id, j.stops]),
+  );
+
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<Status>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -62,8 +84,6 @@ export function JudgeRoster() {
   // Add-judge dialog.
   const [addOpen, setAddOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [kind, setKind] = useState<JudgeKind>("organizer");
-  const [tracks, setTracks] = useState<Track[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
 
   const judges = judgesQuery.data ?? [];
@@ -73,25 +93,17 @@ export function JudgeRoster() {
     const q = query.trim().toLowerCase();
     return judges.filter(
       (j) =>
-        (filter === "all" || j.type === filter) &&
-        (!q ||
-          (j.name ?? "").toLowerCase().includes(q) ||
-          j.email.toLowerCase().includes(q)),
+        !q ||
+        (j.name ?? "").toLowerCase().includes(q) ||
+        j.email.toLowerCase().includes(q),
     );
-  }, [judges, filter, query]);
+  }, [judges, query]);
 
   const openAdd = () => {
     setEmail("");
-    setKind("organizer");
-    setTracks([]);
     setFormError(null);
     setAddOpen(true);
   };
-
-  const toggleTrack = (track: Track) =>
-    setTracks((t) =>
-      t.includes(track) ? t.filter((x) => x !== track) : [...t, track],
-    );
 
   const submitAdd = async () => {
     const trimmed = email.trim().toLowerCase();
@@ -99,16 +111,11 @@ export function JudgeRoster() {
       setFormError("Enter the email they sign in with.");
       return;
     }
-    if (kind === "sponsored" && tracks.length === 0) {
-      setFormError("Pick at least one track for a sponsored judge.");
-      return;
-    }
     setFormError(null);
     try {
       const judge = await addJudge.mutateAsync({
         email: trimmed,
-        type: kind,
-        track: kind === "sponsored" ? tracks : undefined,
+        type: "organizer",
       });
       await utils.judging.admin.getAllJudges.invalidate();
       setAddOpen(false);
@@ -126,11 +133,13 @@ export function JudgeRoster() {
   };
 
   return (
-    <div className="flex flex-col gap-4 font-figtree">
+    <section className={CARD} aria-labelledby="judges-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="m-0 text-2xl font-bold">Judges</h1>
-          <p className={`m-0 text-[15px] ${MUTED}`}>
+          <h2 id="judges-title" className={CARD_TITLE}>
+            Judges
+          </h2>
+          <p className={`m-0 text-sm ${MUTED}`}>
             Judges sign in with their Hack Western account. Add one by email.
           </p>
         </div>
@@ -142,25 +151,6 @@ export function JudgeRoster() {
       <StatusLine status={status} />
 
       <div className="flex flex-wrap items-center gap-2">
-        <div role="group" aria-label="Filter by type" className="flex gap-2">
-          {(
-            [
-              ["all", "All"],
-              ["organizer", "General"],
-              ["sponsored", "Sponsored"],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              aria-pressed={filter === value}
-              className={filter === value ? BTN_DARK : BTN_OUTLINE}
-              onClick={() => setFilter(value)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
         <input
           aria-label="Search judges"
           placeholder="Search judges…"
@@ -171,34 +161,34 @@ export function JudgeRoster() {
       </div>
 
       {judgesQuery.isError && (
-        <p role="alert" className="m-0 text-sm text-destructive">
+        <p role="alert" className="m-0 text-sm text-[#7a1a0f]">
           Couldn&apos;t load judges. Refresh to try again.
         </p>
       )}
 
-      <div className="overflow-x-auto rounded-xl border border-gray-1 bg-white">
-        <table className="w-full min-w-[640px] border-collapse text-[15px]">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[900px] border-collapse text-sm">
           <thead>
-            <tr className="bg-highlight text-medium">
-              <th className={TH_CELL}>Name</th>
-              <th className={TH_CELL}>Type</th>
-              <th className={TH_CELL}>Tracks</th>
-              <th className={TH_CELL}>Marks</th>
-              <th className={TH_CELL}>Avg score</th>
-              <th className={TH_CELL}>Status</th>
+            <tr className={`text-left ${MUTED}`}>
+              <th className={TH}>Name</th>
+              <th className={TH}>Marks</th>
+              <th className={TH}>Avg score</th>
+              <th className={TH}>Assigned teams</th>
+              <th className={TH}>Judging now</th>
+              <th className={TH}>Send a team</th>
             </tr>
           </thead>
           <tbody>
             {judgesQuery.isLoading && (
-              <tr className="border-t border-gray-1">
-                <td colSpan={6} className={`${TD_CELL} ${MUTED}`}>
+              <tr className="border-t border-[#e3e7ef]">
+                <td colSpan={7} className={`${TD} ${MUTED}`}>
                   Loading…
                 </td>
               </tr>
             )}
             {!judgesQuery.isLoading && visible.length === 0 && (
-              <tr className="border-t border-gray-1">
-                <td colSpan={6} className={`${TD_CELL} ${MUTED}`}>
+              <tr className="border-t border-[#e3e7ef]">
+                <td colSpan={7} className={`${TD} ${MUTED}`}>
                   {judges.length === 0
                     ? "No judges yet. Add one by email to get started."
                     : "No judges match."}
@@ -208,34 +198,146 @@ export function JudgeRoster() {
             {visible.map((j) => {
               const avg = average(j.marksSum, j.marksCount);
               return (
-                <tr key={j.id} className="border-t border-gray-1">
-                  <td className={TD_CELL}>
+                <tr key={j.id} className="border-t border-[#e3e7ef]">
+                  <td className={TD}>
                     <button
                       type="button"
                       onClick={() => setSelectedId(j.id)}
                       aria-label={`Details for ${j.name ?? j.email}`}
                       className="flex flex-col text-left hover:underline"
                     >
-                      <span className="font-semibold">{j.name ?? j.email}</span>
+                      <span className="font-semibold">
+                        {j.name ?? j.email}
+                        {j.id === myId ? " (you)" : ""}
+                      </span>
                       {j.name && (
                         <span className={`text-xs ${MUTED}`}>{j.email}</span>
                       )}
                     </button>
                   </td>
-                  <td className={TD_CELL}>{KIND_LABEL[j.type]}</td>
-                  <td className={`${TD_CELL} ${j.track?.length ? "" : MUTED}`}>
-                    {j.track?.length ? j.track.join(", ") : "All teams"}
-                  </td>
-                  <td className={`${TD_CELL} tabular-nums`}>{j.marksCount}</td>
+                  <td className={`${TD} tabular-nums`}>{j.marksCount}</td>
                   <td
-                    className={`${TD_CELL} tabular-nums ${
+                    className={`${TD} tabular-nums ${
                       avg === null ? MUTED : ""
                     }`}
                   >
                     {avg ?? "–"}
                   </td>
-                  <td className={`${TD_CELL} ${j.currentTeamId ? "" : MUTED}`}>
-                    {j.currentTeamId ? "Judging a team" : "Idle"}
+                  <td className={TD}>
+                    {(() => {
+                      const stops = [...(stopsByJudge.get(j.id) ?? [])].sort(
+                        (a, b) => a.position - b.position,
+                      );
+                      if (stops.length === 0)
+                        return <span className={MUTED}>None</span>;
+                      return (
+                        <ul className="m-0 flex list-none flex-wrap gap-1 p-0">
+                          {stops.map((st) => (
+                            <li
+                              key={st.assignmentId}
+                              className={`rounded-full px-2 py-1 text-xs font-semibold ${STOP_STYLE[st.status] ?? ""}`}
+                            >
+                              {teamAtTable.get(st.tableNumber) ?? "Empty"} · T
+                              {st.tableNumber} ·{" "}
+                              {STOP_LABEL[st.status] ?? st.status}
+                            </li>
+                          ))}
+                        </ul>
+                      );
+                    })()}
+                  </td>
+                  <td className={TD}>
+                    {(() => {
+                      const hold = holdByJudge.get(j.id);
+                      return hold ? (
+                        <>
+                          <span className="font-semibold">{hold.teamName}</span>
+                          <span
+                            className={`whitespace-nowrap tabular-nums ${MUTED}`}
+                          >
+                            {" · "}
+                            {hold.assignedAt
+                              ? formatHold(
+                                  now - new Date(hold.assignedAt).getTime(),
+                                )
+                              : "just now"}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="rounded-full bg-[#e4effd] px-2 py-1 text-xs font-bold text-[#123d75]">
+                          Free
+                        </span>
+                      );
+                    })()}
+                  </td>
+                  <td className={TD}>
+                    {(() => {
+                      const name = j.name ?? j.email;
+                      const choice = waiting.find(
+                        (t) => t.teamId === picked[j.id],
+                      )
+                        ? picked[j.id]!
+                        : (waiting[0]?.teamId ?? "");
+                      const sending =
+                        send.isPending && send.variables?.judgeId === j.id;
+                      return (
+                        <div className="flex gap-1.5">
+                          <select
+                            aria-label={`Team to send to ${name}`}
+                            className={`${FIELD} max-w-[180px] text-sm`}
+                            value={choice}
+                            disabled={waiting.length === 0}
+                            onChange={(e) =>
+                              setPicked((p) => ({
+                                ...p,
+                                [j.id]: e.target.value,
+                              }))
+                            }
+                          >
+                            {waiting.length === 0 ? (
+                              <option value="">No teams waiting</option>
+                            ) : (
+                              waiting.map((t) => (
+                                <option key={t.teamId} value={t.teamId}>
+                                  {t.teamName}
+                                </option>
+                              ))
+                            )}
+                          </select>
+                          <button
+                            type="button"
+                            className={`${BTN_OUTLINE} text-sm`}
+                            disabled={!choice || send.isPending}
+                            onClick={() => {
+                              const team = waiting.find(
+                                (t) => t.teamId === choice,
+                              );
+                              if (!team) return;
+                              setStatus(null);
+                              send.mutate(
+                                { judgeId: j.id, tableId: team.tableId },
+                                {
+                                  onSuccess: () => {
+                                    setStatus({
+                                      tone: "ok",
+                                      text: `Added ${name} to table ${team.tableNumber} (${team.teamName}).`,
+                                    });
+                                    void utils.judging.admin.invalidate();
+                                  },
+                                  onError: (e) =>
+                                    setStatus({
+                                      tone: "error",
+                                      text: `Couldn't add ${name} to table ${team.tableNumber}. ${errorText(e)}`,
+                                    }),
+                                },
+                              );
+                            }}
+                          >
+                            {sending ? "Sending…" : "Send"}
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </td>
                 </tr>
               );
@@ -256,20 +358,12 @@ export function JudgeRoster() {
             <>
               <DialogHeader>
                 <DialogTitle>{selected.name ?? selected.email}</DialogTitle>
-                <DialogDescription>
-                  {KIND_LABEL[selected.type]} judge
-                </DialogDescription>
+                <DialogDescription>Judge</DialogDescription>
               </DialogHeader>
 
               <dl className="m-0 grid grid-cols-[120px_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm">
                 <dt className={MUTED}>Account</dt>
                 <dd className="m-0 truncate">{selected.email}</dd>
-                <dt className={MUTED}>Tracks</dt>
-                <dd className="m-0">
-                  {selected.track?.length
-                    ? selected.track.join(", ")
-                    : "All teams"}
-                </dd>
                 <dt className={MUTED}>Marks</dt>
                 <dd className="m-0 tabular-nums">{selected.marksCount}</dd>
                 <dt className={MUTED}>Average score</dt>
@@ -331,52 +425,8 @@ export function JudgeRoster() {
                 }}
               />
             </div>
-            <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
-              <legend className={`p-0 text-sm ${MUTED}`}>Type</legend>
-              <div className="flex gap-2">
-                {(["organizer", "sponsored"] as const).map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    aria-pressed={kind === value}
-                    className={kind === value ? BTN_DARK : BTN_OUTLINE}
-                    onClick={() => {
-                      setKind(value);
-                      setFormError(null);
-                    }}
-                  >
-                    {KIND_LABEL[value]}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-            {kind === "sponsored" && (
-              <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
-                <legend className={`p-0 text-sm ${MUTED}`}>
-                  Tracks they judge
-                </legend>
-                <div className="flex flex-wrap gap-2">
-                  {TRACKS.map((track) => (
-                    <button
-                      key={track}
-                      type="button"
-                      aria-pressed={tracks.includes(track)}
-                      className={
-                        tracks.includes(track) ? BTN_DARK : BTN_OUTLINE
-                      }
-                      onClick={() => {
-                        toggleTrack(track);
-                        setFormError(null);
-                      }}
-                    >
-                      {track}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-            )}
             {formError && (
-              <p role="alert" className="m-0 text-sm text-destructive">
+              <p role="alert" className="m-0 text-sm text-[#7a1a0f]">
                 {formError}
               </p>
             )}
@@ -399,6 +449,6 @@ export function JudgeRoster() {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </section>
   );
 }

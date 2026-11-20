@@ -1,3 +1,4 @@
+import { MessageCircleQuestion } from "lucide-react";
 import { JudgeTeamLinks } from "~/components/judging/judge-app/judge-team-links";
 import { type TeamLinks } from "~/server/api/utils/judge-data";
 import { useState } from "react";
@@ -41,6 +42,8 @@ interface JudgeEditProps {
   /** Resolves true once the server has the change. */
   onSave: (updated: EditedScore) => Promise<boolean>;
   onCancel: () => void;
+  /** Opens the Questions tab. The score stays as it is. */
+  onOpenQuestions?: () => void;
 }
 
 /**
@@ -57,6 +60,7 @@ export function JudgeEdit({
   error,
   onSave,
   onCancel,
+  onOpenQuestions,
 }: JudgeEditProps) {
   const [ratings, setRatings] = useState<Ratings>(team.ratings);
   const [notes, setNotes] = useState(team.notes);
@@ -111,18 +115,34 @@ export function JudgeEdit({
         aria-label={mode === "rescore" ? "Re-score this team" : "Change score"}
         className={`${card} flex flex-col gap-3 px-3.5 py-3`}
       >
-        {hasGuide(rubric) && (
-          <DashboardButton
-            type="button"
-            variant="tertiary"
-            aria-expanded={guideOpen}
-            aria-controls="rubric-guide"
-            onClick={() => setGuideOpen((o) => !o)}
-            className={`${touch} self-end`}
-          >
-            {guideOpen ? "Hide descriptions" : "Show descriptions"}
-          </DashboardButton>
-        )}
+        {/* Questions on the left, descriptions on the right. */}
+        <div className="flex items-center justify-between gap-2">
+          {onOpenQuestions ? (
+            <DashboardButton
+              type="button"
+              variant="tertiary"
+              onClick={onOpenQuestions}
+              className={`${touch} gap-1.5`}
+            >
+              <MessageCircleQuestion aria-hidden="true" className="size-4" />
+              Question bank
+            </DashboardButton>
+          ) : (
+            <span />
+          )}
+          {hasGuide(rubric) && (
+            <DashboardButton
+              type="button"
+              variant="tertiary"
+              aria-expanded={guideOpen}
+              aria-controls="rubric-guide"
+              onClick={() => setGuideOpen((o) => !o)}
+              className={touch}
+            >
+              {guideOpen ? "Hide descriptions" : "Show descriptions"}
+            </DashboardButton>
+          )}
+        </div>
         <RubricScorer
           rubric={rubric}
           ratings={ratings}

@@ -30,11 +30,15 @@ import {
   scavengerHuntRewards,
   scavengerHuntRedemptions,
   scavengerHuntActivityType,
+  scavengerHuntItemType,
   applications,
 } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { isUserApprovedForEvent } from "~/server/api/utils/approval";
-import { resolveScannedUserId } from "~/server/api/utils/hacker-id";
+import {
+  isUniqueViolation,
+  resolveScannedUserId,
+} from "~/server/api/utils/hacker-id";
 import { admittedStatuses } from "~/lib/admission";
 
 // Helper function to handle TRPC errors consistently
@@ -141,20 +145,41 @@ const notDeleted = () =>
 // Scannable: not deleted and not a draft or disabled
 const isOpen = () => and(eq(scavengerHuntItems.status, "active"), notDeleted());
 
+const activityNotFound = () =>
+  new TRPCError({
+    code: "NOT_FOUND",
+    message: "This activity was deleted. Refresh the page.",
+  });
+
+const rewardNotDeleted = () => isNull(scavengerHuntRewards.deletedAt);
+
+// Redeemable: not deleted and not a draft or disabled
+const rewardIsOpen = () =>
+  and(eq(scavengerHuntRewards.status, "active"), rewardNotDeleted());
+
+const rewardNotFound = () =>
+  new TRPCError({
+    code: "NOT_FOUND",
+    message: "This reward was deleted. Refresh the page.",
+  });
+
 // * Safe Functions: Check is done within the transaction to avoid race conditions */
+// Returns the points the reward cost
 const redeemPrize = async (
   userId: string,
   rewardId: number,
-  costPoints: number,
   checkQuantity = false,
   scannerId?: string,
+  expectedCost?: number, // The price the scanner showed
 ) => {
   return withErrorHandling(async () => {
-    await db.transaction(async (tx) => {
-      // Get reward to check quantity if needed
-      const reward = await tx.query.scavengerHuntRewards.findFirst({
-        where: eq(scavengerHuntRewards.id, rewardId),
-      });
+    return db.transaction(async (tx) => {
+      // Locked so concurrent redemptions can't oversell or change the price mid-way
+      const [reward] = await tx
+        .select()
+        .from(scavengerHuntRewards)
+        .where(and(eq(scavengerHuntRewards.id, rewardId), rewardIsOpen()))
+        .for("update");
       if (!reward) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -172,20 +197,27 @@ const redeemPrize = async (
         });
       }
 
-      // Check if user has enough points to redeem reward (using transaction)
-      const user = await tx.query.users.findFirst({
-        where: eq(users.id, userId),
-      });
+      // Locked so two redemptions for one hacker can't both spend the same points
+      const [user] = await tx
+        .select({ scavengerHuntBalance: users.scavengerHuntBalance })
+        .from(users)
+        .where(eq(users.id, userId))
+        .for("update");
       if (!user) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "User not found",
         });
       }
-      if (
-        user.scavengerHuntBalance !== null &&
-        user.scavengerHuntBalance < costPoints
-      ) {
+      const { costPoints } = reward;
+      if (expectedCost !== undefined && expectedCost !== costPoints) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `The price changed to ${costPoints} points. Check the new price and scan again.`,
+        });
+      }
+      // Check if user has enough points to redeem reward (using transaction); no balance yet counts as 0
+      if ((user.scavengerHuntBalance ?? 0) < costPoints) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "User does not have enough points to redeem reward",
@@ -211,6 +243,7 @@ const redeemPrize = async (
         rewardId: rewardId,
         scannerId,
       });
+      return costPoints;
     });
   }, "Failed to redeem item");
 };
@@ -316,6 +349,7 @@ export const scavengerHuntRouter = createTRPCRouter({
   getAllRewards: protectedOrganizerProcedure.query(async () => {
     try {
       const rewards = await db.query.scavengerHuntRewards.findMany({
+        where: rewardIsOpen(),
         orderBy: (rewards, { asc }) => [asc(rewards.name)],
       });
 
@@ -335,7 +369,7 @@ export const scavengerHuntRouter = createTRPCRouter({
       try {
         const { id } = input;
         const reward = await db.query.scavengerHuntRewards.findFirst({
-          where: eq(scavengerHuntRewards.id, id),
+          where: and(eq(scavengerHuntRewards.id, id), rewardIsOpen()),
         });
 
         if (!reward) {
@@ -471,6 +505,326 @@ export const scavengerHuntRouter = createTRPCRouter({
       }, "Failed to delete item");
     }),
 
+  // * ACTIVITIES (organizer Activities tab) * //
+  getScavengerHuntItems: protectedOrganizerProcedure.query(async () => {
+    return withErrorHandling(
+      () =>
+        db
+          .select({
+            id: scavengerHuntItems.id,
+            name: scavengerHuntItems.name,
+            type: scavengerHuntItems.type,
+            points: scavengerHuntItems.points,
+            winPoints: scavengerHuntItems.winPoints,
+            status: scavengerHuntItems.status,
+            startsAt: scavengerHuntItems.startsAt,
+            endsAt: scavengerHuntItems.endsAt,
+            room: scavengerHuntItems.room,
+            // Attendance only, so a winner (attendance + win rows) counts once
+            scans: sql<number>`count(${scavengerHuntScans.userId}) filter (where ${scavengerHuntScans.activityType} = 'attendance')::int`,
+            winScans: sql<number>`count(${scavengerHuntScans.userId}) filter (where ${scavengerHuntScans.activityType} = 'win')::int`,
+          })
+          .from(scavengerHuntItems)
+          .leftJoin(
+            scavengerHuntScans,
+            eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+          )
+          .where(notDeleted())
+          .groupBy(scavengerHuntItems.id)
+          .orderBy(scavengerHuntItems.startsAt, scavengerHuntItems.id),
+      "Failed to fetch activities",
+    );
+  }),
+
+  saveActivity: protectedOrganizerProcedure
+    .input(
+      z
+        .object({
+          id: z.number().optional(), // Omit to create
+          name: z.string().trim().min(1).max(100),
+          type: z.enum(scavengerHuntItemType.enumValues),
+          startsAt: z.date(),
+          endsAt: z.date(),
+          room: z
+            .string()
+            .trim()
+            .nullable()
+            .transform((r) => (r ? r : null)),
+          points: z.number().int().min(0).max(32767),
+          winPoints: z.number().int().min(0).max(32767).nullable(), // Set only for winnable activities
+          status: z.enum(["draft", "active"]).optional(),
+        })
+        .refine((a) => a.endsAt > a.startsAt, {
+          message: "End time must be after start time",
+        }),
+    )
+    .mutation(async ({ input }) => {
+      return withErrorHandling(async () => {
+        const { id, winPoints, status, ...rest } = input;
+        const values = {
+          ...rest,
+          winPoints: input.type === "activity" ? winPoints : null,
+          ...(status && { status }),
+        };
+
+        const duplicateName = () =>
+          new TRPCError({
+            code: "CONFLICT",
+            message: `An activity named "${input.name}" already exists`,
+          });
+        // The unique index also blocks this; checking first gives a clear message
+        const duplicate = await db.query.scavengerHuntItems.findFirst({
+          columns: { id: true },
+          where: and(
+            sql`lower(${scavengerHuntItems.name}) = lower(${input.name})`,
+            notDeleted(),
+            id !== undefined ? ne(scavengerHuntItems.id, id) : undefined,
+          ),
+        });
+        if (duplicate) throw duplicateName();
+
+        // A new or changed end time must be in the future. The start can be in
+        // the past (an activity that already started), and an unchanged past end
+        // can stay, so a finished activity can still be edited. Compared by
+        // minute, because the form only sends minutes.
+        const existing =
+          id !== undefined
+            ? await db.query.scavengerHuntItems.findFirst({
+                columns: { endsAt: true },
+                where: and(eq(scavengerHuntItems.id, id), notDeleted()),
+              })
+            : undefined;
+        if (id !== undefined && !existing) throw activityNotFound();
+        const minute = (d: Date) => Math.floor(d.getTime() / 60_000);
+        const now = minute(new Date());
+        const endChanged =
+          !existing || minute(existing.endsAt) !== minute(input.endsAt);
+        if (endChanged && minute(input.endsAt) <= now) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "End time must be in the future",
+          });
+        }
+
+        try {
+          if (id !== undefined) {
+            await db.transaction(async (tx) => {
+              // Locked so two edits can't both adjust balances from the same old points
+              const [old] = await tx
+                .select({
+                  points: scavengerHuntItems.points,
+                  winPoints: scavengerHuntItems.winPoints,
+                })
+                .from(scavengerHuntItems)
+                .where(and(eq(scavengerHuntItems.id, id), notDeleted()))
+                .for("update");
+              if (!old) throw activityNotFound();
+
+              // Hackers who scanned this item get the point difference. A win
+              // scan on an item that is no longer winnable is worth 0.
+              const attendanceDelta = values.points - old.points;
+              const winDelta = (values.winPoints ?? 0) - (old.winPoints ?? 0);
+              if (attendanceDelta !== 0 || winDelta !== 0) {
+                await tx.execute(sql`
+                  UPDATE "user" u SET
+                    scavenger_hunt_earned = COALESCE(u.scavenger_hunt_earned, 0) + d.delta,
+                    scavenger_hunt_balance = COALESCE(u.scavenger_hunt_balance, 0) + d.delta
+                  FROM (
+                    SELECT user_id, SUM(CASE WHEN activity_type = 'win' THEN ${winDelta}::int ELSE ${attendanceDelta}::int END) AS delta
+                    FROM scavenger_hunt_scan
+                    WHERE item_id = ${id}
+                    GROUP BY user_id
+                  ) d
+                  WHERE u.id = d.user_id`);
+              }
+
+              await tx
+                .update(scavengerHuntItems)
+                .set(values)
+                .where(eq(scavengerHuntItems.id, id));
+            });
+            return;
+          }
+          await db.insert(scavengerHuntItems).values(values);
+        } catch (error) {
+          // Another organizer saved the same name after the check above
+          if (isUniqueViolation(error)) throw duplicateName();
+          throw error;
+        }
+      }, "Failed to save activity");
+    }),
+
+  setActivityStatus: protectedOrganizerProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        status: z.enum(["draft", "active", "disabled"]),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      return withErrorHandling(async () => {
+        const updated = await db
+          .update(scavengerHuntItems)
+          .set({ status: input.status })
+          .where(and(eq(scavengerHuntItems.id, input.id), notDeleted()))
+          .returning({ id: scavengerHuntItems.id });
+        if (!updated.length) throw activityNotFound();
+      }, "Failed to update activity");
+    }),
+
+  // * REWARDS (organizer Rewards tab) * //
+  getScavengerHuntRewards: protectedOrganizerProcedure.query(async () => {
+    return withErrorHandling(
+      () =>
+        db
+          .select({
+            id: scavengerHuntRewards.id,
+            name: scavengerHuntRewards.name,
+            description: scavengerHuntRewards.description,
+            costPoints: scavengerHuntRewards.costPoints,
+            quantity: scavengerHuntRewards.quantity,
+            status: scavengerHuntRewards.status,
+            redemptions: sql<number>`count(${scavengerHuntRedemptions.id})::int`,
+          })
+          .from(scavengerHuntRewards)
+          .leftJoin(
+            scavengerHuntRedemptions,
+            eq(scavengerHuntRedemptions.rewardId, scavengerHuntRewards.id),
+          )
+          .where(rewardNotDeleted())
+          .groupBy(scavengerHuntRewards.id)
+          .orderBy(scavengerHuntRewards.name, scavengerHuntRewards.id),
+      "Failed to fetch rewards",
+    );
+  }),
+
+  // An edit changes only the fields it sends, so a stale quantity can't undo redemptions
+  saveReward: protectedOrganizerProcedure
+    .input(
+      z
+        .object({
+          id: z.number().optional(), // Omit to create
+          name: z.string().trim().min(1).max(255).optional(),
+          description: z
+            .string()
+            .trim()
+            .nullable()
+            .transform((d) => (d ? d : null))
+            .optional(),
+          costPoints: z.number().int().min(0).max(32767).optional(),
+          quantity: z
+            .number()
+            .int()
+            .min(0)
+            .max(2147483647)
+            .nullable()
+            .optional(), // Null means unlimited
+          status: z.enum(["draft", "active"]).optional(),
+        })
+        .refine(
+          (r) =>
+            r.id !== undefined ||
+            (r.name !== undefined && r.costPoints !== undefined),
+          { message: "A new reward needs a name and a cost" },
+        ),
+    )
+    .mutation(async ({ input }) => {
+      return withErrorHandling(async () => {
+        const { id, name, description, costPoints, quantity, status } = input;
+
+        const duplicateName = () =>
+          new TRPCError({
+            code: "CONFLICT",
+            message: `A reward named "${name}" already exists`,
+          });
+        // The unique index also blocks this; checking first gives a clear message
+        if (name !== undefined) {
+          const duplicate = await db.query.scavengerHuntRewards.findFirst({
+            columns: { id: true },
+            where: and(
+              sql`lower(${scavengerHuntRewards.name}) = lower(${name})`,
+              rewardNotDeleted(),
+              id !== undefined ? ne(scavengerHuntRewards.id, id) : undefined,
+            ),
+          });
+          if (duplicate) throw duplicateName();
+        }
+
+        try {
+          if (id === undefined) {
+            // The refine above makes sure both are set
+            await db.insert(scavengerHuntRewards).values({
+              name: name!,
+              costPoints: costPoints!,
+              description,
+              quantity,
+              status,
+            });
+            return;
+          }
+          const values: Partial<typeof scavengerHuntRewards.$inferInsert> = {
+            ...(name !== undefined && { name }),
+            ...(description !== undefined && { description }),
+            ...(costPoints !== undefined && { costPoints }),
+            ...(quantity !== undefined && { quantity }),
+            ...(status !== undefined && { status }),
+          };
+          const where = and(
+            eq(scavengerHuntRewards.id, id),
+            rewardNotDeleted(),
+          );
+          // Nothing changed: only check that the reward still exists
+          const updated = Object.keys(values).length
+            ? await db
+                .update(scavengerHuntRewards)
+                .set(values)
+                .where(where)
+                .returning({ id: scavengerHuntRewards.id })
+            : await db
+                .select({ id: scavengerHuntRewards.id })
+                .from(scavengerHuntRewards)
+                .where(where);
+          if (!updated.length) throw rewardNotFound();
+        } catch (error) {
+          // Another organizer saved the same name after the check above
+          if (isUniqueViolation(error)) throw duplicateName();
+          throw error;
+        }
+      }, "Failed to save reward");
+    }),
+
+  setRewardStatus: protectedOrganizerProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        status: z.enum(["draft", "active", "disabled"]),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      return withErrorHandling(async () => {
+        const updated = await db
+          .update(scavengerHuntRewards)
+          .set({ status: input.status })
+          .where(and(eq(scavengerHuntRewards.id, input.id), rewardNotDeleted()))
+          .returning({ id: scavengerHuntRewards.id });
+        if (!updated.length) throw rewardNotFound();
+      }, "Failed to update reward");
+    }),
+
+  // Soft delete, so past redemptions keep their reward
+  deleteReward: protectedOrganizerProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      return withErrorHandling(async () => {
+        await db
+          .update(scavengerHuntRewards)
+          .set({ deletedAt: new Date() })
+          .where(
+            and(eq(scavengerHuntRewards.id, input.id), rewardNotDeleted()),
+          );
+      }, "Failed to delete reward");
+    }),
+
   // * POINTS ENDPOINTS * //
   // Gets a User's Own Points
   getPoints: protectedProcedure.query(async ({ ctx }) => {
@@ -552,11 +906,12 @@ export const scavengerHuntRouter = createTRPCRouter({
       z.object({
         userId: z.string(),
         rewardId: z.number(),
+        expectedCost: z.number().int().optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
       return withErrorHandling(async () => {
-        const { rewardId } = input;
+        const { rewardId, expectedCost } = input;
         const userId = await resolveScannedUserId(input.userId);
 
         // Get user info before redemption (for return value and to verify user exists)
@@ -570,24 +925,13 @@ export const scavengerHuntRouter = createTRPCRouter({
           });
         }
 
-        // Check if reward exists
-        const reward = await db.query.scavengerHuntRewards.findFirst({
-          where: eq(scavengerHuntRewards.id, rewardId),
-        });
-        if (!reward) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Reward not found",
-          });
-        }
-
         // Redeem prize with quantity checking
-        await redeemPrize(
+        const pointsUsed = await redeemPrize(
           userId,
           rewardId,
-          reward.costPoints,
           true,
           ctx.session.user.id,
+          expectedCost,
         );
 
         // Fetch updated reward to return current quantity
@@ -599,6 +943,7 @@ export const scavengerHuntRouter = createTRPCRouter({
         return {
           success: true,
           message: "Reward redeemed successfully",
+          pointsUsed,
           user: {
             id: user.id,
             name: user.name,

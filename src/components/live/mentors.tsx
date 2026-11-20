@@ -62,13 +62,22 @@ const Mentors = () => {
 // Matches Figma "Mentors" (1:6287): photo, name, what they're good at, tags
 // and a Slack button.
 const MentorCard = ({ mentor }: { mentor: Mentor }) => {
-  const card = (
+  return (
     <div
       className={cn(
-        "flex h-full flex-col gap-6 rounded-dashboard-lg border border-dashboard-border-faint bg-dashboard-bg-surface p-6 transition-colors",
+        "relative flex h-full flex-col gap-6 rounded-dashboard-lg border border-dashboard-border-faint bg-dashboard-bg-surface p-6 transition-colors",
         mentor.linkedin && "hover:border-dashboard-border-outline",
       )}
     >
+      {mentor.linkedin && (
+        <a
+          href={mentor.linkedin}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${mentor.name} on LinkedIn`}
+          className="absolute inset-0 z-10 rounded-dashboard-lg"
+        />
+      )}
       <div className="relative size-20 shrink-0 overflow-hidden rounded-dashboard-sm bg-dashboard-bg-inset">
         {mentor.image && (
           <Image
@@ -99,20 +108,6 @@ const MentorCard = ({ mentor }: { mentor: Mentor }) => {
       </div>
       <SlackButton href={mentor.slack} />
     </div>
-  );
-
-  return mentor.linkedin ? (
-    <a
-      href={mentor.linkedin}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={`${mentor.name} on LinkedIn`}
-      className="block"
-    >
-      {card}
-    </a>
-  ) : (
-    card
   );
 };
 
@@ -145,14 +140,9 @@ const SlackButton = ({ href }: { href?: string }) => {
   }
 
   return (
-    <DashboardButton variant="outline" asChild className="w-full">
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        // Don't also open the card's LinkedIn link
-        onClick={(event) => event.stopPropagation()}
-      >
+    // z-20 puts the button above the card's LinkedIn link (z-10)
+    <DashboardButton variant="outline" asChild className="relative z-20 w-full">
+      <a href={href} target="_blank" rel="noopener noreferrer">
         {content}
       </a>
     </DashboardButton>

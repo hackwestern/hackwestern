@@ -1,3 +1,4 @@
+import { MessageCircleQuestion } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -16,7 +17,6 @@ import {
   scoreRubric,
 } from "~/components/judging/shared/rubric-scorer";
 import { SuperLikeToggle } from "~/components/judging/shared/super-like";
-import { JudgeQuestionBank } from "~/components/judging/judge-app/judge-question-bank";
 
 // ---- Draft autosave ---------------------------------------------------------
 // Drafts are kept in this browser until the score reaches the server, so a
@@ -99,6 +99,8 @@ interface JudgeRubricProps {
   onSubmit: (submission: ScoreSubmission) => Promise<boolean>;
   /** Resolves true once the team is skipped. */
   onAbsent: () => Promise<boolean>;
+  /** Opens the Questions tab. The score stays as it is. */
+  onOpenQuestions?: () => void;
 }
 
 /** The Score page: rubric, notes and the two ways to finish a team. Key it by team. */
@@ -112,6 +114,7 @@ export function JudgeRubric({
   error,
   onSubmit,
   onAbsent,
+  onOpenQuestions,
 }: JudgeRubricProps) {
   const key = `${judgeKey}-${teamId}`;
   const [initial] = useState(() => readDraft(key));
@@ -195,18 +198,34 @@ export function JudgeRubric({
         aria-label="Score this team"
         className={`${card} flex flex-col gap-3 px-3.5 py-3`}
       >
-        {hasGuide(rubric) && (
-          <DashboardButton
-            type="button"
-            variant="tertiary"
-            aria-expanded={guideOpen}
-            aria-controls="rubric-guide"
-            onClick={() => setGuideOpen((o) => !o)}
-            className={`${touch} self-end`}
-          >
-            {guideOpen ? "Hide descriptions" : "Show descriptions"}
-          </DashboardButton>
-        )}
+        {/* Questions on the left, descriptions on the right. */}
+        <div className="flex items-center justify-between gap-2">
+          {onOpenQuestions ? (
+            <DashboardButton
+              type="button"
+              variant="tertiary"
+              onClick={onOpenQuestions}
+              className={`${touch} gap-1.5`}
+            >
+              <MessageCircleQuestion aria-hidden="true" className="size-4" />
+              Question bank
+            </DashboardButton>
+          ) : (
+            <span />
+          )}
+          {hasGuide(rubric) && (
+            <DashboardButton
+              type="button"
+              variant="tertiary"
+              aria-expanded={guideOpen}
+              aria-controls="rubric-guide"
+              onClick={() => setGuideOpen((o) => !o)}
+              className={touch}
+            >
+              {guideOpen ? "Hide descriptions" : "Show descriptions"}
+            </DashboardButton>
+          )}
+        </div>
         <RubricScorer
           rubric={rubric}
           ratings={ratings}
@@ -224,8 +243,6 @@ export function JudgeRubric({
         onChange={(e) => setNotes(e.target.value)}
         className={`${field} py-3`}
       />
-
-      <JudgeQuestionBank />
 
       <div className="flex gap-2">
         <DashboardButton

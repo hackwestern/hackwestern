@@ -1,7 +1,9 @@
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
+import { sponsorNameKey } from "~/lib/sponsor-prize-tracks";
 import { z } from "zod";
 
+import { sponsorStatusSheetCopy as statusCopy } from "~/content/sponsor-status-sheet";
 import { db } from "~/server/db";
 import { sponsorJudgingSponsors } from "~/server/db/schema";
 import {
@@ -9,21 +11,51 @@ import {
   protectedOrganizerProcedure,
 } from "~/server/api/trpc";
 import {
-  cell,
   fetchAllChosenTeams,
   fetchAllSponsorInfo,
-  fetchMasterSponsors,
-  fetchMasterSponsorNames,
+  fetchSheetSponsors,
+  fetchSheetSponsorNames,
   getSheetsClient,
   getSpreadsheetId,
 } from "~/server/api/utils/sponsor-sheets";
-import { ensureSponsorInfoTab } from "~/server/api/utils/sponsor-info-tab";
+import {
+  writeSponsorCcWorkshop,
+  writeSponsorStatus,
+  type SponsorStatusWriteResult,
+} from "~/server/api/utils/sponsor-info-tab";
 import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
+
+/**
+ * A Sponsor Day-Of cell write's result: true when written, false when sheet
+ * writes are off (dev, tests: success, nothing reached the sheet). Throws
+ * when the tab, column or sponsor row is missing. A sponsor missing from
+ * Sponsor Day-Of gets no new row there: that tab is the sponsor list,
+ * edited by the spon team.
+ */
+function sheetWriteOk(
+  result: SponsorStatusWriteResult,
+  sponsorName: string,
+  noColumn: string,
+): boolean {
+  if (!result.ok) {
+    throw new TRPCError({
+      code:
+        result.reason === "not-found" ? "NOT_FOUND" : "INTERNAL_SERVER_ERROR",
+      message:
+        result.reason === "not-found"
+          ? statusCopy.errors.notFound(sponsorName)
+          : result.reason === "no-tab"
+            ? statusCopy.errors.noTab
+            : noColumn,
+    });
+  }
+  return !("written" in result);
+}
 
 export const sponsorDashboardRouter = createTRPCRouter({
   /**
    * Register a sponsor and get their private UUID. Organizer-only. The name
-   * must match the master sheet's "Company Name" spelling, since that is what
+   * must match the Sponsor Day-Of tab's "Sponsor Name" spelling, since that is what
    * the judging sheet is keyed on.
    */
   registerSponsor: protectedOrganizerProcedure
@@ -53,13 +85,13 @@ export const sponsorDashboardRouter = createTRPCRouter({
    * Full sponsor board for organizers: every acquired sponsor from the master
    * sheet (tier, amount, contacts, notes), joined with their private-link UUID
    * and their current picks from the judging sheet. Sponsors that are
-   * registered but no longer on the master sheet are appended with an empty
+   * registered but no longer on the Sponsor Day-Of tab are appended with an empty
    * tier so typos stay visible instead of silently disappearing. Organizer-only.
    */
   getSponsors: protectedOrganizerProcedure.query(async () => {
     try {
       const [master, registered, sheets, spreadsheetId] = await Promise.all([
-        fetchMasterSponsors(),
+        fetchSheetSponsors(),
         db.query.sponsorJudgingSponsors.findMany(),
         getSheetsClient(),
         Promise.resolve(getSpreadsheetId()),
@@ -69,8 +101,28 @@ export const sponsorDashboardRouter = createTRPCRouter({
         fetchAllSponsorInfo(sheets, spreadsheetId),
       ]);
 
+      // Sponsors added to Sponsor Day-Of get their portal link on their own
+      // (Jazz, 2026-11-20): register any the app doesn't have yet, so
+      // nobody has to press "Sync from sponsor sheet".
+      // Matched loosely, so "QNX (BlackBerry)" on the sheet is the
+      // registered "QNX", never a second, empty sponsor.
+      const known = new Set(registered.map((row) => sponsorNameKey(row.name)));
+      const missing = [...new Set(master.map((s) => s.name))].filter(
+        (name) => !known.has(sponsorNameKey(name)),
+      );
+      if (missing.length > 0) {
+        await db
+          .insert(sponsorJudgingSponsors)
+          .values(missing.map((name) => ({ name })))
+          .onConflictDoNothing({ target: sponsorJudgingSponsors.name });
+        registered.push(
+          ...(await db.query.sponsorJudgingSponsors.findMany({
+            where: inArray(sponsorJudgingSponsors.name, missing),
+          })),
+        );
+      }
       const registeredByName = new Map(
-        registered.map((row) => [row.name, row]),
+        registered.map((row) => [sponsorNameKey(row.name), row]),
       );
 
       const sponsors = master.map((sponsor) => {
@@ -87,11 +139,13 @@ export const sponsorDashboardRouter = createTRPCRouter({
           companyContact: sponsor.companyContact,
           hwContact,
           notes: sponsor.notes,
-          sponsorId: registeredByName.get(sponsor.name)?.id ?? null,
+          sponsorId:
+            registeredByName.get(sponsorNameKey(sponsor.name))?.id ?? null,
           teamIds: picks.get(sponsor.name) ?? [],
           status: info?.status ?? "Not arrived",
           roomNumber: info?.roomNumber ?? "TBD",
           boothLocation: info?.boothLocation ?? "TBD",
+          atCcWorkshop: info?.atCcWorkshop ?? null,
           onMasterSheet: true,
         };
       });
@@ -108,12 +162,13 @@ export const sponsorDashboardRouter = createTRPCRouter({
           amount: "",
           companyContact: "",
           hwContact,
-          notes: "Registered but missing from the master sheet",
+          notes: "Registered but not on the Sponsor Day-Of tab",
           sponsorId: row.id,
           teamIds: picks.get(row.name) ?? [],
           status: info?.status ?? "Not arrived",
           roomNumber: info?.roomNumber ?? "TBD",
           boothLocation: info?.boothLocation ?? "TBD",
+          atCcWorkshop: info?.atCcWorkshop ?? null,
           onMasterSheet: false,
         });
       }
@@ -130,8 +185,8 @@ export const sponsorDashboardRouter = createTRPCRouter({
   }),
 
   /**
-   * Set a sponsor's status in the "sponsor info" tab.
-   * Organizer-only.
+   * Set a sponsor's status in the Status column of the Sponsor Day-Of tab
+   * (Sponsor Status was merged into it on 2026-11-19). Organizer-only.
    */
   setSponsorStatus: protectedOrganizerProcedure
     .input(
@@ -143,73 +198,23 @@ export const sponsorDashboardRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       try {
         const sheets = await getSheetsClient();
-        const spreadsheetId = getSpreadsheetId();
-        const tab = await ensureSponsorInfoTab(sheets, spreadsheetId);
-
-        const res = await sheets.spreadsheets.values.get({
-          spreadsheetId,
-          range: `'${tab}'!A1:C`,
-        });
-
-        const rows = res.data.values ?? [];
-        const target = input.sponsorName.trim().toLowerCase();
-        let targetRowIndex = -1;
-
-        for (let i = 0; i < rows.length; i++) {
-          const name = cell(rows[i], 0);
-          const lower = name.toLowerCase();
-          if (
-            lower === target &&
-            lower !== "sponsor name" &&
-            lower !== "company name"
-          ) {
-            targetRowIndex = i + 1;
-            break;
-          }
-        }
-
-        if (targetRowIndex > 0) {
-          await sheets.spreadsheets.values.update({
-            spreadsheetId,
-            range: `'${tab}'!B${targetRowIndex}`,
-            valueInputOption: "RAW",
-            requestBody: {
-              majorDimension: "ROWS",
-              values: [[input.status]],
-            },
-          });
-        } else {
-          // No status row yet. Only add one for a real sponsor (on the master
-          // sheet or registered), spelled as it is there, so a mistyped name
-          // returns an error instead of creating a duplicate sponsor row.
-          const [master, registered] = await Promise.all([
-            fetchMasterSponsors(),
-            db.query.sponsorJudgingSponsors.findMany(),
-          ]);
-          const canonicalName = [
-            ...master.map((sponsor) => sponsor.name),
-            ...registered.map((row) => row.name),
-          ].find((name) => name.trim().toLowerCase() === target);
-          if (!canonicalName) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: `Sponsor not found: ${input.sponsorName}`,
-            });
-          }
-
-          await sheets.spreadsheets.values.append({
-            spreadsheetId,
-            range: `'${tab}'!A:E`,
-            valueInputOption: "RAW",
-            insertDataOption: "INSERT_ROWS",
-            requestBody: {
-              majorDimension: "ROWS",
-              values: [[canonicalName, input.status, "TBD", "TBD", "—"]],
-            },
-          });
-        }
-
-        return { sponsorName: input.sponsorName, status: input.status };
+        const result = await writeSponsorStatus(
+          sheets,
+          getSpreadsheetId(),
+          input.sponsorName,
+          input.status,
+        );
+        const sheetWritten = sheetWriteOk(
+          result,
+          input.sponsorName,
+          statusCopy.errors.noColumn,
+        );
+        return {
+          sponsorName: input.sponsorName,
+          status: input.status,
+          sheetWritten,
+          ...(sheetWritten ? {} : { note: statusCopy.notWritten }),
+        };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
@@ -217,7 +222,52 @@ export const sponsorDashboardRouter = createTRPCRouter({
           message:
             error instanceof Error
               ? error.message
-              : "Failed to update sponsor status in spreadsheet",
+              : statusCopy.errors.writeFailed,
+        });
+      }
+    }),
+
+  /**
+   * Tick or untick a sponsor's "At CC workshop" checkbox on Sponsor Day-Of
+   * (came to the Friday coffee chat workshop; My sponsors' pill).
+   * Organizer-only. With sheet writes off nothing is written: success with
+   * sheetWritten false, like setSponsorStatus.
+   */
+  setSponsorCcWorkshop: protectedOrganizerProcedure
+    .input(
+      z.object({
+        sponsorName: z.string().trim().min(1).max(255),
+        attended: z.boolean(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const sheets = await getSheetsClient();
+        const result = await writeSponsorCcWorkshop(
+          sheets,
+          getSpreadsheetId(),
+          input.sponsorName,
+          input.attended,
+        );
+        const sheetWritten = sheetWriteOk(
+          result,
+          input.sponsorName,
+          statusCopy.errors.noCcColumn,
+        );
+        return {
+          sponsorName: input.sponsorName,
+          attended: input.attended,
+          sheetWritten,
+          ...(sheetWritten ? {} : { note: statusCopy.notWritten }),
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : statusCopy.errors.writeFailed,
         });
       }
     }),
@@ -230,7 +280,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
    * caller can build each sponsor's judging link.
    */
   syncSponsors: protectedOrganizerProcedure.mutation(async () => {
-    const names = await fetchMasterSponsorNames();
+    const names = await fetchSheetSponsorNames();
     if (names.length === 0) return [];
 
     await db
