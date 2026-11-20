@@ -143,8 +143,9 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
   is locked, so the team can't be moved away from it). The seat's other
   `assigned` stops are cancelled in the same transaction, so those judges skip
   it. A stop another judge already has `in_progress` is left alone. A team
-  that shows up late stays disqualified; there is no undo. The ranking must
-  leave out teams whose seat has a `team_absent` stop.
+  that shows up late stays disqualified; there is no undo. The ranking leaves
+  out teams whose seat has a `team_absent` stop, even marks given before the
+  report.
 - Submitting writes the `team_mark` (score + breakdown) for the team seated at
   the table and marks the stop `done` in one transaction.
 - Start and submit also send the `teamId` the judge's screen showed. If a
@@ -176,6 +177,7 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
   another judge in one action. Refused if the receiving judge already has one
   of those tables or has already scored a team seated at one.
 - **Add a judge to a table:** top-up when a table needs another score.
+  Refused for a seat reported absent.
 - **Cancel a stop**, or **mark a team absent**.
 - Judges added after auto-assign are **floaters** (no stops) until auto-assign
   is re-run or an organizer adds them to tables.

@@ -112,6 +112,12 @@ async function getRanking() {
     JOIN judge_stats js ON js.judge_id = m.judge_id
     JOIN team t ON t.id = m.team_id
     WHERE m.round_type = 'regular'
+      -- Absence is final: a team whose seat has a team_absent stop is out.
+      AND NOT EXISTS (
+        SELECT 1 FROM judging_assignment a
+        WHERE a.judging_table_id = t.judging_table_id
+          AND a.status = 'team_absent'
+      )
     GROUP BY m.team_id, t.name
     ORDER BY normalized_score DESC NULLS LAST
   `);

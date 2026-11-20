@@ -337,8 +337,8 @@ try {
     [
       `Seeded in ${secs}s:`,
       `  ${plan.tables} tables (${plan.seats} seats) in ${args.rows} rows`,
-      `  ${seating.seated} teams seated (${args.random ? "random" : "submission order"}), ${seating.emptyTables} tables empty`,
-      `  ${plan.judges} judges, ${plan.tablesPerJudge.min}-${plan.tablesPerJudge.max} tables each, ${plan.judgesPerTable} per table`,
+      `  ${seating.seated} teams seated (${args.random ? "random" : "submission order"}), ${seating.emptySeats} seats empty`,
+      `  ${plan.judges} judges, ${plan.seatsPerJudge.min}-${plan.seatsPerJudge.max} seats each, ${plan.judgesPerTable} per table`,
       ...(args.marks
         ? [`  ${marks} marks written (see judging_team_scores)`]
         : []),

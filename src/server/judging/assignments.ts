@@ -95,7 +95,7 @@ export async function autoAssign(assignedBy: string) {
       judges: judgeRows.length,
       judgesPerTable: settings.judgesPerTable,
       stops: rows.length,
-      tablesPerJudge: { min: Math.min(...sizes), max: Math.max(...sizes) },
+      seatsPerJudge: { min: Math.min(...sizes), max: Math.max(...sizes) },
       floaters: sizes.filter((n) => n === 0).length,
     };
   });
@@ -279,6 +279,19 @@ export async function addJudgeToTable(
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
             message: `Table ${table.number} is switched off.`,
+          });
+        }
+        const absent = await tx.query.judgingAssignments.findFirst({
+          where: and(
+            eq(judgingAssignments.judgingTableId, tableId),
+            eq(judgingAssignments.status, "team_absent"),
+          ),
+          columns: { id: true },
+        });
+        if (absent) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: `The team at table ${table.number} was reported absent, so it can't be judged.`,
           });
         }
         const existing = await tx.query.judgingAssignments.findFirst({

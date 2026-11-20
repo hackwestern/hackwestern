@@ -301,7 +301,7 @@ export async function seatTeams({ random }: { random: boolean }) {
     return {
       random,
       seated: seating.length,
-      emptyTables: tables.length - seating.length,
+      emptySeats: tables.length - seating.length,
       seating,
     };
   });
