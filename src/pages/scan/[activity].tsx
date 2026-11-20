@@ -478,11 +478,11 @@ const ScanActivityPage = () => {
       const message = error instanceof Error ? error.message : "";
       setStatus("error");
       if (holdResults) {
-        const { name: userName, realm } = await fetchUser(userId);
+        const { name: userName, realm, shirtSize } = await fetchUser(userId);
         // fetchUser falls back to the scanned code when nobody matches
         const name = userName !== userId ? userName : undefined;
         if (message.includes("already scanned")) {
-          setHeld({ kind: "already", name, realm });
+          setHeld({ kind: "already", name, realm, shirtSize });
         } else if (/UNAUTHORIZED|FORBIDDEN|not an organizer/.test(message)) {
           setHeld({
             kind: "error",
