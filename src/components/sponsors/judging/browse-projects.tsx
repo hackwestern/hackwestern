@@ -19,7 +19,6 @@ import {
 import { cn } from "~/lib/utils";
 import { JudgePicker, JudgingAs, useJudgeName } from "./judge-picker";
 import { ProjectCard } from "./project-card";
-import { RubricDialog } from "./rubric-dialog";
 import {
   type JudgingData,
   type ReviewPatch,
@@ -82,8 +81,6 @@ export function BrowseProjects({
   const [filter, setFilter] = useState<BrowseFilter>("all");
   const [sort, setSort] = useState<BrowseSort>("name");
   const [at, setAt] = useState(0);
-  const [rubricOpen, setRubricOpen] = useState(false);
-  const [rubricFrom, setRubricFrom] = useState<HTMLElement | null>(null);
 
   const me = judge.name;
   const scorers = useMemo(
@@ -178,14 +175,6 @@ export function BrowseProjects({
       scores={scoresByTeam.get(team.id)}
       owner={split ? (owners.get(team.id) ?? null) : null}
       onScore={(score) => onScore(team.id, me, score)}
-      onRubric={() => {
-        setRubricFrom(
-          document.activeElement instanceof HTMLElement
-            ? document.activeElement
-            : null,
-        );
-        setRubricOpen(true);
-      }}
     />
   );
 
@@ -396,12 +385,6 @@ export function BrowseProjects({
           )}
         </>
       )}
-
-      <RubricDialog
-        open={rubricOpen}
-        onOpenChange={setRubricOpen}
-        returnFocus={rubricFrom}
-      />
     </div>
   );
 }

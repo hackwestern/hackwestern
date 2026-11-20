@@ -19,7 +19,7 @@ export const sponsorJudgingCopy = {
   back: "Back to sponsor hub",
   title: "Judging",
   intro: (top: number) =>
-    `Each of you scores projects out of 10, in half points. Save the strongest to your shortlist and send it. After presentations, rank your top ${top}: 1st to ${ordinal(top)} place.`,
+    `Each of you scores projects out of 10, in half points. Shortlist up to 15 teams, send it to us, then rank your top ${top}: 1st to ${ordinal(top)} place after presentations.`,
   trackTag: (track: string) => `Showing teams in ${track}`,
   invalid: {
     title: "Link not recognised",

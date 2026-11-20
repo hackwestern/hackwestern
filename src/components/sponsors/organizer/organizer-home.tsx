@@ -6,6 +6,7 @@ import {
   Coffee,
   ExternalLink,
   Gavel,
+  RefreshCw,
   TriangleAlert,
 } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -55,7 +56,7 @@ import {
 import { hasPrizeTrack, isDigitalJudging } from "~/lib/sponsor-prize-tracks";
 import { buildOrganizerTimeline, taskEntries } from "~/lib/sponsor-timeline";
 import { cn } from "~/lib/utils";
-import type { RouterOutputs } from "~/utils/api";
+import { api, type RouterOutputs } from "~/utils/api";
 
 const copy = sponsorOrganizerCopy.home;
 
@@ -158,6 +159,25 @@ export function OrganizerHome({
   // Today, else Friday before the event and Sunday after it.
   const day: RunOfShowDay = picked ?? today ?? defaultRunOfShowDay(now);
   const writes = useSponsorWrites();
+  const utils = api.useUtils();
+  const sync = api.sponsorDashboard.syncSponsors.useMutation({
+    onSuccess: async (registered) => {
+      writes.setNote({
+        tone: "ok",
+        text: sponsorOrganizerCopy.board.synced(registered.length),
+      });
+      await Promise.all([
+        utils.sponsorDashboard.getSponsors.invalidate(),
+        utils.sponsorOrganizer.summary.invalidate(),
+      ]);
+    },
+    onError: (error) => {
+      writes.setNote({
+        tone: "error",
+        text: sponsorOrganizerCopy.board.syncFailed(error.message),
+      });
+    },
+  });
 
   // Every sponsor, from the sheet when it loaded, else from the database.
   const rows = useMemo<Row[]>(() => {
@@ -288,37 +308,56 @@ export function OrganizerHome({
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <DayTabs day={day} today={today} onPick={setPicked} />
-        {me && (
-          <div
-            role="group"
-            aria-label={copy.viewLabel}
-            className="inline-flex rounded-full border border-dashboard-border-default bg-dashboard-bg-surface p-0.5"
+        <div className="flex flex-wrap items-center gap-2">
+          <DashboardButton
+            variant="outline"
+            disabled={sync.isPending}
+            onClick={() => {
+              writes.setNote(null);
+              sync.mutate();
+            }}
+            className={cn("h-11 md:h-10", press)}
           >
-            {(["mine", "all"] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                aria-pressed={view === v}
-                onClick={() => onView(v)}
-                className={cn(
-                  "inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-semibold md:min-h-9",
-                  press,
-                  focusRing,
-                  view === v
-                    ? "bg-dashboard-action-primary text-dashboard-text-inverse"
-                    : cn("text-dashboard-text-medium", hover.highlight),
-                )}
-              >
-                {v === "mine" ? copy.yours : copy.all}
-                <span className="tabular-nums opacity-80">
-                  {v === "mine"
-                    ? sponsorsOnDay(day, led).length
-                    : allOnDay.length}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
+            <RefreshCw
+              aria-hidden
+              className={cn(sync.isPending && "motion-safe:animate-spin")}
+            />
+            {sync.isPending
+              ? sponsorOrganizerCopy.board.syncing
+              : sponsorOrganizerCopy.board.sync}
+          </DashboardButton>
+          {me && (
+            <div
+              role="group"
+              aria-label={copy.viewLabel}
+              className="inline-flex rounded-full border border-dashboard-border-default bg-dashboard-bg-surface p-0.5"
+            >
+              {(["mine", "all"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={view === v}
+                  onClick={() => onView(v)}
+                  className={cn(
+                    "inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-semibold md:min-h-9",
+                    press,
+                    focusRing,
+                    view === v
+                      ? "bg-dashboard-action-primary text-dashboard-text-inverse"
+                      : cn("text-dashboard-text-medium", hover.highlight),
+                  )}
+                >
+                  {v === "mine" ? copy.yours : copy.all}
+                  <span className="tabular-nums opacity-80">
+                    {v === "mine"
+                      ? sponsorsOnDay(day, led).length
+                      : allOnDay.length}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <UpNextCard
@@ -1092,11 +1131,13 @@ function Details({
         <Item label={d.prize}>
           {r.digital ? d.prizeDigital : r.prizeTrack ? d.prizeInPerson : <Muted>{d.prizeNone}</Muted>}
         </Item>
-        {r.sponsorId && (
-          <Item label={d.portal}>
-            <CopyLinkButton sponsorId={r.sponsorId} name={r.name} />
-          </Item>
-        )}
+        <Item label={d.portal}>
+          <CopyLinkButton
+            sponsorId={r.sponsorId}
+            name={r.name}
+            showUrl
+          />
+        </Item>
       </dl>
       {r.notes && (
         <p className="m-0 break-words rounded-dashboard-md bg-dashboard-bg-inset px-3 py-2 text-sm text-dashboard-text-medium">

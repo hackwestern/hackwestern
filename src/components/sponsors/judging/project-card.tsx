@@ -134,7 +134,7 @@ export function TeamScores({
 
 /**
  * One project: who built it, its team ID and Devpost link, tracks and
- * links, this rep's 1-10 score (half points) with the rubric, every rep's
+ * links, this rep's 1-10 score (half points), every rep's
  * score, Save to shortlist and an optional private note. Every change
  * autosaves; the status at the end of the action row says when it's
  * saved or failed (and is announced politely). `owner` is the rep whose
@@ -150,7 +150,6 @@ export function ProjectCard({
   scores,
   owner,
   onScore,
-  onRubric,
 }: {
   team: JudgingTeam;
   review: TeamReview | undefined;
@@ -161,7 +160,6 @@ export function ProjectCard({
   scores: TeamScoresData | undefined;
   owner: string | null;
   onScore: (score: number | null) => void;
-  onRubric: () => void;
 }) {
   const noteId = useId();
   const savedNote = review?.note ?? "";
@@ -241,7 +239,6 @@ export function ProjectCard({
         team={team.name}
         value={myScore}
         onChange={onScore}
-        onRubric={onRubric}
       />
       <TeamScores scores={scores} me={me} />
 
