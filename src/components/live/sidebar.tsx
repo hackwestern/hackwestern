@@ -25,10 +25,10 @@ export const SidebarNav = ({
         <SectionLink tab="menu" name="Food Menu" />
         <SectionLink tab="mentors" name="Mentors" />
         <SectionLink tab="sponsors" name="Sponsors" />
+        {!isOrganizer && <SectionLink tab="coffee-chats" name="Coffee Chats" />}
         {!isOrganizer && (
           <SectionLink tab="scavenger-hunt" name="Scavenger Hunt" />
         )}
-        {!isOrganizer && <SectionLink tab="coffee-chats" name="Coffee Chats" />}
         {isOrganizer && (
           <SectionGroup
             icon="scavenger"
