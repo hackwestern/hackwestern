@@ -69,7 +69,7 @@ export function RoomsCard({
   const sponsorName = new Map(board.sponsors.map((s) => [s.sponsorId, s.name]));
 
   return (
-    <Card labelledBy="judging-rooms-heading" className="min-w-0">
+    <Card labelledBy="judging-rooms-heading" className="min-w-0" tour="judging-rooms">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <CardHead id="judging-rooms-heading" title={copy.heading} />
         <div

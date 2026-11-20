@@ -99,6 +99,7 @@ export function AfterPresentations() {
           <div className="flex flex-wrap items-center gap-2">
             <DashboardButton
               variant="small"
+              data-tour="judging-round2"
               disabled={!round2Open && data.slots.length === 0}
               onClick={() => setConfirming(!round2Open)}
             >

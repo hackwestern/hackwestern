@@ -251,7 +251,7 @@ function TodoCard({
     board.lastNotifiedAt !== null;
 
   return (
-    <Card labelledBy="judging-todo-heading">
+    <Card labelledBy="judging-todo-heading" tour="judging-todo">
       <CardHead
         id="judging-todo-heading"
         title={t.heading}
@@ -471,7 +471,7 @@ function SponsorsCard({
   const s = copy.sponsors;
   const sent = board.sponsors.filter((x) => x.shortlistSentAt).length;
   return (
-    <Card labelledBy="judging-sponsors-heading">
+    <Card labelledBy="judging-sponsors-heading" tour="judging-sponsors">
       <CardHead
         id="judging-sponsors-heading"
         title={s.heading}

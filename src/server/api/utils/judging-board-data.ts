@@ -122,7 +122,14 @@ export async function loadJudgingBoard() {
     [
       judgingRoomsWithSource(sponsors),
       db.select().from(sponsorShortlistSends),
-      db.select().from(sponsorPresentations),
+      // Only board sponsors' slots: one that lost its prize track since the
+      // last rebuild drops out on the next one, so it doesn't show now.
+      ids.length > 0
+        ? db
+            .select()
+            .from(sponsorPresentations)
+            .where(inArray(sponsorPresentations.sponsorId, ids))
+        : [],
       db
         .select({
           sponsorId: sponsorTeamScores.sponsorId,
