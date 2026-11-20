@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Check, ChevronLeft, CircleAlert, Clock, Users } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarDays,
+  Check,
+  ChevronLeft,
+  CircleAlert,
+  Clock,
+  Users,
+} from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { pressable } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorSetupCopy as copy } from "~/content/sponsor-coffee-setup";
@@ -52,8 +60,12 @@ export const cardClass =
  * and when this visit started: changes made during this visit are the
  * sponsor's own, so they're never "Since you were last here".
  */
-function useLastSeen(sponsor: string): { lastSeen: Date | null; visit: Date } | undefined {
-  const [seen, setSeen] = useState<{ lastSeen: Date | null; visit: Date } | undefined>(undefined);
+function useLastSeen(
+  sponsor: string,
+): { lastSeen: Date | null; visit: Date } | undefined {
+  const [seen, setSeen] = useState<
+    { lastSeen: Date | null; visit: Date } | undefined
+  >(undefined);
   // Read once per mount: a second run (React strict mode in dev) would read
   // back the time the first run just wrote.
   const read = useRef(false);
@@ -70,7 +82,10 @@ function useLastSeen(sponsor: string): { lastSeen: Date | null; visit: Date } | 
     } catch {
       prev = null;
     }
-    setSeen({ lastSeen: prev && !Number.isNaN(prev.getTime()) ? prev : null, visit });
+    setSeen({
+      lastSeen: prev && !Number.isNaN(prev.getTime()) ? prev : null,
+      visit,
+    });
   }, [key, seen]);
   return seen;
 }
@@ -96,7 +111,10 @@ function writeSeen(sponsor: string, seen: SeenChats): void {
 
 const seenChatsOf = (data: SetupData): SeenChats["chats"] =>
   Object.fromEntries(
-    data.chats.map((c) => [c.placementId, { repId: c.repId, sessionId: c.sessionId, room: c.room, start: c.start }]),
+    data.chats.map((c) => [
+      c.placementId,
+      { repId: c.repId, sessionId: c.sessionId, room: c.room, start: c.start },
+    ]),
   );
 
 /**
@@ -109,7 +127,8 @@ export function useRefreshOwn(sponsor: string) {
   const utils = api.useUtils();
   return useCallback(async (): Promise<SetupData> => {
     const fresh = await utils.client.coffeeChatSetup.get.query({ sponsor });
-    if (fresh.confirmed) writeSeen(sponsor, { ...readSeen(sponsor), chats: seenChatsOf(fresh) });
+    if (fresh.confirmed)
+      writeSeen(sponsor, { ...readSeen(sponsor), chats: seenChatsOf(fresh) });
     utils.coffeeChatSetup.get.setData({ sponsor }, fresh);
     return fresh;
   }, [sponsor, utils]);
@@ -126,22 +145,37 @@ function useChatMoves(
   visit: Date | undefined,
 ): { text: string; at: Date }[] {
   const [notes, setNotes] = useState<SeenChats["notes"]>([]);
-  const signature = data.chats.map((c) => `${c.placementId}:${c.sessionId}:${c.room}`).join(",");
+  const signature = data.chats
+    .map((c) => `${c.placementId}:${c.sessionId}:${c.room}`)
+    .join(",");
   useEffect(() => {
     if (!data.confirmed || !visit) return;
     const stored = readSeen(sponsor);
-    const repName = (id: string) => data.reps.find((r) => r.id === id)?.name ?? "";
+    const repName = (id: string) =>
+      data.reps.find((r) => r.id === id)?.name ?? "";
     // Found on this visit: just before it, so it's "since you were last
     // here" now and "Last change" next time.
     const now = new Date(visit.getTime() - 1).toISOString();
-    const found = chatChanges(stored.chats, data.chats, new Set(data.reps.map((r) => r.id))).map((c) => ({
+    const found = chatChanges(
+      stored.chats,
+      data.chats,
+      new Set(data.reps.map((r) => r.id)),
+    ).map((c) => ({
       text:
         c.kind === "removed"
           ? copy.status.removed(repName(c.repId), shortClock(c.from))
-          : copy.status.moved(repName(c.repId), shortClock(c.from), c.to ? shortClock(c.to) : null, c.room),
+          : copy.status.moved(
+              repName(c.repId),
+              shortClock(c.from),
+              c.to ? shortClock(c.to) : null,
+              c.room,
+            ),
       at: now,
     }));
-    const next = { chats: seenChatsOf(data), notes: [...found, ...stored.notes].slice(0, 5) };
+    const next = {
+      chats: seenChatsOf(data),
+      notes: [...found, ...stored.notes].slice(0, 5),
+    };
     // Not remembered if storage is blocked; still shown this time.
     writeSeen(sponsor, next);
     setNotes(next.notes);
@@ -181,24 +215,42 @@ export function SetupStatus({
   // After Send, "Last change" is what organizers did: Send (and re-sends)
   // and moves of sent chats. Before, it's the sponsor's own submits and
   // saves, which are never "Since you were last here".
-  const events: { key: string; text: string; at: Date; mine: boolean }[] = data.confirmed
-    ? [
-        ...setupEvents({ sentAt: data.sentAt, submittedAt: null, shortlistSubmittedAt: null, updatedAt: null }).map(
-          (e) => ({ key: e.kind, text: s.at(s.changes[e.kind] ?? e.kind, whenEastern(e.at)), at: e.at, mine: false }),
-        ),
-        ...moves.map((m, i) => ({ key: `move-${i}`, text: m.text, at: m.at, mine: false })),
-      ].sort((a, b) => b.at.getTime() - a.at.getTime())
-    : setupEvents(data).map((e) => ({
-        key: e.kind,
-        text: s.at(s.changes[e.kind] ?? e.kind, whenEastern(e.at)),
-        at: e.at,
-        mine: true,
-      }));
+  const events: { key: string; text: string; at: Date; mine: boolean }[] =
+    data.confirmed
+      ? [
+          ...setupEvents({
+            sentAt: data.sentAt,
+            submittedAt: null,
+            shortlistSubmittedAt: null,
+            updatedAt: null,
+          }).map((e) => ({
+            key: e.kind,
+            text: s.at(s.changes[e.kind] ?? e.kind, whenEastern(e.at)),
+            at: e.at,
+            mine: false,
+          })),
+          ...moves.map((m, i) => ({
+            key: `move-${i}`,
+            text: m.text,
+            at: m.at,
+            mine: false,
+          })),
+        ].sort((a, b) => b.at.getTime() - a.at.getTime())
+      : setupEvents(data).map((e) => ({
+          key: e.kind,
+          text: s.at(s.changes[e.kind] ?? e.kind, whenEastern(e.at)),
+          at: e.at,
+          mine: true,
+        }));
   const lastSeen = seen?.lastSeen ?? null;
-  const fresh = lastSeen && seen ? events.filter((e) => !e.mine && e.at > lastSeen && e.at <= seen.visit) : [];
+  const fresh =
+    lastSeen && seen
+      ? events.filter((e) => !e.mine && e.at > lastSeen && e.at <= seen.visit)
+      : [];
   const shown = fresh.length ? fresh : events.slice(0, 1);
   // Still filling in preferences: where they are, not "Draft saved".
-  const inFlow = !!flowStep && (state.kind === "notStarted" || state.kind === "draft");
+  const inFlow =
+    !!flowStep && (state.kind === "notStarted" || state.kind === "draft");
   const title = inFlow
     ? s.inFlow(flowStep, s.flowSteps.length, s.flowSteps[flowStep - 1] ?? "")
     : state.kind === "accepted"
@@ -221,17 +273,27 @@ export function SetupStatus({
         ? s.next.draft
         : state.kind === "waiting"
           ? s.next.waiting
-          : s.next.scheduled(Date.now() < roundClosesAt(1).getTime() ? s.roundOneAnswerBy : null);
+          : s.next.scheduled(
+              Date.now() < roundClosesAt(1).getTime()
+                ? s.roundOneAnswerBy
+                : null,
+            );
   const needsAction = state.kind === "notStarted" || state.kind === "draft";
   const done = state.kind === "invitesGoingOut" || state.kind === "accepted";
-  const waiting = data.chats.flatMap((c) => c.hackers).filter((h) => h.status === "pending").length;
+  const waiting = data.chats
+    .flatMap((c) => c.hackers)
+    .filter((h) => h.status === "pending").length;
 
   return (
     <section
       aria-label={s.label}
       className={cn(
         "flex flex-col gap-3 rounded-dashboard-lg border-l-4 bg-dashboard-bg-surface p-4 shadow-dashboard-card sm:p-5",
-        needsAction ? "border-dashboard-status-warning" : done ? "border-dashboard-status-live" : "border-dashboard-action-primary",
+        needsAction
+          ? "border-dashboard-status-warning"
+          : done
+            ? "border-dashboard-status-live"
+            : "border-dashboard-action-primary",
       )}
     >
       <div className="flex items-start gap-3">
@@ -246,9 +308,17 @@ export function SetupStatus({
                 : "bg-dashboard-bg-highlight text-dashboard-text-active",
           )}
         >
-          {needsAction ? <CircleAlert className="size-5" /> : done ? <Check className="size-5" /> : <Clock className="size-5" />}
+          {needsAction ? (
+            <CircleAlert className="size-5" />
+          ) : done ? (
+            <Check className="size-5" />
+          ) : (
+            <Clock className="size-5" />
+          )}
         </span>
-        <p className="m-0 text-xl font-bold leading-snug text-dashboard-text-heavy sm:text-2xl">{title}</p>
+        <p className="m-0 text-xl font-bold leading-snug text-dashboard-text-heavy sm:text-2xl">
+          {title}
+        </p>
       </div>
       {data.confirmed && (
         <p className="m-0 text-base font-semibold text-dashboard-text-heavy">
@@ -273,7 +343,14 @@ export function SetupStatus({
         </p>
       )}
       {!inFlow && (
-        <p className={cn("m-0 text-base font-semibold", needsAction ? "text-dashboard-text-warning" : "text-dashboard-text-heavy")}>
+        <p
+          className={cn(
+            "m-0 text-base font-semibold",
+            needsAction
+              ? "text-dashboard-text-warning"
+              : "text-dashboard-text-heavy",
+          )}
+        >
           {todo}
         </p>
       )}
@@ -336,13 +413,25 @@ export function FlowHeader({
       >
         <Icon aria-hidden className="size-6 shrink-0" strokeWidth={1.8} />
         <div className="min-w-0">
-          <p className="m-0 text-xs font-bold uppercase tracking-wider">{tag}</p>
-          <h1 className="m-0 text-[28px] font-extrabold leading-tight tracking-tight md:text-sm-display">{title}</h1>
+          <p className="m-0 text-xs font-bold uppercase tracking-wider">
+            {tag}
+          </p>
+          <h1 className="m-0 text-[28px] font-extrabold leading-tight tracking-tight md:text-sm-display">
+            {title}
+          </h1>
         </div>
       </header>
       <div className="flex flex-col gap-2.5">
-        <span className="text-sm text-dashboard-text-medium">{copy.rail.stepOf(current, steps.length)}</span>
-        <div aria-hidden className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
+        <span className="text-sm text-dashboard-text-medium">
+          {copy.rail.stepOf(current, steps.length)}
+        </span>
+        <div
+          aria-hidden
+          className="grid gap-1.5"
+          style={{
+            gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))`,
+          }}
+        >
           {steps.map((label, i) => (
             <i
               key={label}
@@ -358,11 +447,17 @@ export function FlowHeader({
           ))}
         </div>
         <nav aria-label={railLabel}>
-          <ol className="m-0 grid list-none gap-1.5 p-0" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
+          <ol
+            className="m-0 grid list-none gap-1.5 p-0"
+            style={{
+              gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))`,
+            }}
+          >
             {steps.map((label, i) => {
               const n = i + 1;
               const href = hrefFor(n);
-              const state = n < current ? "done" : n === current ? "current" : "todo";
+              const state =
+                n < current ? "done" : n === current ? "current" : "todo";
               const inner = (
                 <>
                   <span
@@ -376,13 +471,22 @@ export function FlowHeader({
                           : "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse",
                     )}
                   >
-                    {state === "done" ? <Check className="size-3" strokeWidth={3} /> : n}
+                    {state === "done" ? (
+                      <Check className="size-3" strokeWidth={3} />
+                    ) : (
+                      n
+                    )}
                   </span>
                   <span
                     className={cn(
                       "min-w-0 text-sm",
                       state === "current"
-                        ? cn("font-semibold", purple ? "text-dashboard-group-text" : "text-dashboard-text-active")
+                        ? cn(
+                            "font-semibold",
+                            purple
+                              ? "text-dashboard-group-text"
+                              : "text-dashboard-text-active",
+                          )
                         : state === "done"
                           ? "text-dashboard-text-heavy"
                           : "text-dashboard-text-medium",
@@ -390,21 +494,31 @@ export function FlowHeader({
                   >
                     {label}
                   </span>
-                  {state === "done" && <span className="sr-only">, {copy.rail.done}</span>}
+                  {state === "done" && (
+                    <span className="sr-only">, {copy.rail.done}</span>
+                  )}
                 </>
               );
-              const cls = "flex min-h-11 items-center gap-1.5 rounded-dashboard-sm";
+              const cls =
+                "flex min-h-11 items-center gap-1.5 rounded-dashboard-sm";
               return (
                 <li key={label}>
                   {href && state !== "current" ? (
                     <Link
                       href={href}
-                      className={cn(cls, "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary")}
+                      className={cn(
+                        cls,
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
+                      )}
                     >
                       {inner}
                     </Link>
                   ) : (
-                    <span aria-current={state === "current" ? "step" : undefined} aria-disabled={!href || undefined} className={cls}>
+                    <span
+                      aria-current={state === "current" ? "step" : undefined}
+                      aria-disabled={!href || undefined}
+                      className={cls}
+                    >
                       {inner}
                     </span>
                   )}
@@ -433,7 +547,13 @@ export function StepFooter({
       <div className="order-2 sm:order-1">{back}</div>
       <div className="order-1 flex flex-col gap-2 sm:order-2 sm:flex-row sm:items-center sm:gap-4">
         {/* Always mounted, so "Saving…" / "Saved." are read out. */}
-        <p role="status" className={cn("m-0 text-sm text-dashboard-text-medium sm:text-right", !note && "sr-only")}>
+        <p
+          role="status"
+          className={cn(
+            "m-0 text-sm text-dashboard-text-medium sm:text-right",
+            !note && "sr-only",
+          )}
+        >
           {note}
         </p>
         {primary}
@@ -452,7 +572,11 @@ export function LinkButton({
   variant?: "primary" | "outline";
 }) {
   return (
-    <DashboardButton asChild variant={variant} className={cn("min-h-11 md:h-11", pressable)}>
+    <DashboardButton
+      asChild
+      variant={variant}
+      className={cn("min-h-11 md:h-11", pressable)}
+    >
       <Link href={href}>
         {children}
         {variant === "primary" && <ArrowRight aria-hidden />}
@@ -469,11 +593,18 @@ export function LinkButton({
  * `confirmed` overrides data.confirmed when the caller just refetched.
  */
 export function useAfterInvites(data: SetupData | undefined) {
-  const [pending, setPending] = useState<{ run: (confirm: boolean) => void; affected: number } | null>(null);
+  const [pending, setPending] = useState<{
+    run: (confirm: boolean) => void;
+    affected: number;
+  } | null>(null);
   // Agreed once on this screen: don't ask again for every tick.
   const agreed = useRef(false);
   const guard = useCallback(
-    (run: (confirm: boolean) => void, affected = 0, confirmed = data?.confirmed) => {
+    (
+      run: (confirm: boolean) => void,
+      affected = 0,
+      confirmed = data?.confirmed,
+    ) => {
       if (!confirmed) return run(false);
       if (agreed.current) return run(true);
       setPending({ run, affected });
@@ -481,7 +612,10 @@ export function useAfterInvites(data: SetupData | undefined) {
     [data?.confirmed],
   );
   const dialog = (
-    <AlertDialog.Root open={pending !== null} onOpenChange={(open) => !open && setPending(null)}>
+    <AlertDialog.Root
+      open={pending !== null}
+      onOpenChange={(open) => !open && setPending(null)}
+    >
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
         <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-32px)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-dashboard-lg bg-dashboard-bg-surface p-6 font-figtree shadow-dashboard-card">
@@ -505,7 +639,10 @@ export function useAfterInvites(data: SetupData | undefined) {
               </DashboardButton>
             </AlertDialog.Action>
             <AlertDialog.Cancel asChild>
-              <DashboardButton variant="outline" className={cn("h-11", pressable)}>
+              <DashboardButton
+                variant="outline"
+                className={cn("h-11", pressable)}
+              >
                 {copy.afterInvites.cancel}
               </DashboardButton>
             </AlertDialog.Cancel>
@@ -522,16 +659,24 @@ export function useAfterInvites(data: SetupData | undefined) {
  * while there's more to the right it says so ("Scroll for later times")
  * with a fade on the right edge, so no column hides without a cue.
  */
-export function ScrollHint({ label, children }: { label: string; children: React.ReactNode }) {
+export function ScrollHint({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const check = () => setMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 4);
+    const check = () =>
+      setMore(el.scrollWidth - el.clientWidth - el.scrollLeft > 4);
     check();
     el.addEventListener("scroll", check, { passive: true });
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(check);
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(check);
     observer?.observe(el);
     if (el.firstElementChild) observer?.observe(el.firstElementChild);
     return () => {

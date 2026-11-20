@@ -7,7 +7,12 @@
  */
 import { chatsBySession, chatsInWindow } from "~/lib/coffee-chat-sessions";
 
-export type ViewRep = { id: string; name: string; free: readonly string[]; chatsWanted: number };
+export type ViewRep = {
+  id: string;
+  name: string;
+  free: readonly string[];
+  chatsWanted: number;
+};
 export type ViewSponsor = {
   id: string;
   name: string;
@@ -51,13 +56,18 @@ export type CellOf<B extends ViewBoard> =
 /** What's in a cell: a chat (with its sponsor and rep), a booking, or nothing. */
 export function cellAt<B extends ViewBoard>(board: B, key: string): CellOf<B> {
   const { room, session } = splitKey(key);
-  const p = board.placements.find((x) => x.room === room && x.sessionId === session);
+  const p = board.placements.find(
+    (x) => x.room === room && x.sessionId === session,
+  );
   if (p) {
     const sponsor = board.sponsors.find((s) => s.id === p.sponsorId);
     const rep = sponsor?.reps.find((r) => r.id === p.repId);
-    if (sponsor && rep) return { kind: "chat", placement: p, sponsor, rep } as CellOf<B>;
+    if (sponsor && rep)
+      return { kind: "chat", placement: p, sponsor, rep } as CellOf<B>;
   }
-  const b = board.bookings.find((x) => x.room === room && x.sessionId === session);
+  const b = board.bookings.find(
+    (x) => x.room === room && x.sessionId === session,
+  );
   return b ? ({ kind: "booking", booking: b } as CellOf<B>) : null;
 }
 
@@ -74,9 +84,20 @@ export function cellAt<B extends ViewBoard>(board: B, key: string): CellOf<B> {
  *   organizer contacts them (the two-step "isn't free" dialog).
  * - "same" or "gone": nothing to do.
  */
-export type DropCheck = "ok" | "same" | "gone" | "taken" | "workshop" | "busy" | "notFree";
+export type DropCheck =
+  | "ok"
+  | "same"
+  | "gone"
+  | "taken"
+  | "workshop"
+  | "busy"
+  | "notFree";
 
-export function dropCheck(board: ViewBoard, src: string, target: string): DropCheck {
+export function dropCheck(
+  board: ViewBoard,
+  src: string,
+  target: string,
+): DropCheck {
   if (src === target) return "same";
   const from = cellAt(board, src);
   if (!from) return "gone";
@@ -85,14 +106,21 @@ export function dropCheck(board: ViewBoard, src: string, target: string): DropCh
   const { session } = splitKey(target);
   if (from.sponsor.blocked.includes(session)) return "workshop";
   const elsewhere = board.placements.some(
-    (p) => p.repId === from.rep.id && p.sessionId === session && p.id !== from.placement.id,
+    (p) =>
+      p.repId === from.rep.id &&
+      p.sessionId === session &&
+      p.id !== from.placement.id,
   );
   if (elsewhere) return "busy";
   return from.rep.free.includes(session) ? "ok" : "notFree";
 }
 
 /** Every empty cell a dragged cell can drop on with no question (lit while dragging). */
-export function litCells(board: ViewBoard, src: string, keys: readonly string[]): Set<string> {
+export function litCells(
+  board: ViewBoard,
+  src: string,
+  keys: readonly string[],
+): Set<string> {
   return new Set(keys.filter((k) => dropCheck(board, src, k) === "ok"));
 }
 
@@ -101,13 +129,19 @@ export function litCells(board: ViewBoard, src: string, keys: readonly string[])
  * part a workshop buffer leaves, and never past the rep's wanted chats
  * (filled in time order across their sessions).
  */
-export function chatsInCell(board: ViewBoard, placement: ViewPlacement): number {
+export function chatsInCell(
+  board: ViewBoard,
+  placement: ViewPlacement,
+): number {
   const sponsor = board.sponsors.find((s) => s.id === placement.sponsorId);
   const rep = sponsor?.reps.find((r) => r.id === placement.repId);
   if (!sponsor || !rep) return 0;
   const mine = board.placements.filter((p) => p.repId === rep.id);
   const fits = (id: string) =>
-    chatsInWindow(mine.find((p) => p.sessionId === id)?.window ?? null, sponsor.chatMinutes);
+    chatsInWindow(
+      mine.find((p) => p.sessionId === id)?.window ?? null,
+      sponsor.chatMinutes,
+    );
   return (
     chatsBySession(
       mine.map((p) => p.sessionId),
@@ -121,7 +155,10 @@ export function chatsInCell(board: ViewBoard, placement: ViewPlacement): number 
 export function clockRange(start: string, end: string): string {
   const part = (t: string) => {
     const [h = 0, m = 0] = t.split(":").map(Number);
-    return { clock: `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")}`, pm: h >= 12 };
+    return {
+      clock: `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")}`,
+      pm: h >= 12,
+    };
   };
   const a = part(start);
   const b = part(end);
@@ -142,7 +179,8 @@ export type HourChat = {
 /** One hour's invites (every chat of one placement): seats, chats, accepted, waiting. */
 export function hourCounts(chats: readonly HourChat[], placementId: string) {
   const mine = chats.filter((c) => c.placementId === placementId);
-  const sum = (f: (c: HourChat) => number) => mine.reduce((n, c) => n + f(c), 0);
+  const sum = (f: (c: HourChat) => number) =>
+    mine.reduce((n, c) => n + f(c), 0);
   const accepted = sum((c) => c.accepted);
   return {
     chats: mine.length,
@@ -153,4 +191,5 @@ export function hourCounts(chats: readonly HourChat[], placementId: string) {
 }
 
 /** "Dana" from "Dana W." (the dialogs say "Contact Dana"). */
-export const firstNameOf = (name: string) => name.trim().split(/\s+/)[0] ?? name;
+export const firstNameOf = (name: string) =>
+  name.trim().split(/\s+/)[0] ?? name;

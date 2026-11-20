@@ -173,7 +173,7 @@ export function HelpSheet({
             "sm:inset-0 sm:m-auto sm:h-fit sm:max-w-[480px] sm:rounded-dashboard-2xl sm:pb-6",
             // Phone: slides up like a sheet (iOS curve). Wider: a small
             // scale + fade from the centre. Exits are quicker than entries.
-            "data-[state=open]:[animation-timing-function:cubic-bezier(0.32,0.72,0,1)] data-[state=closed]:duration-200 data-[state=open]:duration-300 data-[state=closed]:ease-out data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=closed]:duration-200 data-[state=open]:duration-300 data-[state=closed]:ease-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:[animation-timing-function:cubic-bezier(0.32,0.72,0,1)]",
             "data-[state=closed]:slide-out-to-bottom-full data-[state=open]:slide-in-from-bottom-full",
             "sm:data-[state=closed]:duration-150 sm:data-[state=open]:duration-200 sm:data-[state=closed]:fade-out-0 sm:data-[state=open]:fade-in-0 sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:slide-out-to-bottom-2 sm:data-[state=open]:slide-in-from-bottom-2",
             "motion-reduce:data-[state=closed]:animate-none motion-reduce:data-[state=open]:animate-none",

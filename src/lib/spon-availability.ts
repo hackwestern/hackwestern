@@ -114,7 +114,9 @@ export function notesForDay(
   notes: readonly AvailabilityNote[],
   day: RunOfShowDay,
 ): string[] {
-  return notes.filter((n) => n.day === null || n.day === day).map((n) => n.text);
+  return notes
+    .filter((n) => n.day === null || n.day === day)
+    .map((n) => n.text);
 }
 
 const covers = (ranges: readonly MinuteRange[], minute: number) =>
@@ -155,8 +157,12 @@ export function availabilitySegments(
   for (let i = 0; i + 1 < points.length; i++) {
     const start = points[i]!;
     const end = points[i + 1]!;
-    const present = people.filter((p) => covers(p.present, start)).map((p) => p.name);
-    const onCall = people.filter((p) => covers(p.onCall, start)).map((p) => p.name);
+    const present = people
+      .filter((p) => covers(p.present, start))
+      .map((p) => p.name);
+    const onCall = people
+      .filter((p) => covers(p.onCall, start))
+      .map((p) => p.name);
     const last = segments[segments.length - 1];
     if (
       last &&
@@ -181,7 +187,10 @@ export function shortNames(names: readonly string[]): Map<string, string> {
     const words = name.trim().split(/\s+/).filter(Boolean);
     const first = words[0] ?? "";
     if (words.length > 1) {
-      return words.map((w) => w.charAt(0).toUpperCase()).join("") + first.slice(1, 1 + extra);
+      return (
+        words.map((w) => w.charAt(0).toUpperCase()).join("") +
+        first.slice(1, 1 + extra)
+      );
     }
     return first.charAt(0).toUpperCase() + first.slice(1, 2 + extra);
   };

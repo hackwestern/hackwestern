@@ -20,7 +20,10 @@ function clockMinutes(time: string): number {
 }
 
 /** Hour marks across the window: hourly when short, every 2-3 h when long. */
-function hourMarks({ start, end }: MinuteRange): { minute: number; label: boolean }[] {
+function hourMarks({
+  start,
+  end,
+}: MinuteRange): { minute: number; label: boolean }[] {
   const hours = (end - start) / 60;
   const every = hours > 12 ? 3 : hours > 6 ? 2 : 1;
   const marks: { minute: number; label: boolean }[] = [];
@@ -81,7 +84,10 @@ export function SponAvailabilityTable({
           {
             key: "everyone",
             name: copy.everyone,
-            bars: required[day].map((r) => ({ ...r, kind: "required" as const })),
+            bars: required[day].map((r) => ({
+              ...r,
+              kind: "required" as const,
+            })),
             notes: [] as string[],
           },
         ]
@@ -90,8 +96,14 @@ export function SponAvailabilityTable({
       const onCall = o.onCall[day];
       const blocked = [...o.away[day], ...onCall];
       const bars: Bar[] = [
-        ...subtractRanges(o.available[day], blocked).map((r) => ({ ...r, kind: "free" as const })),
-        ...subtractRanges(o.shifts[day], blocked).map((r) => ({ ...r, kind: "shift" as const })),
+        ...subtractRanges(o.available[day], blocked).map((r) => ({
+          ...r,
+          kind: "free" as const,
+        })),
+        ...subtractRanges(o.shifts[day], blocked).map((r) => ({
+          ...r,
+          kind: "shift" as const,
+        })),
         ...onCall.map((r) => ({ ...r, kind: "onCall" as const })),
       ];
       return {
@@ -99,7 +111,9 @@ export function SponAvailabilityTable({
         name: o.name,
         bars,
         notes: [
-          ...o.away[day].map((r) => copy.away(formatMinutes(r.start), formatMinutes(r.end))),
+          ...o.away[day].map((r) =>
+            copy.away(formatMinutes(r.start), formatMinutes(r.end)),
+          ),
           ...notesForDay(o.notes, day),
         ],
       };
@@ -107,8 +121,14 @@ export function SponAvailabilityTable({
   ];
 
   return (
-    <section aria-labelledby="spon-availability" className="flex flex-col gap-3">
-      <h2 id="spon-availability" className="m-0 text-lg font-bold text-dashboard-text-heavy">
+    <section
+      aria-labelledby="spon-availability"
+      className="flex flex-col gap-3"
+    >
+      <h2
+        id="spon-availability"
+        className="m-0 text-lg font-bold text-dashboard-text-heavy"
+      >
         {copy.heading}
       </h2>
       <div className="overflow-x-auto rounded-dashboard-lg bg-dashboard-bg-surface p-3 shadow-dashboard-card sm:p-4">
@@ -145,13 +165,18 @@ export function SponAvailabilityTable({
           <ul className="m-0 flex list-none flex-col p-0">
             {rows.map((row) => {
               const bars = row.bars.flatMap((b) =>
-                clipRanges([b], window.start, window.end).map((r) => ({ ...b, ...r })),
+                clipRanges([b], window.start, window.end).map((r) => ({
+                  ...b,
+                  ...r,
+                })),
               );
               return (
                 <li
                   key={row.key}
                   className="grid items-start gap-y-1 border-t border-dashboard-border-subtle py-2"
-                  style={{ gridTemplateColumns: `${NAME_WIDTH}px minmax(0, 1fr)` }}
+                  style={{
+                    gridTemplateColumns: `${NAME_WIDTH}px minmax(0, 1fr)`,
+                  }}
                 >
                   <span className="truncate pr-2 text-sm font-semibold leading-6 text-dashboard-text-heavy">
                     {row.name}
@@ -174,11 +199,20 @@ export function SponAvailabilityTable({
                             "absolute inset-y-0 flex items-center overflow-hidden rounded-dashboard-xs px-1 text-[11px] font-medium leading-4",
                             BAR_STYLE[b.kind],
                           )}
-                          style={{ left: pct(b.start), width: pct(window.start + b.end - b.start) }}
-                          title={SR_TEXT[b.kind](formatMinutes(b.start), formatMinutes(b.end))}
+                          style={{
+                            left: pct(b.start),
+                            width: pct(window.start + b.end - b.start),
+                          }}
+                          title={SR_TEXT[b.kind](
+                            formatMinutes(b.start),
+                            formatMinutes(b.end),
+                          )}
                         >
                           <span className="sr-only">
-                            {SR_TEXT[b.kind](formatMinutes(b.start), formatMinutes(b.end))}
+                            {SR_TEXT[b.kind](
+                              formatMinutes(b.start),
+                              formatMinutes(b.end),
+                            )}
                           </span>
                           {b.kind === "onCall" && (
                             <span aria-hidden className="truncate">

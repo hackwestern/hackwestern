@@ -153,9 +153,7 @@ describe("planScoreWrites", () => {
     expect(grid[5]!.slice(0, 4)).toEqual(["10:06 AM", "t2", "", 8]);
     // Next block after one row per slot and a gap; no room yet, so only
     // the title is written.
-    expect(grid[2 + SCORES_BLOCK_ROWS + 1]!.slice(0, 2)).toEqual([
-      "TinyFish",
-    ]);
+    expect(grid[2 + SCORES_BLOCK_ROWS + 1]!.slice(0, 2)).toEqual(["TinyFish"]);
     expect(averageFormula(4)).toBe('=IFERROR(ROUND(AVERAGE(D5:I5),1),"")');
     expect(w.filter((c) => c.formula).map((c) => c.row)).toEqual([4, 5]);
   });
@@ -381,9 +379,7 @@ describe("mirrorJudgingScores", () => {
       // pending run, which waits out the interval.
       const first = mirrorJudgingScores({ ...deps, minIntervalMs: 0 });
       await vi.advanceTimersByTimeAsync(0);
-      const burst = Array.from({ length: 10 }, () =>
-        mirrorJudgingScores(deps),
-      );
+      const burst = Array.from({ length: 10 }, () => mirrorJudgingScores(deps));
       expect(new Set(burst).size).toBe(1);
       expect(burst[0]).not.toBe(first);
       await first;

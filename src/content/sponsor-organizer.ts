@@ -84,7 +84,8 @@ export const sponsorOrganizerCopy = {
     viewLabel: "Which sponsors to show",
     signedIn: (name: string) => `Signed in as ${name}`,
     /** Someone with another organizer's view ("Same view as" in HW Contacts). */
-    signedInWithView: (own: string, view: string) => `Signed in as ${own} · ${view}'s view`,
+    signedInWithView: (own: string, view: string) =>
+      `Signed in as ${own} · ${view}'s view`,
     leads: (n: number) =>
       n === 0
         ? "You don't lead a sponsor"
@@ -135,7 +136,8 @@ export const sponsorOrganizerCopy = {
       saving: "Saving…",
       failed: (message: string) => `Couldn't save: ${message}`,
       /** Sponsor Day-Of has no "At CC workshop" column yet. */
-      ccNoColumn: 'Add an "At CC workshop" checkbox column to Sponsor Day-Of to track this',
+      ccNoColumn:
+        'Add an "At CC workshop" checkbox column to Sponsor Day-Of to track this',
     },
     value: {
       none: "—",
@@ -459,7 +461,8 @@ export const sponsorOrganizerCopy = {
         : `Signed in as ${name} · you lead ${listOf(led)}. Times are Eastern.`,
     signedInWithView: (own: string, view: string, led: readonly string[]) =>
       `Signed in as ${own}, with ${view}'s view · ${view} leads ${led.length === 0 ? "no sponsor" : listOf(led)}. Times are Eastern.`,
-    noMatch: "You're not on HW Contacts, so this shows every sponsor. Times are Eastern.",
+    noMatch:
+      "You're not on HW Contacts, so this shows every sponsor. Times are Eastern.",
     daysLabel: "Day",
     dayShort: { Friday: "Fri", Saturday: "Sat", Sunday: "Sun" },
     dayDate: { Friday: "Nov 20", Saturday: "Nov 21", Sunday: "Nov 22" },
@@ -499,7 +502,8 @@ export const sponsorOrganizerCopy = {
     sponsorsOn: (yours: boolean, day: string) =>
       `${yours ? "Your sponsors" : "All sponsors"} on ${day}`,
     count: {
-      things: (n: number) => (n === 1 ? "1 thing needs you" : `${n} things need you`),
+      things: (n: number) =>
+        n === 1 ? "1 thing needs you" : `${n} things need you`,
       clear: (yours: boolean) =>
         yours ? "All clear for your sponsors" : "All clear",
       notStarted: (day: string) => `${day} hasn't started · showing the plan`,
@@ -519,7 +523,8 @@ export const sponsorOrganizerCopy = {
     toFix: (n: number) => (n === 1 ? "1 to fix" : `${n} to fix`),
     none: "—",
     noSponsors: "No sponsors to show.",
-    noneLed: "You don't lead a sponsor. Switch to All sponsors to see everyone.",
+    noneLed:
+      "You don't lead a sponsor. Switch to All sponsors to see everyone.",
     loading: "Loading sponsors…",
     loadFailed: "Couldn't read the sponsor list. It retries on its own.",
     columns: {
@@ -555,7 +560,8 @@ export const sponsorOrganizerCopy = {
       briefingNot: "Not yet",
       noAvailability: "Not sent",
       availabilitySent: (when: string) => `Sent ${when}`,
-      repsPlaced: (placed: number, reps: number) => `${placed} of ${reps} reps placed`,
+      repsPlaced: (placed: number, reps: number) =>
+        `${placed} of ${reps} reps placed`,
       shortlistSent: (when: string) => `Sent ${when}`,
       shortlistNot: "Not sent (optional)",
       invitesOut: (accepted: number, invites: number) =>
@@ -563,7 +569,8 @@ export const sponsorOrganizerCopy = {
       invitesNotOut: "Invites not out",
       confirmed: "Schedule confirmed",
       noChats: "No chats",
-      block: (rep: string, time: string, room: string) => `${rep} ${time} · Rm ${room}`,
+      block: (rep: string, time: string, room: string) =>
+        `${rep} ${time} · Rm ${room}`,
       seats: (accepted: number, waiting: number) =>
         `${accepted}✓${waiting ? ` ${waiting}⏳` : ""}`,
       blockDone: "done",

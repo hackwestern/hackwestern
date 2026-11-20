@@ -17,11 +17,7 @@ import {
   type TourDef,
   type TourStorage,
 } from "~/lib/sponsor-tour";
-import {
-  howToToursFor,
-  SPONSOR_TOURS,
-  toursFor,
-} from "~/lib/sponsor-tours";
+import { howToToursFor, SPONSOR_TOURS, toursFor } from "~/lib/sponsor-tours";
 
 const SPONSOR = "89170676-4186-4912-8a06-fa0eda0ff309";
 

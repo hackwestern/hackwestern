@@ -122,7 +122,9 @@ function CeremonyCard({
               )}
               <span className="break-words text-sm text-dashboard-text-medium">
                 <span className="sr-only">{`${copy.speakersLabel}: `}</span>
-                {s.speakers.length > 0 ? s.speakers.join("; ") : copy.speakersTbd}
+                {s.speakers.length > 0
+                  ? s.speakers.join("; ")
+                  : copy.speakersTbd}
               </span>
               {s.yours && (
                 <span className="text-sm font-semibold text-dashboard-text-heavy">

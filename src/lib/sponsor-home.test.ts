@@ -1,5 +1,11 @@
 import { describe, expect, test } from "vitest";
-import { eventClock, planDay, roomLabel, stepsFor, type HomeContext } from "./sponsor-home";
+import {
+  eventClock,
+  planDay,
+  roomLabel,
+  stepsFor,
+  type HomeContext,
+} from "./sponsor-home";
 
 const ctx = (over: Partial<HomeContext> = {}): HomeContext => ({
   hasPrizeTrack: true,
@@ -35,8 +41,23 @@ describe("sponsor Home Up next", () => {
       1,
       ctx({
         confirmed: true,
-        chats: [{ id: "p1", rep: "Dana W.", start: "10:00", end: "11:00", room: "1352", building: "ivey", chats: 4, confirmed: 2 }],
-        workshop: { start: "14:30", title: "Sun Life Workshop", location: "2230 (50)" },
+        chats: [
+          {
+            id: "p1",
+            rep: "Dana W.",
+            start: "10:00",
+            end: "11:00",
+            room: "1352",
+            building: "ivey",
+            chats: 4,
+            confirmed: 2,
+          },
+        ],
+        workshop: {
+          start: "14:30",
+          title: "Sun Life Workshop",
+          location: "2230 (50)",
+        },
       }),
     );
     expect(steps.some((s) => s.chatsPlaceholder)).toBe(false);
@@ -60,7 +81,9 @@ describe("sponsor Home Up next", () => {
   });
 
   test("no prize track: no judging steps on Sunday", () => {
-    expect(stepsFor(2, ctx({ hasPrizeTrack: false })).some((s) => s.prizeOnly)).toBe(false);
+    expect(
+      stepsFor(2, ctx({ hasPrizeTrack: false })).some((s) => s.prizeOnly),
+    ).toBe(false);
   });
 
   test("room labels from the run of show", () => {

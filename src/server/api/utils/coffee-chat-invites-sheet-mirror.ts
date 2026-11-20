@@ -32,7 +32,10 @@ import { google, type sheets_v4 } from "googleapis";
 
 import { coffeeChatInvitesCopy } from "~/content/coffee-chat-invites";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
-import { effectiveCoffeeChatStatus, type CoffeeChatStatus } from "~/lib/coffee-chat-requests";
+import {
+  effectiveCoffeeChatStatus,
+  type CoffeeChatStatus,
+} from "~/lib/coffee-chat-requests";
 import { formatCoffeeChatTime } from "~/lib/coffee-chats";
 import { easternClock } from "~/server/api/utils/coffee-chat-invite-text";
 import {
@@ -81,7 +84,11 @@ export type InviteSheetRow = {
 const clean = (s: string | null | undefined) => (s ?? "").trim();
 
 /** "Jane D." from first and last name (or a full name). Never more. */
-export function shortName(first: string | null, last: string | null, full: string | null): string {
+export function shortName(
+  first: string | null,
+  last: string | null,
+  full: string | null,
+): string {
   let f = clean(first);
   let l = clean(last);
   if (!f && !l) {
@@ -106,7 +113,10 @@ const stamp = (d: Date) =>
  * declined, expired and cancelled seats were replaced), by sponsor, rep,
  * then time. Pure: tests build it from rows.
  */
-export function invitesSheetRows(rows: readonly InviteSheetRow[], now: Date): string[][] {
+export function invitesSheetRows(
+  rows: readonly InviteSheetRow[],
+  now: Date,
+): string[][] {
   const seats = rows
     .map((r) => ({ r, status: effectiveCoffeeChatStatus(r, now) }))
     .filter(
@@ -151,7 +161,10 @@ export function invitesSheetRows(rows: readonly InviteSheetRow[], now: Date): st
  * tab (no warning-only: edits are refused), editable by `editor` (the app's
  * service account) and the owner, plus the note on A1. Pure.
  */
-export function lockTabRequests(sheetId: number, editor: string): sheets_v4.Schema$Request[] {
+export function lockTabRequests(
+  sheetId: number,
+  editor: string,
+): sheets_v4.Schema$Request[] {
   return [
     {
       addProtectedRange: {
@@ -165,7 +178,13 @@ export function lockTabRequests(sheetId: number, editor: string): sheets_v4.Sche
     },
     {
       updateCells: {
-        range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 1 },
+        range: {
+          sheetId,
+          startRowIndex: 0,
+          endRowIndex: 1,
+          startColumnIndex: 0,
+          endColumnIndex: 1,
+        },
         rows: [{ values: [{ note: copy.note }] }],
         fields: "note",
       },
@@ -196,7 +215,11 @@ export async function googleInvitesSheet(): Promise<InvitesSheet> {
   const spreadsheetId = runOfShowSpreadsheetId();
   const auth = new google.auth.JWT({ email, key, scopes: [WRITE_SCOPE] });
   await auth.authorize();
-  const sheets = google.sheets({ version: "v4", auth, timeout: INVITES_REQUEST_TIMEOUT_MS });
+  const sheets = google.sheets({
+    version: "v4",
+    auth,
+    timeout: INVITES_REQUEST_TIMEOUT_MS,
+  });
   return {
     editor: email,
     async clear(range) {
@@ -218,18 +241,24 @@ export async function googleInvitesSheet(): Promise<InvitesSheet> {
       // Never fall back to 0: that's the first tab, and the lock would
       // land on the live RUN OF SHOW.
       const id = res.data.replies?.[0]?.addSheet?.properties?.sheetId;
-      if (typeof id !== "number") throw new Error(`addSheet returned no sheetId for "${title}"`);
+      if (typeof id !== "number")
+        throw new Error(`addSheet returned no sheetId for "${title}"`);
       return id;
     },
     async batchUpdate(requests) {
-      await sheets.spreadsheets.batchUpdate({ spreadsheetId, requestBody: { requests } });
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: { requests },
+      });
     },
   };
 }
 
 /** Sheets' error for a range on a tab that doesn't exist. */
 const isMissingTab = (error: unknown) =>
-  /unable to parse range/i.test(error instanceof Error ? error.message : String(error));
+  /unable to parse range/i.test(
+    error instanceof Error ? error.message : String(error),
+  );
 
 /**
  * Rewrite the tab: clear everything from A1 down, then write the rows. The
@@ -237,7 +266,10 @@ const isMissingTab = (error: unknown) =>
  * tab is missing is the tab added and locked (once, on create). Throws on
  * any other Sheets error. Returns how many rows were written.
  */
-export async function writeInvitesTab(sheet: InvitesSheet, rows: string[][]): Promise<number> {
+export async function writeInvitesTab(
+  sheet: InvitesSheet,
+  rows: string[][],
+): Promise<number> {
   const tab = `'${INVITES_TAB}'`;
   try {
     await sheet.clear(`${tab}!A:Z`);
@@ -268,13 +300,25 @@ export async function loadInviteSheetRows(): Promise<InviteSheetRow[]> {
       expiresAt: coffeeChats.expiresAt,
     })
     .from(coffeeChats)
-    .innerJoin(coffeeChatPlacements, eq(coffeeChatPlacements.id, coffeeChats.placementId))
-    .innerJoin(coffeeChatReps, eq(coffeeChatReps.id, coffeeChatPlacements.repId))
-    .innerJoin(sponsorJudgingSponsors, eq(sponsorJudgingSponsors.id, coffeeChats.sponsorId))
+    .innerJoin(
+      coffeeChatPlacements,
+      eq(coffeeChatPlacements.id, coffeeChats.placementId),
+    )
+    .innerJoin(
+      coffeeChatReps,
+      eq(coffeeChatReps.id, coffeeChatPlacements.repId),
+    )
+    .innerJoin(
+      sponsorJudgingSponsors,
+      eq(sponsorJudgingSponsors.id, coffeeChats.sponsorId),
+    )
     .innerJoin(users, eq(users.id, coffeeChats.userId))
     .leftJoin(applications, eq(applications.userId, coffeeChats.userId))
     .where(
-      and(isNotNull(coffeeChats.placementId), inArray(coffeeChats.status, ["pending", "accepted"])),
+      and(
+        isNotNull(coffeeChats.placementId),
+        inArray(coffeeChats.status, ["pending", "accepted"]),
+      ),
     );
 }
 
@@ -320,10 +364,14 @@ export function mirrorCoffeeInvites(
   const run = async (): Promise<MirrorResult> => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      const wait = lastRunAt + (deps.minIntervalMs ?? INVITES_MIN_INTERVAL_MS) - Date.now();
+      const wait =
+        lastRunAt +
+        (deps.minIntervalMs ?? INVITES_MIN_INTERVAL_MS) -
+        Date.now();
       if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
       pending = null;
-      if (!sheetWritesEnabled()) return { ok: false, error: SHEET_WRITES_DISABLED };
+      if (!sheetWritesEnabled())
+        return { ok: false, error: SHEET_WRITES_DISABLED };
       lastRunAt = Date.now();
       const write = (async () => {
         const rows = invitesSheetRows(

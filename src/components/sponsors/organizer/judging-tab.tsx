@@ -269,7 +269,11 @@ function BySponsor({
               )}
             >
               <div className="flex items-start gap-2.5">
-                <SponsorBadge name={s.name} colors={colors} className="mt-0.5" />
+                <SponsorBadge
+                  name={s.name}
+                  colors={colors}
+                  className="mt-0.5"
+                />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <h3
                     id={`judging-${s.sponsorId}`}
@@ -286,7 +290,10 @@ function BySponsor({
               {s.final && (
                 <ol className="m-0 flex list-none flex-col divide-y divide-dashboard-border-subtle p-0">
                   {s.final.teams.map((t, i) => (
-                    <li key={t.teamId} className="flex items-start gap-2.5 py-2">
+                    <li
+                      key={t.teamId}
+                      className="flex items-start gap-2.5 py-2"
+                    >
                       <span className={rankBadge}>{copy.rankOf(i + 1)}</span>
                       <span className="flex min-w-0 flex-1 flex-col gap-1">
                         <TeamName t={t} />

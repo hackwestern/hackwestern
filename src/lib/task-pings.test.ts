@@ -140,7 +140,12 @@ describe("buildPingLog", () => {
     const rows = Array.from({ length: 5 }, (_, i) =>
       reminder(`t${i}`, `0${i + 1}:00`),
     );
-    const { entries, hasMore } = buildPingLog(rows, [help("h", "06:00")], NOW, 3);
+    const { entries, hasMore } = buildPingLog(
+      rows,
+      [help("h", "06:00")],
+      NOW,
+      3,
+    );
     expect(entries.map((e) => e.id)).toEqual(["h", "t4", "t3"]);
     expect(hasMore).toBe(true);
     expect(buildPingLog(rows, [], NOW, 5).hasMore).toBe(false);

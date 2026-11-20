@@ -3,7 +3,11 @@ import Link from "next/link";
 import { Check, ChevronDown, Info, ScanLine } from "lucide-react";
 import { btn, card } from "~/components/sponsors/portal-ui";
 import { pressable } from "~/components/sponsors/sponsor-shell-styles";
-import { sponsorHomeCopy, type AgendaAction, type AgendaStep } from "~/content/sponsor-home";
+import {
+  sponsorHomeCopy,
+  type AgendaAction,
+  type AgendaStep,
+} from "~/content/sponsor-home";
 import {
   clockTime,
   eventClock,
@@ -76,7 +80,10 @@ export function UpNext({
   return (
     <section aria-labelledby="upnext-heading" className={card}>
       <div className="flex items-start justify-between gap-3">
-        <h2 id="upnext-heading" className="m-0 text-[22px] font-semibold md:text-2xl">
+        <h2
+          id="upnext-heading"
+          className="m-0 text-[22px] font-semibold md:text-2xl"
+        >
           {copy.title}
         </h2>
         <div className="flex items-center gap-2">
@@ -93,11 +100,18 @@ export function UpNext({
               setLess(v);
               writeStored(LESS_KEY, v ? "less" : "all");
             }}
-            className={cn(quietBtn, "-mr-1 -mt-2 min-w-11 justify-center px-2", pressable)}
+            className={cn(
+              quietBtn,
+              "-mr-1 -mt-2 min-w-11 justify-center px-2",
+              pressable,
+            )}
           >
             <ChevronDown
               aria-hidden
-              className={cn("size-4 transition-transform duration-200", !less && "rotate-180")}
+              className={cn(
+                "size-4 transition-transform duration-200",
+                !less && "rotate-180",
+              )}
             />
           </button>
         </div>
@@ -106,10 +120,18 @@ export function UpNext({
         {less ? (
           hi ? (
             <ol className="m-0 flex list-none flex-col p-0">
-              <Row step={hi.step} state={hi.state} highlight label={label(hi.step)} hrefs={hrefs} />
+              <Row
+                step={hi.step}
+                state={hi.state}
+                highlight
+                label={label(hi.step)}
+                hrefs={hrefs}
+              />
             </ol>
           ) : (
-            <p className="m-0 text-base text-dashboard-text-medium">{copy.allSet}</p>
+            <p className="m-0 text-base text-dashboard-text-medium">
+              {copy.allSet}
+            </p>
           )
         ) : (
           <>
@@ -140,7 +162,11 @@ export function UpNext({
                 />
               ))}
             </ol>
-            {!hi && <p className="m-0 text-base text-dashboard-text-medium">{copy.allSet}</p>}
+            {!hi && (
+              <p className="m-0 text-base text-dashboard-text-medium">
+                {copy.allSet}
+              </p>
+            )}
             {day < 2 && (
               <div className="border-t border-dashboard-border-subtle pt-2">
                 <More
@@ -164,7 +190,13 @@ export function UpNext({
   );
 }
 
-function Label({ now = false, children }: { now?: boolean; children: React.ReactNode }) {
+function Label({
+  now = false,
+  children,
+}: {
+  now?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <span
       className={cn(
@@ -201,12 +233,19 @@ function More({
         aria-expanded={open}
         aria-controls={id}
         onClick={onToggle}
-        className={cn(quietBtn, quiet && "font-medium text-dashboard-text-light", pressable)}
+        className={cn(
+          quietBtn,
+          quiet && "font-medium text-dashboard-text-light",
+          pressable,
+        )}
       >
         {label}
         <ChevronDown
           aria-hidden
-          className={cn("size-4 transition-transform duration-200", open && "rotate-180")}
+          className={cn(
+            "size-4 transition-transform duration-200",
+            open && "rotate-180",
+          )}
         />
       </button>
       <div id={id} hidden={!open}>
@@ -216,7 +255,15 @@ function More({
   );
 }
 
-function DayBlock({ day, abs, ctx }: { day: 0 | 1 | 2; abs: number; ctx: HomeContext }) {
+function DayBlock({
+  day,
+  abs,
+  ctx,
+}: {
+  day: 0 | 1 | 2;
+  abs: number;
+  ctx: HomeContext;
+}) {
   const d = copy.days[day];
   return (
     <>
@@ -225,7 +272,12 @@ function DayBlock({ day, abs, ctx }: { day: 0 | 1 | 2; abs: number; ctx: HomeCon
       </h3>
       <ol className="m-0 flex list-none flex-col p-0">
         {stepsFor(day, ctx).map((step) => (
-          <Row key={step.id} step={step} state={stateOf(step, abs, ctx)} compact />
+          <Row
+            key={step.id}
+            step={step}
+            state={stateOf(step, abs, ctx)}
+            compact
+          />
         ))}
       </ol>
     </>
@@ -281,8 +333,10 @@ function Row({
     >
       <span
         className={cn(
-          "pt-0.5 text-sm font-semibold leading-snug tabular-nums",
-          highlight ? "text-dashboard-text-active" : "text-dashboard-text-medium",
+          "pt-0.5 text-sm font-semibold tabular-nums leading-snug",
+          highlight
+            ? "text-dashboard-text-active"
+            : "text-dashboard-text-medium",
         )}
       >
         {timeOf(step)}
@@ -317,17 +371,32 @@ function Row({
             <b
               className={cn(
                 compact ? "text-[15px]" : "text-base",
-                highlight ? "text-[17px] font-bold" : done || step.note ? "font-medium" : "font-semibold",
+                highlight
+                  ? "text-[17px] font-bold"
+                  : done || step.note
+                    ? "font-medium"
+                    : "font-semibold",
               )}
             >
               {step.title}
             </b>
-            {step.where && <span className="text-sm text-dashboard-text-light">{step.where}</span>}
+            {step.where && (
+              <span className="text-sm text-dashboard-text-light">
+                {step.where}
+              </span>
+            )}
           </p>
-          {step.sub && <p className="m-0 mt-0.5 text-[13px] text-dashboard-text-light">{step.sub}</p>}
+          {step.sub && (
+            <p className="m-0 mt-0.5 text-[13px] text-dashboard-text-light">
+              {step.sub}
+            </p>
+          )}
         </div>
         {action && hrefs && (
-          <Link href={hrefs[action]} className={cn(highlight ? btn.primary : btn.outline, btn.sm)}>
+          <Link
+            href={hrefs[action]}
+            className={cn(highlight ? btn.primary : btn.outline, btn.sm)}
+          >
             {action === "scan" && <ScanLine aria-hidden />}
             {copy.actions[action]}
           </Link>

@@ -89,7 +89,10 @@ describe("isHelpVisibleToSponsor", () => {
 
   it("cancelled never shows", () => {
     expect(
-      isHelpVisibleToSponsor({ status: "cancelled", resolvedAt: created }, at(1)),
+      isHelpVisibleToSponsor(
+        { status: "cancelled", resolvedAt: created },
+        at(1),
+      ),
     ).toBe(false);
   });
 });

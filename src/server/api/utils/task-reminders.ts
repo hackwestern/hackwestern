@@ -210,7 +210,8 @@ export function routeOwner(
     return { target: "dm", slackUserId: override.slackUserId, name: raw };
   }
   const parsed = parseTaskOwner(raw);
-  if (parsed.kind === "none") return { target: "channel", reason: parsed.reason };
+  if (parsed.kind === "none")
+    return { target: "channel", reason: parsed.reason };
   const match = matchSlackUser(parsed.name, lookup.directory ?? []);
   if (match.status === "one") {
     return { target: "dm", slackUserId: match.userId, name: parsed.name };
@@ -677,9 +678,7 @@ export async function syncTaskReminders(
         } catch (error) {
           values = {
             status: "failed",
-            slackChannel: userId
-              ? (dmChannels.get(userId) ?? null)
-              : d.channel,
+            slackChannel: userId ? (dmChannels.get(userId) ?? null) : d.channel,
             scheduledMessageId: null,
             error: errorCode(error).slice(0, 255),
           };
@@ -912,7 +911,10 @@ export async function getTaskPingActivity(
       .select(reminderColumns)
       .from(taskReminders)
       .where(
-        and(eq(taskReminders.status, "scheduled"), gt(taskReminders.postAt, now)),
+        and(
+          eq(taskReminders.status, "scheduled"),
+          gt(taskReminders.postAt, now),
+        ),
       )
       .orderBy(asc(taskReminders.postAt))
       .limit(UP_NEXT_COUNT),
@@ -976,6 +978,9 @@ export async function getTaskPingActivity(
     upNext: selectUpNext(upcoming, now),
     log: entries,
     hasMore,
-    recentlyResolved: resolved.map((r) => ({ ...r, resolvedAt: r.resolvedAt! })),
+    recentlyResolved: resolved.map((r) => ({
+      ...r,
+      resolvedAt: r.resolvedAt!,
+    })),
   };
 }

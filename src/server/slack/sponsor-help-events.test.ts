@@ -36,9 +36,13 @@ import { handleSlackEvent, slackSignature } from "./sponsor-help-events";
 
 const SECRET = "test-signing-secret";
 const BOT_USER = "UBOT";
-const fetchMock = vi.fn<(url: string, init: RequestInit) => Promise<Response>>();
+const fetchMock =
+  vi.fn<(url: string, init: RequestInit) => Promise<Response>>();
 
-function signed(payload: unknown, opts: { secret?: string; age?: number } = {}) {
+function signed(
+  payload: unknown,
+  opts: { secret?: string; age?: number } = {},
+) {
   const rawBody = JSON.stringify(payload);
   const timestamp = String(Math.floor(Date.now() / 1000) - (opts.age ?? 0));
   return {
@@ -76,9 +80,7 @@ const reply = (extra: Record<string, unknown>) =>
   });
 
 function slackApiCalls(method: string) {
-  return fetchMock.mock.calls.filter(([url]) =>
-    url.endsWith(`/${method}`),
-  );
+  return fetchMock.mock.calls.filter(([url]) => url.endsWith(`/${method}`));
 }
 
 let requestId: string;
@@ -133,14 +135,20 @@ async function request() {
 
 describe("signature", () => {
   test("bad signature is 401", async () => {
-    const s = signed({ type: "url_verification", challenge: "x" }, {
-      secret: "wrong",
-    });
+    const s = signed(
+      { type: "url_verification", challenge: "x" },
+      {
+        secret: "wrong",
+      },
+    );
     expect((await handleSlackEvent(s)).status).toBe(401);
   });
 
   test("stale timestamp (over 5 minutes) is 401", async () => {
-    const s = signed({ type: "url_verification", challenge: "x" }, { age: 301 });
+    const s = signed(
+      { type: "url_verification", challenge: "x" },
+      { age: 301 },
+    );
     expect((await handleSlackEvent(s)).status).toBe(401);
   });
 
@@ -163,9 +171,12 @@ describe("signature", () => {
 
   test("SPONSOR_HELP_SLACK_SIGNING_SECRET overrides the shared one", async () => {
     slackEnv.values.SPONSOR_HELP_SLACK_SIGNING_SECRET = "help-only";
-    const s = signed({ type: "url_verification", challenge: "x" }, {
-      secret: "help-only",
-    });
+    const s = signed(
+      { type: "url_verification", challenge: "x" },
+      {
+        secret: "help-only",
+      },
+    );
     expect((await handleSlackEvent(s)).status).toBe(200);
   });
 });
@@ -246,9 +257,7 @@ describe("claiming", () => {
     expect(row?.claimedAt).toBeInstanceOf(Date);
     const posts = slackApiCalls("chat.postMessage");
     expect(posts).toHaveLength(1);
-    expect(String(posts[0]![1].body)).toContain(
-      '"thread_ts":"111.222"',
-    );
+    expect(String(posts[0]![1].body)).toContain('"thread_ts":"111.222"');
     expect(slackApiCalls("chat.update")).toHaveLength(1);
   });
 
@@ -310,14 +319,19 @@ describe("claiming", () => {
   test("event types it doesn't handle get 200 and do nothing", async () => {
     for (const event of [
       { type: "app_mention", user: "U1", channel: "C123", ts: "1.1" },
-      { type: "message", channel_type: "im", user: "U1", channel: "D1", ts: "1.1" },
+      {
+        type: "message",
+        channel_type: "im",
+        user: "U1",
+        channel: "D1",
+        ts: "1.1",
+      },
       { type: "team_join", user: { id: "U9" } },
     ]) {
       const res = await run(signed(eventCallback(event)));
       expect(res.status).toBe(200);
     }
-    expect((await run(signed({ type: "app_rate_limited" }))).status)
-      .toBe(200);
+    expect((await run(signed({ type: "app_rate_limited" }))).status).toBe(200);
     expect((await request())?.status).toBe("open");
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -346,7 +360,9 @@ describe("API route", () => {
   }
 
   function mockReq(method: string, s: ReturnType<typeof signed>) {
-    const req = Readable.from([Buffer.from(s.rawBody)]) as unknown as NextApiRequest;
+    const req = Readable.from([
+      Buffer.from(s.rawBody),
+    ]) as unknown as NextApiRequest;
     req.method = method;
     req.headers = {
       "x-slack-request-timestamp": s.timestamp,

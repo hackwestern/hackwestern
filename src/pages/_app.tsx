@@ -14,7 +14,9 @@ import dynamic from "next/dynamic";
 // Client-only and never in production builds.
 const Agentation =
   process.env.NODE_ENV === "development"
-    ? dynamic(() => import("agentation").then((m) => m.Agentation), { ssr: false })
+    ? dynamic(() => import("agentation").then((m) => m.Agentation), {
+        ssr: false,
+      })
     : null;
 
 import "~/styles/globals.css";

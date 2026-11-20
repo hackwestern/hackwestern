@@ -146,14 +146,12 @@ async function hacker(
 ) {
   const id = `inv-${key}-${++n}`;
   ids[key] = id;
-  await db
-    .insert(users)
-    .values({
-      id,
-      email: `${id}@example.com`,
-      name: `${key} Person`,
-      type: "hacker",
-    });
+  await db.insert(users).values({
+    id,
+    email: `${id}@example.com`,
+    name: `${key} Person`,
+    type: "hacker",
+  });
   await db.insert(applications).values({
     userId: id,
     status: opts.status ?? "CONFIRMED",
@@ -676,8 +674,7 @@ describe("Saturday rounds", () => {
     await respondToCoffeeChat(
       ids.t5!,
       {
-        chatId: (await chatsOf(theta.id)).find((c) => c.userId === ids.t5)!
-          .id,
+        chatId: (await chatsOf(theta.id)).find((c) => c.userId === ids.t5)!.id,
         answer: "decline",
       },
       at("11:20"),
@@ -796,9 +793,9 @@ describe("coffeeChatInvites router", () => {
     vi.setSystemTime(FRI_10PM);
     // The run of show unreadable: no round runs, so nothing is flagged.
     vi.mocked(getRunOfShow).mockRejectedValueOnce(new Error("sheet down"));
-    expect((await statusOf()).sponsors.every((s) => s.totals.unfilled === 0)).toBe(
-      true,
-    );
+    expect(
+      (await statusOf()).sponsors.every((s) => s.totals.unfilled === 0),
+    ).toBe(true);
     delete process.env.COFFEE_INVITES_ENABLED;
     // The kill switch is off here: Run now writes nothing.
     expect(await organizer.coffeeChatInvites.runRoundNow()).toMatchObject({

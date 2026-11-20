@@ -3,7 +3,13 @@ import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
 import type { SetupWindows } from "~/lib/coffee-chat-setup";
 import { COFFEE_SESSIONS } from "~/lib/coffee-chat-sessions";
 import { cn } from "~/lib/utils";
-import { clockOf, ScrollHint, sessionLabel, shortClock, type SetupData } from "./shared";
+import {
+  clockOf,
+  ScrollHint,
+  sessionLabel,
+  shortClock,
+  type SetupData,
+} from "./shared";
 
 const copy = sponsorSetupCopy.prefs;
 
@@ -11,17 +17,24 @@ const copy = sponsorSetupCopy.prefs;
 export const hatch =
   "bg-[repeating-linear-gradient(135deg,rgba(81,100,118,0.08)_0,rgba(81,100,118,0.08)_6px,transparent_6px,transparent_12px)]";
 
-export function workshopWhen(data: Pick<SetupData, "workshops">): string | null {
+export function workshopWhen(
+  data: Pick<SetupData, "workshops">,
+): string | null {
   if (data.workshops.length === 0) return null;
   const start = data.workshops.map((w) => w.start).sort()[0]!;
-  const end = data.workshops.map((w) => w.end).sort().at(-1)!;
+  const end = data.workshops
+    .map((w) => w.end)
+    .sort()
+    .at(-1)!;
   return `${shortClock(start)}–${shortClock(end)}`;
 }
 
 /** "1:00–1:30 only" for a session the workshop buffer cuts, else null. */
 function partialText(windows: SetupWindows, sessionId: string): string | null {
   const w = windows.partial[sessionId];
-  return w ? copy.partialOnly(shortClock(clockOf(w.start)), shortClock(clockOf(w.end))) : null;
+  return w
+    ? copy.partialOnly(shortClock(clockOf(w.start)), shortClock(clockOf(w.end)))
+    : null;
 }
 
 /**
@@ -54,11 +67,18 @@ export function AvailabilityGrid({
         <table className="w-full min-w-[520px] border-collapse text-sm">
           <thead>
             <tr className="bg-dashboard-bg-inset">
-              <th scope="col" className="sticky left-0 z-10 w-28 bg-dashboard-bg-inset p-2 text-left font-medium text-dashboard-text-light">
+              <th
+                scope="col"
+                className="sticky left-0 z-10 w-28 bg-dashboard-bg-inset p-2 text-left font-medium text-dashboard-text-light"
+              >
                 {sponsorSetupCopy.day}
               </th>
               {COFFEE_SESSIONS.map((s) => (
-                <th key={s.id} scope="col" className="p-2 text-center font-semibold text-dashboard-text-heavy">
+                <th
+                  key={s.id}
+                  scope="col"
+                  className="p-2 text-center font-semibold text-dashboard-text-heavy"
+                >
                   {sessionLabel(s.id)}
                 </th>
               ))}
@@ -67,7 +87,10 @@ export function AvailabilityGrid({
           <tbody>
             {when && (
               <tr className="border-t border-dashboard-border-subtle">
-                <th scope="row" className="sticky left-0 z-10 bg-dashboard-bg-surface p-2 text-left font-semibold text-dashboard-text-heavy">
+                <th
+                  scope="row"
+                  className="sticky left-0 z-10 bg-dashboard-bg-surface p-2 text-left font-semibold text-dashboard-text-heavy"
+                >
                   {copy.yourDay}
                 </th>
                 {COFFEE_SESSIONS.map((s) => (
@@ -75,41 +98,75 @@ export function AvailabilityGrid({
                     key={s.id}
                     className={cn(
                       "p-1 text-center text-xs text-dashboard-text-medium",
-                      windows.blocked.includes(s.id) && cn(hatch, "font-semibold"),
+                      windows.blocked.includes(s.id) &&
+                        cn(hatch, "font-semibold"),
                     )}
                   >
-                    {windows.blocked.includes(s.id) ? copy.workshopAt(when) : partialText(windows, s.id)}
+                    {windows.blocked.includes(s.id)
+                      ? copy.workshopAt(when)
+                      : partialText(windows, s.id)}
                   </td>
                 ))}
               </tr>
             )}
             {data.reps.map((rep) => {
               const ticked = free[rep.id] ?? [];
-              const open = COFFEE_SESSIONS.filter((s) => !windows.blocked.includes(s.id));
+              const open = COFFEE_SESSIONS.filter(
+                (s) => !windows.blocked.includes(s.id),
+              );
               const count = open.filter((s) => ticked.includes(s.id)).length;
               const off = (chatsWanted?.[rep.id] ?? rep.chatsWanted) === 0;
               return (
-                <tr key={rep.id} className={cn("border-t border-dashboard-border-subtle", off && "opacity-50")}>
-                  <th scope="row" className="sticky left-0 z-10 bg-dashboard-bg-surface p-2 text-left align-middle">
-                    <span className="block break-words font-semibold text-dashboard-text-heavy">{rep.name}</span>
+                <tr
+                  key={rep.id}
+                  className={cn(
+                    "border-t border-dashboard-border-subtle",
+                    off && "opacity-50",
+                  )}
+                >
+                  <th
+                    scope="row"
+                    className="sticky left-0 z-10 bg-dashboard-bg-surface p-2 text-left align-middle"
+                  >
+                    <span className="block break-words font-semibold text-dashboard-text-heavy">
+                      {rep.name}
+                    </span>
                     <span className="block text-xs font-normal text-dashboard-text-light">
-                      {off ? copy.doesntChat : copy.sessionsOf(count, open.length)}
+                      {off
+                        ? copy.doesntChat
+                        : copy.sessionsOf(count, open.length)}
                     </span>
                   </th>
                   {COFFEE_SESSIONS.map((s) => {
                     const only = partialText(windows, s.id);
-                    const label = only ? copy.partialLabel(sessionLabel(s.id), only) : sessionLabel(s.id);
+                    const label = only
+                      ? copy.partialLabel(sessionLabel(s.id), only)
+                      : sessionLabel(s.id);
                     if (windows.blocked.includes(s.id)) {
                       return (
-                        <td key={s.id} className={cn("p-1 text-center text-xs text-dashboard-text-medium", hatch)}>
+                        <td
+                          key={s.id}
+                          className={cn(
+                            "p-1 text-center text-xs text-dashboard-text-medium",
+                            hatch,
+                          )}
+                        >
                           <span aria-hidden>{copy.yourWorkshop}</span>
-                          <span className="sr-only">{copy.blockedLabel(rep.name, label)}</span>
+                          <span className="sr-only">
+                            {copy.blockedLabel(rep.name, label)}
+                          </span>
                         </td>
                       );
                     }
                     const on = ticked.includes(s.id);
                     return (
-                      <td key={s.id} className={cn("p-1 text-center", on && "bg-dashboard-bg-highlight")}>
+                      <td
+                        key={s.id}
+                        className={cn(
+                          "p-1 text-center",
+                          on && "bg-dashboard-bg-highlight",
+                        )}
+                      >
                         {onToggle ? (
                           <button
                             type="button"
@@ -124,8 +181,16 @@ export function AvailabilityGrid({
                         ) : (
                           <span className="inline-flex size-11 items-center justify-center">
                             {/* Read-only: a plain tick, not a box that looks clickable. */}
-                            {on ? <Check aria-hidden className="size-5 text-dashboard-action-primary" strokeWidth={3} /> : null}
-                            <span className="sr-only">{copy.cellLabel(rep.name, label, on)}</span>
+                            {on ? (
+                              <Check
+                                aria-hidden
+                                className="size-5 text-dashboard-action-primary"
+                                strokeWidth={3}
+                              />
+                            ) : null}
+                            <span className="sr-only">
+                              {copy.cellLabel(rep.name, label, on)}
+                            </span>
                           </span>
                         )}
                       </td>
@@ -139,12 +204,20 @@ export function AvailabilityGrid({
       </ScrollHint>
       {windows.blocked.length > 0 && (
         <p className="m-0 flex items-center gap-2 self-end text-sm text-dashboard-text-medium">
-          <span aria-hidden className={cn("inline-block size-4 rounded-sm border border-dashboard-border-control", hatch)} />
+          <span
+            aria-hidden
+            className={cn(
+              "inline-block size-4 rounded-sm border border-dashboard-border-control",
+              hatch,
+            )}
+          />
           {copy.legend}
         </p>
       )}
       {!data.workshopsKnown && (
-        <p className="m-0 text-sm text-dashboard-text-light">{copy.workshopsUnknown}</p>
+        <p className="m-0 text-sm text-dashboard-text-light">
+          {copy.workshopsUnknown}
+        </p>
       )}
     </div>
   );

@@ -39,7 +39,8 @@ function sheetWriteOk(
 ): boolean {
   if (!result.ok) {
     throw new TRPCError({
-      code: result.reason === "not-found" ? "NOT_FOUND" : "INTERNAL_SERVER_ERROR",
+      code:
+        result.reason === "not-found" ? "NOT_FOUND" : "INTERNAL_SERVER_ERROR",
       message:
         result.reason === "not-found"
           ? statusCopy.errors.notFound(sponsorName)
@@ -138,7 +139,8 @@ export const sponsorDashboardRouter = createTRPCRouter({
           companyContact: sponsor.companyContact,
           hwContact,
           notes: sponsor.notes,
-          sponsorId: registeredByName.get(sponsorNameKey(sponsor.name))?.id ?? null,
+          sponsorId:
+            registeredByName.get(sponsorNameKey(sponsor.name))?.id ?? null,
           teamIds: picks.get(sponsor.name) ?? [],
           status: info?.status ?? "Not arrived",
           roomNumber: info?.roomNumber ?? "TBD",
@@ -202,7 +204,11 @@ export const sponsorDashboardRouter = createTRPCRouter({
           input.sponsorName,
           input.status,
         );
-        const sheetWritten = sheetWriteOk(result, input.sponsorName, statusCopy.errors.noColumn);
+        const sheetWritten = sheetWriteOk(
+          result,
+          input.sponsorName,
+          statusCopy.errors.noColumn,
+        );
         return {
           sponsorName: input.sponsorName,
           status: input.status,
@@ -243,7 +249,11 @@ export const sponsorDashboardRouter = createTRPCRouter({
           input.sponsorName,
           input.attended,
         );
-        const sheetWritten = sheetWriteOk(result, input.sponsorName, statusCopy.errors.noCcColumn);
+        const sheetWritten = sheetWriteOk(
+          result,
+          input.sponsorName,
+          statusCopy.errors.noCcColumn,
+        );
         return {
           sponsorName: input.sponsorName,
           attended: input.attended,
@@ -254,7 +264,10 @@ export const sponsorDashboardRouter = createTRPCRouter({
         if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: error instanceof Error ? error.message : statusCopy.errors.writeFailed,
+          message:
+            error instanceof Error
+              ? error.message
+              : statusCopy.errors.writeFailed,
         });
       }
     }),

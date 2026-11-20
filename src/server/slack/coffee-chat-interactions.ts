@@ -75,7 +75,9 @@ export type InteractionOutcome =
 
 export type Deps = { token?: string; fetch?: typeof fetch; now?: Date };
 
-export type UserInfo = SlackResponse & { user?: { profile?: { email?: string } } };
+export type UserInfo = SlackResponse & {
+  user?: { profile?: { email?: string } };
+};
 
 /**
  * The hacker who owns `chatId` when the clicking Slack user is them: the
@@ -119,7 +121,9 @@ async function hackerForSlackUser(
  * channel ids start with "D"). The offer buttons are only ever posted in
  * the DM the bot opened with the hacker it found (dmHacker).
  */
-export function isDirectMessage(payload: z.infer<typeof payloadSchema>): boolean {
+export function isDirectMessage(
+  payload: z.infer<typeof payloadSchema>,
+): boolean {
   const channelId = payload.channel?.id ?? payload.container?.channel_id;
   return typeof channelId === "string" && channelId.startsWith("D");
 }

@@ -184,9 +184,7 @@ export function CoffeeChatRoomTable({
                     >
                       <CellButton
                         cell={cell}
-                        hold={board.holds.find(
-                          (h) => h.holdId === cell.holdId,
-                        )}
+                        hold={board.holds.find((h) => h.holdId === cell.holdId)}
                         board={board}
                         colors={palette}
                         highlight={highlight}

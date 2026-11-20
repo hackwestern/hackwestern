@@ -174,14 +174,17 @@ export function studyFields(r: {
   major: string | null;
   yearOfStudy: string | null;
 }): { school: string | null; program: string | null; year: string | null } {
-  const school = r.school?.trim() === "Other" ? r.schoolOther?.trim() : r.school?.trim();
-  const year = r.yearOfStudy && /^\d/.test(r.yearOfStudy) ? r.yearOfStudy : null;
+  const school =
+    r.school?.trim() === "Other" ? r.schoolOther?.trim() : r.school?.trim();
+  const year =
+    r.yearOfStudy && /^\d/.test(r.yearOfStudy) ? r.yearOfStudy : null;
   return { school: school ? school : null, program: r.major ?? null, year };
 }
 
 /** Study fields for hackers who agreed to share with sponsors. */
 async function studyByUser(userIds: readonly string[]) {
-  if (userIds.length === 0) return new Map<string, ReturnType<typeof studyFields>>();
+  if (userIds.length === 0)
+    return new Map<string, ReturnType<typeof studyFields>>();
   const rows = await db
     .select({
       userId: applications.userId,
@@ -201,9 +204,16 @@ async function studyByUser(userIds: readonly string[]) {
 }
 
 /** Adds school, program and year to shared candidates. */
-async function withStudy(hackers: SponsorCandidate[]): Promise<SponsorCandidate[]> {
-  const study = await studyByUser(hackers.filter((h) => h.shared).map((h) => h.userId));
-  return hackers.map((h) => ({ ...h, ...(h.shared ? (study.get(h.userId) ?? NO_STUDY) : NO_STUDY) }));
+async function withStudy(
+  hackers: SponsorCandidate[],
+): Promise<SponsorCandidate[]> {
+  const study = await studyByUser(
+    hackers.filter((h) => h.shared).map((h) => h.userId),
+  );
+  return hackers.map((h) => ({
+    ...h,
+    ...(h.shared ? (study.get(h.userId) ?? NO_STUDY) : NO_STUDY),
+  }));
 }
 
 /**
@@ -260,40 +270,42 @@ export function candidatesFromInterestForm(
     const profile = byEmail.get(row.email.trim().toLowerCase());
     return profile ? [{ row, profile }] : [];
   });
-  return (limit === null ? matched : matched.slice(0, limit)).map(({ row, profile }, index) => {
-    const formResume = safeProfileUrl(row.resumeUrl);
-    const extraLink = safeProfileUrl(row.extraLink);
-    const base = { userId: profile.userId, rank: index + 1, pick: row.pick };
-    if (profile.share !== true) {
+  return (limit === null ? matched : matched.slice(0, limit)).map(
+    ({ row, profile }, index) => {
+      const formResume = safeProfileUrl(row.resumeUrl);
+      const extraLink = safeProfileUrl(row.extraLink);
+      const base = { userId: profile.userId, rank: index + 1, pick: row.pick };
+      if (profile.share !== true) {
+        return {
+          ...base,
+          hackerId: null,
+          name: firstNameOf(profile, row.name),
+          shared: false,
+          team: null,
+          resume: formResume,
+          github: null,
+          linkedIn: null,
+          devpost: null,
+          extraLink,
+        };
+      }
       return {
         ...base,
-        hackerId: null,
-        name: firstNameOf(profile, row.name),
-        shared: false,
-        team: null,
-        resume: formResume,
-        github: null,
-        linkedIn: null,
-        devpost: null,
+        hackerId: profile.hackerId,
+        name:
+          displayName(profile.firstName, profile.lastName, null) ||
+          row.name.trim() ||
+          (profile.accountName?.trim() ?? ""),
+        shared: true,
+        team: profile.team,
+        resume: formResume ?? safeProfileUrl(profile.resume),
+        github: safeProfileUrl(profile.github),
+        linkedIn: safeProfileUrl(profile.linkedIn),
+        devpost: safeProfileUrl(profile.devpost),
         extraLink,
       };
-    }
-    return {
-      ...base,
-      hackerId: profile.hackerId,
-      name:
-        displayName(profile.firstName, profile.lastName, null) ||
-        row.name.trim() ||
-        (profile.accountName?.trim() ?? ""),
-      shared: true,
-      team: profile.team,
-      resume: formResume ?? safeProfileUrl(profile.resume),
-      github: safeProfileUrl(profile.github),
-      linkedIn: safeProfileUrl(profile.linkedIn),
-      devpost: safeProfileUrl(profile.devpost),
-      extraLink,
-    };
-  });
+    },
+  );
 }
 
 /**
@@ -338,7 +350,11 @@ async function candidateProfiles(
         inArray(applications.status, [...admittedStatuses(now)]),
       ),
     )
-    .orderBy(asc(applications.firstName), asc(applications.lastName), asc(users.id));
+    .orderBy(
+      asc(applications.firstName),
+      asc(applications.lastName),
+      asc(users.id),
+    );
 }
 
 // The form ranking reads a Google Sheet and every completed review, so keep
@@ -354,7 +370,10 @@ function cachedRanking(sponsorName: string) {
   const now = Date.now();
   const hit = rankingCache.get(sponsorName);
   if (hit && now - hit.at < RANKING_TTL_MS) return hit.rows;
-  const rows = fetchRankedInterestRows(sponsorName, { limit: null, prioritizePick: true });
+  const rows = fetchRankedInterestRows(sponsorName, {
+    limit: null,
+    prioritizePick: true,
+  });
   rankingCache.set(sponsorName, { at: now, rows });
   // Don't keep a failure around: the next call tries again.
   rows.catch(() => {
@@ -386,7 +405,9 @@ export async function sponsorCandidates(
   const preferred = ranked
     ? candidatesFromInterestForm(
         ranked,
-        await candidateProfiles(now, { emails: ranked.map((row) => row.email.trim().toLowerCase()) }),
+        await candidateProfiles(now, {
+          emails: ranked.map((row) => row.email.trim().toLowerCase()),
+        }),
         null,
       )
     : [];

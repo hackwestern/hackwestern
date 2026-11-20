@@ -95,7 +95,10 @@ export async function findSponsor(
   conn: Conn = db,
 ): Promise<{ id: string; name: string }> {
   const [sponsor] = await conn
-    .select({ id: sponsorJudgingSponsors.id, name: sponsorJudgingSponsors.name })
+    .select({
+      id: sponsorJudgingSponsors.id,
+      name: sponsorJudgingSponsors.name,
+    })
     .from(sponsorJudgingSponsors)
     .where(eq(sponsorJudgingSponsors.id, id.toLowerCase()));
   if (!sponsor) {
@@ -112,7 +115,9 @@ async function workshopsOf(
   try {
     const [snapshot, registered] = await Promise.all([
       getRunOfShow(),
-      conn.select({ name: sponsorJudgingSponsors.name }).from(sponsorJudgingSponsors),
+      conn
+        .select({ name: sponsorJudgingSponsors.name })
+        .from(sponsorJudgingSponsors),
     ]);
     const sheet = applySponsorNames(
       snapshot,
@@ -265,7 +270,10 @@ export async function loadSponsorSetup(
     partial: windows.partial,
     totals: setupTotals(
       format,
-      reps.map((r) => ({ chatsWanted: r.chatsWanted, availChats: availChats(r.free, windows) })),
+      reps.map((r) => ({
+        chatsWanted: r.chatsWanted,
+        availChats: availChats(r.free, windows),
+      })),
     ),
     confirmed: sent.length > 0,
   };

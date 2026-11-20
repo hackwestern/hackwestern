@@ -23,7 +23,14 @@ export type BoardDrag = {
   zoneHeight: number;
 };
 
-type Pending = { src: string; el: HTMLElement; x: number; y: number; kind: "mouse" | "touch"; timer?: ReturnType<typeof setTimeout> };
+type Pending = {
+  src: string;
+  el: HTMLElement;
+  x: number;
+  y: number;
+  kind: "mouse" | "touch";
+  timer?: ReturnType<typeof setTimeout>;
+};
 type Live = {
   src: string;
   ghost: HTMLElement;
@@ -65,9 +72,13 @@ export function useBoardDrag({
   enabledRef.current = enabled;
 
   const hitAt = (x: number, y: number): string | null => {
-    const el = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-remove-zone], [data-cell]");
+    const el = document
+      .elementFromPoint(x, y)
+      ?.closest<HTMLElement>("[data-remove-zone], [data-cell]");
     if (!el) return null;
-    return el.hasAttribute("data-remove-zone") ? "remove" : (el.dataset.cell ?? null);
+    return el.hasAttribute("data-remove-zone")
+      ? "remove"
+      : (el.dataset.cell ?? null);
   };
 
   const moveTo = useCallback((x: number, y: number) => {
@@ -119,12 +130,28 @@ export function useBoardDrag({
       document.body.appendChild(ghost);
       // "grabbing" everywhere and no text selection while dragging.
       const style = document.createElement("style");
-      style.textContent = "body,body *{cursor:grabbing!important;-webkit-user-select:none!important;user-select:none!important}";
+      style.textContent =
+        "body,body *{cursor:grabbing!important;-webkit-user-select:none!important;user-select:none!important}";
       document.head.appendChild(style);
       p.el.setAttribute("data-dragging", "");
       const bar = document.querySelector<HTMLElement>(barSelector);
-      live.current = { src: p.src, ghost, style, el: p.el, dx: x - r.left, dy: y - r.top, x, y, over: null, raf: 0 };
-      setDrag({ src: p.src, over: null, zoneHeight: Math.max(80, bar?.offsetHeight ?? 0) });
+      live.current = {
+        src: p.src,
+        ghost,
+        style,
+        el: p.el,
+        dx: x - r.left,
+        dy: y - r.top,
+        x,
+        y,
+        over: null,
+        raf: 0,
+      };
+      setDrag({
+        src: p.src,
+        over: null,
+        zoneHeight: Math.max(80, bar?.offsetHeight ?? 0),
+      });
       try {
         navigator.vibrate?.(10);
       } catch {
@@ -143,7 +170,10 @@ export function useBoardDrag({
             if (d.x < g.left + EDGE_X && box.scrollLeft > 0) {
               box.scrollLeft -= STEP;
               moved = true;
-            } else if (d.x > g.right - EDGE_X && box.scrollLeft < box.scrollWidth - box.clientWidth) {
+            } else if (
+              d.x > g.right - EDGE_X &&
+              box.scrollLeft < box.scrollWidth - box.clientWidth
+            ) {
               box.scrollLeft += STEP;
               moved = true;
             }
@@ -169,20 +199,33 @@ export function useBoardDrag({
   useEffect(() => {
     const target = (e: Event) => {
       if (!enabledRef.current) return null;
-      const el = (e.target as HTMLElement | null)?.closest?.<HTMLElement>("[data-drag][data-cell]");
+      const el = (e.target as HTMLElement | null)?.closest?.<HTMLElement>(
+        "[data-drag][data-cell]",
+      );
       return el ?? null;
     };
     // Mouse and pen.
     const down = (e: PointerEvent) => {
       if (e.pointerType === "touch" || e.button !== 0) return;
       const el = target(e);
-      if (el) pend.current = { src: el.dataset.cell!, el, x: e.clientX, y: e.clientY, kind: "mouse" };
+      if (el)
+        pend.current = {
+          src: el.dataset.cell!,
+          el,
+          x: e.clientX,
+          y: e.clientY,
+          kind: "mouse",
+        };
     };
     const move = (e: PointerEvent) => {
       if (e.pointerType === "touch") return;
       if (live.current) return moveTo(e.clientX, e.clientY);
       const p = pend.current;
-      if (p?.kind === "mouse" && Math.hypot(e.clientX - p.x, e.clientY - p.y) > 5) start(p, e.clientX, e.clientY);
+      if (
+        p?.kind === "mouse" &&
+        Math.hypot(e.clientX - p.x, e.clientY - p.y) > 5
+      )
+        start(p, e.clientX, e.clientY);
     };
     const up = (e: PointerEvent) => {
       if (e.pointerType === "touch") return;
@@ -209,7 +252,13 @@ export function useBoardDrag({
       const el = target(e);
       if (!el) return;
       const t = e.touches[0]!;
-      const p: Pending = { src: el.dataset.cell!, el, x: t.clientX, y: t.clientY, kind: "touch" };
+      const p: Pending = {
+        src: el.dataset.cell!,
+        el,
+        x: t.clientX,
+        y: t.clientY,
+        kind: "touch",
+      };
       p.timer = setTimeout(() => {
         if (pend.current === p) start(p, p.x, p.y);
       }, 250);
@@ -251,7 +300,11 @@ export function useBoardDrag({
       end(false);
     };
     const menu = (e: Event) => {
-      if (live.current !== null || (pend.current !== null && target(e) !== null)) e.preventDefault();
+      if (
+        live.current !== null ||
+        (pend.current !== null && target(e) !== null)
+      )
+        e.preventDefault();
     };
     const key = (e: KeyboardEvent) => {
       if (e.key === "Escape" && live.current) {

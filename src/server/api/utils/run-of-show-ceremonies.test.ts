@@ -12,7 +12,10 @@ import {
 // Copy of the "Opening + Closing Ceremonies" tab (sheet export, 2026-11-14).
 const CEREMONIES: string[][] = [
   ["Task", "Who", "Notes"],
-  ["Make sure all speakers are there for each company and tell them their order", "Noah"],
+  [
+    "Make sure all speakers are there for each company and tell them their order",
+    "Noah",
+  ],
   [],
   ["Opening Speakers"],
   ["Company", "Speaker"],
@@ -33,10 +36,22 @@ const WORKSHOPS: string[][] = [
   ["Workshop", "Description", "Notes"],
   ["MLH"],
   ["Scotiabank Workshop 1"],
-  ["Canada Life: Women in Technology Panel", "Join a panel of accomplished women working across technology."],
-  ["Sun Life Workshop 1: Don't Wait for AI to Happen to You", "This session is designed to inspire."],
-  ["QNX: Intro to QNX: Foundational Software for Embedded Systems", "A high-level overview of QNX."],
-  ["TinyFish: Build your first AI web agent with TinyFish", "A fun, no-pressure hour."],
+  [
+    "Canada Life: Women in Technology Panel",
+    "Join a panel of accomplished women working across technology.",
+  ],
+  [
+    "Sun Life Workshop 1: Don't Wait for AI to Happen to You",
+    "This session is designed to inspire.",
+  ],
+  [
+    "QNX: Intro to QNX: Foundational Software for Embedded Systems",
+    "A high-level overview of QNX.",
+  ],
+  [
+    "TinyFish: Build your first AI web agent with TinyFish",
+    "A fun, no-pressure hour.",
+  ],
   ["Scotiabank Workshop 2"],
   [],
   ["Notes", "Noah will make sure hosts are there!"],
@@ -49,7 +64,9 @@ describe("parseCeremoniesTab (real layout)", () => {
   const segments = parseCeremoniesTab(CEREMONIES);
 
   test("reads both sections in row order, skipping the task table", () => {
-    expect(segments.map((s) => `${s.ceremony} ${s.order} ${s.sponsor}`)).toEqual([
+    expect(
+      segments.map((s) => `${s.ceremony} ${s.order} ${s.sponsor}`),
+    ).toEqual([
       "opening 1 Canada Life",
       "opening 2 Manulife",
       "opening 3 QNX",
@@ -75,11 +92,23 @@ describe("parseCeremoniesTab (real layout)", () => {
 
   test("applySponsorNames maps to registered names and keeps unknown companies", () => {
     const named = applySponsorNames(
-      { items: [], tasks: [], coffeeChats: [], workshops: [], ceremonies: segments },
+      {
+        items: [],
+        tasks: [],
+        coffeeChats: [],
+        workshops: [],
+        ceremonies: segments,
+      },
       NAMES,
     );
     expect(named.ceremonies.map((s) => s.sponsor)).toEqual([
-      "Canada Life", "Manulife", "QNX", "Scotiabank", "Sun Life", "Scotiabank", "Sun Life",
+      "Canada Life",
+      "Manulife",
+      "QNX",
+      "Scotiabank",
+      "Sun Life",
+      "Scotiabank",
+      "Sun Life",
     ]);
   });
 });
@@ -89,17 +118,34 @@ describe("parseCeremoniesTab (columns organizers may add)", () => {
     const segments = parseCeremoniesTab([
       ["Closing Ceremony"],
       ["#", "Time", "Sponsor", "Topic", "Speakers", "Duration"],
-      ["2", "4:05 PM", "QNX", "Prize: best embedded hack", "Ana\nBo; Cy", "2 min"],
+      [
+        "2",
+        "4:05 PM",
+        "QNX",
+        "Prize: best embedded hack",
+        "Ana\nBo; Cy",
+        "2 min",
+      ],
       ["1", "4:00 PM", "Scotiabank", "Prize: best fintech hack", "Dee", "5"],
     ]);
     expect(segments).toEqual([
       {
-        ceremony: "closing", order: 1, start: "16:00", durationMinutes: 5,
-        title: "Prize: best fintech hack", sponsor: "Scotiabank", speakers: ["Dee"],
+        ceremony: "closing",
+        order: 1,
+        start: "16:00",
+        durationMinutes: 5,
+        title: "Prize: best fintech hack",
+        sponsor: "Scotiabank",
+        speakers: ["Dee"],
       },
       {
-        ceremony: "closing", order: 2, start: "16:05", durationMinutes: 2,
-        title: "Prize: best embedded hack", sponsor: "QNX", speakers: ["Ana", "Bo", "Cy"],
+        ceremony: "closing",
+        order: 2,
+        start: "16:05",
+        durationMinutes: 2,
+        title: "Prize: best embedded hack",
+        sponsor: "QNX",
+        speakers: ["Ana", "Bo", "Cy"],
       },
     ]);
   });
@@ -136,8 +182,13 @@ describe("parseWorkshopsTab", () => {
       "Scotiabank Workshop 2",
     ]);
     expect(workshops[0]).toEqual({
-      title: "MLH", sponsor: null, runners: [], day: null, start: null,
-      room: null, description: null,
+      title: "MLH",
+      sponsor: null,
+      runners: [],
+      day: null,
+      start: null,
+      room: null,
+      description: null,
     });
     expect(workshops[2]?.description).toMatch(/^Join a panel/);
   });
@@ -145,11 +196,24 @@ describe("parseWorkshopsTab", () => {
   test("optional Runner(s)/Day/Time/Room/Sponsor columns", () => {
     const [w] = parseWorkshopsTab([
       ["Title", "Sponsor", "Runner(s)", "Day", "Time", "Room", "Description"],
-      ["Intro to QNX", "QNX", "Ana Li\nBo Chen", "Sat", "3:30 PM", "Rm 2230", "Overview"],
+      [
+        "Intro to QNX",
+        "QNX",
+        "Ana Li\nBo Chen",
+        "Sat",
+        "3:30 PM",
+        "Rm 2230",
+        "Overview",
+      ],
     ]);
     expect(w).toEqual({
-      title: "Intro to QNX", sponsor: "QNX", runners: ["Ana Li", "Bo Chen"],
-      day: "Saturday", start: "15:30", room: "Rm 2230", description: "Overview",
+      title: "Intro to QNX",
+      sponsor: "QNX",
+      runners: ["Ana Li", "Bo Chen"],
+      day: "Saturday",
+      start: "15:30",
+      room: "Rm 2230",
+      description: "Overview",
     });
   });
 
@@ -166,8 +230,14 @@ describe("workshop times from RUN OF SHOW", () => {
     title: string,
     location: string | null,
   ): RunOfShowItem => ({
-    id: `${day}-${start}`, day, start, end: start, column: "sponsor-workshop",
-    title, location, sponsors: [],
+    id: `${day}-${start}`,
+    day,
+    start,
+    end: start,
+    column: "sponsor-workshop",
+    title,
+    location,
+    sponsors: [],
   });
   const items = [
     block("Friday", "22:00", "MLH Workshop", "Rm 2230 (50)"),
@@ -175,13 +245,21 @@ describe("workshop times from RUN OF SHOW", () => {
     block("Saturday", "13:00", "Canada Life Workshop", "2230 (50)"),
     block("Saturday", "14:30", "Sunlife Workshop", "2230 (50)"),
     block("Saturday", "20:30", "Scotiabank Workshop", "Rm 2230 (50)"),
-    block("Sunday", "10:00", "Sponsor Track Judging", "Scotiabank: Rm 2110, Canada Life: Rm 2230"),
+    block(
+      "Sunday",
+      "10:00",
+      "Sponsor Track Judging",
+      "Scotiabank: Rm 2110, Canada Life: Rm 2230",
+    ),
   ];
 
   test("the Nth workshop row takes the sponsor's Nth block; judging is skipped", () => {
     const named = applySponsorNames(
       {
-        items, tasks: [], coffeeChats: [], ceremonies: [],
+        items,
+        tasks: [],
+        coffeeChats: [],
+        ceremonies: [],
         workshops: parseWorkshopsTab(WORKSHOPS),
       },
       NAMES,
@@ -191,8 +269,12 @@ describe("workshop times from RUN OF SHOW", () => {
       return `${w?.sponsor} ${w?.day} ${w?.start} ${w?.room}`;
     };
     expect(at("MLH")).toBe("null Friday 22:00 Rm 2230 (50)");
-    expect(at("Scotiabank Workshop 1")).toBe("Scotiabank Saturday 10:00 2230 (50)");
-    expect(at("Scotiabank Workshop 2")).toBe("Scotiabank Saturday 20:30 Rm 2230 (50)");
+    expect(at("Scotiabank Workshop 1")).toBe(
+      "Scotiabank Saturday 10:00 2230 (50)",
+    );
+    expect(at("Scotiabank Workshop 2")).toBe(
+      "Scotiabank Saturday 20:30 Rm 2230 (50)",
+    );
     expect(at("Sun Life")).toBe("Sun Life Saturday 14:30 2230 (50)");
     // QNX has no block of its own in this fixture.
     expect(at("QNX")).toBe("QNX null null null");
@@ -200,10 +282,17 @@ describe("workshop times from RUN OF SHOW", () => {
 
   test("times already on the Workshops tab win", () => {
     const [w] = attachWorkshopTimes(
-      [{
-        title: "X", sponsor: "Scotiabank", runners: [], day: "Sunday",
-        start: "09:00", room: "Rm 1", description: null,
-      }],
+      [
+        {
+          title: "X",
+          sponsor: "Scotiabank",
+          runners: [],
+          day: "Sunday",
+          start: "09:00",
+          room: "Rm 1",
+          description: null,
+        },
+      ],
       [{ ...items[1]!, sponsors: ["Scotiabank"] }],
     );
     expect(w).toMatchObject({ day: "Sunday", start: "09:00", room: "Rm 1" });

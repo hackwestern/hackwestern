@@ -113,7 +113,10 @@ function findMerge(
 ): SheetMerge | undefined {
   return merges.find(
     (m) =>
-      row >= m.startRow && row < m.endRow && col >= m.startCol && col < m.endCol,
+      row >= m.startRow &&
+      row < m.endRow &&
+      col >= m.startCol &&
+      col < m.endCol,
   );
 }
 
@@ -151,7 +154,10 @@ export function parseRunOfShowTab(
   const taskPairs: { task: number; owner: number | null }[] = [];
   headers.forEach((h, col) => {
     if (h === "task") {
-      taskPairs.push({ task: col, owner: headers[col + 1] === "owner" ? col + 1 : null });
+      taskPairs.push({
+        task: col,
+        owner: headers[col + 1] === "owner" ? col + 1 : null,
+      });
     }
   });
 
@@ -411,7 +417,10 @@ export function parseCeremoniesTab(grid: SheetGrid): CeremonySegment[] {
     const keys = row.map(headerKey);
     const sponsorCol = findColumn(keys, CEREMONY_HEADERS.sponsor);
     const speakersCol = findColumn(keys, CEREMONY_HEADERS.speakers);
-    if (sponsorCol >= 0 && (speakersCol >= 0 || findColumn(keys, CEREMONY_HEADERS.title) >= 0)) {
+    if (
+      sponsorCol >= 0 &&
+      (speakersCol >= 0 || findColumn(keys, CEREMONY_HEADERS.title) >= 0)
+    ) {
       cols = {
         sponsor: sponsorCol,
         speakers: speakersCol,
@@ -436,7 +445,10 @@ export function parseCeremoniesTab(grid: SheetGrid): CeremonySegment[] {
     if (!ceremony || (!company && !topic)) continue;
 
     const durationText = /\(([^)]*\d[^)]*)\)/.exec(company)?.[1] ?? "";
-    const sponsor = company.replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
+    const sponsor = company
+      .replace(/\([^)]*\)/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
     const order = Number.parseInt(at(cols.order), 10);
     count[ceremony] += 1;
     segments.push({
@@ -483,9 +495,20 @@ const WORKSHOP_HEADERS = {
   description: ["description", "abstract", "blurb", "details"],
   sponsor: ["sponsor", "company"],
   runners: [
-    "runner", "runners", "runby", "host", "hosts", "hostedby", "speaker",
-    "speakers", "presenter", "presenters", "facilitator", "facilitators",
-    "lead", "leads",
+    "runner",
+    "runners",
+    "runby",
+    "host",
+    "hosts",
+    "hostedby",
+    "speaker",
+    "speakers",
+    "presenter",
+    "presenters",
+    "facilitator",
+    "facilitators",
+    "lead",
+    "leads",
   ],
   day: ["day"],
   start: ["time", "start", "starttime", "timeest"],
@@ -495,11 +518,16 @@ const WORKSHOP_HEADERS = {
 /** Parse the Workshops tab. Never throws: an unknown layout is []. */
 export function parseWorkshopsTab(grid: SheetGrid): WorkshopInfo[] {
   const headerRow = grid.findIndex(
-    (row) => findColumn((row ?? []).map((c) => headerKey(String(c ?? ""))), WORKSHOP_HEADERS.title) >= 0,
+    (row) =>
+      findColumn(
+        (row ?? []).map((c) => headerKey(String(c ?? ""))),
+        WORKSHOP_HEADERS.title,
+      ) >= 0,
   );
   if (headerRow < 0) return [];
   const keys = (grid[headerRow] ?? []).map((c) => headerKey(String(c ?? "")));
-  const col = (k: keyof typeof WORKSHOP_HEADERS) => findColumn(keys, WORKSHOP_HEADERS[k]);
+  const col = (k: keyof typeof WORKSHOP_HEADERS) =>
+    findColumn(keys, WORKSHOP_HEADERS[k]);
   const cols = {
     title: col("title"),
     description: col("description"),

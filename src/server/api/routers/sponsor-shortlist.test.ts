@@ -39,11 +39,22 @@ async function withSeats(sponsorId: string, seats: number) {
     .values({ sponsorId, hackersPerChat: 1, submittedAt: new Date() });
   const [rep] = await db
     .insert(coffeeChatReps)
-    .values({ sponsorId, name: "Dana", phone: "5195550142", isPrimary: true, chatsWanted: seats })
+    .values({
+      sponsorId,
+      name: "Dana",
+      phone: "5195550142",
+      isPrimary: true,
+      chatsWanted: seats,
+    })
     .returning();
   await db
     .insert(coffeeChatRepSessions)
-    .values(["10", "11", "15", "16"].map((sessionId) => ({ repId: rep!.id, sessionId })));
+    .values(
+      ["10", "11", "15", "16"].map((sessionId) => ({
+        repId: rep!.id,
+        sessionId,
+      })),
+    );
 }
 
 async function hackerRanking(
@@ -155,7 +166,9 @@ describe("sponsorShortlist.add / remove", () => {
     const rankedNobody = await hackerRanking(null, true);
     await anon.sponsorShortlist.add({ sponsor: mine.id, userId: rankedOther });
     const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
-    expect(res.hackers.find((h) => h.userId === rankedOther)?.shortlisted).toBe(true);
+    expect(res.hackers.find((h) => h.userId === rankedOther)?.shortlisted).toBe(
+      true,
+    );
     expect(res.picked).toBe(1);
     // The one seat is taken.
     await expect(
@@ -192,7 +205,9 @@ describe("sponsorShortlist: seats, submit, scanned", () => {
     await expect(
       anon.sponsorShortlist.add({ sponsor: mine.id, userId: b }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
-    expect((await anon.sponsorShortlist.list({ sponsor: mine.id })).maxShortlist).toBe(1);
+    expect(
+      (await anon.sponsorShortlist.list({ sponsor: mine.id })).maxShortlist,
+    ).toBe(1);
   });
 
   test("shortlist submit, reopen and picks leave coffee_chat_pref.updated_at alone", async () => {
@@ -200,7 +215,12 @@ describe("sponsorShortlist: seats, submit, scanned", () => {
     await withSeats(mine.id, 4);
     const a = await hackerRanking(mine.id, true);
     const updatedAt = async () =>
-      (await db.select().from(coffeeChatPrefs).where(eq(coffeeChatPrefs.sponsorId, mine.id)))[0]!.updatedAt.getTime();
+      (
+        await db
+          .select()
+          .from(coffeeChatPrefs)
+          .where(eq(coffeeChatPrefs.sponsorId, mine.id))
+      )[0]!.updatedAt.getTime();
     const before = await updatedAt();
     await new Promise((r) => setTimeout(r, 5));
     await anon.sponsorShortlist.add({ sponsor: mine.id, userId: a });
@@ -214,7 +234,9 @@ describe("sponsorShortlist: seats, submit, scanned", () => {
     const mine = await sponsor();
     await withSeats(mine.id, 2);
     const scannedOne = await hackerRanking(null, true);
-    await db.insert(sponsorScans).values({ sponsorId: mine.id, userId: scannedOne });
+    await db
+      .insert(sponsorScans)
+      .values({ sponsorId: mine.id, userId: scannedOne });
     const a = await hackerRanking(mine.id, true);
     const b = await hackerRanking(mine.id, true);
     const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
@@ -233,11 +255,17 @@ describe("sponsorShortlist: seats, submit, scanned", () => {
       await hackerRanking(mine.id, true),
       await hackerRanking(mine.id, true),
     ];
-    for (const userId of ids) await anon.sponsorShortlist.add({ sponsor: mine.id, userId });
-    await db.update(coffeeChatReps).set({ chatsWanted: 1 }).where(eq(coffeeChatReps.sponsorId, mine.id));
+    for (const userId of ids)
+      await anon.sponsorShortlist.add({ sponsor: mine.id, userId });
+    await db
+      .update(coffeeChatReps)
+      .set({ chatsWanted: 1 })
+      .where(eq(coffeeChatReps.sponsorId, mine.id));
     const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
     expect([res.picked, res.maxShortlist]).toEqual([3, 1]);
-    await expect(anon.sponsorShortlist.submit({ sponsor: mine.id })).rejects.toMatchObject({
+    await expect(
+      anon.sponsorShortlist.submit({ sponsor: mine.id }),
+    ).rejects.toMatchObject({
       code: "CONFLICT",
       message: "You now have room for 1 on your shortlist. Remove 2.",
     });
@@ -270,7 +298,11 @@ describe("sponsorShortlist: seats, submit, scanned", () => {
     const scannedPrivate = await hackerRanking(null, false);
     await db.insert(sponsorScans).values([
       { sponsorId: mine.id, userId: scannedShared, repName: "Dana" },
-      { sponsorId: mine.id, userId: scannedPrivate, scannedAt: new Date(Date.now() + 1000) },
+      {
+        sponsorId: mine.id,
+        userId: scannedPrivate,
+        scannedAt: new Date(Date.now() + 1000),
+      },
     ]);
     const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
     expect(res.scanned.map((h) => [h.name, h.repName])).toEqual([
@@ -362,19 +394,37 @@ describe("sponsorShortlist.search", () => {
       last: `Turing${tag}`,
     });
 
-    const byLast = await anon.sponsorShortlist.search({ sponsor: mine.id, q: `lovelace${tag}` });
+    const byLast = await anon.sponsorShortlist.search({
+      sponsor: mine.id,
+      q: `lovelace${tag}`,
+    });
     expect(byLast.map((h) => [h.userId, h.name, h.shared])).toEqual([
       [shared, `Ada${tag} Lovelace${tag}`, true],
     ]);
     // A private hacker's last name never matches, and never shows.
-    expect(await anon.sponsorShortlist.search({ sponsor: mine.id, q: `hopper${tag}` })).toEqual([]);
-    const byFirst = await anon.sponsorShortlist.search({ sponsor: mine.id, q: `grace${tag}` });
-    expect(byFirst.map((h) => [h.userId, h.name, h.shared, h.team, h.github])).toEqual([
-      [hidden, `Grace${tag}`, false, null, null],
-    ]);
+    expect(
+      await anon.sponsorShortlist.search({
+        sponsor: mine.id,
+        q: `hopper${tag}`,
+      }),
+    ).toEqual([]);
+    const byFirst = await anon.sponsorShortlist.search({
+      sponsor: mine.id,
+      q: `grace${tag}`,
+    });
+    expect(
+      byFirst.map((h) => [h.userId, h.name, h.shared, h.team, h.github]),
+    ).toEqual([[hidden, `Grace${tag}`, false, null, null]]);
     // Not admitted: not found.
-    expect(await anon.sponsorShortlist.search({ sponsor: mine.id, q: `turing${tag}` })).toEqual([]);
-    expect(await anon.sponsorShortlist.search({ sponsor: mine.id, q: `alan${tag}` })).toEqual([]);
+    expect(
+      await anon.sponsorShortlist.search({
+        sponsor: mine.id,
+        q: `turing${tag}`,
+      }),
+    ).toEqual([]);
+    expect(
+      await anon.sponsorShortlist.search({ sponsor: mine.id, q: `alan${tag}` }),
+    ).toEqual([]);
   });
 
   test("needs at least 2 characters, and % matches literally", async () => {
@@ -382,6 +432,8 @@ describe("sponsorShortlist.search", () => {
     await expect(
       anon.sponsorShortlist.search({ sponsor: mine.id, q: "a" }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    expect(await anon.sponsorShortlist.search({ sponsor: mine.id, q: "%%" })).toEqual([]);
+    expect(
+      await anon.sponsorShortlist.search({ sponsor: mine.id, q: "%%" }),
+    ).toEqual([]);
   });
 });

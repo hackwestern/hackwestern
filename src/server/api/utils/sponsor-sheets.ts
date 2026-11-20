@@ -301,7 +301,10 @@ export async function sharedSheetRead<T>(
     })
     .catch((error: unknown) => {
       if (slot.at > 0) {
-        console.warn(`Sheet read "${key}" failed; using the last good copy`, error);
+        console.warn(
+          `Sheet read "${key}" failed; using the last good copy`,
+          error,
+        );
         return slot.value as T;
       }
       throw error;
@@ -342,7 +345,10 @@ export async function fetchSponsorDayOfTab(
     .catch((error: unknown) => {
       // Google refused (often the per-minute limit): keep the last good copy.
       if (cached?.spreadsheetId === spreadsheetId) {
-        console.warn("Sponsor Day-Of read failed; using the last good copy", error);
+        console.warn(
+          "Sponsor Day-Of read failed; using the last good copy",
+          error,
+        );
         return cached.value;
       }
       throw error;
@@ -573,7 +579,10 @@ export function chattingMinutesOf(raw: string): number | null {
 }
 
 export function normalizeTier(raw: string): string {
-  const tier = raw.trim().replace(/\s*sponsors?$/i, "").trim();
+  const tier = raw
+    .trim()
+    .replace(/\s*sponsors?$/i, "")
+    .trim();
   return /^(|-+|—|n\/?a|tbd|none)$/i.test(tier) ? "" : tier;
 }
 

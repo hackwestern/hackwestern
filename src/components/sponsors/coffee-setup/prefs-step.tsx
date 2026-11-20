@@ -14,7 +14,11 @@ import {
   setupTotals,
   setupWindows,
 } from "~/lib/coffee-chat-setup";
-import { MAX_HACKERS_PER_CHAT, MIN_HACKERS_PER_CHAT, isSessionId } from "~/lib/coffee-chat-sessions";
+import {
+  MAX_HACKERS_PER_CHAT,
+  MIN_HACKERS_PER_CHAT,
+  isSessionId,
+} from "~/lib/coffee-chat-sessions";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { AvailabilityGrid } from "./availability-grid";
@@ -49,7 +53,10 @@ const snapshotOf = (d: Draft) => ({
 });
 
 /** 1-on-1s are always 15 minutes now (no "longer chats", Q1–Q11). */
-const formatOf = (hackersPerChat: number) => ({ hackersPerChat, longerOneOnOne: false });
+const formatOf = (hackersPerChat: number) => ({
+  hackersPerChat,
+  longerOneOnOne: false,
+});
 
 /**
  * Step 2: hackers per chat, when each rep is free, how many chats each rep
@@ -113,7 +120,9 @@ export function PrefsStep({
         const ids = new Set(fresh.reps.map((r) => r.id));
         setDraft((x) => ({
           ...x,
-          reps: Object.fromEntries(Object.entries(x.reps).filter(([id]) => ids.has(id))),
+          reps: Object.fromEntries(
+            Object.entries(x.reps).filter(([id]) => ids.has(id)),
+          ),
         }));
       }
       // Their own save may move or drop sent chats: seen, not "Organizers …".
@@ -121,7 +130,8 @@ export function PrefsStep({
       return true;
     } catch (e) {
       dirty.current = true;
-      const msg = e instanceof Error ? e.message : sponsorSetupCopy.errors.saveError;
+      const msg =
+        e instanceof Error ? e.message : sponsorSetupCopy.errors.saveError;
       setError(msg);
       setRetrying(true);
       announce(copy.retrying);
@@ -165,14 +175,24 @@ export function PrefsStep({
       },
       // Hackers in the sent chats this edit changes, against what's saved.
       data.confirmed
-        ? invitesAffected(data.chats, data.workshops, snapshotOf(draftOf(data)), snapshotOf(fn(latest.current)))
+        ? invitesAffected(
+            data.chats,
+            data.workshops,
+            snapshotOf(draftOf(data)),
+            snapshotOf(fn(latest.current)),
+          )
         : 0,
     );
 
   /** A rep's draft row, or their saved values (a rep added since the draft). */
   const repDraft = (d: Draft, repId: string) => {
     const saved = data.reps.find((r) => r.id === repId);
-    return d.reps[repId] ?? { chatsWanted: saved?.chatsWanted ?? 0, free: saved?.free ?? [] };
+    return (
+      d.reps[repId] ?? {
+        chatsWanted: saved?.chatsWanted ?? 0,
+        free: saved?.free ?? [],
+      }
+    );
   };
 
   const go = async (href: string) => {
@@ -184,9 +204,17 @@ export function PrefsStep({
   // For the chat length picked above: a cut session holds fewer chats.
   const windows = setupWindows(data.workshops, minutes);
   const repState = data.reps.map((rep) => {
-    const r = draft.reps[rep.id] ?? { chatsWanted: rep.chatsWanted, free: rep.free };
+    const r = draft.reps[rep.id] ?? {
+      chatsWanted: rep.chatsWanted,
+      free: rep.free,
+    };
     const avail = availableFree(r.free, windows.blocked).length;
-    return { rep, ...r, avail, cap: repChatCap(r.chatsWanted, availChats(r.free, windows)) };
+    return {
+      rep,
+      ...r,
+      avail,
+      cap: repChatCap(r.chatsWanted, availChats(r.free, windows)),
+    };
   });
   // The tier's chatting hours across every rep (null = no limit).
   const usedMinutes = repState.reduce((n, r) => n + r.chatsWanted, 0) * minutes;
@@ -195,13 +223,18 @@ export function PrefsStep({
   const roomForOne = maxMinutes === null || usedMinutes + minutes <= maxMinutes;
   const totals = setupTotals(
     format,
-    repState.map((r) => ({ chatsWanted: r.chatsWanted, availChats: availChats(r.free, windows) })),
+    repState.map((r) => ({
+      chatsWanted: r.chatsWanted,
+      availChats: availChats(r.free, windows),
+    })),
   );
 
   if (data.reps.length === 0) {
     return (
       <section className={cardClass}>
-        <p className="m-0 text-base text-dashboard-text-medium">{copy.noReps}</p>
+        <p className="m-0 text-base text-dashboard-text-medium">
+          {copy.noReps}
+        </p>
         <LinkButton href={teamHref}>{sponsorSetupCopy.team.add}</LinkButton>
       </section>
     );
@@ -212,11 +245,18 @@ export function PrefsStep({
       {region}
       {dialog}
       <div className="flex flex-col gap-1.5">
-        <h2 id="prefs-heading" className="m-0 text-[22px] font-bold leading-tight text-dashboard-text-heavy">{copy.heading}</h2>
+        <h2
+          id="prefs-heading"
+          className="m-0 text-[22px] font-bold leading-tight text-dashboard-text-heavy"
+        >
+          {copy.heading}
+        </h2>
         <p className="m-0 text-sm text-dashboard-text-light">{copy.intro}</p>
       </div>
       {data.submittedAt && !data.confirmed && (
-        <Note icon={<Info aria-hidden />}>{sponsorSetupCopy.prefsFlow.editNote}</Note>
+        <Note icon={<Info aria-hidden />}>
+          {sponsorSetupCopy.prefsFlow.editNote}
+        </Note>
       )}
 
       {/* Q1 */}
@@ -225,8 +265,15 @@ export function PrefsStep({
           <Num n={1} />
           {copy.q1}
         </legend>
-        <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={copy.q1Label}>
-          {Array.from({ length: MAX_HACKERS_PER_CHAT - MIN_HACKERS_PER_CHAT + 1 }, (_, i) => i + MIN_HACKERS_PER_CHAT).map((n) => {
+        <div
+          className="flex flex-wrap gap-2"
+          role="radiogroup"
+          aria-label={copy.q1Label}
+        >
+          {Array.from(
+            { length: MAX_HACKERS_PER_CHAT - MIN_HACKERS_PER_CHAT + 1 },
+            (_, i) => i + MIN_HACKERS_PER_CHAT,
+          ).map((n) => {
             const on = draft.hackersPerChat === n;
             return (
               <button
@@ -234,7 +281,9 @@ export function PrefsStep({
                 type="button"
                 role="radio"
                 aria-checked={on}
-                onClick={() => !on && edit((d) => ({ ...d, hackersPerChat: n }))}
+                onClick={() =>
+                  !on && edit((d) => ({ ...d, hackersPerChat: n }))
+                }
                 className={cn(
                   "size-12 rounded-dashboard-md border text-lg font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary focus-visible:ring-offset-2",
                   on
@@ -248,8 +297,12 @@ export function PrefsStep({
             );
           })}
         </div>
-        <p className="m-0 text-base font-semibold text-dashboard-text-link">{copy.format(draft.hackersPerChat)}</p>
-        <p className="m-0 text-sm text-dashboard-text-light">{copy.formatHint}</p>
+        <p className="m-0 text-base font-semibold text-dashboard-text-link">
+          {copy.format(draft.hackersPerChat)}
+        </p>
+        <p className="m-0 text-sm text-dashboard-text-light">
+          {copy.formatHint}
+        </p>
       </fieldset>
 
       <hr className="m-0 border-dashboard-border-subtle" />
@@ -261,7 +314,9 @@ export function PrefsStep({
           {copy.q2}
         </h3>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="m-0 text-base text-dashboard-text-medium">{copy.q2Hint}</p>
+          <p className="m-0 text-base text-dashboard-text-medium">
+            {copy.q2Hint}
+          </p>
           <button
             type="button"
             onClick={() => void go(teamHref)}
@@ -274,7 +329,9 @@ export function PrefsStep({
           data={data}
           windows={windows}
           free={Object.fromEntries(repState.map((r) => [r.rep.id, r.free]))}
-          chatsWanted={Object.fromEntries(repState.map((r) => [r.rep.id, r.chatsWanted]))}
+          chatsWanted={Object.fromEntries(
+            repState.map((r) => [r.rep.id, r.chatsWanted]),
+          )}
           onToggle={(repId, sessionId) =>
             edit((d) => {
               const r = repDraft(d, repId);
@@ -295,13 +352,17 @@ export function PrefsStep({
           <Num n={3} />
           {copy.q3}
         </h3>
-        <p className="m-0 text-base text-dashboard-text-medium">{copy.q3Hint}</p>
+        <p className="m-0 text-base text-dashboard-text-medium">
+          {copy.q3Hint}
+        </p>
         {maxMinutes !== null && (
           <p
             role={overTier ? "alert" : undefined}
             className={cn(
               "m-0 text-base font-semibold",
-              overTier ? "text-dashboard-text-warning" : "text-dashboard-text-active",
+              overTier
+                ? "text-dashboard-text-warning"
+                : "text-dashboard-text-active",
             )}
           >
             {overTier
@@ -314,7 +375,10 @@ export function PrefsStep({
             const setChats = (n: number) =>
               edit((d) => ({
                 ...d,
-                reps: { ...d.reps, [rep.id]: { ...repDraft(d, rep.id), chatsWanted: n } },
+                reps: {
+                  ...d.reps,
+                  [rep.id]: { ...repDraft(d, rep.id), chatsWanted: n },
+                },
               }));
             const note =
               chatsWanted > 0 && avail === 0
@@ -323,33 +387,57 @@ export function PrefsStep({
                   ? copy.capped(rep.name, avail, cap)
                   : null;
             return (
-              <li key={rep.id} className="flex flex-col gap-2 border-b border-dashboard-border-subtle p-3 last:border-b-0">
+              <li
+                key={rep.id}
+                className="flex flex-col gap-2 border-b border-dashboard-border-subtle p-3 last:border-b-0"
+              >
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <span className="min-w-0 break-words text-base font-semibold text-dashboard-text-heavy">{rep.name}</span>
+                  <span className="min-w-0 break-words text-base font-semibold text-dashboard-text-heavy">
+                    {rep.name}
+                  </span>
                   <span className="flex items-center gap-3">
                     <span className="flex items-center rounded-dashboard-md border border-dashboard-border-control">
-                      <StepBtn label={copy.fewer(rep.name)} disabled={chatsWanted <= 0} onClick={() => setChats(chatsWanted - 1)}>
+                      <StepBtn
+                        label={copy.fewer(rep.name)}
+                        disabled={chatsWanted <= 0}
+                        onClick={() => setChats(chatsWanted - 1)}
+                      >
                         <Minus aria-hidden className="size-4" />
                       </StepBtn>
-                      <output aria-label={copy.chatsLabel(rep.name)} className="w-8 text-center text-lg font-semibold tabular-nums text-dashboard-text-heavy">
+                      <output
+                        aria-label={copy.chatsLabel(rep.name)}
+                        className="w-8 text-center text-lg font-semibold tabular-nums text-dashboard-text-heavy"
+                      >
                         {chatsWanted}
                       </output>
-                      <StepBtn label={copy.more(rep.name)} disabled={chatsWanted >= MAX_SETUP_CHATS || !roomForOne} onClick={() => setChats(chatsWanted + 1)}>
+                      <StepBtn
+                        label={copy.more(rep.name)}
+                        disabled={chatsWanted >= MAX_SETUP_CHATS || !roomForOne}
+                        onClick={() => setChats(chatsWanted + 1)}
+                      >
                         <Plus aria-hidden className="size-4" />
                       </StepBtn>
                     </span>
                     <span
                       className={cn(
                         "min-w-[9rem] text-sm font-semibold",
-                        chatsWanted > 0 && avail === 0 ? "text-dashboard-text-warning" : "text-dashboard-text-link",
+                        chatsWanted > 0 && avail === 0
+                          ? "text-dashboard-text-warning"
+                          : "text-dashboard-text-link",
                       )}
                       aria-live="polite"
                     >
-                      {chatsWanted > 0 && avail === 0 ? copy.noFreeTime : copy.chatsAndTime(chatsWanted, minutes)}
+                      {chatsWanted > 0 && avail === 0
+                        ? copy.noFreeTime
+                        : copy.chatsAndTime(chatsWanted, minutes)}
                     </span>
                   </span>
                 </div>
-                {note && <p className="m-0 text-sm text-dashboard-text-warning">{note}</p>}
+                {note && (
+                  <p className="m-0 text-sm text-dashboard-text-warning">
+                    {note}
+                  </p>
+                )}
               </li>
             );
           })}
@@ -360,26 +448,42 @@ export function PrefsStep({
       </div>
 
       {error && (
-        <p role="alert" className="m-0 text-sm font-semibold text-dashboard-text-warning">{error}</p>
+        <p
+          role="alert"
+          className="m-0 text-sm font-semibold text-dashboard-text-warning"
+        >
+          {error}
+        </p>
       )}
 
       <StepFooter
         back={
-          <DashboardButton variant="outline" className={cn("h-11 text-base", pressable)} onClick={() => void go(teamHref)}>
+          <DashboardButton
+            variant="outline"
+            className={cn("h-11 text-base", pressable)}
+            onClick={() => void go(teamHref)}
+          >
             {sponsorSetupCopy.backStep}
           </DashboardButton>
         }
         note={
           retrying ? (
-            <span className="font-semibold text-dashboard-text-warning">{copy.retrying}</span>
+            <span className="font-semibold text-dashboard-text-warning">
+              {copy.retrying}
+            </span>
           ) : save.isPending ? (
             copy.saving
           ) : saved ? (
-            <span className="font-semibold text-dashboard-text-heavy">{copy.saved}</span>
+            <span className="font-semibold text-dashboard-text-heavy">
+              {copy.saved}
+            </span>
           ) : undefined
         }
         primary={
-          <DashboardButton className={cn("min-h-11 md:h-11", pressable)} onClick={() => void go(nextHref)}>
+          <DashboardButton
+            className={cn("min-h-11 md:h-11", pressable)}
+            onClick={() => void go(nextHref)}
+          >
             {copy.next}
           </DashboardButton>
         }
@@ -390,7 +494,10 @@ export function PrefsStep({
 
 function Num({ n }: { n: number }) {
   return (
-    <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-full bg-dashboard-action-primary text-sm font-semibold text-dashboard-text-inverse">
+    <span
+      aria-hidden
+      className="flex size-7 shrink-0 items-center justify-center rounded-full bg-dashboard-action-primary text-sm font-semibold text-dashboard-text-inverse"
+    >
       {n}
     </span>
   );

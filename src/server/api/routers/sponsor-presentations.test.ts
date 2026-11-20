@@ -62,9 +62,7 @@ vi.mock("~/server/api/utils/judging-board-data", async (importOriginal) => ({
 // 2026-11-20), but the mechanism stays: a test-only list keeps it covered.
 const TEST_REMOTE_SPONSOR = "TinyFish";
 vi.mock("~/content/sponsor-prize-tracks", async (importOriginal) => ({
-  ...(await importOriginal<
-    typeof import("~/content/sponsor-prize-tracks")
-  >()),
+  ...(await importOriginal<typeof import("~/content/sponsor-prize-tracks")>()),
   REMOTE_JUDGING_SPONSORS: ["TinyFish"],
 }));
 
@@ -105,7 +103,9 @@ vi.mock("~/server/api/utils/sponsor-judging-board", async () => {
   };
   return {
     judgingRoomsWithSource: withSource,
-    judgingRoomsById: async (sponsors: readonly { id: string; name: string }[]) =>
+    judgingRoomsById: async (
+      sponsors: readonly { id: string; name: string }[],
+    ) =>
       new Map([...(await withSource(sponsors))].map(([k, v]) => [k, v.room])),
   };
 });
@@ -843,7 +843,10 @@ describe("sponsorPresentations judging board", () => {
       ]),
     );
     await expect(
-      organizer.sponsorPresentations.setRoom({ sponsorId: a.id, room: "rm 2110" }),
+      organizer.sponsorPresentations.setRoom({
+        sponsorId: a.id,
+        room: "rm 2110",
+      }),
     ).rejects.toMatchObject({
       code: "CONFLICT",
       message: `Rm 2110 is ${b.name}'s. Pick another.`,
@@ -864,9 +867,9 @@ describe("sponsorPresentations judging board", () => {
     const remote = await named(TEST_REMOTE_SPONSOR);
     const t = await team();
     await send(remote.id, [t]);
-    await expect(organizer.sponsorPresentations.schedule()).rejects.toMatchObject(
-      { code: "BAD_REQUEST" },
-    );
+    await expect(
+      organizer.sponsorPresentations.schedule(),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     const board = await organizer.sponsorPresentations.board();
     expect(board.slots).toEqual([]);
     expect(board.sponsors.find((x) => x.sponsorId === remote.id)).toMatchObject(

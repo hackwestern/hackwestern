@@ -118,6 +118,7 @@ export const coffeeChatInvitesCopy = {
     nobody: "Nobody in line can take this seat.",
     inviteGone: "That invite is gone. The board changed.",
     tooLate: "It's too close to this chat to invite anyone.",
-    invitesOff: "Invites are switched off on this server, so nobody can be invited.",
+    invitesOff:
+      "Invites are switched off on this server, so nobody can be invited.",
   },
 } as const;

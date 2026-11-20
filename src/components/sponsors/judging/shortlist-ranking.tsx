@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { CheckCircle2, GripVertical, Plus, Search, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -70,10 +76,7 @@ export function ShortlistRanking({
     data.top5Draft ??
     submitted.filter((id) => shortlist.some((team) => team.id === id));
   const [topIds, setTopIds] = useState<(string | null)[]>(() =>
-    Array.from(
-      { length: top },
-      (_, i) => initialIds[i] ?? null,
-    ),
+    Array.from({ length: top }, (_, i) => initialIds[i] ?? null),
   );
   const [selectionSlot, setSelectionSlot] = useState<number | null>(null);
   const [selectionQuery, setSelectionQuery] = useState("");
@@ -87,9 +90,8 @@ export function ShortlistRanking({
   useEffect(() => {
     setTopIds((current) => {
       const available = new Set(shortlistKey ? shortlistKey.split(",") : []);
-      return Array.from(
-        { length: top },
-        (_, i) => (current[i] && available.has(current[i]) ? current[i] : null),
+      return Array.from({ length: top }, (_, i) =>
+        current[i] && available.has(current[i]) ? current[i] : null,
       );
     });
   }, [shortlistKey, top]);
@@ -316,15 +318,16 @@ export function ShortlistRanking({
                 setDragOverIndex(index);
               }}
               onDragLeave={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                if (
+                  !event.currentTarget.contains(event.relatedTarget as Node)
+                ) {
                   setDragOverIndex(null);
                 }
               }}
               onDrop={(event) => {
                 event.preventDefault();
                 const sourceId =
-                  draggedId ??
-                  event.dataTransfer.getData("text/plain");
+                  draggedId ?? event.dataTransfer.getData("text/plain");
                 const from = topIds.indexOf(sourceId);
                 if (from >= 0) reorder(from, index);
                 setDraggedId(null);
@@ -371,7 +374,10 @@ export function ShortlistRanking({
                       setDragOverIndex(null);
                     }}
                     onKeyDown={(event) => {
-                      if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+                      if (
+                        event.key === "ArrowUp" ||
+                        event.key === "ArrowLeft"
+                      ) {
                         event.preventDefault();
                         if (index > 0) reorder(index, index - 1);
                       } else if (
@@ -382,7 +388,7 @@ export function ShortlistRanking({
                         if (index < top - 1) reorder(index, index + 1);
                       }
                     }}
-                    className="inline-flex size-9 touch-none cursor-grab items-center justify-center rounded-dashboard-md text-dashboard-text-light active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:bg-dashboard-bg-highlight"
+                    className="inline-flex size-9 cursor-grab touch-none items-center justify-center rounded-dashboard-md text-dashboard-text-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary active:cursor-grabbing [@media(hover:hover)]:hover:bg-dashboard-bg-highlight"
                   >
                     <GripVertical aria-hidden className="size-5" />
                   </span>
@@ -409,7 +415,9 @@ export function ShortlistRanking({
                         <span className="text-sm font-medium tabular-nums text-dashboard-text-light">
                           {team.score === null
                             ? copy.shortlist.noScore
-                            : copy.shortlist.scoreOf(formatAverage(team.score)!)}
+                            : copy.shortlist.scoreOf(
+                                formatAverage(team.score)!,
+                              )}
                         </span>
                       </span>
                     </button>
@@ -456,9 +464,7 @@ export function ShortlistRanking({
       >
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 motion-reduce:animate-none" />
-          <Dialog.Content
-            className="fixed z-50 flex max-h-[92dvh] w-full flex-col gap-4 overflow-y-auto overscroll-contain bg-dashboard-bg-surface p-5 font-figtree font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card focus:outline-none inset-x-0 bottom-0 rounded-t-dashboard-2xl pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:inset-0 sm:m-auto sm:h-fit sm:max-w-[560px] sm:rounded-dashboard-2xl sm:pb-6"
-          >
+          <Dialog.Content className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] w-full flex-col gap-4 overflow-y-auto overscroll-contain rounded-t-dashboard-2xl bg-dashboard-bg-surface p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] font-figtree font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card focus:outline-none sm:inset-0 sm:m-auto sm:h-fit sm:max-w-[560px] sm:rounded-dashboard-2xl sm:pb-6">
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-col gap-1">
                 <Dialog.Title className="m-0 text-xl font-semibold">
@@ -582,9 +588,7 @@ export function ShortlistRanking({
               )}
             </div>
             <DashboardButton
-              disabled={
-                !canSubmit || data.final !== null
-              }
+              disabled={!canSubmit || data.final !== null}
               onClick={() => setConfirming(true)}
               className="shrink-0 disabled:cursor-not-allowed disabled:opacity-dashboard-disabled"
             >
@@ -597,7 +601,7 @@ export function ShortlistRanking({
       <Dialog.Root open={confirming} onOpenChange={setConfirming}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-          <Dialog.Content className="fixed z-50 inset-x-0 bottom-0 flex max-h-[92dvh] flex-col gap-4 overflow-y-auto rounded-t-dashboard-2xl bg-dashboard-bg-surface p-5 shadow-dashboard-card focus:outline-none sm:inset-0 sm:m-auto sm:h-fit sm:max-w-[560px] sm:rounded-dashboard-2xl sm:p-6">
+          <Dialog.Content className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col gap-4 overflow-y-auto rounded-t-dashboard-2xl bg-dashboard-bg-surface p-5 shadow-dashboard-card focus:outline-none sm:inset-0 sm:m-auto sm:h-fit sm:max-w-[560px] sm:rounded-dashboard-2xl sm:p-6">
             <Dialog.Title className="m-0 text-xl font-semibold text-dashboard-text-heavy">
               {copy.submit.confirmTitle(top)}
             </Dialog.Title>
@@ -606,7 +610,9 @@ export function ShortlistRanking({
             </Dialog.Description>
             <ol className="m-0 list-decimal pl-5 text-sm font-medium text-dashboard-text-heavy">
               {picks.map((id) => (
-                <li key={id} className="py-1">{byId.get(id)?.name}</li>
+                <li key={id} className="py-1">
+                  {byId.get(id)?.name}
+                </li>
               ))}
             </ol>
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -619,7 +625,9 @@ export function ShortlistRanking({
                 onClick={() => submit.mutate({ sponsor, teamIds: picks })}
                 disabled={submit.isPending}
               >
-                {submit.isPending ? copy.submit.submitting : copy.submit.confirm}
+                {submit.isPending
+                  ? copy.submit.submitting
+                  : copy.submit.confirm}
               </DashboardButton>
             </div>
           </Dialog.Content>

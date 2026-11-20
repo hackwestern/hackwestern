@@ -109,8 +109,7 @@ export function JudgingBoard() {
     onError: (e, input) =>
       setRoomError({
         sponsorId: input.sponsorId,
-        message:
-          e.data?.code === "CONFLICT" ? e.message : copy.room.failed,
+        message: e.data?.code === "CONFLICT" ? e.message : copy.room.failed,
       }),
   });
   const colors = useMemo(
@@ -146,7 +145,9 @@ export function JudgingBoard() {
     <RoomInput
       key={s.room ?? ""}
       sponsor={s}
-      pending={setRoom.isPending && setRoom.variables?.sponsorId === s.sponsorId}
+      pending={
+        setRoom.isPending && setRoom.variables?.sponsorId === s.sponsorId
+      }
       error={roomError?.sponsorId === s.sponsorId ? roomError.message : null}
       onSet={(r) => setRoom.mutate({ sponsorId: s.sponsorId, room: r })}
     />
@@ -251,7 +252,9 @@ function TodoCard({
             <li key={todoKey(todo)}>
               <Todo
                 todo={todo}
-                sponsor={"sponsorId" in todo ? byId.get(todo.sponsorId) : undefined}
+                sponsor={
+                  "sponsorId" in todo ? byId.get(todo.sponsorId) : undefined
+                }
                 colors={colors}
                 room={room}
                 notify={{
@@ -353,7 +356,10 @@ function Todo({
           onClose={() => setConfirming(false)}
         />
         {notify.error && (
-          <p role="alert" className="m-0 text-sm font-semibold text-dashboard-text-warning">
+          <p
+            role="alert"
+            className="m-0 text-sm font-semibold text-dashboard-text-warning"
+          >
             {notify.error}
           </p>
         )}
@@ -518,7 +524,7 @@ function SponsorRow({
           aria-label={open ? s.collapse(sponsor.name) : s.expand(sponsor.name)}
           onClick={() => setOpen(!open)}
           className={cn(
-            "-ml-2 inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-md text-dashboard-text-light [@media(hover:hover)]:hover:bg-dashboard-bg-highlight md:size-9",
+            "-ml-2 inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-md text-dashboard-text-light md:size-9 [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
             focusRing,
           )}
         >

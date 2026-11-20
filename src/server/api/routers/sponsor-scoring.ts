@@ -422,9 +422,10 @@ export const sponsorScoringRouter = createTRPCRouter({
         retrySheetSoon(sponsor.id, final.submittedAt);
       }
       const finalIds = final?.teamIds.filter((id) => visible.has(id)) ?? [];
-      const draftIds = draft?.teamIds
-        .slice(0, SPONSOR_FINAL_TOP)
-        .map((id) => (id && visible.has(id) ? id : null)) ?? null;
+      const draftIds =
+        draft?.teamIds
+          .slice(0, SPONSOR_FINAL_TOP)
+          .map((id) => (id && visible.has(id) ? id : null)) ?? null;
       return {
         sponsorName: sponsor.name,
         sponsorTrack: track,
@@ -442,7 +443,10 @@ export const sponsorScoringRouter = createTRPCRouter({
         },
         /** Five place slots, preserving blank positions. */
         top5Draft: draftIds
-          ? Array.from({ length: SPONSOR_FINAL_TOP }, (_, i) => draftIds[i] ?? null)
+          ? Array.from(
+              { length: SPONSOR_FINAL_TOP },
+              (_, i) => draftIds[i] ?? null,
+            )
           : null,
         final: final
           ? {
@@ -674,19 +678,16 @@ export const sponsorScoringRouter = createTRPCRouter({
     .input(
       z.object({
         sponsor: sponsorInput,
-        teamIds: z
-          .array(teamIdInput.nullable())
-          .length(SPONSOR_FINAL_TOP),
+        teamIds: z.array(teamIdInput.nullable()).length(SPONSOR_FINAL_TOP),
       }),
     )
     .mutation(async ({ input }) => {
       assertOpen();
       const sponsor = await findTrackSponsor(input.sponsor);
-      const alreadySubmitted =
-        await db.query.sponsorFinalPicks.findFirst({
-          where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
-          columns: { sponsorId: true },
-        });
+      const alreadySubmitted = await db.query.sponsorFinalPicks.findFirst({
+        where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
+        columns: { sponsorId: true },
+      });
       if (alreadySubmitted) {
         throw new TRPCError({
           code: "CONFLICT",
@@ -765,11 +766,10 @@ export const sponsorScoringRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       assertOpen();
       const sponsor = await findTrackSponsor(input.sponsor);
-      const alreadySubmitted =
-        await db.query.sponsorFinalPicks.findFirst({
-          where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
-          columns: { sponsorId: true },
-        });
+      const alreadySubmitted = await db.query.sponsorFinalPicks.findFirst({
+        where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
+        columns: { sponsorId: true },
+      });
       if (alreadySubmitted) {
         throw new TRPCError({
           code: "CONFLICT",
@@ -794,7 +794,10 @@ export const sponsorScoringRouter = createTRPCRouter({
         ? (round.shortlistSent?.teamIds ?? [])
         : round.slots.map((s) => s.teamId);
       if (ranked.length === 0) {
-        throw new TRPCError({ code: "FORBIDDEN", message: errors.noSlot(SPONSOR_FINAL_TOP) });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: errors.noSlot(SPONSOR_FINAL_TOP),
+        });
       }
       const allowed = new Set(ranked.filter((id) => eligible.has(id)));
       const problem = rankingError(input.teamIds, allowed);
@@ -927,7 +930,9 @@ export const sponsorScoringRouter = createTRPCRouter({
       ]);
     // Only prize track sponsors take part in judging.
     const prizeTracks = await prizeTrackSponsors();
-    const sponsors = registered.filter((s) => hasPrizeTrack(s.name, prizeTracks));
+    const sponsors = registered.filter((s) =>
+      hasPrizeTrack(s.name, prizeTracks),
+    );
 
     const teamIds = [
       ...new Set([

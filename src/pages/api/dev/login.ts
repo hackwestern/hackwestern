@@ -9,14 +9,20 @@ import { db } from "~/server/db";
  * must carry that key. Signs in as an existing local user (default the
  * walkthrough organizer) and redirects to the organizer home.
  */
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   const key = process.env.DEV_LOGIN_KEY;
   if (process.env.NODE_ENV !== "development" || !key || req.query.key !== key) {
     res.status(404).end();
     return;
   }
-  const id = typeof req.query.as === "string" ? req.query.as : "walkthrough-noah";
-  const user = await db.query.users.findFirst({ where: (u, { eq }) => eq(u.id, id) });
+  const id =
+    typeof req.query.as === "string" ? req.query.as : "walkthrough-noah";
+  const user = await db.query.users.findFirst({
+    where: (u, { eq }) => eq(u.id, id),
+  });
   if (!user) {
     res.status(404).end();
     return;

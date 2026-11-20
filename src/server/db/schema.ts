@@ -588,7 +588,10 @@ export const coffeeChatPrefs = pgTable(
       .notNull(),
   },
   (t) => [
-    check("coffee_chat_pref_hackers_check", sql`${t.hackersPerChat} between 1 and 5`),
+    check(
+      "coffee_chat_pref_hackers_check",
+      sql`${t.hackersPerChat} between 1 and 5`,
+    ),
   ],
 );
 
@@ -697,7 +700,9 @@ export const coffeeChatRoomBookings = pgTable(
       .defaultNow()
       .notNull(),
   },
-  (t) => [uniqueIndex("coffee_chat_room_booking_cell_idx").on(t.room, t.sessionId)],
+  (t) => [
+    uniqueIndex("coffee_chat_room_booking_cell_idx").on(t.room, t.sessionId),
+  ],
 );
 
 // Organizer edits to one sponsor's line of hackers for coffee chat seats
@@ -845,10 +850,7 @@ export const sponsorTeamScores = pgTable(
   },
   (t) => [
     primaryKey({ columns: [t.sponsorId, t.teamId, t.judgeName] }),
-    check(
-      "sponsor_team_score_range",
-      sql`${t.scoreHalves} BETWEEN 2 AND 20`,
-    ),
+    check("sponsor_team_score_range", sql`${t.scoreHalves} BETWEEN 2 AND 20`),
   ],
 );
 

@@ -249,7 +249,8 @@ export function ShortlistSend({
               e.preventDefault();
               cancelRef.current?.focus();
             }}
-            className="fixed z-50 inset-x-0 bottom-0 flex max-h-[92dvh] flex-col gap-4 overflow-y-auto rounded-t-dashboard-2xl bg-dashboard-bg-surface p-5 shadow-dashboard-card focus:outline-none sm:inset-0 sm:m-auto sm:h-fit sm:max-w-[560px] sm:rounded-dashboard-2xl sm:p-6">
+            className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col gap-4 overflow-y-auto rounded-t-dashboard-2xl bg-dashboard-bg-surface p-5 shadow-dashboard-card focus:outline-none sm:inset-0 sm:m-auto sm:h-fit sm:max-w-[560px] sm:rounded-dashboard-2xl sm:p-6"
+          >
             <Dialog.Title className="m-0 text-xl font-semibold text-dashboard-text-heavy">
               {copy.shortlistSubmitConfirm.title}
             </Dialog.Title>
@@ -273,7 +274,10 @@ export function ShortlistSend({
                       href={team.devpostUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label={copy.browse.openOn(team.name, copy.browse.devpost)}
+                      aria-label={copy.browse.openOn(
+                        team.name,
+                        copy.browse.devpost,
+                      )}
                       className={cn(linkIcon, "text-dashboard-brand-devpost")}
                     >
                       <DevpostLogo className="size-4" />
@@ -284,7 +288,10 @@ export function ShortlistSend({
                       href={team.githubUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label={copy.browse.openOn(team.name, copy.browse.github)}
+                      aria-label={copy.browse.openOn(
+                        team.name,
+                        copy.browse.github,
+                      )}
                       className={cn(linkIcon, "text-dashboard-brand-github")}
                     >
                       <GitHubLogo className="size-4" />
@@ -306,9 +313,12 @@ export function ShortlistSend({
               <DashboardButton
                 disabled={send.isPending}
                 onClick={() => {
-                  send.mutate({ sponsor }, {
-                    onSuccess: () => setConfirmOpen(false),
-                  });
+                  send.mutate(
+                    { sponsor },
+                    {
+                      onSuccess: () => setConfirmOpen(false),
+                    },
+                  );
                 }}
               >
                 {send.isPending

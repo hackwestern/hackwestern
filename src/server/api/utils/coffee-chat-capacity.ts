@@ -1,7 +1,4 @@
-import {
-  chatExpiresAt,
-  coffeeChatsOverlap,
-} from "~/lib/coffee-chat-requests";
+import { chatExpiresAt, coffeeChatsOverlap } from "~/lib/coffee-chat-requests";
 import {
   chatsInSlot,
   coffeeChatOfferRoom,
@@ -151,7 +148,8 @@ export function offerProblem(
   if (!offerStartTimes(durationMinutes, input.holds).includes(input.slotTime)) {
     return "notInWindow";
   }
-  if (input.now >= chatExpiresAt({ slotTime: input.slotTime })) return "tooLate";
+  if (input.now >= chatExpiresAt({ slotTime: input.slotTime }))
+    return "tooLate";
   const slot = { slotTime: input.slotTime, durationMinutes };
   if (
     seatsLeft(input.sponsorChats, slot, askedFor(input, input.slotTime)) < 1
@@ -182,11 +180,7 @@ export function freeStartTimes(
   const { durationMinutes } = input.request;
   return offerStartTimes(durationMinutes, input.holds).flatMap((slotTime) => {
     const slot = { slotTime, durationMinutes };
-    const left = seatsLeft(
-      input.sponsorChats,
-      slot,
-      askedFor(input, slotTime),
-    );
+    const left = seatsLeft(input.sponsorChats, slot, askedFor(input, slotTime));
     const room = offerRoomAt({
       sponsorId: input.sponsorId,
       holds: input.holds,

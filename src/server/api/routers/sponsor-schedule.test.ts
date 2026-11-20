@@ -63,22 +63,42 @@ vi.mock("~/server/api/utils/run-of-show-sheet", () => {
         coffeeChats: [],
         ceremonies: [
           {
-            ceremony: "opening", order: 1, start: null, durationMinutes: 1,
-            title: alphaName, sponsor: alphaName, speakers: ["Ana Alpha"],
+            ceremony: "opening",
+            order: 1,
+            start: null,
+            durationMinutes: 1,
+            title: alphaName,
+            sponsor: alphaName,
+            speakers: ["Ana Alpha"],
           },
           {
-            ceremony: "opening", order: 2, start: null, durationMinutes: 3,
-            title: betaName, sponsor: betaName, speakers: [],
+            ceremony: "opening",
+            order: 2,
+            start: null,
+            durationMinutes: 3,
+            title: betaName,
+            sponsor: betaName,
+            speakers: [],
           },
         ],
         workshops: [
           {
-            title: `${alphaName}: Intro talk`, sponsor: null, runners: [],
-            day: null, start: null, room: null, description: "Alpha's talk",
+            title: `${alphaName}: Intro talk`,
+            sponsor: null,
+            runners: [],
+            day: null,
+            start: null,
+            room: null,
+            description: "Alpha's talk",
           },
           {
-            title: `${betaName}: Panel`, sponsor: null, runners: ["Bo Beta"],
-            day: null, start: null, room: null, description: "Beta's panel",
+            title: `${betaName}: Panel`,
+            sponsor: null,
+            runners: ["Bo Beta"],
+            day: null,
+            start: null,
+            room: null,
+            description: "Beta's panel",
           },
         ],
       }),
@@ -94,7 +114,10 @@ beforeAll(async () => {
   const rows = await db
     .insert(sponsorJudgingSponsors)
     .values([{ name: alphaName }, { name: betaName }])
-    .returning({ id: sponsorJudgingSponsors.id, name: sponsorJudgingSponsors.name });
+    .returning({
+      id: sponsorJudgingSponsors.id,
+      name: sponsorJudgingSponsors.name,
+    });
   alphaId = rows.find((r) => r.name === alphaName)!.id;
   betaId = rows.find((r) => r.name === betaName)!.id;
 });
@@ -166,9 +189,9 @@ describe("sponsorSchedule.organizerCompanies", () => {
 
 describe("sponsorSchedule.organizer", () => {
   test("rejects a logged-out caller", async () => {
-    await expect(publicCaller.sponsorSchedule.organizer()).rejects.toMatchObject(
-      { code: "UNAUTHORIZED" },
-    );
+    await expect(
+      publicCaller.sponsorSchedule.organizer(),
+    ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 });
 
@@ -193,8 +216,12 @@ describe("sponsorSchedule.get ceremonies and workshops", () => {
     const result = await publicCaller.sponsorSchedule.get({ sponsor: alphaId });
     expect(result.workshops).toEqual([
       {
-        title: `${alphaName}: Intro talk`, sponsor: alphaName, runners: [],
-        day: "Saturday", start: "10:00", room: "Rm 101",
+        title: `${alphaName}: Intro talk`,
+        sponsor: alphaName,
+        runners: [],
+        day: "Saturday",
+        start: "10:00",
+        room: "Rm 101",
         description: "Alpha's talk",
       },
     ]);

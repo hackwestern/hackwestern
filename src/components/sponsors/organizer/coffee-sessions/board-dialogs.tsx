@@ -5,7 +5,11 @@ import { toast } from "sonner";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import { firstNameOf } from "~/lib/coffee-chat-board-view";
-import { badgeCodeOf, typedBadgeCodeOf, useQrScanner } from "~/lib/use-qr-scanner";
+import {
+  badgeCodeOf,
+  typedBadgeCodeOf,
+  useQrScanner,
+} from "~/lib/use-qr-scanner";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { dangerButton, focusRing, formatPhone } from "./parts";
@@ -62,18 +66,31 @@ export function ConfirmDialog({
           <AlertDialog.Description asChild>
             <div className="flex flex-col gap-1.5">
               {paras.map((p, i) => (
-                <p key={i} className={i === 0 && paras.length > 1 ? lead : para}>{p}</p>
+                <p
+                  key={i}
+                  className={i === 0 && paras.length > 1 ? lead : para}
+                >
+                  {p}
+                </p>
               ))}
             </div>
           </AlertDialog.Description>
           <div className={acts}>
             <AlertDialog.Action asChild>
-              <DashboardButton variant="primary" className={cn(actBtn, dangerButton)} onClick={onOk}>
+              <DashboardButton
+                variant="primary"
+                className={cn(actBtn, dangerButton)}
+                onClick={onOk}
+              >
                 {ok}
               </DashboardButton>
             </AlertDialog.Action>
             <AlertDialog.Cancel asChild>
-              <DashboardButton ref={cancelRef} variant="outline" className={outlineBtn}>
+              <DashboardButton
+                ref={cancelRef}
+                variant="outline"
+                className={outlineBtn}
+              >
                 {wc.cancel}
               </DashboardButton>
             </AlertDialog.Cancel>
@@ -144,37 +161,66 @@ export function MoveCheckDialog({
             cancelRef.current?.focus();
           }}
         >
-          <AlertDialog.Title className={title}>{c.title(rep.name, session)}</AlertDialog.Title>
+          <AlertDialog.Title className={title}>
+            {c.title(rep.name, session)}
+          </AlertDialog.Title>
           {step === 1 ? (
             <>
               <AlertDialog.Description asChild>
                 <div className="flex flex-col gap-1.5">
-                  <p className={para}>{`${c.notFree(session)} ${c.contact(who)}`}</p>
+                  <p
+                    className={para}
+                  >{`${c.notFree(session)} ${c.contact(who)}`}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-dashboard-md bg-dashboard-bg-inset py-1.5 pl-3 pr-1.5">
                     <span className="flex min-w-0 flex-[1_1_140px] flex-col leading-snug">
-                      <b className="text-[15px] font-semibold [overflow-wrap:anywhere]">{rep.name}</b>
-                      {shown && <span className="text-[17px] font-semibold tabular-nums text-dashboard-text-heavy">{shown}</span>}
+                      <b className="text-[15px] font-semibold [overflow-wrap:anywhere]">
+                        {rep.name}
+                      </b>
+                      {shown && (
+                        <span className="text-[17px] font-semibold tabular-nums text-dashboard-text-heavy">
+                          {shown}
+                        </span>
+                      )}
                     </span>
                     {shown && (
                       <span className="flex items-center gap-1.5">
                         <button
                           type="button"
-                          aria-label={copied ? copy.phone.copiedLabel(shown) : copy.phone.copyLabel(rep.name, shown)}
+                          aria-label={
+                            copied
+                              ? copy.phone.copiedLabel(shown)
+                              : copy.phone.copyLabel(rep.name, shown)
+                          }
                           onClick={() => {
                             const done = () => setCopied(true);
-                            void navigator.clipboard?.writeText(shown).then(done, done);
+                            void navigator.clipboard
+                              ?.writeText(shown)
+                              .then(done, done);
                           }}
                           className={cn(
                             "inline-flex h-11 min-w-11 cursor-pixel-hover items-center justify-center gap-1 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-2 text-[13px] font-semibold",
-                            copied ? "text-dashboard-status-live" : "text-dashboard-text-medium",
+                            copied
+                              ? "text-dashboard-status-live"
+                              : "text-dashboard-text-medium",
                             focusRing,
                           )}
                         >
-                          {copied ? <Check aria-hidden className="size-4" /> : <Copy aria-hidden className="size-4" />}
+                          {copied ? (
+                            <Check aria-hidden className="size-4" />
+                          ) : (
+                            <Copy aria-hidden className="size-4" />
+                          )}
                           {copied && copy.phone.copied}
                         </button>
-                        <DashboardButton asChild variant="small" className="min-h-11 px-3.5 text-[15px] text-dashboard-text-link md:min-h-11">
-                          <a href={telOf(rep.phone)} aria-label={c.callLabel(rep.name, shown)}>
+                        <DashboardButton
+                          asChild
+                          variant="small"
+                          className="min-h-11 px-3.5 text-[15px] text-dashboard-text-link md:min-h-11"
+                        >
+                          <a
+                            href={telOf(rep.phone)}
+                            aria-label={c.callLabel(rep.name, shown)}
+                          >
                             <Phone aria-hidden />
                             {c.call}
                           </a>
@@ -185,11 +231,19 @@ export function MoveCheckDialog({
                 </div>
               </AlertDialog.Description>
               <div className={acts}>
-                <DashboardButton variant="primary" className={actBtn} onClick={() => setStep(2)}>
+                <DashboardButton
+                  variant="primary"
+                  className={actBtn}
+                  onClick={() => setStep(2)}
+                >
                   {c.contacted(who)}
                 </DashboardButton>
                 <AlertDialog.Cancel asChild>
-                  <DashboardButton ref={cancelRef} variant="outline" className={outlineBtn}>
+                  <DashboardButton
+                    ref={cancelRef}
+                    variant="outline"
+                    className={outlineBtn}
+                  >
                     {wc.cancel}
                   </DashboardButton>
                 </AlertDialog.Cancel>
@@ -204,12 +258,20 @@ export function MoveCheckDialog({
               </AlertDialog.Description>
               <div className="flex flex-col gap-2">
                 <AlertDialog.Action asChild>
-                  <DashboardButton variant="primary" className={cn("min-h-11 md:w-full", dangerButton)} onClick={onYes}>
+                  <DashboardButton
+                    variant="primary"
+                    className={cn("min-h-11 md:w-full", dangerButton)}
+                    onClick={onYes}
+                  >
                     {c.yes}
                   </DashboardButton>
                 </AlertDialog.Action>
                 <AlertDialog.Cancel asChild>
-                  <DashboardButton ref={keepRef} variant="outline" className="h-11 w-full">
+                  <DashboardButton
+                    ref={keepRef}
+                    variant="outline"
+                    className="h-11 w-full"
+                  >
                     {c.no}
                   </DashboardButton>
                 </AlertDialog.Cancel>
@@ -237,7 +299,11 @@ type HackerCheck =
  * A typed or scanned hacker ID, checked on the server for this sponsor (and
  * with `chatId`, free at that chat's time): their name, or why not.
  */
-function useHackerCheck(sponsorId: string, raw: string, chatId?: string): HackerCheck {
+function useHackerCheck(
+  sponsorId: string,
+  raw: string,
+  chatId?: string,
+): HackerCheck {
   const typed = typedBadgeCodeOf(raw);
   const [code, setCode] = useState<string | null>(typed);
   // Check once typing pauses.
@@ -251,9 +317,13 @@ function useHackerCheck(sponsorId: string, raw: string, chatId?: string): Hacker
   );
   if (!typed) return { state: "empty" };
   if (code !== typed || q.isFetching || !q.data) {
-    return q.error && code === typed ? { state: "error", message: q.error.message } : { state: "checking" };
+    return q.error && code === typed
+      ? { state: "error", message: q.error.message }
+      : { state: "checking" };
   }
-  return q.data.ok ? { state: "ok", code: typed, name: q.data.name } : { state: "error", message: q.data.error };
+  return q.data.ok
+    ? { state: "ok", code: typed, name: q.data.name }
+    : { state: "error", message: q.data.error };
 }
 
 /** The ID field with a camera button (scan a badge) and a live line under it. */
@@ -284,18 +354,26 @@ function HackerIdPicker({
     },
   });
   const camLine =
-    status === "starting" ? lc.camera.starting
-    : status === "scanning" ? lc.camera.scanning
-    : status === "denied" ? lc.camera.denied
-    : status === "unavailable" ? lc.camera.unavailable
-    : status === "error" ? lc.camera.error
-    : null;
+    status === "starting"
+      ? lc.camera.starting
+      : status === "scanning"
+        ? lc.camera.scanning
+        : status === "denied"
+          ? lc.camera.denied
+          : status === "unavailable"
+            ? lc.camera.unavailable
+            : status === "error"
+              ? lc.camera.error
+              : null;
   const out =
     scanErr ??
-    (check.state === "ok" ? okLine(check.name)
-    : check.state === "error" ? check.message
-    : check.state === "checking" ? lc.checking
-    : "");
+    (check.state === "ok"
+      ? okLine(check.name)
+      : check.state === "error"
+        ? check.message
+        : check.state === "checking"
+          ? lc.checking
+          : "");
   const bad = !!scanErr || check.state === "error";
   return (
     <div className="flex flex-col gap-1.5">
@@ -316,7 +394,9 @@ function HackerIdPicker({
         >
           <Camera aria-hidden className="size-4" />
         </button>
-        <label htmlFor="coffee-hacker-id" className="sr-only">{lc.idLabel}</label>
+        <label htmlFor="coffee-hacker-id" className="sr-only">
+          {lc.idLabel}
+        </label>
         <input
           id="coffee-hacker-id"
           ref={inputRef}
@@ -338,13 +418,29 @@ function HackerIdPicker({
       {scanning && (
         <div className="flex flex-col gap-1">
           <div className="overflow-hidden rounded-dashboard-md bg-dashboard-text-heavy">
-            <video ref={videoRef} aria-label={lc.camera.label} muted playsInline className="aspect-video w-full object-cover" />
+            <video
+              ref={videoRef}
+              aria-label={lc.camera.label}
+              muted
+              playsInline
+              className="aspect-video w-full object-cover"
+            />
           </div>
-          {camLine && <p className="m-0 text-sm text-dashboard-text-medium">{camLine}</p>}
+          {camLine && (
+            <p className="m-0 text-sm text-dashboard-text-medium">{camLine}</p>
+          )}
         </div>
       )}
-      {!scanning && camLine && status !== "idle" && <p className="m-0 text-sm text-dashboard-text-warning">{camLine}</p>}
-      <p aria-live="polite" className={cn("m-0 min-h-[1.5em] text-[15px] font-semibold", bad ? "text-dashboard-text-warning" : "text-dashboard-text-heavy")}>
+      {!scanning && camLine && status !== "idle" && (
+        <p className="m-0 text-sm text-dashboard-text-warning">{camLine}</p>
+      )}
+      <p
+        aria-live="polite"
+        className={cn(
+          "m-0 min-h-[1.5em] text-[15px] font-semibold",
+          bad ? "text-dashboard-text-warning" : "text-dashboard-text-heavy",
+        )}
+      >
         {out}
       </p>
     </div>
@@ -376,7 +472,10 @@ export function RemoveHackerDialog({
   const open = !!target;
   const sponsorId = target?.sponsorId ?? "";
   const chatId = target?.chatId ?? "";
-  const line = api.coffeeChatInvites.line.useQuery({ sponsorId, chatId }, { enabled: open });
+  const line = api.coffeeChatInvites.line.useQuery(
+    { sponsorId, chatId },
+    { enabled: open },
+  );
   const next = line.data?.next ?? null;
   const [mode, setMode] = useState<"next" | "other">("next");
   const [raw, setRaw] = useState("");
@@ -388,7 +487,11 @@ export function RemoveHackerDialog({
   useEffect(() => {
     if (open && line.data) setMode(line.data.next ? "next" : "other");
   }, [open, line.data]);
-  const check = useHackerCheck(sponsorId, mode === "other" ? raw : "", chatId || undefined);
+  const check = useHackerCheck(
+    sponsorId,
+    mode === "other" ? raw : "",
+    chatId || undefined,
+  );
   const refresh = useLineRefresh();
   const replace = api.coffeeChatInvites.replace.useMutation({
     onSuccess: (r) => {
@@ -399,12 +502,21 @@ export function RemoveHackerDialog({
     onSettled: refresh,
   });
   const name = target?.name ?? "";
-  const pickName = mode === "next" ? next?.name : check.state === "ok" ? check.name : undefined;
+  const pickName =
+    mode === "next"
+      ? next?.name
+      : check.state === "ok"
+        ? check.name
+        : undefined;
   const radio = (on: boolean, disabled?: boolean) =>
     cn(
       "flex min-h-11 items-start gap-2.5 rounded-dashboard-md border px-3 py-2.5 text-[15px] text-dashboard-text-heavy",
-      on ? "border-dashboard-action-primary bg-dashboard-bg-highlight" : "border-dashboard-border-default",
-      disabled ? "cursor-not-allowed text-dashboard-text-disabled" : "cursor-pixel-hover",
+      on
+        ? "border-dashboard-action-primary bg-dashboard-bg-highlight"
+        : "border-dashboard-border-default",
+      disabled
+        ? "cursor-not-allowed text-dashboard-text-disabled"
+        : "cursor-pixel-hover",
     );
   return (
     <AlertDialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
@@ -417,11 +529,17 @@ export function RemoveHackerDialog({
             cancelRef.current?.focus();
           }}
         >
-          <AlertDialog.Title className={title}>{lc.removeTitle(name)}</AlertDialog.Title>
+          <AlertDialog.Title className={title}>
+            {lc.removeTitle(name)}
+          </AlertDialog.Title>
           <div className="flex flex-col gap-1.5">
-            <AlertDialog.Description className={para}>{lc.removeLine(name)}</AlertDialog.Description>
+            <AlertDialog.Description className={para}>
+              {lc.removeLine(name)}
+            </AlertDialog.Description>
             <fieldset className="m-0 mt-1.5 flex min-w-0 flex-col gap-2 border-0 p-0">
-              <legend className="mb-1.5 p-0 text-base font-bold text-dashboard-text-heavy">{lc.whoGets}</legend>
+              <legend className="mb-1.5 p-0 text-base font-bold text-dashboard-text-heavy">
+                {lc.whoGets}
+              </legend>
               <label className={radio(mode === "next" && !!next, !next)}>
                 <input
                   type="radio"
@@ -433,7 +551,11 @@ export function RemoveHackerDialog({
                   className="mt-0.5 size-[18px] flex-none accent-dashboard-action-primary"
                 />
                 <span>
-                  {line.isLoading ? lc.checking : next ? lc.next(next.name, why[next.source] ?? next.source) : lc.nextNone}
+                  {line.isLoading
+                    ? lc.checking
+                    : next
+                      ? lc.next(next.name, why[next.source] ?? next.source)
+                      : lc.nextNone}
                 </span>
               </label>
               <label className={radio(mode === "other")}>
@@ -468,14 +590,24 @@ export function RemoveHackerDialog({
                 if (!target || !pickName) return;
                 replace.mutate({
                   chatId: target.chatId,
-                  pick: mode === "next" ? { kind: "next" } : { kind: "code", code: check.state === "ok" ? check.code : "" },
+                  pick:
+                    mode === "next"
+                      ? { kind: "next" }
+                      : {
+                          kind: "code",
+                          code: check.state === "ok" ? check.code : "",
+                        },
                 });
               }}
             >
               {pickName ? lc.removeGo(pickName) : lc.removeGoEmpty}
             </DashboardButton>
             <AlertDialog.Cancel asChild>
-              <DashboardButton ref={cancelRef} variant="outline" className={outlineBtn}>
+              <DashboardButton
+                ref={cancelRef}
+                variant="outline"
+                className={outlineBtn}
+              >
                 {lc.cancel}
               </DashboardButton>
             </AlertDialog.Cancel>
@@ -487,7 +619,13 @@ export function RemoveHackerDialog({
 }
 
 /** Put a hacker first in a sponsor's line: they get its next free seat. */
-export function FrontDialog({ sponsorId, onClose }: { sponsorId: string | null; onClose: () => void }) {
+export function FrontDialog({
+  sponsorId,
+  onClose,
+}: {
+  sponsorId: string | null;
+  onClose: () => void;
+}) {
   const open = !!sponsorId;
   const [raw, setRaw] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -517,8 +655,16 @@ export function FrontDialog({ sponsorId, onClose }: { sponsorId: string | null; 
         >
           <AlertDialog.Title className={title}>{lc.addTitle}</AlertDialog.Title>
           <div className="flex flex-col gap-1.5">
-            <AlertDialog.Description className={para}>{lc.addHint}</AlertDialog.Description>
-            <HackerIdPicker value={raw} onChange={setRaw} check={check} okLine={lc.addLine} inputRef={inputRef} />
+            <AlertDialog.Description className={para}>
+              {lc.addHint}
+            </AlertDialog.Description>
+            <HackerIdPicker
+              value={raw}
+              onChange={setRaw}
+              check={check}
+              okLine={lc.addLine}
+              inputRef={inputRef}
+            />
           </div>
           <div className={acts}>
             <DashboardButton
@@ -526,7 +672,8 @@ export function FrontDialog({ sponsorId, onClose }: { sponsorId: string | null; 
               className={actBtn}
               disabled={check.state !== "ok" || putFirst.isPending}
               onClick={() => {
-                if (sponsorId && check.state === "ok") putFirst.mutate({ sponsorId, code: check.code });
+                if (sponsorId && check.state === "ok")
+                  putFirst.mutate({ sponsorId, code: check.code });
               }}
             >
               {lc.addGo}

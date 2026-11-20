@@ -27,20 +27,32 @@ export function CoffeeChatSummary({
         </p>
       ) : (
         <dl className="m-0 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Fact label={copy.labels.when} icon={<Clock aria-hidden className="size-4" />}>
+          <Fact
+            label={copy.labels.when}
+            icon={<Clock aria-hidden className="size-4" />}
+          >
             {copy.window(
               formatClock(setup.windowStart!),
               formatClock(setup.windowEnd!),
             )}
           </Fact>
-          <Fact label={copy.labels.room} icon={<MapPin aria-hidden className="size-4" />}>
+          <Fact
+            label={copy.labels.room}
+            icon={<MapPin aria-hidden className="size-4" />}
+          >
             {setup.room ? copy.room(setup.room) : copy.roomTbd}
           </Fact>
-          <Fact label={copy.labels.format} icon={<Coffee aria-hidden className="size-4" />}>
+          <Fact
+            label={copy.labels.format}
+            icon={<Coffee aria-hidden className="size-4" />}
+          >
             {copy.format(setup.durationMinutes, setup.groupSize)}
           </Fact>
           {setup.hackers !== null && (
-            <Fact label={copy.labels.hackers} icon={<Users aria-hidden className="size-4" />}>
+            <Fact
+              label={copy.labels.hackers}
+              icon={<Users aria-hidden className="size-4" />}
+            >
               {copy.hackers(setup.hackers)}
             </Fact>
           )}

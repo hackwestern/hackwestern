@@ -24,7 +24,12 @@ export const taskRemindersRouter = createTRPCRouter({
     .input(
       z
         .object({
-          limit: z.number().int().min(1).max(PING_LOG_MAX).default(PING_LOG_PAGE),
+          limit: z
+            .number()
+            .int()
+            .min(1)
+            .max(PING_LOG_MAX)
+            .default(PING_LOG_PAGE),
         })
         .default({}),
     )

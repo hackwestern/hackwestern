@@ -6,7 +6,12 @@ import { Note } from "~/components/sponsors/portal-ui";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { pressable } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
-import { availChats, availableFree, repChatCap, setupWindows } from "~/lib/coffee-chat-setup";
+import {
+  availChats,
+  availableFree,
+  repChatCap,
+  setupWindows,
+} from "~/lib/coffee-chat-setup";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { AvailabilityGrid, workshopWhen } from "./availability-grid";
@@ -57,14 +62,18 @@ export function ReviewStep({
   const submit = api.coffeeChatSetup.submitPrefs.useMutation({
     onSuccess: async () => {
       await utils.coffeeChatSetup.get.invalidate({ sponsor });
-      toast(data.submittedAt ? copy.savedToast : sponsorSetupCopy.page.sentToast);
+      toast(
+        data.submittedAt ? copy.savedToast : sponsorSetupCopy.page.sentToast,
+      );
       await router.push(homeHref);
     },
     onError: (e) => announce(e.message),
   });
 
   const windows = setupWindows(data.workshops, data.chatMinutes);
-  const reps = [...data.reps].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
+  const reps = [...data.reps].sort(
+    (a, b) => Number(b.isPrimary) - Number(a.isPrimary),
+  );
   const rows = reps.map((rep) => {
     const avail = availableFree(rep.free, windows.blocked);
     const cap = repChatCap(rep.chatsWanted, availChats(rep.free, windows));
@@ -73,17 +82,31 @@ export function ReviewStep({
   const primary = data.reps.find((r) => r.isPrimary);
 
   const warnings: { text: string; fix: string; href: string }[] = [];
-  if (!primary) warnings.push({ text: copy.noPrimary, fix: copy.fixTeam, href: teamHref });
+  if (!primary)
+    warnings.push({ text: copy.noPrimary, fix: copy.fixTeam, href: teamHref });
   for (const { rep, avail, cap } of rows) {
     if (rep.chatsWanted > 0 && avail.length === 0) {
-      warnings.push({ text: prefsCopy.notFree(rep.name), fix: copy.fixFree, href: prefsHref });
+      warnings.push({
+        text: prefsCopy.notFree(rep.name),
+        fix: copy.fixFree,
+        href: prefsHref,
+      });
     } else if (rep.chatsWanted > cap) {
-      warnings.push({ text: prefsCopy.capped(rep.name, avail.length, cap), fix: copy.fixChats(rep.name), href: prefsHref });
+      warnings.push({
+        text: prefsCopy.capped(rep.name, avail.length, cap),
+        fix: copy.fixChats(rep.name),
+        href: prefsHref,
+      });
     }
   }
-  const blocking = data.totals.chats === 0 || !primary || data.reps.length === 0;
+  const blocking =
+    data.totals.chats === 0 || !primary || data.reps.length === 0;
   if (data.totals.chats === 0 && data.reps.length > 0) {
-    warnings.unshift({ text: copy.noChats, fix: copy.fixFree, href: prefsHref });
+    warnings.unshift({
+      text: copy.noChats,
+      fix: copy.fixFree,
+      href: prefsHref,
+    });
   }
 
   const when = workshopWhen(data);
@@ -92,7 +115,12 @@ export function ReviewStep({
     <section className={cardClass} aria-labelledby="review-heading">
       {region}
       {dialog}
-      <h2 id="review-heading" className="m-0 text-xl font-semibold text-dashboard-text-heavy">{copy.heading}</h2>
+      <h2
+        id="review-heading"
+        className="m-0 text-xl font-semibold text-dashboard-text-heavy"
+      >
+        {copy.heading}
+      </h2>
 
       {warnings.length === 0 ? (
         <Note tone="ok" icon={<Info aria-hidden />}>
@@ -104,7 +132,10 @@ export function ReviewStep({
             <li key={w.text}>
               <Note tone="warn" icon={<TriangleAlert aria-hidden />}>
                 {w.text}{" "}
-                <Link href={w.href} className="inline-flex min-h-11 items-center px-2 font-semibold text-dashboard-text-link">
+                <Link
+                  href={w.href}
+                  className="inline-flex min-h-11 items-center px-2 font-semibold text-dashboard-text-link"
+                >
                   {w.fix}
                 </Link>
               </Note>
@@ -113,17 +144,33 @@ export function ReviewStep({
         </ul>
       )}
 
-      <h3 className="m-0 text-base font-semibold text-dashboard-text-heavy">{copy.whenFree}</h3>
-      <AvailabilityGrid data={data} windows={windows} free={Object.fromEntries(data.reps.map((r) => [r.id, r.free]))} />
+      <h3 className="m-0 text-base font-semibold text-dashboard-text-heavy">
+        {copy.whenFree}
+      </h3>
+      <AvailabilityGrid
+        data={data}
+        windows={windows}
+        free={Object.fromEntries(data.reps.map((r) => [r.id, r.free]))}
+      />
 
       <p className="m-0 text-lg font-semibold text-dashboard-text-heavy">
-        {copy.summary(data.hackersPerChat, data.chatMinutes, data.totals.chats, data.totals.hackers)}
+        {copy.summary(
+          data.hackersPerChat,
+          data.chatMinutes,
+          data.totals.chats,
+          data.totals.hackers,
+        )}
       </p>
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <h3 className="m-0 text-base font-semibold text-dashboard-text-heavy">{copy.yourTeam}</h3>
-          <Link href={teamHref} className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-dashboard-text-link">
+          <h3 className="m-0 text-base font-semibold text-dashboard-text-heavy">
+            {copy.yourTeam}
+          </h3>
+          <Link
+            href={teamHref}
+            className="inline-flex min-h-11 items-center px-2 text-sm font-semibold text-dashboard-text-link"
+          >
             {copy.edit}
           </Link>
         </div>
@@ -144,22 +191,38 @@ export function ReviewStep({
                 {copy.freeAt(avail.map(sessionLabel).join(", "), avail.length)}
               </span>
               <span className="text-sm text-dashboard-text-medium">
-                {copy.repChats(Math.min(cap, rep.chatsWanted), data.chatMinutes, rep.chatsWanted, rep.chatsWanted > cap)}
+                {copy.repChats(
+                  Math.min(cap, rep.chatsWanted),
+                  data.chatMinutes,
+                  rep.chatsWanted,
+                  rep.chatsWanted > cap,
+                )}
               </span>
             </li>
           ))}
         </ul>
         {primary && (
-          <p className="m-0 text-base font-semibold text-dashboard-text-heavy">{copy.contactLine(primary.name, primary.phone)}</p>
+          <p className="m-0 text-base font-semibold text-dashboard-text-heavy">
+            {copy.contactLine(primary.name, primary.phone)}
+          </p>
         )}
       </div>
 
       {when && (
         <div className="flex flex-col gap-0.5 border-t border-dashboard-border-subtle pt-3">
-          <h3 className="m-0 text-sm font-semibold text-dashboard-text-medium">{copy.workshop}</h3>
+          <h3 className="m-0 text-sm font-semibold text-dashboard-text-medium">
+            {copy.workshop}
+          </h3>
           {data.workshops.map((w) => (
-            <p key={`${w.start}-${w.title}`} className="m-0 text-base text-dashboard-text-heavy">
-              {copy.workshopLine(`${shortClock(w.start)}–${shortClock(w.end)}`, w.title, w.location)}
+            <p
+              key={`${w.start}-${w.title}`}
+              className="m-0 text-base text-dashboard-text-heavy"
+            >
+              {copy.workshopLine(
+                `${shortClock(w.start)}–${shortClock(w.end)}`,
+                w.title,
+                w.location,
+              )}
             </p>
           ))}
           <p className="m-0 text-sm text-dashboard-text-light">
@@ -172,23 +235,42 @@ export function ReviewStep({
       )}
 
       <StepFooter
-        back={<LinkButton href={prefsHref} variant="outline">{sponsorSetupCopy.backStep}</LinkButton>}
+        back={
+          <LinkButton href={prefsHref} variant="outline">
+            {sponsorSetupCopy.backStep}
+          </LinkButton>
+        }
         note={copy.submitNote}
         primary={
           <DashboardButton
-            className={cn("min-h-11 md:h-11", pressable, blocking && "opacity-dashboard-disabled")}
+            className={cn(
+              "min-h-11 md:h-11",
+              pressable,
+              blocking && "opacity-dashboard-disabled",
+            )}
             aria-disabled={blocking || submit.isPending || undefined}
             onClick={() => {
               if (blocking || submit.isPending) return;
-              guard((confirmAfterInvites) => submit.mutate({ sponsor, confirmAfterInvites }));
+              guard((confirmAfterInvites) =>
+                submit.mutate({ sponsor, confirmAfterInvites }),
+              );
             }}
           >
-            {submit.isPending ? copy.submitting : data.submittedAt ? copy.resubmit : copy.submit}
+            {submit.isPending
+              ? copy.submitting
+              : data.submittedAt
+                ? copy.resubmit
+                : copy.submit}
           </DashboardButton>
         }
       />
       {submit.error && (
-        <p role="alert" className="m-0 text-sm font-semibold text-dashboard-text-warning">{submit.error.message}</p>
+        <p
+          role="alert"
+          className="m-0 text-sm font-semibold text-dashboard-text-warning"
+        >
+          {submit.error.message}
+        </p>
       )}
     </section>
   );

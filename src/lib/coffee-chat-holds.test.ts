@@ -208,7 +208,12 @@ describe("block slots and fill", () => {
       [0, 3, true],
       [0, 3, true],
     ]);
-    const fill = blockFill(h, oneOnOne(3), [use("a", null, "09:00", 15)], limits);
+    const fill = blockFill(
+      h,
+      oneOnOne(3),
+      [use("a", null, "09:00", 15)],
+      limits,
+    );
     expect(fill).toEqual({ filled: 1, total: 2, firstOpen: "09:15" });
     expect(blockSlots(h, oneOnOne(3), [])[0]!.lowered).toBe(false);
   });

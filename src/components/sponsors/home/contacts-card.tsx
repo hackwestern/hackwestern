@@ -85,7 +85,9 @@ function ContactLine({
           <div className="flex shrink-0 gap-1.5">
             <button
               type="button"
-              aria-label={copied ? copy.copiedLabel(name) : copy.copyLabel(name, shown)}
+              aria-label={
+                copied ? copy.copiedLabel(name) : copy.copyLabel(name, shown)
+              }
               onClick={() => {
                 const done = () => setCopied(true);
                 void navigator.clipboard?.writeText(shown).then(done, done);

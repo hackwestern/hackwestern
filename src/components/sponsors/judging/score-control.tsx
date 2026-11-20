@@ -1,11 +1,7 @@
 import { useEffect, useId, useRef } from "react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
-import {
-  SCORE_MAX,
-  SCORE_MIN,
-  formatScore,
-} from "~/lib/sponsor-scoring";
+import { SCORE_MAX, SCORE_MIN, formatScore } from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
 
 const copy = sponsorJudgingCopy.score;

@@ -110,7 +110,9 @@ async function lockForWrite(
   // Board lock first, then the sponsor row: the same order as every
   // organizer board write (boardWrite), so a sponsor save and an
   // organizer fix can't deadlock. Reconcile re-takes it (re-entrant).
-  await tx.execute(sql`select pg_advisory_xact_lock(${sql.raw(BOARD_LOCK_KEY)})`);
+  await tx.execute(
+    sql`select pg_advisory_xact_lock(${sql.raw(BOARD_LOCK_KEY)})`,
+  );
   await tx
     .select({ id: sponsorJudgingSponsors.id })
     .from(sponsorJudgingSponsors)
@@ -119,7 +121,10 @@ async function lockForWrite(
   const [sent] = await tx
     .select({ id: coffeeChatPlacements.id })
     .from(coffeeChatPlacements)
-    .innerJoin(coffeeChatReps, eq(coffeeChatReps.id, coffeeChatPlacements.repId))
+    .innerJoin(
+      coffeeChatReps,
+      eq(coffeeChatReps.id, coffeeChatPlacements.repId),
+    )
     .where(
       and(
         eq(coffeeChatReps.sponsorId, sponsor.id),
@@ -138,7 +143,10 @@ async function lockForWrite(
     await tx
       .insert(coffeeChatPrefs)
       .values({ sponsorId: sponsor.id, updatedAt: now })
-      .onConflictDoUpdate({ target: coffeeChatPrefs.sponsorId, set: { updatedAt: now } });
+      .onConflictDoUpdate({
+        target: coffeeChatPrefs.sponsorId,
+        set: { updatedAt: now },
+      });
   }
   return { ...sponsor, sent: !!sent };
 }
@@ -156,11 +164,16 @@ async function reconcileIfSent(
   removingPlacementIds?: string[],
 ): Promise<InviteJob[]> {
   if (!sponsor.sent) return [];
-  const result = await reconcileInvitesAfterChange(tx, sponsor.id, { removingPlacementIds });
+  const result = await reconcileInvitesAfterChange(tx, sponsor.id, {
+    removingPlacementIds,
+  });
   if (result.status === "workshopsUnknown") {
     // Invites can't be checked without workshop times, and a removed rep
     // would drop theirs silently: refuse (the whole change rolls back).
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: errors.scheduleUnknown });
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: errors.scheduleUnknown,
+    });
   }
   return result.jobs;
 }
@@ -178,8 +191,14 @@ async function repOf(tx: Tx, sponsorId: string, repId: string) {
   const [rep] = await tx
     .select()
     .from(coffeeChatReps)
-    .where(and(eq(coffeeChatReps.id, repId), eq(coffeeChatReps.sponsorId, sponsorId)));
-  if (!rep) throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownRep });
+    .where(
+      and(
+        eq(coffeeChatReps.id, repId),
+        eq(coffeeChatReps.sponsorId, sponsorId),
+      ),
+    );
+  if (!rep)
+    throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownRep });
   return rep;
 }
 
@@ -235,7 +254,9 @@ async function yourChats(setup: SponsorSetup): Promise<YourChat[]> {
     // chats its usable window holds; the last may hold fewer.
     const mine = rows.filter((x) => x.repId === rep.id).map((x) => x.sessionId);
     const chats =
-      chatsBySession(mine, rep.chatsWanted, (id) => windows.chats[id] ?? 0).get(p.sessionId) ?? 0;
+      chatsBySession(mine, rep.chatsWanted, (id) => windows.chats[id] ?? 0).get(
+        p.sessionId,
+      ) ?? 0;
     const start = (windows.partial[p.sessionId] ?? session).start;
     return [
       {
@@ -293,7 +314,10 @@ export const coffeeChatSetupRouter = createTRPCRouter({
       const sentTimes = await db
         .select({ at: max(coffeeChatPlacements.sentAt) })
         .from(coffeeChatPlacements)
-        .innerJoin(coffeeChatReps, eq(coffeeChatReps.id, coffeeChatPlacements.repId))
+        .innerJoin(
+          coffeeChatReps,
+          eq(coffeeChatReps.id, coffeeChatPlacements.repId),
+        )
         .where(
           and(
             eq(coffeeChatReps.sponsorId, sponsor.id),
@@ -315,7 +339,11 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         /** Latest Send by organizers that covers this sponsor, or null. */
         sentAt,
         /** The sponsor changed something after organizers sent. */
-        editedAfterSend: !!(sentAt && setup.updatedAt && setup.updatedAt > sentAt),
+        editedAfterSend: !!(
+          sentAt &&
+          setup.updatedAt &&
+          setup.updatedAt > sentAt
+        ),
         seats: {
           total: chats.reduce((n, c) => n + c.chats * setup.hackersPerChat, 0),
           accepted: hackers.filter((h) => h.status === "accepted").length,
@@ -332,22 +360,36 @@ export const coffeeChatSetupRouter = createTRPCRouter({
    * default number of chats.
    */
   addRep: publicProcedure
-    .input(z.object({ sponsor: sponsorInput, name: repName, phone: repPhone, ...confirmInput }))
+    .input(
+      z.object({
+        sponsor: sponsorInput,
+        name: repName,
+        phone: repPhone,
+        ...confirmInput,
+      }),
+    )
     .mutation(async ({ input }) => {
       const sponsor = await findSponsor(input.sponsor);
       const setup = await loadSponsorSetup(sponsor);
       const added = await db.transaction(async (tx) => {
         await lockForWrite(tx, sponsor.id, input.confirmAfterInvites);
         const existing = await tx
-          .select({ id: coffeeChatReps.id, isPrimary: coffeeChatReps.isPrimary })
+          .select({
+            id: coffeeChatReps.id,
+            isPrimary: coffeeChatReps.isPrimary,
+          })
           .from(coffeeChatReps)
           .where(eq(coffeeChatReps.sponsorId, sponsor.id));
         if (existing.length >= MAX_SETUP_REPS) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: errors.tooManyReps(MAX_SETUP_REPS) });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: errors.tooManyReps(MAX_SETUP_REPS),
+          });
         }
         // A new rep starts with the default chats, or none when that would
         // go past the tier's chatting hours (they can still be listed).
-        const used = setup.reps.reduce((n, r) => n + r.chatsWanted, 0) * setup.chatMinutes;
+        const used =
+          setup.reps.reduce((n, r) => n + r.chatsWanted, 0) * setup.chatMinutes;
         const startingChats =
           setup.maxChatMinutes !== null &&
           used + DEFAULT_CHATS_WANTED * setup.chatMinutes > setup.maxChatMinutes
@@ -367,7 +409,10 @@ export const coffeeChatSetupRouter = createTRPCRouter({
             chatsWanted: startingChats,
             position: (pos?.n ?? -1) + 1,
           })
-          .returning({ id: coffeeChatReps.id, isPrimary: coffeeChatReps.isPrimary });
+          .returning({
+            id: coffeeChatReps.id,
+            isPrimary: coffeeChatReps.isPrimary,
+          });
         const open = COFFEE_SESSIONS.map((s) => s.id as string).filter(
           (id) => !setup.blocked.includes(id),
         );
@@ -394,14 +439,19 @@ export const coffeeChatSetupRouter = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       const { jobs, ...result } = await db.transaction(async (tx) => {
-        const sponsor = await lockForWrite(tx, input.sponsor, input.confirmAfterInvites);
+        const sponsor = await lockForWrite(
+          tx,
+          input.sponsor,
+          input.confirmAfterInvites,
+        );
         const rep = await repOf(tx, sponsor.id, input.repId);
         await tx
           .update(coffeeChatReps)
           .set({ name: input.name, phone: input.phone })
           .where(eq(coffeeChatReps.id, input.repId));
         // Invites carry the rep's name: a rename re-asks their hackers.
-        const jobs = rep.name !== input.name ? await reconcileIfSent(tx, sponsor) : [];
+        const jobs =
+          rep.name !== input.name ? await reconcileIfSent(tx, sponsor) : [];
         return { ok: true, jobs };
       });
       await deliver(jobs);
@@ -415,10 +465,20 @@ export const coffeeChatSetupRouter = createTRPCRouter({
    * seat or cancelled first, and those hackers are told.
    */
   removeRep: publicProcedure
-    .input(z.object({ sponsor: sponsorInput, repId: z.string().uuid(), ...confirmInput }))
+    .input(
+      z.object({
+        sponsor: sponsorInput,
+        repId: z.string().uuid(),
+        ...confirmInput,
+      }),
+    )
     .mutation(async ({ input }) => {
       const { jobs, ...result } = await db.transaction(async (tx) => {
-        const sponsor = await lockForWrite(tx, input.sponsor, input.confirmAfterInvites);
+        const sponsor = await lockForWrite(
+          tx,
+          input.sponsor,
+          input.confirmAfterInvites,
+        );
         const rep = await repOf(tx, sponsor.id, input.repId);
         const placements = await tx
           .select({ id: coffeeChatPlacements.id })
@@ -436,7 +496,11 @@ export const coffeeChatSetupRouter = createTRPCRouter({
             .select({ id: coffeeChatReps.id })
             .from(coffeeChatReps)
             .where(eq(coffeeChatReps.sponsorId, sponsor.id))
-            .orderBy(asc(coffeeChatReps.position), asc(coffeeChatReps.createdAt), asc(coffeeChatReps.id))
+            .orderBy(
+              asc(coffeeChatReps.position),
+              asc(coffeeChatReps.createdAt),
+              asc(coffeeChatReps.id),
+            )
             .limit(1);
           if (next) {
             await tx
@@ -455,10 +519,20 @@ export const coffeeChatSetupRouter = createTRPCRouter({
 
   /** Move the crown: exactly one primary contact per sponsor. */
   setPrimary: publicProcedure
-    .input(z.object({ sponsor: sponsorInput, repId: z.string().uuid(), ...confirmInput }))
+    .input(
+      z.object({
+        sponsor: sponsorInput,
+        repId: z.string().uuid(),
+        ...confirmInput,
+      }),
+    )
     .mutation(async ({ input }) => {
       const result = await db.transaction(async (tx) => {
-        const sponsor = await lockForWrite(tx, input.sponsor, input.confirmAfterInvites);
+        const sponsor = await lockForWrite(
+          tx,
+          input.sponsor,
+          input.confirmAfterInvites,
+        );
         await repOf(tx, sponsor.id, input.repId);
         await tx
           .update(coffeeChatReps)
@@ -485,7 +559,11 @@ export const coffeeChatSetupRouter = createTRPCRouter({
     .input(
       z.object({
         sponsor: sponsorInput,
-        hackersPerChat: z.number().int().min(MIN_HACKERS_PER_CHAT).max(MAX_HACKERS_PER_CHAT),
+        hackersPerChat: z
+          .number()
+          .int()
+          .min(MIN_HACKERS_PER_CHAT)
+          .max(MAX_HACKERS_PER_CHAT),
         reps: z
           .array(
             z.object({
@@ -510,7 +588,11 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         setup.maxChatMinutes,
       );
       const { jobs, ...result } = await db.transaction(async (tx) => {
-        const locked = await lockForWrite(tx, sponsor.id, input.confirmAfterInvites);
+        const locked = await lockForWrite(
+          tx,
+          sponsor.id,
+          input.confirmAfterInvites,
+        );
         const reps = await tx
           .select({ id: coffeeChatReps.id })
           .from(coffeeChatReps)
@@ -546,7 +628,9 @@ export const coffeeChatSetupRouter = createTRPCRouter({
             .update(coffeeChatReps)
             .set({ chatsWanted: r.chatsWanted })
             .where(eq(coffeeChatReps.id, r.id));
-          await tx.delete(coffeeChatRepSessions).where(eq(coffeeChatRepSessions.repId, r.id));
+          await tx
+            .delete(coffeeChatRepSessions)
+            .where(eq(coffeeChatRepSessions.repId, r.id));
           const free = [...new Set(availableFree(r.free, blocked))];
           if (free.length) {
             await tx
@@ -574,14 +658,19 @@ export const coffeeChatSetupRouter = createTRPCRouter({
       await db.transaction(async (tx) => {
         // A submit isn't an edit: updated_at stays (organizer board's
         // "Changed after invites" flag).
-        await lockForWrite(tx, sponsor.id, input.confirmAfterInvites, { bump: false });
+        await lockForWrite(tx, sponsor.id, input.confirmAfterInvites, {
+          bump: false,
+        });
         // Checked under the lock, so a rep edit in another tab can't slip in.
         const setup = await loadSponsorSetup(sponsor, tx);
         if (setup.reps.length === 0) {
           throw new TRPCError({ code: "BAD_REQUEST", message: errors.noReps });
         }
         if (!setup.reps.some((r) => r.isPrimary)) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: errors.noPrimary });
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: errors.noPrimary,
+          });
         }
         if (setup.totals.chats === 0) {
           throw new TRPCError({ code: "BAD_REQUEST", message: errors.noChats });
@@ -600,13 +689,26 @@ export const coffeeChatSetupRouter = createTRPCRouter({
 
   /** Is this hacker already on the sponsor's "Met at your booth" list? */
   scanOf: publicProcedure
-    .input(z.object({ sponsor: sponsorInput, userId: z.string().trim().min(1).max(255) }))
+    .input(
+      z.object({
+        sponsor: sponsorInput,
+        userId: z.string().trim().min(1).max(255),
+      }),
+    )
     .query(async ({ input }) => {
       const sponsor = await findSponsor(input.sponsor);
       const [row] = await db
-        .select({ scannedAt: sponsorScans.scannedAt, repName: sponsorScans.repName })
+        .select({
+          scannedAt: sponsorScans.scannedAt,
+          repName: sponsorScans.repName,
+        })
         .from(sponsorScans)
-        .where(and(eq(sponsorScans.sponsorId, sponsor.id), eq(sponsorScans.userId, input.userId)));
+        .where(
+          and(
+            eq(sponsorScans.sponsorId, sponsor.id),
+            eq(sponsorScans.userId, input.userId),
+          ),
+        );
       return row ?? null;
     }),
 
@@ -614,7 +716,7 @@ export const coffeeChatSetupRouter = createTRPCRouter({
    * A sponsor scanned a hacker at their booth ("Met at your booth"):
    * record it so they're invited first. Scanning twice keeps the first
    * time; picking a rep later updates who wants to talk to them. The rep
- * is chosen by id from Your team; the name is looked up here.
+   * is chosen by id from Your team; the name is looked up here.
    */
   recordScan: publicProcedure
     .input(
@@ -632,7 +734,11 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         .from(users)
         .innerJoin(applications, eq(applications.userId, users.id))
         .where(eq(users.id, input.userId));
-      if (!hacker || hacker.type !== "hacker" || !isAdmittedStatus(hacker.status)) {
+      if (
+        !hacker ||
+        hacker.type !== "hacker" ||
+        !isAdmittedStatus(hacker.status)
+      ) {
         throw new TRPCError({ code: "NOT_FOUND", message: errors.notAHacker });
       }
       let rep: string | null = null;
@@ -640,8 +746,17 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         const [row] = await db
           .select({ name: coffeeChatReps.name })
           .from(coffeeChatReps)
-          .where(and(eq(coffeeChatReps.id, input.repId), eq(coffeeChatReps.sponsorId, sponsor.id)));
-        if (!row) throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownRep });
+          .where(
+            and(
+              eq(coffeeChatReps.id, input.repId),
+              eq(coffeeChatReps.sponsorId, sponsor.id),
+            ),
+          );
+        if (!row)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: errors.unknownRep,
+          });
         rep = row.name;
       }
       const insert = db

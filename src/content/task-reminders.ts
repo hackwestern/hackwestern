@@ -50,12 +50,12 @@ export const taskRemindersCopy = {
     logNote:
       "Slack sends task pings itself at their time, so a task ping here means Slack took it for that time, not that we saw it delivered.",
     logEmpty: "No pings yet.",
-    helpWhat: (sponsor: string, reason: string) => `Help: ${sponsor} · ${reason}`,
+    helpWhat: (sponsor: string, reason: string) =>
+      `Help: ${sponsor} · ${reason}`,
     rePings: (n: number) => (n === 1 ? "1 re-ping" : `${n} re-pings`),
     status: {
       scheduled: "Handed to Slack",
-      failed: (code: string | null) =>
-        code ? `Failed (${code})` : "Failed",
+      failed: (code: string | null) => (code ? `Failed (${code})` : "Failed"),
       posted: "Posted",
       notPosted: "Not posted to Slack",
     },

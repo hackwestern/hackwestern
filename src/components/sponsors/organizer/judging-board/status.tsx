@@ -15,7 +15,8 @@ const copy = sponsorJudgingBoardCopy;
 export const STATUS_CELL: Record<TeamStatus, string> = {
   "not-sent":
     "border border-solid border-dashboard-border-subtle bg-dashboard-bg-surface",
-  waiting: "border border-solid border-dashboard-border-control bg-dashboard-bg-surface",
+  waiting:
+    "border border-solid border-dashboard-border-control bg-dashboard-bg-surface",
   accepted:
     "border border-solid border-dashboard-status-live bg-dashboard-schedule-green",
 };

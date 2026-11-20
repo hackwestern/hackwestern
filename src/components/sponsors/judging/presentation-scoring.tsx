@@ -83,11 +83,7 @@ export function PresentationScoring({
                 value={myScore}
                 onChange={(score) => onScore(team.id, me, score)}
               />
-              <TeamScores
-                scores={scores}
-                me={me}
-                status={saveState[team.id]}
-              />
+              <TeamScores scores={scores} me={me} status={saveState[team.id]} />
             </li>
           );
         })}

@@ -54,7 +54,8 @@ export const scheduleCopy = {
     legendEvents: "Your events",
     /** One block per rep session. */
     chatTitle: (rep: string) => `Coffee chats · ${rep}`,
-    chatRoom: (room: string, ivey: boolean) => (ivey ? `Ivey, Rm ${room}` : `Rm ${room}`),
+    chatRoom: (room: string, ivey: boolean) =>
+      ivey ? `Ivey, Rm ${room}` : `Rm ${room}`,
     /** Saturday before chats are confirmed. */
     chatsPlaceholder: "Coffee chats: times confirmed Fri 10:00 PM",
     eyebrow: "Schedule",

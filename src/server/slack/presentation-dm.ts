@@ -46,10 +46,7 @@ export type TeamPresentation = {
 export function presentationDmMessage(
   teamName: string,
   slots: readonly TeamPresentation[],
-  {
-    confirm,
-    result,
-  }: { confirm?: ConfirmButtonValue; result?: string } = {},
+  { confirm, result }: { confirm?: ConfirmButtonValue; result?: string } = {},
 ) {
   const lines = [...slots]
     .sort((a, b) => a.start - b.start)
@@ -75,7 +72,10 @@ export function presentationDmMessage(
         elements: [
           {
             type: "mrkdwn",
-            text: copy.footer(PRESENTATION_PITCH_MINUTES, PRESENTATION_QA_MINUTES),
+            text: copy.footer(
+              PRESENTATION_PITCH_MINUTES,
+              PRESENTATION_QA_MINUTES,
+            ),
           },
         ],
       },

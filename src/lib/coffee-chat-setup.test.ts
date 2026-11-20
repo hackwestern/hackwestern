@@ -21,12 +21,18 @@ describe("setupWindows: partial sessions on the sponsor side", () => {
     const groups = setupWindows(sunLife, 30);
     expect(groups.blocked).toEqual(["14"]);
     // 1:00-1:30 before the cut, 3:30-4:00 after it.
-    expect(groups.partial).toEqual({ "13": { start: 780, end: 810 }, "15": { start: 930, end: 960 } });
+    expect(groups.partial).toEqual({
+      "13": { start: 780, end: 810 },
+      "15": { start: 930, end: 960 },
+    });
     expect(groups.chats).toMatchObject({ "10": 2, "13": 1, "14": 0, "15": 1 });
 
     const oneOnOnes = setupWindows(sunLife, 15);
     expect(oneOnOnes.blocked).toEqual(["14"]);
-    expect(oneOnOnes.partial).toEqual({ "13": { start: 780, end: 825 }, "15": { start: 915, end: 960 } });
+    expect(oneOnOnes.partial).toEqual({
+      "13": { start: 780, end: 825 },
+      "15": { start: 915, end: 960 },
+    });
     expect(oneOnOnes.chats).toMatchObject({ "13": 3, "15": 3, "16": 4 });
   });
 
@@ -39,13 +45,23 @@ describe("setupWindows: partial sessions on the sponsor side", () => {
   });
 
   test("the same windows as the organizer board, for every session and chat length", () => {
-    const items = sunLife.map((w) => ({ day: "Saturday", column: "sponsor-workshop", ...w, sponsors: ["Sun Life"] }));
+    const items = sunLife.map((w) => ({
+      day: "Saturday",
+      column: "sponsor-workshop",
+      ...w,
+      sponsors: ["Sun Life"],
+    }));
     for (const minutes of [15, 30]) {
-      const sponsor = { workshops: workshopWindows(items, "Sun Life"), chatMinutes: minutes };
+      const sponsor = {
+        workshops: workshopWindows(items, "Sun Life"),
+        chatMinutes: minutes,
+      };
       const windows = setupWindows(sunLife, minutes);
       for (const s of COFFEE_SESSIONS) {
         const board = windowAt(sponsor, s);
-        expect(windows.blocked.includes(s.id), `${s.id} @ ${minutes}`).toBe(board === null);
+        expect(windows.blocked.includes(s.id), `${s.id} @ ${minutes}`).toBe(
+          board === null,
+        );
         if (board && (board.start !== s.start || board.end !== s.end)) {
           expect(windows.partial[s.id]).toEqual(board);
         }
@@ -90,19 +106,42 @@ describe("invitesAffected: the change-after-invites count (B4)", () => {
   });
 
   test("unticking one session counts only that chat's hackers", () => {
-    expect(invitesAffected(chats, [], saved, withRep("dana", { free: ["14", "15"] }))).toBe(3);
+    expect(
+      invitesAffected(
+        chats,
+        [],
+        saved,
+        withRep("dana", { free: ["14", "15"] }),
+      ),
+    ).toBe(3);
   });
   test("ticking a free session no chat sits in changes nothing", () => {
-    expect(invitesAffected(chats, [], saved, withRep("kevin", { free: ["10", "11"] }))).toBe(0);
+    expect(
+      invitesAffected(
+        chats,
+        [],
+        saved,
+        withRep("kevin", { free: ["10", "11"] }),
+      ),
+    ).toBe(0);
   });
   test("fewer chats counts only the chats that shrink", () => {
-    expect(invitesAffected(chats, [], saved, withRep("dana", { chatsWanted: 3 }))).toBe(3);
+    expect(
+      invitesAffected(chats, [], saved, withRep("dana", { chatsWanted: 3 })),
+    ).toBe(3);
   });
   test("a new group size touches every chat", () => {
-    expect(invitesAffected(chats, [], saved, { ...saved, hackersPerChat: 2 })).toBe(8);
+    expect(
+      invitesAffected(chats, [], saved, { ...saved, hackersPerChat: 2 }),
+    ).toBe(8);
   });
   test("a removed rep's chats all count", () => {
-    expect(invitesAffected(chats, [], saved, { ...saved, reps: saved.reps.slice(1) })).toBe(6);
+    expect(
+      invitesAffected(chats, [], saved, {
+        ...saved,
+        reps: saved.reps.slice(1),
+      }),
+    ).toBe(6);
   });
 });
 
@@ -139,25 +178,62 @@ describe("chatChanges: organizer moves for the sponsor's Last change", () => {
   const team = new Set(["dana", "kevin"]);
   test("a new session, a new room and a removed chat", () => {
     expect(
-      chatChanges(seen, [
-        { placementId: "p1", repId: "dana", sessionId: "15", room: "1348", start: "15:00" },
-        { placementId: "p2", repId: "dana", sessionId: "14", room: "2241", start: "14:00" },
-      ], team),
+      chatChanges(
+        seen,
+        [
+          {
+            placementId: "p1",
+            repId: "dana",
+            sessionId: "15",
+            room: "1348",
+            start: "15:00",
+          },
+          {
+            placementId: "p2",
+            repId: "dana",
+            sessionId: "14",
+            room: "2241",
+            start: "14:00",
+          },
+        ],
+        team,
+      ),
     ).toEqual([
-      { kind: "moved", repId: "dana", from: "13:00", to: "15:00", room: "1348" },
+      {
+        kind: "moved",
+        repId: "dana",
+        from: "13:00",
+        to: "15:00",
+        room: "1348",
+      },
       { kind: "moved", repId: "dana", from: "14:00", to: null, room: "2241" },
       { kind: "removed", repId: "kevin", from: "10:00" },
     ]);
   });
   test("nothing changed, or a first look, is no change", () => {
-    const now = Object.entries(seen).map(([placementId, c]) => ({ placementId, ...c }));
+    const now = Object.entries(seen).map(([placementId, c]) => ({
+      placementId,
+      ...c,
+    }));
     expect(chatChanges(seen, now, team)).toEqual([]);
     expect(chatChanges({}, now, team)).toEqual([]);
   });
   test("the sponsor removing a rep isn't an organizer removal", () => {
     const now = [
-      { placementId: "p1", repId: "dana", sessionId: "13", room: "2242", start: "13:00" },
-      { placementId: "p2", repId: "dana", sessionId: "14", room: "1348", start: "14:00" },
+      {
+        placementId: "p1",
+        repId: "dana",
+        sessionId: "13",
+        room: "2242",
+        start: "13:00",
+      },
+      {
+        placementId: "p2",
+        repId: "dana",
+        sessionId: "14",
+        room: "1348",
+        start: "14:00",
+      },
     ];
     // Kevin is gone from the team: his missing chat is the sponsor's own change.
     expect(chatChanges(seen, now, new Set(["dana"]))).toEqual([]);
@@ -167,21 +243,40 @@ describe("chatChanges: organizer moves for the sponsor's Last change", () => {
 describe("parseSeenChats: stored sent chats, malformed or not", () => {
   const chat = { repId: "dana", sessionId: "13", room: "2242", start: "13:00" };
   test("reads back what was stored", () => {
-    const stored = { chats: { p1: chat }, notes: [{ text: "Moved", at: "2026-11-21T14:00:00.000Z" }] };
+    const stored = {
+      chats: { p1: chat },
+      notes: [{ text: "Moved", at: "2026-11-21T14:00:00.000Z" }],
+    };
     expect(parseSeenChats(JSON.stringify(stored))).toEqual(stored);
   });
-  test.each([null, "", "not json", "null", "42", '"text"', "[]", "true"])("%j is empty", (raw) => {
-    expect(parseSeenChats(raw)).toEqual({ chats: {}, notes: [] });
-  });
+  test.each([null, "", "not json", "null", "42", '"text"', "[]", "true"])(
+    "%j is empty",
+    (raw) => {
+      expect(parseSeenChats(raw)).toEqual({ chats: {}, notes: [] });
+    },
+  );
   test("drops bad chats and notes, keeps good ones", () => {
     const raw = JSON.stringify({
-      chats: { p1: chat, p2: null, p3: { repId: "kevin" }, p4: "x", p5: { ...chat, room: 2241 } },
-      notes: [{ text: "Moved", at: "2026-11-21T14:00:00.000Z" }, null, { text: 1, at: "x" }, "x"],
+      chats: {
+        p1: chat,
+        p2: null,
+        p3: { repId: "kevin" },
+        p4: "x",
+        p5: { ...chat, room: 2241 },
+      },
+      notes: [
+        { text: "Moved", at: "2026-11-21T14:00:00.000Z" },
+        null,
+        { text: 1, at: "x" },
+        "x",
+      ],
     });
     expect(parseSeenChats(raw)).toEqual({
       chats: { p1: chat },
       notes: [{ text: "Moved", at: "2026-11-21T14:00:00.000Z" }],
     });
-    expect(parseSeenChats(JSON.stringify({ chats: [chat], notes: { text: "x" } }))).toEqual({ chats: {}, notes: [] });
+    expect(
+      parseSeenChats(JSON.stringify({ chats: [chat], notes: { text: "x" } })),
+    ).toEqual({ chats: {}, notes: [] });
   });
 });

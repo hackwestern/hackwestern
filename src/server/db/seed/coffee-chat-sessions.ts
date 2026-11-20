@@ -43,7 +43,12 @@ const SEED: Seed[] = [
     prefs: { hackersPerChat: 3, longerOneOnOne: false },
     reps: [
       // 2-3 is inside Sun Life's workshop window: the scheduler ignores it.
-      { name: "Dana W.", phone: "5195550101", chats: 4, free: ["10", "11", "14", "16"] },
+      {
+        name: "Dana W.",
+        phone: "5195550101",
+        chats: 4,
+        free: ["10", "11", "14", "16"],
+      },
       { name: "Jasmine L.", phone: "5195550102", chats: 4, free: ["11", "16"] },
       { name: "Kevin T.", phone: "5195550103", chats: 3, free: ["11", "16"] },
     ],
@@ -61,7 +66,12 @@ const SEED: Seed[] = [
     prefs: { hackersPerChat: 1, longerOneOnOne: true },
     reps: [
       { name: "Lena M.", phone: "5195550106", chats: 4, free: ["11", "14"] },
-      { name: "Raj P.", phone: "5195550107", chats: 3, free: ["14", "15", "16"] },
+      {
+        name: "Raj P.",
+        phone: "5195550107",
+        chats: 3,
+        free: ["14", "15", "16"],
+      },
     ],
   },
   {
@@ -85,8 +95,18 @@ const SEED: Seed[] = [
     name: "CSE",
     prefs: { hackersPerChat: 5, longerOneOnOne: false },
     reps: [
-      { name: "Chris D.", phone: "5195550115", chats: 6, free: ["11", "14", "15", "16"] },
-      { name: "Mei Z.", phone: "5195550116", chats: 6, free: ["14", "15", "16"] },
+      {
+        name: "Chris D.",
+        phone: "5195550115",
+        chats: 6,
+        free: ["11", "14", "15", "16"],
+      },
+      {
+        name: "Mei Z.",
+        phone: "5195550116",
+        chats: 6,
+        free: ["14", "15", "16"],
+      },
       {
         name: "Alexandra Montgomery-Fitzgerald",
         phone: "5195550117",
@@ -100,10 +120,16 @@ const SEED: Seed[] = [
 const sponsors = await db
   .select({ id: sponsorJudgingSponsors.id, name: sponsorJudgingSponsors.name })
   .from(sponsorJudgingSponsors)
-  .where(inArray(sponsorJudgingSponsors.name, SEED.map((s) => s.name)));
+  .where(
+    inArray(
+      sponsorJudgingSponsors.name,
+      SEED.map((s) => s.name),
+    ),
+  );
 const idOf = new Map(sponsors.map((s) => [s.name, s.id]));
 const missing = SEED.filter((s) => !idOf.has(s.name)).map((s) => s.name);
-if (missing.length) console.warn(`Not registered locally, skipped: ${missing.join(", ")}`);
+if (missing.length)
+  console.warn(`Not registered locally, skipped: ${missing.join(", ")}`);
 
 await db.transaction(async (tx) => {
   const ids = [...idOf.values()];
@@ -111,20 +137,33 @@ await db.transaction(async (tx) => {
   await tx.delete(coffeeChatPlacements);
   await tx.delete(coffeeChatRoomBookings);
   if (ids.length) {
-    await tx.delete(coffeeChatReps).where(inArray(coffeeChatReps.sponsorId, ids));
-    await tx.delete(coffeeChatPrefs).where(inArray(coffeeChatPrefs.sponsorId, ids));
+    await tx
+      .delete(coffeeChatReps)
+      .where(inArray(coffeeChatReps.sponsorId, ids));
+    await tx
+      .delete(coffeeChatPrefs)
+      .where(inArray(coffeeChatPrefs.sponsorId, ids));
   }
   const now = new Date();
   for (const s of SEED) {
     const sponsorId = idOf.get(s.name);
     if (!sponsorId) continue;
     if (s.prefs) {
-      await tx.insert(coffeeChatPrefs).values({ sponsorId, ...s.prefs, submittedAt: now });
+      await tx
+        .insert(coffeeChatPrefs)
+        .values({ sponsorId, ...s.prefs, submittedAt: now });
     }
     for (const [i, r] of s.reps.entries()) {
       const [row] = await tx
         .insert(coffeeChatReps)
-        .values({ sponsorId, name: r.name, phone: r.phone, chatsWanted: r.chats, isPrimary: i === 0, position: i })
+        .values({
+          sponsorId,
+          name: r.name,
+          phone: r.phone,
+          chatsWanted: r.chats,
+          isPrimary: i === 0,
+          position: i,
+        })
         .returning({ id: coffeeChatReps.id });
       if (row && r.free.length) {
         await tx

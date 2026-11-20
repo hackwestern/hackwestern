@@ -43,46 +43,48 @@ vi.mock("~/server/api/utils/coffee-chat-invites", async (importOriginal) => ({
 vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
   ...(await importOriginal<typeof RunOfShowModule>()),
   getRunOfShow: () =>
-    ros.fail ? Promise.reject(new Error("sheet down")) : Promise.resolve({
-      readAt: "2026-11-21T12:00:00.000Z",
-      items: [
-        {
-          id: "Saturday-13:00-sponsor-workshop",
-          day: "Saturday",
-          start: "13:00",
-          end: "14:00",
-          column: "sponsor-workshop",
-          title: `WorkCo${stamp} Workshop`,
-          location: "Rm 2230",
-          sponsors: [],
-        },
-        {
-          id: "Saturday-13:00-sponsor-workshop-cut",
-          day: "Saturday",
-          start: "13:00",
-          end: "14:00",
-          column: "sponsor-workshop",
-          title: `CutCo${stamp} Workshop`,
-          location: "Rm 2232",
-          sponsors: [],
-        },
-        {
-          id: "Saturday-13:00-sponsor-workshop-late",
-          day: "Saturday",
-          start: "13:00",
-          end: "14:20",
-          column: "sponsor-workshop",
-          title: `LateCo${stamp} Workshop`,
-          location: "Rm 2231",
-          sponsors: [],
-        },
-      ],
-      tasks: [],
-      coffeeChats: [],
-      ceremonies: [],
-      workshops: [],
-      availability: { people: [], slots: [] },
-    }),
+    ros.fail
+      ? Promise.reject(new Error("sheet down"))
+      : Promise.resolve({
+          readAt: "2026-11-21T12:00:00.000Z",
+          items: [
+            {
+              id: "Saturday-13:00-sponsor-workshop",
+              day: "Saturday",
+              start: "13:00",
+              end: "14:00",
+              column: "sponsor-workshop",
+              title: `WorkCo${stamp} Workshop`,
+              location: "Rm 2230",
+              sponsors: [],
+            },
+            {
+              id: "Saturday-13:00-sponsor-workshop-cut",
+              day: "Saturday",
+              start: "13:00",
+              end: "14:00",
+              column: "sponsor-workshop",
+              title: `CutCo${stamp} Workshop`,
+              location: "Rm 2232",
+              sponsors: [],
+            },
+            {
+              id: "Saturday-13:00-sponsor-workshop-late",
+              day: "Saturday",
+              start: "13:00",
+              end: "14:20",
+              column: "sponsor-workshop",
+              title: `LateCo${stamp} Workshop`,
+              location: "Rm 2231",
+              sponsors: [],
+            },
+          ],
+          tasks: [],
+          coffeeChats: [],
+          ceremonies: [],
+          workshops: [],
+          availability: { people: [], slots: [] },
+        }),
 }));
 
 // Sponsors aren't logged in: their private UUID is the credential.
@@ -91,7 +93,10 @@ const setup = anon.coffeeChatSetup;
 
 let n = 0;
 async function sponsor(name = `Co${stamp}-${n++}`) {
-  const [row] = await db.insert(sponsorJudgingSponsors).values({ name }).returning();
+  const [row] = await db
+    .insert(sponsorJudgingSponsors)
+    .values({ name })
+    .returning();
   return row!.id;
 }
 
@@ -116,14 +121,24 @@ async function admittedHacker(share = true) {
 
 describe("coffeeChatSetup: Your team", () => {
   test("unknown sponsor is NOT_FOUND, bad uuid BAD_REQUEST", async () => {
-    expect(await code(setup.get({ sponsor: faker.string.uuid() }))).toBe("NOT_FOUND");
+    expect(await code(setup.get({ sponsor: faker.string.uuid() }))).toBe(
+      "NOT_FOUND",
+    );
     expect(await code(setup.get({ sponsor: "nope" }))).toBe("BAD_REQUEST");
   });
 
   test("first rep gets the crown; reps start with every open session ticked", async () => {
     const id = await sponsor(`WorkCo${stamp}`);
-    const a = await setup.addRep({ sponsor: id, name: "Dana W.", phone: "519-555-0142" });
-    const b = await setup.addRep({ sponsor: id, name: "Leo T.", phone: "5195550164" });
+    const a = await setup.addRep({
+      sponsor: id,
+      name: "Dana W.",
+      phone: "519-555-0142",
+    });
+    const b = await setup.addRep({
+      sponsor: id,
+      name: "Leo T.",
+      phone: "5195550164",
+    });
     expect(a.isPrimary).toBe(true);
     expect(b.isPrimary).toBe(false);
     const res = await setup.get({ sponsor: id });
@@ -140,27 +155,58 @@ describe("coffeeChatSetup: Your team", () => {
 
   test("name and phone are required; phone needs 7 digits", async () => {
     const id = await sponsor();
-    expect(await code(setup.addRep({ sponsor: id, name: "", phone: "5195550142" }))).toBe("BAD_REQUEST");
-    expect(await code(setup.addRep({ sponsor: id, name: "Dana", phone: "" }))).toBe("BAD_REQUEST");
-    expect(await code(setup.addRep({ sponsor: id, name: "Dana", phone: "555" }))).toBe("BAD_REQUEST");
+    expect(
+      await code(setup.addRep({ sponsor: id, name: "", phone: "5195550142" })),
+    ).toBe("BAD_REQUEST");
+    expect(
+      await code(setup.addRep({ sponsor: id, name: "Dana", phone: "" })),
+    ).toBe("BAD_REQUEST");
+    expect(
+      await code(setup.addRep({ sponsor: id, name: "Dana", phone: "555" })),
+    ).toBe("BAD_REQUEST");
   });
 
   test("the crown moves; removing the primary passes it on; reps are per sponsor", async () => {
     const id = await sponsor();
     const other = await sponsor();
-    const a = await setup.addRep({ sponsor: id, name: "A", phone: "5195550001" });
-    const b = await setup.addRep({ sponsor: id, name: "B", phone: "5195550002" });
+    const a = await setup.addRep({
+      sponsor: id,
+      name: "A",
+      phone: "5195550001",
+    });
+    const b = await setup.addRep({
+      sponsor: id,
+      name: "B",
+      phone: "5195550002",
+    });
     await setup.setPrimary({ sponsor: id, repId: b.id });
     let res = await setup.get({ sponsor: id });
-    expect(res.reps.filter((r) => r.isPrimary).map((r) => r.name)).toEqual(["B"]);
+    expect(res.reps.filter((r) => r.isPrimary).map((r) => r.name)).toEqual([
+      "B",
+    ]);
 
-    expect(await code(setup.setPrimary({ sponsor: other, repId: a.id }))).toBe("NOT_FOUND");
-    expect(await code(setup.removeRep({ sponsor: other, repId: a.id }))).toBe("NOT_FOUND");
+    expect(await code(setup.setPrimary({ sponsor: other, repId: a.id }))).toBe(
+      "NOT_FOUND",
+    );
+    expect(await code(setup.removeRep({ sponsor: other, repId: a.id }))).toBe(
+      "NOT_FOUND",
+    );
 
-    await setup.updateRep({ sponsor: id, repId: a.id, name: "A2", phone: "5195550003" });
+    await setup.updateRep({
+      sponsor: id,
+      repId: a.id,
+      name: "A2",
+      phone: "5195550003",
+    });
     await setup.removeRep({ sponsor: id, repId: b.id });
     res = await setup.get({ sponsor: id });
-    expect(res.reps).toEqual([expect.objectContaining({ name: "A2", phone: "5195550003", isPrimary: true })]);
+    expect(res.reps).toEqual([
+      expect.objectContaining({
+        name: "A2",
+        phone: "5195550003",
+        isPrimary: true,
+      }),
+    ]);
   });
 });
 
@@ -168,8 +214,16 @@ describe("coffeeChatSetup: preferences", () => {
   test("save drops blocked sessions; chats 0 allowed; submit sets submittedAt", async () => {
     const id = await sponsor(`WorkCo${stamp}-b`);
     // Not the workshop sponsor (name differs), so nothing is blocked here.
-    const a = await setup.addRep({ sponsor: id, name: "A", phone: "5195550001" });
-    const b = await setup.addRep({ sponsor: id, name: "B", phone: "5195550002" });
+    const a = await setup.addRep({
+      sponsor: id,
+      name: "A",
+      phone: "5195550001",
+    });
+    const b = await setup.addRep({
+      sponsor: id,
+      name: "B",
+      phone: "5195550002",
+    });
     await setup.savePrefs({
       sponsor: id,
       hackersPerChat: 3,
@@ -210,9 +264,17 @@ describe("coffeeChatSetup: preferences", () => {
 
   test("a cut session holds only its whole chats, for the chat length being saved", async () => {
     const id = await sponsor(`LateCo${stamp}`);
-    const a = await setup.addRep({ sponsor: id, name: "Lu", phone: "5195550001" });
+    const a = await setup.addRep({
+      sponsor: id,
+      name: "Lu",
+      phone: "5195550001",
+    });
     // 1-on-1s: 2:45-3:00 fits one chat, so 2-3 can be ticked.
-    await setup.savePrefs({ sponsor: id, hackersPerChat: 1, reps: [{ id: a.id, chatsWanted: 6, free: ["14", "16"] }] });
+    await setup.savePrefs({
+      sponsor: id,
+      hackersPerChat: 1,
+      reps: [{ id: a.id, chatsWanted: 6, free: ["14", "16"] }],
+    });
     let res = await setup.get({ sponsor: id });
     expect(res.blocked).toEqual(["13"]);
     expect(res.partial).toEqual({ "14": { start: 885, end: 900 } });
@@ -221,7 +283,11 @@ describe("coffeeChatSetup: preferences", () => {
     expect(res.totals).toEqual({ chats: 5, hackers: 5 });
 
     // Groups of 2 (30 min) in the same save: 2-3 no longer fits a chat and is dropped.
-    await setup.savePrefs({ sponsor: id, hackersPerChat: 2, reps: [{ id: a.id, chatsWanted: 6, free: ["14", "16"] }] });
+    await setup.savePrefs({
+      sponsor: id,
+      hackersPerChat: 2,
+      reps: [{ id: a.id, chatsWanted: 6, free: ["14", "16"] }],
+    });
     res = await setup.get({ sponsor: id });
     expect(res.blocked).toEqual(["13", "14"]);
     expect(res.partial).toEqual({});
@@ -232,18 +298,38 @@ describe("coffeeChatSetup: preferences", () => {
   test("submit needs a rep with a chat at a free time", async () => {
     const id = await sponsor();
     expect(await code(setup.submitPrefs({ sponsor: id }))).toBe("BAD_REQUEST");
-    const a = await setup.addRep({ sponsor: id, name: "A", phone: "5195550001" });
-    await setup.savePrefs({ sponsor: id, hackersPerChat: 1, reps: [{ id: a.id, chatsWanted: 0, free: ["10"] }] });
+    const a = await setup.addRep({
+      sponsor: id,
+      name: "A",
+      phone: "5195550001",
+    });
+    await setup.savePrefs({
+      sponsor: id,
+      hackersPerChat: 1,
+      reps: [{ id: a.id, chatsWanted: 0, free: ["10"] }],
+    });
     expect(await code(setup.submitPrefs({ sponsor: id }))).toBe("BAD_REQUEST");
-    await setup.savePrefs({ sponsor: id, hackersPerChat: 1, reps: [{ id: a.id, chatsWanted: 2, free: [] }] });
+    await setup.savePrefs({
+      sponsor: id,
+      hackersPerChat: 1,
+      reps: [{ id: a.id, chatsWanted: 2, free: [] }],
+    });
     expect(await code(setup.submitPrefs({ sponsor: id }))).toBe("BAD_REQUEST");
   });
 
   test("savePrefs skips reps that aren't theirs (removed elsewhere, or another sponsor's)", async () => {
     const id = await sponsor();
     const other = await sponsor();
-    const mine = await setup.addRep({ sponsor: id, name: "Me", phone: "5195550001" });
-    const a = await setup.addRep({ sponsor: other, name: "A", phone: "5195550001" });
+    const mine = await setup.addRep({
+      sponsor: id,
+      name: "Me",
+      phone: "5195550001",
+    });
+    const a = await setup.addRep({
+      sponsor: other,
+      name: "A",
+      phone: "5195550001",
+    });
     const res = await setup.savePrefs({
       sponsor: id,
       hackersPerChat: 2,
@@ -253,7 +339,10 @@ describe("coffeeChatSetup: preferences", () => {
       ],
     });
     expect(res.skipped).toBe(1);
-    const [theirs] = await db.select().from(coffeeChatReps).where(eq(coffeeChatReps.id, a.id));
+    const [theirs] = await db
+      .select()
+      .from(coffeeChatReps)
+      .where(eq(coffeeChatReps.id, a.id));
     expect(theirs!.chatsWanted).toBe(4);
     expect((await setup.get({ sponsor: id })).reps[0]!.chatsWanted).toBe(3);
   });
@@ -263,22 +352,40 @@ describe("coffeeChatSetup: every write bumps coffee_chat_pref.updated_at", () =>
   test("add, edit, crown, prefs, remove each move updated_at; longer 1-on-1s stay off", async () => {
     const id = await sponsor();
     const stamp = async () => {
-      const [pref] = await db.select().from(coffeeChatPrefs).where(eq(coffeeChatPrefs.sponsorId, id));
+      const [pref] = await db
+        .select()
+        .from(coffeeChatPrefs)
+        .where(eq(coffeeChatPrefs.sponsorId, id));
       return pref;
     };
     // Each write must land after the one before.
     const tick = () => new Promise((r) => setTimeout(r, 5));
-    const a = await setup.addRep({ sponsor: id, name: "A", phone: "5195550001" });
+    const a = await setup.addRep({
+      sponsor: id,
+      name: "A",
+      phone: "5195550001",
+    });
     let before = (await stamp())!.updatedAt.getTime();
     const writes: (() => Promise<unknown>)[] = [
       () => setup.addRep({ sponsor: id, name: "B", phone: "5195550002" }),
-      () => setup.updateRep({ sponsor: id, repId: a.id, name: "A2", phone: "5195550003" }),
+      () =>
+        setup.updateRep({
+          sponsor: id,
+          repId: a.id,
+          name: "A2",
+          phone: "5195550003",
+        }),
       async () => {
         const res = await setup.get({ sponsor: id });
         const b = res.reps.find((r) => r.name === "B")!;
         return setup.setPrimary({ sponsor: id, repId: b.id });
       },
-      () => setup.savePrefs({ sponsor: id, hackersPerChat: 1, reps: [{ id: a.id, chatsWanted: 2, free: ["10"] }] }),
+      () =>
+        setup.savePrefs({
+          sponsor: id,
+          hackersPerChat: 1,
+          reps: [{ id: a.id, chatsWanted: 2, free: ["10"] }],
+        }),
       () => setup.removeRep({ sponsor: id, repId: a.id }),
     ];
     for (const write of writes) {
@@ -308,8 +415,16 @@ describe("coffeeChatSetup: every write bumps coffee_chat_pref.updated_at", () =>
 describe("coffeeChatSetup: after organizers send", () => {
   test("Your chats, seats and the after-invites warning", async () => {
     const id = await sponsor();
-    const a = await setup.addRep({ sponsor: id, name: "Dana", phone: "5195550001" });
-    await setup.savePrefs({ sponsor: id, hackersPerChat: 2, reps: [{ id: a.id, chatsWanted: 3, free: ["10", "11"] }] });
+    const a = await setup.addRep({
+      sponsor: id,
+      name: "Dana",
+      phone: "5195550001",
+    });
+    await setup.savePrefs({
+      sponsor: id,
+      hackersPerChat: 2,
+      reps: [{ id: a.id, chatsWanted: 3, free: ["10", "11"] }],
+    });
     await setup.submitPrefs({ sponsor: id });
     const sentAt = new Date(Date.now() + 1000);
     const [p10] = await db
@@ -331,28 +446,54 @@ describe("coffeeChatSetup: after organizers send", () => {
 
     const res = await setup.get({ sponsor: id });
     expect(res.confirmed).toBe(true);
-    expect(res.chats.map((c) => [c.sessionId, c.room, c.building, c.chats, c.end])).toEqual([
+    expect(
+      res.chats.map((c) => [c.sessionId, c.room, c.building, c.chats, c.end]),
+    ).toEqual([
       ["10", "2241", "near", 2, "11:00"],
       ["11", "1352", "ivey", 1, "11:30"],
     ]);
-    expect(res.chats[0]!.hackers).toEqual([{ firstName: "Ada", status: "accepted" }]);
-    expect(res.seats).toEqual({ total: 6, accepted: 1, invited: 1, changed: 0 });
+    expect(res.chats[0]!.hackers).toEqual([
+      { firstName: "Ada", status: "accepted" },
+    ]);
+    expect(res.seats).toEqual({
+      total: 6,
+      accepted: 1,
+      invited: 1,
+      changed: 0,
+    });
     expect(res.editedAfterSend).toBe(false);
 
     // A change now needs the warning confirmed, and is then flagged.
     const refused = await setup
-      .updateRep({ sponsor: id, repId: a.id, name: "Dana W.", phone: "5195550001" })
+      .updateRep({
+        sponsor: id,
+        repId: a.id,
+        name: "Dana W.",
+        phone: "5195550001",
+      })
       .then(
         () => null,
         (e: { code?: string; message: string }) => e,
       );
     expect(refused?.code).toBe("PRECONDITION_FAILED");
     expect(refused?.message).toContain("Invites are already out");
-    await db.update(coffeeChatPlacements).set({ sentAt: new Date(Date.now() - 1000) }).where(eq(coffeeChatPlacements.repId, a.id));
-    await setup.updateRep({ sponsor: id, repId: a.id, name: "Dana W.", phone: "5195550001", confirmAfterInvites: true });
+    await db
+      .update(coffeeChatPlacements)
+      .set({ sentAt: new Date(Date.now() - 1000) })
+      .where(eq(coffeeChatPlacements.repId, a.id));
+    await setup.updateRep({
+      sponsor: id,
+      repId: a.id,
+      name: "Dana W.",
+      phone: "5195550001",
+      confirmAfterInvites: true,
+    });
     const after = await setup.get({ sponsor: id });
     expect(after.editedAfterSend).toBe(true);
-    const [pref] = await db.select().from(coffeeChatPrefs).where(eq(coffeeChatPrefs.sponsorId, id));
+    const [pref] = await db
+      .select()
+      .from(coffeeChatPrefs)
+      .where(eq(coffeeChatPrefs.sponsorId, id));
     expect(pref!.updatedAt.getTime()).toBeGreaterThan(after.sentAt!.getTime());
     expect(after.seats.changed).toBe(0);
 
@@ -373,26 +514,55 @@ describe("coffeeChatSetup.recordScan", () => {
     const id = await sponsor();
     const other = await sponsor();
     const hacker = await admittedHacker(false);
-    const dana = await setup.addRep({ sponsor: id, name: "Dana W.", phone: "5195550001" });
-    const theirs = await setup.addRep({ sponsor: other, name: "Mallory", phone: "5195550002" });
+    const dana = await setup.addRep({
+      sponsor: id,
+      name: "Dana W.",
+      phone: "5195550001",
+    });
+    const theirs = await setup.addRep({
+      sponsor: other,
+      name: "Mallory",
+      phone: "5195550002",
+    });
     await setup.recordScan({ sponsor: id, userId: hacker });
     await setup.recordScan({ sponsor: id, userId: hacker, repId: dana.id });
-    expect(await code(setup.recordScan({ sponsor: id, userId: hacker, repId: theirs.id }))).toBe("NOT_FOUND");
-    let rows = await db.select().from(sponsorScans).where(eq(sponsorScans.sponsorId, id));
+    expect(
+      await code(
+        setup.recordScan({ sponsor: id, userId: hacker, repId: theirs.id }),
+      ),
+    ).toBe("NOT_FOUND");
+    let rows = await db
+      .select()
+      .from(sponsorScans)
+      .where(eq(sponsorScans.sponsorId, id));
     expect(rows).toHaveLength(1);
     expect(rows[0]!.repName).toBe("Dana W.");
     // The card pre-selects the credited rep, so an explicit "Anyone" clears it.
     await setup.recordScan({ sponsor: id, userId: hacker });
-    rows = await db.select().from(sponsorScans).where(eq(sponsorScans.sponsorId, id));
+    rows = await db
+      .select()
+      .from(sponsorScans)
+      .where(eq(sponsorScans.sponsorId, id));
     expect(rows).toHaveLength(1);
     expect(rows[0]!.repName).toBeNull();
     expect((await setup.get({ sponsor: id })).scannedCount).toBe(1);
 
     const notHacker = (await mockSession(db)).user.id;
-    expect(await code(setup.recordScan({ sponsor: id, userId: notHacker }))).toBe("NOT_FOUND");
-    expect(await code(setup.recordScan({ sponsor: faker.string.uuid(), userId: hacker }))).toBe("NOT_FOUND");
+    expect(
+      await code(setup.recordScan({ sponsor: id, userId: notHacker })),
+    ).toBe("NOT_FOUND");
+    expect(
+      await code(
+        setup.recordScan({ sponsor: faker.string.uuid(), userId: hacker }),
+      ),
+    ).toBe("NOT_FOUND");
     // Scans never touch Your team.
-    expect(await db.select().from(coffeeChatReps).where(eq(coffeeChatReps.sponsorId, id))).toHaveLength(1);
+    expect(
+      await db
+        .select()
+        .from(coffeeChatReps)
+        .where(eq(coffeeChatReps.sponsorId, id)),
+    ).toHaveLength(1);
   });
 
   test("scanOf says whether a hacker is already on this sponsor's list", async () => {
@@ -400,7 +570,11 @@ describe("coffeeChatSetup.recordScan", () => {
     const other = await sponsor();
     const hacker = await admittedHacker(false);
     expect(await setup.scanOf({ sponsor: id, userId: hacker })).toBeNull();
-    const dana = await setup.addRep({ sponsor: id, name: "Dana W.", phone: "5195550001" });
+    const dana = await setup.addRep({
+      sponsor: id,
+      name: "Dana W.",
+      phone: "5195550001",
+    });
     await setup.recordScan({ sponsor: id, userId: hacker, repId: dana.id });
     const row = await setup.scanOf({ sponsor: id, userId: hacker });
     expect(row?.repName).toBe("Dana W.");
@@ -414,30 +588,58 @@ describe("coffeeChatSetup: edits after Send update invites", () => {
   const FRI_1030PM = new Date("2026-11-20T22:30:00-05:00");
 
   /** A submitted sponsor with sent 1-on-1 chats: one placement per rep. */
-  async function sentSponsor(reps: { name: string; chats: number; sessionId: "10" | "11"; room: string }[]) {
+  async function sentSponsor(
+    reps: {
+      name: string;
+      chats: number;
+      sessionId: "10" | "11";
+      room: string;
+    }[],
+  ) {
     const id = await sponsor();
     const out: { repId: string; placementId: string }[] = [];
     for (const r of reps) {
-      const rep = await setup.addRep({ sponsor: id, name: r.name, phone: "5195550001" });
+      const rep = await setup.addRep({
+        sponsor: id,
+        name: r.name,
+        phone: "5195550001",
+      });
       out.push({ repId: rep.id, placementId: "" });
     }
     await setup.savePrefs({
       sponsor: id,
       hackersPerChat: 1,
-      reps: reps.map((r, i) => ({ id: out[i]!.repId, chatsWanted: r.chats, free: [r.sessionId] })),
+      reps: reps.map((r, i) => ({
+        id: out[i]!.repId,
+        chatsWanted: r.chats,
+        free: [r.sessionId],
+      })),
     });
     await setup.submitPrefs({ sponsor: id });
     for (const [i, r] of reps.entries()) {
       const [p] = await db
         .insert(coffeeChatPlacements)
-        .values({ repId: out[i]!.repId, sessionId: r.sessionId, room: r.room, status: "sent", sentAt: new Date() })
+        .values({
+          repId: out[i]!.repId,
+          sessionId: r.sessionId,
+          room: r.room,
+          status: "sent",
+          sentAt: new Date(),
+        })
         .returning();
       out[i]!.placementId = p!.id;
     }
     return { id, reps: out };
   }
 
-  async function invite(sponsorId: string, placementId: string, slotTime: string, status: "pending" | "accepted", repName: string, room: string) {
+  async function invite(
+    sponsorId: string,
+    placementId: string,
+    slotTime: string,
+    status: "pending" | "accepted",
+    repName: string,
+    room: string,
+  ) {
     const userId = await admittedHacker();
     await db.insert(coffeeChats).values({
       sponsorId,
@@ -454,7 +656,11 @@ describe("coffeeChatSetup: edits after Send update invites", () => {
   }
 
   const invitesOf = (sponsorId: string) =>
-    db.select().from(coffeeChats).where(eq(coffeeChats.sponsorId, sponsorId)).orderBy(asc(coffeeChats.slotTime));
+    db
+      .select()
+      .from(coffeeChats)
+      .where(eq(coffeeChats.sponsorId, sponsorId))
+      .orderBy(asc(coffeeChats.slotTime));
 
   test("removing a rep moves their hackers to an open seat first, cancels the rest, and tells them", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -466,10 +672,21 @@ describe("coffeeChatSetup: edits after Send update invites", () => {
         { name: "Ben", chats: 1, sessionId: "11", room: "1356" },
       ]);
       const [ana, ben] = sp.reps;
-      const kept = await invite(sp.id, ana!.placementId, "10:15", "accepted", "Ana", "1354");
+      const kept = await invite(
+        sp.id,
+        ana!.placementId,
+        "10:15",
+        "accepted",
+        "Ana",
+        "1354",
+      );
       await invite(sp.id, ana!.placementId, "10:00", "pending", "Ana", "1354");
       deliver.mockClear();
-      await setup.removeRep({ sponsor: sp.id, repId: ana!.repId, confirmAfterInvites: true });
+      await setup.removeRep({
+        sponsor: sp.id,
+        repId: ana!.repId,
+        confirmAfterInvites: true,
+      });
 
       // The accepted hacker takes Ben's one seat and must confirm again; the
       // other invite is cancelled (and its row goes with Ana's chats).
@@ -485,7 +702,10 @@ describe("coffeeChatSetup: edits after Send update invites", () => {
         notifiedAt: null,
       });
       expect(deliver).toHaveBeenCalledTimes(1);
-      expect(deliver.mock.calls[0]![0].map((j) => j.event).sort()).toEqual(["cancelled", "reconfirm"]);
+      expect(deliver.mock.calls[0]![0].map((j) => j.event).sort()).toEqual([
+        "cancelled",
+        "reconfirm",
+      ]);
     } finally {
       vi.useRealTimers();
     }
@@ -495,15 +715,32 @@ describe("coffeeChatSetup: edits after Send update invites", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(FRI_1030PM);
     try {
-      const sp = await sentSponsor([{ name: "Ana", chats: 4, sessionId: "10", room: "1354" }]);
+      const sp = await sentSponsor([
+        { name: "Ana", chats: 4, sessionId: "10", room: "1354" },
+      ]);
       const [ana] = sp.reps;
       await invite(sp.id, ana!.placementId, "10:15", "accepted", "Ana", "1354");
       deliver.mockClear();
-      await setup.updateRep({ sponsor: sp.id, repId: ana!.repId, name: "Ana", phone: "5195550009", confirmAfterInvites: true });
+      await setup.updateRep({
+        sponsor: sp.id,
+        repId: ana!.repId,
+        name: "Ana",
+        phone: "5195550009",
+        confirmAfterInvites: true,
+      });
       expect(deliver).not.toHaveBeenCalled();
-      expect((await invitesOf(sp.id))[0]).toMatchObject({ status: "accepted", repName: "Ana" });
+      expect((await invitesOf(sp.id))[0]).toMatchObject({
+        status: "accepted",
+        repName: "Ana",
+      });
 
-      await setup.updateRep({ sponsor: sp.id, repId: ana!.repId, name: "Ana Li", phone: "5195550009", confirmAfterInvites: true });
+      await setup.updateRep({
+        sponsor: sp.id,
+        repId: ana!.repId,
+        name: "Ana Li",
+        phone: "5195550009",
+        confirmAfterInvites: true,
+      });
       expect((await invitesOf(sp.id))[0]).toMatchObject({
         placementId: ana!.placementId,
         status: "pending",
@@ -511,7 +748,9 @@ describe("coffeeChatSetup: edits after Send update invites", () => {
         notifiedAt: null,
       });
       expect(deliver).toHaveBeenCalledTimes(1);
-      expect(deliver.mock.calls[0]![0].map((j) => j.event)).toEqual(["reconfirm"]);
+      expect(deliver.mock.calls[0]![0].map((j) => j.event)).toEqual([
+        "reconfirm",
+      ]);
     } finally {
       vi.useRealTimers();
     }
@@ -521,9 +760,18 @@ describe("coffeeChatSetup: edits after Send update invites", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(FRI_1030PM);
     try {
-      const sp = await sentSponsor([{ name: "Cy", chats: 4, sessionId: "10", room: "2243" }]);
+      const sp = await sentSponsor([
+        { name: "Cy", chats: 4, sessionId: "10", room: "2243" },
+      ]);
       const [cy] = sp.reps;
-      const first = await invite(sp.id, cy!.placementId, "10:00", "accepted", "Cy", "2243");
+      const first = await invite(
+        sp.id,
+        cy!.placementId,
+        "10:00",
+        "accepted",
+        "Cy",
+        "2243",
+      );
       await invite(sp.id, cy!.placementId, "10:45", "pending", "Cy", "2243");
       deliver.mockClear();
       await setup.savePrefs({
@@ -533,11 +781,15 @@ describe("coffeeChatSetup: edits after Send update invites", () => {
         confirmAfterInvites: true,
       });
       const rows = await invitesOf(sp.id);
-      expect(rows.map((r) => [r.userId === first, r.slotTime, r.status])).toEqual([
+      expect(
+        rows.map((r) => [r.userId === first, r.slotTime, r.status]),
+      ).toEqual([
         [true, "10:00", "accepted"],
         [false, "10:45", "cancelled"],
       ]);
-      expect(deliver.mock.calls.flatMap((c) => c[0].map((j) => j.event))).toEqual(["cancelled"]);
+      expect(
+        deliver.mock.calls.flatMap((c) => c[0].map((j) => j.event)),
+      ).toEqual(["cancelled"]);
 
       // A save that changes nothing about the chats leaves invites alone.
       deliver.mockClear();
@@ -554,25 +806,53 @@ describe("coffeeChatSetup: edits after Send update invites", () => {
   });
 
   test("with the run of show unreadable, removing a rep after Send is refused and nothing changes", async () => {
-    const sp = await sentSponsor([{ name: "Di", chats: 4, sessionId: "10", room: "1348" }]);
-    await invite(sp.id, sp.reps[0]!.placementId, "10:00", "accepted", "Di", "1348");
+    const sp = await sentSponsor([
+      { name: "Di", chats: 4, sessionId: "10", room: "1348" },
+    ]);
+    await invite(
+      sp.id,
+      sp.reps[0]!.placementId,
+      "10:00",
+      "accepted",
+      "Di",
+      "1348",
+    );
     ros.fail = true;
     try {
       expect(
-        await code(setup.removeRep({ sponsor: sp.id, repId: sp.reps[0]!.repId, confirmAfterInvites: true })),
+        await code(
+          setup.removeRep({
+            sponsor: sp.id,
+            repId: sp.reps[0]!.repId,
+            confirmAfterInvites: true,
+          }),
+        ),
       ).toBe("PRECONDITION_FAILED");
     } finally {
       ros.fail = false;
     }
     expect(await invitesOf(sp.id)).toHaveLength(1);
-    expect(await db.select().from(coffeeChatReps).where(eq(coffeeChatReps.sponsorId, sp.id))).toHaveLength(1);
+    expect(
+      await db
+        .select()
+        .from(coffeeChatReps)
+        .where(eq(coffeeChatReps.sponsorId, sp.id)),
+    ).toHaveLength(1);
   });
 
   test("before Send, rep edits never touch invites", async () => {
     const id = await sponsor();
-    const a = await setup.addRep({ sponsor: id, name: "Ed", phone: "5195550001" });
+    const a = await setup.addRep({
+      sponsor: id,
+      name: "Ed",
+      phone: "5195550001",
+    });
     deliver.mockClear();
-    await setup.savePrefs({ sponsor: id, hackersPerChat: 2, reps: [{ id: a.id, chatsWanted: 2, free: ["10"] }] });
+    await setup.savePrefs({
+      sponsor: id,
+      hackersPerChat: 2,
+      reps: [{ id: a.id, chatsWanted: 2, free: ["10"] }],
+    });
     await setup.removeRep({ sponsor: id, repId: a.id });
     expect(deliver).not.toHaveBeenCalled();
   });
@@ -582,25 +862,50 @@ describe("coffeeChatSetup: Your chats times", () => {
   test("a session cut by their workshop starts late, at the same times hackers are invited to", async () => {
     // CutCo's workshop is 1-2, so with 30-min groups its 2-3 is only 2:30-3:00.
     const id = await sponsor(`CutCo${stamp}`);
-    const a = await setup.addRep({ sponsor: id, name: "Ana", phone: "5195550001" });
-    await setup.savePrefs({ sponsor: id, hackersPerChat: 2, reps: [{ id: a.id, chatsWanted: 3, free: ["14", "16"] }] });
+    const a = await setup.addRep({
+      sponsor: id,
+      name: "Ana",
+      phone: "5195550001",
+    });
+    await setup.savePrefs({
+      sponsor: id,
+      hackersPerChat: 2,
+      reps: [{ id: a.id, chatsWanted: 3, free: ["14", "16"] }],
+    });
     await setup.submitPrefs({ sponsor: id });
     await db.insert(coffeeChatPlacements).values([
-      { repId: a.id, sessionId: "14", room: "2241", status: "sent", sentAt: new Date() },
-      { repId: a.id, sessionId: "16", room: "2242", status: "sent", sentAt: new Date() },
+      {
+        repId: a.id,
+        sessionId: "14",
+        room: "2241",
+        status: "sent",
+        sentAt: new Date(),
+      },
+      {
+        repId: a.id,
+        sessionId: "16",
+        room: "2242",
+        status: "sent",
+        sentAt: new Date(),
+      },
     ]);
 
     const res = await setup.get({ sponsor: id });
-    expect(res.chats.map((c) => [c.sessionId, c.chats, c.start, c.end])).toEqual([
+    expect(
+      res.chats.map((c) => [c.sessionId, c.chats, c.start, c.end]),
+    ).toEqual([
       ["14", 1, "14:30", "15:00"],
       ["16", 2, "16:00", "17:00"],
     ]);
 
     // Track B's seats for the same placements: the same start times.
-    const clock = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+    const clock = (m: number) =>
+      `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
     const seats = layoutOf(await loadBoardState(), (p) => p.sponsorId === id);
     for (const c of res.chats) {
-      const starts = seats.filter((x) => x.placementId === c.placementId).map((x) => x.start);
+      const starts = seats
+        .filter((x) => x.placementId === c.placementId)
+        .map((x) => x.start);
       expect(starts.length, c.sessionId).toBe(c.chats);
       expect(clock(starts[0]!)).toBe(c.start);
       expect(clock(starts.at(-1)! + seats[0]!.minutes)).toBe(c.end);

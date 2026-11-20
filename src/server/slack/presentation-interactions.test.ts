@@ -86,7 +86,9 @@ async function toldTeam() {
     room: "Rm 2235",
     startMinute: 600,
   });
-  const key = slotsKey([{ sponsorId: sponsor!.id, room: "Rm 2235", start: 600 }]);
+  const key = slotsKey([
+    { sponsorId: sponsor!.id, room: "Rm 2235", start: 600 },
+  ]);
   await db.insert(sponsorPresentationNotices).values({
     userId,
     teamId: id,

@@ -32,8 +32,21 @@ const sponsor = (over: Partial<BoardSponsor>): BoardSponsor => ({
 const day = [
   sponsor({ sponsorId: "sb", name: "Scotiabank" }),
   sponsor({ sponsorId: "cl", name: "Canada Life", room: "Rm 2230" }),
-  sponsor({ sponsorId: "sl", name: "Sun Life", room: null, shortlistSent: false, teams: 0, firstStart: null }),
-  sponsor({ sponsorId: "tf", name: "Remote Co", mode: "remote", room: "Remote (judges online)", firstStart: null }),
+  sponsor({
+    sponsorId: "sl",
+    name: "Sun Life",
+    room: null,
+    shortlistSent: false,
+    teams: 0,
+    firstStart: null,
+  }),
+  sponsor({
+    sponsorId: "tf",
+    name: "Remote Co",
+    mode: "remote",
+    room: "Remote (judges online)",
+    firstStart: null,
+  }),
 ];
 
 describe("teamStatus", () => {

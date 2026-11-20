@@ -174,7 +174,9 @@ export function rankInterestRows(
 
   const ranked = [...firstByEmail.values()]
     .flatMap((row) =>
-      row.rank !== null && row.rank <= 3 && (prioritizePick || scores.has(row.email))
+      row.rank !== null &&
+      row.rank <= 3 &&
+      (prioritizePick || scores.has(row.email))
         ? [
             {
               email: row.email,

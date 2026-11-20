@@ -199,7 +199,10 @@ function SlotRow({
             Math.max(hour, coffeeChatMinutesOf(block.startTime) ?? hour),
           ),
           endTime: coffeeChatTimeOf(
-            Math.min(hour + 60, coffeeChatMinutesOf(block.endTime) ?? hour + 60),
+            Math.min(
+              hour + 60,
+              coffeeChatMinutesOf(block.endTime) ?? hour + 60,
+            ),
           ),
         };
   return (

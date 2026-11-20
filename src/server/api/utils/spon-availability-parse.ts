@@ -27,13 +27,17 @@ import {
   type SponAvailability,
   type SponOrganizer,
 } from "~/lib/spon-availability";
-import type { SheetGrid, SheetMerge } from "~/server/api/utils/run-of-show-parse";
+import type {
+  SheetGrid,
+  SheetMerge,
+} from "~/server/api/utils/run-of-show-parse";
 
 const AVAILABILITY_HEADER = /^spon(sor)?\s*team\s+availability$/i;
 const SHIFTS_HEADER = /^spon(sor)?\s*team\s+(necessary\s+)?shifts$/i;
 const EVERYONE = /^(everyone|everybody|all|whole team|team)$/i;
 /** "stepping out", "away", "sleeping", ... : the person isn't around. */
-const AWAY = /\b(stepping\s+out|step\s+out|stepped\s+out|out|away|off|break|sleep(ing)?|nap(ping)?)\b/gi;
+const AWAY =
+  /\b(stepping\s+out|step\s+out|stepped\s+out|out|away|off|break|sleep(ing)?|nap(ping)?)\b/gi;
 const NONE = /^(-+|–|—|n\/?a|none|no|nil|x)$/i;
 
 function cell(grid: SheetGrid, row: number, col: number): string {
@@ -49,11 +53,18 @@ function dayOf(word: string): RunOfShowDay | null {
 
 const TIME = String.raw`(\d{1,2})(?::(\d{2}))?\s*(?:([ap])\.?\s*m\.?)?`;
 const TIME_ONLY = new RegExp(`^${TIME}$`, "i");
-const RANGE = new RegExp(`^${TIME}\\s*(?:-|–|—|to|until|till)\\s*${TIME}$`, "i");
+const RANGE = new RegExp(
+  `^${TIME}\\s*(?:-|–|—|to|until|till)\\s*${TIME}$`,
+  "i",
+);
 
 type Clock = { hour: number; minute: number; meridiem: "a" | "p" | null };
 
-function clockOf(h: string, m: string | undefined, ap: string | undefined): Clock | null {
+function clockOf(
+  h: string,
+  m: string | undefined,
+  ap: string | undefined,
+): Clock | null {
   const hour = Number(h);
   const minute = m ? Number(m) : 0;
   if (minute > 59) return null;
@@ -78,7 +89,9 @@ function bareMinutes(clock: Clock): number {
 }
 
 function minutesOf(clock: Clock): number {
-  return clock.meridiem ? withMeridiem(clock, clock.meridiem) : bareMinutes(clock);
+  return clock.meridiem
+    ? withMeridiem(clock, clock.meridiem)
+    : bareMinutes(clock);
 }
 
 /**
@@ -98,7 +111,8 @@ export function parseTimePhrase(text: string): MinuteRange | null {
     const clock = m && clockOf(m[1]!, m[2], m[3]);
     if (!clock) return null;
     const at = minutesOf(clock);
-    if (after) return at >= DAY_MINUTES ? null : { start: at, end: DAY_MINUTES };
+    if (after)
+      return at >= DAY_MINUTES ? null : { start: at, end: DAY_MINUTES };
     // "Before 12AM" = the whole day.
     return { start: 0, end: at === 0 ? DAY_MINUTES : at };
   }
@@ -118,7 +132,8 @@ export function parseTimePhrase(text: string): MinuteRange | null {
   } else if (a.meridiem && !b.meridiem) {
     start = withMeridiem(a, a.meridiem);
     end = withMeridiem(b, a.meridiem);
-    if (end <= start && end !== 0) end = withMeridiem(b, a.meridiem === "a" ? "p" : "a");
+    if (end <= start && end !== 0)
+      end = withMeridiem(b, a.meridiem === "a" ? "p" : "a");
   } else {
     start = minutesOf(a);
     end = minutesOf(b);
@@ -131,7 +146,11 @@ export function parseTimePhrase(text: string): MinuteRange | null {
 }
 
 /** Add a window to `out`, splitting it at midnight. Past Sunday is dropped. */
-function addWindow(out: DayRanges, day: RunOfShowDay, range: MinuteRange): void {
+function addWindow(
+  out: DayRanges,
+  day: RunOfShowDay,
+  range: MinuteRange,
+): void {
   const index = RUN_OF_SHOW_DAYS.indexOf(day);
   out[day].push({ start: range.start, end: Math.min(range.end, DAY_MINUTES) });
   const next = RUN_OF_SHOW_DAYS[index + 1];
@@ -183,7 +202,10 @@ export function parseDayTimes(
     if (partDay) day = partDay;
     let rest = dayMatch ? raw.replace(dayMatch[0], " ") : raw;
     if (strip) rest = rest.replace(strip, " ");
-    rest = rest.replace(/^\s*(on|at)\s+/i, "").replace(/\s+/g, " ").trim();
+    rest = rest
+      .replace(/^\s*(on|at)\s+/i, "")
+      .replace(/\s+/g, " ")
+      .trim();
     const range = rest ? parseTimePhrase(rest) : null;
     if (!range || !day) {
       unread.push({ day, text: raw });
@@ -194,11 +216,20 @@ export function parseDayTimes(
   return { ranges: unionAll(ranges), unread };
 }
 
-function findHeader(grid: SheetGrid, pattern: RegExp): { row: number; col: number } | null {
+function findHeader(
+  grid: SheetGrid,
+  pattern: RegExp,
+): { row: number; col: number } | null {
   for (let row = 0; row < grid.length; row++) {
     const cells = grid[row] ?? [];
     for (let col = 0; col < cells.length; col++) {
-      if (pattern.test(String(cells[col] ?? "").replace(/\s+/g, " ").trim())) {
+      if (
+        pattern.test(
+          String(cells[col] ?? "")
+            .replace(/\s+/g, " ")
+            .trim(),
+        )
+      ) {
         return { row, col };
       }
     }
@@ -207,16 +238,26 @@ function findHeader(grid: SheetGrid, pattern: RegExp): { row: number; col: numbe
 }
 
 /** Name rows under a block's header, until the first blank name. */
-function blockRows(grid: SheetGrid, header: { row: number; col: number }): number[] {
+function blockRows(
+  grid: SheetGrid,
+  header: { row: number; col: number },
+): number[] {
   const rows: number[] = [];
-  for (let r = header.row + 1; r < grid.length && cell(grid, r, header.col); r++) {
+  for (
+    let r = header.row + 1;
+    r < grid.length && cell(grid, r, header.col);
+    r++
+  ) {
     rows.push(r);
   }
   return rows;
 }
 
 /** Last filled header cell of a block (its notes start after it). */
-function lastHeaderCol(grid: SheetGrid, header: { row: number; col: number }): number {
+function lastHeaderCol(
+  grid: SheetGrid,
+  header: { row: number; col: number },
+): number {
   let last = header.col;
   const cells = grid[header.row] ?? [];
   for (let c = header.col + 1; c < cells.length; c++) {
@@ -229,8 +270,14 @@ function lastHeaderCol(grid: SheetGrid, header: { row: number; col: number }): n
 type LabeledNote = { label: string | null; text: string };
 
 /** Note cells right of a block: "label:" + next cell, or "label: text". */
-function notesRightOf(grid: SheetGrid, row: number, fromCol: number): LabeledNote[] {
-  const cells = (grid[row] ?? []).slice(fromCol).map((c) => String(c ?? "").trim());
+function notesRightOf(
+  grid: SheetGrid,
+  row: number,
+  fromCol: number,
+): LabeledNote[] {
+  const cells = (grid[row] ?? [])
+    .slice(fromCol)
+    .map((c) => String(c ?? "").trim());
   const notes: LabeledNote[] = [];
   for (let i = 0; i < cells.length; i++) {
     const text = cells[i]!;
@@ -246,7 +293,9 @@ function notesRightOf(grid: SheetGrid, row: number, fromCol: number): LabeledNot
     }
     const labeled = /^([^:\d]{1,40}):\s*(.+)$/s.exec(text);
     notes.push(
-      labeled ? { label: labeled[1]!.trim(), text: labeled[2]!.trim() } : { label: null, text },
+      labeled
+        ? { label: labeled[1]!.trim(), text: labeled[2]!.trim() }
+        : { label: null, text },
     );
   }
   return notes;
@@ -264,7 +313,8 @@ function newOrganizer(name: string): SponOrganizer {
 }
 
 function mergeInto(target: DayRanges, add: DayRanges): void {
-  for (const day of RUN_OF_SHOW_DAYS) target[day] = unionRanges([...target[day], ...add[day]]);
+  for (const day of RUN_OF_SHOW_DAYS)
+    target[day] = unionRanges([...target[day], ...add[day]]);
 }
 
 /**
@@ -312,7 +362,10 @@ export function parseSponAvailability(grid: SheetGrid): SponAvailability {
         o.notes.push(...unread.map((n) => ({ day, text: n.text })));
       }
       for (const note of notesRightOf(grid, r, last + 1)) {
-        o.notes.push({ day: null, text: note.label ? `${note.label}: ${note.text}` : note.text });
+        o.notes.push({
+          day: null,
+          text: note.label ? `${note.label}: ${note.text}` : note.text,
+        });
       }
     }
   }
@@ -349,12 +402,17 @@ export function parseSponAvailability(grid: SheetGrid): SponAvailability {
       if (note.label && EVERYONE.test(note.label)) {
         const { ranges, unread } = parseDayTimes(note.text);
         mergeInto(result.required, ranges);
-        result.notes.push(...unread.map((n) => ({ ...n, text: `${note.label}: ${n.text}` })));
+        result.notes.push(
+          ...unread.map((n) => ({ ...n, text: `${note.label}: ${n.text}` })),
+        );
         continue;
       }
       const person = note.label ? findPerson(note.label) : null;
       if (!person) {
-        result.notes.push({ day: null, text: note.label ? `${note.label}: ${note.text}` : note.text });
+        result.notes.push({
+          day: null,
+          text: note.label ? `${note.label}: ${note.text}` : note.text,
+        });
         continue;
       }
       // Only time away is drawn; any other note stays as written.
@@ -386,6 +444,9 @@ export function runOfShowColumns(
     grid: grid.map((row) => row.slice(0, RUN_OF_SHOW_COLUMN_COUNT)),
     merges: merges
       .filter((m) => m.startCol < RUN_OF_SHOW_COLUMN_COUNT)
-      .map((m) => ({ ...m, endCol: Math.min(m.endCol, RUN_OF_SHOW_COLUMN_COUNT) })),
+      .map((m) => ({
+        ...m,
+        endCol: Math.min(m.endCol, RUN_OF_SHOW_COLUMN_COUNT),
+      })),
   };
 }

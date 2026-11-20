@@ -129,10 +129,7 @@ export function organizerHomeHref({
  */
 export function legacyScheduleDestination(query: OrganizerQuery): string {
   const asked = first(query.tab) ?? first(query.view);
-  const tab: OrganizerTab =
-    asked === "coffee"
-      ? "coffee"
-      : "sponsors";
+  const tab: OrganizerTab = asked === "coffee" ? "coffee" : "sponsors";
   return organizerHomeHref({
     tab,
     sponsor: first(query.sponsor) ?? null,
@@ -583,7 +580,11 @@ export function viewRowOf(
  */
 export function organizerForEmail(
   email: string | null | undefined,
-  contacts: readonly { name: string; loginEmail: string; sameViewAs?: string }[],
+  contacts: readonly {
+    name: string;
+    loginEmail: string;
+    sameViewAs?: string;
+  }[],
 ): OrganizerContact | null {
   const want = (email ?? "").trim().toLowerCase();
   if (!want) return null;

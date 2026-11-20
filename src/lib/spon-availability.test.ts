@@ -13,7 +13,10 @@ import {
 
 const h = (hours: number, minutes = 0) => hours * 60 + minutes;
 
-function person(name: string, parts: Partial<SponOrganizer> = {}): SponOrganizer {
+function person(
+  name: string,
+  parts: Partial<SponOrganizer> = {},
+): SponOrganizer {
   return {
     name,
     available: emptyDayRanges(),
@@ -42,7 +45,10 @@ describe("ranges", () => {
 
   test("subtract cuts holes", () => {
     expect(
-      subtractRanges([{ start: 0, end: 1440 }], [{ start: h(11), end: h(11, 30) }]),
+      subtractRanges(
+        [{ start: 0, end: 1440 }],
+        [{ start: h(11), end: h(11, 30) }],
+      ),
     ).toEqual([
       { start: 0, end: h(11) },
       { start: h(11, 30), end: 1440 },
@@ -113,12 +119,9 @@ describe("availabilitySegments", () => {
 
 describe("shortNames", () => {
   test("two letters keep Alice and Aniya apart", () => {
-    expect([...shortNames(["Noah", "Alice", "Aniya", "Mary Ann"]).values()]).toEqual([
-      "No",
-      "Al",
-      "An",
-      "MA",
-    ]);
+    expect([
+      ...shortNames(["Noah", "Alice", "Aniya", "Mary Ann"]).values(),
+    ]).toEqual(["No", "Al", "An", "MA"]);
   });
 
   test("still equal: one more letter", () => {
@@ -134,11 +137,16 @@ describe("availabilityWindow", () => {
         available: { ...emptyDayRanges(), Friday: [{ start: 0, end: 1440 }] },
       }),
       person("Aniya", {
-        available: { ...emptyDayRanges(), Friday: [{ start: h(13), end: 1440 }] },
+        available: {
+          ...emptyDayRanges(),
+          Friday: [{ start: h(13), end: 1440 }],
+        },
       }),
     );
     expect(
-      availabilityWindow(availability, "Friday", [{ start: h(16), end: h(23, 30) }]),
+      availabilityWindow(availability, "Friday", [
+        { start: h(16), end: h(23, 30) },
+      ]),
     ).toEqual({ start: h(13), end: 1440 });
   });
 

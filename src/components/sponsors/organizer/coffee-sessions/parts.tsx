@@ -47,7 +47,10 @@ export function StatusDot({ sent }: { sent: boolean }) {
     >
       <span
         aria-hidden
-        className={cn("size-2 rounded-full", sent ? "bg-current" : "shadow-[inset_0_0_0_1.5px_currentColor]")}
+        className={cn(
+          "size-2 rounded-full",
+          sent ? "bg-current" : "shadow-[inset_0_0_0_1.5px_currentColor]",
+        )}
       />
       <span className="sr-only">{word}</span>
     </span>
@@ -60,7 +63,9 @@ export function StatusDot({ sent }: { sent: boolean }) {
  * it for 1.6 s, except inside a draggable cell (that press starts a drag).
  */
 export function BoardTips({ off }: { off: boolean }) {
-  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
+  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(
+    null,
+  );
   const offRef = useRef(off);
   offRef.current = off;
   useEffect(() => {
@@ -73,14 +78,18 @@ export function BoardTips({ off }: { off: boolean }) {
     };
     const over = (e: MouseEvent) => {
       if (offRef.current) return;
-      const el = (e.target as HTMLElement | null)?.closest?.<HTMLElement>("[data-tip]");
+      const el = (e.target as HTMLElement | null)?.closest?.<HTMLElement>(
+        "[data-tip]",
+      );
       if (el) at(el);
       else setTip(null);
     };
     let press: ReturnType<typeof setTimeout> | undefined;
     let hide: ReturnType<typeof setTimeout> | undefined;
     const touch = (e: TouchEvent) => {
-      const el = (e.target as HTMLElement | null)?.closest?.<HTMLElement>("[data-tip]");
+      const el = (e.target as HTMLElement | null)?.closest?.<HTMLElement>(
+        "[data-tip]",
+      );
       if (!el || el.closest("[data-drag]")) return;
       press = setTimeout(() => {
         at(el);
@@ -94,7 +103,10 @@ export function BoardTips({ off }: { off: boolean }) {
     for (const ev of ["touchend", "touchmove", "scroll"] as const) {
       document.addEventListener(ev, cancel, { passive: true, capture: true });
     }
-    window.addEventListener("scroll", hideNow, { passive: true, capture: true });
+    window.addEventListener("scroll", hideNow, {
+      passive: true,
+      capture: true,
+    });
     return () => {
       clearTimeout(press);
       clearTimeout(hide);
@@ -136,7 +148,9 @@ export function clockOf(min: number): string {
 /** "5195550101" -> "(519) 555-0101"; anything else as typed. */
 export function formatPhone(phone: string): string {
   const d = phone.replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
-  return d.length === 10 ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}` : phone;
+  return d.length === 10
+    ? `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`
+    : phone;
 }
 
 /** The sponsor's logo (name as alt and tooltip), or a text wordmark. */
@@ -188,7 +202,8 @@ export function PrimaryCrown() {
 const STATUS_STYLE: Record<BoardSponsor["status"]["kind"], string> = {
   not: "border border-dashed border-dashboard-border-task text-dashboard-text-warning",
   none: "bg-dashboard-bg-inset text-dashboard-text-medium",
-  unavailable: "border border-dashed border-dashboard-border-task text-dashboard-text-warning",
+  unavailable:
+    "border border-dashed border-dashboard-border-task text-dashboard-text-warning",
   need: "bg-dashboard-bg-task text-dashboard-text-task",
   scheduled: "bg-dashboard-bg-nav text-dashboard-text-active",
   sent: "bg-dashboard-schedule-green text-dashboard-status-live",
@@ -207,7 +222,9 @@ export function statusFlags(status: BoardSponsor["status"]): string[] {
   if (!("done" in status) || status.kind === "need") return [];
   const f = copy.sponsors.flags;
   if (status.broken > 0) return [f.broken(status.broken)];
-  return status.done < status.total ? [f.notPlaced(status.total - status.done)] : [];
+  return status.done < status.total
+    ? [f.notPlaced(status.total - status.done)]
+    : [];
 }
 
 export function StatusChip({ status }: { status: BoardSponsor["status"] }) {
@@ -237,10 +254,16 @@ export function PhoneCopy({ name, phone }: { name: string; phone: string }) {
   const shown = formatPhone(phone);
   return (
     <span className="inline-flex items-center gap-0.5">
-      <span className="text-[13px] tabular-nums text-dashboard-text-medium">{shown}</span>
+      <span className="text-[13px] tabular-nums text-dashboard-text-medium">
+        {shown}
+      </span>
       <button
         type="button"
-        aria-label={copied ? copy.phone.copiedLabel(shown) : copy.phone.copyLabel(name, shown)}
+        aria-label={
+          copied
+            ? copy.phone.copiedLabel(shown)
+            : copy.phone.copyLabel(name, shown)
+        }
         onClick={() => {
           const done = () => setCopied(true);
           void navigator.clipboard?.writeText(shown).then(done, done);
@@ -256,7 +279,10 @@ export function PhoneCopy({ name, phone }: { name: string; phone: string }) {
           <Copy aria-hidden className="size-4" />
         )}
       </button>
-      <span aria-live="polite" className="text-[13px] font-medium text-dashboard-status-live">
+      <span
+        aria-live="polite"
+        className="text-[13px] font-medium text-dashboard-status-live"
+      >
         {copied ? copy.phone.copied : ""}
       </span>
     </span>
@@ -268,9 +294,14 @@ export function PhoneCopy({ name, phone }: { name: string; phone: string }) {
  * asked for, and their phone with a copy icon. No Text or Call buttons.
  */
 export function PeopleList({ sponsor }: { sponsor: BoardSponsor }) {
-  const reps = [...sponsor.reps].sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary));
+  const reps = [...sponsor.reps].sort(
+    (a, b) => Number(b.isPrimary) - Number(a.isPrimary),
+  );
   return (
-    <ul aria-label={copy.sponsors.people} className="m-0 flex list-none flex-col gap-1 p-0">
+    <ul
+      aria-label={copy.sponsors.people}
+      className="m-0 flex list-none flex-col gap-1 p-0"
+    >
       {reps.map((r) => (
         <li key={r.id} className="flex min-w-0 flex-col py-1">
           <b className="inline-flex flex-wrap items-center gap-1 text-[15px] font-semibold [overflow-wrap:anywhere]">
@@ -279,7 +310,9 @@ export function PeopleList({ sponsor }: { sponsor: BoardSponsor }) {
           </b>
           {sponsor.submitted && (
             <span className="text-[13px] text-dashboard-text-light">
-              {copy.sponsors.asked(copy.sponsors.repWants(r.chatsWanted, sponsor.chatMinutes))}
+              {copy.sponsors.asked(
+                copy.sponsors.repWants(r.chatsWanted, sponsor.chatMinutes),
+              )}
             </span>
           )}
           <PhoneCopy name={r.name} phone={r.phone} />
@@ -315,13 +348,23 @@ export function Card({
   );
 }
 
-export function CardHead({ id, title, aside }: { id: string; title: string; aside?: string }) {
+export function CardHead({
+  id,
+  title,
+  aside,
+}: {
+  id: string;
+  title: string;
+  aside?: string;
+}) {
   return (
     <div className="flex items-baseline justify-between gap-3">
       <h2 id={id} className="m-0 text-xl font-bold text-dashboard-text-heavy">
         {title}
       </h2>
-      {aside && <span className="text-sm text-dashboard-text-light">{aside}</span>}
+      {aside && (
+        <span className="text-sm text-dashboard-text-light">{aside}</span>
+      )}
     </div>
   );
 }

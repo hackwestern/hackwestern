@@ -66,8 +66,12 @@ export function sessionInviteEmail(chat: OfferDetails) {
   const lines: [string, string][] = [
     [copy.whenLabel, when],
     [copy.whereLabel, where],
-    ...(chat.repName ? ([[inv.repLabel, chat.repName]] as [string, string][]) : []),
-    ...(answerBy ? ([[inv.answerByLabel, answerBy]] as [string, string][]) : []),
+    ...(chat.repName
+      ? ([[inv.repLabel, chat.repName]] as [string, string][])
+      : []),
+    ...(answerBy
+      ? ([[inv.answerByLabel, answerBy]] as [string, string][])
+      : []),
   ];
   const text = [
     copy.greeting(chat.hackerFirstName),
@@ -87,9 +91,15 @@ export function sessionInviteEmail(chat: OfferDetails) {
   const p = emailParagraph;
   const html = emailShell([
     p(escapeHtml(copy.greeting(chat.hackerFirstName))),
-    ...(chat.reconfirm ? [p(`<strong>${escapeHtml(inv.reconfirm)}</strong>`)] : []),
+    ...(chat.reconfirm
+      ? [p(`<strong>${escapeHtml(inv.reconfirm)}</strong>`)]
+      : []),
     p(escapeHtml(intro)),
-    p(lines.map(([k, v]) => `<strong>${escapeHtml(k)}:</strong> ${escapeHtml(v)}`).join("<br>")),
+    p(
+      lines
+        .map(([k, v]) => `<strong>${escapeHtml(k)}:</strong> ${escapeHtml(v)}`)
+        .join("<br>"),
+    ),
     emailButton(LIVE_URL, copy.action),
     p(escapeHtml(deadline)),
     p(escapeHtml(copy.signoff)),

@@ -76,7 +76,11 @@ export function RoomsCard({
       : null;
 
   return (
-    <Card labelledBy="judging-rooms-heading" className="min-w-0" tour="judging-rooms">
+    <Card
+      labelledBy="judging-rooms-heading"
+      className="min-w-0"
+      tour="judging-rooms"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <CardHead id="judging-rooms-heading" title={copy.heading} />
         <div
@@ -300,7 +304,11 @@ function Calendar({
       ? Math.max(...slots.map((s) => s.start))
       : PRESENTATION_WINDOW_START - 1;
   const times: number[] = [];
-  for (let t = PRESENTATION_WINDOW_START; t <= last; t += PRESENTATION_SLOT_MINUTES) {
+  for (
+    let t = PRESENTATION_WINDOW_START;
+    t <= last;
+    t += PRESENTATION_SLOT_MINUTES
+  ) {
     times.push(t);
   }
   const at = (sponsorId: string, start: number) =>
@@ -356,32 +364,34 @@ function Calendar({
                     colSpan={columns.length + 1}
                     className="border-t-2 border-dashed border-dashboard-border-task pt-1 text-xs font-bold uppercase tracking-wider text-dashboard-text-task"
                   >
-                    {copy.pastEnd(formatPresentationTime(PRESENTATION_WINDOW_END))}
+                    {copy.pastEnd(
+                      formatPresentationTime(PRESENTATION_WINDOW_END),
+                    )}
                   </td>
                 </tr>
               )}
-            <tr>
-              <th
-                scope="row"
-                className="pr-1 text-right align-middle text-sm font-medium tabular-nums text-dashboard-text-medium"
-              >
-                {clockOf(t)}
-              </th>
-              {columns.map((c) => {
-                const slot = at(c.sponsorId, t);
-                return (
-                  <td key={c.sponsorId} className="h-px p-0 align-top">
-                    {slot && (
-                      <SlotCell
-                        slot={slot}
-                        count={counts.get(slot.teamId) ?? 1}
-                        onOpen={onOpenTeam}
-                      />
-                    )}
-                  </td>
-                );
-              })}
-            </tr>
+              <tr>
+                <th
+                  scope="row"
+                  className="pr-1 text-right align-middle text-sm font-medium tabular-nums text-dashboard-text-medium"
+                >
+                  {clockOf(t)}
+                </th>
+                {columns.map((c) => {
+                  const slot = at(c.sponsorId, t);
+                  return (
+                    <td key={c.sponsorId} className="h-px p-0 align-top">
+                      {slot && (
+                        <SlotCell
+                          slot={slot}
+                          count={counts.get(slot.teamId) ?? 1}
+                          onOpen={onOpenTeam}
+                        />
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
             </Fragment>
           ))}
         </tbody>
@@ -453,7 +463,9 @@ function Schedule({
                   </button>
                   {runsPastEnd(s.start) && (
                     <span className="shrink-0 text-xs font-semibold text-dashboard-text-task">
-                      {copy.pastEnd(formatPresentationTime(PRESENTATION_WINDOW_END))}
+                      {copy.pastEnd(
+                        formatPresentationTime(PRESENTATION_WINDOW_END),
+                      )}
                     </span>
                   )}
                   <StatusPill status={s.status} />

@@ -21,9 +21,15 @@ const unique = (rooms: string[]) => [...new Set(rooms)];
  * the real rooms, then each rep's.
  */
 export function KeyRooms({ chats }: { chats: KeyRoomChat[] | null }) {
-  const ordered = [...(chats ?? [])].sort((a, b) => a.start.localeCompare(b.start));
-  const main = unique(ordered.filter((c) => c.building === "near").map((c) => c.room));
-  const ivey = unique(ordered.filter((c) => c.building === "ivey").map((c) => c.room));
+  const ordered = [...(chats ?? [])].sort((a, b) =>
+    a.start.localeCompare(b.start),
+  );
+  const main = unique(
+    ordered.filter((c) => c.building === "near").map((c) => c.room),
+  );
+  const ivey = unique(
+    ordered.filter((c) => c.building === "ivey").map((c) => c.room),
+  );
   const line = [
     main.map(copy.room).join(", "),
     ivey.length ? copy.iveyGroup(ivey) : "",
@@ -35,10 +41,13 @@ export function KeyRooms({ chats }: { chats: KeyRoomChat[] | null }) {
     rooms: unique(
       ordered
         .filter((c) => c.rep === rep)
-        .map((c) => (c.building === "ivey" ? copy.iveyRoom(c.room) : copy.room(c.room))),
+        .map((c) =>
+          c.building === "ivey" ? copy.iveyRoom(c.room) : copy.room(c.room),
+        ),
     ),
   }));
-  const row = "flex min-w-0 items-center gap-3 border-t border-dashboard-border-subtle py-3 first:border-t-0";
+  const row =
+    "flex min-w-0 items-center gap-3 border-t border-dashboard-border-subtle py-3 first:border-t-0";
   return (
     <section aria-labelledby="keyrooms-heading" className={card}>
       <CardTitle id="keyrooms-heading" icon={<House aria-hidden />}>
@@ -48,7 +57,9 @@ export function KeyRooms({ chats }: { chats: KeyRoomChat[] | null }) {
         <div className={row}>
           <div className="min-w-0 flex-1">
             <b className="block font-semibold">{copy.lounge.label}</b>
-            <span className="block text-[13px] text-dashboard-text-light">{copy.lounge.hint}</span>
+            <span className="block text-[13px] text-dashboard-text-light">
+              {copy.lounge.hint}
+            </span>
           </div>
           <span className="tabular-nums">{copy.lounge.room}</span>
         </div>
@@ -61,20 +72,25 @@ export function KeyRooms({ chats }: { chats: KeyRoomChat[] | null }) {
                 <span className="flex flex-wrap gap-x-3.5 text-[13px] text-dashboard-text-light">
                   {reps.map((r) => (
                     <span key={r.rep} className="whitespace-nowrap">
-                      <b className="font-semibold">{copy.repRooms(r.rep)}</b> {r.rooms.join(", ")}
+                      <b className="font-semibold">{copy.repRooms(r.rep)}</b>{" "}
+                      {r.rooms.join(", ")}
                     </span>
                   ))}
                 </span>
               </>
             ) : (
-              <span className="text-[13px] text-dashboard-text-light">{copy.chatsPending}</span>
+              <span className="text-[13px] text-dashboard-text-light">
+                {copy.chatsPending}
+              </span>
             )}
           </div>
         </div>
         <div className={row}>
           <div className="min-w-0 flex-1">
             <b className="block font-semibold">{copy.belongings.label}</b>
-            <span className="block text-[13px] text-dashboard-text-light">{copy.belongings.hint}</span>
+            <span className="block text-[13px] text-dashboard-text-light">
+              {copy.belongings.hint}
+            </span>
           </div>
           <span className="tabular-nums">{copy.belongings.room}</span>
         </div>

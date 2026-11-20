@@ -22,7 +22,10 @@ import { isJudgingTitle } from "~/lib/sponsor-timeline";
 export { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS };
 
 /** Where a room came from; "judging-board" = set by an organizer there. */
-export type JudgingRoomSource = "judging-board" | "sponsor-sheet" | "run-of-show";
+export type JudgingRoomSource =
+  | "judging-board"
+  | "sponsor-sheet"
+  | "run-of-show";
 
 export type JudgingStatus =
   | "ready"

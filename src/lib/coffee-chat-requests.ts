@@ -204,7 +204,9 @@ export type CoffeeChatClock = {
 };
 
 /** When a pending chat stops being answerable. */
-export function chatExpiresAt(chat: Pick<CoffeeChatClock, "slotTime" | "expiresAt">): Date {
+export function chatExpiresAt(
+  chat: Pick<CoffeeChatClock, "slotTime" | "expiresAt">,
+): Date {
   return chat.expiresAt ?? coffeeChatExpiresAt(chat.slotTime);
 }
 

@@ -64,7 +64,6 @@ const CHEAT_CONCURRENCY = 2;
  */
 const STALE_CLAIM = sql`now() - interval '10 minutes'`;
 
-
 /** Run `fn` over `items`, at most `limit` at a time, results in order. */
 async function mapPool<T, R>(
   items: readonly T[],
@@ -239,7 +238,9 @@ export async function notifyPresentationTimes({
     .where(
       and(
         isNotNull(sponsorPresentations.startMinute),
-        teamIds ? inArray(sponsorPresentations.teamId, [...teamIds]) : undefined,
+        teamIds
+          ? inArray(sponsorPresentations.teamId, [...teamIds])
+          : undefined,
       ),
     );
   if (rows.length === 0) {

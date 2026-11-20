@@ -70,8 +70,14 @@ export function setupWindows(
 }
 
 /** Whole chats a rep fits in the sessions they ticked (partial ones hold fewer). */
-export function availChats(free: readonly string[], windows: SetupWindows): number {
-  return availableFree(free, windows.blocked).reduce((n, id) => n + (windows.chats[id] ?? 0), 0);
+export function availChats(
+  free: readonly string[],
+  windows: SetupWindows,
+): number {
+  return availableFree(free, windows.blocked).reduce(
+    (n, id) => n + (windows.chats[id] ?? 0),
+    0,
+  );
 }
 
 /**
@@ -91,7 +97,10 @@ export function setupTotals(
   format: SetupFormat,
   reps: readonly { chatsWanted: number; availChats: number }[],
 ): { chats: number; hackers: number } {
-  const chats = reps.reduce((n, r) => n + repChatCap(r.chatsWanted, r.availChats), 0);
+  const chats = reps.reduce(
+    (n, r) => n + repChatCap(r.chatsWanted, r.availChats),
+    0,
+  );
   return { chats, hackers: chats * format.hackersPerChat };
 }
 
@@ -202,8 +211,16 @@ export function invitesAffected(
     const was = before.reps.find((r) => r.id === rep);
     const now = after.reps.find((r) => r.id === rep);
     const placed = mine.map((c) => c.sessionId);
-    const countsBefore = chatsBySession(placed, was?.chatsWanted ?? 0, fitsBefore);
-    const countsAfter = chatsBySession(placed, now?.chatsWanted ?? 0, fitsAfter);
+    const countsBefore = chatsBySession(
+      placed,
+      was?.chatsWanted ?? 0,
+      fitsBefore,
+    );
+    const countsAfter = chatsBySession(
+      placed,
+      now?.chatsWanted ?? 0,
+      fitsAfter,
+    );
     for (const c of mine) {
       const changed =
         !now ||
@@ -233,9 +250,14 @@ export function sentSnapshot(
     const placed = COFFEE_SESSIONS.map((s) => s.id as string).filter((s) =>
       chats.some((c) => c.repId === id && c.sessionId === s),
     );
-    const least = placed.slice(0, -1).reduce((n, s) => n + (fits[s] ?? 0), 0) + 1;
+    const least =
+      placed.slice(0, -1).reduce((n, s) => n + (fits[s] ?? 0), 0) + 1;
     const now = current.reps.find((r) => r.id === id);
-    return { id, free: placed, chatsWanted: Math.max(now?.chatsWanted ?? 0, least) };
+    return {
+      id,
+      free: placed,
+      chatsWanted: Math.max(now?.chatsWanted ?? 0, least),
+    };
   });
   return { hackersPerChat: current.hackersPerChat, reps };
 }
@@ -247,19 +269,39 @@ export function sentSnapshot(
  * same way.
  */
 export function invitesOutOfLine(
-  chats: readonly { repId: string; sessionId: string; hackers: readonly unknown[] }[],
+  chats: readonly {
+    repId: string;
+    sessionId: string;
+    hackers: readonly unknown[];
+  }[],
   workshops: readonly { start: string; end: string }[],
   current: SetupSnapshot,
 ): number {
-  return invitesAffected(chats, workshops, sentSnapshot(chats, workshops, current), current);
+  return invitesAffected(
+    chats,
+    workshops,
+    sentSnapshot(chats, workshops, current),
+    current,
+  );
 }
 
 /** A sent chat as this device last saw it (for "Organizers moved …"). */
-export type SeenChat = { repId: string; sessionId: string; room: string; start: string };
+export type SeenChat = {
+  repId: string;
+  sessionId: string;
+  room: string;
+  start: string;
+};
 
 /** What organizers changed in the sent chats since this device last looked. */
 export type ChatChange =
-  | { kind: "moved"; repId: string; from: string; to: string | null; room: string | null }
+  | {
+      kind: "moved";
+      repId: string;
+      from: string;
+      to: string | null;
+      room: string | null;
+    }
   | { kind: "removed"; repId: string; from: string };
 
 /**
@@ -281,7 +323,8 @@ export function chatChanges(
   for (const [id, was] of Object.entries(before)) {
     const c = byId.get(id);
     if (!c) {
-      if (repIds.has(was.repId)) out.push({ kind: "removed", repId: was.repId, from: was.start });
+      if (repIds.has(was.repId))
+        out.push({ kind: "removed", repId: was.repId, from: was.start });
     } else if (c.sessionId !== was.sessionId || c.room !== was.room) {
       out.push({
         kind: "moved",
@@ -320,18 +363,38 @@ export function parseSeenChats(raw: string | null): SeenChats {
     notes?: unknown;
   };
   const chats: Record<string, SeenChat> = {};
-  if (stored.chats && typeof stored.chats === "object" && !Array.isArray(stored.chats)) {
-    for (const [id, c] of Object.entries(stored.chats as Record<string, unknown>)) {
+  if (
+    stored.chats &&
+    typeof stored.chats === "object" &&
+    !Array.isArray(stored.chats)
+  ) {
+    for (const [id, c] of Object.entries(
+      stored.chats as Record<string, unknown>,
+    )) {
       const v = c as Partial<SeenChat> | null;
-      if (v && typeof v === "object" && isStr(v.repId) && isStr(v.sessionId) && isStr(v.room) && isStr(v.start)) {
-        chats[id] = { repId: v.repId, sessionId: v.sessionId, room: v.room, start: v.start };
+      if (
+        v &&
+        typeof v === "object" &&
+        isStr(v.repId) &&
+        isStr(v.sessionId) &&
+        isStr(v.room) &&
+        isStr(v.start)
+      ) {
+        chats[id] = {
+          repId: v.repId,
+          sessionId: v.sessionId,
+          room: v.room,
+          start: v.start,
+        };
       }
     }
   }
   const notes = Array.isArray(stored.notes)
     ? (stored.notes as unknown[]).flatMap((n) => {
         const v = n as Partial<MoveNote> | null;
-        return v && typeof v === "object" && isStr(v.text) && isStr(v.at) ? [{ text: v.text, at: v.at }] : [];
+        return v && typeof v === "object" && isStr(v.text) && isStr(v.at)
+          ? [{ text: v.text, at: v.at }]
+          : [];
       })
     : [];
   return { chats, notes };

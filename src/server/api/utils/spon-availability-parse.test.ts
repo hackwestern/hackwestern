@@ -40,17 +40,25 @@ describe("parseTimePhrase", () => {
     expect(parseTimePhrase(text)).toEqual({ start, end });
   });
 
-  test.each(["", "maybe", "TBD", "ask me", "After lunch", "25:00-26:00", "13PM-2PM", "9:75AM-10AM"])(
-    "%j is not a time",
-    (text) => {
-      expect(parseTimePhrase(text)).toBeNull();
-    },
-  );
+  test.each([
+    "",
+    "maybe",
+    "TBD",
+    "ask me",
+    "After lunch",
+    "25:00-26:00",
+    "13PM-2PM",
+    "9:75AM-10AM",
+  ])("%j is not a time", (text) => {
+    expect(parseTimePhrase(text)).toBeNull();
+  });
 });
 
 describe("parseDayTimes", () => {
   test("a list with its own days", () => {
-    const { ranges, unread } = parseDayTimes("friday 4PM-7PM, sunday 7:30AM-6:30PM");
+    const { ranges, unread } = parseDayTimes(
+      "friday 4PM-7PM, sunday 7:30AM-6:30PM",
+    );
     expect(ranges.Friday).toEqual([{ start: h(16), end: h(19) }]);
     expect(ranges.Saturday).toEqual([]);
     expect(ranges.Sunday).toEqual([{ start: h(7, 30), end: h(18, 30) }]);
@@ -88,7 +96,9 @@ describe("parseDayTimes", () => {
   test("--, none and blank are no windows", () => {
     for (const text of ["--", "-", "none", "N/A", ""]) {
       const { ranges, unread } = parseDayTimes(text);
-      expect(ranges.Friday.length + ranges.Saturday.length + ranges.Sunday.length).toBe(0);
+      expect(
+        ranges.Friday.length + ranges.Saturday.length + ranges.Sunday.length,
+      ).toBe(0);
       expect(unread).toEqual([]);
     }
   });
@@ -100,7 +110,10 @@ describe("parseDayTimes", () => {
   });
 
   test("garbage is kept as written, readable parts still count", () => {
-    const { ranges, unread } = parseDayTimes("Before 2:30, maybe later??", "Saturday");
+    const { ranges, unread } = parseDayTimes(
+      "Before 2:30, maybe later??",
+      "Saturday",
+    );
     expect(ranges.Saturday).toEqual([{ start: 0, end: h(14, 30) }]);
     expect(unread).toEqual([{ day: "Saturday", text: "maybe later??" }]);
   });
@@ -120,7 +133,9 @@ describe("parseDayTimes", () => {
 
 /** The RUN OF SHOW tab as read on 2026-11-18, columns A-X. */
 function sheetGrid(): SheetGrid {
-  const grid: SheetGrid = Array.from({ length: 20 }, () => Array<string>(24).fill(""));
+  const grid: SheetGrid = Array.from({ length: 20 }, () =>
+    Array<string>(24).fill(""),
+  );
   const put = (ref: string, text: string) => {
     const col = ref.charCodeAt(0) - 65;
     const row = Number(ref.slice(1)) - 1;
@@ -177,7 +192,8 @@ function sheetGrid(): SheetGrid {
 
 describe("parseSponAvailability", () => {
   const parsed = parseSponAvailability(sheetGrid());
-  const person = (name: string) => parsed.organizers.find((o) => o.name === name)!;
+  const person = (name: string) =>
+    parsed.organizers.find((o) => o.name === name)!;
 
   test("one organizer per name, in sheet order", () => {
     expect(parsed.organizers.map((o) => o.name)).toEqual([
@@ -191,29 +207,47 @@ describe("parseSponAvailability", () => {
 
   test("free hours per day", () => {
     expect(person("Noah").available.Friday).toEqual([{ start: 0, end: 1440 }]);
-    expect(person("Caroline").available.Friday).toEqual([{ start: h(14, 30), end: 1440 }]);
+    expect(person("Caroline").available.Friday).toEqual([
+      { start: h(14, 30), end: 1440 },
+    ]);
     expect(person("Alice").available.Saturday).toEqual([
       { start: 0, end: h(14, 30) },
       { start: h(15, 30), end: 1440 },
     ]);
-    expect(person("Aniya").available.Saturday).toEqual([{ start: h(17), end: 1440 }]);
+    expect(person("Aniya").available.Saturday).toEqual([
+      { start: h(17), end: 1440 },
+    ]);
   });
 
   test("on-call windows land on their calendar day", () => {
-    expect(person("Noah").onCall.Saturday).toEqual([{ start: h(1), end: h(4) }]);
-    expect(person("Caroline").onCall.Sunday).toEqual([{ start: h(4), end: h(7, 30) }]);
-    expect(person("Daniel").onCall).toEqual({ Friday: [], Saturday: [], Sunday: [] });
-    expect(person("Alice").onCall.Saturday).toEqual([{ start: h(4), end: h(8, 30) }]);
+    expect(person("Noah").onCall.Saturday).toEqual([
+      { start: h(1), end: h(4) },
+    ]);
+    expect(person("Caroline").onCall.Sunday).toEqual([
+      { start: h(4), end: h(7, 30) },
+    ]);
+    expect(person("Daniel").onCall).toEqual({
+      Friday: [],
+      Saturday: [],
+      Sunday: [],
+    });
+    expect(person("Alice").onCall.Saturday).toEqual([
+      { start: h(4), end: h(8, 30) },
+    ]);
   });
 
   test("everyone's required windows", () => {
     expect(parsed.required.Friday).toEqual([{ start: h(16), end: h(19) }]);
-    expect(parsed.required.Sunday).toEqual([{ start: h(7, 30), end: h(18, 30) }]);
+    expect(parsed.required.Sunday).toEqual([
+      { start: h(7, 30), end: h(18, 30) },
+    ]);
   });
 
   test("time away is matched to the person by label", () => {
     expect(person("Daniel").away.Friday).toEqual([{ start: h(23), end: 1440 }]);
-    expect(person("Daniel").away.Sunday).toEqual([{ start: h(11), end: h(11, 30) }]);
+    expect(person("Daniel").away.Sunday).toEqual([
+      { start: h(11), end: h(11, 30) },
+    ]);
   });
 
   test("free notes stay as written", () => {

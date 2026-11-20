@@ -30,8 +30,7 @@ export const sponsorJudgingBoardCopy = {
     needsRoom: (sponsor: string) => `${sponsor} needs a room`,
     notifyButton: "Notify teams",
     /** Next to the disabled button until every sponsor has a room. */
-    roomsFirst: (n: number) =>
-      `Give every sponsor a room first (${n} to go).`,
+    roomsFirst: (n: number) => `Give every sponsor a room first (${n} to go).`,
     notifying: "Notifying…",
     /** Asked before notifying (Jazz, 2026-11-20). */
     notifyConfirm: {
@@ -57,8 +56,7 @@ export const sponsorJudgingBoardCopy = {
     line: {
       teams: (teams: number, reps: number) =>
         `${teams} ${teams === 1 ? "team" : "teams"} · ${reps} ${reps === 1 ? "rep" : "reps"} judging`,
-      scored: (scored: number, teams: number) =>
-        `${scored} of ${teams} scored`,
+      scored: (scored: number, teams: number) => `${scored} of ${teams} scored`,
       topIn: (top: number) => `Top ${top} in`,
       shortlistMissing: "Shortlist isn't in",
       missedRound1: "No shortlist: missed round 1",

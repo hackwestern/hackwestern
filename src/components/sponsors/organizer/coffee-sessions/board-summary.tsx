@@ -5,7 +5,11 @@ const copy = coffeeSessionsCopy;
 
 /** "9:58 PM", Toronto time. */
 export const timeOf = (d: Date | string) =>
-  new Date(d).toLocaleTimeString("en-US", { timeZone: "America/Toronto", hour: "numeric", minute: "2-digit" });
+  new Date(d).toLocaleTimeString("en-US", {
+    timeZone: "America/Toronto",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 
 /**
  * One line for an organizer arriving cold: what needs doing now, then what
@@ -20,14 +24,17 @@ export function summaryLine(board: SessionBoardData): string {
   const changed = board.sponsors.filter((x) => x.changedAfterSend).length;
   // Needs scheduling, or placed with a rep still missing.
   const need = board.sponsors.filter(
-    (x) => "done" in x.status && (x.status.kind === "need" || x.status.done < x.status.total),
+    (x) =>
+      "done" in x.status &&
+      (x.status.kind === "need" || x.status.done < x.status.total),
   ).length;
   let head: string;
   if (changed > 0) head = s.changedAfterSend(changed);
   else if (!board.scheduled) head = s.notScheduled(submitted);
   else if (need > 0) head = s.need(need);
   else if (board.fixes.length > 0) head = s.fixes(board.fixes.length);
-  else if (board.draftCount === 0 && board.sentAt) head = s.sent(timeOf(board.sentAt));
+  else if (board.draftCount === 0 && board.sentAt)
+    head = s.sent(timeOf(board.sentAt));
   else head = s.ready;
   return head + tail;
 }
@@ -42,9 +49,14 @@ export function BoardSummary({
   action?: React.ReactNode;
 }) {
   return (
-    <section aria-label={copy.summary.label} className="flex flex-col gap-2 rounded-dashboard-lg bg-dashboard-bg-surface px-4 py-3 shadow-dashboard-card md:px-5">
+    <section
+      aria-label={copy.summary.label}
+      className="flex flex-col gap-2 rounded-dashboard-lg bg-dashboard-bg-surface px-4 py-3 shadow-dashboard-card md:px-5"
+    >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <p className="m-0 text-[17px] font-semibold text-dashboard-text-heavy">{summaryLine(board)}</p>
+        <p className="m-0 text-[17px] font-semibold text-dashboard-text-heavy">
+          {summaryLine(board)}
+        </p>
         {action}
       </div>
     </section>

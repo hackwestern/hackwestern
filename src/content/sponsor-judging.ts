@@ -220,7 +220,8 @@ export const sponsorJudgingCopy = {
     heading: "Rank your finalists",
     intro: (top: number) =>
       `Put your favourite first. The first ${top} are the teams you submit.`,
-    empty: "No finalists yet. Tap Save as finalist on the projects you want to hear present.",
+    empty:
+      "No finalists yet. Tap Save as finalist on the projects you want to hear present.",
     browse: "Browse projects",
     needMore: (top: number, have: number) =>
       `Save ${plural(top - have, "more finalist", "more finalists")} to submit your top ${top}.`,
@@ -236,7 +237,8 @@ export const sponsorJudgingCopy = {
     remove: (team: string) => `Remove ${team} from your finalists`,
     keyboardHint: "Use the arrow buttons to reorder.",
     moved: (team: string, rank: number) => `${team} moved to number ${rank}.`,
-    selected: (team: string, rank: number) => `${team} selected for place ${rank}.`,
+    selected: (team: string, rank: number) =>
+      `${team} selected for place ${rank}.`,
     slotsHeading: "Your top 5",
     slotsIntro: "Choose a team for each place, then drag the cards to reorder.",
     choose: (place: number) => `Choose ${ordinal(place)} place`,

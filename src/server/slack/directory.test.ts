@@ -33,7 +33,9 @@ describe("directoryEntry", () => {
     const base = { real_name: "Noah" };
     expect(directoryEntry({ ...base, id: "U1", deleted: true })).toBeNull();
     expect(directoryEntry({ ...base, id: "U1", is_bot: true })).toBeNull();
-    expect(directoryEntry({ ...base, id: "U1", is_restricted: true })).toBeNull();
+    expect(
+      directoryEntry({ ...base, id: "U1", is_restricted: true }),
+    ).toBeNull();
     expect(
       directoryEntry({ ...base, id: "U1", is_ultra_restricted: true }),
     ).toBeNull();
@@ -49,7 +51,10 @@ describe("matchSlackUser", () => {
   ];
 
   test("exactly one match, any case", () => {
-    expect(matchSlackUser("NOAH", dir)).toEqual({ status: "one", userId: "UNOAH" });
+    expect(matchSlackUser("NOAH", dir)).toEqual({
+      status: "one",
+      userId: "UNOAH",
+    });
     expect(matchSlackUser("daniel wu", dir)).toEqual({
       status: "one",
       userId: "UDAN2",
@@ -71,7 +76,10 @@ describe("getSlackDirectory", () => {
     const pages = [
       {
         ok: true,
-        members: [{ id: "U1", real_name: "Noah Lee" }, { id: "B1", is_bot: true }],
+        members: [
+          { id: "U1", real_name: "Noah Lee" },
+          { id: "B1", is_bot: true },
+        ],
         response_metadata: { next_cursor: "c2" },
       },
       {
@@ -99,7 +107,10 @@ describe("getSlackDirectory", () => {
     const good = vi.fn(
       async () =>
         new Response(
-          JSON.stringify({ ok: true, members: [{ id: "U1", real_name: "Noah" }] }),
+          JSON.stringify({
+            ok: true,
+            members: [{ id: "U1", real_name: "Noah" }],
+          }),
         ),
     ) as unknown as typeof fetch;
     await getSlackDirectory("t", good, 0);
@@ -122,7 +133,10 @@ describe("getSlackDirectory", () => {
       ++n === 1
         ? new Response("", { status: 429, headers: { "Retry-After": "2" } })
         : new Response(
-            JSON.stringify({ ok: true, members: [{ id: "U1", real_name: "Noah" }] }),
+            JSON.stringify({
+              ok: true,
+              members: [{ id: "U1", real_name: "Noah" }],
+            }),
           ),
     ) as unknown as typeof fetch;
     const sleep = vi.fn(async () => undefined);
@@ -145,9 +159,11 @@ describe("getSlackDirectory", () => {
     });
     expect(sleep).not.toHaveBeenCalled();
     const twice = limited("1");
-    await expect(getSlackDirectory("t", twice, 0, sleep)).rejects.toMatchObject({
-      code: "http_429",
-    });
+    await expect(getSlackDirectory("t", twice, 0, sleep)).rejects.toMatchObject(
+      {
+        code: "http_429",
+      },
+    );
     expect(twice).toHaveBeenCalledTimes(2);
   });
 

@@ -211,20 +211,32 @@ describe("reps who ask for 0 chats", () => {
 
 describe("a partial session that leaves a rep short of chats", () => {
   // 15-min chats: Sun Life's 1-2 holds 3 chats (1:00-1:45), a full session 4.
-  const one = (free: string[], chatsWanted: number, maxSessions: number | null = null): SchedSponsor => ({
+  const one = (
+    free: string[],
+    chatsWanted: number,
+    maxSessions: number | null = null,
+  ): SchedSponsor => ({
     ...sun([{ free, sessions: 1 }], 15),
     reps: [{ id: "sun:0", free, sessionsWanted: 1, chatsWanted, maxSessions }],
   });
-  const at13: Board = { [cellKey("2241", "13")]: { type: "chat", rep: "sun:0", pinned: true } };
+  const at13: Board = {
+    [cellKey("2241", "13")]: { type: "chat", rep: "sun:0", pinned: true },
+  };
 
   test("with a free session left: an add-a-session fix that raises the cap", () => {
     const sp = one(["10", "13"], 4);
-    const fix = boardFixes([sp], ROOMS, SESS, at13).find((f) => f.reason === "partial")!;
+    const fix = boardFixes([sp], ROOMS, SESS, at13).find(
+      (f) => f.reason === "partial",
+    )!;
     expect(fix).toMatchObject({
       session: "13",
       problem: "short",
       items: [{ rep: "sun:0", chats: { got: 3, want: 4 } }],
-      suggestion: { kind: "extra", place: { rep: "sun:0", session: "10" }, cap: { rep: "sun:0", sessions: 2 } },
+      suggestion: {
+        kind: "extra",
+        place: { rep: "sun:0", session: "10" },
+        cap: { rep: "sun:0", sessions: 2 },
+      },
     });
     const ap = applySuggestion([sp], SESS, at13, {}, fix.suggestion);
     expect(ap.maxSessions).toEqual({ "sun:0": 2 });
@@ -236,15 +248,29 @@ describe("a partial session that leaves a rep short of chats", () => {
 
   test("no free session: fewer chats keeps what they have and stops the flag", () => {
     const sp = one(["13"], 4);
-    const fix = boardFixes([sp], ROOMS, SESS, at13).find((f) => f.reason === "partial")!;
-    expect(fix.suggestion).toEqual({ kind: "fewer", caps: [{ rep: "sun:0", sessions: 1, want: 1 }] });
+    const fix = boardFixes([sp], ROOMS, SESS, at13).find(
+      (f) => f.reason === "partial",
+    )!;
+    expect(fix.suggestion).toEqual({
+      kind: "fewer",
+      caps: [{ rep: "sun:0", sessions: 1, want: 1 }],
+    });
     const ap = applySuggestion([sp], SESS, at13, {}, fix.suggestion);
-    expect(boardFixes([one(["13"], 4, ap.maxSessions["sun:0"])], ROOMS, SESS, ap.board)).toEqual([]);
+    expect(
+      boardFixes(
+        [one(["13"], 4, ap.maxSessions["sun:0"])],
+        ROOMS,
+        SESS,
+        ap.board,
+      ),
+    ).toEqual([]);
   });
 
   test("no fix when the partial session still holds enough, or nothing is partial", () => {
     expect(boardFixes([one(["10", "13"], 3)], ROOMS, SESS, at13)).toEqual([]);
-    const at10: Board = { [cellKey("2241", "10")]: { type: "chat", rep: "sun:0" } };
+    const at10: Board = {
+      [cellKey("2241", "10")]: { type: "chat", rep: "sun:0" },
+    };
     expect(boardFixes([one(["10", "13"], 4)], ROOMS, SESS, at10)).toEqual([]);
   });
 });

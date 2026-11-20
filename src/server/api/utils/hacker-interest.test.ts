@@ -70,7 +70,11 @@ describe("rankInterestRows", () => {
       null,
       true,
     );
-    expect(ranked.map((r) => r.email)).toEqual(["first@x.ca", "second@x.ca", "third@x.ca"]);
+    expect(ranked.map((r) => r.email)).toEqual([
+      "first@x.ca",
+      "second@x.ca",
+      "third@x.ca",
+    ]);
   });
 
   test("matches review emails case-insensitively and dedupes form rows", () => {

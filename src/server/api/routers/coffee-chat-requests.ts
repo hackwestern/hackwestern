@@ -534,7 +534,10 @@ async function saveHold(input: {
       }
     }
     if (ownHoldOverlap(span, own, input.holdId)) {
-      throw new TRPCError({ code: "CONFLICT", message: errors.ownBlockOverlap });
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: errors.ownBlockOverlap,
+      });
     }
     const live = await activeChats(
       tx,
@@ -546,7 +549,10 @@ async function saveHold(input: {
       before &&
       live.some((c) => holdCovers(before, c) && !holdCovers(span, c))
     ) {
-      throw new TRPCError({ code: "CONFLICT", message: errors.blockDropsChats });
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: errors.blockDropsChats,
+      });
     }
     const moving = live.filter((c) => holdCovers(span, c));
     const sponsors = await tx
@@ -871,7 +877,10 @@ async function saveSlotLimit(input: {
       (l) => l.startTime === input.startTime && l.endTime === input.endTime,
     );
     if (!exists && limits.length >= MAX_LIMITS_PER_SPONSOR) {
-      throw new TRPCError({ code: "BAD_REQUEST", message: errors.tooManyLimits });
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: errors.tooManyLimits,
+      });
     }
     await tx
       .insert(coffeeChatLimits)
@@ -1409,7 +1418,10 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       const now = new Date();
       return db.transaction(async (tx) => {
         await lockRoomWrites(tx);
-        const [hold] = await loadHolds(tx, eq(coffeeChatHolds.id, input.holdId));
+        const [hold] = await loadHolds(
+          tx,
+          eq(coffeeChatHolds.id, input.holdId),
+        );
         if (!hold) {
           throw new TRPCError({
             code: "NOT_FOUND",

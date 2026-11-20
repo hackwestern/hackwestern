@@ -31,11 +31,7 @@ import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
 const copy = sponsorJudgingCopy;
-type Step =
-  | "browse"
-  | "shortlist"
-  | "presentations"
-  | "top";
+type Step = "browse" | "shortlist" | "presentations" | "top";
 const ALL_STEPS: readonly Step[] = [
   "browse",
   "shortlist",
@@ -54,13 +50,10 @@ function JudgingIdentity({
   scores: readonly { judge: string }[];
   onSwitch: () => void;
 }) {
-  const others = [...new Set([
-    ...reps,
-    ...scores.map((score) => score.judge),
-  ])].filter((candidate) => judgeKey(candidate) !== judgeKey(name));
-  return (
-    <JudgingAs name={name} others={others} onSwitch={onSwitch} />
-  );
+  const others = [
+    ...new Set([...reps, ...scores.map((score) => score.judge)]),
+  ].filter((candidate) => judgeKey(candidate) !== judgeKey(name));
+  return <JudgingAs name={name} others={others} onSwitch={onSwitch} />;
 }
 
 // Sponsor judging (kept at Lucas's /sponsors/[uuid]/picks URL): each rep
@@ -122,7 +115,10 @@ export default function SponsorJudgingPage() {
   useEffect(() => {
     if (roundTwoAvailable && (step === "browse" || step === "shortlist")) {
       setStep("presentations");
-    } else if (!roundTwoAvailable && (step === "presentations" || step === "top")) {
+    } else if (
+      !roundTwoAvailable &&
+      (step === "presentations" || step === "top")
+    ) {
       setStep("browse");
     }
   }, [roundTwoAvailable, step]);
@@ -281,24 +277,23 @@ export default function SponsorJudgingPage() {
         </p>
       )}
 
-      {judge.ready &&
-        (!judge.name || switchingJudge) ? (
-          <JudgePicker
-            reps={data.reps}
-            current={judge.name}
-            onPick={(name) => {
-              judge.choose(name);
-              setSwitchingJudge(false);
-            }}
-          />
-        ) : judge.ready && judge.name ? (
-          <JudgingIdentity
-            name={judge.name}
-            reps={data.reps}
-            scores={data.scores}
-            onSwitch={() => setSwitchingJudge(true)}
-          />
-        ) : null}
+      {judge.ready && (!judge.name || switchingJudge) ? (
+        <JudgePicker
+          reps={data.reps}
+          current={judge.name}
+          onPick={(name) => {
+            judge.choose(name);
+            setSwitchingJudge(false);
+          }}
+        />
+      ) : judge.ready && judge.name ? (
+        <JudgingIdentity
+          name={judge.name}
+          reps={data.reps}
+          scores={data.scores}
+          onSwitch={() => setSwitchingJudge(true)}
+        />
+      ) : null}
 
       {/* Four judging stages stay visible; unavailable stages stay locked. */}
 
@@ -394,7 +389,8 @@ export default function SponsorJudgingPage() {
         aria-labelledby={`step-${step}`}
         className="flex flex-col gap-4"
       >
-        {!judge.ready || !judge.name || switchingJudge ? null : step === "browse" ? (
+        {!judge.ready || !judge.name || switchingJudge ? null : step ===
+          "browse" ? (
           <BrowseProjects
             me={judge.name}
             data={data}

@@ -10,10 +10,7 @@ import { ROUND1_OVER } from "~/lib/judging-board";
 import { RUN_OF_SHOW_DAYS, type RunOfShowDay } from "~/lib/run-of-show";
 import { runOfShowInstant } from "~/lib/run-of-show-time";
 import { round1State, type SundayJudging } from "~/lib/sponsor-day-board";
-import {
-  pillDone,
-  type MySponsorChats,
-} from "~/lib/sponsor-organizer";
+import { pillDone, type MySponsorChats } from "~/lib/sponsor-organizer";
 
 /** One rep in one room for one Saturday session, with its seats. */
 export type RepBlock = {
@@ -67,7 +64,9 @@ export function repBlocks({
   return out
     .sort(
       (a, b) =>
-        a.start - b.start || a.position - b.position || a.repName.localeCompare(b.repName),
+        a.start - b.start ||
+        a.position - b.position ||
+        a.repName.localeCompare(b.repName),
     )
     .map(({ position: _position, ...b }) => b);
 }
@@ -88,7 +87,11 @@ export type HomeSponsor = {
   /** Sunday judging room is missing (from the judging board). */
   missingRoom: boolean;
   /** Their workshops' times on each day ("HH:MM"). */
-  workshops: readonly { day: RunOfShowDay; start: string; end: string | null }[];
+  workshops: readonly {
+    day: RunOfShowDay;
+    start: string;
+    end: string | null;
+  }[];
   /** Has a prize track (judges on Sunday). */
   prizeTrack: boolean;
   /** Digital prize track (PCBWay): no booth, chats or room. */
@@ -115,14 +118,25 @@ export type HomeFlag =
   | { kind: "invitesNotOut" }
   | { kind: "changedAfterSend" }
   /** Sent chats nobody has accepted or is answering; `first` is the earliest. */
-  | { kind: "emptyBlocks"; count: number; first: { rep: string; start: number } }
+  | {
+      kind: "emptyBlocks";
+      count: number;
+      first: { rep: string; start: number };
+    }
   | { kind: "shortlistLate" }
   | { kind: "noRoom" }
   | { kind: "topLate" };
 
 /** Every day's columns, in the order the table shows them. */
 export const HOME_COLUMNS: Record<RunOfShowDay, readonly HomeColumnKey[]> = {
-  Friday: ["arrived", "booth", "briefing", "availability", "shortlist", "invites"],
+  Friday: [
+    "arrived",
+    "booth",
+    "briefing",
+    "availability",
+    "shortlist",
+    "invites",
+  ],
   Saturday: ["chats", "workshop", "boothOpen"],
   Sunday: ["judgingShortlist", "judgingRoom", "top5"],
 };
@@ -142,8 +156,9 @@ export function dayStarted(day: RunOfShowDay, now: Date): boolean {
 /** The day of the event `now` falls in; null outside Fri–Sun. */
 export function eventToday(now: Date): RunOfShowDay | null {
   return (
-    RUN_OF_SHOW_DAYS.find((d) => now >= at(d, "00:00") && now < at(d, "24:00")) ??
-    null
+    RUN_OF_SHOW_DAYS.find(
+      (d) => now >= at(d, "00:00") && now < at(d, "24:00"),
+    ) ?? null
   );
 }
 
@@ -188,7 +203,9 @@ export function flagsFor(
   const after = (time: string) => now >= at(day, time);
   switch (col) {
     case "arrived":
-      return s.status !== null && !pillDone("arrival", s.status) && after("17:05")
+      return s.status !== null &&
+        !pillDone("arrival", s.status) &&
+        after("17:05")
         ? [{ kind: "notHere" }]
         : [];
     case "availability":
@@ -201,7 +218,8 @@ export function flagsFor(
         : [];
     case "chats": {
       const out: HomeFlag[] = [];
-      if (s.chats && !s.chats.prefsSubmittedAt) out.push({ kind: "noAvailability" });
+      if (s.chats && !s.chats.prefsSubmittedAt)
+        out.push({ kind: "noAvailability" });
       if (s.chats?.changedAfterSend) out.push({ kind: "changedAfterSend" });
       // Sent chats nobody has accepted or is answering, before they start:
       // one flag for all of them, so a sponsor with many reads as one fix.
@@ -346,7 +364,8 @@ export function boardCount(
   return sponsors.filter((s) => {
     if (s.digital || !s.chats) return false;
     if (!s.chats.prefsSubmittedAt) return true;
-    if (day === "Friday") return s.chats.repsChatting > 0 && s.chats.invites === 0;
+    if (day === "Friday")
+      return s.chats.repsChatting > 0 && s.chats.invites === 0;
     const nowMin = minutesInto("Saturday", now);
     return (
       s.chats.changedAfterSend ||
@@ -361,7 +380,12 @@ export function minutesInto(day: RunOfShowDay, now: Date): number {
 }
 
 /** A team task with its start instant. */
-export type DatedTask = { day: RunOfShowDay; start: string; task: string; owner: string | null };
+export type DatedTask = {
+  day: RunOfShowDay;
+  start: string;
+  task: string;
+  owner: string | null;
+};
 
 export type UpNext =
   | { kind: "next"; task: DatedTask; minutes: number }
@@ -393,7 +417,10 @@ export function upNext(
     ? {
         kind: "next",
         task: next.t,
-        minutes: Math.max(0, Math.round((next.when.getTime() - now.getTime()) / 60_000)),
+        minutes: Math.max(
+          0,
+          Math.round((next.when.getTime() - now.getTime()) / 60_000),
+        ),
       }
     : { kind: "none" };
 }

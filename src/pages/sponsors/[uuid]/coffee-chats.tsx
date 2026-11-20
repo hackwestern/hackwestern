@@ -5,7 +5,10 @@ import { btn } from "~/components/sponsors/portal-ui";
 import { ChatsHome } from "~/components/sponsors/coffee-setup/chats-home";
 import { PrefsStep } from "~/components/sponsors/coffee-setup/prefs-step";
 import { ReviewStep } from "~/components/sponsors/coffee-setup/review-step";
-import { BackToChats, FlowHeader } from "~/components/sponsors/coffee-setup/shared";
+import {
+  BackToChats,
+  FlowHeader,
+} from "~/components/sponsors/coffee-setup/shared";
 import { ShortlistFlow } from "~/components/sponsors/coffee-setup/shortlist-flow";
 import { TeamStep } from "~/components/sponsors/coffee-setup/team-step";
 import {
@@ -24,7 +27,9 @@ type Screen =
   | { flow: "prefs"; step: 1 | 2 | 3 }
   | { flow: "shortlist"; step: 1 | 2 };
 
-function screenOf(query: Record<string, string | string[] | undefined>): Screen {
+function screenOf(
+  query: Record<string, string | string[] | undefined>,
+): Screen {
   const step = Number(query.step);
   if (query.flow === "prefs") {
     return { flow: "prefs", step: step === 2 || step === 3 ? step : 1 };
@@ -46,14 +51,20 @@ export default function SponsorCoffeeChatsPage() {
   const validUuid = uuidRegex.test(id);
   const q = api.coffeeChatSetup.get.useQuery(
     { sponsor: id },
-    { enabled: validUuid, retry: 1, refetchInterval: 60_000, refetchOnWindowFocus: false },
+    {
+      enabled: validUuid,
+      retry: 1,
+      refetchInterval: 60_000,
+      refetchOnWindowFocus: false,
+    },
   );
 
   // Chats: "Coffee chats" is the page heading, with "Scan a hacker" on its
   // right from tablets up. The flows have their own h1 (FlowHeader) under
   // "Back to Coffee chats".
   const base = `/sponsors/${id}/coffee-chats`;
-  const inFlow = router.query.flow === "prefs" || router.query.flow === "shortlist";
+  const inFlow =
+    router.query.flow === "prefs" || router.query.flow === "shortlist";
   const shell = (children: React.ReactNode) =>
     inFlow ? (
       <SponsorShell title={copy.seoTitle}>
@@ -69,7 +80,10 @@ export default function SponsorCoffeeChatsPage() {
           validUuid && (
             <Link
               href={`/sponsors/${id}/scan`}
-              className={cn(btn.primary, "min-h-14 rounded-dashboard-2xl px-6 text-[17px] font-bold [&_svg]:size-6")}
+              className={cn(
+                btn.primary,
+                "min-h-14 rounded-dashboard-2xl px-6 text-[17px] font-bold [&_svg]:size-6",
+              )}
             >
               <ScanLine aria-hidden />
               {copy.page.scan}
@@ -80,8 +94,10 @@ export default function SponsorCoffeeChatsPage() {
         {children}
       </SponsorShell>
     );
-  if (!router.isReady || (validUuid && q.isLoading)) return shell(<ScheduleSkeleton />);
-  if (!validUuid || q.error?.data?.code === "NOT_FOUND") return shell(<InvalidLink />);
+  if (!router.isReady || (validUuid && q.isLoading))
+    return shell(<ScheduleSkeleton />);
+  if (!validUuid || q.error?.data?.code === "NOT_FOUND")
+    return shell(<InvalidLink />);
   if (!q.data) return shell(<LoadError onRetry={() => void q.refetch()} />);
 
   const data = q.data;
@@ -101,13 +117,25 @@ export default function SponsorCoffeeChatsPage() {
           steps={f.steps}
           current={screen.step}
           // Steps 2 and 3 need a team.
-          hrefFor={(n) => (n === 1 || data.reps.length > 0 ? prefsHref(n) : null)}
+          hrefFor={(n) =>
+            n === 1 || data.reps.length > 0 ? prefsHref(n) : null
+          }
         />
         {screen.step === 1 && (
-          <TeamStep sponsor={id} data={data} backHref={base} nextHref={prefsHref(2)} />
+          <TeamStep
+            sponsor={id}
+            data={data}
+            backHref={base}
+            nextHref={prefsHref(2)}
+          />
         )}
         {screen.step === 2 && (
-          <PrefsStep sponsor={id} data={data} teamHref={prefsHref(1)} nextHref={prefsHref(3)} />
+          <PrefsStep
+            sponsor={id}
+            data={data}
+            teamHref={prefsHref(1)}
+            nextHref={prefsHref(3)}
+          />
         )}
         {screen.step === 3 && (
           <ReviewStep
@@ -151,7 +179,9 @@ export default function SponsorCoffeeChatsPage() {
     <ChatsHome
       sponsor={id}
       data={data}
-      startHref={data.reps.some((r) => r.isPrimary) ? prefsHref(2) : prefsHref(1)}
+      startHref={
+        data.reps.some((r) => r.isPrimary) ? prefsHref(2) : prefsHref(1)
+      }
       changeHref={prefsHref(2)}
       teamHref={prefsHref(1)}
       shortlistHref={shortlistHref(1)}

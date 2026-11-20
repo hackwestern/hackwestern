@@ -65,7 +65,10 @@ export function OrganizerNav({
   return (
     <nav aria-label={copy.label} className="flex flex-wrap items-center gap-1">
       <Link
-        href={organizerHomeHref({ tab: "sponsors", sponsor: onHome ? null : sponsor })}
+        href={organizerHomeHref({
+          tab: "sponsors",
+          sponsor: onHome ? null : sponsor,
+        })}
         shallow
         scroll={false}
         aria-current={onHome ? "page" : undefined}

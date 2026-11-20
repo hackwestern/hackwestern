@@ -62,13 +62,15 @@ export const coffeeSessionsCopy = {
      */
     flags: {
       notPlaced: (n: number) => `${plural(n, "rep")} short of chats`,
-      broken: (n: number) => `${plural(n, "chat")} ${n === 1 ? "needs" : "need"} a fix`,
+      broken: (n: number) =>
+        `${plural(n, "chat")} ${n === 1 ? "needs" : "need"} a fix`,
       /**
        * Seats are re-offered at once; one left empty means nobody left in the
        * sponsor's line can take it (already invited, busy then, at the 2-chat
        * cap, or declined).
        */
-      unfilled: (n: number) => `${plural(n, "seat")} couldn't be filled: no hacker left in line is free then`,
+      unfilled: (n: number) =>
+        `${plural(n, "seat")} couldn't be filled: no hacker left in line is free then`,
     },
     /** Flag on a sponsor that edited after the schedule was sent. */
     changedAfterSend: "Changed after invites",
@@ -90,7 +92,8 @@ export const coffeeSessionsCopy = {
     repWants: (chats: number, minutes: number) => {
       if (chats === 0) return "0 chats · doesn't chat";
       const h = (chats * minutes) / 60;
-      const time = h < 1 ? `${chats * minutes} min` : `${Number(h.toFixed(2))} h`;
+      const time =
+        h < 1 ? `${chats * minutes} min` : `${Number(h.toFixed(2))} h`;
       return `${plural(chats, "chat")} · ${time}`;
     },
     legend: {
@@ -105,14 +108,17 @@ export const coffeeSessionsCopy = {
     repAt: (rep: string, s: string, room: string) => `${rep}, ${s}, Rm ${room}`,
     repEvent: (rep: string, s: string, what: string) => `${rep}, ${s}: ${what}`,
     /** A session a workshop's travel buffer cuts: only part of it is usable. */
-    repPartial: (rep: string, s: string, time: string) => `${rep} free ${s}, usable ${time}`,
+    repPartial: (rep: string, s: string, time: string) =>
+      `${rep} free ${s}, usable ${time}`,
     people: "People",
     /**
      * A rep booked back to back in two buildings (allowed, never blocked):
      * a 15-minute walk between chats. `s` is the later session.
      */
     walk: (toIvey: boolean, s: string) =>
-      toIvey ? `Walk to Ivey between chats (${s})` : `Walk back from Ivey between chats (${s})`,
+      toIvey
+        ? `Walk to Ivey between chats (${s})`
+        : `Walk back from Ivey between chats (${s})`,
     /** A rep placed for fewer chats than asked (a partial session), e.g. "3 of 4 chats". */
     chatsOf: (got: number, want: number) => `${got} of ${plural(want, "chat")}`,
     /** Next to each rep in People, e.g. "Asked for 6 chats · 1.5 h". */
@@ -121,7 +127,8 @@ export const coffeeSessionsCopy = {
 
   /** Phones on the board: each number has a copy icon beside it. */
   phone: {
-    copyLabel: (name: string, phone: string) => `Copy ${name}'s number, ${phone}`,
+    copyLabel: (name: string, phone: string) =>
+      `Copy ${name}'s number, ${phone}`,
     copied: "Copied",
     copiedLabel: (phone: string) => `Copied ${phone}`,
     primary: "Main contact",
@@ -133,13 +140,13 @@ export const coffeeSessionsCopy = {
     /** Above the list: Auto-schedule applies fixes itself, except these two kinds. */
     left: "Auto-schedule applies these for you, except fewer chats and chats hackers were notified about.",
     /** A sent chat that breaks a rule now: it's locked, so no Apply. */
-    locked: "Hackers were notified about this chat, so it's locked. Call the rep.",
+    locked:
+      "Hackers were notified about this chat, so it's locked. Call the rep.",
     beforeAuto: "Fixes show up after Auto-schedule.",
     apply: "Apply fix",
     applying: "Applying…",
     suggested: "Suggested:",
-    group: (n: number, s: string) =>
-      `${plural(n, "rep")} not placed at ${s}.`,
+    group: (n: number, s: string) => `${plural(n, "rep")} not placed at ${s}.`,
     short: (rep: string, got: number, want: number) =>
       `${rep} has ${got} of ${plural(want, "chat")}.`,
     why: {
@@ -147,15 +154,19 @@ export const coffeeSessionsCopy = {
       near: (k: number) => `All ${k} near rooms are taken then.`,
       ivey: (k: number) => `All ${k} Ivey rooms are taken then.`,
       open: "A room is free in another session they ticked.",
-      workshop: "Workshop times come from the run of show, plus 15 minutes of travel time.",
+      workshop:
+        "Workshop times come from the run of show, plus 15 minutes of travel time.",
       notFree: "Their free sessions changed after this chat was placed.",
       notSubmitted: "Only sponsors who submitted get chats.",
       overCap: "The rep now asks for fewer chats than they have.",
-      partial: "A workshop cuts one of their sessions short, so it fits fewer chats.",
+      partial:
+        "A workshop cuts one of their sessions short, so it fits fewer chats.",
     },
     /** Partial sessions left a rep short of the chats they asked for. */
-    partialShort: (rep: string, got: number, want: number) => `${rep} gets ${got} of ${plural(want, "chat")}.`,
-    extra: (rep: string, room: string, s: string) => `add a session: put ${rep} in ${room} at ${s}.`,
+    partialShort: (rep: string, got: number, want: number) =>
+      `${rep} gets ${got} of ${plural(want, "chat")}.`,
+    extra: (rep: string, room: string, s: string) =>
+      `add a session: put ${rep} in ${room} at ${s}.`,
     /** A chat already on the board that breaks a rule now. */
     invalid: {
       workshop: (rep: string, s: string, how: ChatHow, sponsor: string) =>
@@ -199,20 +210,34 @@ export const coffeeSessionsCopy = {
     dropRemove: "Drop here to remove",
     where: (room: string, s: string) => `${room}, ${s}`,
     /** "Sun Life · Dana W., 2241, 10–11, 2 chats · 3 each, Draft" (+ ", Not free"). */
-    chatLabel: (sponsor: string, rep: string, where: string, format?: string, tag?: string, forced?: boolean) =>
-      [`${sponsor} · ${rep}`, where, format, tag, forced ? "Not free" : ""].filter(Boolean).join(", "),
+    chatLabel: (
+      sponsor: string,
+      rep: string,
+      where: string,
+      format?: string,
+      tag?: string,
+      forced?: boolean,
+    ) =>
+      [`${sponsor} · ${rep}`, where, format, tag, forced ? "Not free" : ""]
+        .filter(Boolean)
+        .join(", "),
     /** A cell's tooltip: its lines joined, "Dana W. · Sun Life · 2 chats · 3 each · Draft". */
-    cellTitle: (parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(" · "),
+    cellTitle: (parts: (string | false | null | undefined)[]) =>
+      parts.filter(Boolean).join(" · "),
     /**
      * A chat cell's third line: chats first, then their size. A partial
      * session leads with the part of the hour it uses.
      */
     cellFormat: (chats: number, hackersPerChat: number, part?: string | null) =>
-      [part, `${plural(chats, "chat")} · ${hackersPerChat === 1 ? "1-on-1" : `${hackersPerChat} each`}`]
+      [
+        part,
+        `${plural(chats, "chat")} · ${hackersPerChat === 1 ? "1-on-1" : `${hackersPerChat} each`}`,
+      ]
         .filter(Boolean)
         .join(" · "),
     hintMouse: "Drag a chat to move it. Click it for details.",
-    hintTouch: "Press and hold a chat, then drag to move it. Tap it for details.",
+    hintTouch:
+      "Press and hold a chat, then drag to move it. Tap it for details.",
     tagSent: "Sent",
     tagDraft: "Draft",
     tagForced: "Not free",
@@ -239,13 +264,16 @@ export const coffeeSessionsCopy = {
     draft: "Draft",
     pinned: "Placed by hand: Auto-schedule keeps it here.",
     forcedNote: (rep: string) => `Moved by hand to a time ${rep} isn't free.`,
-    notSentYet: "Not sent yet. Hackers are invited when an organizer presses Notify hackers.",
+    notSentYet:
+      "Not sent yet. Hackers are invited when an organizer presses Notify hackers.",
     /** A sent chat in the modal: no Move to or Remove. */
-    locked: "Hackers were notified, so this chat is locked. It can't be moved or removed.",
+    locked:
+      "Hackers were notified, so this chat is locked. It can't be moved or removed.",
     /** "Sun Life · Rm 2241 · 10–11" under the rep's name. */
     sub: (sponsor: string, where: string) => `${sponsor} · ${where}`,
     /** A draft: "6 seats in 2 chats". */
-    draftSum: (seats: number, chats: number) => `${plural(seats, "seat")} in ${plural(chats, "chat")}`,
+    draftSum: (seats: number, chats: number) =>
+      `${plural(seats, "seat")} in ${plural(chats, "chat")}`,
     /** A sent chat: "10 seats in 2 chats · 6 accepted · 4 waiting". */
     sum: (seats: number, chats: number, accepted: number, waiting: number) =>
       `${plural(seats, "seat")} in ${plural(chats, "chat")} · ${accepted} accepted · ${waiting} waiting`,
@@ -261,11 +289,21 @@ export const coffeeSessionsCopy = {
     label: "Invited hackers",
     chatLabel: (time: string) => `Chat at ${time}`,
     /** "10:00–10:15 · 1-on-1 · 1 accepted"; zero counts are left out. */
-    chatHead: (time: string, hackersPerChat: number, accepted: number, waiting: number) =>
+    chatHead: (
+      time: string,
+      hackersPerChat: number,
+      accepted: number,
+      waiting: number,
+    ) =>
       [
         time,
         hackersPerChat === 1 ? "1-on-1" : `Group of ${hackersPerChat}`,
-        [accepted ? `${accepted} accepted` : "", waiting ? `${waiting} waiting` : ""].filter(Boolean).join(", "),
+        [
+          accepted ? `${accepted} accepted` : "",
+          waiting ? `${waiting} waiting` : "",
+        ]
+          .filter(Boolean)
+          .join(", "),
       ]
         .filter(Boolean)
         .join(" · "),
@@ -339,7 +377,8 @@ export const coffeeSessionsCopy = {
       `${name} will get this sponsor's next free seat (before booth, shortlist and interested hackers).`,
     addGo: "Add to front",
     cancel: "Cancel",
-    toastReplaced: (old: string, name: string) => `Removed ${old}. Invited ${name}.`,
+    toastReplaced: (old: string, name: string) =>
+      `Removed ${old}. Invited ${name}.`,
     toastFront: (name: string) => `${name} is first in line.`,
   },
 
@@ -364,9 +403,11 @@ export const coffeeSessionsCopy = {
     searchNone: "No hacker matches.",
     loading: "Loading hackers…",
     /** One hacker in the list: "Ada L. · brave-otter-kite". */
-    hackerLine: (name: string, hackerId: string | null) => (hackerId ? `${name} · ${hackerId}` : name),
+    hackerLine: (name: string, hackerId: string | null) =>
+      hackerId ? `${name} · ${hackerId}` : name,
     /** Under the Book button: booked chats skip Notify hackers. */
-    lockedNote: "Booked chats are confirmed and locked right away: no Notify needed.",
+    lockedNote:
+      "Booked chats are confirmed and locked right away: no Notify needed.",
     book: "Book",
     cancel: "Cancel",
     needSponsor: "Pick a sponsor.",
@@ -413,7 +454,8 @@ export const coffeeSessionsCopy = {
       `${plural(n, "sponsor")} ${n === 1 ? "needs" : "need"} scheduling. Then an organizer notifies hackers at 10:00 PM.`,
     fixes: (n: number) =>
       `${plural(n, "suggested fix", "suggested fixes")} open. Then an organizer notifies hackers at 10:00 PM.`,
-    ready: "Everything is scheduled. Next: an organizer notifies hackers at 10:00 PM.",
+    ready:
+      "Everything is scheduled. Next: an organizer notifies hackers at 10:00 PM.",
     changedAfterSend: (n: number) =>
       `${plural(n, "sponsor")} changed after invites. Check their chats, then notify again.`,
     sent: (time: string) => `Hackers notified ${time}. Nothing to do now.`,
@@ -440,7 +482,8 @@ export const coffeeSessionsCopy = {
     reconfirmed: (n: number) =>
       `Re-confirmed ${plural(n, "sponsor")} who changed after invites.`,
     /** Invites are switched off on this server (dev, previews). */
-    invitesOff: "Invites are switched off on this server, so no hacker was messaged.",
+    invitesOff:
+      "Invites are switched off on this server, so no hacker was messaged.",
     sheetOff: "Sheet writes are off here, so the Room Grid tab wasn't updated.",
     /** COFFEE_INVITES_ENABLED=dry: added to the Send toast. */
     dryRun: " (dry run: nothing was messaged)",
@@ -459,15 +502,18 @@ export const coffeeSessionsCopy = {
     unknownFix: "That fix no longer applies. The board changed.",
     unknownPlacement: "That chat is gone. The board changed.",
     /** A sent chat is locked: hackers were notified about it. */
-    sentLocked: "Hackers were notified about this chat, so it's locked. It can't be moved or removed.",
+    sentLocked:
+      "Hackers were notified about this chat, so it's locked. It can't be moved or removed.",
     unknownBooking: "That booking is gone. The board changed.",
     badCell: "Unknown room or session.",
     boardChanged: "Someone else just changed the board. Refresh and try again.",
     badReference: "That sponsor or rep is gone. Refresh and try again.",
     unknownSponsor: "That sponsor isn't registered. Refresh and try again.",
     /** Book an event: the hacker isn't admitted or didn't agree to share with sponsors. */
-    bookNoHacker: "That hacker can't be booked: they aren't admitted or didn't agree to share with sponsors.",
-    bookSameSponsor: (name: string, sponsor: string) => `${name} already has a chat with ${sponsor}.`,
+    bookNoHacker:
+      "That hacker can't be booked: they aren't admitted or didn't agree to share with sponsors.",
+    bookSameSponsor: (name: string, sponsor: string) =>
+      `${name} already has a chat with ${sponsor}.`,
     workshopsUnknown,
   },
 
@@ -475,7 +521,8 @@ export const coffeeSessionsCopy = {
     button: "Help",
     title: "How coffee chats work",
     close: "Close",
-    cellNote: "A cell is one rep for one hour. Groups run 2 chats an hour; 1-on-1s run 4.",
+    cellNote:
+      "A cell is one rep for one hour. Groups run 2 chats an hour; 1-on-1s run 4.",
     give: {
       lead: "What sponsors give us",
       rest: " (at the Friday 5 PM workshop): their team (one main contact, every rep has a phone), hackers per chat (1–5; a 1-on-1 is 15 min, a group 30), which 1-hour sessions each rep is free (10–11, 11–12, 1–2, 2–3, 3–4, 4–5), and how many chats each rep wants. The shortlist is optional, up to their number of hacker seats.",
@@ -502,7 +549,8 @@ export const coffeeSessionsCopy = {
     },
     send: {
       lead: "Notify hackers (any organizer, at 10:00 PM Friday; it can't be undone):",
-      before: " marks every draft chat confirmed and locks it, re-confirms sponsors who changed after invites (their hackers were already asked again when they saved), and updates the locked ",
+      before:
+        " marks every draft chat confirmed and locks it, re-confirms sponsors who changed after invites (their hackers were already asked again when they saved), and updates the locked ",
       bold: "Coffee Chat Room Grid",
       after:
         " tab (on the live site only). Each sponsor sees their confirmed chats under Your chats in their portal. Hackers get one invite per seat on Slack (email if Slack can't reach them): people the sponsor met at their booth first, then their shortlist, then hackers interested in them. They answer by Sat 10 AM. When someone declines, their seat goes to the next hacker right away; from 10 AM Saturday, new invites go out every 30 minutes.",

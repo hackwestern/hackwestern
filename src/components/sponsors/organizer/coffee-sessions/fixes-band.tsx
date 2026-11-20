@@ -1,5 +1,8 @@
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { coffeeSessionsCopy, type ChatHow } from "~/content/coffee-chat-sessions";
+import {
+  coffeeSessionsCopy,
+  type ChatHow,
+} from "~/content/coffee-chat-sessions";
 import { COFFEE_ROOMS } from "~/lib/coffee-chat-sessions";
 import {
   Card,
@@ -20,11 +23,17 @@ const fc = copy.fixes;
  * Problem → why → Suggested → [Apply fix], as text. `locked`: the fix would
  * move a sent chat, which is locked (no Apply; call the rep).
  */
-export function fixView(fix: BoardFix, sp: BoardSponsor, board: Pick<SessionBoardData, "placements">) {
+export function fixView(
+  fix: BoardFix,
+  sp: BoardSponsor,
+  board: Pick<SessionBoardData, "placements">,
+) {
   // Sent first: a sent chat is kept whether or not it was moved by hand.
   const howAt = (key: string): ChatHow => {
     const [room, session] = key.split("|");
-    const p = board.placements.find((x) => x.room === room && x.sessionId === session);
+    const p = board.placements.find(
+      (x) => x.room === room && x.sessionId === session,
+    );
     return !p ? null : p.status === "sent" ? "sent" : p.pinned ? "hand" : null;
   };
   const rep = (id: string) => sp.reps.find((r) => r.id === id);
@@ -38,27 +47,63 @@ export function fixView(fix: BoardFix, sp: BoardSponsor, board: Pick<SessionBoar
   const problem =
     r === "partial" && first.chats
       ? fc.partialShort(name(first.rep), first.chats.got, first.chats.want)
-      : g.kind === "move" && (r === "workshop" || r === "notFree" || r === "notSubmitted" || r === "overCap")
-      ? fc.invalid[r](name(first.rep), sessionLabel(fix.session), howAt(g.from), sp.name)
-      : fix.problem === "short"
-        ? fc.short(name(first.rep), chats(first.rep, first.got), chats(first.rep, first.want))
-        : fc.group(fix.items.length, sessionLabel(fix.session));
-  const k = (b: "near" | "ivey") => COFFEE_ROOMS.filter((x) => x.building === b).length;
+      : g.kind === "move" &&
+          (r === "workshop" ||
+            r === "notFree" ||
+            r === "notSubmitted" ||
+            r === "overCap")
+        ? fc.invalid[r](
+            name(first.rep),
+            sessionLabel(fix.session),
+            howAt(g.from),
+            sp.name,
+          )
+        : fix.problem === "short"
+          ? fc.short(
+              name(first.rep),
+              chats(first.rep, first.got),
+              chats(first.rep, first.want),
+            )
+          : fc.group(fix.items.length, sessionLabel(fix.session));
+  const k = (b: "near" | "ivey") =>
+    COFFEE_ROOMS.filter((x) => x.building === b).length;
   const why = r === "near" || r === "ivey" ? fc.why[r](k(r)) : fc.why[r];
   let suggestion: string;
   if (g.kind === "extra") {
-    suggestion = fc.extra(name(g.place.rep), copy.rooms.rm(g.place.room), sessionLabel(g.place.session));
+    suggestion = fc.extra(
+      name(g.place.rep),
+      copy.rooms.rm(g.place.room),
+      sessionLabel(g.place.session),
+    );
   } else if (g.kind === "fewer" && r === "partial" && first.chats) {
-    suggestion = fc.fewer([{ rep: name(first.rep), got: first.chats.got, want: first.chats.want }]);
+    suggestion = fc.fewer([
+      { rep: name(first.rep), got: first.chats.got, want: first.chats.want },
+    ]);
   } else if (g.kind === "move") {
     const to = g.to;
-    suggestion = to ? fc.move(copy.rooms.rm(to.room), sessionLabel(to.session)) : fc.removeIt;
+    suggestion = to
+      ? fc.move(copy.rooms.rm(to.room), sessionLabel(to.session))
+      : fc.removeIt;
   } else if (g.kind === "session") {
-    suggestion = fc.session(g.places.map((p) => ({ rep: name(p.rep), room: p.room, s: sessionLabel(p.session) })));
+    suggestion = fc.session(
+      g.places.map((p) => ({
+        rep: name(p.rep),
+        room: p.room,
+        s: sessionLabel(p.session),
+      })),
+    );
   } else if (g.kind === "ivey") {
-    suggestion = fc.ivey(g.places.length, g.places.map((p) => p.room), sessionLabel(g.session));
+    suggestion = fc.ivey(
+      g.places.length,
+      g.places.map((p) => p.room),
+      sessionLabel(g.session),
+    );
   } else {
-    const items = g.caps.map((c) => ({ rep: name(c.rep), got: chats(c.rep, c.sessions), want: chats(c.rep, c.want) }));
+    const items = g.caps.map((c) => ({
+      rep: name(c.rep),
+      got: chats(c.rep, c.sessions),
+      want: chats(c.rep, c.want),
+    }));
     suggestion = fc.fewer(items);
   }
   const locked = g.kind === "move" && howAt(g.from) === "sent";
@@ -91,7 +136,9 @@ export function FixesBand({
         </p>
       ) : (
         <>
-          <p className="m-0 text-[15px] text-dashboard-text-medium">{fc.left}</p>
+          <p className="m-0 text-[15px] text-dashboard-text-medium">
+            {fc.left}
+          </p>
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {board.fixes.map((fix) => {
               const sp = board.sponsors.find((s) => s.id === fix.sponsor);
@@ -106,11 +153,17 @@ export function FixesBand({
                 >
                   <p className="m-0 flex min-w-0 items-center gap-2 text-[15px]">
                     <Logo name={sp.name} />
-                    <b className="min-w-0 font-bold text-dashboard-text-warning">{v.problem}</b>
+                    <b className="min-w-0 font-bold text-dashboard-text-warning">
+                      {v.problem}
+                    </b>
                   </p>
-                  <p className="m-0 text-sm text-dashboard-text-medium">{v.why}</p>
+                  <p className="m-0 text-sm text-dashboard-text-medium">
+                    {v.why}
+                  </p>
                   {v.locked ? (
-                    <p className="m-0 text-sm font-medium text-dashboard-text-medium">{fc.locked}</p>
+                    <p className="m-0 text-sm font-medium text-dashboard-text-medium">
+                      {fc.locked}
+                    </p>
                   ) : (
                     <p className="m-0 text-[15px]">
                       <b className="font-bold">{fc.suggested}</b> {v.suggestion}

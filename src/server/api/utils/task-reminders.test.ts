@@ -80,7 +80,11 @@ function mockSlack(answers: Record<string, unknown> = {}) {
       "users.list": {
         ok: true,
         members: [
-          { id: "UJAZZ", real_name: "Jazz Gu", profile: { first_name: "Jazz" } },
+          {
+            id: "UJAZZ",
+            real_name: "Jazz Gu",
+            profile: { first_name: "Jazz" },
+          },
           { id: "UNOAH", real_name: "Noah Lee" },
         ],
       },
@@ -410,7 +414,9 @@ describe("syncTaskReminders", () => {
       "chat.scheduleMessage",
       "chat.scheduleMessage",
     ]);
-    const posts = slack.calls.filter((c) => c.method === "chat.scheduleMessage");
+    const posts = slack.calls.filter(
+      (c) => c.method === "chat.scheduleMessage",
+    );
     expect(posts.map((p) => p.args.get("channel"))).toEqual([
       "D-U-jazz@example.com",
       CHANNEL,
@@ -429,7 +435,12 @@ describe("syncTaskReminders", () => {
       channel: CHANNEL,
       readSheet: sheet(tasks),
     });
-    expect(again).toMatchObject({ ok: true, scheduled: 3, created: 0, cancelled: 0 });
+    expect(again).toMatchObject({
+      ok: true,
+      scheduled: 3,
+      created: 0,
+      cancelled: 0,
+    });
     expect(slack.calls).toHaveLength(0);
 
     // Change one task and remove another: delete both, schedule the new one.
@@ -440,7 +451,12 @@ describe("syncTaskReminders", () => {
       channel: CHANNEL,
       readSheet: sheet([task("14:30", "Open doors", "Jazz"), tasks[1]!]),
     });
-    expect(changed).toMatchObject({ ok: true, scheduled: 2, created: 1, cancelled: 2 });
+    expect(changed).toMatchObject({
+      ok: true,
+      scheduled: 2,
+      created: 1,
+      cancelled: 2,
+    });
     // The directory is cached, so users.list isn't called again.
     expect(slack.methods().sort()).toEqual([
       "chat.deleteScheduledMessage",
@@ -518,7 +534,9 @@ describe("syncTaskReminders", () => {
       readSheet: read,
     });
     expect(result).toMatchObject({ ok: true, created: 2, toChannel: 1 });
-    const posts = slack.calls.filter((c) => c.method === "chat.scheduleMessage");
+    const posts = slack.calls.filter(
+      (c) => c.method === "chat.scheduleMessage",
+    );
     expect(posts.map((p) => p.args.get("channel"))).toEqual([
       CHANNEL,
       "D-UNOAH",
@@ -560,7 +578,12 @@ describe("syncTaskReminders", () => {
     // Next sync: the delete works, then the new post is scheduled.
     const fixed = mockSlack();
     const done = await syncTaskReminders(NOW, opts(fixed.fetch, ""));
-    expect(done).toMatchObject({ ok: true, created: 1, cancelled: 1, deferred: 0 });
+    expect(done).toMatchObject({
+      ok: true,
+      created: 1,
+      cancelled: 1,
+      deferred: 0,
+    });
     expect(fixed.methods()).toEqual([
       "chat.deleteScheduledMessage",
       "chat.scheduleMessage",
@@ -631,14 +654,18 @@ describe("maybeAutoSyncTaskReminders (throttle)", () => {
     const slack = mockSlack();
     const opts = { token: "xoxb-t", fetch: slack.fetch, channel: CHANNEL };
 
-    const first = await maybeAutoSyncTaskReminders(snapshot, { ...opts, now: NOW });
+    const first = await maybeAutoSyncTaskReminders(snapshot, {
+      ...opts,
+      now: NOW,
+    });
     expect(first.status).toBe("started");
     expect(await first.run).toMatchObject({ ok: true, created: 1 });
 
     // Same instance, a minute later: in-memory throttle.
     const soon = new Date(NOW.getTime() + 60_000);
     expect(
-      (await maybeAutoSyncTaskReminders(snapshot, { ...opts, now: soon })).status,
+      (await maybeAutoSyncTaskReminders(snapshot, { ...opts, now: soon }))
+        .status,
     ).toBe("throttled");
 
     // Another instance (no memory), tasks changed, still inside 3 minutes:
@@ -646,7 +673,8 @@ describe("maybeAutoSyncTaskReminders (throttle)", () => {
     resetAutoSyncThrottle();
     const changed = { ...snapshot, tasks: [task("15:00", "Other", null)] };
     expect(
-      (await maybeAutoSyncTaskReminders(changed, { ...opts, now: soon })).status,
+      (await maybeAutoSyncTaskReminders(changed, { ...opts, now: soon }))
+        .status,
     ).toBe("throttled");
 
     // Unchanged tasks, recently synced: nothing to do.
@@ -658,9 +686,16 @@ describe("maybeAutoSyncTaskReminders (throttle)", () => {
     ).toBe("unchanged");
 
     // Changed tasks after the throttle window: runs again.
-    const next = await maybeAutoSyncTaskReminders(changed, { ...opts, now: later });
+    const next = await maybeAutoSyncTaskReminders(changed, {
+      ...opts,
+      now: later,
+    });
     expect(next.status).toBe("started");
-    expect(await next.run).toMatchObject({ ok: true, created: 1, cancelled: 1 });
+    expect(await next.run).toMatchObject({
+      ok: true,
+      created: 1,
+      cancelled: 1,
+    });
   });
 
   test("does nothing without a Slack token", async () => {

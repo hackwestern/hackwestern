@@ -142,7 +142,12 @@ export function SponsorShell({
         locked: !judgingOpen,
       }
     : null;
-  const home: NavItem = { id: "home", label: copy.home, icon: House, href: base };
+  const home: NavItem = {
+    id: "home",
+    label: copy.home,
+    icon: House,
+    href: base,
+  };
   const chats: NavItem = {
     id: "chats",
     label: copy.chats,
@@ -155,7 +160,12 @@ export function SponsorShell({
     icon: Calendar,
     href: `${base}/schedule`,
   };
-  const map: NavItem = { id: "map", label: copy.map, icon: MapIcon, href: `${base}/map` };
+  const map: NavItem = {
+    id: "map",
+    label: copy.map,
+    icon: MapIcon,
+    href: `${base}/map`,
+  };
   // Side nav (mock sponsor-chats-v2): Home · Schedule · Map, then "Your
   // tasks": Chats · Judging. Scan lives in the Chats header and on Home.
   const sideMain = id ? [home, schedule, map] : [];
@@ -163,9 +173,17 @@ export function SponsorShell({
   // Phone tab bar: Home · Chats · [Scan] · Schedule · Map (· Judge). Scan
   // is the exact centre of five; with Judging it's third of six.
   const tabs = id
-    ? [home, chats, scanItem, schedule, map, ...(judgingItem ? [judgingItem] : [])]
+    ? [
+        home,
+        chats,
+        scanItem,
+        schedule,
+        map,
+        ...(judgingItem ? [judgingItem] : []),
+      ]
     : [];
-  const topTitle = barTitle ?? (active ? copy.titles[active] : sponsorPortalCopy.brand);
+  const topTitle =
+    barTitle ?? (active ? copy.titles[active] : sponsorPortalCopy.brand);
   const hasDeskHeader = !!(heading ?? headerStart ?? headerEnd);
 
   const frame = (
@@ -290,7 +308,9 @@ export function SponsorShell({
             <div className="mx-auto flex w-full max-w-[884px] flex-col gap-6 md:gap-8">
               {hasDeskHeader && (
                 <div className="flex flex-col gap-6">
-                  {headerStart && <div className="hidden md:block">{headerStart}</div>}
+                  {headerStart && (
+                    <div className="hidden md:block">{headerStart}</div>
+                  )}
                   {(heading ?? headerEnd) && (
                     <div className="flex items-start justify-between gap-4">
                       {heading && (
@@ -305,7 +325,11 @@ export function SponsorShell({
                           {heading}
                         </h1>
                       )}
-                      {headerEnd && <div className="hidden shrink-0 md:block">{headerEnd}</div>}
+                      {headerEnd && (
+                        <div className="hidden shrink-0 md:block">
+                          {headerEnd}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -407,7 +431,10 @@ function SideNavItem({ item, current }: { item: NavItem; current: boolean }) {
       />
       <span className="min-w-0 flex-1 truncate">{item.label}</span>
       {item.locked && (
-        <Lock aria-hidden className="size-4 shrink-0 text-dashboard-text-light" />
+        <Lock
+          aria-hidden
+          className="size-4 shrink-0 text-dashboard-text-light"
+        />
       )}
     </>
   );

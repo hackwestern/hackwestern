@@ -1,5 +1,11 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { CheckCircle2, ExternalLink, Github, TriangleAlert, X } from "lucide-react";
+import {
+  CheckCircle2,
+  ExternalLink,
+  Github,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import { HackerLinks } from "~/components/sponsors/hacker-links";
 import { focusRing } from "~/components/sponsors/organizer/coffee-sessions/parts";
 import { sponsorJudgingBoardCopy } from "~/content/sponsor-judging-board";

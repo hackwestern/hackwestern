@@ -185,10 +185,7 @@ export function RunOfShowTab({
       )}
       {/* Not while loading: the day isn't known yet (no Sunday flash). */}
       {!summary.isLoading && shownDay === judgingDay && (
-        <JudgingPanel
-          board={judging}
-          failed={summary.isError}
-        />
+        <JudgingPanel board={judging} failed={summary.isError} />
       )}
       {/* Only the picked day's ceremony and workshops (Jazz, 2026-11-18). */}
       <CeremonyOrder
@@ -230,10 +227,7 @@ export function RunOfShowExtras({
         items={data.items}
       />
       {!summary.isLoading && day === judgingDay && (
-        <JudgingPanel
-          board={judging}
-          failed={summary.isError}
-        />
+        <JudgingPanel board={judging} failed={summary.isError} />
       )}
       <CeremonyOrder
         segments={ceremonySegmentsForDay(data.ceremonies, data.items, day)}

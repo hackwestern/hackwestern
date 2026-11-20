@@ -319,7 +319,10 @@ const atChat = (
  */
 export async function loadRemovedPairs(conn: Conn): Promise<Set<string>> {
   const rows = await conn
-    .select({ sponsorId: coffeeChatLine.sponsorId, userId: coffeeChatLine.userId })
+    .select({
+      sponsorId: coffeeChatLine.sponsorId,
+      userId: coffeeChatLine.userId,
+    })
     .from(coffeeChatLine)
     .where(eq(coffeeChatLine.kind, "removed"));
   return new Set(rows.map((r) => `${r.sponsorId}|${r.userId}`));
@@ -573,8 +576,7 @@ async function writeInviteRound(
       ...input,
       chats: input.chats.map((c) => ({
         ...c,
-        live:
-          c.live + placed.filter((i) => chatKey(i) === chatKey(c)).length,
+        live: c.live + placed.filter((i) => chatKey(i) === chatKey(c)).length,
       })),
       busy: [
         ...input.busy,
@@ -896,7 +898,10 @@ export async function deliverInviteNotices(
   if (jobs.length === 0) return result;
   if (!invitesDeliveryLive()) {
     // Counts only: no names or ids in logs.
-    if (invitesEnabled()) console.info(`[coffee invites] dry run: ${jobs.length} notice(s) not sent`);
+    if (invitesEnabled())
+      console.info(
+        `[coffee invites] dry run: ${jobs.length} notice(s) not sent`,
+      );
     result.skipped = jobs.length;
     return result;
   }

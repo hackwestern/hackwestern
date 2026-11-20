@@ -153,9 +153,7 @@ export function BrowseProjects({
   // The timer runs the latest render's version (fresh scores, index).
   const advance = useRef(nextUnscored);
   advance.current = nextUnscored;
-  const autoNext = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
+  const autoNext = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const cancelAutoNext = () => clearTimeout(autoNext.current);
   useEffect(() => cancelAutoNext, []);
   const go = (i: number) => {
@@ -373,11 +371,7 @@ export function BrowseProjects({
           ) : (
             <ul className="m-0 flex list-none flex-col gap-3 p-0">
               {listed.map((team, i) => (
-                <li
-                  key={team.id}
-                >
-                  {card(team)}
-                </li>
+                <li key={team.id}>{card(team)}</li>
               ))}
             </ul>
           )}

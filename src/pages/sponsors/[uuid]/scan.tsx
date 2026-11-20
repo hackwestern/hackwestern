@@ -51,13 +51,13 @@ export default function SponsorScanPage() {
     <>
       {/* The intro stays on phones too: it says what scanning does. */}
       <p className="-mt-2 mb-0 max-w-[62ch] text-sm">
-        {hacker ? copy.offerIntro : sponsorQ.data?.confirmed ? copy.introLive : copy.intro}
+        {hacker
+          ? copy.offerIntro
+          : sponsorQ.data?.confirmed
+            ? copy.introLive
+            : copy.intro}
       </p>
-      <BadgeScanner
-        key={hacker ?? ""}
-        sponsor={id}
-        initialCode={hacker}
-      />
+      <BadgeScanner key={hacker ?? ""} sponsor={id} initialCode={hacker} />
     </>,
   );
 }

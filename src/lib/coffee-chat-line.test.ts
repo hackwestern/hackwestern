@@ -1,9 +1,19 @@
 import { describe, expect, test } from "vitest";
 import { planInviteRound, type BusyChat } from "~/lib/coffee-chat-invites";
-import { firstForSeat, seatFit, sponsorLine, type LineEntry } from "~/lib/coffee-chat-line";
+import {
+  firstForSeat,
+  seatFit,
+  sponsorLine,
+  type LineEntry,
+} from "~/lib/coffee-chat-line";
 
 const seat = { sponsorId: "A", start: 600, minutes: 15 };
-const busy = (userId: string, start: number, sponsorId = "B", minutes = 15): BusyChat => ({
+const busy = (
+  userId: string,
+  start: number,
+  sponsorId = "B",
+  minutes = 15,
+): BusyChat => ({
   userId,
   sponsorId,
   start,
@@ -48,8 +58,20 @@ describe("seatFit and firstForSeat", () => {
     ];
     expect(firstForSeat(line, seat, [])).toEqual(line[0]);
     expect(firstForSeat(line, seat, [busy("ari", 600)])).toEqual(line[1]);
-    expect(firstForSeat(line, seat, [busy("ari", 600), busy("gabe", 780), busy("gabe", 840)])).toEqual(line[2]);
-    expect(firstForSeat(line, seat, [busy("ari", 600), busy("gabe", 600), busy("bo", 600)])).toBeNull();
+    expect(
+      firstForSeat(line, seat, [
+        busy("ari", 600),
+        busy("gabe", 780),
+        busy("gabe", 840),
+      ]),
+    ).toEqual(line[2]);
+    expect(
+      firstForSeat(line, seat, [
+        busy("ari", 600),
+        busy("gabe", 600),
+        busy("bo", 600),
+      ]),
+    ).toBeNull();
     expect(firstForSeat([], seat, [])).toBeNull();
   });
 });
@@ -59,7 +81,17 @@ describe("the planner puts organizer picks first", () => {
     const { invites } = planInviteRound({
       round: 1,
       now: new Date("2026-11-20T22:00:00-05:00"),
-      chats: [{ placementId: "p", sponsorId: "A", start: 600, minutes: 15, building: "near", seats: 1, live: 0 }],
+      chats: [
+        {
+          placementId: "p",
+          sponsorId: "A",
+          start: 600,
+          minutes: 15,
+          building: "near",
+          seats: 1,
+          live: 0,
+        },
+      ],
       candidates: new Map([
         [
           "A",
@@ -72,6 +104,8 @@ describe("the planner puts organizer picks first", () => {
       busy: [],
       blocked: new Set(),
     });
-    expect(invites.map((i) => [i.userId, i.source])).toEqual([["lou", "organizer"]]);
+    expect(invites.map((i) => [i.userId, i.source])).toEqual([
+      ["lou", "organizer"],
+    ]);
   });
 });

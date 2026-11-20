@@ -23,7 +23,8 @@ export function keepNamesTogether(
   );
   let out = text;
   for (const name of names) {
-    if (out.includes(name)) out = out.split(name).join(name.replace(/ /g, NBSP));
+    if (out.includes(name))
+      out = out.split(name).join(name.replace(/ /g, NBSP));
   }
   return out;
 }

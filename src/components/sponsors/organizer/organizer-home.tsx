@@ -13,7 +13,10 @@ import { DashboardButton } from "~/components/internals/dashboard-button";
 import { hover, press } from "~/components/internals/interaction";
 import { DayGrid } from "~/components/sponsors/day-grid";
 import { SponsorLogo } from "~/components/sponsors/organizer/day-cells";
-import { Pill, type MySponsorData } from "~/components/sponsors/organizer/my-sponsors";
+import {
+  Pill,
+  type MySponsorData,
+} from "~/components/sponsors/organizer/my-sponsors";
 import { PrimaryCrownIcon } from "~/components/sponsors/organizer/primary-crown";
 import {
   RunOfShowExtras,
@@ -253,7 +256,8 @@ export function OrganizerHome({
     });
   }, [sheet, summaries, mine, schedule?.workshops, prizeTracks]);
 
-  const isMine = (r: Row) => !!me && leadsSponsor(r.hwContact, me, contactNames);
+  const isMine = (r: Row) =>
+    !!me && leadsSponsor(r.hwContact, me, contactNames);
   const led = rows.filter(isMine);
   const shown = sponsorsOnDay(day, view === "mine" ? led : rows);
   const allOnDay = sponsorsOnDay(day, rows);
@@ -366,11 +370,7 @@ export function OrganizerHome({
         </div>
       </div>
 
-      <UpNextCard
-        day={day}
-        next={next}
-        failed={scheduleFailed}
-      />
+      <UpNextCard day={day} next={next} failed={scheduleFailed} />
 
       {schedule && (
         <section aria-labelledby="your-day" className="min-w-0">
@@ -418,7 +418,11 @@ export function OrganizerHome({
               // Wraps on phones so the count never runs out of the card.
               className="h-auto min-h-11 flex-wrap justify-center gap-x-2.5 gap-y-1 py-2 md:h-11 md:flex-nowrap md:py-0"
             >
-              <Link href={organizerHomeHref({ tab: board })} shallow scroll={false}>
+              <Link
+                href={organizerHomeHref({ tab: board })}
+                shallow
+                scroll={false}
+              >
                 {board === "coffee" ? (
                   <Coffee aria-hidden className="size-5" />
                 ) : (
@@ -453,7 +457,10 @@ export function OrganizerHome({
               <TriangleAlert aria-hidden className="size-4" />
             )}
             {started && flagCount === 0 && (
-              <CircleCheck aria-hidden className="size-4 text-dashboard-status-live" />
+              <CircleCheck
+                aria-hidden
+                className="size-4 text-dashboard-status-live"
+              />
             )}
             {!started
               ? copy.count.notStarted(day)
@@ -482,7 +489,10 @@ export function OrganizerHome({
                   focusRing,
                 )}
               >
-                <CircleCheck aria-hidden className="size-3.5 text-dashboard-status-live" />
+                <CircleCheck
+                  aria-hidden
+                  className="size-3.5 text-dashboard-status-live"
+                />
                 {copy.doneChip(copy.columns[c])}
               </button>
             ))}
@@ -504,7 +514,9 @@ export function OrganizerHome({
         )}
 
         {!sheet && !sheetFailed && rows.length === 0 ? (
-          <p className="m-0 text-sm text-dashboard-text-light">{copy.loading}</p>
+          <p className="m-0 text-sm text-dashboard-text-light">
+            {copy.loading}
+          </p>
         ) : shown.length === 0 ? (
           <p className="m-0 text-sm text-dashboard-text-medium">
             {view === "mine" && me ? copy.noneLed : copy.noSponsors}
@@ -615,9 +627,13 @@ function UpNextCard({
           {u.first(day, formatClock(next.task.start), next.task.task)}
         </span>
       ) : next.kind === "over" ? (
-        <span className="text-sm text-dashboard-text-medium">{u.over(day)}</span>
+        <span className="text-sm text-dashboard-text-medium">
+          {u.over(day)}
+        </span>
       ) : (
-        <span className="text-sm text-dashboard-text-medium">{u.none(day)}</span>
+        <span className="text-sm text-dashboard-text-medium">
+          {u.none(day)}
+        </span>
       )}
     </section>
   );
@@ -648,13 +664,7 @@ function SponsorTable({
 }) {
   const keyOf = (r: Row) => r.sponsorId ?? r.name;
   const cell = (col: HomeColumnKey, r: Row) => (
-    <Cell
-      col={col}
-      row={r}
-      day={day}
-      now={now}
-      writes={writes}
-    />
+    <Cell col={col} row={r} day={day} now={now} writes={writes} />
   );
   /**
    * The sponsor's portal, one tap from the table (Jazz, 2026-11-19): an
@@ -760,8 +770,16 @@ function SponsorTable({
                 ))}
               </dl>
               {open.has(keyOf(r)) && (
-                <div id={panel} className="border-t border-dashboard-border-subtle pt-3">
-                  <Details row={r} day={day} me={me} contactNames={contactNames} />
+                <div
+                  id={panel}
+                  className="border-t border-dashboard-border-subtle pt-3"
+                >
+                  <Details
+                    row={r}
+                    day={day}
+                    me={me}
+                    contactNames={contactNames}
+                  />
                 </div>
               )}
             </li>
@@ -817,7 +835,8 @@ function SponsorTable({
                       className={cn(
                         td,
                         "bg-dashboard-bg-surface font-normal",
-                        flagged && "border-l-4 border-l-dashboard-status-warning",
+                        flagged &&
+                          "border-l-4 border-l-dashboard-status-warning",
                       )}
                     >
                       {nameWithLink(r, panel)}
@@ -834,7 +853,12 @@ function SponsorTable({
                         colSpan={columns.length + 1}
                         className="border-b border-dashboard-border-subtle bg-dashboard-bg-highlightSubtle px-4 pb-4 pt-2"
                       >
-                        <Details row={r} day={day} me={me} contactNames={contactNames} />
+                        <Details
+                          row={r}
+                          day={day}
+                          me={me}
+                          contactNames={contactNames}
+                        />
                       </td>
                     </tr>
                   )}
@@ -853,7 +877,13 @@ function Muted({ children }: { children: React.ReactNode }) {
 }
 
 /** An amber flag inside its cell, linking to where it's fixed. */
-function Flag({ flag, sponsorId }: { flag: HomeFlag; sponsorId: string | null }) {
+function Flag({
+  flag,
+  sponsorId,
+}: {
+  flag: HomeFlag;
+  sponsorId: string | null;
+}) {
   const f = copy.flags;
   const text =
     flag.kind === "emptyBlocks"
@@ -980,9 +1010,13 @@ function Cell({
         <Muted>{copy.none}</Muted>
       ) : r.chats.prefsSubmittedAt ? (
         <span className="flex flex-col">
-          <span>{c.availabilitySent(timeOf(r.chats.prefsSubmittedAt, day))}</span>
+          <span>
+            {c.availabilitySent(timeOf(r.chats.prefsSubmittedAt, day))}
+          </span>
           {r.chats.repsChatting > 0 && (
-            <Muted>{c.repsPlaced(r.chats.repsPlaced, r.chats.repsChatting)}</Muted>
+            <Muted>
+              {c.repsPlaced(r.chats.repsPlaced, r.chats.repsChatting)}
+            </Muted>
           )}
         </span>
       ) : (
@@ -1120,7 +1154,15 @@ function Details({
       {/* One fact per row, label | value (Jazz, 2026-11-20). */}
       <dl className="m-0 flex max-w-3xl flex-col divide-y divide-dashboard-border-subtle border-y border-dashboard-border-subtle text-sm">
         <Item label={d.hwLead}>
-          {r.hwContact ? (mineLead ? `${r.hwContact} (${d.you})` : r.hwContact) : <Muted>{d.noLead}</Muted>}
+          {r.hwContact ? (
+            mineLead ? (
+              `${r.hwContact} (${d.you})`
+            ) : (
+              r.hwContact
+            )
+          ) : (
+            <Muted>{d.noLead}</Muted>
+          )}
         </Item>
         <Item label={d.mainContact}>
           {r.companyContact || <Muted>{copy.none}</Muted>}
@@ -1131,11 +1173,16 @@ function Details({
           ) : (
             <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
               {r.reps.map((rep) => (
-                <li key={rep.id} className="flex flex-wrap items-center gap-x-2">
+                <li
+                  key={rep.id}
+                  className="flex flex-wrap items-center gap-x-2"
+                >
                   <span className="inline-flex items-center gap-1 font-semibold">
                     {rep.name}
                     {rep.isPrimary && (
-                      <PrimaryCrownIcon label={sponsorOrganizerCopy.mine.people.primary} />
+                      <PrimaryCrownIcon
+                        label={sponsorOrganizerCopy.mine.people.primary}
+                      />
                     )}
                   </span>
                   <PhoneCopy name={rep.name} phone={rep.phone} />
@@ -1164,18 +1211,22 @@ function Details({
           )}
         </Item>
         <Item label={d.prize}>
-          {r.digital ? d.prizeDigital : r.prizeTrack ? d.prizeInPerson : <Muted>{d.prizeNone}</Muted>}
+          {r.digital ? (
+            d.prizeDigital
+          ) : r.prizeTrack ? (
+            d.prizeInPerson
+          ) : (
+            <Muted>{d.prizeNone}</Muted>
+          )}
         </Item>
         <Item label={d.portal}>
-          <CopyLinkButton
-            sponsorId={r.sponsorId}
-            name={r.name}
-            showUrl
-          />
+          <CopyLinkButton sponsorId={r.sponsorId} name={r.name} showUrl />
         </Item>
         {r.notes && (
           <Item label={d.notes}>
-            <span className="whitespace-pre-line text-dashboard-text-medium">{r.notes}</span>
+            <span className="whitespace-pre-line text-dashboard-text-medium">
+              {r.notes}
+            </span>
           </Item>
         )}
       </dl>
@@ -1184,7 +1235,10 @@ function Details({
           {!r.digital && day !== "Sunday" && (
             <DashboardButton variant="link" asChild className="-ml-2">
               <Link
-                href={organizerHomeHref({ tab: "coffee", sponsor: r.sponsorId })}
+                href={organizerHomeHref({
+                  tab: "coffee",
+                  sponsor: r.sponsorId,
+                })}
                 shallow
                 scroll={false}
               >
@@ -1197,7 +1251,10 @@ function Details({
           {r.prizeTrack && (
             <DashboardButton variant="link" asChild className="-ml-2">
               <Link
-                href={organizerHomeHref({ tab: "judging", sponsor: r.sponsorId })}
+                href={organizerHomeHref({
+                  tab: "judging",
+                  sponsor: r.sponsorId,
+                })}
                 shallow
                 scroll={false}
               >
@@ -1213,10 +1270,18 @@ function Details({
   );
 }
 
-function Item({ label, children }: { label: string; children: React.ReactNode }) {
+function Item({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)] items-start gap-x-3 py-2 sm:grid-cols-[9rem_minmax(0,1fr)]">
-      <dt className="pt-0.5 text-xs font-semibold text-dashboard-text-light">{label}</dt>
+      <dt className="pt-0.5 text-xs font-semibold text-dashboard-text-light">
+        {label}
+      </dt>
       <dd className="m-0 min-w-0 break-words">{children}</dd>
     </div>
   );

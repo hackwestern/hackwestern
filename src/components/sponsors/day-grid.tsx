@@ -870,11 +870,11 @@ function GridBlock({
                     live && "ring-2 ring-dashboard-chat-line",
                   )
                 : strong
-              ? cn(
-                  "border-l-4 border-dashboard-action-primary bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card",
-                  live && "ring-2 ring-dashboard-action-primary",
-                )
-              : "border border-dashed border-dashboard-border-control bg-dashboard-bg-inset text-dashboard-text-light",
+                  ? cn(
+                      "border-l-4 border-dashboard-action-primary bg-dashboard-bg-surface text-dashboard-text-heavy shadow-dashboard-card",
+                      live && "ring-2 ring-dashboard-action-primary",
+                    )
+                  : "border border-dashed border-dashboard-border-control bg-dashboard-bg-inset text-dashboard-text-light",
         )}
       >
         {/* Tint over white so the block stays opaque over the rules. */}

@@ -19,7 +19,11 @@ import {
   type PlanChat,
   type PlanInput,
 } from "~/lib/coffee-chat-invites";
-import { COFFEE_SESSIONS, chatsInWindow, usableWindow } from "~/lib/coffee-chat-sessions";
+import {
+  COFFEE_SESSIONS,
+  chatsInWindow,
+  usableWindow,
+} from "~/lib/coffee-chat-sessions";
 
 const FRI_10PM = new Date("2026-11-20T22:00:00-05:00");
 const at = (hhmm: string) => new Date(`2026-11-21T${hhmm}:00-05:00`);
@@ -103,9 +107,15 @@ describe("seat times", () => {
         for (const s of COFFEE_SESSIONS) {
           const w = usableWindow(s.id, ws, minutes);
           const fromWindow = w
-            ? Array.from({ length: chatsInWindow(w, minutes) }, (_, k) => w.start + k * minutes)
+            ? Array.from(
+                { length: chatsInWindow(w, minutes) },
+                (_, k) => w.start + k * minutes,
+              )
             : [];
-          expect(sessionChatStarts(s, minutes, ws), `${s.id} @ ${minutes}`).toEqual(fromWindow);
+          expect(
+            sessionChatStarts(s, minutes, ws),
+            `${s.id} @ ${minutes}`,
+          ).toEqual(fromWindow);
         }
       }
     }
@@ -259,7 +269,9 @@ describe("round timing", () => {
       [min("14:00"), at("11:35")],
     ]);
     // 11:15's last call (10:55) is gone.
-    expect(unfilled).toEqual([{ placementId: "p", start: min("11:15"), open: 1 }]);
+    expect(unfilled).toEqual([
+      { placementId: "p", start: min("11:15"), open: 1 },
+    ]);
   });
 
   test("10:00 and 10:15 chats (10:30 in Ivey) are only ever filled by round 1", () => {
@@ -585,7 +597,9 @@ describe("planner", () => {
           ["u4", "interested"],
         ],
       }),
-      busy: [{ userId: "u1", sponsorId: "X", start: min("14:00"), minutes: 15 }],
+      busy: [
+        { userId: "u1", sponsorId: "X", start: min("14:00"), minutes: 15 },
+      ],
     });
     expect(invites.map((i) => [i.start, i.userId])).toEqual([
       [min("14:15"), "u1"],
@@ -738,14 +752,23 @@ describe("planner", () => {
 });
 
 describe("final call (one last hacker, 30 minutes before)", () => {
-  const two = cands({ A: [["h1", "shortlist"], ["h2", "shortlist"]] });
+  const two = cands({
+    A: [
+      ["h1", "shortlist"],
+      ["h2", "shortlist"],
+    ],
+  });
 
   test("starts 30 minutes before a chat (45 for Ivey) and is answered by 10 before (25)", () => {
     expect(finalCallAt(min("11:00"), "near")).toEqual(at("10:30"));
     expect(finalCallAt(min("11:00"), "ivey")).toEqual(at("10:15"));
     expect(finalCallExpiresAt(min("11:00"), "near", at("10:29"))).toBeNull();
-    expect(finalCallExpiresAt(min("11:00"), "near", at("10:35"))).toEqual(at("10:50"));
-    expect(finalCallExpiresAt(min("11:00"), "ivey", at("10:20"))).toEqual(at("10:35"));
+    expect(finalCallExpiresAt(min("11:00"), "near", at("10:35"))).toEqual(
+      at("10:50"),
+    );
+    expect(finalCallExpiresAt(min("11:00"), "ivey", at("10:20"))).toEqual(
+      at("10:35"),
+    );
     // Under 10 minutes left to answer: too late even for the last offer.
     expect(finalCallExpiresAt(min("11:00"), "near", at("10:41"))).toBeNull();
   });
@@ -760,7 +783,9 @@ describe("final call (one last hacker, 30 minutes before)", () => {
     expect(invites).toHaveLength(1);
     expect(invites[0]!.userId).toBe("h1");
     expect(invites[0]!.expiresAt).toEqual(at("10:50"));
-    expect(isFinalCallInvite(invites[0]!.expiresAt, min("11:00"), "near")).toBe(true);
+    expect(isFinalCallInvite(invites[0]!.expiresAt, min("11:00"), "near")).toBe(
+      true,
+    );
   });
 
   test("after the last invite ends, the seat stays empty and isn't flagged", () => {
@@ -779,7 +804,15 @@ describe("final call (one last hacker, 30 minutes before)", () => {
     const { invites } = plan({
       round: currentRound(at("10:38")),
       now: at("10:38"),
-      chats: [chat({ placementId: "p", start: min("11:00"), seats: 3, live: 1, finalSpent: 1 })],
+      chats: [
+        chat({
+          placementId: "p",
+          start: min("11:00"),
+          seats: 3,
+          live: 1,
+          finalSpent: 1,
+        }),
+      ],
       candidates: two,
     });
     expect(invites.map((i) => i.userId)).toEqual(["h1"]);
@@ -794,6 +827,8 @@ describe("final call (one last hacker, 30 minutes before)", () => {
     });
     // Answer by the round's close capped at the last call (10:40).
     expect(invites[0]!.expiresAt).toEqual(at("10:40"));
-    expect(isFinalCallInvite(invites[0]!.expiresAt, min("11:00"), "near")).toBe(false);
+    expect(isFinalCallInvite(invites[0]!.expiresAt, min("11:00"), "near")).toBe(
+      false,
+    );
   });
 });

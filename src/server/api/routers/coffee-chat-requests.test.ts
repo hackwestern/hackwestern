@@ -733,9 +733,7 @@ describe("coffeeChatRequests organizer actions (T26)", () => {
 
     const { chats, rooms } =
       await organizer.coffeeChatRequests.organizerChats();
-    expect(rooms).toEqual(
-      expect.arrayContaining([...COFFEE_CHAT_ROOMS]),
-    );
+    expect(rooms).toEqual(expect.arrayContaining([...COFFEE_CHAT_ROOMS]));
     const moved = chats.find((c) => c.chatId === chatId);
     const board = await organizer.coffeeChatRequests.organizerChatBoard();
     expect(board.holds.find((h) => h.sponsorId === mover)?.room).toBe(

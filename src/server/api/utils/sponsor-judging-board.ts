@@ -120,7 +120,8 @@ export async function judgingRoomsWithSource(
       rooms.set(row.sponsorId, { room: row.room, source: "sheet" });
     }
   }
-  for (const p of picked) rooms.set(p.sponsorId, { room: p.room, source: "board" });
+  for (const p of picked)
+    rooms.set(p.sponsorId, { room: p.room, source: "board" });
   for (const s of sponsors) {
     const remote = remoteJudgingRoom(s.name);
     if (remote) rooms.set(s.id, { room: remote, source: "remote" });

@@ -3,16 +3,42 @@ import { CircleCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
-import { cellAt, dropCheck, keyOf, litCells, splitKey } from "~/lib/coffee-chat-board-view";
-import { chatsInWindow, minutesOfClock, type CoffeeRoomId, type CoffeeSessionId } from "~/lib/coffee-chat-sessions";
+import {
+  cellAt,
+  dropCheck,
+  keyOf,
+  litCells,
+  splitKey,
+} from "~/lib/coffee-chat-board-view";
+import {
+  chatsInWindow,
+  minutesOfClock,
+  type CoffeeRoomId,
+  type CoffeeSessionId,
+} from "~/lib/coffee-chat-sessions";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { BoardSummary, timeOf } from "./board-summary";
-import { ConfirmDialog, FrontDialog, MoveCheckDialog, RemoveHackerDialog } from "./board-dialogs";
-import { ALL_KEYS, ChatModal, type InviteChat, type ModalView } from "./chat-modal";
+import {
+  ConfirmDialog,
+  FrontDialog,
+  MoveCheckDialog,
+  RemoveHackerDialog,
+} from "./board-dialogs";
+import {
+  ALL_KEYS,
+  ChatModal,
+  type InviteChat,
+  type ModalView,
+} from "./chat-modal";
 import { FixesBand } from "./fixes-band";
 import { HelpSheet } from "./help-sheet";
-import { BoardTips, clockOf, sessionLabel, type SessionBoardData } from "./parts";
+import {
+  BoardTips,
+  clockOf,
+  sessionLabel,
+  type SessionBoardData,
+} from "./parts";
 import { RoomsGrid } from "./rooms-grid";
 import { SponsorsBand, sponsorRowId } from "./sponsors-band";
 import { useBoardDrag } from "./use-board-drag";
@@ -52,7 +78,11 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   const [open, setOpen] = useState<string | null>(null);
   const [view, setView] = useState<ModalView>(null);
   const [ask, setAsk] = useState<Ask | null>(null);
-  const [hackerRm, setHackerRm] = useState<{ sponsorId: string; chatId: string; name: string } | null>(null);
+  const [hackerRm, setHackerRm] = useState<{
+    sponsorId: string;
+    chatId: string;
+    name: string;
+  } | null>(null);
   const [front, setFront] = useState<string | null>(null);
   const [applying, setApplying] = useState<string | null>(null);
   const [confirmSend, setConfirmSend] = useState(false);
@@ -73,7 +103,9 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   useEffect(() => {
     if (!sponsor || !board.data || jumpedTo.current === sponsor) return;
     const s = board.data.sponsors.find(
-      (x) => x.id === sponsor.toLowerCase() || x.name.toLowerCase() === sponsor.toLowerCase(),
+      (x) =>
+        x.id === sponsor.toLowerCase() ||
+        x.name.toLowerCase() === sponsor.toLowerCase(),
     );
     if (!s) return;
     jumpedTo.current = sponsor;
@@ -86,7 +118,8 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   }, [sponsor, board.data]);
 
   const refresh = () => utils.coffeeChatSessions.getBoard.invalidate();
-  const refreshAll = () => Promise.all([refresh(), utils.coffeeChatInvites.invalidate()]);
+  const refreshAll = () =>
+    Promise.all([refresh(), utils.coffeeChatInvites.invalidate()]);
   const onError = (e: { message: string }) => toast.error(e.message);
   const auto = api.coffeeChatSessions.autoSchedule.useMutation({
     onSuccess: (r) => toast.success(copy.toast.scheduled(r.chats, r.fixed)),
@@ -175,13 +208,20 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   });
   // Book an event: a sent (locked) chat with an accepted hacker.
   const bookEvent = api.coffeeChatSessions.bookEvent.useMutation({
-    onSuccess: (r) => toast.success(copy.toast.eventBooked(r.name, clockOf(minutesOfClock(r.slotTime) ?? 0))),
+    onSuccess: (r) =>
+      toast.success(
+        copy.toast.eventBooked(
+          r.name,
+          clockOf(minutesOfClock(r.slotTime) ?? 0),
+        ),
+      ),
     onError,
     onSettled: refreshAll,
   });
   const send = api.coffeeChatSessions.send.useMutation({
     onSuccess: (r) => {
-      const dry = r.invites.dryRun && r.invites.created > 0 ? copy.toast.dryRun : "";
+      const dry =
+        r.invites.dryRun && r.invites.created > 0 ? copy.toast.dryRun : "";
       toast.success(
         r.sent || r.invites.created
           ? copy.toast.sent(r.chats, r.invites.created) +
@@ -199,8 +239,15 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     onSettled: refreshAll,
   });
   const busy =
-    auto.isPending || applyFix.isPending || movePlacement.isPending || moveBooking.isPending ||
-    removePlacement.isPending || removeBooking.isPending || bookRoom.isPending || bookEvent.isPending || send.isPending ||
+    auto.isPending ||
+    applyFix.isPending ||
+    movePlacement.isPending ||
+    moveBooking.isPending ||
+    removePlacement.isPending ||
+    removeBooking.isPending ||
+    bookRoom.isPending ||
+    bookEvent.isPending ||
+    send.isPending ||
     placeChat.isPending;
   // No run of show = no workshop windows: the server refuses every write
   // that places or moves something, so those buttons are off too.
@@ -208,12 +255,17 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
 
   /** A sponsor's sent chats with their invites, or null before they load. */
   const chatsOf = (sponsorId: string): InviteChat[] | null =>
-    invites.data ? (invites.data.sponsors.find((s) => s.sponsorId === sponsorId)?.chats ?? []) : null;
+    invites.data
+      ? (invites.data.sponsors.find((s) => s.sponsorId === sponsorId)?.chats ??
+        [])
+      : null;
   /** After a move, the modal (and focus) follow the cell to its new place, once the board has it. */
   const followTo = (src: string, target: string) =>
     void refresh().then(() => {
       if (focusBack.current === src) focusBack.current = target;
-      setView((v) => (v?.kind === "cell" && v.key === src ? { kind: "cell", key: target } : v));
+      setView((v) =>
+        v?.kind === "cell" && v.key === src ? { kind: "cell", key: target } : v,
+      );
     });
 
   const doMove = (src: string, target: string, force: boolean) => {
@@ -221,7 +273,12 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     if (c?.kind !== "chat") return;
     const { room, session } = splitKey(target);
     movePlacement.mutate(
-      { placementId: c.placement.id, room: room as CoffeeRoomId, sessionId: session as CoffeeSessionId, force },
+      {
+        placementId: c.placement.id,
+        room: room as CoffeeRoomId,
+        sessionId: session as CoffeeSessionId,
+        force,
+      },
       {
         onSuccess: () => followTo(src, target),
       },
@@ -236,18 +293,26 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     const s = sessionLabel(session);
     const check = dropCheck(data, src, target);
     if (check === "same" || check === "gone" || !from) return;
-    if (from.kind === "chat" && from.placement.status === "sent") return void toast.error(copy.errors.sentLocked);
-    if (check === "taken") return void toast.error(copy.errors.roomTaken(rc.rm(room), s));
+    if (from.kind === "chat" && from.placement.status === "sent")
+      return void toast.error(copy.errors.sentLocked);
+    if (check === "taken")
+      return void toast.error(copy.errors.roomTaken(rc.rm(room), s));
     if (from.kind === "booking") {
       return moveBooking.mutate(
-        { bookingId: from.booking.id, room: room as CoffeeRoomId, sessionId: session as CoffeeSessionId },
+        {
+          bookingId: from.booking.id,
+          room: room as CoffeeRoomId,
+          sessionId: session as CoffeeSessionId,
+        },
         {
           onSuccess: () => followTo(src, target),
         },
       );
     }
-    if (check === "workshop") return void toast.error(copy.errors.duringWorkshop(from.sponsor.name));
-    if (check === "busy") return void toast.error(copy.errors.repBusy(from.rep.name, s));
+    if (check === "workshop")
+      return void toast.error(copy.errors.duringWorkshop(from.sponsor.name));
+    if (check === "busy")
+      return void toast.error(copy.errors.repBusy(from.rep.name, s));
     if (check === "notFree") return setAsk({ kind: "notFree", src, target });
     doMove(src, target, false);
   };
@@ -257,12 +322,14 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     if (!c) return;
     // Removing from the modal closes it and puts focus on the now-empty cell.
     setView((v) => (v?.kind === "cell" && v.key === src ? null : v));
-    if (c.kind === "chat") removePlacement.mutate({ placementId: c.placement.id });
+    if (c.kind === "chat")
+      removePlacement.mutate({ placementId: c.placement.id });
     else removeBooking.mutate({ bookingId: c.booking.id });
   };
   const requestRemove = (src: string) => {
     const c = data ? cellAt(data, src) : null;
-    if (c?.kind === "chat" && c.placement.status === "sent") return void toast.error(copy.errors.sentLocked);
+    if (c?.kind === "chat" && c.placement.status === "sent")
+      return void toast.error(copy.errors.sentLocked);
     doRemove(src);
   };
 
@@ -270,11 +337,13 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     scrollRef,
     barSelector: BAR,
     enabled: !!data && !locked && !busy && !view && !ask,
-    onDrop: (src, target) => (target === "remove" ? requestRemove(src) : requestMove(src, target)),
+    onDrop: (src, target) =>
+      target === "remove" ? requestRemove(src) : requestMove(src, target),
   });
   useEffect(() => setDragging(!!drag), [drag]);
   const lit = useMemo(
-    () => (drag && data ? litCells(data, drag.src, ALL_KEYS) : new Set<string>()),
+    () =>
+      drag && data ? litCells(data, drag.src, ALL_KEYS) : new Set<string>(),
     [drag, data],
   );
 
@@ -284,8 +353,12 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   if (!data) {
     return (
       <div className="flex flex-wrap items-center gap-3 rounded-dashboard-lg bg-dashboard-bg-surface p-4 shadow-dashboard-card">
-        <p role="alert" className="m-0 text-sm text-dashboard-text-warning">{copy.loadError}</p>
-        <DashboardButton variant="small" onClick={() => void board.refetch()}>{copy.retry}</DashboardButton>
+        <p role="alert" className="m-0 text-sm text-dashboard-text-warning">
+          {copy.loadError}
+        </p>
+        <DashboardButton variant="small" onClick={() => void board.refetch()}>
+          {copy.retry}
+        </DashboardButton>
       </div>
     );
   }
@@ -293,7 +366,11 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
   const onCell = (k: string) => {
     focusBack.current = k;
     const { room, session } = splitKey(k);
-    setView(cellAt(data, k) ? { kind: "cell", key: k } : { kind: "book", room, session });
+    setView(
+      cellAt(data, k)
+        ? { kind: "cell", key: k }
+        : { kind: "book", room, session },
+    );
   };
 
   // The open question's pieces.
@@ -305,7 +382,9 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
     <div className="flex min-w-0 flex-col gap-4 lg:gap-6">
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <div>
-          <h2 className="m-0 text-[28px] font-bold leading-tight lg:text-[32px]">{copy.title}</h2>
+          <h2 className="m-0 text-[28px] font-bold leading-tight lg:text-[32px]">
+            {copy.title}
+          </h2>
           <p className="m-0 text-sm text-dashboard-text-light">{copy.day}</p>
         </div>
         {/* Events are booked from an empty cell (it gives the room and session). */}
@@ -330,7 +409,10 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
       />
 
       {!data.workshopsAvailable && (
-        <p role="alert" className="m-0 rounded-dashboard-lg bg-dashboard-bg-task/40 px-4 py-3 text-sm text-dashboard-text-task">
+        <p
+          role="alert"
+          className="m-0 rounded-dashboard-lg bg-dashboard-bg-task/40 px-4 py-3 text-sm text-dashboard-text-task"
+        >
           {copy.workshopsUnavailable}
         </p>
       )}
@@ -392,7 +474,9 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
       <ChatModal
         board={data}
         view={view}
-        chats={modalCell?.kind === "chat" ? chatsOf(modalCell.sponsor.id) : null}
+        chats={
+          modalCell?.kind === "chat" ? chatsOf(modalCell.sponsor.id) : null
+        }
         busy={busy}
         locked={locked}
         onClose={() => setView(null)}
@@ -400,7 +484,13 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
         onRemove={requestRemove}
         onBook={(v) => {
           bookEvent.mutate(
-            { room: v.room as CoffeeRoomId, sessionId: v.session as CoffeeSessionId, sponsorId: v.sponsorId, repId: v.repId, userId: v.userId },
+            {
+              room: v.room as CoffeeRoomId,
+              sessionId: v.session as CoffeeSessionId,
+              sponsorId: v.sponsorId,
+              repId: v.repId,
+              userId: v.userId,
+            },
             {
               // The modal shows the new chat.
               onSuccess: () =>
@@ -417,7 +507,10 @@ export function CoffeeSessionsTab({ sponsor }: { sponsor: string | null }) {
         onCloseFocus={() =>
           requestAnimationFrame(() => {
             const k = focusBack.current;
-            if (k) document.querySelector<HTMLElement>(`[data-cell="${k}"]`)?.focus({ preventScroll: true });
+            if (k)
+              document
+                .querySelector<HTMLElement>(`[data-cell="${k}"]`)
+                ?.focus({ preventScroll: true });
           })
         }
       />
@@ -474,7 +567,9 @@ function SendConfirm({
   ]).size;
   const hackers = drafts.reduce((n, p) => {
     const sp = sponsorOf.get(p.sponsorId);
-    return sp ? n + chatsInWindow(p.window, sp.chatMinutes) * sp.hackersPerChat : n;
+    return sp
+      ? n + chatsInWindow(p.window, sp.chatMinutes) * sp.hackersPerChat
+      : n;
   }, 0);
   return (
     <ConfirmDialog
@@ -506,10 +601,15 @@ function ActionBar({
   const nFix = board.fixes.length;
   // A sponsor who changed after invites still needs its schedule re-confirmed.
   const changed = board.sponsors.some((sp) => sp.changedAfterSend);
-  const allSent = board.scheduled && board.draftCount === 0 && board.sentAt && !changed;
+  const allSent =
+    board.scheduled && board.draftCount === 0 && board.sentAt && !changed;
   const sentTime = board.sentAt ? timeOf(board.sentAt) : "";
   return (
-    <div data-tour="coffee-send" data-coffee-bar="" className="fixed inset-x-0 bottom-0 z-20 border-t border-dashboard-border-default bg-dashboard-bg-surface px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 shadow-dashboard-card lg:px-12">
+    <div
+      data-tour="coffee-send"
+      data-coffee-bar=""
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-dashboard-border-default bg-dashboard-bg-surface px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 shadow-dashboard-card lg:px-12"
+    >
       <div className="mx-auto flex max-w-[1440px] flex-col items-stretch gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
         {allSent ? (
           <span className="inline-flex items-center justify-center gap-1.5 text-[17px] font-bold text-dashboard-status-live">
@@ -518,8 +618,15 @@ function ActionBar({
           </span>
         ) : !board.scheduled ? (
           <>
-            <span className="text-center text-[15px] text-dashboard-text-medium sm:text-left">{b.start}</span>
-            <DashboardButton variant="primary" disabled={busy || locked} onClick={onAuto} className="sm:w-auto">
+            <span className="text-center text-[15px] text-dashboard-text-medium sm:text-left">
+              {b.start}
+            </span>
+            <DashboardButton
+              variant="primary"
+              disabled={busy || locked}
+              onClick={onAuto}
+              className="sm:w-auto"
+            >
               {busy ? b.working : b.autoSchedule}
             </DashboardButton>
           </>
@@ -527,13 +634,21 @@ function ActionBar({
           <>
             <span className="flex flex-wrap items-center justify-center gap-1 text-[15px] text-dashboard-text-medium sm:justify-start">
               {nFix ? (
-                <span className="font-medium text-dashboard-text-warning">{b.fixesOpen(nFix)}</span>
+                <span className="font-medium text-dashboard-text-warning">
+                  {b.fixesOpen(nFix)}
+                </span>
               ) : board.sentAt && board.draftCount > 0 ? (
                 b.newSince(board.draftCount)
               ) : (
                 b.review
               )}
-              <DashboardButton variant="link" disabled={busy || locked} onClick={onAuto}>{b.rerun}</DashboardButton>
+              <DashboardButton
+                variant="link"
+                disabled={busy || locked}
+                onClick={onAuto}
+              >
+                {b.rerun}
+              </DashboardButton>
             </span>
             <DashboardButton
               variant="primary"

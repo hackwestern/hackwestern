@@ -30,7 +30,12 @@ export default function SponsorHubPage() {
   );
   const setupQ = api.coffeeChatSetup.get.useQuery(
     { sponsor: id },
-    { enabled: validUuid, retry: false, refetchOnWindowFocus: false, refetchInterval: 60_000 },
+    {
+      enabled: validUuid,
+      retry: false,
+      refetchOnWindowFocus: false,
+      refetchInterval: 60_000,
+    },
   );
 
   if (!router.isReady) {
@@ -44,7 +49,10 @@ export default function SponsorHubPage() {
     );
   }
 
-  if (!validUuid || (sponsorQ.isError && sponsorQ.error.data?.code === "NOT_FOUND")) {
+  if (
+    !validUuid ||
+    (sponsorQ.isError && sponsorQ.error.data?.code === "NOT_FOUND")
+  ) {
     return (
       <SponsorShell title={copy.seoTitle}>
         <DashboardPanel className="text-center">
@@ -61,7 +69,8 @@ export default function SponsorHubPage() {
   const setup = setupQ.data;
   const sponsorName = info?.sponsorName ?? null;
   const logo = sponsorName ? sponsorLogo(sponsorName) : null;
-  const repName = (repId: string) => setup?.reps.find((r) => r.id === repId)?.name ?? "";
+  const repName = (repId: string) =>
+    setup?.reps.find((r) => r.id === repId)?.name ?? "";
   const workshop = setup?.workshops[0] ?? null;
   const ctx: HomeContext = {
     hasPrizeTrack: info?.hasPrizeTrack === true,
@@ -79,9 +88,14 @@ export default function SponsorHubPage() {
       confirmed: c.hackers.filter((h) => h.status === "accepted").length,
     })),
     workshop: workshop
-      ? { start: workshop.start, title: workshop.title, location: workshop.location }
+      ? {
+          start: workshop.start,
+          title: workshop.title,
+          location: workshop.location,
+        }
       : null,
-    judgingRoom: info?.roomNumber && info.roomNumber !== "TBD" ? info.roomNumber : null,
+    judgingRoom:
+      info?.roomNumber && info.roomNumber !== "TBD" ? info.roomNumber : null,
   };
   const base = `/sponsors/${id}`;
 

@@ -33,7 +33,9 @@ export function ChatSetupCard({
     sheet?.windowStart && sheet.windowEnd
       ? copy.hours(formatClock(sheet.windowStart), formatClock(sheet.windowEnd))
       : null,
-    sheet?.chattingHours != null ? copy.chattingHours(sheet.chattingHours) : null,
+    sheet?.chattingHours != null
+      ? copy.chattingHours(sheet.chattingHours)
+      : null,
   ].filter(Boolean);
   return (
     <DashboardPanel>

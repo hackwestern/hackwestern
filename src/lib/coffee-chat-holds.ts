@@ -303,11 +303,8 @@ export function blockFill(
       0,
     ),
     firstOpen:
-      slots.find(
-        (s) =>
-          s.booked < s.needed &&
-          (!now || now < chatExpiresAt(s)),
-      )?.slotTime ?? null,
+      slots.find((s) => s.booked < s.needed && (!now || now < chatExpiresAt(s)))
+        ?.slotTime ?? null,
   };
 }
 

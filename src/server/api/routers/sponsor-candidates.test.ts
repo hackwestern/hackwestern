@@ -44,9 +44,17 @@ async function withSeats(sponsorId: string) {
     .values({ sponsorId, hackersPerChat: 1, submittedAt: new Date() });
   const [rep] = await db
     .insert(coffeeChatReps)
-    .values({ sponsorId, name: "Dana", phone: "5195550142", isPrimary: true, chatsWanted: 4 })
+    .values({
+      sponsorId,
+      name: "Dana",
+      phone: "5195550142",
+      isPrimary: true,
+      chatsWanted: 4,
+    })
     .returning();
-  await db.insert(coffeeChatRepSessions).values({ repId: rep!.id, sessionId: "10" });
+  await db
+    .insert(coffeeChatRepSessions)
+    .values({ repId: rep!.id, sessionId: "10" });
 }
 
 async function hacker(
@@ -164,9 +172,7 @@ describe("candidates from the interest form", () => {
 
     const res = await anon.sponsorShortlist.list({ sponsor: mine.id });
     expect(res.hackers).toHaveLength(42);
-    expect(res.hackers.map((h) => h.userId)).toEqual(
-      admitted.map((h) => h.id),
-    );
+    expect(res.hackers.map((h) => h.userId)).toEqual(admitted.map((h) => h.id));
     expect(res.hackers.map((h) => h.rank)).toEqual(
       Array.from({ length: 42 }, (_, i) => i + 1),
     );

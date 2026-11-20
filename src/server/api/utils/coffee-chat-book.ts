@@ -123,12 +123,17 @@ export async function bookingHackers(
         ),
       ),
     )
-    .orderBy(asc(applications.firstName), asc(applications.lastName), asc(users.id))
+    .orderBy(
+      asc(applications.firstName),
+      asc(applications.lastName),
+      asc(users.id),
+    )
     .limit(10);
   return { scanned: scannedRows.map(toHacker), found: foundRows.map(toHacker) };
 }
 
-const fail = (code: "BAD_REQUEST" | "CONFLICT", message: string) => new TRPCError({ code, message });
+const fail = (code: "BAD_REQUEST" | "CONFLICT", message: string) =>
+  new TRPCError({ code, message });
 
 export type BookInput = {
   room: string;
@@ -151,7 +156,12 @@ export async function bookEvent(
   state: BoardState,
   input: BookInput,
   now = new Date(),
-): Promise<{ placementId: string; chatId: string; name: string; slotTime: string }> {
+): Promise<{
+  placementId: string;
+  chatId: string;
+  name: string;
+  slotTime: string;
+}> {
   assertWorkshopsKnown(state);
   const sponsor = state.sponsors.find((s) => s.id === input.sponsorId);
   const rep = sponsor?.reps.find((r) => r.id === input.repId);
@@ -159,7 +169,9 @@ export async function bookEvent(
   assertRepCanChat(state, rep.id, input.sessionId);
   assertCellFree(state, input.room, input.sessionId);
   // Like Undo (placeChat): one more session than the rep's chats need is refused.
-  const schedRep = state.sched.flatMap((sp) => sp.reps).find((r) => r.id === rep.id);
+  const schedRep = state.sched
+    .flatMap((sp) => sp.reps)
+    .find((r) => r.id === rep.id);
   const has = state.placements.filter((p) => p.repId === rep.id).length;
   if (schedRep && has >= sessionCap(schedRep)) {
     throw fail("BAD_REQUEST", errors.repAtCap(has));
@@ -199,7 +211,9 @@ export async function bookEvent(
   if (chats.length === 0) throw fail("BAD_REQUEST", errors.repAtCap(has));
   // The hacker takes the first chat of the hour they're free for.
   const rows = await sweepExpired(tx, await loadChatRows(tx), now);
-  const theirs = rows.filter((r) => r.userId === h.userId && isLive(r)).map(busyOf);
+  const theirs = rows
+    .filter((r) => r.userId === h.userId && isLive(r))
+    .map(busyOf);
   const fits = chats.map((c) => ({ c, fit: seatFit(c, theirs) }));
   const pick = fits.find((x) => x.fit === "ok")?.c;
   if (!pick) {
@@ -207,7 +221,11 @@ export async function bookEvent(
     const withSponsor = theirs.some((b) => b.sponsorId === sponsor.id);
     throw fail(
       "CONFLICT",
-      fit === "full" ? lineErrors.full(name) : withSponsor ? errors.bookSameSponsor(name, sponsor.name) : lineErrors.busy(name),
+      fit === "full"
+        ? lineErrors.full(name)
+        : withSponsor
+          ? errors.bookSameSponsor(name, sponsor.name)
+          : lineErrors.busy(name),
     );
   }
 

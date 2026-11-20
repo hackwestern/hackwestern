@@ -298,9 +298,7 @@ describe("schedulePresentations", () => {
       { sponsorId: "qnx", teamId: "b", start: 612 },
     ];
     const result = schedulePresentations(requests, undefined, { keep });
-    expect(result.slots.map((s) => [s.teamId, s.start])).toEqual([
-      ["b", 612],
-    ]);
+    expect(result.slots.map((s) => [s.teamId, s.start])).toEqual([["b", 612]]);
   });
 
   it("follows changed constants", () => {

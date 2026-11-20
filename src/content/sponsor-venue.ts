@@ -54,8 +54,18 @@ export const sponsorVenueCopy = {
     /** Inside your own booth on the Map. */
     you: (sponsor: string) => `${sponsor} · you`,
     /** "Right wall, middle booth" */
-    spot: (side: "top" | "left" | "right" | "bottom", place: "first" | "middle" | "last" | "only") => {
-      const wall = side === "top" ? "Top row" : side === "bottom" ? "Bottom row" : side === "left" ? "Left wall" : "Right wall";
+    spot: (
+      side: "top" | "left" | "right" | "bottom",
+      place: "first" | "middle" | "last" | "only",
+    ) => {
+      const wall =
+        side === "top"
+          ? "Top row"
+          : side === "bottom"
+            ? "Bottom row"
+            : side === "left"
+              ? "Left wall"
+              : "Right wall";
       const across = side === "top" || side === "bottom";
       const where =
         place === "only"
@@ -73,7 +83,11 @@ export const sponsorVenueCopy = {
     },
     /** ", between CSE and Scotiabank." / ", next to CSE." */
     neighbours: (names: string[]) =>
-      names.length === 2 ? `, between ${names[0]} and ${names[1]}.` : names.length === 1 ? `, next to ${names[0]}.` : ".",
+      names.length === 2
+        ? `, between ${names[0]} and ${names[1]}.`
+        : names.length === 1
+          ? `, next to ${names[0]}.`
+          : ".",
   },
   judgingLocked: {
     badge: "Opens Sunday 9:00 AM",

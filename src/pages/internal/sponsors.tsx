@@ -146,7 +146,11 @@ export default function SponsorOrganizerHome() {
                 intro={copy.home.toolIntro}
               />
               {focusId && (
-                <SponsorFocusBar tab={tab} sponsorId={focusId} name={focusName} />
+                <SponsorFocusBar
+                  tab={tab}
+                  sponsorId={focusId}
+                  name={focusName}
+                />
               )}
               {tab === "coffee" ? (
                 <CoffeeSessionsTab sponsor={loc.sponsor} />

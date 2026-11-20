@@ -23,7 +23,8 @@ const copy = coffeeSessionsCopy;
 const sc = copy.sponsors;
 
 /** The row button's id, so a ?sponsor= link can scroll to it and focus it. */
-export const sponsorRowId = (sponsorId: string) => `coffee-sponsor-${sponsorId}`;
+export const sponsorRowId = (sponsorId: string) =>
+  `coffee-sponsor-${sponsorId}`;
 
 /**
  * Sponsors band: logo + name, the stage chip ("Needs scheduling", "Sent")
@@ -42,7 +43,9 @@ export function SponsorsBand({
   onOpen: (id: string) => void;
 }) {
   // Not submitted first: those need chasing.
-  const list = [...board.sponsors].sort((a, b) => Number(a.submitted) - Number(b.submitted));
+  const list = [...board.sponsors].sort(
+    (a, b) => Number(a.submitted) - Number(b.submitted),
+  );
   // Seats are re-offered at once, so an empty seat is a problem flag.
   const anySent = board.placements.some((p) => p.status === "sent");
   const invites = api.coffeeChatInvites.status.useQuery(undefined, {
@@ -75,7 +78,10 @@ export function SponsorsBand({
               ...(unfilled > 0 ? [sc.flags.unfilled(unfilled)] : []),
             ];
             return (
-              <li key={sp.id} className="border-t border-dashboard-border-subtle first:border-t-0">
+              <li
+                key={sp.id}
+                className="border-t border-dashboard-border-subtle first:border-t-0"
+              >
                 <button
                   type="button"
                   id={sponsorRowId(sp.id)}
@@ -83,7 +89,7 @@ export function SponsorsBand({
                   aria-label={sc.openLabel(sp.name, status, flags)}
                   onClick={() => onOpen(sp.id)}
                   className={cn(
-                    "flex min-h-16 w-full min-w-0 scroll-mt-4 cursor-pixel-hover items-center gap-2 rounded-dashboard-md py-1.5 text-left",
+                    "flex min-h-16 w-full min-w-0 cursor-pixel-hover scroll-mt-4 items-center gap-2 rounded-dashboard-md py-1.5 text-left",
                     focusRing,
                   )}
                 >
@@ -124,24 +130,42 @@ export function SponsorsBand({
   );
 }
 
-function SponsorDetail({ sponsor: sp, board }: { sponsor: BoardSponsor; board: SessionBoardData }) {
+function SponsorDetail({
+  sponsor: sp,
+  board,
+}: {
+  sponsor: BoardSponsor;
+  board: SessionBoardData;
+}) {
   if (!sp.submitted) {
     return (
       <>
-        <p className="m-0 text-sm text-dashboard-text-medium">{sc.notSubmittedYet}</p>
+        <p className="m-0 text-sm text-dashboard-text-medium">
+          {sc.notSubmittedYet}
+        </p>
         <PeopleList sponsor={sp} />
       </>
     );
   }
   const roomAt = (repId: string, s: string) =>
-    board.placements.find((p) => p.repId === repId && p.sessionId === s)?.room ?? null;
+    board.placements.find((p) => p.repId === repId && p.sessionId === s)
+      ?.room ?? null;
   const event = sc.theirEvent(sp.name);
   return (
     <>
       <p className="m-0 text-[13px] text-dashboard-text-medium">
-        <span aria-hidden className="text-dashboard-action-primary">■</span> {sc.legend.pick} ·{" "}
-        <span aria-hidden className="font-bold text-dashboard-text-active">✓</span> {sc.legend.free} ·{" "}
-        <span aria-hidden className="text-dashboard-text-light">▨</span> {sc.legend.event}
+        <span aria-hidden className="text-dashboard-action-primary">
+          ■
+        </span>{" "}
+        {sc.legend.pick} ·{" "}
+        <span aria-hidden className="font-bold text-dashboard-text-active">
+          ✓
+        </span>{" "}
+        {sc.legend.free} ·{" "}
+        <span aria-hidden className="text-dashboard-text-light">
+          ▨
+        </span>{" "}
+        {sc.legend.event}
       </p>
       <table className="w-full table-fixed border-separate border-spacing-[3px] text-[13px]">
         <thead>
@@ -171,14 +195,20 @@ function SponsorDetail({ sponsor: sp, board }: { sponsor: BoardSponsor; board: S
                 {board.walks
                   .filter((w) => w.repId === r.id)
                   .map((w) => (
-                    <span key={w.sessionId} className="block text-[11px] font-semibold text-dashboard-text-warning">
+                    <span
+                      key={w.sessionId}
+                      className="block text-[11px] font-semibold text-dashboard-text-warning"
+                    >
                       {sc.walk(w.toIvey, sessionLabel(w.sessionId))}
                     </span>
                   ))}
                 {(() => {
                   // Placed chats short of what they asked (a partial session): say so.
                   const mine = board.placements.filter((p) => p.repId === r.id);
-                  const got = mine.reduce((n, p) => n + chatsInWindow(p.window, sp.chatMinutes), 0);
+                  const got = mine.reduce(
+                    (n, p) => n + chatsInWindow(p.window, sp.chatMinutes),
+                    0,
+                  );
                   return mine.length > 0 && got < r.chatsWanted ? (
                     <span className="block text-[11px] font-semibold text-dashboard-text-warning">
                       {sc.chatsOf(got, r.chatsWanted)}
@@ -195,17 +225,30 @@ function SponsorDetail({ sponsor: sp, board }: { sponsor: BoardSponsor; board: S
                 const room = roomAt(r.id, s.id);
                 // A session the workshop buffer cuts: show the part left, e.g. "1:00–1:30".
                 const part = sp.partial[s.id];
-                const partTime = part ? copy.rooms.partialTime(clockOf(part.start), clockOf(part.end)) : null;
-                const base = "h-[34px] rounded-dashboard-sm border text-center align-middle leading-tight";
+                const partTime = part
+                  ? copy.rooms.partialTime(
+                      clockOf(part.start),
+                      clockOf(part.end),
+                    )
+                  : null;
+                const base =
+                  "h-[34px] rounded-dashboard-sm border text-center align-middle leading-tight";
                 if (room) {
                   return (
                     <td
                       key={s.id}
                       aria-label={sc.repAt(r.name, partTime ?? label, room)}
-                      className={cn(base, "border-dashboard-action-primary bg-dashboard-action-primary px-px text-[11px] font-semibold text-dashboard-text-inverse")}
+                      className={cn(
+                        base,
+                        "border-dashboard-action-primary bg-dashboard-action-primary px-px text-[11px] font-semibold text-dashboard-text-inverse",
+                      )}
                     >
                       {copy.rooms.rm(room)}
-                      {partTime && <span className="block text-[10px] font-medium">{partTime}</span>}
+                      {partTime && (
+                        <span className="block text-[10px] font-medium">
+                          {partTime}
+                        </span>
+                      )}
                     </td>
                   );
                 }
@@ -215,7 +258,11 @@ function SponsorDetail({ sponsor: sp, board }: { sponsor: BoardSponsor; board: S
                       key={s.id}
                       title={event}
                       aria-label={sc.repEvent(r.name, label, event)}
-                      className={cn(base, hatch, "border-dashboard-border-default")}
+                      className={cn(
+                        base,
+                        hatch,
+                        "border-dashboard-border-default",
+                      )}
                     />
                   );
                 }
@@ -223,16 +270,31 @@ function SponsorDetail({ sponsor: sp, board }: { sponsor: BoardSponsor; board: S
                   return (
                     <td
                       key={s.id}
-                      aria-label={partTime ? sc.repPartial(r.name, label, partTime) : sc.repFree(r.name, label)}
-                      className={cn(base, "border-dashboard-bg-inset bg-dashboard-bg-inset text-dashboard-text-active")}
+                      aria-label={
+                        partTime
+                          ? sc.repPartial(r.name, label, partTime)
+                          : sc.repFree(r.name, label)
+                      }
+                      className={cn(
+                        base,
+                        "border-dashboard-bg-inset bg-dashboard-bg-inset text-dashboard-text-active",
+                      )}
                     >
                       <Check aria-hidden className="inline size-3.5" />
-                      {partTime && <span className="block text-[10px] font-medium leading-none">{partTime}</span>}
+                      {partTime && (
+                        <span className="block text-[10px] font-medium leading-none">
+                          {partTime}
+                        </span>
+                      )}
                     </td>
                   );
                 }
                 return (
-                  <td key={s.id} aria-label={sc.repNotFree(r.name, label)} className={cn(base, "border-dashboard-border-subtle")} />
+                  <td
+                    key={s.id}
+                    aria-label={sc.repNotFree(r.name, label)}
+                    className={cn(base, "border-dashboard-border-subtle")}
+                  />
                 );
               })}
             </tr>
@@ -240,9 +302,9 @@ function SponsorDetail({ sponsor: sp, board }: { sponsor: BoardSponsor; board: S
         </tbody>
       </table>
       <p className="m-0 text-sm text-dashboard-text-medium">{sc.facts(sp)}</p>
-      {board.placements.some((p) => p.sponsorId === sp.id && p.status === "sent") && (
-        <InviteSummary sponsorId={sp.id} />
-      )}
+      {board.placements.some(
+        (p) => p.sponsorId === sp.id && p.status === "sent",
+      ) && <InviteSummary sponsorId={sp.id} />}
       <PeopleList sponsor={sp} />
     </>
   );
@@ -265,7 +327,9 @@ function InviteSummary({ sponsorId }: { sponsorId: string }) {
     <p className="m-0 text-sm font-semibold text-dashboard-text-heavy">
       {sc.invites(t.seats, t.accepted, t.pending)}
       {!status.data.enabled && (
-        <span className="block font-normal text-dashboard-text-light">{sc.invitesOff}</span>
+        <span className="block font-normal text-dashboard-text-light">
+          {sc.invitesOff}
+        </span>
       )}
     </p>
   );

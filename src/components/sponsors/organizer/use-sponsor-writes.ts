@@ -67,7 +67,10 @@ export function useSponsorWrites() {
     // refetch. Say why instead of snapping back silently.
     onSuccess: (data) => {
       if (!data.sheetWritten && data.note) {
-        setNote({ tone: "ok", text: copy.statusNote(data.sponsorName, data.note) });
+        setNote({
+          tone: "ok",
+          text: copy.statusNote(data.sponsorName, data.note),
+        });
       }
     },
     onSettled: (_data, _err, { sponsorName }) => settle(sponsorName),
@@ -78,27 +81,33 @@ export function useSponsorWrites() {
     sponsorName: string,
     attended: boolean,
   ) =>
-    old?.map((s) => (s.name === sponsorName ? { ...s, atCcWorkshop: attended } : s));
-  const updateCcWorkshop = api.sponsorDashboard.setSponsorCcWorkshop.useMutation({
-    onMutate: async ({ sponsorName, attended }) => {
-      await utils.sponsorDashboard.getSponsors.cancel();
-      utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
-        withCcWorkshop(old, sponsorName, attended),
-      );
-    },
-    onError: (err, { sponsorName, attended }) => {
-      utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
-        withCcWorkshop(old, sponsorName, !attended),
-      );
-      setNote({ tone: "error", text: copy.statusFailed(err.message) });
-    },
-    onSuccess: (data) => {
-      if (!data.sheetWritten && data.note) {
-        setNote({ tone: "ok", text: copy.statusNote(data.sponsorName, data.note) });
-      }
-    },
-    onSettled: (_data, _err, { sponsorName }) => settle(sponsorName),
-  });
+    old?.map((s) =>
+      s.name === sponsorName ? { ...s, atCcWorkshop: attended } : s,
+    );
+  const updateCcWorkshop =
+    api.sponsorDashboard.setSponsorCcWorkshop.useMutation({
+      onMutate: async ({ sponsorName, attended }) => {
+        await utils.sponsorDashboard.getSponsors.cancel();
+        utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
+          withCcWorkshop(old, sponsorName, attended),
+        );
+      },
+      onError: (err, { sponsorName, attended }) => {
+        utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
+          withCcWorkshop(old, sponsorName, !attended),
+        );
+        setNote({ tone: "error", text: copy.statusFailed(err.message) });
+      },
+      onSuccess: (data) => {
+        if (!data.sheetWritten && data.note) {
+          setNote({
+            tone: "ok",
+            text: copy.statusNote(data.sponsorName, data.note),
+          });
+        }
+      },
+      onSettled: (_data, _err, { sponsorName }) => settle(sponsorName),
+    });
 
   const lock = (sponsorName: string) => {
     if (inFlightRef.current.has(sponsorKey(sponsorName))) return false;

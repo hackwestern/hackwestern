@@ -40,16 +40,9 @@ export function presentationEmail(
     PRESENTATION_PITCH_MINUTES,
     PRESENTATION_QA_MINUTES,
   );
-  const text = [
-    greeting,
-    "",
-    intro,
-    "",
-    ...lines,
-    "",
-    copy.signoff,
-    "",
-  ].join("\n");
+  const text = [greeting, "", intro, "", ...lines, "", copy.signoff, ""].join(
+    "\n",
+  );
   const html = emailShell([
     emailParagraph(escapeHtml(greeting)),
     emailParagraph(escapeHtml(intro)),

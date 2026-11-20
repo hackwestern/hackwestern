@@ -55,7 +55,10 @@ export function WelcomeCard({
         className="mt-[3px] shrink-0 self-start"
       />
       <div className="flex min-w-0 flex-1 flex-col gap-px">
-        <h2 id="welcome-heading" className="m-0 text-base font-bold leading-snug">
+        <h2
+          id="welcome-heading"
+          className="m-0 text-base font-bold leading-snug"
+        >
           {copy.title}
         </h2>
         <p className="m-0 text-sm text-dashboard-text-medium">

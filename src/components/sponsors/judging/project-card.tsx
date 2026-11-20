@@ -272,11 +272,7 @@ export function ProjectCard({
         <ProjectLinks team={team} />
       </div>
 
-      <ScoreControl
-        team={team.name}
-        value={myScore}
-        onChange={onScore}
-      />
+      <ScoreControl team={team.name} value={myScore} onChange={onScore} />
       <TeamScores scores={scores} me={me} status={saveState} />
 
       <div className="flex flex-wrap items-center gap-2">

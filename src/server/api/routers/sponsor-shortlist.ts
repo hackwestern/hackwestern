@@ -1,5 +1,15 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, count, eq, ilike, inArray, notInArray, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  ilike,
+  inArray,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 
 import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
@@ -241,7 +251,11 @@ async function searchHackers(q: string): Promise<SponsorCandidate[]> {
         ),
       ),
     )
-    .orderBy(asc(applications.firstName), asc(applications.lastName), asc(users.id))
+    .orderBy(
+      asc(applications.firstName),
+      asc(applications.lastName),
+      asc(users.id),
+    )
     .limit(SEARCH_LIMIT);
   return rows.map((r) => asCandidate(sponsorView(r)));
 }
@@ -265,10 +279,16 @@ async function assertShortlistOpen(
     .from(coffeeChatPrefs)
     .where(eq(coffeeChatPrefs.sponsorId, sponsorId));
   if (needPrefs && !pref?.submittedAt) {
-    throw new TRPCError({ code: "PRECONDITION_FAILED", message: setupErrors.prefsFirst });
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: setupErrors.prefsFirst,
+    });
   }
   if (!allowSubmitted && pref?.shortlistSubmittedAt) {
-    throw new TRPCError({ code: "CONFLICT", message: setupErrors.shortlistSubmitted });
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: setupErrors.shortlistSubmitted,
+    });
   }
 }
 
@@ -306,7 +326,10 @@ async function capState(tx: Tx, sponsor: { id: string; name: string }) {
           : undefined,
       ),
     );
-  return { cap: capOf(setup.totals.hackers, scanned.length), picked: total?.n ?? 0 };
+  return {
+    cap: capOf(setup.totals.hackers, scanned.length),
+    picked: total?.n ?? 0,
+  };
 }
 
 /** Whether the logged-in viewer (if any) is an organizer. */

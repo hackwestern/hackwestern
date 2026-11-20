@@ -74,17 +74,16 @@ export function JudgePicker({
         </p>
       ) : (
         <div className="flex flex-col gap-1.5">
-        <label
-          htmlFor={inputId}
-          className="text-sm font-semibold text-dashboard-text-medium"
-        >
-          {copy.pickLabel}
-        </label>
+          <label
+            htmlFor={inputId}
+            className="text-sm font-semibold text-dashboard-text-medium"
+          >
+            {copy.pickLabel}
+          </label>
           <select
             id={inputId}
             value={
-              current &&
-              reps.some((rep) => judgeKey(rep) === judgeKey(current))
+              current && reps.some((rep) => judgeKey(rep) === judgeKey(current))
                 ? reps.find((rep) => judgeKey(rep) === judgeKey(current))!
                 : ""
             }

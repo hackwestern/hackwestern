@@ -19,7 +19,13 @@ import {
 import { cn } from "~/lib/utils";
 import { api, type RouterOutputs } from "~/utils/api";
 import { timeOf } from "./board-summary";
-import { clockOf, focusRing, Logo, sessionLabel, type SessionBoardData } from "./parts";
+import {
+  clockOf,
+  focusRing,
+  Logo,
+  sessionLabel,
+  type SessionBoardData,
+} from "./parts";
 import { partialTimeOf, type ChatCell } from "./rooms-grid";
 
 const copy = coffeeSessionsCopy;
@@ -27,15 +33,25 @@ const rc = copy.rooms;
 const dc = copy.detail;
 const hc = copy.hackers;
 
-export type InviteChat = RouterOutputs["coffeeChatInvites"]["status"]["sponsors"][number]["chats"][number];
+export type InviteChat =
+  RouterOutputs["coffeeChatInvites"]["status"]["sponsors"][number]["chats"][number];
 
 /** Every grid cell key, rooms in order then sessions. */
-export const ALL_KEYS = COFFEE_ROOMS.flatMap((r) => COFFEE_SESSIONS.map((s) => keyOf(r.id, s.id)));
+export const ALL_KEYS = COFFEE_ROOMS.flatMap((r) =>
+  COFFEE_SESSIONS.map((s) => keyOf(r.id, s.id)),
+);
 
-const roomLabel = (room: string) => (buildingOf(room) === "ivey" ? rc.iveyRm(room) : rc.rm(room));
+const roomLabel = (room: string) =>
+  buildingOf(room) === "ivey" ? rc.iveyRm(room) : rc.rm(room);
 
 /** Book an event: a rep of a sponsor and a hacker, in this cell. */
-export type BookEvent = { room: string; session: string; sponsorId: string; repId: string; userId: string };
+export type BookEvent = {
+  room: string;
+  session: string;
+  sponsorId: string;
+  repId: string;
+  userId: string;
+};
 
 /** What the modal shows: a cell's detail, or the booking form. */
 export type ModalView =
@@ -72,7 +88,11 @@ export function ChatModal({
   onMoveTo: (src: string, target: string) => void;
   onRemove: (src: string) => void;
   onBook: (v: BookEvent) => void;
-  onRemoveHacker: (t: { sponsorId: string; chatId: string; name: string }) => void;
+  onRemoveHacker: (t: {
+    sponsorId: string;
+    chatId: string;
+    name: string;
+  }) => void;
   onFront: (sponsorId: string) => void;
   /** Where focus goes when the modal closes (the cell). */
   onCloseFocus: () => void;
@@ -101,9 +121,17 @@ export function ChatModal({
             "sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-h-[calc(100dvh-64px)] sm:w-[min(520px,calc(100%-32px))] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-dashboard-lg sm:shadow-[0_10px_40px_rgba(11,43,74,.25)]",
           )}
         >
-          <div aria-hidden className="mx-auto mt-2 h-1 w-9 rounded-sm bg-dashboard-border-default sm:hidden" />
+          <div
+            aria-hidden
+            className="mx-auto mt-2 h-1 w-9 rounded-sm bg-dashboard-border-default sm:hidden"
+          />
           {view?.kind === "book" ? (
-            <BookingForm board={board} initial={view} busy={busy || locked} onBook={onBook} />
+            <BookingForm
+              board={board}
+              initial={view}
+              busy={busy || locked}
+              onBook={onBook}
+            />
           ) : c && view?.kind === "cell" ? (
             <CellDetail
               key={view.key}
@@ -125,7 +153,8 @@ export function ChatModal({
 }
 
 const pad = "flex flex-col gap-2.5 p-5 sm:p-6";
-const pill = "inline-flex min-h-7 items-center gap-1 rounded-dashboard-lg px-2.5 text-sm";
+const pill =
+  "inline-flex min-h-7 items-center gap-1 rounded-dashboard-lg px-2.5 text-sm";
 
 function Head({ children, sub }: { children: React.ReactNode; sub: string }) {
   return (
@@ -134,7 +163,9 @@ function Head({ children, sub }: { children: React.ReactNode; sub: string }) {
         <Dialog.Title className="m-0 flex flex-wrap items-center gap-2 text-xl font-bold leading-snug [overflow-wrap:anywhere]">
           {children}
         </Dialog.Title>
-        <span className="block text-sm text-dashboard-text-medium [overflow-wrap:anywhere]">{sub}</span>
+        <span className="block text-sm text-dashboard-text-medium [overflow-wrap:anywhere]">
+          {sub}
+        </span>
       </div>
       <Dialog.Close
         aria-label={dc.close}
@@ -167,7 +198,11 @@ function CellDetail({
   locked: boolean;
   onMoveTo: (target: string) => void;
   onRemove: () => void;
-  onRemoveHacker: (t: { sponsorId: string; chatId: string; name: string }) => void;
+  onRemoveHacker: (t: {
+    sponsorId: string;
+    chatId: string;
+    name: string;
+  }) => void;
   onFront: (sponsorId: string) => void;
 }) {
   const c = cellAt(board, k);
@@ -209,46 +244,105 @@ function CellDetail({
   const n = chatsInCell(board, c.placement);
   return (
     <div className={pad}>
-      <Head sub={dc.sub(c.sponsor.name, `${roomLabel(room)} · ${part ?? sessionLabel(session)}`)}>
-        <span className="rounded-dashboard-sm bg-dashboard-bg-inset px-1.5 py-0.5"><Logo name={c.sponsor.name} /></span>
+      <Head
+        sub={dc.sub(
+          c.sponsor.name,
+          `${roomLabel(room)} · ${part ?? sessionLabel(session)}`,
+        )}
+      >
+        <span className="rounded-dashboard-sm bg-dashboard-bg-inset px-1.5 py-0.5">
+          <Logo name={c.sponsor.name} />
+        </span>
         <span>{c.rep.name}</span>
       </Head>
       <div className="flex flex-wrap items-center gap-2">
-        <span className={cn(pill, "bg-dashboard-bg-nav font-medium")}>{dc.format(c.sponsor)}</span>
+        <span className={cn(pill, "bg-dashboard-bg-nav font-medium")}>
+          {dc.format(c.sponsor)}
+        </span>
         {sent ? (
-          <span className={cn(pill, "bg-dashboard-schedule-green font-semibold text-dashboard-status-live")}>
+          <span
+            className={cn(
+              pill,
+              "bg-dashboard-schedule-green font-semibold text-dashboard-status-live",
+            )}
+          >
             <Check aria-hidden className="size-3.5" strokeWidth={2.4} />
             {dc.sent}
           </span>
         ) : (
-          <span className={cn(pill, "border border-dashboard-border-subtle bg-dashboard-bg-surface font-semibold text-dashboard-text-light")}>{dc.draft}</span>
+          <span
+            className={cn(
+              pill,
+              "border border-dashboard-border-subtle bg-dashboard-bg-surface font-semibold text-dashboard-text-light",
+            )}
+          >
+            {dc.draft}
+          </span>
         )}
-        {forced && <span className={cn(pill, "bg-dashboard-bg-task font-semibold text-dashboard-text-warning")}>{rc.tagForced}</span>}
+        {forced && (
+          <span
+            className={cn(
+              pill,
+              "bg-dashboard-bg-task font-semibold text-dashboard-text-warning",
+            )}
+          >
+            {rc.tagForced}
+          </span>
+        )}
       </div>
-      {forced && <p className="m-0 text-sm font-medium text-dashboard-text-warning">{dc.forcedNote(c.rep.name)}</p>}
+      {forced && (
+        <p className="m-0 text-sm font-medium text-dashboard-text-warning">
+          {dc.forcedNote(c.rep.name)}
+        </p>
+      )}
       {sent ? (
-        <HackerList cell={c} chats={chats} onRemoveHacker={onRemoveHacker} onFront={onFront} />
+        <HackerList
+          cell={c}
+          chats={chats}
+          onRemoveHacker={onRemoveHacker}
+          onFront={onFront}
+        />
       ) : (
         <>
-          <p className="m-0 text-[15px] font-bold tabular-nums">{dc.draftSum(n * c.sponsor.hackersPerChat, n)}</p>
+          <p className="m-0 text-[15px] font-bold tabular-nums">
+            {dc.draftSum(n * c.sponsor.hackersPerChat, n)}
+          </p>
           <p className="m-0 text-[15px] font-semibold">{dc.notSentYet}</p>
         </>
       )}
-      {part && <p className="m-0 text-sm text-dashboard-text-medium">{rc.partialNote}</p>}
+      {part && (
+        <p className="m-0 text-sm text-dashboard-text-medium">
+          {rc.partialNote}
+        </p>
+      )}
       {board.walks
         .filter((w) => {
           // This chat is either end of the walk: the later chat or the one before it.
           const i = COFFEE_SESSIONS.findIndex((x) => x.id === w.sessionId);
-          return w.repId === c.placement.repId && (w.sessionId === session || COFFEE_SESSIONS[i - 1]?.id === session);
+          return (
+            w.repId === c.placement.repId &&
+            (w.sessionId === session || COFFEE_SESSIONS[i - 1]?.id === session)
+          );
         })
         .map((w) => (
-          <p key={w.sessionId} className="m-0 text-sm font-medium text-dashboard-text-warning">
+          <p
+            key={w.sessionId}
+            className="m-0 text-sm font-medium text-dashboard-text-warning"
+          >
             {copy.sponsors.walk(w.toIvey, sessionLabel(w.sessionId))}
           </p>
         ))}
-      {c.placement.pinned && !sent && !forced && <p className="m-0 text-sm text-dashboard-text-medium">{dc.pinned}</p>}
+      {c.placement.pinned && !sent && !forced && (
+        <p className="m-0 text-sm text-dashboard-text-medium">{dc.pinned}</p>
+      )}
       {/* Hackers were notified: the chat is locked (the server refuses a move or remove too). */}
-      {sent ? <p className="m-0 text-sm font-medium text-dashboard-text-medium">{dc.locked}</p> : actions}
+      {sent ? (
+        <p className="m-0 text-sm font-medium text-dashboard-text-medium">
+          {dc.locked}
+        </p>
+      ) : (
+        actions
+      )}
     </div>
   );
 }
@@ -258,17 +352,30 @@ function CellDetail({
  * no question, by session. Picking one goes through the same warnings as a
  * drop.
  */
-function MoveList({ board, k, who, onPick }: { board: SessionBoardData; k: string; who: string; onPick: (target: string) => void }) {
+function MoveList({
+  board,
+  k,
+  who,
+  onPick,
+}: {
+  board: SessionBoardData;
+  k: string;
+  who: string;
+  onPick: (target: string) => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const cells = [...litCells(board, k, ALL_KEYS)];
   useEffect(() => {
     ref.current?.querySelector<HTMLButtonElement>("button")?.focus();
   }, []);
-  const box = "flex flex-col gap-2 rounded-dashboard-md bg-dashboard-bg-inset p-3";
+  const box =
+    "flex flex-col gap-2 rounded-dashboard-md bg-dashboard-bg-inset p-3";
   if (!cells.length) {
     return (
       <div id="coffee-move-list" ref={ref} className={box}>
-        <p className="m-0 text-sm text-dashboard-text-medium">{dc.moveNone(who)}</p>
+        <p className="m-0 text-sm text-dashboard-text-medium">
+          {dc.moveNone(who)}
+        </p>
       </div>
     );
   }
@@ -279,13 +386,23 @@ function MoveList({ board, k, who, onPick }: { board: SessionBoardData; k: strin
         const ks = cells.filter((x) => splitKey(x).session === s.id);
         if (!ks.length) return null;
         return (
-          <div key={s.id} className="grid grid-cols-[48px_minmax(0,1fr)] items-start gap-2">
-            <span className="pt-2 text-sm font-semibold tabular-nums text-dashboard-text-medium">{sessionLabel(s.id)}</span>
+          <div
+            key={s.id}
+            className="grid grid-cols-[48px_minmax(0,1fr)] items-start gap-2"
+          >
+            <span className="pt-2 text-sm font-semibold tabular-nums text-dashboard-text-medium">
+              {sessionLabel(s.id)}
+            </span>
             <div className="flex flex-wrap gap-1.5">
               {ks.map((x) => {
                 const r = splitKey(x).room;
                 return (
-                  <DashboardButton key={x} variant="small" aria-label={dc.moveToLabel(r, sessionLabel(s.id))} onClick={() => onPick(x)}>
+                  <DashboardButton
+                    key={x}
+                    variant="small"
+                    aria-label={dc.moveToLabel(r, sessionLabel(s.id))}
+                    onClick={() => onPick(x)}
+                  >
                     {r}
                   </DashboardButton>
                 );
@@ -317,26 +434,49 @@ function HackerList({
 }: {
   cell: ChatCell;
   chats: InviteChat[] | null;
-  onRemoveHacker: (t: { sponsorId: string; chatId: string; name: string }) => void;
+  onRemoveHacker: (t: {
+    sponsorId: string;
+    chatId: string;
+    name: string;
+  }) => void;
   onFront: (sponsorId: string) => void;
 }) {
   const [edit, setEdit] = useState(false);
   const sponsorId = cell.sponsor.id;
   const line = api.coffeeChatInvites.line.useQuery({ sponsorId });
-  if (!chats) return <p className="m-0 text-sm text-dashboard-text-medium">{hc.loading}</p>;
+  if (!chats)
+    return (
+      <p className="m-0 text-sm text-dashboard-text-medium">{hc.loading}</p>
+    );
   const mine = chats
     .filter((x) => x.placementId === cell.placement.id)
-    .sort((a, b) => (minutesOfClock(a.slotTime) ?? 0) - (minutesOfClock(b.slotTime) ?? 0));
-  const sum = (f: (x: InviteChat) => number) => mine.reduce((n, x) => n + f(x), 0);
+    .sort(
+      (a, b) =>
+        (minutesOfClock(a.slotTime) ?? 0) - (minutesOfClock(b.slotTime) ?? 0),
+    );
+  const sum = (f: (x: InviteChat) => number) =>
+    mine.reduce((n, x) => n + f(x), 0);
   const accepted = sum((x) => x.accepted);
   const waiting = sum((x) => x.filled) - accepted;
   const hpc = cell.sponsor.hackersPerChat;
   return (
     <>
       <div className="flex items-center justify-between gap-2">
-        <p className="m-0 text-[15px] font-bold tabular-nums">{dc.sum(sum((x) => x.seats), mine.length, accepted, waiting)}</p>
+        <p className="m-0 text-[15px] font-bold tabular-nums">
+          {dc.sum(
+            sum((x) => x.seats),
+            mine.length,
+            accepted,
+            waiting,
+          )}
+        </p>
         {edit ? (
-          <DashboardButton variant="small" aria-pressed="true" className="min-h-11 px-3.5 md:min-h-11" onClick={() => setEdit(false)}>
+          <DashboardButton
+            variant="small"
+            aria-pressed="true"
+            className="min-h-11 px-3.5 md:min-h-11"
+            onClick={() => setEdit(false)}
+          >
             {hc.done}
           </DashboardButton>
         ) : (
@@ -361,8 +501,12 @@ function HackerList({
           const acc = x.accepted;
           const wait = x.filled - x.accepted;
           return (
-            <section key={x.slotTime} aria-label={hc.chatLabel(time)} className="overflow-hidden rounded-dashboard-md border border-dashboard-border-subtle bg-dashboard-bg-surface">
-              <h3 className="m-0 bg-dashboard-bg-inset px-3 py-1.5 text-[13px] font-semibold leading-snug tabular-nums text-dashboard-text-medium">
+            <section
+              key={x.slotTime}
+              aria-label={hc.chatLabel(time)}
+              className="overflow-hidden rounded-dashboard-md border border-dashboard-border-subtle bg-dashboard-bg-surface"
+            >
+              <h3 className="m-0 bg-dashboard-bg-inset px-3 py-1.5 text-[13px] font-semibold tabular-nums leading-snug text-dashboard-text-medium">
                 {hc.chatHead(time, hpc, acc, wait)}
               </h3>
               <ul className="m-0 list-none px-3 py-0">
@@ -371,12 +515,18 @@ function HackerList({
                     key={h.chatId}
                     className={cn(
                       "grid items-center gap-2.5 border-t border-dashboard-border-subtle py-2 first:border-t-0",
-                      edit ? "grid-cols-[minmax(0,1fr)_auto_auto] gap-2" : "grid-cols-[minmax(0,1fr)_auto]",
+                      edit
+                        ? "grid-cols-[minmax(0,1fr)_auto_auto] gap-2"
+                        : "grid-cols-[minmax(0,1fr)_auto]",
                     )}
                   >
                     <div className="min-w-0">
-                      <b className="block text-[15px] font-semibold [overflow-wrap:anywhere]">{h.name}</b>
-                      <span className="block text-[13px] text-dashboard-text-light">{h.source ? (hc.why[h.source] ?? h.source) : ""}</span>
+                      <b className="block text-[15px] font-semibold [overflow-wrap:anywhere]">
+                        {h.name}
+                      </b>
+                      <span className="block text-[13px] text-dashboard-text-light">
+                        {h.source ? (hc.why[h.source] ?? h.source) : ""}
+                      </span>
                     </div>
                     {h.status === "accepted" ? (
                       <span className="inline-flex flex-col items-end rounded-dashboard-md bg-dashboard-schedule-green px-2 py-[3px] text-right text-[13px] font-semibold leading-tight text-dashboard-status-live">
@@ -385,14 +535,24 @@ function HackerList({
                     ) : (
                       <span className="inline-flex flex-col items-end rounded-dashboard-md bg-dashboard-bg-task px-2 py-[3px] text-right text-[13px] font-semibold leading-tight text-dashboard-text-task">
                         {hc.waiting}
-                        {h.expiresAt && <small className="text-xs font-medium">{hc.answerBy(timeOf(h.expiresAt))}</small>}
+                        {h.expiresAt && (
+                          <small className="text-xs font-medium">
+                            {hc.answerBy(timeOf(h.expiresAt))}
+                          </small>
+                        )}
                       </span>
                     )}
                     {edit && (
                       <button
                         type="button"
                         aria-label={hc.removeLabel(h.name)}
-                        onClick={() => onRemoveHacker({ sponsorId, chatId: h.chatId, name: h.name })}
+                        onClick={() =>
+                          onRemoveHacker({
+                            sponsorId,
+                            chatId: h.chatId,
+                            name: h.name,
+                          })
+                        }
                         className={cn(
                           "min-h-11 cursor-pixel-hover rounded-dashboard-md border border-destructive-dark bg-dashboard-bg-surface px-3 text-sm font-semibold text-destructive-dark [@media(hover:hover)]:hover:bg-destructive/10",
                           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive-dark focus-visible:ring-offset-1",
@@ -411,17 +571,28 @@ function HackerList({
       <div className="flex flex-col gap-2 border-t border-dashboard-border-subtle pt-3">
         <h3 className="m-0 text-[15px] font-bold">{hc.queueTitle}</h3>
         {line.data?.queue.length ? (
-          <ol aria-label={hc.queueTitle} className="m-0 flex list-none flex-col gap-1.5 p-0">
+          <ol
+            aria-label={hc.queueTitle}
+            className="m-0 flex list-none flex-col gap-1.5 p-0"
+          >
             {line.data.queue.map((q, i) => (
-              <li key={q.userId} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px]">
-                <span aria-hidden className="inline-flex size-5 items-center justify-center rounded-full bg-dashboard-bg-inset text-xs font-semibold text-dashboard-text-light">
+              <li
+                key={q.userId}
+                className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px]"
+              >
+                <span
+                  aria-hidden
+                  className="inline-flex size-5 items-center justify-center rounded-full bg-dashboard-bg-inset text-xs font-semibold text-dashboard-text-light"
+                >
                   {i + 1}
                 </span>
                 <b className="font-semibold">{q.name}</b>
                 <span
                   className={cn(
                     "inline-flex min-h-[22px] items-center whitespace-nowrap rounded-full px-2 text-xs font-semibold",
-                    q.source === "organizer" ? "bg-dashboard-bg-nav text-dashboard-text-active" : "bg-dashboard-bg-inset text-dashboard-text-medium",
+                    q.source === "organizer"
+                      ? "bg-dashboard-bg-nav text-dashboard-text-active"
+                      : "bg-dashboard-bg-inset text-dashboard-text-medium",
                   )}
                 >
                   {hc.why[q.source] ?? q.source}
@@ -430,9 +601,15 @@ function HackerList({
             ))}
           </ol>
         ) : (
-          <p className="m-0 text-[15px] text-dashboard-text-medium">{line.isLoading ? hc.loading : hc.queueNone}</p>
+          <p className="m-0 text-[15px] text-dashboard-text-medium">
+            {line.isLoading ? hc.loading : hc.queueNone}
+          </p>
         )}
-        <DashboardButton variant="small" className="self-start min-h-11 md:min-h-11" onClick={() => onFront(sponsorId)}>
+        <DashboardButton
+          variant="small"
+          className="min-h-11 self-start md:min-h-11"
+          onClick={() => onFront(sponsorId)}
+        >
           <Plus aria-hidden />
           {hc.addButton}
         </DashboardButton>
@@ -471,7 +648,9 @@ export function BookingForm({
     const t = setTimeout(() => setQuery(q.trim()), 250);
     return () => clearTimeout(t);
   }, [q]);
-  const sponsors = board.sponsors.filter((sp) => sp.submitted && sp.reps.length > 0);
+  const sponsors = board.sponsors.filter(
+    (sp) => sp.submitted && sp.reps.length > 0,
+  );
   const sponsor = sponsors.find((sp) => sp.id === sponsorId);
   // Reps who can chat then: ticked free, not their workshop, not placed elsewhere.
   const reps = (sponsor?.reps ?? []).filter(
@@ -479,14 +658,18 @@ export function BookingForm({
       r.chatsWanted > 0 &&
       r.free.includes(session) &&
       !sponsor!.blocked.includes(session) &&
-      !board.placements.some((p) => p.repId === r.id && p.sessionId === session),
+      !board.placements.some(
+        (p) => p.repId === r.id && p.sessionId === session,
+      ),
   );
   const hackers = api.coffeeChatSessions.bookingHackers.useQuery(
     { sponsorId, q: query.length >= 2 ? query : "" },
     { enabled: !!sponsorId, placeholderData: (prev) => prev },
   );
   const scanned = hackers.data?.scanned ?? [];
-  const found = (hackers.data?.found ?? []).filter((h) => !scanned.some((x) => x.userId === h.userId));
+  const found = (hackers.data?.found ?? []).filter(
+    (h) => !scanned.some((x) => x.userId === h.userId),
+  );
   const field = "flex min-w-0 flex-col gap-1.5";
   const input = cn(
     "min-h-11 w-full rounded-dashboard-md border border-dashboard-border-default bg-dashboard-bg-surface px-3 py-2.5 text-base text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder",
@@ -495,7 +678,9 @@ export function BookingForm({
   const option = (on: boolean) =>
     cn(
       "flex min-h-11 cursor-pixel-hover items-center gap-2.5 rounded-dashboard-md border px-3 py-2 text-[15px] text-dashboard-text-heavy",
-      on ? "border-dashboard-action-primary bg-dashboard-bg-highlight" : "border-dashboard-border-default",
+      on
+        ? "border-dashboard-action-primary bg-dashboard-bg-highlight"
+        : "border-dashboard-border-default",
     );
   const hackerList = (list: typeof scanned, label: string) => (
     <ul aria-label={label} className="m-0 flex list-none flex-col gap-1.5 p-0">
@@ -510,7 +695,9 @@ export function BookingForm({
               onChange={() => setUserId(h.userId)}
               className="size-[18px] flex-none accent-dashboard-action-primary"
             />
-            <span className="min-w-0 [overflow-wrap:anywhere]">{bc.hackerLine(h.name, h.hackerId)}</span>
+            <span className="min-w-0 [overflow-wrap:anywhere]">
+              {bc.hackerLine(h.name, h.hackerId)}
+            </span>
           </label>
         </li>
       ))}
@@ -525,7 +712,9 @@ export function BookingForm({
         if (!repId) return setErr(bc.needRep);
         if (!userId) return setErr(bc.needHacker);
         if (cellAt(board, keyOf(room, session))) {
-          return setErr(copy.errors.roomTaken(rc.rm(room), sessionLabel(session)));
+          return setErr(
+            copy.errors.roomTaken(rc.rm(room), sessionLabel(session)),
+          );
         }
         setErr(null);
         onBook({ room, session, sponsorId, repId, userId });
@@ -533,18 +722,27 @@ export function BookingForm({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <Dialog.Title className="m-0 text-xl font-bold leading-snug">{bc.title}</Dialog.Title>
-          <span className="block text-sm font-semibold text-dashboard-text-medium">{bc.where(roomLabel(room), sessionLabel(session))}</span>
+          <Dialog.Title className="m-0 text-xl font-bold leading-snug">
+            {bc.title}
+          </Dialog.Title>
+          <span className="block text-sm font-semibold text-dashboard-text-medium">
+            {bc.where(roomLabel(room), sessionLabel(session))}
+          </span>
         </div>
         <Dialog.Close
           aria-label={dc.close}
-          className={cn("-mr-2.5 -mt-2.5 inline-flex size-11 cursor-pixel-hover items-center justify-center rounded-dashboard-lg text-dashboard-text-light [@media(hover:hover)]:hover:bg-dashboard-bg-highlight", focusRing)}
+          className={cn(
+            "-mr-2.5 -mt-2.5 inline-flex size-11 cursor-pixel-hover items-center justify-center rounded-dashboard-lg text-dashboard-text-light [@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
+            focusRing,
+          )}
         >
           <X aria-hidden className="size-[18px]" />
         </Dialog.Close>
       </div>
       <div className={field}>
-        <label htmlFor="bk-sponsor" className="text-sm font-semibold">{bc.sponsor}</label>
+        <label htmlFor="bk-sponsor" className="text-sm font-semibold">
+          {bc.sponsor}
+        </label>
         <select
           id="bk-sponsor"
           className={input}
@@ -555,39 +753,65 @@ export function BookingForm({
             setUserId("");
           }}
         >
-          <option value="">{sponsors.length ? bc.sponsorPick : bc.noSponsors}</option>
+          <option value="">
+            {sponsors.length ? bc.sponsorPick : bc.noSponsors}
+          </option>
           {sponsors.map((sp) => (
-            <option key={sp.id} value={sp.id}>{sp.name}</option>
+            <option key={sp.id} value={sp.id}>
+              {sp.name}
+            </option>
           ))}
         </select>
       </div>
       {sponsor && (
         <div className={field}>
-          <label htmlFor="bk-rep" className="text-sm font-semibold">{bc.rep}</label>
+          <label htmlFor="bk-rep" className="text-sm font-semibold">
+            {bc.rep}
+          </label>
           {reps.length ? (
-            <select id="bk-rep" className={input} value={repId} onChange={(e) => setRepId(e.target.value)}>
+            <select
+              id="bk-rep"
+              className={input}
+              value={repId}
+              onChange={(e) => setRepId(e.target.value)}
+            >
               <option value="">{bc.repPick}</option>
               {reps.map((r) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
               ))}
             </select>
           ) : (
-            <p id="bk-rep" className="m-0 text-[15px] text-dashboard-text-warning">{bc.noReps(sessionLabel(session))}</p>
+            <p
+              id="bk-rep"
+              className="m-0 text-[15px] text-dashboard-text-warning"
+            >
+              {bc.noReps(sessionLabel(session))}
+            </p>
           )}
         </div>
       )}
       {sponsor && repId && (
         <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
-          <legend className="mb-1 p-0 text-sm font-semibold">{bc.hacker}</legend>
+          <legend className="mb-1 p-0 text-sm font-semibold">
+            {bc.hacker}
+          </legend>
           <h3 className="m-0 text-[15px] font-bold">{bc.scannedTitle}</h3>
           {hackers.isLoading ? (
-            <p className="m-0 text-[15px] text-dashboard-text-medium">{bc.loading}</p>
+            <p className="m-0 text-[15px] text-dashboard-text-medium">
+              {bc.loading}
+            </p>
           ) : scanned.length ? (
             hackerList(scanned, bc.scannedTitle)
           ) : (
-            <p className="m-0 text-[15px] text-dashboard-text-medium">{bc.scannedNone}</p>
+            <p className="m-0 text-[15px] text-dashboard-text-medium">
+              {bc.scannedNone}
+            </p>
           )}
-          <label htmlFor="bk-search" className="mt-1 text-sm font-semibold">{bc.searchLabel}</label>
+          <label htmlFor="bk-search" className="mt-1 text-sm font-semibold">
+            {bc.searchLabel}
+          </label>
           <input
             id="bk-search"
             type="search"
@@ -599,20 +823,42 @@ export function BookingForm({
             spellCheck={false}
           />
           {query.length < 2 ? (
-            <p className="m-0 text-sm text-dashboard-text-light">{bc.searchHint}</p>
+            <p className="m-0 text-sm text-dashboard-text-light">
+              {bc.searchHint}
+            </p>
           ) : found.length ? (
             hackerList(found, bc.searchLabel)
           ) : (
-            !hackers.isFetching && <p className="m-0 text-sm text-dashboard-text-medium">{bc.searchNone}</p>
+            !hackers.isFetching && (
+              <p className="m-0 text-sm text-dashboard-text-medium">
+                {bc.searchNone}
+              </p>
+            )
           )}
         </fieldset>
       )}
-      {err && <p role="alert" className="m-0 text-sm font-medium text-dashboard-text-warning">{err}</p>}
+      {err && (
+        <p
+          role="alert"
+          className="m-0 text-sm font-medium text-dashboard-text-warning"
+        >
+          {err}
+        </p>
+      )}
       <p className="m-0 text-sm text-dashboard-text-medium">{bc.lockedNote}</p>
       <div className="flex flex-wrap gap-2">
-        <DashboardButton type="submit" variant="primary" disabled={busy} className="h-auto min-h-11 w-auto px-4 py-0 text-sm md:min-h-9">{bc.book}</DashboardButton>
+        <DashboardButton
+          type="submit"
+          variant="primary"
+          disabled={busy}
+          className="h-auto min-h-11 w-auto px-4 py-0 text-sm md:min-h-9"
+        >
+          {bc.book}
+        </DashboardButton>
         <Dialog.Close asChild>
-          <DashboardButton type="button" variant="small">{bc.cancel}</DashboardButton>
+          <DashboardButton type="button" variant="small">
+            {bc.cancel}
+          </DashboardButton>
         </Dialog.Close>
       </div>
     </form>

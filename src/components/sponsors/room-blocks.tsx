@@ -147,7 +147,9 @@ export function GiveRoom({
   const selectId = `give-${room}-${slotTime}`;
 
   if (sponsors.length === 0) {
-    return <p className="m-0 text-sm text-dashboard-text-medium">{g.noSponsors}</p>;
+    return (
+      <p className="m-0 text-sm text-dashboard-text-medium">{g.noSponsors}</p>
+    );
   }
   return (
     <form
@@ -240,9 +242,7 @@ export function BlockDetails({
             );
             const waiting = chats.filter((c) => c.status === "pending").length;
             const time = formatClock(slot.slotTime);
-            const open =
-              slot.booked < slot.needed &&
-              now < chatExpiresAt(slot);
+            const open = slot.booked < slot.needed && now < chatExpiresAt(slot);
             return (
               <li
                 key={slot.slotTime}
@@ -580,7 +580,9 @@ function BlockChat({ chat, sponsor }: { chat: BoardChat; sponsor: string }) {
           <DashboardButton
             variant="link"
             aria-label={
-              waiting ? b.rejectLabel(hacker, time) : b.cancelLabel(hacker, time)
+              waiting
+                ? b.rejectLabel(hacker, time)
+                : b.cancelLabel(hacker, time)
             }
             onClick={() => setConfirming(true)}
             className="ml-auto shrink-0"

@@ -61,7 +61,10 @@ function sessionInviteBody(chat: ChatDetails): string {
 /** The chat's details as a Slack section block. */
 export function coffeeChatDetailsBlock(chat: ChatDetails) {
   if (chat.placementId) {
-    return { type: "section", text: { type: "mrkdwn", text: sessionInviteBody(chat) } };
+    return {
+      type: "section",
+      text: { type: "mrkdwn", text: sessionInviteBody(chat) },
+    };
   }
   const when = coffeeChatNotifyCopy.when(
     formatCoffeeChatTime(chat.slotTime),

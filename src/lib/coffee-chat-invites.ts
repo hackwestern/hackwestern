@@ -56,7 +56,9 @@ import {
  * chat board all of Sunday.
  */
 export function saturdayAt(minutes: number): Date {
-  const midnight = new Date(`${COFFEE_CHAT_DATE}T00:00:00${COFFEE_CHAT_UTC_OFFSET}`);
+  const midnight = new Date(
+    `${COFFEE_CHAT_DATE}T00:00:00${COFFEE_CHAT_UTC_OFFSET}`,
+  );
   return new Date(midnight.getTime() + minutes * 60_000);
 }
 
@@ -270,7 +272,8 @@ export function sessionChatStarts(
 ): number[] {
   const w = sessionWindow(session, workshops, chatMinutes);
   const out: number[] = [];
-  for (let t = w?.start ?? 0; w && t + chatMinutes <= w.end; t += chatMinutes) out.push(t);
+  for (let t = w?.start ?? 0; w && t + chatMinutes <= w.end; t += chatMinutes)
+    out.push(t);
   return out;
 }
 

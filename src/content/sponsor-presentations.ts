@@ -197,7 +197,8 @@ export const sponsorPresentationsCopy = {
       notYours: "These times aren't linked to your Slack account.",
       changed:
         "Your times have changed since this message. Check the newest message from us.",
-      failed: "Something went wrong. Try again in a minute, or tell an organizer.",
+      failed:
+        "Something went wrong. Try again in a minute, or tell an organizer.",
     },
   },
 

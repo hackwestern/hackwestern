@@ -23,7 +23,9 @@ export function buildingOfRoomLabel(
 
 /** COFFEE_CHAT_UTC_OFFSET ("-05:00") in minutes (-300). */
 const OFFSET_MINUTES = (() => {
-  const [, sign, h, m] = /^([+-])(\d{2}):(\d{2})$/.exec(COFFEE_CHAT_UTC_OFFSET)!;
+  const [, sign, h, m] = /^([+-])(\d{2}):(\d{2})$/.exec(
+    COFFEE_CHAT_UTC_OFFSET,
+  )!;
   return (sign === "-" ? -1 : 1) * (Number(h) * 60 + Number(m));
 })();
 

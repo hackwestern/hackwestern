@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { faker } from "@faker-js/faker";
 
-import { buildJudgingBoard, MIN_SPONSOR_PICKS } from "~/lib/sponsor-judging-rooms";
+import {
+  buildJudgingBoard,
+  MIN_SPONSOR_PICKS,
+} from "~/lib/sponsor-judging-rooms";
 import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
 import {
   clearJudgingSheetCache,

@@ -29,10 +29,7 @@ import { asc, like } from "drizzle-orm";
 
 import { conn, db } from "..";
 import { applications, sponsorJudgingSponsors, teams, users } from "../schema";
-import {
-  TRACK_VALUES,
-  type TrackValue,
-} from "~/lib/sponsor-track";
+import { TRACK_VALUES, type TrackValue } from "~/lib/sponsor-track";
 import { fetchSponsorTrack } from "~/server/api/utils/sponsor-judging-teams";
 
 const SEED_TEAM_ID_PREFIX = "sp";
@@ -91,7 +88,8 @@ function tracksForTeam(
   const otherTracks = TRACK_VALUES.filter(
     (track) => track !== canadaLifeTrack && track !== "General",
   );
-  const track = otherTracks[index % Math.max(1, otherTracks.length)] ?? "General";
+  const track =
+    otherTracks[index % Math.max(1, otherTracks.length)] ?? "General";
   return track === "General" ? ["General"] : ["General", track];
 }
 
@@ -212,9 +210,7 @@ async function seedSponsorPicks(args: Args): Promise<void> {
     orderBy: asc(sponsorJudgingSponsors.createdAt),
   });
   const sponsor =
-    sponsors.find((row) =>
-      row.name.toLowerCase().includes("canada life"),
-    ) ??
+    sponsors.find((row) => row.name.toLowerCase().includes("canada life")) ??
     sponsors[0];
   if (sponsor) {
     console.log(`\nTry the picks page as an existing sponsor:`);

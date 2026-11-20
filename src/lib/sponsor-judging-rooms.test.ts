@@ -282,9 +282,16 @@ describe("buildJudgingBoard, as the organizer Home builds it", () => {
       sponsors: SPONSORS.filter((s) => s.name !== "Scotiabank"),
       otherSponsors: [{ name: "Scotiabank" }],
       items: [item({})],
-      sheet: { rooms: new Map(), pickCount: pickCountFromChosenTeams(new Map()) },
+      sheet: {
+        rooms: new Map(),
+        pickCount: pickCountFromChosenTeams(new Map()),
+      },
     });
-    expect(board.rows.map((r) => r.name)).toEqual(["Canada Life", "RBC", "QNX"]);
+    expect(board.rows.map((r) => r.name)).toEqual([
+      "Canada Life",
+      "RBC",
+      "QNX",
+    ]);
   });
   it("counts picks from the given count (shortlist sizes), not the sheet", () => {
     const board = buildJudgingBoard({

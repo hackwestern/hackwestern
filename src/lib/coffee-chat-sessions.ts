@@ -70,22 +70,34 @@ export function buildingOf(room: string): Building | null {
  * longer_one_on_one column is ignored: 1-on-1s are always 15 minutes
  * (docs/decisions.md 2026-11-19, Q1-Q11).
  */
-export function chatMinutes(prefs: { hackersPerChat: number; longerOneOnOne?: boolean }): 15 | 30 {
+export function chatMinutes(prefs: {
+  hackersPerChat: number;
+  longerOneOnOne?: boolean;
+}): 15 | 30 {
   return prefs.hackersPerChat === 1 ? 15 : 30;
 }
 
 /** Chats one rep runs in one 1-hour session (4 at 15 min, 2 at 30). */
-export function chatsPerSession(prefs: { hackersPerChat: number; longerOneOnOne?: boolean }): number {
+export function chatsPerSession(prefs: {
+  hackersPerChat: number;
+  longerOneOnOne?: boolean;
+}): number {
   return 60 / chatMinutes(prefs);
 }
 
 /** Sessions a rep's wanted chats need: ceil(chats x chat length / 60). */
-export function sessionsForChats(chatsWanted: number, minutes: 15 | 30): number {
+export function sessionsForChats(
+  chatsWanted: number,
+  minutes: 15 | 30,
+): number {
   return Math.ceil((Math.max(0, chatsWanted) * minutes) / 60);
 }
 
 /** Hackers one rep sees in one session. */
-export function hackersPerSession(prefs: { hackersPerChat: number; longerOneOnOne?: boolean }): number {
+export function hackersPerSession(prefs: {
+  hackersPerChat: number;
+  longerOneOnOne?: boolean;
+}): number {
   return (60 / chatMinutes(prefs)) * prefs.hackersPerChat;
 }
 
@@ -97,11 +109,18 @@ export function minutesOfClock(time: string | null | undefined): number | null {
 }
 
 /** A sponsor workshop in minutes after midnight; `setup` is when they must be in the room. */
-export type WorkshopTime = { setup?: number | null; start: number; end: number };
+export type WorkshopTime = {
+  setup?: number | null;
+  start: number;
+  end: number;
+};
 
 /** Minutes a workshop blocks: (setup, or start) - 15 to end + 15. */
 export function workshopBlock(w: WorkshopTime): { from: number; to: number } {
-  return { from: (w.setup ?? w.start) - WORKSHOP_BUFFER_MIN, to: w.end + WORKSHOP_BUFFER_MIN };
+  return {
+    from: (w.setup ?? w.start) - WORKSHOP_BUFFER_MIN,
+    to: w.end + WORKSHOP_BUFFER_MIN,
+  };
 }
 
 /** Start and end of the part of a session a rep can use, minutes after midnight. */
@@ -149,7 +168,9 @@ export function sessionWindow(
     );
   }
   // Longest stretch first; on a tie, the earlier one.
-  const best = [...free].sort((a, b) => b.end - b.start - (a.end - a.start) || a.start - b.start)[0];
+  const best = [...free].sort(
+    (a, b) => b.end - b.start - (a.end - a.start) || a.start - b.start,
+  )[0];
   if (!best) return null;
   const chats = Math.floor((best.end - best.start) / chatMinutes);
   if (chats === 0) return null;
@@ -161,7 +182,10 @@ export function sessionWindow(
 }
 
 /** Whole chats that fit in a window. */
-export function chatsInWindow(w: UsableWindow | null, chatMinutes: number): number {
+export function chatsInWindow(
+  w: UsableWindow | null,
+  chatMinutes: number,
+): number {
   return w && chatMinutes > 0 ? Math.floor((w.end - w.start) / chatMinutes) : 0;
 }
 

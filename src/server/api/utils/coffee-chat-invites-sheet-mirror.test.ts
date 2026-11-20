@@ -29,7 +29,9 @@ vi.mock("googleapis", () => ({
 vi.mock("@vercel/functions", () => ({ waitUntil: vi.fn() }));
 const writes = vi.hoisted(() => ({ enabled: true }));
 vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("~/server/api/utils/run-of-show-sheet")>()),
+  ...(await importOriginal<
+    typeof import("~/server/api/utils/run-of-show-sheet")
+  >()),
   sheetWritesEnabled: () => writes.enabled,
 }));
 
@@ -63,7 +65,8 @@ function fakeSheet(opts: { missing?: boolean } = {}) {
     editor: "app@example.test",
     clear(range) {
       calls.push({ op: "clear", arg: range });
-      if (missing) return Promise.reject(new Error(`Unable to parse range: ${range}`));
+      if (missing)
+        return Promise.reject(new Error(`Unable to parse range: ${range}`));
       return Promise.resolve();
     },
     write(range, values) {
@@ -129,7 +132,10 @@ describe("invitesSheetRows", () => {
         row({ firstName: "Gone", status: "cancelled" }),
         row({ firstName: "Late", status: "expired" }),
         // Pending, but its answer-by has passed: it reads as expired.
-        row({ firstName: "Lapsed", expiresAt: new Date("2026-11-21T03:00:00Z") }),
+        row({
+          firstName: "Lapsed",
+          expiresAt: new Date("2026-11-21T03:00:00Z"),
+        }),
       ],
       NOW,
     );
@@ -142,22 +148,41 @@ describe("invitesSheetRows", () => {
   test("sorted by sponsor, then rep, then time", () => {
     const rows = invitesSheetRows(
       [
-        row({ sponsor: "TinyFish", rep: "Ari", slotTime: "10:00", firstName: "A" }),
+        row({
+          sponsor: "TinyFish",
+          rep: "Ari",
+          slotTime: "10:00",
+          firstName: "A",
+        }),
         row({ sponsor: "QNX", rep: "Zed", slotTime: "10:00", firstName: "B" }),
         row({ sponsor: "QNX", rep: "Bo", slotTime: "14:15", firstName: "C" }),
         row({ sponsor: "QNX", rep: "Bo", slotTime: "11:00", firstName: "D" }),
       ],
       NOW,
     );
-    expect(rows.slice(3).map((r) => r[5])).toEqual(["D D.", "C D.", "B D.", "A D."]);
+    expect(rows.slice(3).map((r) => r[5])).toEqual([
+      "D D.",
+      "C D.",
+      "B D.",
+      "A D.",
+    ]);
   });
 
   test("no PII beyond first name + last initial and the hacker ID", () => {
     const rows = invitesSheetRows(
       [
-        row({ firstName: "Jane", lastName: "Doe", userName: "jane.doe@example.test" }),
+        row({
+          firstName: "Jane",
+          lastName: "Doe",
+          userName: "jane.doe@example.test",
+        }),
         // No application: the account name gives first name + initial only.
-        row({ firstName: null, lastName: null, userName: "Sam Rivera Lopez", hackerId: null }),
+        row({
+          firstName: null,
+          lastName: null,
+          userName: "Sam Rivera Lopez",
+          hackerId: null,
+        }),
       ],
       NOW,
     );
@@ -169,8 +194,8 @@ describe("invitesSheetRows", () => {
 
   test("source labels", () => {
     const rows = invitesSheetRows(
-      ["scanned", "shortlist", "interested", "organizer", null].map((source, i) =>
-        row({ source, firstName: `H${i}` }),
+      ["scanned", "shortlist", "interested", "organizer", null].map(
+        (source, i) => row({ source, firstName: `H${i}` }),
       ),
       NOW,
     );
@@ -197,7 +222,10 @@ describe("writeInvitesTab", () => {
     await expect(writeInvitesTab(sheet, rows)).resolves.toBe(4);
     expect(calls.map((c) => c.op)).toEqual(["clear", "write"]);
     expect(calls[0]!.arg).toBe(`'${INVITES_TAB}'!A:Z`);
-    expect(calls[1]!.arg).toEqual({ range: `'${INVITES_TAB}'!A1`, values: rows });
+    expect(calls[1]!.arg).toEqual({
+      range: `'${INVITES_TAB}'!A1`,
+      values: rows,
+    });
   });
 
   test("a missing tab is created and locked once", async () => {
@@ -234,9 +262,17 @@ describe("lockTabRequests", () => {
       editors: { users: ["app@example.test"] },
     });
     // No row or column bounds: the whole tab.
-    expect(Object.keys(protect!.addProtectedRange!.protectedRange!.range!)).toEqual(["sheetId"]);
+    expect(
+      Object.keys(protect!.addProtectedRange!.protectedRange!.range!),
+    ).toEqual(["sheetId"]);
     expect(note!.updateCells).toMatchObject({
-      range: { sheetId: 7, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: 1 },
+      range: {
+        sheetId: 7,
+        startRowIndex: 0,
+        endRowIndex: 1,
+        startColumnIndex: 0,
+        endColumnIndex: 1,
+      },
       rows: [{ values: [{ note: NOTE }] }],
       fields: "note",
     });
@@ -248,7 +284,9 @@ describe("mirrorCoffeeInvites", () => {
     writes.enabled = false;
     const load = vi.fn(() => Promise.resolve([row({})]));
     const sheet = vi.fn(() => Promise.resolve(fakeSheet().sheet));
-    await expect(mirrorCoffeeInvites({ load, sheet, minIntervalMs: 0 })).resolves.toEqual({
+    await expect(
+      mirrorCoffeeInvites({ load, sheet, minIntervalMs: 0 }),
+    ).resolves.toEqual({
       ok: false,
       error: "disabled",
     });
@@ -259,8 +297,16 @@ describe("mirrorCoffeeInvites", () => {
   test("calls made while a run waits share it", async () => {
     const { sheet, calls } = fakeSheet();
     const load = vi.fn(() => Promise.resolve([row({})]));
-    const deps = { load, sheet: () => Promise.resolve(sheet), now: () => NOW, minIntervalMs: 0 };
-    const [a, b] = await Promise.all([mirrorCoffeeInvites(deps), mirrorCoffeeInvites(deps)]);
+    const deps = {
+      load,
+      sheet: () => Promise.resolve(sheet),
+      now: () => NOW,
+      minIntervalMs: 0,
+    };
+    const [a, b] = await Promise.all([
+      mirrorCoffeeInvites(deps),
+      mirrorCoffeeInvites(deps),
+    ]);
     expect(a).toEqual({ ok: true, rows: 4 });
     expect(b).toEqual(a);
     expect(load).toHaveBeenCalledTimes(1);
@@ -268,7 +314,9 @@ describe("mirrorCoffeeInvites", () => {
   });
 
   test("a failure is reported, never thrown", async () => {
-    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const error = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
     const result = await mirrorCoffeeInvites({
       load: () => Promise.reject(new Error("db down")),
       minIntervalMs: 0,

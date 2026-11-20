@@ -19,7 +19,10 @@ import { scheduleCopy } from "~/content/sponsor-schedule";
 import { RUN_OF_SHOW_DAYS, type RunOfShowDay } from "~/lib/run-of-show";
 import { defaultRunOfShowDay } from "~/lib/run-of-show-time";
 import { fetchScheduleData } from "~/lib/schedule";
-import { buildSponsorTimeline, type TimelineEntry } from "~/lib/sponsor-timeline";
+import {
+  buildSponsorTimeline,
+  type TimelineEntry,
+} from "~/lib/sponsor-timeline";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
@@ -58,7 +61,12 @@ export default function SponsorSchedulePage() {
   // The sponsor's coffee chats (session model): sent chats with invites.
   const setupQ = api.coffeeChatSetup.get.useQuery(
     { sponsor: id },
-    { enabled: validUuid, retry: 1, refetchInterval: 60_000, refetchOnWindowFocus: false },
+    {
+      enabled: validUuid,
+      retry: 1,
+      refetchInterval: 60_000,
+      refetchOnWindowFocus: false,
+    },
   );
 
   const shell = (children: React.ReactNode) => (
@@ -83,8 +91,10 @@ export default function SponsorSchedulePage() {
   );
   const shownDay = day ?? linkedDay ?? defaultRunOfShowDay(now);
   const confirmed = !!setup?.confirmed && setup.chats.length > 0;
-  const repName = (repId: string) => setup?.reps.find((r) => r.id === repId)?.name ?? "";
-  const chatReps = setup?.reps.filter((r) => setup.chats.some((c) => c.repId === r.id)) ?? [];
+  const repName = (repId: string) =>
+    setup?.reps.find((r) => r.id === repId)?.name ?? "";
+  const chatReps =
+    setup?.reps.filter((r) => setup.chats.some((c) => c.repId === r.id)) ?? [];
   const chatEntries: TimelineEntry[] =
     shownDay !== "Saturday" || !setup
       ? []
@@ -140,7 +150,11 @@ export default function SponsorSchedulePage() {
     <>
       {shownDay === "Saturday" && confirmed && (
         <div className="flex flex-col gap-3">
-          <div role="group" aria-label={copy.repsLabel} className="flex flex-wrap gap-2">
+          <div
+            role="group"
+            aria-label={copy.repsLabel}
+            className="flex flex-wrap gap-2"
+          >
             {[{ id: null, name: copy.everyone }, ...chatReps].map((r) => (
               <button
                 key={r.id ?? "all"}
@@ -156,11 +170,17 @@ export default function SponsorSchedulePage() {
           </div>
           <p className="m-0 flex flex-wrap gap-4 text-[13px] text-dashboard-text-medium">
             <span className="inline-flex items-center gap-1.5">
-              <i aria-hidden className="inline-block h-3.5 w-2.5 rounded-sm border-l-4 border-dashboard-chat-line bg-dashboard-chat-tint" />
+              <i
+                aria-hidden
+                className="inline-block h-3.5 w-2.5 rounded-sm border-l-4 border-dashboard-chat-line bg-dashboard-chat-tint"
+              />
               {copy.legendChats}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <i aria-hidden className="inline-block h-3.5 w-2.5 rounded-sm border-l-4 border-dashboard-action-primary bg-dashboard-bg-surface" />
+              <i
+                aria-hidden
+                className="inline-block h-3.5 w-2.5 rounded-sm border-l-4 border-dashboard-action-primary bg-dashboard-bg-surface"
+              />
               {copy.legendEvents}
             </span>
           </p>

@@ -166,9 +166,7 @@ export function CopyLinkButton({
 
   const url = `/sponsors/${sponsorId}`;
   const absoluteUrl =
-    typeof window === "undefined"
-      ? url
-      : `${window.location.origin}${url}`;
+    typeof window === "undefined" ? url : `${window.location.origin}${url}`;
 
   const copyUrl = async () => {
     try {
@@ -1247,7 +1245,9 @@ export function SponsorsTab({
           statusAfterPill(pill, done ? "undo" : "advance"),
         )
       }
-      onCcWorkshop={(sponsor, attended) => changeCcWorkshop(sponsor.name, attended)}
+      onCcWorkshop={(sponsor, attended) =>
+        changeCcWorkshop(sponsor.name, attended)
+      }
       copyLink={(sponsor) => (
         <CopyLinkButton sponsorId={sponsor.sponsorId} name={sponsor.name} />
       )}
@@ -1260,7 +1260,9 @@ export function SponsorsTab({
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <p className="m-0 text-sm text-dashboard-text-medium">
             <span className="font-semibold text-dashboard-text-heavy">
-              {me.ownName ? mineCopy.signedInWithView(me.ownName, me.name) : mineCopy.signedIn(me.name)}
+              {me.ownName
+                ? mineCopy.signedInWithView(me.ownName, me.name)
+                : mineCopy.signedIn(me.name)}
             </span>
             {" · "}
             {mineCopy.leads(mySponsors.length)}

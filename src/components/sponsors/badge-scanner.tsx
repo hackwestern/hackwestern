@@ -181,12 +181,19 @@ function CameraPanel({
     return (
       <section className={cn(card, "gap-3.5", enterMotion)}>
         <StepHeading headingRef={headingRef}>
-          {failed && !typing ? cameraProblem(status).title : copy.manual.heading}
+          {failed && !typing
+            ? cameraProblem(status).title
+            : copy.manual.heading}
         </StepHeading>
         {failed && !typing && (
           <div className="flex items-start gap-3 rounded-dashboard-lg bg-dashboard-bg-inset p-4">
-            <CameraOff aria-hidden className="mt-0.5 size-5 shrink-0 text-dashboard-text-warning" />
-            <p className="m-0 text-base text-dashboard-text-medium">{cameraProblem(status).body}</p>
+            <CameraOff
+              aria-hidden
+              className="mt-0.5 size-5 shrink-0 text-dashboard-text-warning"
+            />
+            <p className="m-0 text-base text-dashboard-text-medium">
+              {cameraProblem(status).body}
+            </p>
           </div>
         )}
         <ManualEntry onSubmit={onTyped} />
@@ -208,7 +215,10 @@ function CameraPanel({
   }
 
   return (
-    <section aria-label={copy.camera.label} className={cn(card, "gap-3.5", enterMotion)}>
+    <section
+      aria-label={copy.camera.label}
+      className={cn(card, "gap-3.5", enterMotion)}
+    >
       <h2 ref={headingRef} tabIndex={-1} className="sr-only">
         {copy.camera.heading}
       </h2>
@@ -223,7 +233,7 @@ function CameraPanel({
         {/* Aiming frame */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-[14%] top-[14%] bottom-[22%] rounded-dashboard-2xl border-2 border-dashboard-text-inverse/80 md:inset-x-[23%]"
+          className="pointer-events-none absolute inset-x-[14%] bottom-[22%] top-[14%] rounded-dashboard-2xl border-2 border-dashboard-text-inverse/80 md:inset-x-[23%]"
         />
         <p
           aria-hidden
@@ -232,7 +242,11 @@ function CameraPanel({
           {status === "scanning" ? copy.camera.heading : copy.camera.starting}
         </p>
       </div>
-      <button type="button" className={cn(btn.link, "self-start")} onClick={() => setTyping(true)}>
+      <button
+        type="button"
+        className={cn(btn.link, "self-start")}
+        onClick={() => setTyping(true)}
+      >
         <Hash aria-hidden />
         {copy.manual.open}
       </button>
@@ -256,7 +270,10 @@ function ManualEntry({ onSubmit }: { onSubmit: (text: string) => void }) {
         onSubmit(value);
       }}
     >
-      <label htmlFor="hacker-code" className="text-sm font-semibold text-dashboard-text-heavy">
+      <label
+        htmlFor="hacker-code"
+        className="text-sm font-semibold text-dashboard-text-heavy"
+      >
         {copy.manual.label}
       </label>
       <input
@@ -271,15 +288,23 @@ function ManualEntry({ onSubmit }: { onSubmit: (text: string) => void }) {
           setValue(event.target.value);
           setEmpty(false);
         }}
-        aria-describedby={empty ? "hacker-code-hint hacker-code-error" : "hacker-code-hint"}
+        aria-describedby={
+          empty ? "hacker-code-hint hacker-code-error" : "hacker-code-hint"
+        }
         aria-invalid={empty || undefined}
         className="h-11 w-full min-w-0 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3 text-base text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
       />
-      <p id="hacker-code-hint" className="m-0 text-[13px] text-dashboard-text-light">
+      <p
+        id="hacker-code-hint"
+        className="m-0 text-[13px] text-dashboard-text-light"
+      >
         {copy.manual.hint}
       </p>
       {empty && (
-        <p id="hacker-code-error" className="m-0 text-sm font-semibold text-dashboard-notice-danger">
+        <p
+          id="hacker-code-error"
+          className="m-0 text-sm font-semibold text-dashboard-notice-danger"
+        >
           {copy.manual.empty}
         </p>
       )}
@@ -401,7 +426,14 @@ function HackerStep({
     if (hackerQ.isError) announce(copy.notHacker.title);
     else if (hackerQ.data) announce(metCopy.heading(hackerQ.data.firstName));
     onFocusHeading();
-  }, [settled, hackerQ.isError, hackerQ.data, announce, onFocusHeading, metCopy]);
+  }, [
+    settled,
+    hackerQ.isError,
+    hackerQ.data,
+    announce,
+    onFocusHeading,
+    metCopy,
+  ]);
 
   if (!settled) {
     return (
@@ -446,26 +478,40 @@ function HackerStep({
     <div className="flex min-w-0 items-center gap-3">
       {/* GitHub photo only when they shared their profile (links is null
           otherwise). */}
-      <HackerAvatar name={hacker.firstName} github={hacker.links?.github} size="lg" />
+      <HackerAvatar
+        name={hacker.firstName}
+        github={hacker.links?.github}
+        size="lg"
+      />
       <div className="flex min-w-0 flex-col">
         <b className="break-words text-lg">{hacker.firstName}</b>
-        <span className="text-sm tabular-nums text-dashboard-text-light">{code}</span>
+        <span className="text-sm tabular-nums text-dashboard-text-light">
+          {code}
+        </span>
       </div>
     </div>
   );
 
   if (!added) {
     return (
-      <section aria-labelledby="scan-found" className={cn(card, "gap-4", enterMotion)}>
+      <section
+        aria-labelledby="scan-found"
+        className={cn(card, "gap-4", enterMotion)}
+      >
         <h2 id="scan-found" ref={headingRef} tabIndex={-1} className="sr-only">
           {metCopy.heading(hacker.firstName)}
         </h2>
         {who}
         {already && (
-          <p className="m-0 text-sm font-semibold">{metCopy.already(whenEastern(already.scannedAt), already.repName)}</p>
+          <p className="m-0 text-sm font-semibold">
+            {metCopy.already(whenEastern(already.scannedAt), already.repName)}
+          </p>
         )}
         {record.isError && (
-          <p role="alert" className="m-0 text-sm font-semibold text-dashboard-notice-danger">
+          <p
+            role="alert"
+            className="m-0 text-sm font-semibold text-dashboard-notice-danger"
+          >
             {metCopy.error}
           </p>
         )}
@@ -481,7 +527,11 @@ function HackerStep({
           <Plus aria-hidden />
           {record.isPending ? metCopy.adding : metCopy.add}
         </button>
-        <button type="button" className={cn(btn.link, "self-start")} onClick={onScanNext}>
+        <button
+          type="button"
+          className={cn(btn.link, "self-start")}
+          onClick={onScanNext}
+        >
           {copy.notThem}
         </button>
       </section>
@@ -495,14 +545,25 @@ function HackerStep({
           <Check aria-hidden className="size-6" strokeWidth={2.5} />
         </span>
         <div className="min-w-0">
-          <StepHeading headingRef={headingRef}>{metCopy.onList(hacker.firstName)}</StepHeading>
+          <StepHeading headingRef={headingRef}>
+            {metCopy.onList(hacker.firstName)}
+          </StepHeading>
         </div>
       </div>
-      <p className="m-0 text-sm">{live ? metCopy.invitedFirstLive : metCopy.invitedFirst}</p>
+      <p className="m-0 text-sm">
+        {live ? metCopy.invitedFirstLive : metCopy.invitedFirst}
+      </p>
       {reps.length > 0 && (
-        <div role="group" aria-labelledby="scan-who" className="flex flex-col gap-2 border-t border-dashboard-border-subtle pt-3.5">
+        <div
+          role="group"
+          aria-labelledby="scan-who"
+          className="flex flex-col gap-2 border-t border-dashboard-border-subtle pt-3.5"
+        >
           <h3 id="scan-who" className="m-0 text-base font-semibold">
-            {metCopy.metLegend} <span className="font-medium text-dashboard-text-light">{metCopy.optional}</span>
+            {metCopy.metLegend}{" "}
+            <span className="font-medium text-dashboard-text-light">
+              {metCopy.optional}
+            </span>
           </h3>
           <div className="flex flex-col gap-2">
             {reps.map((r) => {
@@ -516,17 +577,27 @@ function HackerStep({
                   onClick={() => {
                     const next = on ? null : r.id;
                     setRepId(next);
-                    record.mutate({ sponsor, userId: hacker.userId, repId: next });
+                    record.mutate({
+                      sponsor,
+                      userId: hacker.userId,
+                      repId: next,
+                    });
                   }}
                   className={cn(
                     "flex min-h-14 items-center gap-3 rounded-dashboard-lg border px-3 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
                     on
                       ? "border-2 border-dashboard-action-primary bg-dashboard-bg-highlight"
-                      : cn("border-dashboard-border-control bg-dashboard-bg-surface", hoverTint),
+                      : cn(
+                          "border-dashboard-border-control bg-dashboard-bg-surface",
+                          hoverTint,
+                        ),
                     pressable,
                   )}
                 >
-                  <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-inset text-xs font-bold text-dashboard-text-medium">
+                  <span
+                    aria-hidden
+                    className="flex size-9 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-inset text-xs font-bold text-dashboard-text-medium"
+                  >
                     {initials(r.name)}
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col">
@@ -539,7 +610,9 @@ function HackerStep({
                     aria-hidden
                     className={cn(
                       "flex size-6 shrink-0 items-center justify-center rounded-full border-2",
-                      on ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse" : "border-dashboard-border-control",
+                      on
+                        ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
+                        : "border-dashboard-border-control",
                     )}
                   >
                     {on && <Check className="size-3.5" strokeWidth={3} />}
@@ -550,7 +623,11 @@ function HackerStep({
           </div>
         </div>
       )}
-      <button type="button" className={cn(btn.primary, "w-full")} onClick={onScanNext}>
+      <button
+        type="button"
+        className={cn(btn.primary, "w-full")}
+        onClick={onScanNext}
+      >
         <ScanLine aria-hidden />
         {copy.scanNext}
       </button>

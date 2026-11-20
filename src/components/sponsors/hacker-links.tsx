@@ -6,7 +6,11 @@ import {
   Link as LinkIcon,
   Linkedin,
 } from "lucide-react";
-import { DevpostLogo, GitHubLogo, LinkedInLogo } from "~/components/sponsors/brand-icons";
+import {
+  DevpostLogo,
+  GitHubLogo,
+  LinkedInLogo,
+} from "~/components/sponsors/brand-icons";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorHackersCopy as copy } from "~/content/sponsor-hackers";
 import { cn } from "~/lib/utils";
@@ -36,11 +40,36 @@ export type HackerLinkFields = {
 /** The icon version (mock sponsor-chats-v3): LinkedIn, GitHub and Devpost
  * as their logos in brand colour, Résumé and Website as line icons. */
 const ICONS = [
-  { key: "resume", label: copy.links.resumeIcon, icon: <FileText className="size-5" strokeWidth={1.8} />, tone: "text-dashboard-text-link" },
-  { key: "linkedIn", label: copy.links.linkedIn, icon: <LinkedInLogo className="size-5" />, tone: "text-dashboard-brand-linkedin" },
-  { key: "github", label: copy.links.github, icon: <GitHubLogo className="size-5" />, tone: "text-dashboard-brand-github" },
-  { key: "extraLink", label: copy.links.extraIcon, icon: <Globe className="size-5" strokeWidth={1.8} />, tone: "text-dashboard-text-link" },
-  { key: "devpost", label: copy.links.devpost, icon: <DevpostLogo className="size-5" />, tone: "text-dashboard-brand-devpost" },
+  {
+    key: "resume",
+    label: copy.links.resumeIcon,
+    icon: <FileText className="size-5" strokeWidth={1.8} />,
+    tone: "text-dashboard-text-link",
+  },
+  {
+    key: "linkedIn",
+    label: copy.links.linkedIn,
+    icon: <LinkedInLogo className="size-5" />,
+    tone: "text-dashboard-brand-linkedin",
+  },
+  {
+    key: "github",
+    label: copy.links.github,
+    icon: <GitHubLogo className="size-5" />,
+    tone: "text-dashboard-brand-github",
+  },
+  {
+    key: "extraLink",
+    label: copy.links.extraIcon,
+    icon: <Globe className="size-5" strokeWidth={1.8} />,
+    tone: "text-dashboard-text-link",
+  },
+  {
+    key: "devpost",
+    label: copy.links.devpost,
+    icon: <DevpostLogo className="size-5" />,
+    tone: "text-dashboard-brand-devpost",
+  },
 ] as const;
 
 export function HackerLinks({
@@ -60,7 +89,10 @@ export function HackerLinks({
     });
     if (shown.length === 0) return null;
     return (
-      <ul aria-label={copy.links.label(name)} className="m-0 flex list-none flex-wrap gap-2 p-0">
+      <ul
+        aria-label={copy.links.label(name)}
+        className="m-0 flex list-none flex-wrap gap-2 p-0"
+      >
         {shown.map((l) => (
           <li key={l.key}>
             <a

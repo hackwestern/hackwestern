@@ -92,9 +92,12 @@ export function Note({
       id={id}
       className={cn(
         "flex items-start gap-2.5 rounded-dashboard-lg px-3.5 py-3 text-sm [&>svg]:mt-px [&>svg]:size-[18px] [&>svg]:shrink-0",
-        tone === "plain" && "bg-dashboard-bg-inset text-dashboard-text-medium [&>svg]:text-dashboard-text-light",
-        tone === "warn" && "bg-dashboard-notice-cautionBg text-dashboard-text-warning",
-        tone === "ok" && "bg-dashboard-notice-okBg text-dashboard-notice-okText",
+        tone === "plain" &&
+          "bg-dashboard-bg-inset text-dashboard-text-medium [&>svg]:text-dashboard-text-light",
+        tone === "warn" &&
+          "bg-dashboard-notice-cautionBg text-dashboard-text-warning",
+        tone === "ok" &&
+          "bg-dashboard-notice-okBg text-dashboard-notice-okText",
         tone === "strong" &&
           "border-l-4 border-dashboard-border-task bg-dashboard-notice-cautionBg text-[15px] text-dashboard-text-heavy [&>svg]:text-dashboard-text-warning",
         className,
@@ -119,7 +122,8 @@ export const chip = (pressed: boolean) =>
 
 /** A segmented switch (the mock's .seg2): the frame, then each button. */
 export const seg = {
-  frame: "grid auto-cols-fr grid-flow-col gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1",
+  frame:
+    "grid auto-cols-fr grid-flow-col gap-1 rounded-dashboard-lg bg-dashboard-bg-nav p-1",
   button: (pressed: boolean) =>
     cn(
       "min-h-11 min-w-0 rounded-dashboard-md px-1.5 text-[15px] font-semibold",

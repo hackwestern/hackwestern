@@ -1,7 +1,11 @@
 import { describe, expect, test } from "vitest";
 
 import { SPONSOR_PRIZE_TRACKS } from "~/content/sponsor-prize-tracks";
-import { hasPrizeTrack, prizeTrackOf, sponsorNameKey } from "./sponsor-prize-tracks";
+import {
+  hasPrizeTrack,
+  prizeTrackOf,
+  sponsorNameKey,
+} from "./sponsor-prize-tracks";
 
 describe("prize tracks", () => {
   test("the list Jazz gave", () => {

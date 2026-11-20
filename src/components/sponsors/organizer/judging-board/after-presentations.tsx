@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
-import { Card, CardHead } from "~/components/sponsors/organizer/coffee-sessions/parts";
+import {
+  Card,
+  CardHead,
+} from "~/components/sponsors/organizer/coffee-sessions/parts";
 import { sponsorJudgingBoardCopy } from "~/content/sponsor-judging-board";
 import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
 import { formatSubmittedTime } from "~/lib/sponsor-scoring";

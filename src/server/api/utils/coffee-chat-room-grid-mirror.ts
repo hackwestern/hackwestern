@@ -43,7 +43,11 @@ const STEP = 15;
 const HEAD_ROWS = 4;
 const TIME_ROWS = (LAST - FIRST) / STEP + 1;
 /** Organizer bookings: Sheets' "light grey 2" (#d9d9d9). */
-export const BOOKING_GREY = { red: 217 / 255, green: 217 / 255, blue: 217 / 255 };
+export const BOOKING_GREY = {
+  red: 217 / 255,
+  green: 217 / 255,
+  blue: 217 / 255,
+};
 
 const clock = (min: number) =>
   formatClock(`${Math.floor(min / 60)}:${String(min % 60).padStart(2, "0")}`);
@@ -76,9 +80,13 @@ const rowOf = (min: number) => HEAD_ROWS + (min - FIRST) / STEP;
  */
 export function roomGridBlocks(state: GridState): GridBlock[] {
   const blocks: GridBlock[] = [];
-  const colOf = (room: string) => 1 + COFFEE_ROOMS.findIndex((r) => r.id === room);
+  const colOf = (room: string) =>
+    1 + COFFEE_ROOMS.findIndex((r) => r.id === room);
   const sessionOf = (id: string) => COFFEE_SESSIONS.find((s) => s.id === id);
-  const span = (w: UsableWindow) => ({ startRow: rowOf(w.start), endRow: rowOf(w.end) });
+  const span = (w: UsableWindow) => ({
+    startRow: rowOf(w.start),
+    endRow: rowOf(w.end),
+  });
   for (const sp of state.sponsors) {
     const format = coffeeSessionsCopy.detail.format(sp);
     for (const rep of sp.reps) {
@@ -99,7 +107,12 @@ export function roomGridBlocks(state: GridState): GridBlock[] {
           kind: "chat",
           col: colOf(p.room),
           ...span(w),
-          text: sheetCopy.chat(sp.name, rep.name, format, counts.get(p.sessionId) ?? 0),
+          text: sheetCopy.chat(
+            sp.name,
+            rep.name,
+            format,
+            counts.get(p.sessionId) ?? 0,
+          ),
         });
       }
     }
@@ -107,19 +120,32 @@ export function roomGridBlocks(state: GridState): GridBlock[] {
   for (const b of state.bookings) {
     const s = sessionOf(b.sessionId);
     if (!s || colOf(b.room) < 1) continue;
-    blocks.push({ kind: "booking", col: colOf(b.room), ...span(s), text: sheetCopy.booking(b.label) });
+    blocks.push({
+      kind: "booking",
+      col: colOf(b.room),
+      ...span(s),
+      text: sheetCopy.booking(b.label),
+    });
   }
   return blocks;
 }
 
 /** The whole tab as rows from A1. Pure: tests build it from a board state. */
 export function roomGridRows(state: GridState, writtenAt: Date): string[][] {
-  const pad = (row: string[]) => [...row, ...Array<string>(Math.max(0, WIDTH - row.length)).fill("")];
+  const pad = (row: string[]) => [
+    ...row,
+    ...Array<string>(Math.max(0, WIDTH - row.length)).fill(""),
+  ];
   const nearCount = COFFEE_ROOMS.filter((r) => r.building === "near").length;
   const rows: string[][] = [
     [sheetCopy.note, sheetCopy.updated(stamp(writtenAt))],
     [],
-    ["", sheetCopy.nearHeader, ...Array<string>(nearCount - 1).fill(""), sheetCopy.iveyHeader],
+    [
+      "",
+      sheetCopy.nearHeader,
+      ...Array<string>(nearCount - 1).fill(""),
+      sheetCopy.iveyHeader,
+    ],
     [sheetCopy.time, ...COFFEE_ROOMS.map((r) => sheetCopy.rm(r.id))],
   ];
   for (let t = FIRST; t <= LAST; t += STEP) rows.push([clock(t)]);
@@ -135,7 +161,10 @@ export function roomGridRows(state: GridState, writtenAt: Date): string[][] {
  * organizer bookings. Pure: unit-tested, never run against the live sheet
  * from dev or tests.
  */
-export function roomGridRequests(state: GridState, sheetId: number): sheets_v4.Schema$Request[] {
+export function roomGridRequests(
+  state: GridState,
+  sheetId: number,
+): sheets_v4.Schema$Request[] {
   const grid = {
     sheetId,
     startRowIndex: HEAD_ROWS,
@@ -157,22 +186,31 @@ export function roomGridRequests(state: GridState, sheetId: number): sheets_v4.S
       // backgroundColor is in the field mask but not the cell: Sheets clears it.
       repeatCell: {
         range: grid,
-        cell: { userEnteredFormat: { wrapStrategy: "WRAP", verticalAlignment: "TOP" } },
-        fields: "userEnteredFormat(backgroundColor,wrapStrategy,verticalAlignment)",
+        cell: {
+          userEnteredFormat: { wrapStrategy: "WRAP", verticalAlignment: "TOP" },
+        },
+        fields:
+          "userEnteredFormat(backgroundColor,wrapStrategy,verticalAlignment)",
       },
     },
     ...blocks
       .filter((b) => b.endRow - b.startRow > 1)
-      .map((b): sheets_v4.Schema$Request => ({ mergeCells: { range: rangeOf(b), mergeType: "MERGE_ALL" } })),
+      .map(
+        (b): sheets_v4.Schema$Request => ({
+          mergeCells: { range: rangeOf(b), mergeType: "MERGE_ALL" },
+        }),
+      ),
     ...blocks
       .filter((b) => b.kind === "booking")
-      .map((b): sheets_v4.Schema$Request => ({
-        repeatCell: {
-          range: rangeOf(b),
-          cell: { userEnteredFormat: { backgroundColor: BOOKING_GREY } },
-          fields: "userEnteredFormat.backgroundColor",
-        },
-      })),
+      .map(
+        (b): sheets_v4.Schema$Request => ({
+          repeatCell: {
+            range: rangeOf(b),
+            cell: { userEnteredFormat: { backgroundColor: BOOKING_GREY } },
+            fields: "userEnteredFormat.backgroundColor",
+          },
+        }),
+      ),
   ];
 }
 
@@ -203,7 +241,9 @@ export async function googleRoomGridSheet(): Promise<RoomGridSheet> {
         spreadsheetId,
         fields: "sheets(properties(sheetId,title))",
       });
-      const tab = (res.data.sheets ?? []).find((s) => s.properties?.title === title);
+      const tab = (res.data.sheets ?? []).find(
+        (s) => s.properties?.title === title,
+      );
       return tab?.properties?.sheetId ?? null;
     },
     async addTab(title) {
@@ -214,7 +254,8 @@ export async function googleRoomGridSheet(): Promise<RoomGridSheet> {
       // Never fall back to 0: that's the first tab, and the formatting
       // would land on the live RUN OF SHOW.
       const id = res.data.replies?.[0]?.addSheet?.properties?.sheetId;
-      if (typeof id !== "number") throw new Error(`addSheet returned no sheetId for "${title}"`);
+      if (typeof id !== "number")
+        throw new Error(`addSheet returned no sheetId for "${title}"`);
       return id;
     },
     async write(range, values) {
@@ -226,7 +267,10 @@ export async function googleRoomGridSheet(): Promise<RoomGridSheet> {
       });
     },
     async batchUpdate(requests) {
-      await sheets.spreadsheets.batchUpdate({ spreadsheetId, requestBody: { requests } });
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: { requests },
+      });
     },
   };
 }
@@ -247,7 +291,9 @@ export async function mirrorRoomGrid(
     const rows = roomGridRows(state, deps.now ?? new Date());
     const write = (async () => {
       const sheet = await (deps.sheet ?? googleRoomGridSheet)();
-      const id = (await sheet.sheetId(ROOM_GRID_TAB)) ?? (await sheet.addTab(ROOM_GRID_TAB));
+      const id =
+        (await sheet.sheetId(ROOM_GRID_TAB)) ??
+        (await sheet.addTab(ROOM_GRID_TAB));
       await sheet.write(`'${ROOM_GRID_TAB}'!A1`, rows);
       await sheet.batchUpdate(roomGridRequests(state, id));
       return rows.length;
@@ -256,7 +302,10 @@ export async function mirrorRoomGrid(
     const n = await Promise.race([
       write,
       new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new Error(`timed out after ${TIMEOUT_MS} ms`)), TIMEOUT_MS);
+        timer = setTimeout(
+          () => reject(new Error(`timed out after ${TIMEOUT_MS} ms`)),
+          TIMEOUT_MS,
+        );
       }),
     ]);
     return { ok: true, rows: n };

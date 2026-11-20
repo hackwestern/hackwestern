@@ -189,9 +189,9 @@ export function roomCellSpans(table: RoomTable): number[][] {
  * The sponsor strip above the room table: every sponsor in the view, those
  * with room blocks first, then set up (a sheet window), then by name.
  */
-export function sponsorStrip<S extends RoomBoardSponsor>(
-  board: { sponsors: readonly S[] },
-): S[] {
+export function sponsorStrip<S extends RoomBoardSponsor>(board: {
+  sponsors: readonly S[];
+}): S[] {
   return [...board.sponsors].sort(
     (a, b) =>
       Number(b.blockMinutes > 0) - Number(a.blockMinutes > 0) ||

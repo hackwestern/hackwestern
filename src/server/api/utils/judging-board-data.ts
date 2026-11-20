@@ -56,9 +56,7 @@ async function boardSponsors() {
     .orderBy(sponsorJudgingSponsors.name);
   return {
     registered,
-    sponsors: registered.filter(
-      (s) => judgesOnBoard(s.name, prizeTracks),
-    ),
+    sponsors: registered.filter((s) => judgesOnBoard(s.name, prizeTracks)),
   };
 }
 
@@ -201,14 +199,12 @@ export async function loadJudgingBoard() {
         ).size,
         topInAt: finalOf.get(s.id)?.submittedAt ?? null,
         firstStart: starts.length > 0 ? Math.min(...starts) : null,
-        reps: orderReps(reps.filter((r) => r.sponsorId === s.id)).map(
-          (r) => ({
-            id: r.id,
-            name: r.name,
-            phone: r.phone,
-            isPrimary: r.isPrimary,
-          }),
-        ),
+        reps: orderReps(reps.filter((r) => r.sponsorId === s.id)).map((r) => ({
+          id: r.id,
+          name: r.name,
+          phone: r.phone,
+          isPrimary: r.isPrimary,
+        })),
       };
     }),
     slots: placed
@@ -402,7 +398,10 @@ export async function setJudgingRoom(input: {
     if (holder && (!input.swap || !mine)) {
       throw new TRPCError({
         code: "CONFLICT",
-        message: copy.room.takenError(roomOf.get(holder.id) ?? room, holder.name),
+        message: copy.room.takenError(
+          roomOf.get(holder.id) ?? room,
+          holder.name,
+        ),
       });
     }
     const ids = holder ? [me.id, holder.id] : [me.id];
@@ -419,10 +418,12 @@ export async function setJudgingRoom(input: {
         .delete(sponsorJudgingRooms)
         .where(inArray(sponsorJudgingRooms.sponsorId, stale));
     }
-    await tx.insert(sponsorJudgingRooms).values([
-      { sponsorId: me.id, room },
-      ...(holder && mine ? [{ sponsorId: holder.id, room: mine }] : []),
-    ]);
+    await tx
+      .insert(sponsorJudgingRooms)
+      .values([
+        { sponsorId: me.id, room },
+        ...(holder && mine ? [{ sponsorId: holder.id, room: mine }] : []),
+      ]);
     return { room, swappedWith: holder?.name ?? null };
   });
   if (!(await rebuildPresentationScheduleQuietly())) {
