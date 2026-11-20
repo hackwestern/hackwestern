@@ -165,9 +165,11 @@ const EventLogistics = () => {
 
   return (
     <div className="flex h-full flex-row gap-12 pr-2 font-figtree">
+      {/* Always reserve the scrollbar's space so Prev/Next don't jump when a
+          longer page adds a scrollbar */}
       <div
         ref={scrollRef}
-        className="flex min-w-0 max-w-[717px] flex-1 flex-col overflow-auto pb-16"
+        className="flex min-w-0 max-w-[717px] flex-1 flex-col overflow-auto pb-16 [scrollbar-gutter:stable]"
       >
         {/* Stays pinned while the page content scrolls underneath */}
         <div className="sticky top-0 z-10 flex flex-col gap-[18px] border-b border-dashboard-border-default bg-dashboard-bg-page pb-[18px]">

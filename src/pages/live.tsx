@@ -20,7 +20,6 @@ import { db } from "~/server/db";
 import { formatTitle } from "~/utils/format";
 import { SCHEDULE_ENABLED } from "~/constants/live";
 import { liveAccessRedirect } from "~/lib/live-access";
-import { disabledRedirect } from "~/utils/redirect";
 
 const Live = ({ isOrganizer }: { isOrganizer: boolean }) => {
   const searchParams = useSearchParams();
@@ -100,10 +99,6 @@ export default Live;
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
-  // Closed on production until the live site launches; previews stay open.
-  const disabled = await disabledRedirect();
-  if ("redirect" in disabled) return disabled;
-
   // Organizers and admitted hackers only. Navigation between tabs is shallow,
   // so this only runs on a full page load.
   const session = await getServerSession(context.req, context.res, authOptions);

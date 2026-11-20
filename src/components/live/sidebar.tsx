@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
-import { SearchAutocomplete } from "../internals/search-autocomplete";
 import { Button } from "../ui/button";
 import { SectionLink, SectionGroup, IconlessLink } from "./navlinks";
 import * as tokens from "~/lib/tokens";
@@ -14,7 +13,6 @@ export const SidebarNav = ({
   isOrganizer?: boolean;
 }) => (
   <div className="flex flex-col gap-9">
-    <SearchAutocomplete options={[]} placeholder="Search" />
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1.5">
         <SectionLink tab="home" name="Home" />
@@ -39,7 +37,6 @@ export const SidebarNav = ({
             <SectionLink tab="rewards" name="Rewards" />
           </SectionGroup>
         )}
-        {isOrganizer && <SectionLink tab="activities" name="Activities" />}
         {isOrganizer && (
           <SectionLink tab="judge" name="Judging" href="/judge" />
         )}
