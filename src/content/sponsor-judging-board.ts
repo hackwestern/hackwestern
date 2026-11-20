@@ -132,8 +132,9 @@ export const sponsorJudgingBoardCopy = {
     close: "Close",
     devpost: (team: string) => `${team} on Devpost`,
     github: (team: string) => `${team} on GitHub`,
+    /** Check-in, not the team accepting its times (that's the status pill). */
     confirmed: (n: number, of: number) =>
-      `Confirmed: ${n} of ${of} ${of === 1 ? "member" : "members"} checked in`,
+      `Checked in: ${n} of ${of} ${of === 1 ? "member" : "members"}`,
     noneConfirmed: "No one from this team has checked in",
     presentsTo: "Presents to",
     slot: (time: string, room: string) => `${time} · ${room}`,

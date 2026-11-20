@@ -186,7 +186,7 @@ export function JudgingBoard() {
           formatPresentationTime(PRESENTATION_WINDOW_END),
         )}
       </p>
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
         <div className="flex min-w-0 flex-col gap-4">
           <TodoCard
             board={board}
@@ -411,7 +411,9 @@ function Todo({
           <span className="text-base text-dashboard-text-task">
             {t.textLead(lead.name)}
           </span>
-          <PhoneCopy name={lead.name} phone={lead.phone} />
+          <span className="whitespace-nowrap">
+            <PhoneCopy name={lead.name} phone={lead.phone} />
+          </span>
           <a
             href={smsHref(lead.phone, sms)}
             onClick={onTexted}
@@ -563,14 +565,8 @@ function SponsorRow({
           >
             {LINE_TEXT(line, top)}
           </span>
-          {lead && (
-            <span className="flex flex-wrap items-center gap-x-1.5 text-sm text-dashboard-text-light">
-              {s.headRep}: {lead.name}
-              <PhoneCopy name={lead.name} phone={lead.phone} />
-            </span>
-          )}
         </div>
-        <div className="w-full sm:w-44 sm:shrink-0">
+        <div className="w-full sm:w-40 sm:shrink-0">
           {sponsor.mode === "remote" ? (
             <span className="block pt-1.5 text-sm text-dashboard-text-medium sm:text-right">
               {s.remote}
@@ -580,6 +576,13 @@ function SponsorRow({
           )}
         </div>
       </div>
+      {/* The head rep's number on every row (Jazz, 2026-11-19). */}
+      {lead && (
+        <span className="-mt-2 flex flex-wrap items-center gap-x-1.5 whitespace-nowrap pl-9 text-sm text-dashboard-text-light">
+          {s.headRep}: {lead.name}
+          <PhoneCopy name={lead.name} phone={lead.phone} />
+        </span>
+      )}
       {open && (
         <div id={detailsId} className="flex flex-col gap-1 pl-9">
           <h4 className="m-0 text-xs font-bold uppercase tracking-wider text-dashboard-text-medium">

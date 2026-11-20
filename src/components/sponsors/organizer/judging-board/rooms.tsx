@@ -314,7 +314,9 @@ function Calendar({
 
   return (
     // Scrolls sideways inside the card on phones; the page never does.
-    <div className="-mx-1 overflow-x-auto px-1 pb-1">
+    // `relative` keeps the cells' sr-only labels (absolutely placed)
+    // inside the scroll box, so they can't widen the page.
+    <div className="relative -mx-1 overflow-x-auto px-1 pb-1">
       <table className="w-full min-w-[34rem] table-fixed border-separate border-spacing-1.5">
         <caption className="sr-only">{copy.tableLabel}</caption>
         <thead>
