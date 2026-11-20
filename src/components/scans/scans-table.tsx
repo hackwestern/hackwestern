@@ -8,7 +8,8 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search } from "lucide-react";
+import { DashboardButton } from "~/components/internals/dashboard-button";
 import { cn } from "~/lib/utils";
 
 export type ScanRow = {
@@ -64,9 +65,18 @@ type SearchProps =
   | { search: string; onSearchChange: (value: string) => void }
   | { search?: undefined; onSearchChange?: undefined };
 
+export interface ScansPagination {
+  page: number;
+  pageCount: number;
+  total: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+}
+
 type ScansTableProps = {
   scans: ScanRow[];
   isLoading?: boolean;
+  pagination?: ScansPagination;
 } & FilterProps &
   SearchProps;
 
@@ -78,6 +88,7 @@ export function ScansTable({
   onFilterChange,
   search,
   onSearchChange,
+  pagination,
 }: ScansTableProps) {
   const showFilters =
     filters !== undefined && filters.length > 0 && onFilterChange !== undefined;
@@ -184,6 +195,37 @@ export function ScansTable({
             </TableBody>
           </Table>
         </div>
+      )}
+
+      {pagination && pagination.total > 0 && (
+        <nav
+          aria-label="Scans pages"
+          className="flex items-center justify-between gap-4"
+        >
+          <DashboardButton
+            variant="secondary"
+            aria-label="Previous page"
+            disabled={pagination.page <= 1}
+            onClick={() => pagination.onPageChange(pagination.page - 1)}
+          >
+            <ArrowLeft />
+            Prev
+          </DashboardButton>
+          <span className="text-sm font-medium text-dashboard-text-light">
+            {(pagination.page - 1) * pagination.pageSize + 1}–
+            {Math.min(pagination.page * pagination.pageSize, pagination.total)}{" "}
+            of {pagination.total}
+          </span>
+          <DashboardButton
+            variant="secondary"
+            aria-label="Next page"
+            disabled={pagination.page >= pagination.pageCount}
+            onClick={() => pagination.onPageChange(pagination.page + 1)}
+          >
+            Next
+            <ArrowRight />
+          </DashboardButton>
+        </nav>
       )}
     </div>
   );

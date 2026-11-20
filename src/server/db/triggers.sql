@@ -1,10 +1,11 @@
 -- Judging triggers.
 --
 -- Drizzle's schema DSL can't express triggers, so they live here. This file
--- is the source of truth: it is applied by the production migration
--- (drizzle/0013_apply_judging_triggers.sql) AND by the Vitest harness (see
--- src/server/db/triggers.ts -> applyTriggers), so the tests exercise the real
--- triggers rather than a mock.
+-- is the source of truth: it is applied by the production migrations
+-- (drizzle/0013_apply_judging_triggers.sql, 0038 for the scavenger hunt
+-- refund trigger, and 0039 for the table status triggers below) AND by the
+-- Vitest harness (see src/server/db/triggers.ts -> applyTriggers), so the
+-- tests exercise the real triggers rather than a mock.
 --
 -- If you change anything below, add a new custom migration carrying the same
 -- DDL (`npx drizzle-kit generate --custom`) — editing this file alone only
@@ -69,26 +70,118 @@ CREATE TRIGGER trg_team_mark_stats
 AFTER INSERT OR UPDATE OR DELETE ON "team_mark"
 FOR EACH ROW EXECUTE FUNCTION judging_sync_judge_stats();
 
--- 2. Auto-queue: when a mark lands, advance the team's queue accounting and
---    remove it from the queue once it has been seen by enough judges. This is
---    the "auto queue" functional requirement, enforced in the database.
-CREATE OR REPLACE FUNCTION judging_autoqueue_on_mark() RETURNS trigger AS $$
+-- 2. Retired: the auto-queue trigger. Judging now runs on fixed table
+--    sections (judging_assignment), so drop it wherever it still exists.
+DROP TRIGGER IF EXISTS trg_team_mark_autoqueue ON "team_mark";
+DROP FUNCTION IF EXISTS judging_autoqueue_on_mark();
+
+-- 3. Scavenger hunt points: when a scan is deleted, take its item's points back
+--    off the hacker's earned and balance totals. recordScan adds the points in
+--    application code when a scan is inserted. The balance can go below zero.
+--    Win scans refund the item's win_points, attendance scans its points.
+CREATE OR REPLACE FUNCTION scavenger_hunt_refund_scan_points() RETURNS trigger AS $$
 BEGIN
-  UPDATE "judging_queue" SET
-    seen_judges      = seen_judges + 1,
-    rounds_remaining = rounds_remaining - 1,
-    current_judge_id = NULL,
-    status           = 'waiting'
-  WHERE team_id = NEW.team_id;
-
-  DELETE FROM "judging_queue"
-  WHERE team_id = NEW.team_id AND rounds_remaining <= 0;
-
-  RETURN NEW;
+  UPDATE "user" u SET
+    scavenger_hunt_earned = COALESCE(u.scavenger_hunt_earned, 0) - p.points,
+    scavenger_hunt_balance = COALESCE(u.scavenger_hunt_balance, 0) - p.points
+  FROM (
+    SELECT CASE WHEN OLD.activity_type = 'win' THEN COALESCE(i.win_points, 0) ELSE i.points END AS points
+    FROM scavenger_hunt_item i
+    WHERE i.id = OLD.item_id
+  ) p
+  WHERE u.id = OLD.user_id;
+  RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_team_mark_autoqueue ON "team_mark";
-CREATE TRIGGER trg_team_mark_autoqueue
-AFTER INSERT ON "team_mark"
-FOR EACH ROW EXECUTE FUNCTION judging_autoqueue_on_mark();
+DROP TRIGGER IF EXISTS trg_scavenger_hunt_scan_refund ON "scavenger_hunt_scan";
+CREATE TRIGGER trg_scavenger_hunt_scan_refund
+AFTER DELETE ON "scavenger_hunt_scan"
+FOR EACH ROW EXECUTE FUNCTION scavenger_hunt_refund_scan_points();
+
+-- 4. Live table status: keep judging_table.status in step with who is seated
+--    and where each judge's stops stand. Rules, first match wins:
+--      empty         no team seated at the table
+--      being_judged  a stop at the table is in progress
+--      waiting       a stop is still assigned, or the table has no live stops
+--      finished      every live stop is done or team_absent
+--    Only writes (and bumps status_updated_at) when the status changes.
+CREATE OR REPLACE FUNCTION judging_refresh_table_status(p_table_id integer)
+RETURNS void AS $$
+DECLARE
+  next_status judging_table_status;
+BEGIN
+  IF p_table_id IS NULL THEN
+    RETURN;
+  END IF;
+
+  -- Serialize recalculations for this table. Two judges changing stops at the
+  -- same table at once would otherwise each compute from their own snapshot
+  -- and the last write could be stale. After the lock, the SELECT below sees
+  -- whatever the other transaction committed.
+  PERFORM 1 FROM "judging_table" WHERE id = p_table_id FOR UPDATE;
+
+  SELECT CASE
+    WHEN NOT EXISTS (
+      SELECT 1 FROM "team" t WHERE t.judging_table_id = p_table_id
+    ) THEN 'empty'
+    WHEN EXISTS (
+      SELECT 1 FROM "judging_assignment" a
+      WHERE a.judging_table_id = p_table_id AND a.status = 'in_progress'
+    ) THEN 'being_judged'
+    WHEN EXISTS (
+      SELECT 1 FROM "judging_assignment" a
+      WHERE a.judging_table_id = p_table_id AND a.status = 'assigned'
+    ) OR NOT EXISTS (
+      SELECT 1 FROM "judging_assignment" a
+      WHERE a.judging_table_id = p_table_id AND a.status <> 'cancelled'
+    ) THEN 'waiting'
+    ELSE 'finished'
+  END::judging_table_status
+  INTO next_status;
+
+  UPDATE "judging_table"
+  SET status = next_status, status_updated_at = now()
+  WHERE id = p_table_id AND status IS DISTINCT FROM next_status;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION judging_assignment_refresh_table() RETURNS trigger AS $$
+BEGIN
+  IF (TG_OP = 'INSERT') THEN
+    PERFORM judging_refresh_table_status(NEW.judging_table_id);
+  ELSIF (TG_OP = 'DELETE') THEN
+    PERFORM judging_refresh_table_status(OLD.judging_table_id);
+  ELSE
+    PERFORM judging_refresh_table_status(OLD.judging_table_id);
+    IF NEW.judging_table_id IS DISTINCT FROM OLD.judging_table_id THEN
+      PERFORM judging_refresh_table_status(NEW.judging_table_id);
+    END IF;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_judging_assignment_table_status ON "judging_assignment";
+CREATE TRIGGER trg_judging_assignment_table_status
+AFTER INSERT OR UPDATE OR DELETE ON "judging_assignment"
+FOR EACH ROW EXECUTE FUNCTION judging_assignment_refresh_table();
+
+CREATE OR REPLACE FUNCTION judging_team_refresh_table() RETURNS trigger AS $$
+BEGIN
+  IF (TG_OP = 'INSERT') THEN
+    PERFORM judging_refresh_table_status(NEW.judging_table_id);
+  ELSIF (TG_OP = 'DELETE') THEN
+    PERFORM judging_refresh_table_status(OLD.judging_table_id);
+  ELSIF NEW.judging_table_id IS DISTINCT FROM OLD.judging_table_id THEN
+    PERFORM judging_refresh_table_status(OLD.judging_table_id);
+    PERFORM judging_refresh_table_status(NEW.judging_table_id);
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_team_judging_table_status ON "team";
+CREATE TRIGGER trg_team_judging_table_status
+AFTER INSERT OR DELETE OR UPDATE OF judging_table_id ON "team"
+FOR EACH ROW EXECUTE FUNCTION judging_team_refresh_table();

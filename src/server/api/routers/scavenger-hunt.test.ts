@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { db } from "~/server/db";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -24,13 +24,16 @@ import { getOrCreateHackerId } from "~/server/api/utils/hacker-id";
 // ---- helpers ----
 const insertTestItem = async (
   overrides: Partial<typeof scavengerHuntItems.$inferInsert> = {},
-  code = `123456789012`,
+  name = `123456789012`, // Names must be unique among items that are not deleted
 ) => {
   const [item] = await db
     .insert(scavengerHuntItems)
     .values({
-      code: code,
+      name,
       points: 25,
+      type: "activity",
+      startsAt: new Date("2026-11-21T14:00:00Z"),
+      endsAt: new Date("2026-11-21T15:00:00Z"),
       ...overrides,
     })
     .returning();
@@ -71,9 +74,9 @@ await db.insert(applications).values({
 
 // Tests
 describe("scavengerHuntRouter basic endpoints", () => {
-  // getScavengerHuntItem tests
+  // getScavengerHuntItemById tests
   let item: Awaited<ReturnType<typeof insertTestItem>>; // declare outside so tests can use it
-  describe("getScavengerHuntItem", () => {
+  describe("getScavengerHuntItemById", () => {
     beforeEach(async () => {
       item = await insertTestItem();
     });
@@ -86,16 +89,23 @@ describe("scavengerHuntRouter basic endpoints", () => {
     });
 
     test("returns inserted item", async () => {
-      const result = await caller.scavengerHunt.getScavengerHuntItem({
-        code: item.code,
-      });
+      const result =
+        await organizerCaller.scavengerHunt.getScavengerHuntItemById({
+          id: item.id,
+        });
 
       expect(result.id).toBe(item.id);
     });
 
-    test("throws error if code not found", async () => {
+    test("hackers can't read items", async () => {
       await expect(
-        caller.scavengerHunt.getScavengerHuntItem({ code: "nonexistent" }),
+        caller.scavengerHunt.getScavengerHuntItemById({ id: item.id }),
+      ).rejects.toThrow(TRPCError);
+    });
+
+    test("throws error if id not found", async () => {
+      await expect(
+        organizerCaller.scavengerHunt.getScavengerHuntItemById({ id: -1 }),
       ).rejects.toThrow();
     });
 
@@ -107,7 +117,9 @@ describe("scavengerHuntRouter basic endpoints", () => {
 
       // Should throw error when trying to get soft-deleted item
       try {
-        (await caller.scavengerHunt.getScavengerHuntItem({ code: item.code }),
+        (await organizerCaller.scavengerHunt.getScavengerHuntItemById({
+          id: item.id,
+        }),
           expect.fail("Route should return a TRPCError"));
       } catch (err) {
         expect(err).toBeInstanceOf(TRPCError);
@@ -122,11 +134,11 @@ describe("scavengerHuntRouter basic endpoints", () => {
   describe("getAllScavengerHuntItems", () => {
     afterEach(async () => {
       // Clean up test items
-      const testCodes = ["GETALL-001", "GETALL-002", "GETALL-003"];
-      for (const code of testCodes) {
+      const testNames = ["GETALL-001", "GETALL-002", "GETALL-003"];
+      for (const name of testNames) {
         await db
           .delete(scavengerHuntItems)
-          .where(eq(scavengerHuntItems.code, code));
+          .where(eq(scavengerHuntItems.name, name));
       }
     });
 
@@ -137,36 +149,27 @@ describe("scavengerHuntRouter basic endpoints", () => {
 
     test("returns all non-deleted items", async () => {
       // Create multiple test items
-      const item1 = await insertTestItem(
-        { code: "GETALL-001", points: 10 },
-        "GETALL-001",
-      );
-      const item2 = await insertTestItem(
-        { code: "GETALL-002", points: 20 },
-        "GETALL-002",
-      );
-      const item3 = await insertTestItem(
-        { code: "GETALL-003", points: 30 },
-        "GETALL-003",
-      );
+      const item1 = await insertTestItem({ points: 10 }, "GETALL-001");
+      const item2 = await insertTestItem({ points: 20 }, "GETALL-002");
+      const item3 = await insertTestItem({ points: 30 }, "GETALL-003");
 
       const result = await caller.scavengerHunt.getAllScavengerHuntItems();
 
       expect(result.length).toBeGreaterThanOrEqual(3);
-      const resultCodes = result.map((item) => item.code);
-      expect(resultCodes).toContain(item1.code);
-      expect(resultCodes).toContain(item2.code);
-      expect(resultCodes).toContain(item3.code);
+      const resultNames = result.map((item) => item.name);
+      expect(resultNames).toContain(item1.name);
+      expect(resultNames).toContain(item2.name);
+      expect(resultNames).toContain(item3.name);
     });
 
     /*test("excludes soft-deleted items", async () => {
       // Create items
       const activeItem = await insertTestItem(
-        { code: "GETALL-001", points: 10 },
+        { points: 10 },
         "GETALL-001",
       );
       const deletedItem = await insertTestItem(
-        { code: "GETALL-002", points: 20 },
+        { points: 20 },
         "GETALL-002",
       );
 
@@ -179,16 +182,13 @@ describe("scavengerHuntRouter basic endpoints", () => {
       const result = await caller.scavengerHunt.getAllScavengerHuntItems();
 
       // Should only return the active item
-      const resultCodes = result.map((item) => item.code);
-      expect(resultCodes).toContain(activeItem.code);
-      expect(resultCodes).not.toContain(deletedItem.code);
+      const resultNames = result.map((item) => item.name);
+      expect(resultNames).toContain(activeItem.name);
+      expect(resultNames).not.toContain(deletedItem.name);
     });*/
 
     test("works without authentication (public procedure)", async () => {
-      const item = await insertTestItem(
-        { code: "GETALL-001", points: 10 },
-        "GETALL-001",
-      );
+      const item = await insertTestItem({ points: 10 }, "GETALL-001");
 
       // Create unauthenticated caller
       const unauthenticatedCtx = createInnerTRPCContext({ session: null });
@@ -198,23 +198,19 @@ describe("scavengerHuntRouter basic endpoints", () => {
         await unauthenticatedCaller.scavengerHunt.getAllScavengerHuntItems();
 
       expect(result.length).toBeGreaterThanOrEqual(1);
-      const resultCodes = result.map((i) => i.code);
-      expect(resultCodes).toContain(item.code);
+      const resultNames = result.map((i) => i.name);
+      expect(resultNames).toContain(item.name);
     });
 
     test("returns items with correct structure", async () => {
-      const item = await insertTestItem(
-        { code: "GETALL-001", points: 25, description: "Test item" },
-        "GETALL-001",
-      );
+      const item = await insertTestItem({ points: 25 }, "GETALL-001");
 
       const result = await caller.scavengerHunt.getAllScavengerHuntItems();
 
       const foundItem = result.find((i) => i.id === item.id);
       expect(foundItem).toBeDefined();
-      expect(foundItem?.code).toBe(item.code);
       expect(foundItem?.points).toBe(25);
-      expect(foundItem?.description).toBe("Test item");
+      expect(foundItem?.name).toBe("GETALL-001");
       expect(foundItem?.deletedAt).toBeNull();
     });
   });
@@ -226,22 +222,22 @@ describe("scavengerHuntRouter basic endpoints", () => {
       // Create a fresh item for each test to avoid state pollution
       testItem = await insertTestItem({}, faker.string.alphanumeric(12));
 
+      // Clean up any existing scans for this user (first, because deleting a scan refunds its points)
+      await db
+        .delete(scavengerHuntScans)
+        .where(eq(scavengerHuntScans.userId, session.user.id));
+
       // Reset user's scavenger hunt balance and points
       await db
         .update(users)
         .set({ scavengerHuntBalance: 0, scavengerHuntEarned: 0 })
         .where(eq(users.id, session.user.id));
-
-      // Clean up any existing scans for this user
-      await db
-        .delete(scavengerHuntScans)
-        .where(eq(scavengerHuntScans.userId, session.user.id));
     });
 
     test("successfully scans and awards points", async () => {
       const scanResult = await organizerCaller.scavengerHunt.scan({
         userId: session.user.id,
-        itemCode: testItem.code,
+        itemId: testItem.id,
       });
       expect(scanResult.success).toBe(true);
 
@@ -264,7 +260,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
       const hackerId = await getOrCreateHackerId(session.user.id);
       const scanResult = await organizerCaller.scavengerHunt.scan({
         userId: hackerId,
-        itemCode: testItem.code,
+        itemId: testItem.id,
       });
       expect(scanResult.success).toBe(true);
 
@@ -280,7 +276,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
     test("throws error if scanning same item twice", async () => {
       const firstScanResult = await organizerCaller.scavengerHunt.scan({
         userId: session.user.id,
-        itemCode: testItem.code,
+        itemId: testItem.id,
       });
       expect(firstScanResult.success).toBe(true);
       expect(firstScanResult.message).toBe("Item scanned successfully");
@@ -288,7 +284,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
       try {
         await organizerCaller.scavengerHunt.scan({
           userId: session.user.id,
-          itemCode: testItem.code,
+          itemId: testItem.id,
         });
 
         // If we get here, the test should fail because the function should throw an error
@@ -312,7 +308,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
       try {
         await caller.scavengerHunt.scan({
           userId: session.user.id,
-          itemCode: testItem.code,
+          itemId: testItem.id,
         });
 
         // If we get here, the test should fail because the function should throw an error
@@ -329,7 +325,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
       try {
         await organizerCaller.scavengerHunt.scan({
           userId: session.user.id,
-          itemCode: "nonexistent-code",
+          itemId: -1,
         });
         expect.fail("Route should return a TRPCError");
       } catch (err) {
@@ -350,7 +346,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
       try {
         await organizerCaller.scavengerHunt.scan({
           userId: session.user.id,
-          itemCode: testItem.code,
+          itemId: testItem.id,
         });
         expect.fail("Route should return a TRPCError");
       } catch (err) {
@@ -370,7 +366,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
 
       const scanResult = await organizerCaller.scavengerHunt.scan({
         userId: session.user.id,
-        itemCode: testItem.code,
+        itemId: testItem.id,
       });
       expect(scanResult.success).toBe(true);
     });
@@ -380,7 +376,7 @@ describe("scavengerHuntRouter basic endpoints", () => {
       try {
         await organizerCaller.scavengerHunt.scan({
           userId: nonExistentUserId,
-          itemCode: testItem.code,
+          itemId: testItem.id,
         });
         expect.fail("Route should return a TRPCError");
       } catch (err) {
@@ -467,6 +463,94 @@ describe("scavengerHuntRouter basic endpoints", () => {
         expect(trpcErr.code).toBe("NOT_FOUND");
         expect(trpcErr.message).toBe("User not found");
       }
+    });
+  });
+
+  describe("getLeaderboard", () => {
+    const insertUser = async (
+      earned: number,
+      status: (typeof applications.$inferInsert)["status"],
+      type: "hacker" | "organizer" = "hacker",
+    ) => {
+      const id = faker.string.uuid();
+      await db.insert(users).values({
+        id,
+        email: faker.internet.email(),
+        type,
+        scavengerHuntEarned: earned,
+      });
+      await db.insert(applications).values({
+        ...ApplicationSeeder.createRandomWithoutUser(),
+        userId: id,
+        status,
+      });
+      return id;
+    };
+
+    let fixtureIds: string[] = [];
+    let top: string, tieA: string, tieB: string, zero: string;
+    let unapproved: string, organizer: string;
+
+    beforeEach(async () => {
+      top = await insertUser(1_000_001, "CONFIRMED");
+      tieA = await insertUser(1_000_000, "CONFIRMED");
+      tieB = await insertUser(1_000_000, "CONFIRMED");
+      zero = await insertUser(0, "CONFIRMED");
+      unapproved = await insertUser(2_000_000, "REJECTED");
+      organizer = await insertUser(3_000_000, "CONFIRMED", "organizer");
+      fixtureIds = [top, tieA, tieB, zero, unapproved, organizer];
+    });
+
+    afterEach(async () => {
+      await db.delete(users).where(inArray(users.id, fixtureIds));
+    });
+
+    test("returns the top N hackers by earned points, ties sorted by id", async () => {
+      const leaderboard = await organizerCaller.scavengerHunt.getLeaderboard({
+        limit: 3,
+      });
+      expect(leaderboard.map((u) => u.id)).toEqual([
+        top,
+        ...[tieA, tieB].sort(),
+      ]);
+    });
+
+    test("includes 0-point hackers and excludes non-approved hackers and non-hackers", async () => {
+      const leaderboard = await organizerCaller.scavengerHunt.getLeaderboard({
+        limit: 100_000,
+      });
+      const ids = leaderboard.map((u) => u.id);
+      expect(ids).toContain(zero);
+      expect(ids).not.toContain(unapproved);
+      expect(ids).not.toContain(organizer);
+    });
+
+    test("uses the application name when the account has no name", async () => {
+      const id = faker.string.uuid();
+      fixtureIds.push(id);
+      await db.insert(users).values({
+        id,
+        email: faker.internet.email(),
+        type: "hacker",
+        scavengerHuntEarned: 4_000_000,
+      });
+      await db.insert(applications).values({
+        ...ApplicationSeeder.createRandomWithoutUser(),
+        userId: id,
+        status: "CONFIRMED",
+        firstName: "Ada",
+        lastName: "Lovelace",
+      });
+      const leaderboard = await organizerCaller.scavengerHunt.getLeaderboard({
+        limit: 100_000,
+      });
+      expect(leaderboard.find((u) => u.id === id)?.name).toBe("Ada Lovelace");
+    });
+
+    test("throws error if user is not an organizer", async () => {
+      await expect(
+        caller.scavengerHunt.getLeaderboard({ limit: 10 }),
+      ).rejects.toThrow("User is not an organizer");
     });
   });
 });
@@ -863,8 +947,9 @@ describe("scavengerHuntRouter scan endpoints", () => {
     });
 
     test("returns empty array when no scans exist", async () => {
-      const scans = await organizerCaller.scavengerHunt.getAllScans({});
-      expect(scans).toEqual([]);
+      const result = await organizerCaller.scavengerHunt.getAllScans({});
+      expect(result.scans).toEqual([]);
+      expect(result.total).toBe(0);
     });
 
     test("throws error if user is not an organizer", async () => {
@@ -922,14 +1007,16 @@ describe("scavengerHuntRouter scan endpoints", () => {
       expect(deletedItem?.deletedAt).toBeInstanceOf(Date);
     });
 
-    test("soft-deleted item cannot be retrieved via getScavengerHuntItem", async () => {
+    test("soft-deleted item cannot be retrieved via getScavengerHuntItemById", async () => {
       await organizerCaller.scavengerHunt.deleteScavengerHuntItem({
         itemId: testItem.id,
       });
 
       // Should throw error when trying to get soft-deleted item
       await expect(
-        caller.scavengerHunt.getScavengerHuntItem({ code: testItem.code }),
+        organizerCaller.scavengerHunt.getScavengerHuntItemById({
+          id: testItem.id,
+        }),
       ).rejects.toThrow();
     });
 
@@ -946,7 +1033,7 @@ describe("scavengerHuntRouter scan endpoints", () => {
       try {
         await organizerCaller.scavengerHunt.scan({
           userId: testUser.user.id,
-          itemCode: testItem.code,
+          itemId: testItem.id,
         });
         expect.fail("Route should return a TRPCError");
       } catch (err) {
@@ -971,7 +1058,7 @@ describe("scavengerHuntRouter scan endpoints", () => {
       // Scan the item first
       await organizerCaller.scavengerHunt.scan({
         userId: testUser.user.id,
-        itemCode: testItem.code,
+        itemId: testItem.id,
       });
 
       // Verify scan exists
@@ -1033,4 +1120,30 @@ describe("scavengerHuntRouter scan endpoints", () => {
       ).rejects.toThrow();
     });
   });
+});
+
+describe("scavengerHuntRouter item status", () => {
+  afterEach(async () => {
+    await db
+      .delete(scavengerHuntItems)
+      .where(eq(scavengerHuntItems.name, "STATUS-TEST"));
+  });
+
+  test.each(["draft", "disabled"] as const)(
+    "%s items are hidden from the scanner and can't be scanned",
+    async (status) => {
+      const item = await insertTestItem({ status }, "STATUS-TEST");
+      const scannable = await caller.scavengerHunt.getAllScavengerHuntItems();
+      expect(scannable.map((i) => i.id)).not.toContain(item.id);
+      await expect(
+        organizerCaller.scavengerHunt.getScavengerHuntItemById({ id: item.id }),
+      ).rejects.toThrow("Item not found");
+      await expect(
+        organizerCaller.scavengerHunt.scan({
+          userId: session.user.id,
+          itemId: item.id,
+        }),
+      ).rejects.toThrow("can't be scanned");
+    },
+  );
 });

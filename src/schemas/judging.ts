@@ -1,52 +1,105 @@
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { CRITERION_IDS, type CriterionId } from "~/lib/judging-criteria";
 import { judgeTypeEnum, judges, trackEnum } from "~/server/db/schema";
 
+// Scores are 0-10, the judge app's rubric range.
 export const SCORE_MIN = 0;
 export const SCORE_MAX = 10;
 
-export type ScoreBreakdown = {
-  /** 0–10 slider value (half steps) per rubric criterion id, e.g. { technical: 7.5 }. */
-  ratings: Record<string, number>;
-  notes?: string | null;
-  /** The judge's "super like" for this team. */
-  superLike?: boolean;
-};
+const ratingSchema = z.number().min(SCORE_MIN).max(SCORE_MAX).multipleOf(0.5);
 
+/**
+ * The rubric a judge sends with a mark. Each criterion is stored in its own
+ * team_mark column, so only the criteria in CRITERION_IDS are accepted.
+ */
 export const scoreBreakdownSchema = z.object({
-  ratings: z.record(
-    z.string().max(64),
-    z.number().min(SCORE_MIN).max(SCORE_MAX).multipleOf(0.5),
-  ),
-  notes: z.string().max(2000).optional(),
+  ratings: z
+    .object(
+      Object.fromEntries(
+        CRITERION_IDS.map((id) => [id, ratingSchema.optional()]),
+      ) as Record<CriterionId, z.ZodOptional<typeof ratingSchema>>,
+    )
+    .strict(),
+  notes: z.string().max(2000).nullish(),
   superLike: z.boolean().optional(),
 });
 
+/** What a judge sends with a mark: ratings by criterion id, notes, super like. */
+export type ScoreBreakdown = z.infer<typeof scoreBreakdownSchema>;
+
+const score = z.number().min(SCORE_MIN).max(SCORE_MAX);
+const assignmentId = z.number().int().positive();
+const tableId = z.number().int().positive();
+const teamId = z.string().min(1);
+const judgeId = z.string().min(1);
+
 // judge inputs
-export const submitTeamMarkSchema = z.object({
-  teamId: z.string().min(1),
-  score: z.number().min(SCORE_MIN).max(SCORE_MAX),
+export const assignmentIdSchema = z.object({ assignmentId });
+
+// The team the judge's screen showed (null for an empty table). Optional, but
+// when sent, a stale screen can't mark a newly seated team absent.
+export const reportAbsentSchema = z.object({
+  assignmentId,
+  teamId: z.string().min(1).nullable().optional(),
+});
+
+// `teamId` is the team the judge's screen showed for this stop. The engine
+// refuses if a different team is seated there now (e.g. after a swap).
+export const startStopSchema = z.object({ assignmentId, teamId });
+
+export const submitStopSchema = z.object({
+  assignmentId,
+  teamId,
+  score,
   breakdown: scoreBreakdownSchema.optional(),
 });
 
 export const editTeamMarkSchema = z.object({
   teamMarkId: z.number().int().positive(),
-  score: z.number().min(SCORE_MIN).max(SCORE_MAX),
+  score,
   breakdown: scoreBreakdownSchema.optional(),
 });
 
-// organizer inputs
-export const loadQueueSchema = z
-  .object({
-    roundsPerTeam: z.number().int().min(1).max(20).default(3),
-  })
-  .default({ roundsPerTeam: 3 });
-
-export const assignJudgeForTeamSchema = z.object({
-  judgeId: z.string().min(1),
-  teamId: z.string().min(1),
+// organizer inputs: room setup, seating, assignment
+export const setupTablesSchema = z.object({
+  tableCount: z.number().int().min(1).max(500),
+  rows: z.number().int().min(1).max(100),
+  judgesPerTable: z.number().int().min(1).max(10).optional(),
+  zone: z.string().trim().min(1).max(64).optional(),
 });
+export type SetupTablesInput = z.infer<typeof setupTablesSchema>;
+
+export const setTableActiveSchema = z.object({
+  tableId,
+  isActive: z.boolean(),
+});
+
+export const seatTeamsSchema = z
+  .object({
+    // Random by default; false seats in submission order.
+    random: z.boolean().default(true),
+  })
+  .default({ random: true });
+
+export const swapTeamsSchema = z
+  .object({ teamAId: teamId, teamBId: teamId })
+  .refine((v) => v.teamAId !== v.teamBId, {
+    message: "Pick two different teams.",
+    path: ["teamBId"],
+  });
+
+export const moveTeamSchema = z.object({ teamId, tableId });
+
+export const handOffJudgeSchema = z
+  .object({ fromJudgeId: judgeId, toJudgeId: judgeId })
+  .refine((v) => v.fromJudgeId !== v.toJudgeId, {
+    message: "Pick a different judge to hand off to.",
+    path: ["toJudgeId"],
+  });
+
+export const addJudgeToTableSchema = z.object({ judgeId, tableId });
 
 // `id` is the user id being promoted to a judge. Stats columns are
 // server-derived, so they're omitted. `track` needs the array override
@@ -60,6 +113,7 @@ export const addJudgeSchema = createInsertSchema(judges, {
     marksCount: true,
     marksSum: true,
     marksSquaredSum: true,
+    createdAt: true,
   })
   .refine((v) => v.type !== "sponsored" || (v.track?.length ?? 0) > 0, {
     message: "Sponsored judges must have at least one track.",

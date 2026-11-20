@@ -6,4 +6,4 @@ Search for and join sponsor channels if you’d like to learn more about a spons
 # 🛜 Internet Connection  
 If you are a Western Student, please use **uwosecure-v2**. 
 
-If you are not a Western student, please use **HackWestern25**. The password for the network is **h@ck2025!**. You may also set up wifi using the **eduroam** network. Instructions here: <https://wts.uwo.ca/hdi/wireless.html>. If you have any difficulties, come to the help desk!
+If you are not a Western student, please use **Hack Western 13**. The password for the network is **hack2026!**. You may also set up wifi using the **eduroam** network. Instructions here: <https://wts.uwo.ca/hdi/wireless.html>. If you have any difficulties, come to the help desk!

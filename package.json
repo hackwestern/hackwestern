@@ -16,13 +16,16 @@
     "db:migrate": "tsx ./src/server/db/migrate.ts",
     "db:seed": "dotenv tsx ./src/server/db/seed/index.ts",
     "seed:judging": "dotenv -- tsx ./src/server/db/seed/judging.ts",
-    "judging:driver": "dotenv -- tsx ./scripts/judging-driver.ts",
-    "judging:warmup": "dotenv -- tsx ./scripts/judging-warmup.ts",
     "dev": "next dev --turbopack",
     "dev:prod": "dotenv -e .env.prod next dev --turbopack",
     "lint": "next lint",
     "scan": "next dev --turbopack && npx react-scan@latest localhost:3000",
-    "start": "next start"
+    "start": "next start",
+    "load-tester:generate-app-json": "tsx scripts/generate-app-map.ts",
+    "load-tester:dev": "npx wrangler dev -c workers/hw-network-requests/wrangler.toml --env-file \"$PWD/.env\"",
+    "load-tester:migrate:new": "npx wrangler d1 migrations create hw-network-requests -c workers/hw-network-requests/wrangler.toml",
+    "load-tester:migrate": "npx wrangler d1 migrations apply hw-network-requests -c workers/hw-network-requests/wrangler.toml --local",
+    "load-tester:studio": "drizzle-kit studio --config workers/hw-network-requests/studio.config.ts"
   },
   "dependencies": {
     "@auth/core": "^0.34.2",
@@ -54,6 +57,7 @@
     "@trpc/react-query": "next",
     "@trpc/server": "next",
     "@types/bcrypt": "^5.0.2",
+    "@vercel/functions": "^3.11.1",
     "@vercel/speed-insights": "^1.2.0",
     "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",
@@ -94,6 +98,7 @@
   "devDependencies": {
     "@clack/prompts": "^0.7.0",
     "@faker-js/faker": "^8.4.1",
+    "@libsql/client": "^0.18.0",
     "@types/eslint": "^8.56.2",
     "@types/formidable": "^3.4.5",
     "@types/node": "^20.11.20",
@@ -116,9 +121,11 @@
     "prettier": "^3.2.5",
     "prettier-plugin-tailwindcss": "^0.5.11",
     "tailwindcss": "^3.4.1",
+    "ts-morph": "^28.0.0",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
-    "vitest": "^3.0.9"
+    "vitest": "^3.0.9",
+    "zod-to-json-schema": "^3.25.2"
   },
   "ct3aMetadata": {
     "initVersion": "7.30.1"

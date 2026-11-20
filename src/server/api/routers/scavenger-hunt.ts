@@ -1,5 +1,18 @@
 import { alias } from "drizzle-orm/pg-core";
-import { eq, and, sql, or, isNull, gt, desc } from "drizzle-orm";
+import {
+  eq,
+  ne,
+  and,
+  sql,
+  or,
+  isNull,
+  isNotNull,
+  gt,
+  desc,
+  ilike,
+  count,
+  inArray,
+} from "drizzle-orm";
 import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -16,10 +29,13 @@ import {
   users,
   scavengerHuntRewards,
   scavengerHuntRedemptions,
+  scavengerHuntActivityType,
+  applications,
 } from "~/server/db/schema";
 import { TRPCError } from "@trpc/server";
 import { isUserApprovedForEvent } from "~/server/api/utils/approval";
 import { resolveScannedUserId } from "~/server/api/utils/hacker-id";
+import { admittedStatuses } from "~/lib/admission";
 
 // Helper function to handle TRPC errors consistently
 const withErrorHandling = async <T>(
@@ -115,25 +131,15 @@ const _getUserScans = async (userId: string) => {
 };
 
 // * Helper Functions *
-// (anyone can use this function) Gets the scavenger hunt item while keeping in mind soft-deletion
-const getScavengerHuntItemByItemCode = async (itemCode: string) => {
-  const now = new Date();
+// A future deletedAt is a scheduled close
+const notDeleted = () =>
+  or(
+    isNull(scavengerHuntItems.deletedAt),
+    gt(scavengerHuntItems.deletedAt, new Date()),
+  );
 
-  const item = await db.query.scavengerHuntItems.findFirst({
-    where: and(
-      eq(scavengerHuntItems.code, itemCode),
-      or(
-        isNull(scavengerHuntItems.deletedAt),
-        gt(scavengerHuntItems.deletedAt, now),
-      ),
-    ),
-  });
-  if (!item) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
-  }
-
-  return item;
-};
+// Scannable: not deleted and not a draft or disabled
+const isOpen = () => and(eq(scavengerHuntItems.status, "active"), notDeleted());
 
 // * Safe Functions: Check is done within the transaction to avoid race conditions */
 const redeemPrize = async (
@@ -213,14 +219,16 @@ const recordScan = async (
   scannerId: string,
   points: number,
   itemId: number,
+  activityType: ActivityType = "attendance",
 ) => {
   return withErrorHandling(async () => {
     await db.transaction(async (tx) => {
-      // Check if user has already scanned this item
+      // Check if user has already scanned this item for this activity type (a hacker can attend and win the same activity)
       const scan = await tx.query.scavengerHuntScans.findFirst({
         where: and(
           eq(scavengerHuntScans.userId, userId),
           eq(scavengerHuntScans.itemId, itemId),
+          eq(scavengerHuntScans.activityType, activityType),
         ),
       });
       if (scan) {
@@ -238,17 +246,28 @@ const recordScan = async (
         userId: userId,
         itemId: itemId,
         scannerId: scannerId,
+        activityType,
       });
     });
   }, "Failed to add points");
 };
+
+const FILTER_TYPES = {
+  meals: "meal",
+  workshops: "workshop",
+  sponsor_workshops: "sponsor_workshop",
+  bonus: "bonus",
+} as const;
+
+type ActivityType = (typeof scavengerHuntActivityType.enumValues)[number];
 
 export const scavengerHuntRouter = createTRPCRouter({
   // Get All Scavenger Hunt Items
   getAllScavengerHuntItems: publicProcedure.query(async () => {
     try {
       const items = await db.query.scavengerHuntItems.findMany({
-        orderBy: (items, { asc }) => [asc(items.code)],
+        where: isOpen(),
+        orderBy: (items, { asc }) => [asc(items.name)],
       });
 
       return items;
@@ -305,24 +324,14 @@ export const scavengerHuntRouter = createTRPCRouter({
       }
     }),
 
-  // Get Scavenger Hunt Item by Code
-  getScavengerHuntItem: publicProcedure
-    .input(z.object({ code: z.string() }))
-    .query(async ({ input }) => {
-      return withErrorHandling(async () => {
-        const { code } = input;
-        return await getScavengerHuntItemByItemCode(code);
-      }, "Failed to fetch item");
-    }),
-
   // Get Scavenger Hunt Item by ID
-  getScavengerHuntItemById: publicProcedure
+  getScavengerHuntItemById: protectedOrganizerProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       try {
         const { id } = input;
         const item = await db.query.scavengerHuntItems.findFirst({
-          where: eq(scavengerHuntItems.id, id),
+          where: and(eq(scavengerHuntItems.id, id), isOpen()),
         });
 
         if (!item) {
@@ -331,6 +340,7 @@ export const scavengerHuntRouter = createTRPCRouter({
 
         return item;
       } catch (error) {
+        if (error instanceof TRPCError) throw error;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to fetch item: " + JSON.stringify(error),
@@ -343,40 +353,29 @@ export const scavengerHuntRouter = createTRPCRouter({
     .input(
       z.object({
         userId: z.string(),
-        itemId: z.number().optional(),
-        itemCode: z.string().optional(),
+        itemId: z.number(),
+        activityType: z.enum(scavengerHuntActivityType.enumValues).optional(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
       try {
-        const { itemId, itemCode } = input;
+        const { itemId } = input;
         const userId = await resolveScannedUserId(input.userId);
         const scannerId = ctx.session.user.id; // Get the organizer who is scanning
 
-        // Check if item exists - prefer itemId over itemCode. Deleted items
-        // can't be scanned; a future deletedAt is a scheduled close.
-        const isOpen = or(
-          isNull(scavengerHuntItems.deletedAt),
-          gt(scavengerHuntItems.deletedAt, new Date()),
-        );
-        let item;
-        if (itemId) {
-          item = await db.query.scavengerHuntItems.findFirst({
-            where: and(eq(scavengerHuntItems.id, itemId), isOpen),
-          });
-        } else if (itemCode) {
-          item = await db.query.scavengerHuntItems.findFirst({
-            where: and(eq(scavengerHuntItems.code, itemCode), isOpen),
-          });
-        } else {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Either itemId or itemCode must be provided",
-          });
-        }
+        // Deleted items can't be scanned; a future deletedAt is a scheduled close.
+        const item = await db.query.scavengerHuntItems.findFirst({
+          where: and(eq(scavengerHuntItems.id, itemId), notDeleted()),
+        });
 
         if (!item) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Item not found" });
+        }
+        if (item.status !== "active") {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `This activity is ${item.status === "draft" ? "a draft" : "disabled"} and can't be scanned`,
+          });
         }
 
         // Check if user exists
@@ -400,7 +399,16 @@ export const scavengerHuntRouter = createTRPCRouter({
         }
 
         // Record the scan with scanner ID
-        await recordScan(userId, scannerId, item.points, item.id);
+        const activityType = input.activityType ?? "attendance";
+        if (activityType === "win" && item.winPoints === null) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "This activity can't be won",
+          });
+        }
+        const points =
+          activityType === "win" ? (item.winPoints ?? 0) : item.points;
+        await recordScan(userId, scannerId, points, item.id, activityType);
         return {
           success: true,
           message: "Item scanned successfully",
@@ -445,6 +453,31 @@ export const scavengerHuntRouter = createTRPCRouter({
 
       // Get points for requestedUserId
       return await getUserPoints(requestedUserId);
+    }),
+
+  // All hackers in descending order of EARNED points
+  getLeaderboard: protectedOrganizerProcedure
+    .input(z.object({ limit: z.number().int().min(1) }))
+    .query(async ({ input }) => {
+      return await db
+        .select({
+          id: users.id,
+          // Email sign-ups have no users.name, so prefer the (required) application name
+          name: sql<
+            string | null
+          >`coalesce(nullif(concat_ws(' ', ${applications.firstName}, ${applications.lastName}), ''), ${users.name})`,
+          earned: users.scavengerHuntEarned,
+        })
+        .from(users)
+        .innerJoin(applications, eq(applications.userId, users.id))
+        .where(
+          and(
+            eq(users.type, "hacker"),
+            inArray(applications.status, [...admittedStatuses()]),
+          ),
+        )
+        .orderBy(sql`${users.scavengerHuntEarned} desc nulls last`, users.id)
+        .limit(input.limit);
     }),
 
   // Redeem a Reward (only accessible to users)
@@ -554,9 +587,11 @@ export const scavengerHuntRouter = createTRPCRouter({
         userId: scavengerHuntScans.userId,
         itemId: scavengerHuntScans.itemId,
         createdAt: scavengerHuntScans.createdAt,
-        itemCode: scavengerHuntItems.code,
-        itemDescription: scavengerHuntItems.description,
+        itemName: scavengerHuntItems.name,
         itemPoints: scavengerHuntItems.points,
+        itemWinPoints: scavengerHuntItems.winPoints,
+        itemType: scavengerHuntItems.type,
+        activityType: scavengerHuntScans.activityType,
       })
       .from(scavengerHuntScans)
       .innerJoin(
@@ -584,12 +619,14 @@ export const scavengerHuntRouter = createTRPCRouter({
 
     // Combine scans and redemptions into a unified list
     const scanEntries = scans.map((scan) => ({
-      id: `scan-${scan.userId}-${scan.itemId}`,
+      id: `scan-${scan.userId}-${scan.itemId}-${scan.activityType}`,
       type: "scan" as const,
       itemId: scan.itemId,
-      itemCode: scan.itemCode,
-      itemDescription: scan.itemDescription,
-      points: scan.itemPoints ?? 0,
+      itemType: scan.itemType,
+      itemName: scan.itemName,
+      points:
+        (scan.activityType === "win" ? scan.itemWinPoints : scan.itemPoints) ??
+        0,
       createdAt: scan.createdAt,
     }));
 
@@ -597,8 +634,8 @@ export const scavengerHuntRouter = createTRPCRouter({
       id: `redemption-${redemption.userId}-${redemption.rewardId}-${redemption.createdAt?.getTime()}`,
       type: "redemption" as const,
       rewardId: redemption.rewardId,
-      itemCode: null,
-      itemDescription:
+      itemType: null,
+      itemName:
         redemption.rewardName ?? redemption.rewardDescription ?? "Reward",
       points: -(redemption.costPoints ?? 0), // Negative points for redemptions
       createdAt: redemption.createdAt,
@@ -687,78 +724,102 @@ export const scavengerHuntRouter = createTRPCRouter({
           ])
           .optional()
           .default("all"),
+        search: z.string().trim().max(100).optional().default(""),
+        page: z.number().int().min(1).optional().default(1),
+        pageSize: z.number().int().min(1).max(100).optional().default(25),
       }),
     )
     .query(async ({ input }) => {
       try {
-        const { filter } = input;
+        const { filter, search, page, pageSize } = input;
 
         // Create alias for scanner user table
         const scannerUsers = alias(users, "scanner");
 
-        // Get all scans with user, item, and scanner info using joins
-        const allScans = await db
-          .select({
-            userId: scavengerHuntScans.userId,
-            itemId: scavengerHuntScans.itemId,
-            scannerId: scavengerHuntScans.scannerId,
-            createdAt: scavengerHuntScans.createdAt,
-            userName: users.name,
-            userEmail: users.email,
-            itemCode: scavengerHuntItems.code,
-            itemDescription: scavengerHuntItems.description,
-            scannerName: scannerUsers.name,
-            scannerEmail: scannerUsers.email,
-          })
-          .from(scavengerHuntScans)
-          .innerJoin(users, eq(scavengerHuntScans.userId, users.id))
-          .innerJoin(
-            scavengerHuntItems,
-            eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
-          )
-          .leftJoin(
-            scannerUsers,
-            eq(scavengerHuntScans.scannerId, scannerUsers.id),
-          )
-          .orderBy(desc(scavengerHuntScans.createdAt));
-
-        // Filter by category based on item code suffix
-        let filteredScans = allScans;
-        if (filter === "meals") {
-          filteredScans = allScans.filter((scan) =>
-            scan.itemCode?.endsWith("_meal"),
-          );
-        } else if (filter === "workshops") {
-          filteredScans = allScans.filter((scan) =>
-            scan.itemCode?.endsWith("_ws"),
-          );
-        } else if (filter === "sponsor_workshops") {
-          filteredScans = allScans.filter((scan) =>
-            scan.itemCode?.endsWith("_sw"),
-          );
-        } else if (filter === "activities") {
-          filteredScans = allScans.filter((scan) =>
-            scan.itemCode?.endsWith("_act"),
-          );
+        const conditions: SQL[] = [];
+        if (filter === "activities") {
+          conditions.push(ne(scavengerHuntItems.type, "meal"));
         } else if (filter === "attendance") {
-          filteredScans = allScans.filter((scan) =>
-            scan.itemCode?.endsWith("_att"),
+          conditions.push(
+            eq(scavengerHuntScans.activityType, "attendance"),
+            isNotNull(scavengerHuntItems.winPoints),
           );
         } else if (filter === "wins") {
-          filteredScans = allScans.filter((scan) =>
-            scan.itemCode?.endsWith("_win"),
-          );
-        } else if (filter === "bonus") {
-          filteredScans = allScans.filter((scan) =>
-            scan.itemCode?.endsWith("_bonus"),
+          conditions.push(eq(scavengerHuntScans.activityType, "win"));
+        } else if (filter !== "all") {
+          conditions.push(eq(scavengerHuntItems.type, FILTER_TYPES[filter]));
+        }
+        if (search) {
+          const pattern = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
+          conditions.push(
+            or(
+              ilike(users.name, pattern),
+              ilike(users.email, pattern),
+              ilike(scavengerHuntItems.name, pattern),
+              ilike(scannerUsers.name, pattern),
+            )!,
           );
         }
+        const where = conditions.length ? and(...conditions) : undefined;
+
+        // Get one page of scans with user, item, and scanner info using joins
+        const [pageScans, [totals]] = await Promise.all([
+          db
+            .select({
+              userId: scavengerHuntScans.userId,
+              itemId: scavengerHuntScans.itemId,
+              scannerId: scavengerHuntScans.scannerId,
+              createdAt: scavengerHuntScans.createdAt,
+              userName: users.name,
+              userEmail: users.email,
+              itemName: scavengerHuntItems.name,
+              itemType: scavengerHuntItems.type,
+              activityType: scavengerHuntScans.activityType,
+              scannerName: scannerUsers.name,
+              scannerEmail: scannerUsers.email,
+            })
+            .from(scavengerHuntScans)
+            .innerJoin(users, eq(scavengerHuntScans.userId, users.id))
+            .innerJoin(
+              scavengerHuntItems,
+              eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+            )
+            .leftJoin(
+              scannerUsers,
+              eq(scavengerHuntScans.scannerId, scannerUsers.id),
+            )
+            .where(where)
+            .orderBy(
+              desc(scavengerHuntScans.createdAt),
+              scavengerHuntScans.userId,
+              scavengerHuntScans.itemId,
+            )
+            .limit(pageSize)
+            .offset((page - 1) * pageSize),
+          db
+            .select({ total: count() })
+            .from(scavengerHuntScans)
+            .innerJoin(users, eq(scavengerHuntScans.userId, users.id))
+            .innerJoin(
+              scavengerHuntItems,
+              eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+            )
+            .leftJoin(
+              scannerUsers,
+              eq(scavengerHuntScans.scannerId, scannerUsers.id),
+            )
+            .where(where),
+        ]);
+
+        const total = totals?.total ?? 0;
 
         // Format the data for display
-        return filteredScans.map((scan) => ({
-          id: `${scan.userId}-${scan.itemId}`,
+        const scans = pageScans.map((scan) => ({
+          id: `${scan.userId}-${scan.itemId}-${scan.activityType}`,
           hackerName: scan.userName ?? scan.userEmail ?? scan.userId,
-          event: scan.itemDescription ?? scan.itemCode ?? "Unknown",
+          event: `${scan.itemName}${scan.activityType === "win" ? " (Win)" : ""}`,
+          type: scan.itemType,
+          activityType: scan.activityType,
           scanner:
             scan.scannerName ??
             scan.scannerEmail ??
@@ -779,6 +840,14 @@ export const scavengerHuntRouter = createTRPCRouter({
             : "N/A",
           createdAt: scan.createdAt,
         }));
+
+        return {
+          scans,
+          total,
+          page,
+          pageSize,
+          pageCount: Math.max(1, Math.ceil(total / pageSize)),
+        };
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",

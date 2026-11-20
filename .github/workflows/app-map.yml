@@ -1,0 +1,50 @@
+name: App map
+
+# Regenerates src/generated/app.json whenever main changes and commits it back
+# if the API surface changed.
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      # The bot's own commit; without this the workflow would retrigger itself.
+      - "src/generated/app.json"
+  workflow_dispatch:
+
+concurrency:
+  group: app-map
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  map:
+    # Also guards manual runs: only ever regenerate and commit on main.
+    if: github.ref == 'refs/heads/main'
+    # Pulls secrets.PAT from this environment first, then repo/org secrets.
+    environment: prettify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # PAT so the push can get past branch protection (same as prettier.yml).
+          token: ${{ secrets.PAT }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+      - name: Generate app map
+        run: npm run load-tester:generate-app-json
+      - name: Commit if changed
+        run: |
+          git config user.email 'app-map-hackwestern[bot]@users.noreply.github.com'
+          git config user.name 'app-map-hackwestern[bot]'
+          git add src/generated/app.json
+          if git diff --cached --quiet; then
+            echo "app.json unchanged"
+          else
+            git commit -m "chore: regenerate app.json [skip ci]"
+            git push
+          fi

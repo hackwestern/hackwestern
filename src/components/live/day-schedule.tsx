@@ -1,6 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { ParsedScheduleEvent } from "~/types/schedule";
 import { getTimeInMinutes } from "~/lib/schedule";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "~/components/ui/dialog";
 
 interface EventBlockProps {
   event: {
@@ -17,14 +23,16 @@ interface EventBlockProps {
     | "scavenger"
     | "other";
   height: number;
+  /** e.g. "Saturday · 2:30 PM – 3:30 PM", shown in the details dialog */
+  when: string;
 }
 
-const EventBlock = ({ event, type, height }: EventBlockProps) => {
+const EventBlock = ({ event, type, height, when }: EventBlockProps) => {
   const colorMap = {
     main: "bg-violet-300 border-violet-400",
     sponsor: "bg-pink-200 border-pink-300",
     workshop: "bg-yellow-200 border-yellow-300",
-    activity: "bg-green-200 border-green-300",
+    activity: "bg-emerald-200 border-emerald-300",
     food: "bg-blue-200 border-blue-300",
     booth: "bg-pink-100 border-pink-200",
     scavenger: "bg-orange-100 border-orange-200",
@@ -35,27 +43,92 @@ const EventBlock = ({ event, type, height }: EventBlockProps) => {
     main: "text-violet-900",
     sponsor: "text-pink-900",
     workshop: "text-yellow-900",
-    activity: "text-green-900",
+    activity: "text-emerald-900",
     food: "text-blue-900",
     booth: "text-pink-900",
     scavenger: "text-orange-900",
     other: "text-purple-900",
   };
 
+  const typeLabel = {
+    main: "Main event",
+    sponsor: "Sponsor workshop",
+    workshop: "Workshop",
+    activity: "Activity",
+    food: "Food",
+    booth: "Sponsor booth",
+    scavenger: "Scavenger hunt",
+    other: "Other",
+  };
+
+  // Long titles get cut to the lines that fit; clicking opens the full details
+  const blockRef = useRef<HTMLButtonElement>(null);
+  const titleRef = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const block = blockRef.current;
+    const title = titleRef.current;
+    if (!block || !title) return;
+    const fit = () => {
+      const style = getComputedStyle(block);
+      const location = title.nextElementSibling as HTMLElement | null;
+      const room =
+        block.clientHeight -
+        parseFloat(style.paddingTop) -
+        parseFloat(style.paddingBottom) -
+        (location ? location.offsetHeight + 2 : 0);
+      const lineHeight = parseFloat(getComputedStyle(title).lineHeight);
+      title.style.webkitLineClamp = String(
+        Math.max(1, Math.floor(room / lineHeight)),
+      );
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(block);
+    return () => observer.disconnect();
+  }, [height, event.title, event.location]);
+
   return (
-    <div
-      className={`rounded-lg border-2 p-1.5 sm:p-2.5 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 z-50 flex select-text flex-col justify-center shadow-sm transition-shadow hover:shadow-md`}
-      style={{ height: `${height}px` }}
-    >
-      <div className="select-text font-secondary text-[9px] font-semibold leading-tight sm:text-[11px]">
-        {event.title}
-      </div>
-      {event.location && (
-        <div className="mt-0.5 select-text font-secondary text-[8px] italic opacity-70 sm:text-[9px]">
-          {event.location}
+    <Dialog>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          ref={blockRef}
+          className={`rounded-lg border-2 p-1.5 text-left sm:px-2.5 lg:px-1.5 ${colorMap[type]} ${textColorMap[type]} absolute left-0 right-0 top-0 z-50 flex cursor-pointer flex-col justify-center overflow-hidden shadow-sm transition-shadow hover:shadow-md`}
+          style={{ height: `${height}px` }}
+        >
+          <span
+            ref={titleRef}
+            className="overflow-hidden break-words font-figtree text-[9px] font-semibold leading-tight [-webkit-box-orient:vertical] [display:-webkit-box] sm:text-[11px]"
+          >
+            {event.title}
+          </span>
+          {event.location && (
+            <span className="mt-0.5 block break-words font-figtree text-[8px] italic opacity-70 sm:text-[9px]">
+              {event.location}
+            </span>
+          )}
+        </button>
+      </DialogTrigger>
+      <DialogContent
+        aria-describedby={undefined}
+        className="w-[calc(100%-2rem)] max-w-sm rounded-xl border-dashboard-border-card bg-dashboard-bg-surface font-figtree"
+      >
+        <span
+          className={`w-fit rounded-full border px-2 py-0.5 text-xs font-medium ${colorMap[type]} ${textColorMap[type]}`}
+        >
+          {typeLabel[type]}
+        </span>
+        <DialogTitle className="whitespace-pre-line pr-6 text-xl leading-snug text-dashboard-text-heavy">
+          {event.title}
+        </DialogTitle>
+        <div className="space-y-1 text-sm text-dashboard-text-medium">
+          <p>{when}</p>
+          {event.location && (
+            <p className="whitespace-pre-line">{event.location}</p>
+          )}
         </div>
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -96,14 +169,14 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
     const currentDate = currentTime.getDate();
     const currentMonth = currentTime.getMonth(); // 0-indexed, November is 10
 
-    // November 21 = Friday, November 22 = Saturday, November 23 = Sunday
-    if (day === "Friday" && currentDate === 21 && currentMonth === 10) {
+    // November 20 = Friday, November 21 = Saturday, November 22 = Sunday
+    if (day === "Friday" && currentDate === 20 && currentMonth === 10) {
       return true;
     }
-    if (day === "Saturday" && currentDate === 22 && currentMonth === 10) {
+    if (day === "Saturday" && currentDate === 21 && currentMonth === 10) {
       return true;
     }
-    if (day === "Sunday" && currentDate === 23 && currentMonth === 10) {
+    if (day === "Sunday" && currentDate === 22 && currentMonth === 10) {
       return true;
     }
     return false;
@@ -234,6 +307,24 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
     return prevEvent?.title === currentEvent.title;
   };
 
+  // "Saturday · 2:30 PM – 3:30 PM" for the details dialog
+  const getEventTimes = (
+    startIdx: number,
+    eventKey: keyof ParsedScheduleEvent,
+  ): string => {
+    const titleAt = (i: number) =>
+      (timeSlots[i]?.[eventKey] as { title: string } | undefined)?.title;
+    let endIdx = startIdx;
+    while (titleAt(endIdx + 1) === titleAt(startIdx)) endIdx++;
+    const lastMinutes = getTimeInMinutes(timeSlots[endIdx]!.time) + 30;
+    const endTime =
+      timeSlots[endIdx + 1]?.time ??
+      (lastMinutes >= 1440
+        ? "midnight"
+        : `${Math.floor(lastMinutes / 60) % 12 || 12}:${String(lastMinutes % 60).padStart(2, "0")} ${lastMinutes >= 720 ? "PM" : "AM"}`);
+    return `${day} · ${timeSlots[startIdx]!.time} – ${endTime}`;
+  };
+
   // Helper function to calculate the height of a continuous event block
   const getEventHeight = (
     startIdx: number,
@@ -260,24 +351,27 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
         : currentMinutes + 30;
       const duration = nextMinutes - currentMinutes;
       const baseSlotHeight = 56; // must match baseSlotHeight in row rendering
-      const slotHeight = Math.max(
-        baseSlotHeight,
-        (duration / 30) * baseSlotHeight,
-      );
+      const rowGap = isDesktop ? 8 : 6; // space-y-1.5 sm:space-y-2
+      // Same as the rows: a gap over 2 hours is a 20px row plus a 40px "⋯" row
+      const isLargeGap = duration > 120;
+      const slotHeight = isLargeGap
+        ? 20
+        : Math.max(baseSlotHeight, (duration / 30) * baseSlotHeight);
 
-      totalHeight += slotHeight + 6; // 6px gap between rows (approx space-y-1.5)
+      totalHeight += slotHeight + rowGap;
+      if (isLargeGap) totalHeight += 40 + rowGap;
     }
 
-    return totalHeight - 6; // Remove last gap
+    return totalHeight - (isDesktop ? 8 : 6); // Remove last gap
   };
 
   return (
     <div className="w-full pb-3 sm:pb-4">
-      <div className="rounded-sm px-3 py-4 sm:p-6">
+      <div className="rounded-sm py-4 sm:py-6">
         {/* Header with day name */}
-        <div className="sticky left-0 mb-3 mt-1 font-secondary text-lg font-bold text-heavy sm:mb-4 sm:mt-2 sm:text-2xl">
+        <div className="sticky left-0 mb-3 mt-1 font-figtree text-lg font-bold text-dashboard-text-heavy sm:mb-4 sm:mt-2 sm:text-2xl">
           {day}, November{" "}
-          {day === "Friday" ? "21st" : day === "Saturday" ? "22nd" : "23rd"}
+          {day === "Friday" ? "20th" : day === "Saturday" ? "21st" : "22nd"}
         </div>
 
         {/* Timeline rows */}
@@ -292,7 +386,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
               }}
             >
               <div className="flex w-[80px] items-center justify-end pr-2">
-                <span className="font-jetbrains-mono bg-red-500 px-1.5 py-0.5 text-[8px] font-bold text-white sm:text-[10px]">
+                <span className="bg-red-500 px-1.5 py-0.5 font-figtree text-[8px] font-bold text-white sm:text-[10px]">
                   {formatCurrentTime()}
                 </span>
               </div>
@@ -337,7 +431,6 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
               { key: "scavengerHunt", type: "scavenger" },
               { key: "other", type: "other" },
               { key: "other2", type: "other" },
-              { key: "other3", type: "other" },
             ];
 
             // Group consecutive columns with the same event
@@ -398,11 +491,11 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                   className="grid gap-1.5 border-t border-gray-200 pt-1 sm:gap-2"
                   style={{
                     minHeight: `${height}px`,
-                    gridTemplateColumns: `60px repeat(11, 1fr)`,
+                    gridTemplateColumns: `60px repeat(10, 1fr)`,
                   }}
                 >
                   {/* Time label */}
-                  <div className="font-base flex items-start pt-1.5 font-secondary text-[10px] text-medium sm:pt-2 sm:text-xs">
+                  <div className="flex items-start pt-1.5 font-figtree text-[10px] font-medium text-dashboard-text-light sm:pt-2 sm:text-xs">
                     {event.time}
                   </div>
 
@@ -419,6 +512,7 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                             event={col.event}
                             type={col.type}
                             height={getEventHeight(idx, col.startKey)}
+                            when={getEventTimes(idx, col.startKey)}
                           />
                         )}
                     </div>
@@ -429,13 +523,13 @@ const DayScheduleView = ({ day, events }: DayScheduleProps) => {
                 {isLargeGap && (
                   <div
                     key={`gap-${idx}`}
-                    className="grid grid-cols-[60px_repeat(11,1fr)] gap-1.5 rounded-md border border-dashed border-gray-300 bg-gray-50 sm:gap-2"
+                    className="grid grid-cols-[60px_repeat(10,1fr)] gap-1.5 rounded-md border border-dashed border-gray-300 bg-gray-50 sm:gap-2"
                     style={{ minHeight: "40px" }}
                   >
-                    <div className="flex items-center justify-center text-xs font-medium text-gray-400">
+                    <div className="flex items-center justify-center font-figtree text-xs font-medium text-dashboard-text-light">
                       ⋯
                     </div>
-                    {Array(11)
+                    {Array(10)
                       .fill(null)
                       .map((_, colIdx) => (
                         <div

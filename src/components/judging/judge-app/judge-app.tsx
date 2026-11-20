@@ -47,10 +47,10 @@ import { api } from "~/utils/api";
 // The rubric every judge scores with, until rubrics come from the backend.
 const RUBRIC = DEFAULT_RUBRIC;
 
-// Each rubric category is stored on the mark as the same 0-10 slider value
-// the judge set (team_mark.score_breakdown), next to the overall 0-10 score.
-// Ratings are stored by criterion id:
-// { ratings: { technical: 7.5, ... }, notes, superLike }.
+// Each rubric category is sent with the mark as the same 0-10 slider value
+// the judge set, keyed by criterion id; the server stores each one in its own
+// team_mark column (impact_rating, ...), next to the overall 0-10 score:
+// { ratings: { impact: 7.5, ... }, notes, superLike }.
 const toBreakdown = (ratings: Ratings, notes: string, superLike: boolean) => ({
   ratings: Object.fromEntries(
     RUBRIC.criteria.map((c) => [c.id, ratings[c.id] ?? RUBRIC_MIN]),
@@ -58,14 +58,6 @@ const toBreakdown = (ratings: Ratings, notes: string, superLike: boolean) => ({
   ...(notes ? { notes } : {}),
   superLike,
 });
-
-function fromBreakdown(
-  b: { ratings?: Record<string, number> } | null,
-): Ratings {
-  // Marks saved before ratings were keyed by criterion have no `ratings`; the
-  // sliders start empty for those.
-  return b?.ratings ? { ...b.ratings } : {};
-}
 
 // Where the judge is in the flow. It is remembered on this device, per judge.
 // The server doesn't know about it yet, so it guides this app, not the judging
@@ -210,17 +202,25 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       { scroll: false },
     );
   }, [hydrated, stage, initial.comparison, router]);
-  const assignment = api.judging.me.getCurrentAssignment.useQuery();
+  // The judge's stops (tables) in walking order. The engine fixes the list up
+  // front, so there is no "ask for the next team": the stop to do now is the
+  // one in progress, else the first one still assigned.
+  const stopsQuery = api.judging.me.getMyStops.useQuery();
   const marksQuery = api.judging.me.getSubmittedTeamMarks.useQuery();
-  // Re-scoring only opens once nothing is left in this judge's queue.
-  const remainingQuery = api.judging.me.getRemainingCount.useQuery();
-  const getNext = api.judging.me.getNextTeam.useMutation();
-  const submit = api.judging.me.submitTeamMark.useMutation();
+  const startStop = api.judging.me.startStop.useMutation();
+  const submit = api.judging.me.submitStop.useMutation();
   const edit = api.judging.me.editTeamMark.useMutation();
-  const startTeam = api.judging.me.startTeam.useMutation();
-  const skip = api.judging.me.skipAssignment.useMutation();
+  const reportAbsent = api.judging.me.reportAbsent.useMutation();
 
-  const held = assignment.data?.team ?? null;
+  // Stops still to do that have a team seated (an empty table can't be scored).
+  const pendingStops = (stopsQuery.data?.stops ?? []).filter(
+    (s) => (s.status === "assigned" || s.status === "in_progress") && s.team,
+  );
+  const heldStop =
+    pendingStops.find((s) => s.status === "in_progress") ??
+    pendingStops[0] ??
+    null;
+  const held = heldStop?.team ?? null;
   const heldTable = held ? (initial.tableByTeam[held.id] ?? null) : null;
 
   const results: JudgedTeam[] = (marksQuery.data ?? [])
@@ -229,10 +229,11 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       teamId: m.teamId,
       table: initial.tableByTeam[m.teamId] ?? null,
       teamName: m.team.name,
-      ratings: fromBreakdown(m.scoreBreakdown),
+      // Empty for a slider-only mark, so its sliders start empty.
+      ratings: { ...m.ratings },
       score: m.score,
-      notes: m.scoreBreakdown?.notes ?? "",
-      superLike: m.scoreBreakdown?.superLike === true,
+      notes: m.notes ?? "",
+      superLike: m.superLike,
     }))
     // Oldest first: marks are numbered in the order they were saved.
     .sort((a, b) => a.markId - b.markId);
@@ -269,9 +270,12 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   const started = startedLocal || held !== null || results.length > 0;
   // Nothing is left in this judge's queue: time to re-score.
   const queueDone =
-    stage === "first" && results.length > 0 && remainingQuery.data === 0;
+    stage === "first" &&
+    results.length > 0 &&
+    stopsQuery.data !== undefined &&
+    pendingStops.length === 0;
   let phase: NextPhase;
-  if (!hydrated || assignment.isLoading || (findingNext && !held)) {
+  if (!hydrated || stopsQuery.isLoading || (findingNext && !held)) {
     phase = "loading";
   } else if (finished) phase = "finished";
   else if (held) phase = "team";
@@ -279,16 +283,15 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   else if (queueDone) phase = "rescoreReady";
   else phase = "none";
 
-  // Asks the server for the next team. A CONFLICT means nothing is waiting.
+  // Reloads this judge's stops. Which one is next comes from the list itself.
   const fetchNext = async () => {
     setNextError(null);
     setFindingNext(true);
     try {
-      await getNext.mutateAsync();
+      await stopsQuery.refetch();
     } catch (error) {
-      if (errorCode(error) !== "CONFLICT") setNextError(friendlyError(error));
+      setNextError(friendlyError(error));
     } finally {
-      await utils.judging.me.getCurrentAssignment.invalidate();
       setFindingNext(false);
     }
   };
@@ -303,20 +306,17 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     setFindingNext(true);
     setScoring(false);
     setTab("next");
-    await Promise.all([
-      marksQuery.refetch(),
-      utils.judging.me.getCurrentAssignment.invalidate(),
-    ]);
-    await fetchNext();
-    await remainingQuery.refetch();
+    await Promise.all([marksQuery.refetch(), stopsQuery.refetch()]);
+    setFindingNext(false);
   };
 
   const submitScore = async (s: ScoreSubmission): Promise<boolean> => {
-    if (!held) return false;
+    if (!held || !heldStop) return false;
     setScoreError(null);
     setSending(true);
     try {
       await submit.mutateAsync({
+        assignmentId: heldStop.id,
         teamId: held.id,
         score: s.score,
         breakdown: toBreakdown(s.ratings, s.notes, s.superLike),
@@ -329,7 +329,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         ),
       );
       if (errorCode(error) === "CONFLICT") {
-        await utils.judging.me.getCurrentAssignment.invalidate();
+        await utils.judging.me.getMyStops.invalidate();
       }
       setSending(false);
       return false;
@@ -342,8 +342,12 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   const teamNotHere = async (): Promise<boolean> => {
     setScoreError(null);
     setSending(true);
+    if (!heldStop) return false;
     try {
-      await skip.mutateAsync({});
+      await reportAbsent.mutateAsync({
+        assignmentId: heldStop.id,
+        teamId: held?.id ?? null,
+      });
     } catch (error) {
       setScoreError(friendlyError(error));
       setSending(false);
@@ -423,23 +427,12 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     setTab("teams");
   };
 
-  // First review is over: releases the team the judge is holding (so another
-  // judge can have it), then starts the second pass. A CONFLICT just means they
-  // held nothing.
+  // First review is over: starts the second pass.
   const startRescore = async () => {
     setConfirm(null);
     setFinishError(null);
     setFinishing(true);
-    try {
-      await skip.mutateAsync({ released: true });
-    } catch (error) {
-      if (errorCode(error) !== "CONFLICT") {
-        setFinishError(friendlyError(error));
-        setFinishing(false);
-        return;
-      }
-    }
-    await utils.judging.me.getCurrentAssignment.invalidate();
+    await utils.judging.me.getMyStops.invalidate();
     setScoring(false);
     setFinishing(false);
     if (results.length === 0) {
@@ -467,14 +460,17 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   // block scoring: the stop is closed when the score is submitted.
   const judgeThisTeam = async () => {
     setScoreError(null);
+    if (!heldStop || !held) return;
     try {
-      await startTeam.mutateAsync();
+      await startStop.mutateAsync({
+        assignmentId: heldStop.id,
+        teamId: held.id,
+      });
     } catch (error) {
       if (errorCode(error) === "CONFLICT") {
-        setNextError(
-          "That team was given to someone else. Finding you another.",
-        );
-        await utils.judging.me.getCurrentAssignment.invalidate();
+        // A different team was seated here meanwhile (e.g. after a swap).
+        setNextError("That table changed. Reloading your list.");
+        await utils.judging.me.getMyStops.invalidate();
         return;
       }
     }

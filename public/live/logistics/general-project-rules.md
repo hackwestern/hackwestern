@@ -15,10 +15,10 @@ There is no one theme hackers must follow. You are open to build anything you’
 11. Teams can be disqualified from the competition at the organizers' discretion. Reasons might include but are not limited to breaking the Competition Rules, breaking the [Code of Conduct](https://static.mlh.io/docs/mlh-code-of-conduct.pdf), or other unsporting behaviour.
 
 # 🎖️ Qualifications
-At Hack Western 12, your final project should be new and only built during the weekend of Hack Western. Hacking begins at **9pm** on **Friday, November 21st, 2025** and ends at **9am** on **Sunday, November 23rd, 2025**. All code written for Hack Western must be written within this time frame, with the exception of code taken from public and open source libraries, APIs, or tutorials. Any projects found to have been worked on outside of this time frame will be disqualified from judging.
+At Hack Western 13, your final project should be new and only built during the weekend of Hack Western. Hacking begins at **9pm** on **Friday, November 20th, 2026** and ends at **9am** on **Sunday, November 22nd, 2026**. All code written for Hack Western must be written within this time frame, with the exception of code taken from public and open source libraries, APIs, or tutorials. Any projects found to have been worked on outside of this time frame will be disqualified from judging.
 
 # 📥 DevPost
-DevPost is an online platform for managing hackathons, and all hackers of Hack Western 12 must register and submit their project to qualify for prizes. Projects must be submitted to DevPost by **Sunday, November 23rd @9AM** to qualify for judging. Note that you will NOT be able to edit your submission afterwards. We recommend finalizing all project details before submitting. 
+DevPost is an online platform for managing hackathons, and all hackers of Hack Western 13 must register and submit their project to qualify for prizes. Projects must be submitted to DevPost by **Sunday, November 22nd @9AM** to qualify for judging. Note that you will NOT be able to edit your submission afterwards. We recommend finalizing all project details before submitting. 
 
 # 🚀 Demos
 After hacking, teams will demo their projects to each other and the judges. **Focus on showing what you built**, as pitches or presentations are discouraged. Judges evaluate the hack itself, not the quality of your pitch, so skipping a demo can hurt your chances.
@@ -26,6 +26,8 @@ After hacking, teams will demo their projects to each other and the judges. **Fo
 Even if your hack isn’t finished or fully functional, demo what you’ve done! Completion is just one judging criterion, and demoing lets you share what you learned. Plus, you’ll earn an MLH "I Demoed" sticker for participating. If you can’t demo, share what you tried and learned—it’s inspiring for others!
 
 # 🧑‍⚖️ Judging
-The Hack Western 12 Demo Fair will take place from **10:30am-12pm** on **Sunday**, where hackers will be able to showcase their projects and pitch them to judges! Judging will be done expo-style and you will receive a table number and time slot to arrive and set up your table. Your team’s judging is completed once 2 organizers and sponsor representatives—based on the number of sponsor prize tracks your team submitted for—visit to judge your project. Once that happens, you’re welcome to explore other projects, network, get lunch, and participate in various activities!
+The Hack Western 13 Demo Fair will take place from **11:30am** on **Sunday** in the **Grand Hall (Rm 1110)**, where hackers will be able to showcase their projects to judges! Judging will be done expo-style and you will receive a table number on Slack. Each project is seen by **3 judges**: each time, you'll have **3 minutes** to demo, followed by **2 minutes** of Q&A. Once that happens, you’re welcome to explore other projects, network, get lunch, and participate in various activities!
+
+Sponsor-track judging starts earlier, at **10am** on **Sunday** on the second floor (Rooms **2110**, **2230** and **2235**).
 
 When submitting your project, there will be an option to select which prizes you want to opt-in to be judged during the fair under “Prizes”. More specifics on judging will be released in Slack on Sunday!

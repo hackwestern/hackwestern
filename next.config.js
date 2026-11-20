@@ -7,6 +7,13 @@ await import("./src/env.js");
 /** @type {import("next").NextConfig} */
 const config = {
   reactStrictMode: true,
+
+  // The internal-tools warning runs in the browser, so inline the hackathon
+  // window at build time.
+  env: {
+    NEXT_PUBLIC_HACK_START: process.env.HACK_START ?? "",
+    NEXT_PUBLIC_HACK_END: process.env.HACK_END ?? "",
+  },
   experimental: {
     reactCompiler: true,
   },
