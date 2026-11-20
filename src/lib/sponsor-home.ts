@@ -92,6 +92,7 @@ export function stepsFor(day: 0 | 1 | 2, ctx: HomeContext): AgendaStep[] {
               c.building === "ivey" ? `Ivey, Rm ${c.room}` : `Rm ${c.room}`,
             sub: copy.chatSub(c.chats, c.confirmed),
             action: "yourChats",
+            ivey: c.building === "ivey",
           }),
         ),
       ];

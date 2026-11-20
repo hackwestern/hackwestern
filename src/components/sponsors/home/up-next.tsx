@@ -17,6 +17,7 @@ import {
   type HomeContext,
   type StepState,
 } from "~/lib/sponsor-home";
+import { IveyWalkNote } from "~/components/ivey-walk-note";
 import { cn } from "~/lib/utils";
 import { readStored, writeStored } from "./welcome-card";
 
@@ -54,10 +55,13 @@ export function UpNext({
   ctx,
   now,
   hrefs,
+  mapHref,
 }: {
   ctx: HomeContext;
   now: Date;
   hrefs: Record<AgendaAction, string>;
+  /** The portal map opened on Ivey, for the Ivey walk note's Check map. */
+  mapHref?: string;
 }) {
   const [less, setLess] = useState(false);
   const [earlier, setEarlier] = useState(false);
@@ -126,6 +130,7 @@ export function UpNext({
                 highlight
                 label={label(hi.step)}
                 hrefs={hrefs}
+                mapHref={mapHref}
               />
             </ol>
           ) : (
@@ -159,6 +164,7 @@ export function UpNext({
                   highlight={hi?.step === r.step}
                   label={label(r.step)}
                   hrefs={hrefs}
+                  mapHref={mapHref}
                 />
               ))}
             </ol>
@@ -310,6 +316,7 @@ function Row({
   highlight = false,
   label = null,
   hrefs,
+  mapHref,
   compact = false,
 }: {
   step: AgendaStep;
@@ -317,6 +324,7 @@ function Row({
   highlight?: boolean;
   label?: React.ReactNode;
   hrefs?: Record<AgendaAction, string>;
+  mapHref?: string;
   compact?: boolean;
 }) {
   const done = state === "done";
@@ -390,6 +398,13 @@ function Row({
             <p className="m-0 mt-0.5 text-[13px] text-dashboard-text-light">
               {step.sub}
             </p>
+          )}
+          {step.ivey && (
+            <IveyWalkNote
+              who="sponsor"
+              mapHref={mapHref ?? null}
+              className="mt-1"
+            />
           )}
         </div>
         {action && hrefs && (

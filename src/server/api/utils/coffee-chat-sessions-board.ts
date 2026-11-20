@@ -149,6 +149,10 @@ export type BoardBooking = {
   forSponsorId: string | null;
   label: string;
   note: string | null;
+  /** Who on the sponsorship team booked it; null on older bookings. */
+  bookedBy: string | null;
+  /** The sponsor's reps in it (Book an event); empty when none. */
+  repIds: string[];
 };
 
 export type SessionBoard = {
@@ -340,6 +344,8 @@ export async function loadBoardState(
     forSponsorId: b.forSponsorId,
     label: b.label,
     note: b.note,
+    bookedBy: b.bookedBy,
+    repIds: b.repIds ?? [],
   }));
   const board = boardOf(placements, boardBookings);
   const latest = (ds: (Date | null | undefined)[]) => {
@@ -570,6 +576,17 @@ export function assertWorkshopsKnown(
   }
 }
 
+/** True when an organizer booking holds this rep in this session. */
+export function repInBooking(
+  state: Pick<BoardState, "bookings">,
+  repId: string,
+  sessionId: string,
+): boolean {
+  return state.bookings.some(
+    (b) => b.sessionId === sessionId && b.repIds.includes(repId),
+  );
+}
+
 /** Throws a clear error unless (room, session) is a real, empty cell. */
 export function assertCellFree(
   state: BoardState,
@@ -649,7 +666,8 @@ export function assertRepCanChat(
         p.repId === repId &&
         p.sessionId === sessionId &&
         p.id !== exceptPlacementId,
-    )
+    ) ||
+    repInBooking(state, repId, sessionId)
   ) {
     throw new TRPCError({
       code: "CONFLICT",

@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, test, vi } from "vitest";
 import type * as InvitesModule from "~/server/api/utils/coffee-chat-invites";
 import type * as RunOfShowModule from "~/server/api/utils/run-of-show-sheet";
 import type * as RoomGridModule from "~/server/api/utils/coffee-chat-room-grid-mirror";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "~/server/db";
 import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
@@ -23,6 +23,7 @@ import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { roomGridRows } from "~/server/api/utils/coffee-chat-room-grid-mirror";
 import { loadBoardState } from "~/server/api/utils/coffee-chat-sessions-board";
 import { layoutOf } from "~/server/api/utils/coffee-chat-invites";
+import { respondToCoffeeChat } from "~/server/api/utils/coffee-chat-respond";
 
 const { names, ros, mirror, deliver } = vi.hoisted(() => {
   const stamp = Date.now();
@@ -1143,7 +1144,7 @@ describe("forced moves (coffee board v12)", () => {
   });
 });
 
-describe("Book an event (rep + hacker on an empty cell)", () => {
+describe("Book an event (a room, optional sponsor, reps and hackers)", () => {
   /** An admitted hacker; `share` = agreed to share with sponsors. */
   async function hackerUser(first: string, share = true, hackerId?: string) {
     const session = await mockSession(db);
@@ -1191,10 +1192,11 @@ describe("Book an event (rep + hacker on an empty cell)", () => {
   let shy = "";
 
   beforeAll(async () => {
-    // 1-on-1s: 4 chats = one session. Bea is free 3-4; Ben 3-4 and 4-5 (8 chats).
+    // 1-on-1s: 4 chats = one session. Bea is free 3-4; Ben 3-4 and 4-5 (8 chats); Bo 4-5.
     await addSponsor(name, true, [
       { name: "Bea", chats: 4, free: ["15"] },
       { name: "Ben", chats: 8, free: ["15", "16"] },
+      { name: "Bo", chats: 4, free: ["16"] },
     ]);
     ada = await hackerUser(`Ada${tag}`, true, `brave-otter-${tag}`);
     bob = await hackerUser(`Bob${tag}`);
@@ -1241,91 +1243,83 @@ describe("Book an event (rep + hacker on an empty cell)", () => {
     ).toBe("FORBIDDEN");
   });
 
-  test("booking makes a sent, locked chat and the hacker's accepted chat; Notify doesn't come back", async () => {
-    const before = await organizer.coffeeChatSessions.getBoard();
+  const book = (input: {
+    room: string;
+    sessionId: string;
+    description?: string;
+    bookedBy?: string;
+    sponsorId?: string | null;
+    repIds?: string[];
+    userIds?: string[];
+  }) =>
+    organizer.coffeeChatSessions.bookEvent({
+      description: "Resume reviews",
+      bookedBy: "Noah",
+      ...input,
+      room: input.room as "2241",
+      sessionId: input.sessionId as "15",
+    });
+  const bookingRow = async (id: string) =>
+    (
+      await db
+        .select()
+        .from(coffeeChatRoomBookings)
+        .where(eq(coffeeChatRoomBookings.id, id))
+    )[0];
+  const chatsOf = (bookingId: string) =>
+    db.select().from(coffeeChats).where(eq(coffeeChats.bookingId, bookingId));
+
+  test("a room just for the team: no sponsor, reps or hackers; the cell is taken and shows who booked it", async () => {
     const room = await roomAt("15");
-    const res = await organizer.coffeeChatSessions.bookEvent({
+    deliver.mockClear();
+    const res = await book({
       room,
       sessionId: "15",
-      sponsorId: ids[name]!,
-      repId: ids.Bea!,
-      userId: ada,
+      description: "Spon team sync",
     });
-    expect(res).toMatchObject({ name: `Ada${tag} B.`, slotTime: "15:00" });
-    const [p] = await placementOf("Bea");
-    expect(p).toMatchObject({
+    expect(res).toMatchObject({ chatIds: [], skipped: [] });
+    expect(await bookingRow(res.bookingId)).toMatchObject({
       room,
       sessionId: "15",
-      status: "sent",
-      pinned: true,
+      label: "Spon team sync",
+      bookedBy: "Noah",
+      forSponsorId: null,
+      repIds: [],
     });
-    expect(p!.sentAt).not.toBeNull();
-    expect(await chatRow(res.chatId)).toMatchObject({
-      userId: ada,
-      sponsorId: ids[name],
-      placementId: p!.id,
-      slotTime: "15:00",
-      status: "accepted",
-      source: "organizer",
-      room: `Rm ${room}`,
-      repName: "Bea",
+    const board = await organizer.coffeeChatSessions.getBoard();
+    expect(board.bookings.find((b) => b.id === res.bookingId)).toMatchObject({
+      label: "Spon team sync",
+      bookedBy: "Noah",
     });
-    // Already notified: nothing new to Notify, and it's locked like any sent chat.
-    const after = await organizer.coffeeChatSessions.getBoard();
-    expect(after.draftCount).toBe(before.draftCount);
+    expect(deliver).not.toHaveBeenCalled();
+    // Taken for other bookings and for chats.
+    expect(await code(book({ room, sessionId: "15" }))).toBe("CONFLICT");
     expect(
       await code(
-        organizer.coffeeChatSessions.removePlacement({ placementId: p!.id }),
-      ),
-    ).toBe("PRECONDITION_FAILED");
-    // The Invites status shows the hacker in that chat.
-    const status = await organizer.coffeeChatInvites.status({
-      sponsorId: ids[name]!,
-    });
-    expect(
-      status.sponsors[0]!.chats.find((c) => c.slotTime === "15:00"),
-    ).toMatchObject({ filled: 1, accepted: 1 });
-    // The cell is taken now.
-    expect(
-      await code(
-        organizer.coffeeChatSessions.bookEvent({
-          room,
+        organizer.coffeeChatSessions.bookRoom({
+          room: room as "2241",
           sessionId: "15",
-          sponsorId: ids[name]!,
-          repId: ids.Ben!,
-          userId: bob,
+          label: "Mentors",
         }),
       ),
     ).toBe("CONFLICT");
+    // Description and booked by are required.
+    expect(
+      await code(
+        book({ room: await roomAt("15"), sessionId: "15", description: " " }),
+      ),
+    ).toBe("BAD_REQUEST");
+    expect(
+      await code(
+        book({ room: await roomAt("15"), sessionId: "15", bookedBy: "" }),
+      ),
+    ).toBe("BAD_REQUEST");
   });
 
-  test("refused: same sponsor twice, 2 live chats, a chat then, a hacker who doesn't share, a rep not free", async () => {
-    const book = async (userId: string, repName = "Ben") =>
-      failed(
-        organizer.coffeeChatSessions.bookEvent({
-          room: await roomAt("16"),
-          sessionId: "16",
-          sponsorId: ids[name]!,
-          repId: ids[repName]!,
-          userId,
-        }),
-      );
-    expect(await book(ada)).toBe(
-      `CONFLICT: Ada${tag} B. already has a chat with ${name}.`,
-    );
-    // Bob: a 60-minute chat with another sponsor at 4:00 covers all of Ben's 4-5.
-    await db.insert(coffeeChats).values({
-      sponsorId: ids[names.team]!,
-      userId: bob,
-      slotTime: "16:00",
-      durationMinutes: 60,
-      status: "accepted",
-    });
-    expect(await book(bob)).toBe(
-      `CONFLICT: Bob${tag} B. already has a chat then.`,
-    );
-    // Cleo holds 2 live chats already.
+  test("several reps and hackers: each hacker gets a normal pending invite; who can't be invited is listed", async () => {
+    // Cleo holds 2 live chats already; Dee has a chat at 4:30.
     const cleo = await hackerUser(`Cleo${tag}`);
+    const dee = await hackerUser(`Dee${tag}`);
     await db.insert(coffeeChats).values([
       {
         sponsorId: ids[names.team]!,
@@ -1339,34 +1333,135 @@ describe("Book an event (rep + hacker on an empty cell)", () => {
         slotTime: "11:00",
         status: "pending",
       },
+      {
+        sponsorId: ids[names.team]!,
+        userId: dee,
+        slotTime: "16:30",
+        status: "accepted",
+      },
     ]);
-    expect(await book(cleo)).toBe(
-      `CONFLICT: Cleo${tag} B. already has 2 chats.`,
-    );
-    expect(await book(shy)).toMatch(
-      /^BAD_REQUEST: That hacker can't be booked/,
-    );
-    // Bea isn't free at 4-5.
-    expect(await book(bob, "Bea")).toBe("BAD_REQUEST: Bea isn't free at 4–5.");
-    // Nothing was written by any refused booking.
-    expect(await placementOf("Ben")).toEqual([]);
-  });
-
-  test("a hacker busy at the start of the hour gets the next chat in it", async () => {
-    const dee = await hackerUser(`Dee${tag}`);
-    await db.insert(coffeeChats).values({
-      sponsorId: ids[names.team]!,
-      userId: dee,
-      slotTime: "16:00",
-      status: "accepted",
-    });
-    const res = await organizer.coffeeChatSessions.bookEvent({
-      room: await roomAt("16"),
+    const room = await roomAt("16");
+    deliver.mockClear();
+    const res = await book({
+      room,
       sessionId: "16",
       sponsorId: ids[name]!,
-      repId: ids.Ben!,
-      userId: dee,
+      repIds: [ids.Ben!, ids.Bo!],
+      userIds: [ada, bob, shy, cleo, dee],
     });
-    expect(res.slotTime).toBe("16:15");
+    expect(res.chatIds).toHaveLength(2);
+    expect(res.skipped).toEqual([
+      {
+        userId: shy,
+        reason: expect.stringMatching(/^That hacker can.t be booked/) as string,
+      },
+      { userId: cleo, reason: `Cleo${tag} B. already has 2 chats.` },
+      { userId: dee, reason: `Dee${tag} B. already has a chat then.` },
+    ]);
+    expect(await bookingRow(res.bookingId)).toMatchObject({
+      forSponsorId: ids[name],
+      repIds: [ids.Ben, ids.Bo],
+    });
+    const chats = await chatsOf(res.bookingId);
+    expect(chats.map((c) => c.userId).sort()).toEqual([ada, bob].sort());
+    for (const c of chats) {
+      expect(c).toMatchObject({
+        sponsorId: ids[name],
+        status: "pending",
+        slotTime: "16:00",
+        durationMinutes: 60,
+        room: `Rm ${room}`,
+        repName: "Ben, Bo",
+        placementId: null,
+        source: "organizer",
+        notifiedAt: null,
+      });
+      // Answer by 20 minutes before the event, like every invite.
+      expect(c.expiresAt).toEqual(new Date("2026-11-21T15:40:00-05:00"));
+    }
+    // The usual invite goes out: session-invite wording, a group chat.
+    const jobs = deliver.mock.calls.flatMap((call) => call[0]) as unknown as {
+      event: string;
+      notice: { group?: boolean | null; bookingId?: string | null };
+    }[];
+    expect(jobs.map((j) => j.event)).toEqual(["offered", "offered"]);
+    expect(jobs.every((j) => j.notice.group === true)).toBe(true);
+    expect(jobs.every((j) => j.notice.bookingId === res.bookingId)).toBe(true);
+    // Busy reps can't be booked: in this event, or not free then.
+    expect(
+      await failed(
+        book({
+          room: await roomAt("16"),
+          sessionId: "16",
+          sponsorId: ids[name]!,
+          repIds: [ids.Ben!],
+        }),
+      ),
+    ).toBe("CONFLICT: Ben is already booked at this time.");
+    expect(
+      await failed(
+        book({
+          room: await roomAt("16"),
+          sessionId: "16",
+          sponsorId: ids[name]!,
+          repIds: [ids.Bea!],
+        }),
+      ),
+    ).toBe("CONFLICT: Bea is already booked at this time.");
+
+    // Accepting works like any invite (no board, no refill).
+    const accepted = await respondToCoffeeChat(ada, {
+      chatId: chats.find((c) => c.userId === ada)!.id,
+      answer: "accept",
+    });
+    expect(accepted.status).toBe("accepted");
+
+    // Moving is refused while hackers hold invites; removing cancels them.
+    expect(
+      await code(
+        organizer.coffeeChatSessions.moveBooking({
+          bookingId: res.bookingId,
+          room: (await roomAt("15")) as "2241",
+          sessionId: "15",
+        }),
+      ),
+    ).toBe("PRECONDITION_FAILED");
+    const removed = await organizer.coffeeChatSessions.removeBooking({
+      bookingId: res.bookingId,
+    });
+    expect(removed.cancelled).toBe(2);
+    const after = await db
+      .select()
+      .from(coffeeChats)
+      .where(
+        inArray(
+          coffeeChats.id,
+          chats.map((c) => c.id),
+        ),
+      );
+    expect(after.map((c) => [c.status, c.bookingId])).toEqual([
+      ["cancelled", null],
+      ["cancelled", null],
+    ]);
+  });
+
+  test("one hacker is a 1-on-1; hackers or reps need a sponsor", async () => {
+    deliver.mockClear();
+    const res = await book({
+      room: await roomAt("13"),
+      sessionId: "13",
+      sponsorId: ids[name]!,
+      userIds: [bob],
+    });
+    expect(res.chatIds).toHaveLength(1);
+    const job = deliver.mock.calls[0]![0][0] as unknown as {
+      notice: { group?: boolean | null };
+    };
+    expect(job.notice.group).toBe(false);
+    expect(
+      await failed(
+        book({ room: await roomAt("13"), sessionId: "13", userIds: [ada] }),
+      ),
+    ).toBe("BAD_REQUEST: Pick a sponsor to invite hackers.");
   });
 });

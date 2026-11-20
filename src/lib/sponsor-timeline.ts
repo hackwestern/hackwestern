@@ -53,6 +53,8 @@ export type TimelineEntry = {
   task?: RunOfShowTask;
   /** Booked coffee chats behind a "coffee-chat" entry (from the DB). */
   booking?: CoffeeChatBooking;
+  /** A coffee chat at Ivey: the details show the walk note. */
+  ivey?: boolean;
 };
 
 /** One sponsor's booked coffee chats at one start, in one room. */

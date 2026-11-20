@@ -344,6 +344,20 @@
       "when": 1795165834220,
       "tag": "0048_sponsor_dashboard",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1795197592625,
+      "tag": "0049_coffee_chat_reminder",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1795198633850,
+      "tag": "0050_room_booking_event",
+      "breakpoints": true
     }
   ]
 }

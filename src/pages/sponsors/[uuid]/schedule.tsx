@@ -109,6 +109,7 @@ export default function SponsorSchedulePage() {
                 category: "coffee-chat" as const,
                 title: copy.chatTitle(repName(c.repId)),
                 location: room,
+                ivey: c.building === "ivey",
                 start: minutesOf(c.start),
                 end: minutesOf(c.end),
                 booking: {

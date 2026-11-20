@@ -6,7 +6,10 @@ import {
   coffeeChatChangeText,
   type CoffeeChatChangeEvent,
 } from "~/server/api/utils/coffee-chat-change-text";
-import { inviteText } from "~/server/api/utils/coffee-chat-invite-text";
+import {
+  buildingOfRoomLabel,
+  inviteText,
+} from "~/server/api/utils/coffee-chat-invite-text";
 import type { CoffeeChatNotice } from "~/server/api/utils/coffee-chat-notify";
 import { escapeSlackText } from "~/server/slack/client";
 import { dmHacker } from "~/server/slack/dm";
@@ -33,7 +36,12 @@ type ChatDetails = Pick<
   CoffeeChatNotice,
   "chatId" | "sponsorName" | "slotTime" | "durationMinutes" | "room"
 > &
-  Partial<Pick<CoffeeChatNotice, "placementId" | "repName" | "expiresAt">> & {
+  Partial<
+    Pick<
+      CoffeeChatNotice,
+      "placementId" | "repName" | "expiresAt" | "group" | "bookingId"
+    >
+  > & {
     /** A changed session invite the hacker must confirm again. */
     reconfirm?: boolean;
   };
@@ -54,13 +62,15 @@ function sessionInviteBody(chat: ChatDetails): string {
     when,
     where: escapeSlackText(where),
     answerBy: answerBy ?? when,
+    group: chat.group,
+    ivey: buildingOfRoomLabel(chat.room) === "ivey",
   });
   return chat.reconfirm ? `${invitesCopy.slack.reconfirm}\n${body}` : body;
 }
 
 /** The chat's details as a Slack section block. */
 export function coffeeChatDetailsBlock(chat: ChatDetails) {
-  if (chat.placementId) {
+  if (chat.placementId ?? chat.bookingId) {
     return {
       type: "section",
       text: { type: "mrkdwn", text: sessionInviteBody(chat) },
@@ -86,11 +96,12 @@ export function coffeeChatDetailsBlock(chat: ChatDetails) {
 /** The DM: details, Accept / Decline buttons (value = chat id), /live link. */
 export function coffeeChatDmMessage(chat: ChatDetails) {
   return {
-    text: chat.placementId
-      ? chat.reconfirm
-        ? invitesCopy.slack.reconfirmText(chat.sponsorName)
-        : invitesCopy.slack.text(chat.sponsorName)
-      : copy.text(chat.sponsorName),
+    text:
+      (chat.placementId ?? chat.bookingId)
+        ? chat.reconfirm
+          ? invitesCopy.slack.reconfirmText(chat.sponsorName)
+          : invitesCopy.slack.text(chat.sponsorName, chat.group)
+        : copy.text(chat.sponsorName),
     blocks: [
       coffeeChatDetailsBlock(chat),
       {
