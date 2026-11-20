@@ -5,11 +5,7 @@ import { InternalPage } from "~/components/internals/page-shell";
 import { pingLogsCopy as copy } from "~/content/ping-logs";
 import { api, type RouterOutputs } from "~/utils/api";
 import { authRedirectOrganizer } from "~/utils/redirect";
-import {
-  PING_KINDS,
-  type PingKind,
-  type PingTone,
-} from "~/server/api/utils/ping-log-sources";
+import { PING_KINDS, type PingKind, type PingTone } from "~/lib/ping-log";
 
 type Log = RouterOutputs["organizerPings"]["log"];
 type Entry = Log["entries"][number];

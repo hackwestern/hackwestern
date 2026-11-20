@@ -11,36 +11,13 @@ import {
   teams,
   users,
 } from "~/server/db/schema";
+import type { PingEntry, PingKind, PingTone } from "~/lib/ping-log";
 
 /**
  * Every other kind of ping the site sends, read from the tables each feature
  * already keeps (read-only; nothing new is recorded). Organizer run-of-show
  * reminders come from Slack's queue instead (organizer-ping-log.ts).
  */
-
-export const PING_KINDS = [
-  "organizer",
-  "coffee",
-  "presentation",
-  "help",
-  "task",
-  "marketing",
-] as const;
-export type PingKind = (typeof PING_KINDS)[number];
-
-/** How a status reads at a glance. */
-export type PingTone = "ok" | "waiting" | "problem" | "done";
-
-export type PingEntry = {
-  kind: PingKind;
-  at: Date;
-  to: string;
-  about: string;
-  /** Raw status key; the page turns it into words. */
-  status: string;
-  tone: PingTone;
-  detail?: string;
-};
 
 /** Newest rows per source: plenty for one weekend, keeps the page fast. */
 const LIMIT = 500;

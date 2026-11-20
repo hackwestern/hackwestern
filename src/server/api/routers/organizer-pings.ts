@@ -2,12 +2,8 @@ import {
   createTRPCRouter,
   protectedOrganizerProcedure,
 } from "~/server/api/trpc";
-import {
-  otherPings,
-  type PingEntry,
-  type PingKind,
-  type PingTone,
-} from "~/server/api/utils/ping-log-sources";
+import type { PingEntry, PingKind, PingTone } from "~/lib/ping-log";
+import { otherPings } from "~/server/api/utils/ping-log-sources";
 import { sharedSheetRead } from "~/server/api/utils/sponsor-sheets";
 import { loadOrganizerData, slackId } from "~/server/slack/organizer-load";
 import {
