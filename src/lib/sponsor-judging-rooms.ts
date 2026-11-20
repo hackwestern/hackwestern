@@ -21,8 +21,8 @@ import { isJudgingTitle } from "~/lib/sponsor-timeline";
 
 export { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS };
 
-/** Where a sponsor's judging room came from. */
-export type JudgingRoomSource = "sponsor-sheet" | "run-of-show";
+/** Where a room came from; "judging-board" = set by an organizer there. */
+export type JudgingRoomSource = "judging-board" | "sponsor-sheet" | "run-of-show";
 
 export type JudgingStatus =
   | "ready"
@@ -166,14 +166,17 @@ export function judgingCounts(rows: readonly JudgingRow[]): JudgingCounts {
  * "TBD" = none) and the pick count; null when it couldn't be read.
  * `runOfShowRead` false = `items` is empty because the run-of-show sheet
  * failed. A sponsor with no room is "missing" only when both sources were
- * read; otherwise its room is unknown.
+ * read; otherwise its room is unknown. `boardRooms` (by sponsor id) are
+ * rooms organizers set on the Judging board; they win over both sheets.
  */
 export function buildJudgingBoard({
   sponsors,
   items,
   runOfShowRead = true,
   sheet,
+  boardRooms,
 }: {
+  boardRooms?: ReadonlyMap<string, string>;
   sponsors: readonly { id: string; name: string }[];
   items: readonly RunOfShowItem[];
   runOfShowRead?: boolean;
@@ -196,16 +199,26 @@ export function buildJudgingBoard({
     .map((s) => {
       const fromSheet = sheetRoomOrNull(sheetRooms?.get(norm(s.name)));
       const fromList = listedRoom(s.name);
-      const room = fromSheet ?? fromList;
+      const fromBoard = boardRooms?.get(s.id) ?? null;
+      const room = fromBoard ?? fromSheet ?? fromList;
       const picks = sheet ? sheet.pickCount(s.name) : null;
       return {
         name: s.name,
         sponsorId: s.id,
         registered: true,
         room,
-        source: fromSheet ? "sponsor-sheet" : fromList ? "run-of-show" : null,
+        source: fromBoard
+          ? "judging-board"
+          : fromSheet
+            ? "sponsor-sheet"
+            : fromList
+              ? "run-of-show"
+              : null,
         otherRoom:
-          fromSheet && fromList && norm(fromSheet) !== norm(fromList)
+          !fromBoard &&
+          fromSheet &&
+          fromList &&
+          norm(fromSheet) !== norm(fromList)
             ? fromList
             : null,
         picks,

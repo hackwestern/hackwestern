@@ -36,6 +36,8 @@ export type PresentationNoticeItem = {
   start: number;
   /** How they were told; null when they weren't (a teammate was). */
   channel: NoticeChannel | null;
+  /** The team confirmed its times (one member's tap covers the team). */
+  confirmed: boolean;
 };
 
 export type HackerNotice = CoffeeChatNoticeItem | PresentationNoticeItem;
@@ -60,6 +62,8 @@ export type NoticeSources = {
     }[];
     sentAt: Date | null;
     channel: NoticeChannel | null;
+    /** When the team confirmed these times; null = not yet. */
+    confirmedAt?: Date | null;
   };
 };
 
@@ -102,6 +106,7 @@ export function buildHackerNotices(
     };
   });
   const { sentAt, channel } = sources.presentations;
+  const confirmed = (sources.presentations.confirmedAt ?? null) !== null;
   const presentations: HackerNotice[] = sentAt
     ? sources.presentations.slots.map((s) => {
         const key = presentationNoticeKey(s);
@@ -114,6 +119,7 @@ export function buildHackerNotices(
           room: s.room,
           start: s.start,
           channel,
+          confirmed,
         };
       })
     : [];

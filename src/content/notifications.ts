@@ -40,6 +40,10 @@ export const notificationsCopy = {
     /** "Sun 10:05 AM · Rm 2110" */
     detail: (time: string, room: string) => `Sun ${time} · ${room}`,
     status: "Judging",
+    /** One member's tap confirms for the whole team. */
+    confirm: "Confirm our times",
+    confirming: "Confirming…",
+    confirmed: "Confirmed",
   },
 
   channel: {

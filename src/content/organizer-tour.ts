@@ -75,13 +75,17 @@ export const organizerTourCopy = {
       },
     },
     judging: {
-      sent: {
-        title: "Who sent a shortlist",
-        body: "On Sunday each sponsor sends their shortlist. This shows who has, and when.",
+      todo: {
+        title: "Start with To do",
+        body: "Missing shortlists (text the sponsor's lead), sponsors without a room, then Notify teams. Each shortlist is scheduled as it arrives.",
       },
-      actions: {
-        title: "Schedule, then notify",
-        body: "Once shortlists are in, Schedule presentations sets each team's time and room. Notify hackers tells them.",
+      sponsors: {
+        title: "Sponsors and rooms",
+        body: "Each sponsor's progress in one line, its lead's phone, and its room. Changing a room keeps every time; those teams get told again.",
+      },
+      rooms: {
+        title: "Who's presenting where",
+        body: "Times down the side, rooms across. A team is Invite not sent, Waiting, or Accepted once anyone on it confirms. Tap a team for details.",
       },
       round2: {
         title: "Open round 2",

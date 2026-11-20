@@ -796,6 +796,26 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Alternatives:** layouts 2 (side by side) and 3 (sponsor first) from v2; separate Sponsors and Run of show tabs (the current build).
 **Workflow (Jazz, same day):** every new screen is mocked in HTML first and approved before it's built.
 
+## 2026-11-19: Organizer judging board = mock organizer-judging-board-v2, approved for build with changes (Jazz)
+
+**Decision:** Build v2 with these changes. Team status is only Invite not sent / Waiting / Accepted, and one hacker replying on the Slack bot or the live-site notification accepts for the whole team. No presenting / presented tracking. Phone numbers get a copy icon instead of a Copy button, and each sponsor's head rep number shows with the same icon. Remote teams don't present, so the remote list is out of the presentation flow.
+**Why:** organizers only need to know if a team will show up; presenting/presented is noise, and remote teams never present in a room.
+**Alternatives:** v2 as mocked (told/not told, presenting now, presented, remote column); requiring every team member to confirm.
+
+## 2026-11-19: Judging board build choices (made while building v2; Jazz to confirm)
+
+**Decision:**
+- **Accepting is per team and per set of times.** `sponsor_presentation_confirm` (one row per team) stores which times were confirmed. If a room change gives the team new times, it's Waiting again until someone confirms the new ones. The Slack button carries the times it was sent with, so a button from an older DM is refused ("your times have changed").
+- **The schedule rebuilds itself** whenever a sponsor sends a shortlist or an organizer changes a room (the mock has no Schedule button). Times already given never move: a room change keeps every time and only relabels the room, so those teams need telling again.
+- **On judging day, new teams only get slots at least 10 minutes from now**, never a slot that already passed. After 11:30 a late team isn't placed and can't be ranked.
+- **A sheet outage can't remove a room.** If no source names a sponsor's room during a rebuild, it keeps the room its slots already use.
+- **Remote sponsors (TinyFish)** get no slots and no invites. In round 2 they rank their sent shortlist instead of "teams that presented" (otherwise they'd be locked out).
+- **Rooms set on the board win** over the sponsor sheet and run of show everywhere, including the run-of-show judging panel.
+- **"No scores yet"** shows two slots (12 min) after a sponsor's first presentation; "Top 5 late" after 12:00; shortlist and room to-dos go away at 11:30.
+- **The modal skips each member's "role"** from the mock: hackers have no role field anywhere in the data.
+- **Round 2, sheet sync and the cheat check** stay in an "After presentations" card under the board (not in the mock, but still needed). The old Presentations panel's schedule, notify and by-hacker views are covered by the board and moved to `_to_delete/`.
+**Why:** each keeps a time a team was told from changing under them, or keeps a sponsor from being locked out.
+**Alternatives:** a Schedule button organizers press (the old flow; the mock dropped it); per-member confirms (Jazz chose one reply per team).
 ## 2026-11-19: Organizer Home built from v3: what's in, what waits for data (build)
 
 **Decision:** /internal/sponsors opens on the v3 day view. Columns built from data the app has: Fri (Arrived, Booth, Coffee chat briefing as tap pills that write Sponsor Day-Of; Availability; Chat shortlist; Chats + invites), Sat (Chats by rep from sent placements with ✓/⏳ seats; Workshop with setup at −30; Booth status), Sun (Judging shortlist, Judging room, Top 5). Left out until there's a data source: Opening speaker check-in, Met at booth count, Tonight (staying/leaving), Judging workshop attendance, Closing role, Gifts · departed. Empty sent chats on Saturday show as one flag per sponsor ("5 chats have no hackers yet, first …"), not one per chat. The chat shortlist is never flagged (it's optional since seats fill from interested hackers). Home has no guided tour yet; the tools keep theirs. The old Sponsors board, Needs attention and Task pings code stays in the repo, not rendered; Sync from sheet and search went with the board.

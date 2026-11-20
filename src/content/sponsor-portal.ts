@@ -34,18 +34,31 @@ export const sponsorPortalCopy = {
   // button in the page header that opens a dialog over the current page.
   nav: {
     label: "Sponsor portal",
-    home: "Today",
+    home: "Home",
     scan: "Scan",
     chats: "Chats",
     schedule: "Schedule",
     judging: "Judging",
+    /** Judging's phone tab: "Judging" and its lock don't fit a sixth of 360 px. */
+    judgingTab: "Judge",
     map: "Map",
+    /** Side nav label over Chats and Judging. */
+    tasks: "Your tasks",
+    /** The phone top bar's title per section. */
+    titles: {
+      home: "Home",
+      chats: "Coffee chats",
+      scan: "Scan a hacker",
+      schedule: "Schedule",
+      judging: "Judging",
+      map: "Map",
+    },
     /** Beside the sponsor's logo at the top of the side nav. */
     portal: "Sponsor portal",
     homeLink: "Hack Western 13 sponsor portal home",
     /** Bottom of the side nav. */
     footer: `Times are Eastern · ${eventDateRange()}`,
-    judgingLocked: (opens: string) => `Judging, locked. ${opens}`,
+    judgingLocked: (opens: string) => `Judging, locked until ${opens}`,
     judgingLockedTitle: "When judging opens",
     /** Beside Judging once it's open: has the team sent its top picks? */
     judgingSent: "Sent",

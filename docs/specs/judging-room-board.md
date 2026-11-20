@@ -1,5 +1,7 @@
 # Judging room board (organizer)
 
+> **Built 2026-11-19 from mock organizer-judging-board-v2 with Jazz's changes** (docs/decisions.md). Where this spec and the build differ, the build wins: no suggested fixes, Auto-assign or "+ Add a room" (3 rooms + "Other…"); team status is only Invite not sent / Waiting / Accepted (one member confirming on Slack or /live accepts for the team); no presenting/presented tracking; remote sponsors' teams don't present; the schedule rebuilds itself on every shortlist send and room change and never moves a time already given. Code: `src/components/sponsors/organizer/judging-board/`, `src/lib/judging-board.ts`, `src/server/api/utils/judging-board-data.ts`, `presentation-schedule.ts`, `presentation-confirm.ts`.
+
 Jazz, 2026-11-19. The organizer Judging tab works like the coffee chat board: see each prize-track sponsor's details, a room calendar, suggested fixes, and assign sponsors to rooms. Round 1 presentations run Sunday 10:00–11:30.
 
 ## What sponsors do (no change to timing)
