@@ -3,7 +3,6 @@ import { SessionProvider } from "next-auth/react";
 import { type AppType } from "next/app";
 import Head from "next/head";
 import { useEffect, useState } from "react";
-import { Figtree } from "next/font/google";
 import localFont from "next/font/local";
 import { api } from "~/utils/api";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -70,9 +69,11 @@ const pix32 = localFont({
   display: "swap",
 });
 
-const figtree = Figtree({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+// Self-hosted so builds don't fetch from Google Fonts (that fetch kept
+// failing CI and Vercel builds)
+const figtree = localFont({
+  src: "../../public/shared/fonts/figtree/Figtree-Variable.woff2",
+  weight: "300 900",
   variable: "--font-figtree",
   fallback: ["Inter", "sans-serif"],
 });
