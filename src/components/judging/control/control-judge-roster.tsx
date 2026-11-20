@@ -17,23 +17,65 @@ import {
   CARD_TITLE,
   FIELD,
   MUTED,
+  type Progress,
+  type QueueState,
   type Status,
   StatusLine,
   TD,
   TH,
+  errorText,
+  formatHold,
 } from "./control-shared";
+
+const STOP_STYLE: Record<string, string> = {
+  done: "bg-[#e3f4e8] text-[#14532d]",
+  in_progress: "bg-[#e4effd] text-[#123d75]",
+  assigned: "bg-[#f1f3f8] text-[#2c3e55]",
+  team_absent: "bg-[#fdeceb] text-[#7a1a0f]",
+};
+const STOP_LABEL: Record<string, string> = {
+  done: "done",
+  in_progress: "now",
+  assigned: "upcoming",
+  team_absent: "absent",
+};
 
 /** Mean score of a judge's marks, or null when they have none. */
 const average = (sum: number, count: number) =>
   count > 0 ? Math.round(sum / count) : null;
 
-export function JudgeRoster() {
+export function JudgeRoster({
+  progress,
+  queue,
+  now,
+  myId,
+}: {
+  progress: Progress | undefined;
+  queue: QueueState | undefined;
+  now: number;
+  myId: string | undefined;
+}) {
   const utils = api.useUtils();
   const judgesQuery = api.judging.admin.getAllJudges.useQuery(undefined, {
     // Keeps "judging a team" roughly live without a manual refresh.
     refetchInterval: 15_000,
   });
   const addJudge = api.judging.admin.addJudgeByEmail.useMutation();
+  const send = api.judging.admin.addJudgeToTable.useMutation();
+  const [picked, setPicked] = useState<Record<string, string>>({});
+
+  const waiting = (queue?.teams ?? []).filter((t) => !t.currentJudgeId);
+  const holdByJudge = new Map(
+    (queue?.teams ?? []).flatMap((t) =>
+      t.currentJudgeId ? [[t.currentJudgeId, t] as const] : [],
+    ),
+  );
+  const teamAtTable = new Map(
+    (progress?.tables ?? []).map((t) => [t.number, t.team?.name ?? null]),
+  );
+  const stopsByJudge = new Map(
+    (progress?.judges ?? []).map((j) => [j.id, j.stops]),
+  );
 
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<Status>(null);
@@ -125,26 +167,28 @@ export function JudgeRoster() {
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[640px] border-collapse text-sm">
+        <table className="w-full min-w-[900px] border-collapse text-sm">
           <thead>
             <tr className={`text-left ${MUTED}`}>
               <th className={TH}>Name</th>
               <th className={TH}>Marks</th>
               <th className={TH}>Avg score</th>
-              <th className={TH}>Status</th>
+              <th className={TH}>Assigned teams</th>
+              <th className={TH}>Judging now</th>
+              <th className={TH}>Send a team</th>
             </tr>
           </thead>
           <tbody>
             {judgesQuery.isLoading && (
               <tr className="border-t border-[#e3e7ef]">
-                <td colSpan={6} className={`${TD} ${MUTED}`}>
+                <td colSpan={7} className={`${TD} ${MUTED}`}>
                   Loading…
                 </td>
               </tr>
             )}
             {!judgesQuery.isLoading && visible.length === 0 && (
               <tr className="border-t border-[#e3e7ef]">
-                <td colSpan={6} className={`${TD} ${MUTED}`}>
+                <td colSpan={7} className={`${TD} ${MUTED}`}>
                   {judges.length === 0
                     ? "No judges yet. Add one by email to get started."
                     : "No judges match."}
@@ -162,7 +206,10 @@ export function JudgeRoster() {
                       aria-label={`Details for ${j.name ?? j.email}`}
                       className="flex flex-col text-left hover:underline"
                     >
-                      <span className="font-semibold">{j.name ?? j.email}</span>
+                      <span className="font-semibold">
+                        {j.name ?? j.email}
+                        {j.id === myId ? " (you)" : ""}
+                      </span>
                       {j.name && (
                         <span className={`text-xs ${MUTED}`}>{j.email}</span>
                       )}
@@ -176,8 +223,121 @@ export function JudgeRoster() {
                   >
                     {avg ?? "–"}
                   </td>
-                  <td className={`${TD} ${j.currentTeamId ? "" : MUTED}`}>
-                    {j.currentTeamId ? "Judging a team" : "Idle"}
+                  <td className={TD}>
+                    {(() => {
+                      const stops = [...(stopsByJudge.get(j.id) ?? [])].sort(
+                        (a, b) => a.position - b.position,
+                      );
+                      if (stops.length === 0)
+                        return <span className={MUTED}>None</span>;
+                      return (
+                        <ul className="m-0 flex list-none flex-wrap gap-1 p-0">
+                          {stops.map((st) => (
+                            <li
+                              key={st.assignmentId}
+                              className={`rounded-full px-2 py-1 text-xs font-semibold ${STOP_STYLE[st.status] ?? ""}`}
+                            >
+                              {teamAtTable.get(st.tableNumber) ?? "Empty"} · T
+                              {st.tableNumber} ·{" "}
+                              {STOP_LABEL[st.status] ?? st.status}
+                            </li>
+                          ))}
+                        </ul>
+                      );
+                    })()}
+                  </td>
+                  <td className={TD}>
+                    {(() => {
+                      const hold = holdByJudge.get(j.id);
+                      return hold ? (
+                        <>
+                          <span className="font-semibold">{hold.teamName}</span>
+                          <span
+                            className={`whitespace-nowrap tabular-nums ${MUTED}`}
+                          >
+                            {" · "}
+                            {hold.assignedAt
+                              ? formatHold(
+                                  now - new Date(hold.assignedAt).getTime(),
+                                )
+                              : "just now"}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="rounded-full bg-[#e4effd] px-2 py-1 text-xs font-bold text-[#123d75]">
+                          Free
+                        </span>
+                      );
+                    })()}
+                  </td>
+                  <td className={TD}>
+                    {(() => {
+                      const name = j.name ?? j.email;
+                      const choice = waiting.find(
+                        (t) => t.teamId === picked[j.id],
+                      )
+                        ? picked[j.id]!
+                        : (waiting[0]?.teamId ?? "");
+                      const sending =
+                        send.isPending && send.variables?.judgeId === j.id;
+                      return (
+                        <div className="flex gap-1.5">
+                          <select
+                            aria-label={`Team to send to ${name}`}
+                            className={`${FIELD} max-w-[180px] text-sm`}
+                            value={choice}
+                            disabled={waiting.length === 0}
+                            onChange={(e) =>
+                              setPicked((p) => ({
+                                ...p,
+                                [j.id]: e.target.value,
+                              }))
+                            }
+                          >
+                            {waiting.length === 0 ? (
+                              <option value="">No teams waiting</option>
+                            ) : (
+                              waiting.map((t) => (
+                                <option key={t.teamId} value={t.teamId}>
+                                  {t.teamName}
+                                </option>
+                              ))
+                            )}
+                          </select>
+                          <button
+                            type="button"
+                            className={`${BTN_OUTLINE} text-sm`}
+                            disabled={!choice || send.isPending}
+                            onClick={() => {
+                              const team = waiting.find(
+                                (t) => t.teamId === choice,
+                              );
+                              if (!team) return;
+                              setStatus(null);
+                              send.mutate(
+                                { judgeId: j.id, tableId: team.tableId },
+                                {
+                                  onSuccess: () => {
+                                    setStatus({
+                                      tone: "ok",
+                                      text: `Added ${name} to table ${team.tableNumber} (${team.teamName}).`,
+                                    });
+                                    void utils.judging.admin.invalidate();
+                                  },
+                                  onError: (e) =>
+                                    setStatus({
+                                      tone: "error",
+                                      text: `Couldn't add ${name} to table ${team.tableNumber}. ${errorText(e)}`,
+                                    }),
+                                },
+                              );
+                            }}
+                          >
+                            {sending ? "Sending…" : "Send"}
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </td>
                 </tr>
               );

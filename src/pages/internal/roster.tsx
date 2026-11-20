@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import { useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { InternalPage } from "~/components/internals/page-shell";
-import { ControlJudges } from "~/components/judging/control/control-judges";
 import { JudgeRoster } from "~/components/judging/control/control-judge-roster";
 import {
   queueFromProgress,
@@ -28,9 +27,6 @@ export default function RosterPage({ results }: { results: TeamResult[] }) {
   const now = useNow();
   const { data: session } = useSession();
   const progressQ = api.judging.admin.getProgress.useQuery(undefined, {
-    refetchInterval: 5000,
-  });
-  const judgesQ = api.judging.admin.getAllJudges.useQuery(undefined, {
     refetchInterval: 5000,
   });
   const queue = useMemo(
@@ -65,9 +61,8 @@ export default function RosterPage({ results }: { results: TeamResult[] }) {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="judges" className="mt-0 flex flex-col gap-5">
-            <JudgeRoster />
-            <ControlJudges
-              judges={judgesQ.data}
+            <JudgeRoster
+              progress={progressQ.data}
               queue={queue}
               now={now}
               myId={session?.user.id}

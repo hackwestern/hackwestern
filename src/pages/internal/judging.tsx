@@ -3,9 +3,9 @@ import { useMemo } from "react";
 import SEO from "~/components/seo";
 import { InternalPage } from "~/components/internals/page-shell";
 import { ControlProgress } from "~/components/judging/control/control-progress";
+import { ControlRounds } from "~/components/judging/control/control-rounds";
 import { ControlQueue } from "~/components/judging/control/control-queue";
 import { ControlQueueTable } from "~/components/judging/control/control-queue-table";
-import { ControlRanking } from "~/components/judging/control/control-ranking";
 import {
   errorText,
   queueFromProgress,
@@ -30,10 +30,9 @@ export default function JudgingControlRoom() {
     [progressQ.data],
   );
   const judgesQ = api.judging.admin.getAllJudges.useQuery(undefined, poll);
-  const rankingQ = api.judging.admin.getLatestRanking.useQuery(undefined, poll);
 
-  const queries = [progressQ, judgesQ, rankingQ];
-  // The oldest of the three, so the label never claims fresher data than shown.
+  const queries = [progressQ, judgesQ];
+  // The oldest of the two, so the label never claims fresher data than shown.
   const updatedAt = queries.every((q) => q.dataUpdatedAt > 0)
     ? Math.min(...queries.map((q) => q.dataUpdatedAt))
     : 0;
@@ -77,10 +76,8 @@ export default function JudgingControlRoom() {
         <ControlQueue queue={queue} />
         <ControlProgress queue={queue} judges={judgesQ.data} now={now} />
 
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:items-start">
-          <ControlQueueTable queue={queue} now={now} />
-          <ControlRanking ranking={rankingQ.data} queue={queue} />
-        </div>
+        <ControlQueueTable queue={queue} now={now} />
+        <ControlRounds queue={queue} />
       </InternalPage>
     </>
   );
