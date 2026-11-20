@@ -32,6 +32,7 @@ import { waitUntil } from "@vercel/functions";
 import {
   and,
   asc,
+  desc,
   eq,
   gt,
   inArray,
@@ -87,6 +88,7 @@ import { mirrorCoffeeChats } from "~/server/api/utils/coffee-chat-sheet-mirror";
 import { db } from "~/server/db";
 import {
   applications,
+  coffeeChatLine,
   coffeeChats,
   sponsorInterests,
   sponsorScans,
@@ -223,7 +225,7 @@ export function layoutOf(
 // Rows
 // ---------------------------------------------------------------------------
 
-type ChatRow = {
+export type ChatRow = {
   id: string;
   sponsorId: string;
   userId: string;
@@ -238,7 +240,7 @@ type ChatRow = {
   createdAt: Date;
 };
 
-async function loadChatRows(conn: Conn): Promise<ChatRow[]> {
+export async function loadChatRows(conn: Conn): Promise<ChatRow[]> {
   return conn
     .select({
       id: coffeeChats.id,
@@ -263,7 +265,7 @@ async function loadChatRows(conn: Conn): Promise<ChatRow[]> {
  * DB's one-live-chat-per-slot index doesn't block the next invite. Returns
  * the rows with their effective status.
  */
-async function sweepExpired(
+export async function sweepExpired(
   tx: InviteTx,
   rows: ChatRow[],
   now: Date,
@@ -292,10 +294,10 @@ async function sweepExpired(
   );
 }
 
-const isLive = (r: ChatRow) =>
+export const isLive = (r: ChatRow) =>
   r.status === "pending" || r.status === "accepted";
 const startOf = (r: ChatRow) => minutesOfClock(r.slotTime) ?? 0;
-const busyOf = (r: ChatRow): BusyChat => ({
+export const busyOf = (r: ChatRow): BusyChat => ({
   userId: r.userId,
   sponsorId: r.sponsorId,
   start: startOf(r),
@@ -310,11 +312,27 @@ const atChat = (
   r.durationMinutes === c.minutes;
 
 /**
- * Each sponsor's candidates in order: scanned (earliest scan first), then
- * the shortlist (order picked), then interested hackers (their rank of the
- * sponsor). Only admitted hackers who agreed to share with sponsors.
+ * "sponsorId|userId" pairs an organizer removed from one of that sponsor's
+ * chats (coffee_chat_line kind "removed"): never offered that sponsor again,
+ * like a decline.
  */
-async function loadCandidates(
+export async function loadRemovedPairs(conn: Conn): Promise<Set<string>> {
+  const rows = await conn
+    .select({ sponsorId: coffeeChatLine.sponsorId, userId: coffeeChatLine.userId })
+    .from(coffeeChatLine)
+    .where(eq(coffeeChatLine.kind, "removed"));
+  return new Set(rows.map((r) => `${r.sponsorId}|${r.userId}`));
+}
+
+/**
+ * Each sponsor's candidates in order: hackers an organizer put first in
+ * line (newest first), then scanned (earliest scan first), then the
+ * shortlist (order picked), then interested hackers (their rank of the
+ * sponsor). Only admitted hackers who agreed to share with sponsors. A
+ * hacker can show up in several tiers; the planner and the line keep the
+ * first.
+ */
+export async function loadCandidates(
   conn: Conn,
   sponsorIds: readonly string[],
   now: Date,
@@ -322,7 +340,20 @@ async function loadCandidates(
   const out = new Map<string, { userId: string; source: InviteSource }[]>();
   if (sponsorIds.length === 0) return out;
   const ids = [...sponsorIds];
-  const [scans, shortlist, interested] = await Promise.all([
+  const [front, scans, shortlist, interested] = await Promise.all([
+    conn
+      .select({
+        sponsorId: coffeeChatLine.sponsorId,
+        userId: coffeeChatLine.userId,
+      })
+      .from(coffeeChatLine)
+      .where(
+        and(
+          inArray(coffeeChatLine.sponsorId, ids),
+          eq(coffeeChatLine.kind, "front"),
+        ),
+      )
+      .orderBy(desc(coffeeChatLine.createdAt), asc(coffeeChatLine.userId)),
     conn
       .select({
         sponsorId: sponsorScans.sponsorId,
@@ -353,7 +384,9 @@ async function loadCandidates(
       ),
   ]);
   const userIds = [
-    ...new Set([...scans, ...shortlist, ...interested].map((r) => r.userId)),
+    ...new Set(
+      [...front, ...scans, ...shortlist, ...interested].map((r) => r.userId),
+    ),
   ];
   if (userIds.length === 0) return out;
   const eligibleRows = await conn
@@ -381,6 +414,7 @@ async function loadCandidates(
       ]);
     }
   };
+  add(front, "organizer");
   add(scans, "scanned");
   add(shortlist, "shortlist");
   add(interested, "interested");
@@ -464,11 +498,12 @@ async function writeInviteRound(
   for (const c of layout) {
     c.live = rows.filter((r) => atChat(r, c) && isLive(r)).length;
   }
-  const blocked = new Set(
-    rows
+  const blocked = new Set([
+    ...rows
       .filter((r) => r.status === "declined" || r.status === "expired")
       .map((r) => `${r.sponsorId}|${r.userId}`),
-  );
+    ...(await loadRemovedPairs(tx)),
+  ]);
   const sponsorIds = [...new Set(layout.map((c) => c.sponsorId))];
   const candidates = await loadCandidates(tx, sponsorIds, now);
   const order = state.sponsors

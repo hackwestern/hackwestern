@@ -63,6 +63,7 @@ const placement = (sessionId: string, room: string, window: { start: number; end
   sessionId,
   room,
   pinned: false,
+  forced: false,
   status: "sent" as const,
   sentAt: null,
   window,

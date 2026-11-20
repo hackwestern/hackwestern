@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { PrimaryCrownIcon } from "~/components/sponsors/organizer/primary-crown";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
@@ -23,6 +23,109 @@ export const hatch =
   "bg-[repeating-linear-gradient(135deg,theme(colors.dashboard.border.subtle)_0_3px,theme(colors.dashboard.bg.surface)_3px_8px)]";
 
 export const sessionLabel = (id: string) => copy.sessions[id] ?? id;
+
+/**
+ * The red primary button of a warning (moving or removing something that
+ * tells hackers, or a rep who isn't free): Tailwind's existing destructive
+ * colours on a primary DashboardButton (white on destructive-dark, about
+ * 4.8:1; hover #b42318, the notice danger token). DashboardButton itself has
+ * no red variant (shared component).
+ */
+export const dangerButton =
+  "bg-destructive-dark text-dashboard-text-inverse shadow-none hover:bg-dashboard-notice-danger disabled:hover:bg-destructive-dark focus-visible:ring-destructive-dark";
+
+/** The Sent or Draft dot after a rep's name (the word for screen readers and the tooltip). */
+export function StatusDot({ sent }: { sent: boolean }) {
+  const word = sent ? copy.rooms.tagSent : copy.rooms.tagDraft;
+  return (
+    <span
+      data-tip={word}
+      className={cn(
+        "inline-flex size-3.5 shrink-0 items-center justify-center",
+        sent ? "text-dashboard-status-live" : "text-dashboard-text-light",
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn("size-2 rounded-full", sent ? "bg-current" : "shadow-[inset_0_0_0_1.5px_currentColor]")}
+      />
+      <span className="sr-only">{word}</span>
+    </span>
+  );
+}
+
+/**
+ * One tooltip for the board (dark, 13px) on anything with data-tip: logos
+ * and the Sent or Draft dots. Hover shows it; on touch a 450 ms press shows
+ * it for 1.6 s, except inside a draggable cell (that press starts a drag).
+ */
+export function BoardTips({ off }: { off: boolean }) {
+  const [tip, setTip] = useState<{ text: string; x: number; y: number } | null>(null);
+  const offRef = useRef(off);
+  offRef.current = off;
+  useEffect(() => {
+    if (off) setTip(null);
+  }, [off]);
+  useEffect(() => {
+    const at = (el: HTMLElement) => {
+      const r = el.getBoundingClientRect();
+      setTip({ text: el.dataset.tip ?? "", x: r.left + r.width / 2, y: r.top });
+    };
+    const over = (e: MouseEvent) => {
+      if (offRef.current) return;
+      const el = (e.target as HTMLElement | null)?.closest?.<HTMLElement>("[data-tip]");
+      if (el) at(el);
+      else setTip(null);
+    };
+    let press: ReturnType<typeof setTimeout> | undefined;
+    let hide: ReturnType<typeof setTimeout> | undefined;
+    const touch = (e: TouchEvent) => {
+      const el = (e.target as HTMLElement | null)?.closest?.<HTMLElement>("[data-tip]");
+      if (!el || el.closest("[data-drag]")) return;
+      press = setTimeout(() => {
+        at(el);
+        hide = setTimeout(() => setTip(null), 1600);
+      }, 450);
+    };
+    const cancel = () => clearTimeout(press);
+    const hideNow = () => setTip(null);
+    document.addEventListener("mouseover", over);
+    document.addEventListener("touchstart", touch, { passive: true });
+    for (const ev of ["touchend", "touchmove", "scroll"] as const) {
+      document.addEventListener(ev, cancel, { passive: true, capture: true });
+    }
+    window.addEventListener("scroll", hideNow, { passive: true, capture: true });
+    return () => {
+      clearTimeout(press);
+      clearTimeout(hide);
+      document.removeEventListener("mouseover", over);
+      document.removeEventListener("touchstart", touch);
+      for (const ev of ["touchend", "touchmove", "scroll"] as const) {
+        document.removeEventListener(ev, cancel, { capture: true });
+      }
+      window.removeEventListener("scroll", hideNow, { capture: true });
+    };
+  }, []);
+  // Above the element, kept 8px inside the window.
+  const boxRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = boxRef.current;
+    if (!el || !tip) return;
+    const w = el.offsetWidth;
+    el.style.left = `${Math.max(8, Math.min(window.innerWidth - w - 8, tip.x - w / 2))}px`;
+    el.style.top = `${Math.max(8, tip.y - el.offsetHeight - 6)}px`;
+  }, [tip]);
+  if (!tip) return null;
+  return (
+    <div
+      ref={boxRef}
+      role="tooltip"
+      className="pointer-events-none fixed left-0 top-0 z-[70] whitespace-nowrap rounded-dashboard-md bg-dashboard-text-heavy px-2 py-1 text-[13px] font-medium text-dashboard-text-inverse shadow-dashboard-card"
+    >
+      {tip.text}
+    </div>
+  );
+}
 
 /** Minutes after midnight -> "1:30" (no AM/PM: the board is daytime). */
 export function clockOf(min: number): string {
@@ -52,7 +155,7 @@ export function Logo({
       <span
         role="img"
         aria-label={name}
-        title={name}
+        data-tip={name}
         className={cn(
           "inline-flex min-w-0 items-center font-extrabold leading-none tracking-wide text-dashboard-text-heavy",
           size === "sm" ? "text-[13px]" : "text-[15px]",
@@ -68,7 +171,7 @@ export function Logo({
     <img
       src={src}
       alt={name}
-      title={name}
+      data-tip={name}
       className={cn(
         "block w-auto max-w-full shrink-0 object-contain object-left",
         size === "sm" ? "h-4 max-w-[84px]" : "h-5 max-w-[100px]",

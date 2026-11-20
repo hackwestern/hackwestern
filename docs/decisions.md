@@ -833,3 +833,36 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Decision:** The finished sponsor portal follows `hackwestern-sponsor-dash/mocks/sponsor-chats-v3` (its flow, screens and information, with v1/v2's READMEs for what v3 didn't change), replacing what the portal shows today. Approves sponsor-chats-v3 for build. Real data replaces the mock's fake data (contacts from HW Contacts and Noah, tier from the sponsor sheet, hackers from the candidate list).
 **Why:** Jazz: "EVERYTHING should look like this, the finished spon portal for sponsors should follow this exact flow."
 **Alternatives:** keep the current portal (v6 restyle) and patch pieces in.
+
+## 2026-11-19: Organizer coffee chat board = mock organizer-coffee-v12, approved for build (Jazz)
+
+**Decision:** Build v12 in full, behaviour as well as look ("follow everything"). Because v12 is v11 with real sponsor data, and v11 and v10 build on v9, this approves v9, v10 and v11 as well: drag to highlighted free cells with "Are you sure?" on unavailable drops, a warning before moving a sent chat, fixed-size cells with chat details in a modal (a bottom sheet on phones), per-chat counts, contacting the rep before an unavailable move, editing and removing hackers, and putting someone first in line.
+**Why:** Jazz asked to build from v12.
+**Alternatives:** the current built board (v8-era).
+
+## 2026-11-19: Coffee board v12 build: answers and defaults
+
+**Jazz decided:**
+- **Never during the workshop.** A forced ("isn't free") move can't land in the sponsor's own workshop window or its 15-min buffers. The old rule stands; workshop cells don't light up and can't take a forced drop.
+- **Never two places at once.** The "already has a chat in Rm X then" case is refused with an error toast like room-taken. The unique (rep, session) index stays.
+
+**Defaults taken while building (from docs/plans/coffee-board-v12-gap.md, section 4; change any by asking):**
+- Newer decisions win over older mock copy: the Send dialog says "invite hackers to N seats" (no open seats), and Help describes round 1 ending at 10 AM with declines re-sent at once.
+- "answer by" shows each invite's real expiresAt. Hacker names: first name + last initial (as on the Invites sheet tab). The ID example uses the real format ("brave-otter-kite").
+- "Next in line" skips to the first person who can take that seat (free then, under the 2-chat cap, agreed to share). Organizers can't override the share agreement. A removed hacker is not offered that sponsor again (the same as decline).
+- Forced chats are never flagged as fixes again, Auto-schedule keeps them, and a normal move clears the mark. The Room Grid sheet doesn't mark them.
+- Partial sessions keep their real time ("1:00–1:30") on the format line, and the count is the real one. Walk notes stay in the modal. The "Sent. … Your chats" line is dropped, as in the mock.
+- Red buttons use the existing Tailwind `destructive` colours. A red variant on DashboardButton is a shared-component change, made in the main folder first.
+- Sponsor order: by name, as now (the mock order is only its data order). "Placed N chats." counts chats added. The Undo toast lasts 5 s.
+
+## 2026-11-19: Coffee board v12 UI build choices
+
+**Decision:**
+- A drop the rules never allow (the sponsor's workshop window, or a rep already chatting elsewhere then) is refused with an error toast, like a taken room. Only "didn't tick it" opens the two-step contact dialog.
+- Undo after removing a forced draft puts it back forced (placeChat with force), so it keeps its "Not free" mark.
+- Red buttons: `destructive-dark` fill with the existing `dashboard.notice.danger` (#b42318) as hover, set by className; the Remove zone uses `notice.danger` and `destructive/10`. No token or DashboardButton change.
+- The hacker ID placeholder uses the real format ("brave-otter-kite"); the camera button opens the real scanner (useQrScanner).
+- While a drag runs, the board shows the data it started with and stops refetching, so touch targets never leave the DOM.
+**Why:** each follows Jazz's "never" answers or keeps the build inside this worktree's rules (no shared files).
+**Alternatives:** a dialog for every unlit drop (mock v9); a red DashboardButton variant (shared component, main folder first).
+

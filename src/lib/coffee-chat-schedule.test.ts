@@ -376,3 +376,23 @@ describe("pins are re-checked (boardFixes)", () => {
     expect(boardFixes(DEMO, ROOMS, SESS, r.board)).toEqual(r.fixes);
   });
 });
+
+describe("forced chats (moved by hand after contacting the rep)", () => {
+  test("not ticked free is fine when forced; the workshop window still isn't", () => {
+    // startech:0 is free 11 and 14, so 10 is a "notFree" chat unless forced.
+    const forced: Board = { "2241|10": { type: "chat", rep: "startech:0", pinned: true, forced: true } };
+    expect(invalidChats(DEMO, SESS, forced)).toEqual([]);
+    expect(boardFixes(DEMO, ROOMS, SESS, forced).filter((f) => f.problem === "invalid")).toEqual([]);
+    expect(checkBoard(DEMO, ROOMS, SESS, forced).filter((b) => b.includes("not free"))).toEqual([]);
+    // Sun Life blocks 14: forced or not, that's a workshop problem.
+    const inWorkshop: Board = { "2241|14": { type: "chat", rep: "sunlife:1", pinned: true, forced: true } };
+    expect(invalidChats(DEMO, SESS, inWorkshop)).toMatchObject([{ problem: "workshop" }]);
+  });
+
+  test("a forced pin keeps its mark through Auto-schedule", () => {
+    const pin: Pin = { room: "2241", session: "10", type: "chat", rep: "startech:0", forced: true };
+    const r = schedule(DEMO, ROOMS, SESS, [pin]);
+    expect(r.board["2241|10"]).toEqual({ type: "chat", rep: "startech:0", pinned: true, forced: true });
+    expect(invalidChats(DEMO, SESS, r.board)).toEqual([]);
+  });
+});

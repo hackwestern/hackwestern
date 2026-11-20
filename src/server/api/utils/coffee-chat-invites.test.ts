@@ -769,7 +769,7 @@ describe("coffeeChatInvites router", () => {
       room: "Rm 2241",
     });
     expect(a.chats[0]!.invites.map((i) => [i.name, i.status])).toEqual([
-      ["h5 Person", "accepted"],
+      ["h5 P.", "accepted"],
     ]);
     // Declined and expired invites aren't listed: they were replaced.
     expect(a.chats[1]!.invites).toEqual([]);

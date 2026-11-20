@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { coffeeChatInvitesCopy } from "~/content/coffee-chat-invites";
@@ -19,6 +20,19 @@ import {
   protectedOrganizerProcedure,
 } from "~/server/api/trpc";
 import {
+  mirrorCoffeeInvitesLater,
+  shortName,
+} from "~/server/api/utils/coffee-chat-invites-sheet-mirror";
+import {
+  checkHacker,
+  hackerCheckError,
+  putFirstInLine,
+  replaceInvite,
+  sponsorLineView,
+} from "~/server/api/utils/coffee-chat-line";
+import { db } from "~/server/db";
+import {
+  deliverInviteNotices,
   invitesEnabled,
   layoutOf,
   runAndDeliver,
@@ -27,9 +41,11 @@ import {
   sessionInviteRows,
 } from "~/server/api/utils/coffee-chat-invites";
 import { loadBoardState } from "~/server/api/utils/coffee-chat-sessions-board";
+import { coffeeChats } from "~/server/db/schema";
 
 export type InviteSeat = {
   chatId: string;
+  /** First name and last initial ("Ada L."), as on the Invites sheet tab. */
   name: string;
   /** Only live invites are listed: declined and expired ones are replaced. */
   status: "pending" | "accepted";
@@ -119,9 +135,7 @@ export const coffeeChatInvitesRouter = createTRPCRouter({
           placementId: r.placementId!,
           start: minutesOfClock(r.slotTime) ?? 0,
         });
-        const name =
-          [r.firstName, r.lastName].filter((x) => x?.trim()).join(" ") ||
-          (r.userName ?? "");
+        const name = shortName(r.firstName, r.lastName, r.userName);
         const status = effectiveCoffeeChatStatus(r, now);
         // Declined and expired invites aren't shown: their seat was offered
         // to the next hacker.
@@ -217,5 +231,104 @@ export const coffeeChatInvitesRouter = createTRPCRouter({
         created: out.status === "ok" ? out.created.length : 0,
         delivery: out.delivery,
       };
+    }),
+
+  /**
+   * A sponsor's line (coffee board v12): the next few hackers who'd get a
+   * free seat, and with `chatId` (a live invite) who'd get that seat.
+   */
+  line: protectedOrganizerProcedure
+    .input(
+      z.object({
+        sponsorId: z.string().uuid(),
+        chatId: z.string().uuid().optional(),
+      }),
+    )
+    .query(({ input }) =>
+      sponsorLineView(input.sponsorId, { chatId: input.chatId }),
+    ),
+
+  /**
+   * Check a scanned or typed hacker ID for this sponsor, before an organizer
+   * gives them a seat or puts them first in line. With `chatId`, also free
+   * at that invite's time. Returns their name, or why not.
+   */
+  checkHacker: protectedOrganizerProcedure
+    .input(
+      z.object({
+        sponsorId: z.string().uuid(),
+        code: z.string().trim().min(1).max(255),
+        chatId: z.string().uuid().optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const [row] = input.chatId
+        ? await db
+            .select({
+              sponsorId: coffeeChats.sponsorId,
+              slotTime: coffeeChats.slotTime,
+              minutes: coffeeChats.durationMinutes,
+            })
+            .from(coffeeChats)
+            .where(eq(coffeeChats.id, input.chatId))
+        : [];
+      const check = await checkHacker(db, input.sponsorId, input.code, {
+        seat: row
+          ? {
+              sponsorId: row.sponsorId,
+              start: minutesOfClock(row.slotTime) ?? 0,
+              minutes: row.minutes,
+            }
+          : undefined,
+      });
+      return check.kind === "ok"
+        ? { ok: true as const, name: check.name }
+        : { ok: false as const, error: hackerCheckError(check, input.code)! };
+    }),
+
+  /**
+   * Remove a hacker from a sent chat: they're told it's cancelled and never
+   * offered this sponsor again. Their seat goes to the next person in line
+   * who can take it, or to a hacker picked by ID ("Added by organizer").
+   */
+  replace: protectedOrganizerProcedure
+    .input(
+      z.object({
+        chatId: z.string().uuid(),
+        pick: z.discriminatedUnion("kind", [
+          z.object({ kind: z.literal("next") }),
+          z.object({
+            kind: z.literal("code"),
+            code: z.string().trim().min(1).max(255),
+          }),
+        ]),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const out = await db.transaction((tx) =>
+        replaceInvite(tx, { ...input, by: ctx.session.user.id }),
+      );
+      await deliverInviteNotices(out.jobs);
+      mirrorCoffeeInvitesLater();
+      return { removed: out.removed, invited: out.invited };
+    }),
+
+  /** Put a hacker first in a sponsor's line (newest pick first). */
+  putFirst: protectedOrganizerProcedure
+    .input(
+      z.object({
+        sponsorId: z.string().uuid(),
+        code: z.string().trim().min(1).max(255),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const out = await db.transaction((tx) =>
+        putFirstInLine(tx, { ...input, by: ctx.session.user.id }),
+      );
+      if (out.jobs.length) {
+        await deliverInviteNotices(out.jobs);
+        mirrorCoffeeInvitesLater();
+      }
+      return { name: out.name };
     }),
 });

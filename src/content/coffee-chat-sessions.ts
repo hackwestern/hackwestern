@@ -1,5 +1,5 @@
 // Copy for the organizer coffee chat board (Coffee chats tab of
-// /internal/sponsors), from mocks/organizer-coffee-v8. Keep wording here, not
+// /internal/sponsors), from mocks/organizer-coffee-v8 to v12. Keep wording here, not
 // in components. Help text is the "Coffee chats" and "Where data lives"
 // sections of mocks/_data/organizer-help.md, as written there.
 
@@ -76,7 +76,8 @@ export const coffeeSessionsCopy = {
      * Once a sponsor is sent: their hackers' invites, all chats together.
      * No declined or open count: a "no" is replaced by the next hacker.
      */
-    invites: (accepted: number, waiting: number) => `${accepted} accepted · ${waiting} waiting`,
+    invites: (seats: number, accepted: number, waiting: number) =>
+      `Invites: ${plural(seats, "seat")} · ${accepted} accepted · ${waiting} waiting`,
     invitesOff: "Invites are switched off on this server, so none go out.",
     facts: (p: { hackersPerChat: number }) =>
       p.hackersPerChat === 1
@@ -184,15 +185,35 @@ export const coffeeSessionsCopy = {
     rm: (id: string) => `Rm ${id}`,
     iveyRm: (id: string) => `Ivey, Rm ${id}`,
     cellBook: (where: string) => `Book a room: ${where}`,
-    cellMoveHere: (where: string) => `Move here: ${where}`,
-    moveHere: "Move here",
+    cellMoveHere: (where: string) => `Drop here: ${where}`,
+    /** A lit cell while dragging: the rep can take it with no question. */
+    dropHere: "Drop here",
+    /** The red zone over the bottom bar while dragging. */
+    dropRemove: "Drop here to remove",
     where: (room: string, s: string) => `${room}, ${s}`,
-    chatLabel: (sponsor: string, rep: string, where: string) =>
-      `${sponsor} · ${rep}, ${where}`,
+    /** "Sun Life · Dana W., 2241, 10–11, 2 chats · 3 each, Draft" (+ ", Not free"). */
+    chatLabel: (sponsor: string, rep: string, where: string, format?: string, tag?: string, forced?: boolean) =>
+      [`${sponsor} · ${rep}`, where, format, tag, forced ? "Not free" : ""].filter(Boolean).join(", "),
+    /** A cell's tooltip: its lines joined, "Dana W. · Sun Life · 2 chats · 3 each · Draft". */
+    cellTitle: (parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(" · "),
+    /**
+     * A chat cell's third line: chats first, then their size. A partial
+     * session leads with the part of the hour it uses.
+     */
+    cellFormat: (chats: number, hackersPerChat: number, part?: string | null) =>
+      [part, `${plural(chats, "chat")} · ${hackersPerChat === 1 ? "1-on-1" : `${hackersPerChat} each`}`]
+        .filter(Boolean)
+        .join(" · "),
+    hintMouse: "Drag a chat to move it. Click it for details.",
+    hintTouch: "Press and hold a chat, then drag to move it. Tap it for details.",
+    tagSent: "Sent",
+    tagDraft: "Draft",
+    tagForced: "Not free",
     workshopCell: (room: string | null) =>
       room ? `workshop · ${room}` : "workshop",
+    /** "Sun Life workshop · 2:30–3:30 PM · Rm 2230" (time before room). */
     workshopLabel: (sponsor: string, room: string | null, when: string) =>
-      `${sponsor} workshop${room ? ` · ${room}` : ""} · ${when}`,
+      `${sponsor} workshop · ${when}${room ? ` · ${room}` : ""}`,
     adhoc: "Booked by organizers",
     /** A chat in a partial session: the part of the hour it uses. */
     partialTime: (from: string, to: string) => `${from}–${to}`,
@@ -201,18 +222,132 @@ export const coffeeSessionsCopy = {
 
   detail: {
     close: "Close",
-    move: "Move",
     remove: "Remove",
     cancel: "Cancel",
-    movePick: (who: string) => `Tap an empty cell when ${who} is free.`,
     format: (p: { hackersPerChat: number }) =>
       p.hackersPerChat === 1
         ? "1-on-1 · 15 min"
         : `Group of ${p.hackersPerChat}`,
-    toInvite: (n: number) => `${n} hackers to invite`,
     sent: "Sent",
-    afterSend: "Sent. Hackers are invited; this sponsor sees it under Your chats.",
+    draft: "Draft",
     pinned: "Placed by hand: Auto-schedule keeps it here.",
+    forcedNote: (rep: string) => `Moved by hand to a time ${rep} isn't free.`,
+    notSentYet: "Not sent yet. Hackers are invited when Noah sends.",
+    /** "Sun Life · Rm 2241 · 10–11" under the rep's name. */
+    sub: (sponsor: string, where: string) => `${sponsor} · ${where}`,
+    /** A draft: "6 seats in 2 chats". */
+    draftSum: (seats: number, chats: number) => `${plural(seats, "seat")} in ${plural(chats, "chat")}`,
+    /** A sent chat: "10 seats in 2 chats · 6 accepted · 4 waiting". */
+    sum: (seats: number, chats: number, accepted: number, waiting: number) =>
+      `${plural(seats, "seat")} in ${plural(chats, "chat")} · ${accepted} accepted · ${waiting} waiting`,
+    /** Move to… (the keyboard way to move): only cells the rep can take with no question. */
+    moveTo: "Move to…",
+    moveListTitle: (who: string) => `Free cells for ${who}`,
+    moveNone: (who: string) => `No empty room when ${who} is free.`,
+    moveToLabel: (room: string, s: string) => `Move to ${room} at ${s}`,
+  },
+
+  /** A sent chat's hackers in the modal, one block per chat. */
+  hackers: {
+    label: "Invited hackers",
+    chatLabel: (time: string) => `Chat at ${time}`,
+    /** "10:00–10:15 · 1-on-1 · 1 accepted"; zero counts are left out. */
+    chatHead: (time: string, hackersPerChat: number, accepted: number, waiting: number) =>
+      [
+        time,
+        hackersPerChat === 1 ? "1-on-1" : `Group of ${hackersPerChat}`,
+        [accepted ? `${accepted} accepted` : "", waiting ? `${waiting} waiting` : ""].filter(Boolean).join(", "),
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    accepted: "Accepted",
+    waiting: "Waiting",
+    answerBy: (time: string) => `answer by ${time}`,
+    /** Why they were invited (coffee_chat.source). */
+    why: {
+      organizer: "Added by organizer",
+      scanned: "Met at your booth",
+      shortlist: "Shortlist",
+      interested: "Interested",
+    } as Record<string, string>,
+    edit: "Edit hackers",
+    done: "Done",
+    remove: "Remove",
+    removeLabel: (name: string) => `Remove ${name}`,
+    queueTitle: "Next in line",
+    queueNone: "Nobody is in line.",
+    addButton: "Put someone first in line",
+    loading: "Loading hackers…",
+    loadError: "Couldn't load this chat's hackers.",
+  },
+
+  /** Warnings before a change that tells hackers, or a move to a time the rep isn't free. */
+  warn: {
+    confirmedTitle: "This chat is confirmed.",
+    /** "This hour has 4 hackers in 4 chats (3 accepted, 1 waiting)." */
+    invited: (hackers: number, chats: number, accepted: number, waiting: number) =>
+      `This hour has ${plural(hackers, "hacker")} in ${plural(chats, "chat")} (${[
+        accepted ? `${accepted} accepted` : "",
+        waiting ? `${waiting} waiting` : "",
+      ]
+        .filter(Boolean)
+        .join(", ")}).`,
+    moveAsk: "Moving it asks them to confirm the new time or room.",
+    removeAsk: "Removing it cancels the chat and tells them.",
+    moveTell: "Move and tell them",
+    removeTell: "Remove and tell them",
+    cancel: "Cancel",
+    /** Two steps: contact the rep, then confirm they can do it. */
+    check: {
+      title: (rep: string, s: string) => `${rep} isn't free at ${s}`,
+      notFree: (s: string) => `They didn't tick ${s} as free.`,
+      contact: (who: string) => `Contact ${who} before moving the chat.`,
+      call: "Call",
+      callLabel: (name: string, phone: string) => `Call ${name}, ${phone}`,
+      contacted: (who: string) => `I've contacted ${who}`,
+      ask: (who: string, s: string) => `Did ${who} confirm they can do ${s}?`,
+      sentLine: (hackers: number, chats: number) =>
+        `${plural(hackers, "hacker")} in ${plural(chats, "chat")} will be asked to confirm the new time or room.`,
+      yes: "Yes, move the chat",
+      yesTell: "Yes, move and tell them",
+      no: "No, keep it where it is",
+    },
+  },
+
+  /** Editing a sent chat's hackers: remove one (who gets the seat?) and put someone first in line. */
+  line: {
+    removeTitle: (name: string) => `Remove ${name} from this chat?`,
+    removeLine: (name: string) => `${name} will be told the chat is cancelled.`,
+    whoGets: "Who gets this seat?",
+    next: (name: string, why: string) => `Next in line: ${name} · ${why}`,
+    nextNone: "Next in line: nobody is in line",
+    other: "Someone else: scan or enter a hacker ID",
+    idLabel: "Hacker ID",
+    idPlaceholder: "Hacker ID, e.g. brave-otter-kite",
+    scanLabel: "Scan a hacker's badge",
+    stopScan: "Stop scanning",
+    camera: {
+      starting: "Starting the camera…",
+      scanning: "Hold the badge's QR code up to the camera.",
+      denied: "Camera access is blocked. Type the hacker ID instead.",
+      unavailable: "No camera here. Type the hacker ID instead.",
+      error: "The camera stopped. Type the hacker ID instead.",
+      notCode: "That code isn't a hacker ID.",
+      label: "Camera",
+    },
+    checking: "Checking…",
+    /** A valid "Someone else" pick. */
+    front: (name: string) => `${name} · goes to the front of the line`,
+    removeGo: (name: string) => `Remove and invite ${name}`,
+    removeGoEmpty: "Remove and invite…",
+    addTitle: "Put someone first in line",
+    addHint: "Scan or enter a hacker ID.",
+    addLine: (name: string) =>
+      `${name} will get this sponsor's next free seat (before booth, shortlist and interested hackers).`,
+    addGo: "Add to front",
+    cancel: "Cancel",
+    toastReplaced: (old: string, name: string) => `Removed ${old}. Invited ${name}.`,
+    toastFront: (name: string) => `${name} is first in line.`,
   },
 
   booking: {
@@ -345,6 +480,7 @@ export const coffeeSessionsCopy = {
     button: "Help",
     title: "How coffee chats work",
     close: "Close",
+    cellNote: "A cell is one rep for one hour. Groups run 2 chats an hour; 1-on-1s run 4.",
     give: {
       lead: "What sponsors give us",
       rest: " (at the Friday 5 PM workshop): their team (one main contact, every rep has a phone), hackers per chat (1–5; a 1-on-1 is 15 min, a group 30), which 1-hour sessions each rep is free (10–11, 11–12, 1–2, 2–3, 3–4, 4–5), and how many chats each rep wants. The shortlist is optional, up to their number of hacker seats.",

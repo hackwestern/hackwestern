@@ -100,4 +100,24 @@ export const coffeeChatInvitesCopy = {
       "Can't read the run of show, so workshop times are unknown. Invites weren't sent; try again in a minute.",
     unknownSponsor: "That sponsor isn't registered.",
   },
+
+  /**
+   * Organizer edits to a sponsor's hackers on the coffee board (remove a
+   * hacker and fill the seat, put someone first in line). Server errors,
+   * shown as toasts or under the hacker ID field.
+   */
+  line: {
+    unknown: (code: string) => `No hacker with ID ${code}.`,
+    taken: (name: string) => `${name} is already invited or in line.`,
+    blocked: (name: string) =>
+      `${name} said no to this sponsor or was removed, so they aren't offered it again.`,
+    noShare: (name: string) =>
+      `${name} didn't agree to share with sponsors, so they can't be invited.`,
+    busy: (name: string) => `${name} already has a chat then.`,
+    full: (name: string) => `${name} already has 2 chats.`,
+    nobody: "Nobody in line can take this seat.",
+    inviteGone: "That invite is gone. The board changed.",
+    tooLate: "It's too close to this chat to invite anyone.",
+    invitesOff: "Invites are switched off on this server, so nobody can be invited.",
+  },
 } as const;

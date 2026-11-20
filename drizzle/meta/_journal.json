@@ -414,6 +414,13 @@
       "when": 1795132502919,
       "tag": "0061_judging_board",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1795138273246,
+      "tag": "0062_coffee_board_v12",
+      "breakpoints": true
     }
   ]
 }
