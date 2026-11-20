@@ -525,7 +525,12 @@ export const sponsorSetupCopy = {
     heading: (name: string) => `You met ${name}`,
     already: (when: string, rep: string | null) =>
       rep ? `Already on your list · added ${when} · talked to ${rep}` : `Already on your list · added ${when}`,
-    metLegend: "Who talked to them? (optional)",
+    metLegend: "Who talked to them?",
+    optional: "(optional)",
+    onList: (name: string) => `${name} is on your list`,
+    invitedFirst: "They're invited before anyone on your shortlist.",
+    invitedFirstLive: "We'll invite them to the next open seat in your chats.",
+    chatWith: (rep: string) => `They'll chat with ${rep} if they can`,
     noRep: "Anyone",
     add: "Add to my list",
     save: "Save",

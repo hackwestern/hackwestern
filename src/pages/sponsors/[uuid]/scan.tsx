@@ -1,11 +1,11 @@
 import { useRouter } from "next/router";
 import { BadgeScanner } from "~/components/sponsors/badge-scanner";
+import { BackToChats } from "~/components/sponsors/coffee-setup/shared";
 import {
   InvalidLink,
   ScheduleSkeleton,
 } from "~/components/sponsors/schedule-states";
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
-import { sponsorPortalCopy } from "~/content/sponsor-portal";
 import { sponsorScanCopy as copy } from "~/content/sponsor-scan";
 import { badgeCodeOf } from "~/lib/use-qr-scanner";
 import { api } from "~/utils/api";
@@ -33,7 +33,7 @@ export default function SponsorScanPage() {
     <SponsorShell
       title={copy.seoTitle}
       heading={hacker ? copy.offerTitle : copy.title}
-      barTitle={sponsorPortalCopy.nav.scan}
+      headerStart={<BackToChats href={`/sponsors/${id}/coffee-chats`} />}
     >
       {children}
     </SponsorShell>
@@ -47,8 +47,8 @@ export default function SponsorScanPage() {
   return shell(
     <>
       {/* The intro stays on phones too: it says what scanning does. */}
-      <p className="m-0 max-w-[62ch] text-base text-dashboard-text-medium">
-        {hacker ? copy.offerIntro : copy.intro}
+      <p className="-mt-2 mb-0 max-w-[62ch] text-sm">
+        {hacker ? copy.offerIntro : sponsorQ.data?.confirmed ? copy.introLive : copy.intro}
       </p>
       <BadgeScanner
         key={hacker ?? ""}
