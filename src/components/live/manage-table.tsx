@@ -64,12 +64,18 @@ export const SearchBox = ({
   </div>
 );
 
-// The name, struck through when disabled, with a Draft or Disabled tag
-export const StatusName = ({ row }: { row: Row }) => (
+// The name, struck through when disabled or sold out, with a tag for each
+export const StatusName = ({
+  row,
+  soldOut = false,
+}: {
+  row: Row;
+  soldOut?: boolean;
+}) => (
   <span className="flex flex-wrap items-center gap-2">
     <span
       className={cn(
-        row.status === "disabled" &&
+        (row.status === "disabled" || soldOut) &&
           "text-dashboard-text-disabled line-through",
       )}
     >
@@ -80,6 +86,7 @@ export const StatusName = ({ row }: { row: Row }) => (
         {row.status === "draft" ? "Draft" : "Disabled"}
       </DashboardTag>
     )}
+    {soldOut && <DashboardTag>Sold out</DashboardTag>}
   </span>
 );
 

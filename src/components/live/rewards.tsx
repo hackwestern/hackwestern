@@ -176,7 +176,7 @@ const Rewards = () => {
                       <TableCell
                         className={cn(CELL, "text-dashboard-text-heavy")}
                       >
-                        <StatusName row={r} />
+                        <StatusName row={r} soldOut={isSoldOut(r)} />
                       </TableCell>
                       <TableCell
                         className={cn(
