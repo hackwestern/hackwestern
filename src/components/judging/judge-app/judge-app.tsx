@@ -27,6 +27,7 @@ import {
 } from "~/components/judging/judge-app/judge-teams";
 import { JudgeComparison } from "~/components/judging/judge-app/judge-comparison";
 import { JudgeFinal } from "~/components/judging/judge-app/judge-final";
+import { JudgeQuestionBank } from "~/components/judging/judge-app/judge-question-bank";
 import {
   JudgeQueueList,
   useQueueLineup,
@@ -46,8 +47,10 @@ import { api } from "~/utils/api";
 // The rubric every judge scores with, until rubrics come from the backend.
 const RUBRIC = DEFAULT_RUBRIC;
 
-// Ratings are stored by criterion id:
-// { ratings: { technical: 7.5, ... }, notes, superLike }.
+// Each rubric category is sent with the mark as the same 0-10 slider value
+// the judge set, keyed by criterion id; the server stores each one in its own
+// team_mark column (impact_rating, ...), next to the overall 0-10 score:
+// { ratings: { impact: 7.5, ... }, notes, superLike }.
 const toBreakdown = (ratings: Ratings, notes: string, superLike: boolean) => ({
   ratings: Object.fromEntries(
     RUBRIC.criteria.map((c) => [c.id, ratings[c.id] ?? RUBRIC_MIN]),
@@ -55,14 +58,6 @@ const toBreakdown = (ratings: Ratings, notes: string, superLike: boolean) => ({
   ...(notes ? { notes } : {}),
   superLike,
 });
-
-function fromBreakdown(
-  b: { ratings?: Record<string, number> } | null,
-): Ratings {
-  // Marks saved before ratings were keyed by criterion have no `ratings`; the
-  // sliders start empty for those.
-  return b?.ratings ? { ...b.ratings } : {};
-}
 
 // Where the judge is in the flow. It is remembered on this device, per judge.
 // The server doesn't know about it yet, so it guides this app, not the judging
@@ -234,10 +229,11 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       teamId: m.teamId,
       table: initial.tableByTeam[m.teamId] ?? null,
       teamName: m.team.name,
-      ratings: fromBreakdown(m.scoreBreakdown),
+      // Empty for a slider-only mark, so its sliders start empty.
+      ratings: { ...m.ratings },
       score: m.score,
-      notes: m.scoreBreakdown?.notes ?? "",
-      superLike: m.scoreBreakdown?.superLike === true,
+      notes: m.notes ?? "",
+      superLike: m.superLike,
     }))
     // Oldest first: marks are numbered in the order they were saved.
     .sort((a, b) => a.markId - b.markId);
@@ -400,10 +396,11 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   };
 
   // Tapping a tab always lands on that tab's main screen.
-  // Score keeps whatever is open there (a team being judged or edited).
+  // Score keeps whatever is open there (a team being judged or edited), and
+  // so does a trip to Questions and back.
   const changeTab = (next: JudgeTab) => {
     setTab(next);
-    if (next !== "score") setEditingId(null);
+    if (next !== "score" && next !== "questions") setEditingId(null);
   };
 
   const reviewAll = () => {
@@ -481,14 +478,18 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     setTab("score");
   };
 
-  const editing = tab === "score" && editingTeam !== undefined && canEdit;
-  const scoringPage =
-    tab === "score" && ((scoring && held !== null && canScoreNew) || editing);
+  // What the Score tab has open, whichever tab is showing.
+  const editOpen = editingTeam !== undefined && canEdit;
+  const scoreOpen = (scoring && held !== null && canScoreNew) || editOpen;
+  const editing = tab === "score" && editOpen;
+  const scoringPage = tab === "score" && scoreOpen;
 
   let header: ReactNode = null;
   if (tab === "map") {
     // The map page has no header: the map fills the whole screen height.
     header = null;
+  } else if (tab === "questions") {
+    header = <HeaderRow left="Questions" />;
   } else if (tab === "teams") {
     header = (
       <HeaderRow
@@ -514,6 +515,49 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       />
     );
   }
+
+  // The Score tab's screen. It stays mounted (just hidden) while Questions is
+  // open, so a half-finished score or edit is still there on the way back.
+  // The tab is locked until a team is chosen or opened for edit, so the last
+  // message is only a fallback.
+  const scoreBody: ReactNode =
+    editingTeam && canEdit ? (
+      <JudgeEdit
+        key={editingTeam.markId}
+        team={editingTeam}
+        rubric={RUBRIC}
+        mode={stage === "rescore" ? "rescore" : "edit"}
+        links={
+          // Project links stay hidden until re-scoring.
+          stage === "first"
+            ? undefined
+            : initial.linksByTeam[editingTeam.teamId]
+        }
+        saving={edit.isPending}
+        error={editError}
+        onSave={saveEdit}
+        onCancel={closeEdit}
+        onOpenQuestions={() => changeTab("questions")}
+      />
+    ) : scoring && held && canScoreNew ? (
+      <JudgeRubric
+        key={held.id}
+        judgeKey={judgeKey}
+        teamId={held.id}
+        teamName={held.name}
+        table={heldTable}
+        rubric={RUBRIC}
+        busy={sending}
+        error={scoreError}
+        onSubmit={submitScore}
+        onAbsent={teamNotHere}
+        onOpenQuestions={() => changeTab("questions")}
+      />
+    ) : (
+      <p className="px-1 text-base font-medium text-dashboard-text-light">
+        Choose a team to judge on the Next tab first.
+      </p>
+    );
 
   let body: ReactNode;
 
@@ -552,44 +596,10 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       />
     );
   } else if (tab === "score") {
-    // The Score tab is locked until a team is chosen or opened for edit, so the
-    // last message is only a fallback.
-    body =
-      editingTeam && canEdit ? (
-        <JudgeEdit
-          key={editingTeam.markId}
-          team={editingTeam}
-          rubric={RUBRIC}
-          mode={stage === "rescore" ? "rescore" : "edit"}
-          links={
-            // Project links stay hidden until re-scoring.
-            stage === "first"
-              ? undefined
-              : initial.linksByTeam[editingTeam.teamId]
-          }
-          saving={edit.isPending}
-          error={editError}
-          onSave={saveEdit}
-          onCancel={closeEdit}
-        />
-      ) : scoring && held && canScoreNew ? (
-        <JudgeRubric
-          key={held.id}
-          judgeKey={judgeKey}
-          teamId={held.id}
-          teamName={held.name}
-          table={heldTable}
-          rubric={RUBRIC}
-          busy={sending}
-          error={scoreError}
-          onSubmit={submitScore}
-          onAbsent={teamNotHere}
-        />
-      ) : (
-        <p className="px-1 text-base font-medium text-dashboard-text-light">
-          Choose a team to judge on the Next tab first.
-        </p>
-      );
+    // Drawn below, outside the animated section (see scoreBody).
+    body = null;
+  } else if (tab === "questions") {
+    body = <JudgeQuestionBank />;
   } else if (tab === "teams") {
     body =
       stage === "submitted" ? (
@@ -631,6 +641,8 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
 
   // Each section opens at the top and fades in, instead of snapping.
   const sectionKey = `${tab}:${phase}:${editingId ?? ""}:${scoring}`;
+  const scoreShown = tab === "score";
+  const scoreKept = scoreShown || (tab === "questions" && scoreOpen);
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [sectionKey]);
@@ -659,20 +671,28 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
           </div>
           <div
             key={sectionKey}
-            className={`flex flex-col duration-200 animate-in fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none ${
+            className={`flex flex-col duration-200 animate-in fade-in-0 slide-in-from-bottom-1 empty:hidden motion-reduce:animate-none ${
               mapPage ? "min-h-0 flex-1" : "gap-3"
             }`}
           >
             {body}
           </div>
+          {scoreKept && (
+            <div
+              // A class, not the hidden attribute: `flex` would override it.
+              className={`flex-col gap-3 duration-200 animate-in fade-in-0 slide-in-from-bottom-1 motion-reduce:animate-none ${
+                scoreShown ? "flex" : "hidden"
+              }`}
+            >
+              {scoreBody}
+            </div>
+          )}
         </main>
         <JudgeNav
           active={tab}
           onChange={changeTab}
           disabled={{
-            ...(!(scoring && held && canScoreNew) && !editing
-              ? { score: "choose a team to judge first" }
-              : {}),
+            ...(!scoreOpen ? { score: "choose a team to judge first" } : {}),
           }}
           labels={{ teams: stage === "submitted" ? "Results" : "My teams" }}
         />

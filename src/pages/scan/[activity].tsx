@@ -395,6 +395,11 @@ const ScanActivityPage = () => {
 
   return (
     <div className="flex h-dvh w-full flex-col bg-dashboard-bg-nav font-figtree">
+      {itemLoading && (
+        <p className="fixed inset-0 flex items-center justify-center text-base font-medium text-dashboard-text-medium">
+          Loading activity...
+        </p>
+      )}
       {/* Top Bar */}
       <header
         className={cn(

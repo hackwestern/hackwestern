@@ -485,7 +485,13 @@ describe("judge flow", () => {
     expect((await tableByNumber(1)).status).toBe("being_judged");
 
     const breakdown = {
-      ratings: { technical: 7.5, design: 6 },
+      ratings: {
+        impact: 8,
+        creativity: 7.5,
+        technical: 9,
+        design: 6,
+        adventurous: 8.5,
+      },
       notes: "Strong demo",
       superLike: true,
     };
@@ -502,11 +508,22 @@ describe("judge flow", () => {
     expect(mark).toMatchObject({
       score: 7,
       roundType: "regular",
-      scoreBreakdown: breakdown,
+      impactRating: 8,
+      creativityRating: 7.5,
+      technicalRating: 9,
+      designRating: 6,
+      adventurousRating: 8.5,
+      notes: "Strong demo",
+      superLike: true,
     });
 
     const mine = await j.caller.judging.me.getMyStops();
-    expect(mine.stops[0]).toMatchObject({ status: "done", mark: { score: 7 } });
+    expect(mine.stops[0]).toMatchObject({
+      status: "done",
+      mark: { score: 7, ratings: breakdown.ratings, superLike: true },
+    });
+    const [submitted] = await j.caller.judging.me.getSubmittedTeamMarks();
+    expect(submitted?.ratings).toEqual(breakdown.ratings);
     expect(mine.finished).toBe(1);
     expect(mine.nextStopId).toBe(mine.stops[1]?.id);
     // Two other judges still have table 1 to come.
@@ -1059,7 +1076,7 @@ describe("editTeamMark / deleteTeamMark", () => {
     await j.caller.judging.me.editTeamMark({
       teamMarkId,
       score: 9,
-      breakdown: { ratings: { technical: 9 } },
+      breakdown: { ratings: { impact: 9 } },
     });
     const row = await db.query.judges.findFirst({
       where: eq(judges.id, j.session.user.id),
@@ -1072,7 +1089,25 @@ describe("editTeamMark / deleteTeamMark", () => {
     const mark = await db.query.teamMarks.findFirst({
       where: eq(teamMarks.id, teamMarkId),
     });
-    expect(mark?.scoreBreakdown).toEqual({ ratings: { technical: 9 } });
+    // An edit with a breakdown rewrites every rubric column.
+    expect(mark).toMatchObject({
+      impactRating: 9,
+      creativityRating: null,
+      technicalRating: null,
+      designRating: null,
+      adventurousRating: null,
+      notes: null,
+      superLike: false,
+    });
+
+    // A criterion with no column is rejected rather than silently dropped.
+    await expect(
+      j.caller.judging.me.editTeamMark({
+        teamMarkId,
+        score: 9,
+        breakdown: { ratings: { pitch: 9 } as never },
+      }),
+    ).rejects.toThrow();
   });
 
   test("editTeamMark only edits your own marks", async () => {
@@ -1630,7 +1665,7 @@ describe("team_mark stat maintenance", () => {
     const b = await makeJudge();
     await db
       .insert(teamMarks)
-      .values({ teamId, judgeId: a.session.user.id, score: 40 });
+      .values({ teamId, judgeId: a.session.user.id, score: 4 });
 
     await db
       .update(teamMarks)
@@ -1648,8 +1683,8 @@ describe("team_mark stat maintenance", () => {
     expect(rowA?.marksSum).toBe(0);
     expect(rowA?.marksSquaredSum).toBe(0);
     expect(rowB?.marksCount).toBe(1);
-    expect(rowB?.marksSum).toBe(40);
-    expect(rowB?.marksSquaredSum).toBe(1600);
+    expect(rowB?.marksSum).toBe(4);
+    expect(rowB?.marksSquaredSum).toBe(16);
   });
 
   test("reassigning judge_id and score together stays consistent", async () => {
@@ -1658,11 +1693,11 @@ describe("team_mark stat maintenance", () => {
     const b = await makeJudge();
     await db
       .insert(teamMarks)
-      .values({ teamId, judgeId: a.session.user.id, score: 40 });
+      .values({ teamId, judgeId: a.session.user.id, score: 4 });
 
     await db
       .update(teamMarks)
-      .set({ judgeId: b.session.user.id, score: 90 })
+      .set({ judgeId: b.session.user.id, score: 9 })
       .where(eq(teamMarks.teamId, teamId));
 
     const rowA = await db.query.judges.findFirst({
@@ -1675,8 +1710,8 @@ describe("team_mark stat maintenance", () => {
     expect(rowA?.marksCount).toBe(0);
     expect(rowA?.marksSum).toBe(0);
     expect(rowB?.marksCount).toBe(1);
-    expect(rowB?.marksSum).toBe(90);
-    expect(rowB?.marksSquaredSum).toBe(8100);
+    expect(rowB?.marksSum).toBe(9);
+    expect(rowB?.marksSquaredSum).toBe(81);
   });
 
   test("editing only the score is still a delta on one judge", async () => {
@@ -1684,18 +1719,18 @@ describe("team_mark stat maintenance", () => {
     const j = await makeJudge();
     await db
       .insert(teamMarks)
-      .values({ teamId, judgeId: j.session.user.id, score: 40 });
+      .values({ teamId, judgeId: j.session.user.id, score: 4 });
 
     await db
       .update(teamMarks)
-      .set({ score: 90 })
+      .set({ score: 9 })
       .where(eq(teamMarks.teamId, teamId));
 
     const row = await db.query.judges.findFirst({
       where: eq(judges.id, j.session.user.id),
     });
     expect(row?.marksCount).toBe(1);
-    expect(row?.marksSum).toBe(90);
-    expect(row?.marksSquaredSum).toBe(8100);
+    expect(row?.marksSum).toBe(9);
+    expect(row?.marksSquaredSum).toBe(81);
   });
 });

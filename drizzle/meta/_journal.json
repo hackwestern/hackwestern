@@ -295,6 +295,41 @@
       "when": 1795050965855,
       "tag": "0041_organizer_clock",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1795131058475,
+      "tag": "0042_redemption_scanner",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1795138790500,
+      "tag": "0043_team_import_flags",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1795138800000,
+      "tag": "0044_team_mark_rating_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1795138800700,
+      "tag": "0045_drop_team_mark_score_breakdown",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1795138801400,
+      "tag": "0046_judging_normalization",
+      "breakpoints": true
     }
   ]
 }

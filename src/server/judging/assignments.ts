@@ -8,9 +8,10 @@
 import { TRPCError } from "@trpc/server";
 import { and, asc, eq, inArray, max, ne, sql } from "drizzle-orm";
 
+import { markColumnsFromBreakdown } from "~/lib/judging-criteria";
+import { type ScoreBreakdown } from "~/schemas/judging";
 import { db } from "~/server/db";
 import {
-  type ScoreBreakdown,
   judges,
   judgingAssignments,
   judgingTables,
@@ -544,7 +545,7 @@ export async function submitStop(
         teamId: team.id,
         judgeId: judge.id,
         score,
-        scoreBreakdown: breakdown ?? null,
+        ...(breakdown ? markColumnsFromBreakdown(breakdown) : {}),
         roundType: judge.type === "sponsored" ? "sponsored" : "regular",
       })
       .returning({ id: teamMarks.id });
@@ -554,7 +555,8 @@ export async function submitStop(
 
 /**
  * A judge re-scores one of their own marks. Updates the row in place, so the
- * stats trigger swaps the old score for the new one.
+ * stats trigger swaps the old score for the new one. The rubric columns are
+ * only rewritten (all of them) when a breakdown is sent.
  */
 export async function editMark(
   judgeId: string,
@@ -564,7 +566,10 @@ export async function editMark(
 ) {
   const [row] = await db
     .update(teamMarks)
-    .set({ score, ...(breakdown ? { scoreBreakdown: breakdown } : {}) })
+    .set({
+      score,
+      ...(breakdown ? markColumnsFromBreakdown(breakdown) : {}),
+    })
     .where(and(eq(teamMarks.id, teamMarkId), eq(teamMarks.judgeId, judgeId)))
     .returning({ id: teamMarks.id });
   if (!row) {
