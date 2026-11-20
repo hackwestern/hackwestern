@@ -153,7 +153,9 @@ export function setupSheetRows(
   }
   const extra = sponsors
     .filter(
-      (s) => !seen.has(key(s.name)) && (s.doesCoffeeChats === true || s.pref !== null || s.reps.length > 0),
+      (s) =>
+        !seen.has(key(s.name)) &&
+        (s.doesCoffeeChats === true || s.pref !== null || s.reps.length > 0),
     )
     .map((s) => s.name)
     .sort((a, b) => a.localeCompare(b));
@@ -165,29 +167,30 @@ export function setupSheetRows(
 
 /** Every registered sponsor's setup from the DB. */
 export async function loadSetupSponsors(): Promise<SetupSponsor[]> {
-  const [sponsors, prefs, reps, repSessions, shortlists, ticked] = await Promise.all([
-    db
-      .select({
-        id: sponsorJudgingSponsors.id,
-        name: sponsorJudgingSponsors.name,
-      })
-      .from(sponsorJudgingSponsors),
-    db.select().from(coffeeChatPrefs),
-    db
-      .select()
-      .from(coffeeChatReps)
-      .orderBy(
-        asc(coffeeChatReps.position),
-        asc(coffeeChatReps.createdAt),
-        asc(coffeeChatReps.id),
-      ),
-    db.select().from(coffeeChatRepSessions),
-    db
-      .select({ sponsorId: sponsorShortlists.sponsorId, n: count() })
-      .from(sponsorShortlists)
-      .groupBy(sponsorShortlists.sponsorId),
-    coffeeChatSponsorNames(),
-  ]);
+  const [sponsors, prefs, reps, repSessions, shortlists, ticked] =
+    await Promise.all([
+      db
+        .select({
+          id: sponsorJudgingSponsors.id,
+          name: sponsorJudgingSponsors.name,
+        })
+        .from(sponsorJudgingSponsors),
+      db.select().from(coffeeChatPrefs),
+      db
+        .select()
+        .from(coffeeChatReps)
+        .orderBy(
+          asc(coffeeChatReps.position),
+          asc(coffeeChatReps.createdAt),
+          asc(coffeeChatReps.id),
+        ),
+      db.select().from(coffeeChatRepSessions),
+      db
+        .select({ sponsorId: sponsorShortlists.sponsorId, n: count() })
+        .from(sponsorShortlists)
+        .groupBy(sponsorShortlists.sponsorId),
+      coffeeChatSponsorNames(),
+    ]);
   const prefOf = new Map(prefs.map((p) => [p.sponsorId, p]));
   const shortlistOf = new Map(
     shortlists.map((s) => [s.sponsorId, Number(s.n)]),
@@ -343,7 +346,9 @@ export function setupSheetWrites(
   });
   const appends = sponsors
     .filter(
-      (s) => !seen.has(key(s.name)) && (s.doesCoffeeChats === true || s.pref !== null || s.reps.length > 0),
+      (s) =>
+        !seen.has(key(s.name)) &&
+        (s.doesCoffeeChats === true || s.pref !== null || s.reps.length > 0),
     )
     .map((s) => s.name)
     .sort((a, b) => a.localeCompare(b))

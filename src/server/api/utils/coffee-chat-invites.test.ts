@@ -756,9 +756,7 @@ test("expired rows are written back", async () => {
   // answer-by. Pending ones left are pool invites with time to answer.
   const rows = await chatsOf(alpha.id);
   expect(
-    rows.filter(
-      (c) => c.status === "pending" && c.expiresAt! <= at("11:30"),
-    ),
+    rows.filter((c) => c.status === "pending" && c.expiresAt! <= at("11:30")),
   ).toEqual([]);
   expect(
     rows
@@ -831,9 +829,11 @@ describe("coffeeChatInvites router", () => {
     // The 11:12 round gave 1:00 and 1:15 to the interest pool (Theta's t4
     // and t5): pool invites count like any other.
     expect(
-      a.chats.slice(4).map((c) =>
-        c.invites.map((i) => [i.name, i.status, i.source, i.round]),
-      ),
+      a.chats
+        .slice(4)
+        .map((c) =>
+          c.invites.map((i) => [i.name, i.status, i.source, i.round]),
+        ),
     ).toEqual([
       [["t4 P.", "pending", "anyone", 4]],
       [["t5 P.", "pending", "anyone", 4]],

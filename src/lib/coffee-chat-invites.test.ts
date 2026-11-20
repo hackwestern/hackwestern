@@ -838,7 +838,12 @@ describe("anyone on the interest list fills what a sponsor's line can't", () => 
     const { invites, unfilled } = plan({
       chats: [chat({ placementId: "p", start: min("11:00"), seats: 3 })],
       candidates: cands({
-        A: [["mine", "interested"], ["x", "anyone"], ["y", "anyone"], ["z", "anyone"]],
+        A: [
+          ["mine", "interested"],
+          ["x", "anyone"],
+          ["y", "anyone"],
+          ["z", "anyone"],
+        ],
       }),
     });
     expect(invites.map((i) => [i.userId, i.source])).toEqual([
@@ -851,8 +856,15 @@ describe("anyone on the interest list fills what a sponsor's line can't", () => 
   test("the 2-chat cap and no overlaps still hold for the interest list", () => {
     const { invites } = plan({
       chats: [chat({ placementId: "p", start: min("11:00") })],
-      candidates: cands({ A: [["busy", "anyone"], ["free", "anyone"]] }),
-      busy: [{ userId: "busy", sponsorId: "B", start: min("11:00"), minutes: 15 }],
+      candidates: cands({
+        A: [
+          ["busy", "anyone"],
+          ["free", "anyone"],
+        ],
+      }),
+      busy: [
+        { userId: "busy", sponsorId: "B", start: min("11:00"), minutes: 15 },
+      ],
     });
     expect(invites.map((i) => i.userId)).toEqual(["free"]);
   });
