@@ -807,3 +807,9 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Decision:** The coffee chat shortlist has a name search over every admitted hacker, not just the sponsor's top 40 candidates. Hackers who share with sponsors match on first, last or full name and show their full profile. Hackers who don't share show, and match on, their first name only, and get no Shortlist button ("Can't be invited: they didn't agree to share with sponsors"), because invite rounds only invite sharers. A hacker already scanned at the booth shows "Met at your booth". A pick found by search is listed after the candidates, counts toward the seat cap, and shows in the organizer forSponsor view. Top-40 candidates from the interest form keep their old rule (they can be shortlisted without the app share box). Up to 20 results, 2+ letters, % and _ match literally.
 **Why:** sponsors meet people at the event who never ranked them, and want to shortlist them by name.
 **Alternatives:** search only the top 40 (no rule change, but can't find people off the list); include non-sharers as shortlistable (dead picks that use a seat and never get invited).
+
+## 2026-11-19: Sponsor portal = mock sponsor-chats-v3, exactly (Jazz)
+
+**Decision:** The finished sponsor portal follows `hackwestern-sponsor-dash/mocks/sponsor-chats-v3` (its flow, screens and information, with v1/v2's READMEs for what v3 didn't change), replacing what the portal shows today. Approves sponsor-chats-v3 for build. Real data replaces the mock's fake data (contacts from HW Contacts and Noah, tier from the sponsor sheet, hackers from the candidate list).
+**Why:** Jazz: "EVERYTHING should look like this, the finished spon portal for sponsors should follow this exact flow."
+**Alternatives:** keep the current portal (v6 restyle) and patch pieces in.
