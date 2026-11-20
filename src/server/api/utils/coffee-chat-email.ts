@@ -42,7 +42,9 @@ type OfferDetails = Pick<
   CoffeeChatNotice,
   "sponsorName" | "hackerFirstName" | "slotTime" | "durationMinutes" | "room"
 > &
-  Partial<Pick<CoffeeChatNotice, "placementId" | "repName" | "expiresAt">> & {
+  Partial<
+    Pick<CoffeeChatNotice, "placementId" | "repName" | "expiresAt" | "group">
+  > & {
     /** A changed session invite the hacker must confirm again. */
     reconfirm?: boolean;
   };
@@ -60,8 +62,8 @@ export function sessionInviteEmail(chat: OfferDetails) {
   });
   const subject = chat.reconfirm
     ? inv.reconfirmSubject(chat.sponsorName)
-    : inv.subject(chat.sponsorName);
-  const intro = inv.intro(chat.sponsorName, chat.repName ?? null);
+    : inv.subject(chat.sponsorName, chat.group);
+  const intro = inv.intro(chat.sponsorName, chat.repName ?? null, chat.group);
   const deadline = inv.deadline(answerBy ?? when);
   const lines: [string, string][] = [
     [copy.whenLabel, when],

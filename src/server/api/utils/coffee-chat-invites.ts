@@ -85,6 +85,7 @@ import {
   type BoardState,
 } from "~/server/api/utils/coffee-chat-sessions-board";
 import { mirrorCoffeeInvitesLater } from "~/server/api/utils/coffee-chat-invites-sheet-mirror";
+import { syncCoffeeChatRemindersLater } from "~/server/api/utils/coffee-chat-reminder";
 import { mirrorCoffeeChats } from "~/server/api/utils/coffee-chat-sheet-mirror";
 import { db } from "~/server/db";
 import {
@@ -919,6 +920,13 @@ export async function deliverInviteNotices(
 ): Promise<DeliveryResult> {
   const result: DeliveryResult = { slack: 0, email: 0, failed: 0, skipped: 0 };
   if (jobs.length === 0) return result;
+  // A re-ask or cancel deletes the chat's 15-minute reminder; a move
+  // reschedules it. Its own switch (remindersLive), after the response.
+  void syncCoffeeChatRemindersLater(
+    jobs.flatMap((j) =>
+      j.event !== "offered" && j.notice ? [j.notice.chatId] : [],
+    ),
+  );
   if (!invitesDeliveryLive()) {
     // Counts only: no names or ids in logs.
     if (invitesEnabled())

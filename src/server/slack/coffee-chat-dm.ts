@@ -33,7 +33,9 @@ type ChatDetails = Pick<
   CoffeeChatNotice,
   "chatId" | "sponsorName" | "slotTime" | "durationMinutes" | "room"
 > &
-  Partial<Pick<CoffeeChatNotice, "placementId" | "repName" | "expiresAt">> & {
+  Partial<
+    Pick<CoffeeChatNotice, "placementId" | "repName" | "expiresAt" | "group">
+  > & {
     /** A changed session invite the hacker must confirm again. */
     reconfirm?: boolean;
   };
@@ -54,6 +56,7 @@ function sessionInviteBody(chat: ChatDetails): string {
     when,
     where: escapeSlackText(where),
     answerBy: answerBy ?? when,
+    group: chat.group,
   });
   return chat.reconfirm ? `${invitesCopy.slack.reconfirm}\n${body}` : body;
 }
@@ -89,7 +92,7 @@ export function coffeeChatDmMessage(chat: ChatDetails) {
     text: chat.placementId
       ? chat.reconfirm
         ? invitesCopy.slack.reconfirmText(chat.sponsorName)
-        : invitesCopy.slack.text(chat.sponsorName)
+        : invitesCopy.slack.text(chat.sponsorName, chat.group)
       : copy.text(chat.sponsorName),
     blocks: [
       coffeeChatDetailsBlock(chat),

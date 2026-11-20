@@ -4,6 +4,17 @@
 // The Accept / Decline buttons and their results are shared with the old
 // per-slot flow (src/content/coffee-chat-notify.ts).
 
+/**
+ * What a chat is called: "Group Coffee Chat" (more than one hacker per
+ * chat) or "1-on-1 Coffee Chat"; "coffee chat" when unknown (null).
+ */
+export const coffeeChatName = (group: boolean | null | undefined) =>
+  group == null
+    ? "coffee chat"
+    : group
+      ? "Group Coffee Chat"
+      : "1-on-1 Coffee Chat";
+
 export const coffeeChatInvitesCopy = {
   /** "Rm 2241 (near the Sponsor Bay)" / "Rm 1348, Ivey building (15-min walk)" */
   where: (room: string | null, building: "near" | "ivey" | null) => {
@@ -17,8 +28,8 @@ export const coffeeChatInvitesCopy = {
 
   slack: {
     /** Notification preview text. */
-    text: (sponsor: string) =>
-      `You're invited to a coffee chat with ${sponsor}`,
+    text: (sponsor: string, group?: boolean | null) =>
+      `You're invited to a ${coffeeChatName(group)} with ${sponsor}`,
     reconfirmText: (sponsor: string) =>
       `Your coffee chat with ${sponsor} changed. Please confirm again`,
     reconfirm:
@@ -29,11 +40,12 @@ export const coffeeChatInvitesCopy = {
       when: string;
       where: string;
       answerBy: string;
+      group?: boolean | null;
     }) =>
       [
         p.rep
-          ? `*${p.sponsor}* invited you to a coffee chat with ${p.rep}.`
-          : `*${p.sponsor}* invited you to a coffee chat.`,
+          ? `*${p.sponsor}* invited you to a ${coffeeChatName(p.group)} with ${p.rep}.`
+          : `*${p.sponsor}* invited you to a ${coffeeChatName(p.group)}.`,
         `*When:* ${p.when}`,
         `*Where:* ${p.where}`,
         `*Answer by:* ${p.answerBy}. If you don't, your seat goes to someone else.`,
@@ -41,17 +53,17 @@ export const coffeeChatInvitesCopy = {
   },
 
   email: {
-    subject: (sponsor: string) =>
-      `You're invited to a coffee chat with ${sponsor}`,
+    subject: (sponsor: string, group?: boolean | null) =>
+      `You're invited to a ${coffeeChatName(group)} with ${sponsor}`,
     reconfirmSubject: (sponsor: string) =>
       `Your coffee chat with ${sponsor} changed: please confirm again`,
     reconfirm:
       "Your coffee chat changed. Please accept again to keep your seat.",
     answerByLabel: "Answer by",
-    intro: (sponsor: string, rep: string | null) =>
+    intro: (sponsor: string, rep: string | null, group?: boolean | null) =>
       rep
-        ? `${sponsor} invited you to a coffee chat with ${rep} at Hack Western.`
-        : `${sponsor} invited you to a coffee chat at Hack Western.`,
+        ? `${sponsor} invited you to a ${coffeeChatName(group)} with ${rep} at Hack Western.`
+        : `${sponsor} invited you to a ${coffeeChatName(group)} at Hack Western.`,
     repLabel: "With",
     deadline: (answerBy: string) =>
       `Please accept or decline by ${answerBy}. If you don't answer, your seat goes to someone else.`,

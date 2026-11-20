@@ -503,6 +503,28 @@ export const coffeeChats = pgTable(
   ],
 );
 
+// The Slack reminder DM'd to a hacker 15 minutes before an accepted coffee
+// chat (src/server/api/utils/coffee-chat-reminder.ts). One row per chat.
+// No foreign key on purpose: a chat deleted with its placement leaves its
+// row, so the next sync can still delete the scheduled message in Slack.
+export const coffeeChatReminders = pgTable("coffee_chat_reminder", {
+  chatId: uuid("chat_id").notNull().primaryKey(),
+  // The hacker's DM channel (conversations.open).
+  slackChannel: varchar("slack_channel", { length: 32 }).notNull(),
+  // chat.scheduleMessage's scheduled_message_id, or chat.postMessage's ts
+  // when it was sent at once. Empty while a send-now is in flight.
+  messageId: varchar("message_id", { length: 64 }).notNull(),
+  // "scheduled" (Slack posts it at post_at) or "sent" (posted at once).
+  kind: varchar("kind", { length: 16 }).notNull(),
+  postAt: timestamp("post_at", { mode: "date", precision: 3 }).notNull(),
+  // sha256 of what the reminder says (start, length, sponsor, room,
+  // group): a change reschedules it.
+  contentKey: varchar("content_key", { length: 64 }).notNull(),
+  createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
+
 // An organizer's room hold: a coffee chat room set aside for one sponsor at
 // one Saturday time, before any hacker is booked ("Needs a hacker"). A room
 // can be held by different sponsors at different times; the server refuses

@@ -1,5 +1,6 @@
 // User-facing copy for coffee chat notifications: the offer email (T17), the
-// Slack DM and its button results (T22/T23), and the organizer bookings tab
+// Slack DM and its button results (T22/T23), the reminder DM 15 minutes
+// before an accepted chat, and the organizer bookings tab
 // in the run-of-show sheet (T20). Keep wording here, not in server code.
 
 /** Where hackers answer coffee chat requests. */
@@ -55,6 +56,19 @@ export const coffeeChatNotifyCopy = {
       notPending: "This request can't be answered anymore.",
       failed: "Something went wrong. Please answer on your Live page.",
     },
+  },
+
+  /**
+   * The Slack DM 15 minutes before an accepted chat (sent at once, with the
+   * real minutes left, when the chat was accepted later than that).
+   */
+  reminder: {
+    /** chat = "Group Coffee Chat" / "1-on-1 Coffee Chat" (coffeeChatName). */
+    lead: (chat: string, sponsor: string, minutesLeft: number) =>
+      `☕ Your ${chat} with *${sponsor}* starts in ${minutesLeft} min!`,
+    when: (time: string, minutes: number) =>
+      `🕒 Saturday ${time} · ${minutes} min`,
+    where: (room: string) => `📍 ${room}`,
   },
 
   sheet: {

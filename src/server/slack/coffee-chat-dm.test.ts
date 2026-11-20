@@ -10,7 +10,11 @@ import {
   sponsorJudgingSponsors,
   users,
 } from "~/server/db/schema";
-import { sendCoffeeChatDm } from "~/server/slack/coffee-chat-dm";
+import { sessionInviteEmail } from "~/server/api/utils/coffee-chat-email";
+import {
+  coffeeChatDmMessage,
+  sendCoffeeChatDm,
+} from "~/server/slack/coffee-chat-dm";
 
 vi.mock("~/env", async (importOriginal) => {
   const original = await importOriginal<typeof Env>();
@@ -218,5 +222,38 @@ describe("notifyCoffeeChat Slack channel", () => {
     const posts = slack.calls.filter((c) => c.method === "chat.postMessage");
     expect(posts).toHaveLength(1);
     expect(slack.calls[0]!.args.get("email")).toBe(email);
+  });
+});
+
+describe("session invite names the chat (Group / 1-on-1)", () => {
+  const session = {
+    ...CHAT,
+    placementId: "22222222-2222-4222-8222-222222222222",
+    repName: "Riley",
+  };
+
+  test("group", () => {
+    const dm = coffeeChatDmMessage({ ...session, group: true });
+    expect(dm.text).toBe("You're invited to a Group Coffee Chat with StarTech");
+    expect(JSON.stringify(dm.blocks)).toContain(
+      "*StarTech* invited you to a Group Coffee Chat with Riley.",
+    );
+    const email = sessionInviteEmail({ ...session, group: true });
+    expect(email.subject).toBe(
+      "You're invited to a Group Coffee Chat with StarTech",
+    );
+    expect(email.text).toContain(
+      "StarTech invited you to a Group Coffee Chat with Riley at Hack Western.",
+    );
+  });
+
+  test("1-on-1", () => {
+    const dm = coffeeChatDmMessage({ ...session, group: false });
+    expect(dm.text).toBe(
+      "You're invited to a 1-on-1 Coffee Chat with StarTech",
+    );
+    expect(sessionInviteEmail({ ...session, group: false }).subject).toBe(
+      "You're invited to a 1-on-1 Coffee Chat with StarTech",
+    );
   });
 });

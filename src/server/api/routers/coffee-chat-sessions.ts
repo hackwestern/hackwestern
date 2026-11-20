@@ -24,6 +24,7 @@ import {
 } from "~/server/api/trpc";
 import { mirrorRoomGrid } from "~/server/api/utils/coffee-chat-room-grid-mirror";
 import { mirrorCoffeeInvitesLater } from "~/server/api/utils/coffee-chat-invites-sheet-mirror";
+import { syncAllCoffeeChatReminders } from "~/server/api/utils/coffee-chat-reminder";
 import {
   deliverInviteNotices,
   invitesDeliveryLive,
@@ -540,6 +541,16 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       await remirrorIf(true);
       return out;
     }),
+
+  /**
+   * Make every accepted chat's 15-minute Slack reminder match the chat
+   * (backfill for chats accepted before reminders shipped; the Saturday
+   * invite-round workflow runs the same sweep). Idempotent: never a second
+   * reminder. Stops after 45 s; run again until `left` is 0.
+   */
+  syncReminders: protectedOrganizerProcedure.mutation(() =>
+    syncAllCoffeeChatReminders({ budgetMs: 45_000 }),
+  ),
 
   /**
    * An organizer room booking (who it's for) on an empty cell. The board
