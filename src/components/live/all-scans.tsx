@@ -7,6 +7,7 @@ const SCAN_FILTERS = [
   { value: "all", label: "All" },
   { value: "meals", label: "Meals" },
   { value: "activities", label: "Activities" },
+  { value: "rewards", label: "Rewards" },
 ] as const;
 type ScanFilterValue = (typeof SCAN_FILTERS)[number]["value"];
 
