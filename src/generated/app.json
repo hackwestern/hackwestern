@@ -18559,6 +18559,61 @@
       "type": "query"
     },
     {
+      "auth": "protected",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/scavengerHunt.getTasks?input=<superjson>",
+      "input": null,
+      "output": {
+        "items": {
+          "properties": {
+            "id": {
+              "type": "number"
+            },
+            "name": {
+              "type": "string"
+            },
+            "points": {
+              "type": "number"
+            },
+            "scannedAt": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "format": "date-time",
+                  "type": "string",
+                  "x-superjson": "Date"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "points",
+            "scannedAt"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "path": "scavengerHunt.getTasks",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "query"
+    },
+    {
       "auth": "organizer",
       "errors": [
         {
