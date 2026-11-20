@@ -279,7 +279,7 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
 }
 
 /** Organizer top-up: add one seat to the end of an organizer judge's list. */
-export async function addJudgeToSeat(
+export async function addSeatToJudge(
   judgeId: string,
   seatId: number,
   assignedBy: string,

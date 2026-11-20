@@ -99,7 +99,7 @@ export const handOffJudgeSchema = z
     path: ["toJudgeId"],
   });
 
-export const addJudgeToSeatSchema = z.object({ judgeId, seatId });
+export const addSeatToJudgeSchema = z.object({ judgeId, seatId });
 
 // `id` is the user id being promoted to a judge. Stats columns are
 // server-derived, so they're omitted. `track` needs the array override

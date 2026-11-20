@@ -61,7 +61,7 @@ export function JudgeRoster({
     refetchInterval: 15_000,
   });
   const addJudge = api.judging.admin.addJudgeByEmail.useMutation();
-  const send = api.judging.admin.addJudgeToSeat.useMutation();
+  const send = api.judging.admin.addSeatToJudge.useMutation();
   const [picked, setPicked] = useState<Record<string, string>>({});
 
   const waiting = (queue?.teams ?? []).filter((t) => !t.currentJudgeId);
@@ -320,14 +320,14 @@ export function JudgeRoster({
                                   onSuccess: () => {
                                     setStatus({
                                       tone: "ok",
-                                      text: `Added ${name} to Table ${team.tableNumber} (seat ${team.seat}) (${team.teamName}).`,
+                                      text: `Added Table ${team.tableNumber} (seat ${team.seat}) (${team.teamName}) to ${name}'s list.`,
                                     });
                                     void utils.judging.admin.invalidate();
                                   },
                                   onError: (e) =>
                                     setStatus({
                                       tone: "error",
-                                      text: `Couldn't add ${name} to Table ${team.tableNumber} (seat ${team.seat}). ${errorText(e)}`,
+                                      text: `Couldn't add Table ${team.tableNumber} (seat ${team.seat}) to ${name}'s list. ${errorText(e)}`,
                                     }),
                                 },
                               );

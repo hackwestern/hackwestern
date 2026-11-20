@@ -14,7 +14,7 @@ import { maybeTriggerSweepOnJudgingComplete } from "~/server/api/utils/cheat-che
 import {
   type AddJudgeInput,
   addJudgeByEmailSchema,
-  addJudgeToSeatSchema,
+  addSeatToJudgeSchema,
   addJudgesSchema,
   assignmentIdSchema,
   deleteTeamMarkSchema,
@@ -30,7 +30,7 @@ import {
   swapTeamsSchema,
 } from "~/schemas/judging";
 import {
-  addJudgeToSeat,
+  addSeatToJudge,
   autoAssign,
   cancelStop,
   deleteMark,
@@ -388,13 +388,13 @@ export const judgingRouter = createTRPCRouter({
         );
       }),
 
-    addJudgeToSeat: protectedOrganizerProcedure
-      .input(addJudgeToSeatSchema)
+    addSeatToJudge: protectedOrganizerProcedure
+      .input(addSeatToJudgeSchema)
       .mutation(async ({ ctx, input }) => {
         return withErrorHandling(
           () =>
-            addJudgeToSeat(input.judgeId, input.seatId, ctx.session.user.id),
-          "Failed to add judge to seat",
+            addSeatToJudge(input.judgeId, input.seatId, ctx.session.user.id),
+          "Failed to add seat to judge",
         );
       }),
 

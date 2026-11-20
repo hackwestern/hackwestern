@@ -707,7 +707,7 @@ describe("judge flow", () => {
 
     const t1 = await tableByNumber(1);
     await expect(
-      org.caller.judging.admin.addJudgeToSeat({
+      org.caller.judging.admin.addSeatToJudge({
         judgeId: sponsor.session.user.id,
         seatId: t1.id,
       }),
@@ -1030,7 +1030,7 @@ describe("judge flow", () => {
     });
     const extra = await makeJudge();
     await expect(
-      org.caller.judging.admin.addJudgeToSeat({
+      org.caller.judging.admin.addSeatToJudge({
         judgeId: extra.session.user.id,
         seatId: stop.seat.id,
       }),
@@ -1209,7 +1209,7 @@ describe("swapTeams / moveTeam", () => {
   });
 });
 
-describe("handOffJudge / addJudgeToSeat / cancel / absent", () => {
+describe("handOffJudge / addSeatToJudge / cancel / absent", () => {
   test("a leaving judge's unfinished tables go to a floater, in order", async () => {
     const { org, judges: js } = await setupRoom({
       tableCount: 6,
@@ -1285,14 +1285,14 @@ describe("handOffJudge / addJudgeToSeat / cancel / absent", () => {
     ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
-  test("addJudgeToSeat tops a table up, but never twice or for a team already scored", async () => {
+  test("addSeatToJudge tops a seat up, but never twice or for a team already scored", async () => {
     const { org, judges: js } = await setupRoom({
       tableCount: 6,
       judgeCount: 3,
     });
     const extra = await makeJudge();
     const t4 = await tableByNumber(4);
-    const added = await org.caller.judging.admin.addJudgeToSeat({
+    const added = await org.caller.judging.admin.addSeatToJudge({
       judgeId: extra.session.user.id,
       seatId: t4.id,
     });
@@ -1302,7 +1302,7 @@ describe("handOffJudge / addJudgeToSeat / cancel / absent", () => {
       status: "assigned",
     });
     await expect(
-      org.caller.judging.admin.addJudgeToSeat({
+      org.caller.judging.admin.addSeatToJudge({
         judgeId: extra.session.user.id,
         seatId: t4.id,
       }),
@@ -1317,7 +1317,7 @@ describe("handOffJudge / addJudgeToSeat / cancel / absent", () => {
     });
     const t1 = await tableByNumber(1);
     await expect(
-      org.caller.judging.admin.addJudgeToSeat({
+      org.caller.judging.admin.addSeatToJudge({
         judgeId: js[0]!.session.user.id,
         seatId: t1.id,
       }),
