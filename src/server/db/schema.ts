@@ -403,17 +403,664 @@ export const userType = pgEnum("user_type", [
 ]);
 
 // Sponsor judging: maps a private UUID (handed to a sponsor as their URL) to
-// the sponsor's name as spelled in the master sheet. The judging Google Sheet
+// the sponsor's name as spelled on the Sponsor Day-Of tab. The judging Google Sheet
 // itself keeps storing the name in column A; the UUID never appears there.
 export const sponsorJudgingSponsors = pgTable("sponsor_judging_sponsor", {
   id: uuid("id").defaultRandom().notNull().primaryKey(),
-  // Must match the "Company Name" spelling in the master sheet, since this is
+  // Must match the "Sponsor Name" spelling on the Sponsor Day-Of tab, since this is
   // what the judging sheet rows are keyed on.
   name: varchar("name", { length: 255 }).notNull().unique(),
+  // v1 rep count; no longer read (v2 uses coffee_chat_style/per_slot).
+  coffeeChatReps: smallint("coffee_chat_reps").default(1).notNull(),
+  // The sponsor's coffee chat request (src/lib/coffee-chat-request.ts):
+  // "oneOnOne" (per_slot = reps) or "group" (per_slot = group size). Both
+  // null = not answered yet; then the Coffee Chats sheet row applies.
+  coffeeChatStyle: varchar("coffee_chat_style", { length: 16 }),
+  coffeeChatPerSlot: smallint("coffee_chat_per_slot"),
+  // Saturday coffee chat room ("Rm 2241"-"Rm 2243"), set by organizers on
+  // /internal/sponsor-schedule. Null = unassigned; then the Coffee Chats
+  // sheet's ROOM value (if any) applies.
+  coffeeChatRoom: varchar("coffee_chat_room", { length: 64 }),
+  // Who on the sponsor team watches this sponsor's coffee chats (and so
+  // that room). Free-text name set by organizers; sponsors see it as their
+  // Hack Western contact for chats. Null = nobody yet.
+  coffeeChatWatcher: varchar("coffee_chat_watcher", { length: 255 }),
+  // When an organizer marked the sponsor's private portal link as handed
+  // over (Friday, on /internal/sponsors). Null = not given yet.
+  portalLinkGivenAt: timestamp("portal_link_given_at", {
+    mode: "date",
+    precision: 3,
+  }),
   createdAt: timestamp("created_at", { mode: "date", precision: 3 })
     .defaultNow()
     .notNull(),
 });
+
+export const coffeeChatStatusEnum = pgEnum("coffee_chat_status", [
+  "pending",
+  "accepted",
+  "declined",
+  "expired",
+  // An organizer called it off (Cancel on /internal/sponsor-schedule).
+  "cancelled",
+]);
+
+// A sponsor's coffee chat request to one hacker, in one room at one
+// Saturday slot. The DB is the source of truth; the Coffee Chats sheet tab
+// is a one-way mirror. See src/lib/coffee-chat-requests.ts for the rules.
+export const coffeeChats = pgTable(
+  "coffee_chat",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // Room label as written in the sponsor's Coffee Chats sheet row (e.g.
+    // "Rm 2241"), copied when the chat is offered; null until organizers
+    // assign one. Organizers can move a chat with Move room. A sponsor's reps
+    // run several chats at once in the same room.
+    room: varchar("room", { length: 64 }),
+    // Saturday start time "HH:MM" on the 15-minute grid, and length (15 or
+    // 30, from the sponsor's FORMAT in the Coffee Chats sheet tab). A 30-min
+    // chat blocks the hacker for two grid slots; overlap is checked when the
+    // request is made (the unique index below only catches equal starts).
+    slotTime: varchar("slot_time", { length: 5 }).notNull(),
+    durationMinutes: smallint("duration_minutes").default(15).notNull(),
+    status: coffeeChatStatusEnum("status").default("pending").notNull(),
+    repName: varchar("rep_name", { length: 255 }),
+    // Session model invites (track B): the rep-session this seat belongs
+    // to; null = an old per-slot request.
+    placementId: uuid("placement_id").references(
+      () => coffeeChatPlacements.id,
+      { onDelete: "cascade" },
+    ),
+    // Invite round: 1 = Fri 10:00 PM batch, 2+ = Saturday 30-minute rounds.
+    round: smallint("round"),
+    // Pending invites expire at this time and the seat passes on.
+    expiresAt: timestamp("expires_at", { mode: "date", precision: 3 }),
+    // Why they were invited: "scanned" | "shortlist" | "interested".
+    source: varchar("source", { length: 16 }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    respondedAt: timestamp("responded_at", { mode: "date", precision: 3 }),
+    // Session invites: when the DM or email about the current invite went
+    // out. Null = not sent yet (or a send failed); the delivery sweep in
+    // src/server/api/utils/coffee-chat-invites.ts claims and sends those.
+    notifiedAt: timestamp("notified_at", { mode: "date", precision: 3 }),
+  },
+  (t) => [
+    // A hacker can't hold two live (pending or accepted) chats in one slot.
+    uniqueIndex("coffee_chat_user_slot_active_idx")
+      .on(t.userId, t.slotTime)
+      .where(sql`${t.status} in ('pending', 'accepted')`),
+    index("coffee_chat_sponsor_slot_idx").on(t.sponsorId, t.slotTime),
+    index("coffee_chat_user_idx").on(t.userId),
+    index("coffee_chat_placement_idx").on(t.placementId),
+  ],
+);
+
+// An organizer's room hold: a coffee chat room set aside for one sponsor at
+// one Saturday time, before any hacker is booked ("Needs a hacker"). A room
+// can be held by different sponsors at different times; the server refuses
+// a hold or chat from another sponsor in the same room at an overlapping
+// time. Chats the sponsor offers inside the hold take its room. See
+// src/lib/coffee-chat-holds.ts and docs/decisions.md (2026-11-17).
+export const coffeeChatHolds = pgTable(
+  "coffee_chat_hold",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    // One of the coffee chat rooms ("Rm 2241"-"Rm 2243").
+    room: varchar("room", { length: 64 }).notNull(),
+    // Saturday "HH:MM" on the 15-minute grid; end is exclusive.
+    startTime: varchar("start_time", { length: 5 }).notNull(),
+    endTime: varchar("end_time", { length: 5 }).notNull(),
+    note: varchar("note", { length: 255 }),
+    createdBy: varchar("created_by", { length: 255 }).references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("coffee_chat_hold_sponsor_idx").on(t.sponsorId),
+    index("coffee_chat_hold_room_idx").on(t.room, t.startTime),
+  ],
+);
+
+// A sponsor's "Ask for fewer": at most `hackers` per coffee chat slot
+// starting from start_time (inclusive) to end_time (exclusive), e.g. a rep
+// leaves at 11. 0 = no chat then. The lowest ask covering a slot wins. See
+// src/lib/coffee-chat-request.ts.
+export const coffeeChatLimits = pgTable(
+  "coffee_chat_limit",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    startTime: varchar("start_time", { length: 5 }).notNull(),
+    endTime: varchar("end_time", { length: 5 }).notNull(),
+    hackers: smallint("hackers").notNull(),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex("coffee_chat_limit_span_idx").on(
+      t.sponsorId,
+      t.startTime,
+      t.endTime,
+    ),
+  ],
+);
+
+// Coffee chat sessions (docs/specs/coffee-chat-sessions.md): a sponsor's
+// chatting preferences. One row per sponsor; submittedAt null = not
+// submitted yet (organizers see "Not submitted" and can't schedule them).
+export const coffeeChatPrefs = pgTable(
+  "coffee_chat_pref",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .primaryKey()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    hackersPerChat: smallint("hackers_per_chat").default(1).notNull(),
+    // 1-on-1s only: 30 minutes instead of 15.
+    longerOneOnOne: boolean("longer_one_on_one").default(false).notNull(),
+    submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 }),
+    // The separate Shortlist flow's Review & submit; null = not submitted
+    // (at 10:00 PM Friday interested hackers fill their seats instead).
+    shortlistSubmittedAt: timestamp("shortlist_submitted_at", {
+      mode: "date",
+      precision: 3,
+    }),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    check(
+      "coffee_chat_pref_hackers_check",
+      sql`${t.hackersPerChat} between 1 and 5`,
+    ),
+  ],
+);
+
+// A sponsor's named rep for coffee chats. Exactly one primary contact (the
+// crown) per sponsor; every rep has a phone (no email is collected). Each
+// rep says how many chats they want; the sessions that needs follow from
+// the sponsor's chat length (src/lib/coffee-chat-sessions.ts).
+export const coffeeChatReps = pgTable(
+  "coffee_chat_rep",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(),
+    phone: varchar("phone", { length: 32 }).notNull(),
+    isPrimary: boolean("is_primary").default(false).notNull(),
+    // 0 = this rep doesn't chat (decisions 2026-11-19, Q1–Q11).
+    chatsWanted: smallint("chats_wanted").default(1).notNull(),
+    // Organizer cap in sessions from a "fewer chats" suggested fix; null =
+    // what their chats need.
+    maxSessions: smallint("max_sessions"),
+    // Order the sponsor listed them in.
+    position: smallint("position").default(0).notNull(),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("coffee_chat_rep_sponsor_idx").on(t.sponsorId),
+    check("coffee_chat_rep_chats_check", sql`${t.chatsWanted} >= 0`),
+    uniqueIndex("coffee_chat_rep_primary_idx")
+      .on(t.sponsorId)
+      .where(sql`${t.isPrimary}`),
+  ],
+);
+
+// The 1-hour sessions a rep ticked as free (session ids from
+// src/lib/coffee-chat-sessions.ts: "10", "11", "13"-"16").
+export const coffeeChatRepSessions = pgTable(
+  "coffee_chat_rep_session",
+  {
+    repId: uuid("rep_id")
+      .notNull()
+      .references(() => coffeeChatReps.id, { onDelete: "cascade" }),
+    sessionId: varchar("session_id", { length: 4 }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.repId, t.sessionId] })],
+);
+
+export const coffeeChatPlacementStatusEnum = pgEnum(
+  "coffee_chat_placement_status",
+  ["draft", "sent"],
+);
+
+// One rep in one room for one session, from Auto-schedule or an organizer.
+// Draft until Send; pinned = an organizer placed it (move, applied fix) and
+// re-running Auto-schedule keeps it. A room holds one thing per session
+// (also checked against room bookings in the router).
+export const coffeeChatPlacements = pgTable(
+  "coffee_chat_placement",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    repId: uuid("rep_id")
+      .notNull()
+      .references(() => coffeeChatReps.id, { onDelete: "cascade" }),
+    sessionId: varchar("session_id", { length: 4 }).notNull(),
+    room: varchar("room", { length: 8 }).notNull(),
+    pinned: boolean("pinned").default(false).notNull(),
+    // Moved by hand to a session the rep didn't tick as free, after an
+    // organizer contacted them (coffee board v12). Never flagged as a fix
+    // for that; Auto-schedule keeps it. A normal move clears it.
+    forced: boolean("forced").default(false).notNull(),
+    status: coffeeChatPlacementStatusEnum("status").default("draft").notNull(),
+    sentAt: timestamp("sent_at", { mode: "date", precision: 3 }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex("coffee_chat_placement_room_idx").on(t.room, t.sessionId),
+    uniqueIndex("coffee_chat_placement_rep_idx").on(t.repId, t.sessionId),
+  ],
+);
+
+// An organizer's ad hoc room booking on the coffee chat board (e.g. a
+// sponsor who wants a room last minute, or mentors). forSponsorId null =
+// for organizers or someone else, named in `label`.
+export const coffeeChatRoomBookings = pgTable(
+  "coffee_chat_room_booking",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    sessionId: varchar("session_id", { length: 4 }).notNull(),
+    room: varchar("room", { length: 8 }).notNull(),
+    forSponsorId: uuid("for_sponsor_id").references(
+      () => sponsorJudgingSponsors.id,
+      { onDelete: "set null" },
+    ),
+    label: varchar("label", { length: 255 }).notNull(),
+    note: varchar("note", { length: 255 }),
+    createdBy: varchar("created_by", { length: 255 }).references(
+      () => users.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    uniqueIndex("coffee_chat_room_booking_cell_idx").on(t.room, t.sessionId),
+  ],
+);
+
+// Organizer edits to one sponsor's line of hackers for coffee chat seats
+// (coffee board v12). kind "front": put first in line, newest first, ahead
+// of booth, shortlist and interested hackers. kind "removed": an organizer
+// took them off one of this sponsor's chats, so they're never offered this
+// sponsor again (like a decline). One row per (sponsor, hacker).
+export const coffeeChatLine = pgTable(
+  "coffee_chat_line",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: varchar("kind", { length: 8 }).$type<"front" | "removed">().notNull(),
+    addedBy: varchar("added_by", { length: 255 }).references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.sponsorId, t.userId] })],
+);
+
+// A hacker's interest ranking of the sponsors (1 = most interested). Feeds each
+// sponsor's coffee-chat shortlist. One row per (hacker, sponsor), and a hacker
+// can't give two sponsors the same rank.
+export const sponsorInterests = pgTable(
+  "sponsor_interest",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    rank: smallint("rank").notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.sponsorId] }),
+    uniqueIndex("sponsor_interest_user_rank_idx").on(t.userId, t.rank),
+    index("sponsor_interest_sponsor_idx").on(t.sponsorId),
+  ],
+);
+
+// A sponsor's coffee chat shortlist: hackers they picked from their
+// "Interested hackers" list on /sponsors/[uuid]/coffee-chats. Organizers
+// use it to set up chats. Only admitted hackers who agreed to share with
+// sponsors and ranked this sponsor can be added (sponsorShortlist router).
+export const sponsorShortlists = pgTable(
+  "sponsor_shortlist",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.sponsorId, t.userId] })],
+);
+
+// A hacker a sponsor scanned at the Sponsor Bay ("Met at Hacker Fair").
+// Scanned hackers are first choice for that sponsor's coffee chat seats,
+// before the shortlist and interested hackers (decisions 2026-11-19).
+export const sponsorScans = pgTable(
+  "sponsor_scan",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // The rep who scanned them, if picked.
+    repName: varchar("rep_name", { length: 255 }),
+    scannedAt: timestamp("scanned_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sponsorId, t.userId] }),
+    index("sponsor_scan_user_idx").on(t.userId),
+  ],
+);
+
+// A sponsor's review of one submitted team on /sponsors/[uuid]/picks
+// ("Judging"): a 1-10 score, whether it's on their shortlist, and a short
+// private note. One row per (sponsor, team), written by autosave. Only teams
+// the sponsor can see (submitted, in their track) can be reviewed; see the
+// sponsorScoring router and docs/decisions.md (2026-11-18).
+export const sponsorTeamReviews = pgTable(
+  "sponsor_team_review",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 12 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    // 1-10, null = not scored yet.
+    score: smallint("score"),
+    shortlisted: boolean("shortlisted").default(false).notNull(),
+    note: varchar("note", { length: 280 }),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sponsorId, t.teamId] }),
+    index("sponsor_team_review_team_idx").on(t.teamId),
+    check(
+      "sponsor_team_review_score_range",
+      sql`${t.score} IS NULL OR (${t.score} BETWEEN 1 AND 10)`,
+    ),
+  ],
+);
+
+// One rep's score for one team ("Who's judging?"): several reps share a
+// sponsor login, each scores separately, 1-10 in half points. Stored as
+// halves (2-20) so it stays an integer. Track F, docs/decisions.md.
+export const sponsorTeamScores = pgTable(
+  "sponsor_team_score",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 12 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    judgeName: varchar("judge_name", { length: 255 }).notNull(),
+    scoreHalves: smallint("score_halves").notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sponsorId, t.teamId, t.judgeName] }),
+    check("sponsor_team_score_range", sql`${t.scoreHalves} BETWEEN 2 AND 20`),
+  ],
+);
+
+// A sponsor's submitted final ranking: exactly SPONSOR_FINAL_TOP team ids,
+// best first (src/lib/sponsor-scoring.ts). Resubmitting replaces it. The
+// same ids are also written to the judging sheet (Lucas's picks column);
+// sheetSyncedAt is null while that write hasn't succeeded.
+export const sponsorFinalPicks = pgTable("sponsor_final_pick", {
+  sponsorId: uuid("sponsor_id")
+    .primaryKey()
+    .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+  teamIds: varchar("team_ids", { length: 12 }).array().notNull(),
+  submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+  sheetSyncedAt: timestamp("sheet_synced_at", { mode: "date", precision: 3 }),
+});
+
+// Unsubmitted Top 5 progress. Null slots are represented by empty strings
+// so the five-place order stays stable while a sponsor is choosing teams.
+export const sponsorTop5Drafts = pgTable("sponsor_top5_draft", {
+  sponsorId: uuid("sponsor_id")
+    .primaryKey()
+    .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+  teamIds: varchar("team_ids", { length: 12 }).array().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
+
+// The shortlist a sponsor sent at the end of round 1: a snapshot of the
+// shortlisted team ids, so later shortlist edits don't move the schedule
+// until the sponsor sends again. Sending again replaces it
+// (docs/flows/sponsor-judging.md).
+export const sponsorShortlistSends = pgTable("sponsor_shortlist_send", {
+  sponsorId: uuid("sponsor_id")
+    .primaryKey()
+    .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+  teamIds: varchar("team_ids", { length: 12 }).array().notNull(),
+  sentAt: timestamp("sent_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
+
+// The Sunday presentation schedule (src/lib/sponsor-presentations.ts): one
+// row per (sponsor, sent-shortlist team). startMinute is minutes after
+// midnight Eastern on judging day; null = couldn't fit (room set) or the
+// sponsor had no room (room null). "Schedule presentations" replaces every
+// row; who was told which times lives in sponsor_presentation_notice.
+export const sponsorPresentations = pgTable(
+  "sponsor_presentation",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 12 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    room: varchar("room", { length: 64 }),
+    startMinute: smallint("start_minute"),
+    scheduledAt: timestamp("scheduled_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sponsorId, t.teamId] }),
+    index("sponsor_presentation_team_idx").on(t.teamId),
+  ],
+);
+
+// One row per team member DM'd or emailed (or tried) about presentations.
+// A notify claims the row atomically (status "sending") before sending, so
+// a double click or retry can't message twice. A member Slack can't find
+// is emailed instead (status "emailed"). slotsKey (slotsKey() in
+// src/lib/sponsor-presentations.ts) is the set of times the member was
+// sent: a member is up to date while it matches their team's slots, so
+// rescheduling a team without changing its times keeps them notified.
+export const sponsorPresentationNotices = pgTable(
+  "sponsor_presentation_notice",
+  {
+    userId: varchar("user_id", { length: 255 })
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    teamId: varchar("team_id", { length: 12 })
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    // "sending" | "sent" (Slack) | "emailed" | "not-found" | "failed"
+    status: varchar("status", { length: 16 }).notNull(),
+    slotsKey: text("slots_key").notNull(),
+    claimedAt: timestamp("claimed_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    /** Last successful DM or email; null = never reached. */
+    sentAt: timestamp("sent_at", { mode: "date", precision: 3 }),
+  },
+  (t) => [index("sponsor_presentation_notice_team_idx").on(t.teamId)],
+);
+
+// A sponsor's Sunday judging room as set by an organizer on the Judging
+// board (room select or "Move to"). Wins over the sheets' room
+// (judgingRoomsById). A room holds one sponsor, so `room` is unique; a swap
+// rewrites both rows in one transaction. Remote sponsors never get a row.
+export const sponsorJudgingRooms = pgTable(
+  "sponsor_judging_room",
+  {
+    sponsorId: uuid("sponsor_id")
+      .primaryKey()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    room: varchar("room", { length: 64 }).notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [uniqueIndex("sponsor_judging_room_room_idx").on(t.room)],
+);
+
+// A team accepted its presentation times (Jazz, 2026-11-19): one member
+// tapped Confirm on the Slack DM or on /live, which covers the whole team.
+// slotsKey is the team's times when they confirmed; new times (a room
+// change) need a new confirm, so the board shows Waiting again.
+export const sponsorPresentationConfirms = pgTable(
+  "sponsor_presentation_confirm",
+  {
+    teamId: varchar("team_id", { length: 12 })
+      .primaryKey()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 255 }).references(() => users.id, {
+      onDelete: "set null",
+    }),
+    // "slack" | "live"
+    via: varchar("via", { length: 8 }).notNull(),
+    slotsKey: text("slots_key").notNull(),
+    confirmedAt: timestamp("confirmed_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+);
+
+// Sunday judging switches organizers flip (docs/flows/sponsor-judging.md).
+// One row (id 1). round2OpenedAt set = round 2 is open: sponsors with a
+// presentation slot rank the teams that presented and submit a top 5.
+export const sponsorJudgingSettings = pgTable(
+  "sponsor_judging_setting",
+  {
+    id: smallint("id").primaryKey().default(1),
+    round2OpenedAt: timestamp("round2_opened_at", {
+      mode: "date",
+      precision: 3,
+    }),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [check("sponsor_judging_setting_single_row", sql`${t.id} = 1`)],
+);
+
+export const sponsorHelpStatusEnum = pgEnum("sponsor_help_status", [
+  "open",
+  "claimed",
+  "resolved",
+  "cancelled",
+]);
+
+// A sponsor's "Need help" request. Posted to the sponsor team's Slack
+// channel; the first reaction or thread reply claims it. Rules in
+// src/lib/sponsor-help.ts, runbook docs/runbooks/slack-sponsor-help.md.
+export const sponsorHelpRequests = pgTable(
+  "sponsor_help_request",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    // One of SPONSOR_HELP_REASONS (varchar so the list can change without a
+    // migration).
+    reason: varchar("reason", { length: 32 }).notNull(),
+    note: varchar("note", { length: 500 }),
+    // Booth location from the sponsor info sheet when the request was made,
+    // shown in the Slack post. Null when the sheet had none.
+    location: varchar("location", { length: 255 }),
+    // Who to find and call, typed by the sponsor (0042). Required by the
+    // router for new requests; nullable so rows from before 0042 stay valid.
+    repName: varchar("rep_name", { length: 80 }),
+    phone: varchar("phone", { length: 32 }),
+    // Where they are right now, if they said. Slack falls back to `location`.
+    locationNote: varchar("location_note", { length: 120 }),
+    status: sponsorHelpStatusEnum("status").default("open").notNull(),
+    // The bot's Slack post; null when Slack is off or the post failed.
+    slackChannel: varchar("slack_channel", { length: 64 }),
+    slackTs: varchar("slack_ts", { length: 32 }),
+    claimedBySlackId: varchar("claimed_by_slack_id", { length: 64 }),
+    claimedByName: varchar("claimed_by_name", { length: 255 }),
+    // Re-pings sent in the Slack thread (0-2), see SPONSOR_HELP_REPING_MINUTES.
+    pingCount: smallint("ping_count").default(0).notNull(),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    claimedAt: timestamp("claimed_at", { mode: "date", precision: 3 }),
+    // When it was resolved or cancelled.
+    resolvedAt: timestamp("resolved_at", { mode: "date", precision: 3 }),
+  },
+  (t) => [
+    // One live (open or claimed) request per sponsor.
+    uniqueIndex("sponsor_help_request_sponsor_active_idx")
+      .on(t.sponsorId)
+      .where(sql`${t.status} in ('open', 'claimed')`),
+    index("sponsor_help_request_slack_idx").on(t.slackChannel, t.slackTs),
+    index("sponsor_help_request_status_idx").on(t.status),
+  ],
+);
 
 export const users = pgTable(
   "user",
@@ -443,6 +1090,18 @@ export const users = pgTable(
     // their application: "slack", "devpost", "wallet", "hide-checklist"
     // (see src/lib/onboarding.ts).
     onboardingSteps: text("onboarding_steps")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+
+    // The email a hacker says their Slack account is on, set on /live when
+    // it isn't their account email. Slack lookups try it first, then
+    // `email`; email notices always go to `email` (src/lib/slack-email.ts).
+    slackEmail: varchar("slack_email", { length: 255 }),
+    // Keys of the /live notification center notices the hacker has seen
+    // (src/lib/hacker-notifications.ts). A notice's key changes when its
+    // status, time or room does, so a change shows as unread again.
+    notificationsSeen: text("notifications_seen")
       .array()
       .notNull()
       .default(sql`'{}'::text[]`),
@@ -1414,4 +2073,114 @@ export const scavengerHuntRedemptions = pgTable(
       .notNull(),
   },
   (t) => [index("redemption_user_idx").on(t.userId)],
+);
+
+// ---------------------------------------------------------------------------
+// Run-of-show task reminders (T49)
+// ---------------------------------------------------------------------------
+
+// Who a sheet "Owner" name is on Slack. Organizers type the email on the
+// Team tasks tab; the Slack user id is looked up once (users.lookupByEmail)
+// and cached until the email changes.
+export const taskOwnerContacts = pgTable("task_owner_contact", {
+  // Owner name trimmed, spaces collapsed, lower-cased ("jazz gu").
+  ownerKey: varchar("owner_key", { length: 255 }).primaryKey(),
+  // Owner name as the sheet writes it, for display.
+  ownerName: varchar("owner_name", { length: 255 }).notNull(),
+  slackEmail: varchar("slack_email", { length: 255 }),
+  // Null until looked up, or when Slack has no account for the email.
+  slackUserId: varchar("slack_user_id", { length: 32 }),
+  // When the email was last looked up; null = not checked yet.
+  lookedUpAt: timestamp("looked_up_at", { mode: "date", precision: 3 }),
+  updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
+
+export const taskReminderStatusEnum = pgEnum("task_reminder_status", [
+  "scheduled",
+  "cancelled",
+  "failed",
+  "sent-window-passed",
+]);
+
+// One Slack scheduled message for a task, at its start time: a DM to the
+// owner, or a team channel post when nobody owns it on Slack (slackUserId
+// null).
+// Synced from the run-of-show sheet (src/server/api/utils/task-reminders.ts).
+export const taskReminders = pgTable(
+  "task_reminder",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    // sha256 of day + start + task + owner: a changed task is a new key.
+    taskKey: varchar("task_key", { length: 64 }).notNull(),
+    owner: varchar("owner", { length: 255 }).notNull(),
+    // Task text and Slack user, so a failure can be shown and an owner's new
+    // Slack account reschedules the DM.
+    task: text("task").notNull(),
+    slackUserId: varchar("slack_user_id", { length: 32 }),
+    postAt: timestamp("post_at", { mode: "date", precision: 3 }).notNull(),
+    // DM channel id from conversations.open.
+    slackChannel: varchar("slack_channel", { length: 32 }),
+    scheduledMessageId: varchar("scheduled_message_id", { length: 64 }),
+    // sha256 of where and what was scheduled (DM user or channel, and the
+    // full text with its mention): a change reschedules. Null on rows from
+    // before 0047, which are rescheduled once.
+    routeKey: varchar("route_key", { length: 64 }),
+    status: taskReminderStatusEnum("status").notNull(),
+    error: varchar("error", { length: 255 }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("task_reminder_key_idx").on(t.taskKey),
+    index("task_reminder_status_idx").on(t.status),
+  ],
+);
+
+// One row ("run-of-show"): when reminders were last synced and the hash of
+// the tasks they were synced from. The automatic sync after a sheet read is
+// throttled with lastAttemptAt.
+export const taskReminderSync = pgTable("task_reminder_sync", {
+  id: varchar("id", { length: 32 }).primaryKey(),
+  tasksHash: varchar("tasks_hash", { length: 64 }),
+  lastSyncedAt: timestamp("last_synced_at", { mode: "date", precision: 3 }),
+  lastAttemptAt: timestamp("last_attempt_at", { mode: "date", precision: 3 }),
+});
+
+// Marketing notification bot (Allison/Brittney/Anson/Jamie). One Slack
+// scheduled DM per recipient and notify-time, with all tasks at that time
+// grouped into one message.
+export const marketingNotificationStatusEnum = pgEnum(
+  "marketing_notification_status",
+  ["scheduled", "cancelled", "failed", "sent-window-passed"],
+);
+
+export const marketingNotificationReminders = pgTable(
+  "marketing_notification_reminder",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    reminderKey: varchar("reminder_key", { length: 64 }).notNull().unique(),
+    recipientName: varchar("recipient_name", { length: 32 }).notNull(),
+    slackUserId: varchar("slack_user_id", { length: 32 }),
+    postAt: timestamp("post_at", { mode: "date", precision: 3 }).notNull(),
+    taskIds: text("task_ids").array().notNull(),
+    text: text("text").notNull(),
+    routeKey: varchar("route_key", { length: 64 }).notNull(),
+    slackChannel: varchar("slack_channel", { length: 32 }),
+    scheduledMessageId: varchar("scheduled_message_id", { length: 64 }),
+    status: marketingNotificationStatusEnum("status").notNull(),
+    error: varchar("error", { length: 255 }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("marketing_notification_post_idx").on(t.postAt),
+    index("marketing_notification_status_idx").on(t.status),
+  ],
 );

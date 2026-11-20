@@ -341,8 +341,15 @@
     {
       "idx": 48,
       "version": "7",
-      "when": 1795142554525,
-      "tag": "0048_judging_seats",
+      "when": 1795165834220,
+      "tag": "0048_sponsor_dashboard",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1795196289948,
+      "tag": "0049_judging_seats",
       "breakpoints": true
     }
   ]

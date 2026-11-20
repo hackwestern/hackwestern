@@ -1,5 +1,5 @@
 {
-  "id": "45657039-3fdb-4aa7-a6fa-3a8d05d4b63e",
+  "id": "b18aa155-1deb-4f1a-bb66-883e99d88ff0",
   "prevId": "814ff665-ee10-4799-bf1d-76209d9c2875",
   "version": "7",
   "dialect": "postgresql",
@@ -774,6 +774,1023 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.coffee_chat_hold": {
+      "name": "coffee_chat_hold",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "room": {
+          "name": "room",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_time": {
+          "name": "start_time",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_time": {
+          "name": "end_time",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "coffee_chat_hold_sponsor_idx": {
+          "name": "coffee_chat_hold_sponsor_idx",
+          "columns": [
+            {
+              "expression": "sponsor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "coffee_chat_hold_room_idx": {
+          "name": "coffee_chat_hold_room_idx",
+          "columns": [
+            {
+              "expression": "room",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "start_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffee_chat_hold_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "coffee_chat_hold_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "coffee_chat_hold",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coffee_chat_hold_created_by_user_id_fk": {
+          "name": "coffee_chat_hold_created_by_user_id_fk",
+          "tableFrom": "coffee_chat_hold",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffee_chat_limit": {
+      "name": "coffee_chat_limit",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_time": {
+          "name": "start_time",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_time": {
+          "name": "end_time",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hackers": {
+          "name": "hackers",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "coffee_chat_limit_span_idx": {
+          "name": "coffee_chat_limit_span_idx",
+          "columns": [
+            {
+              "expression": "sponsor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "start_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "end_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffee_chat_limit_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "coffee_chat_limit_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "coffee_chat_limit",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffee_chat_line": {
+      "name": "coffee_chat_line",
+      "schema": "",
+      "columns": {
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "added_by": {
+          "name": "added_by",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "coffee_chat_line_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "coffee_chat_line_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "coffee_chat_line",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coffee_chat_line_user_id_user_id_fk": {
+          "name": "coffee_chat_line_user_id_user_id_fk",
+          "tableFrom": "coffee_chat_line",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coffee_chat_line_added_by_user_id_fk": {
+          "name": "coffee_chat_line_added_by_user_id_fk",
+          "tableFrom": "coffee_chat_line",
+          "tableTo": "user",
+          "columnsFrom": [
+            "added_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "coffee_chat_line_sponsor_id_user_id_pk": {
+          "name": "coffee_chat_line_sponsor_id_user_id_pk",
+          "columns": [
+            "sponsor_id",
+            "user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffee_chat_placement": {
+      "name": "coffee_chat_placement",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "rep_id": {
+          "name": "rep_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "varchar(4)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "room": {
+          "name": "room",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pinned": {
+          "name": "pinned",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "forced": {
+          "name": "forced",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "status": {
+          "name": "status",
+          "type": "coffee_chat_placement_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "coffee_chat_placement_room_idx": {
+          "name": "coffee_chat_placement_room_idx",
+          "columns": [
+            {
+              "expression": "room",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "coffee_chat_placement_rep_idx": {
+          "name": "coffee_chat_placement_rep_idx",
+          "columns": [
+            {
+              "expression": "rep_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffee_chat_placement_rep_id_coffee_chat_rep_id_fk": {
+          "name": "coffee_chat_placement_rep_id_coffee_chat_rep_id_fk",
+          "tableFrom": "coffee_chat_placement",
+          "tableTo": "coffee_chat_rep",
+          "columnsFrom": [
+            "rep_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffee_chat_pref": {
+      "name": "coffee_chat_pref",
+      "schema": "",
+      "columns": {
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "hackers_per_chat": {
+          "name": "hackers_per_chat",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "longer_one_on_one": {
+          "name": "longer_one_on_one",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "submitted_at": {
+          "name": "submitted_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shortlist_submitted_at": {
+          "name": "shortlist_submitted_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "coffee_chat_pref_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "coffee_chat_pref_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "coffee_chat_pref",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "coffee_chat_pref_hackers_check": {
+          "name": "coffee_chat_pref_hackers_check",
+          "value": "\"coffee_chat_pref\".\"hackers_per_chat\" between 1 and 5"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.coffee_chat_rep_session": {
+      "name": "coffee_chat_rep_session",
+      "schema": "",
+      "columns": {
+        "rep_id": {
+          "name": "rep_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "varchar(4)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "coffee_chat_rep_session_rep_id_coffee_chat_rep_id_fk": {
+          "name": "coffee_chat_rep_session_rep_id_coffee_chat_rep_id_fk",
+          "tableFrom": "coffee_chat_rep_session",
+          "tableTo": "coffee_chat_rep",
+          "columnsFrom": [
+            "rep_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "coffee_chat_rep_session_rep_id_session_id_pk": {
+          "name": "coffee_chat_rep_session_rep_id_session_id_pk",
+          "columns": [
+            "rep_id",
+            "session_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffee_chat_rep": {
+      "name": "coffee_chat_rep",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_primary": {
+          "name": "is_primary",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "chats_wanted": {
+          "name": "chats_wanted",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "max_sessions": {
+          "name": "max_sessions",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "position": {
+          "name": "position",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "coffee_chat_rep_sponsor_idx": {
+          "name": "coffee_chat_rep_sponsor_idx",
+          "columns": [
+            {
+              "expression": "sponsor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "coffee_chat_rep_primary_idx": {
+          "name": "coffee_chat_rep_primary_idx",
+          "columns": [
+            {
+              "expression": "sponsor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"coffee_chat_rep\".\"is_primary\"",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffee_chat_rep_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "coffee_chat_rep_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "coffee_chat_rep",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "coffee_chat_rep_chats_check": {
+          "name": "coffee_chat_rep_chats_check",
+          "value": "\"coffee_chat_rep\".\"chats_wanted\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.coffee_chat_room_booking": {
+      "name": "coffee_chat_room_booking",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "varchar(4)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "room": {
+          "name": "room",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "for_sponsor_id": {
+          "name": "for_sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "label": {
+          "name": "label",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "coffee_chat_room_booking_cell_idx": {
+          "name": "coffee_chat_room_booking_cell_idx",
+          "columns": [
+            {
+              "expression": "room",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "session_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffee_chat_room_booking_for_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "coffee_chat_room_booking_for_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "coffee_chat_room_booking",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "for_sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "coffee_chat_room_booking_created_by_user_id_fk": {
+          "name": "coffee_chat_room_booking_created_by_user_id_fk",
+          "tableFrom": "coffee_chat_room_booking",
+          "tableTo": "user",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.coffee_chat": {
+      "name": "coffee_chat",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "room": {
+          "name": "room",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slot_time": {
+          "name": "slot_time",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "duration_minutes": {
+          "name": "duration_minutes",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 15
+        },
+        "status": {
+          "name": "status",
+          "type": "coffee_chat_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "rep_name": {
+          "name": "rep_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "placement_id": {
+          "name": "placement_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "round": {
+          "name": "round",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "responded_at": {
+          "name": "responded_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notified_at": {
+          "name": "notified_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "coffee_chat_user_slot_active_idx": {
+          "name": "coffee_chat_user_slot_active_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slot_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"coffee_chat\".\"status\" in ('pending', 'accepted')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "coffee_chat_sponsor_slot_idx": {
+          "name": "coffee_chat_sponsor_slot_idx",
+          "columns": [
+            {
+              "expression": "sponsor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slot_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "coffee_chat_user_idx": {
+          "name": "coffee_chat_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "coffee_chat_placement_idx": {
+          "name": "coffee_chat_placement_idx",
+          "columns": [
+            {
+              "expression": "placement_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "coffee_chat_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "coffee_chat_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "coffee_chat",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coffee_chat_user_id_user_id_fk": {
+          "name": "coffee_chat_user_id_user_id_fk",
+          "tableFrom": "coffee_chat",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "coffee_chat_placement_id_coffee_chat_placement_id_fk": {
+          "name": "coffee_chat_placement_id_coffee_chat_placement_id_fk",
+          "tableFrom": "coffee_chat",
+          "tableTo": "coffee_chat_placement",
+          "columnsFrom": [
+            "placement_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.day_of_registration": {
       "name": "day_of_registration",
       "schema": "",
@@ -1114,13 +2131,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "no_show": {
-          "name": "no_show",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
         "marks_count": {
           "name": "marks_count",
           "type": "integer",
@@ -1194,8 +2204,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "judging_seat_id": {
-          "name": "judging_seat_id",
+        "judging_table_id": {
+          "name": "judging_table_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -1263,8 +2273,8 @@
           "method": "btree",
           "with": {}
         },
-        "judging_assignment_judge_seat_idx": {
-          "name": "judging_assignment_judge_seat_idx",
+        "judging_assignment_judge_table_idx": {
+          "name": "judging_assignment_judge_table_idx",
           "columns": [
             {
               "expression": "judge_id",
@@ -1273,7 +2283,7 @@
               "nulls": "last"
             },
             {
-              "expression": "judging_seat_id",
+              "expression": "judging_table_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1285,11 +2295,11 @@
           "method": "btree",
           "with": {}
         },
-        "judging_assignment_seat_idx": {
-          "name": "judging_assignment_seat_idx",
+        "judging_assignment_table_idx": {
+          "name": "judging_assignment_table_idx",
           "columns": [
             {
-              "expression": "judging_seat_id",
+              "expression": "judging_table_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1331,6 +2341,19 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
+        "judging_assignment_judging_table_id_judging_table_id_fk": {
+          "name": "judging_assignment_judging_table_id_judging_table_id_fk",
+          "tableFrom": "judging_assignment",
+          "tableTo": "judging_table",
+          "columnsFrom": [
+            "judging_table_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "judging_assignment_assigned_by_user_id_fk": {
           "name": "judging_assignment_assigned_by_user_id_fk",
           "tableFrom": "judging_assignment",
@@ -1342,19 +2365,6 @@
             "id"
           ],
           "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "judging_assignment_judging_seat_id_judging_seat_id_fk": {
-          "name": "judging_assignment_judging_seat_id_judging_seat_id_fk",
-          "tableFrom": "judging_assignment",
-          "tableTo": "judging_seat",
-          "columnsFrom": [
-            "judging_seat_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -1389,8 +2399,8 @@
           "notNull": true,
           "default": 5
         },
-        "judges_per_seat": {
-          "name": "judges_per_seat",
+        "judges_per_table": {
+          "name": "judges_per_table",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -1415,6 +2425,207 @@
           "value": "\"judging_settings\".\"id\" = 1"
         }
       },
+      "isRLSEnabled": false
+    },
+    "public.judging_table": {
+      "name": "judging_table",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "number": {
+          "name": "number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "zone": {
+          "name": "zone",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "status": {
+          "name": "status",
+          "type": "judging_table_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'empty'"
+        },
+        "status_updated_at": {
+          "name": "status_updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "judging_table_number_unique": {
+          "name": "judging_table_number_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "number"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.marketing_notification_reminder": {
+      "name": "marketing_notification_reminder",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "reminder_key": {
+          "name": "reminder_key",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipient_name": {
+          "name": "recipient_name",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slack_user_id": {
+          "name": "slack_user_id",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "post_at": {
+          "name": "post_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "task_ids": {
+          "name": "task_ids",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "route_key": {
+          "name": "route_key",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slack_channel": {
+          "name": "slack_channel",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scheduled_message_id": {
+          "name": "scheduled_message_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "marketing_notification_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "error": {
+          "name": "error",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "marketing_notification_post_idx": {
+          "name": "marketing_notification_post_idx",
+          "columns": [
+            {
+              "expression": "post_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "marketing_notification_status_idx": {
+          "name": "marketing_notification_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "marketing_notification_reminder_reminder_key_unique": {
+          "name": "marketing_notification_reminder_reminder_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "reminder_key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.preregistration": {
@@ -2131,6 +3342,455 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.sponsor_final_pick": {
+      "name": "sponsor_final_pick",
+      "schema": "",
+      "columns": {
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "team_ids": {
+          "name": "team_ids",
+          "type": "varchar(12)[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "submitted_at": {
+          "name": "submitted_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "sheet_synced_at": {
+          "name": "sheet_synced_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sponsor_final_pick_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "sponsor_final_pick_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "sponsor_final_pick",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sponsor_help_request": {
+      "name": "sponsor_help_request",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location": {
+          "name": "location",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rep_name": {
+          "name": "rep_name",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location_note": {
+          "name": "location_note",
+          "type": "varchar(120)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "sponsor_help_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'open'"
+        },
+        "slack_channel": {
+          "name": "slack_channel",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slack_ts": {
+          "name": "slack_ts",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "claimed_by_slack_id": {
+          "name": "claimed_by_slack_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "claimed_by_name": {
+          "name": "claimed_by_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ping_count": {
+          "name": "ping_count",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "claimed_at": {
+          "name": "claimed_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolved_at": {
+          "name": "resolved_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "sponsor_help_request_sponsor_active_idx": {
+          "name": "sponsor_help_request_sponsor_active_idx",
+          "columns": [
+            {
+              "expression": "sponsor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"sponsor_help_request\".\"status\" in ('open', 'claimed')",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sponsor_help_request_slack_idx": {
+          "name": "sponsor_help_request_slack_idx",
+          "columns": [
+            {
+              "expression": "slack_channel",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slack_ts",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sponsor_help_request_status_idx": {
+          "name": "sponsor_help_request_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sponsor_help_request_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "sponsor_help_request_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "sponsor_help_request",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sponsor_interest": {
+      "name": "sponsor_interest",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rank": {
+          "name": "rank",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "sponsor_interest_user_rank_idx": {
+          "name": "sponsor_interest_user_rank_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "rank",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "sponsor_interest_sponsor_idx": {
+          "name": "sponsor_interest_sponsor_idx",
+          "columns": [
+            {
+              "expression": "sponsor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sponsor_interest_user_id_user_id_fk": {
+          "name": "sponsor_interest_user_id_user_id_fk",
+          "tableFrom": "sponsor_interest",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sponsor_interest_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "sponsor_interest_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "sponsor_interest",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "sponsor_interest_user_id_sponsor_id_pk": {
+          "name": "sponsor_interest_user_id_sponsor_id_pk",
+          "columns": [
+            "user_id",
+            "sponsor_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sponsor_judging_room": {
+      "name": "sponsor_judging_room",
+      "schema": "",
+      "columns": {
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "room": {
+          "name": "room",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "sponsor_judging_room_room_idx": {
+          "name": "sponsor_judging_room_room_idx",
+          "columns": [
+            {
+              "expression": "room",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sponsor_judging_room_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "sponsor_judging_room_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "sponsor_judging_room",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sponsor_judging_setting": {
+      "name": "sponsor_judging_setting",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "smallint",
+          "primaryKey": true,
+          "notNull": true,
+          "default": 1
+        },
+        "round2_opened_at": {
+          "name": "round2_opened_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "sponsor_judging_setting_single_row": {
+          "name": "sponsor_judging_setting_single_row",
+          "value": "\"sponsor_judging_setting\".\"id\" = 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.sponsor_judging_sponsor": {
       "name": "sponsor_judging_sponsor",
       "schema": "",
@@ -2147,6 +3807,43 @@
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
+        },
+        "coffee_chat_reps": {
+          "name": "coffee_chat_reps",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "coffee_chat_style": {
+          "name": "coffee_chat_style",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coffee_chat_per_slot": {
+          "name": "coffee_chat_per_slot",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coffee_chat_room": {
+          "name": "coffee_chat_room",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coffee_chat_watcher": {
+          "name": "coffee_chat_watcher",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "portal_link_given_at": {
+          "name": "portal_link_given_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -2168,6 +3865,911 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sponsor_presentation_confirm": {
+      "name": "sponsor_presentation_confirm",
+      "schema": "",
+      "columns": {
+        "team_id": {
+          "name": "team_id",
+          "type": "varchar(12)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "via": {
+          "name": "via",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slots_key": {
+          "name": "slots_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "confirmed_at": {
+          "name": "confirmed_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sponsor_presentation_confirm_team_id_team_id_fk": {
+          "name": "sponsor_presentation_confirm_team_id_team_id_fk",
+          "tableFrom": "sponsor_presentation_confirm",
+          "tableTo": "team",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sponsor_presentation_confirm_user_id_user_id_fk": {
+          "name": "sponsor_presentation_confirm_user_id_user_id_fk",
+          "tableFrom": "sponsor_presentation_confirm",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sponsor_presentation_notice": {
+      "name": "sponsor_presentation_notice",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "varchar(12)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slots_key": {
+          "name": "slots_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "claimed_at": {
+          "name": "claimed_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "sponsor_presentation_notice_team_idx": {
+          "name": "sponsor_presentation_notice_team_idx",
+          "columns": [
+            {
+              "expression": "team_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sponsor_presentation_notice_user_id_user_id_fk": {
+          "name": "sponsor_presentation_notice_user_id_user_id_fk",
+          "tableFrom": "sponsor_presentation_notice",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sponsor_presentation_notice_team_id_team_id_fk": {
+          "name": "sponsor_presentation_notice_team_id_team_id_fk",
+          "tableFrom": "sponsor_presentation_notice",
+          "tableTo": "team",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sponsor_presentation": {
+      "name": "sponsor_presentation",
+      "schema": "",
+      "columns": {
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "varchar(12)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "room": {
+          "name": "room",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_minute": {
+          "name": "start_minute",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scheduled_at": {
+          "name": "scheduled_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "sponsor_presentation_team_idx": {
+          "name": "sponsor_presentation_team_idx",
+          "columns": [
+            {
+              "expression": "team_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sponsor_presentation_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "sponsor_presentation_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "sponsor_presentation",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sponsor_presentation_team_id_team_id_fk": {
+          "name": "sponsor_presentation_team_id_team_id_fk",
+          "tableFrom": "sponsor_presentation",
+          "tableTo": "team",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "sponsor_presentation_sponsor_id_team_id_pk": {
+          "name": "sponsor_presentation_sponsor_id_team_id_pk",
+          "columns": [
+            "sponsor_id",
+            "team_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sponsor_scan": {
+      "name": "sponsor_scan",
+      "schema": "",
+      "columns": {
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rep_name": {
+          "name": "rep_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scanned_at": {
+          "name": "scanned_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "sponsor_scan_user_idx": {
+          "name": "sponsor_scan_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sponsor_scan_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "sponsor_scan_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "sponsor_scan",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sponsor_scan_user_id_user_id_fk": {
+          "name": "sponsor_scan_user_id_user_id_fk",
+          "tableFrom": "sponsor_scan",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "sponsor_scan_sponsor_id_user_id_pk": {
+          "name": "sponsor_scan_sponsor_id_user_id_pk",
+          "columns": [
+            "sponsor_id",
+            "user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sponsor_shortlist_send": {
+      "name": "sponsor_shortlist_send",
+      "schema": "",
+      "columns": {
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "team_ids": {
+          "name": "team_ids",
+          "type": "varchar(12)[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sponsor_shortlist_send_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "sponsor_shortlist_send_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "sponsor_shortlist_send",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sponsor_shortlist": {
+      "name": "sponsor_shortlist",
+      "schema": "",
+      "columns": {
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sponsor_shortlist_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "sponsor_shortlist_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "sponsor_shortlist",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sponsor_shortlist_user_id_user_id_fk": {
+          "name": "sponsor_shortlist_user_id_user_id_fk",
+          "tableFrom": "sponsor_shortlist",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "sponsor_shortlist_sponsor_id_user_id_pk": {
+          "name": "sponsor_shortlist_sponsor_id_user_id_pk",
+          "columns": [
+            "sponsor_id",
+            "user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sponsor_team_review": {
+      "name": "sponsor_team_review",
+      "schema": "",
+      "columns": {
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "varchar(12)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "score": {
+          "name": "score",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shortlisted": {
+          "name": "shortlisted",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "note": {
+          "name": "note",
+          "type": "varchar(280)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "sponsor_team_review_team_idx": {
+          "name": "sponsor_team_review_team_idx",
+          "columns": [
+            {
+              "expression": "team_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sponsor_team_review_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "sponsor_team_review_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "sponsor_team_review",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sponsor_team_review_team_id_team_id_fk": {
+          "name": "sponsor_team_review_team_id_team_id_fk",
+          "tableFrom": "sponsor_team_review",
+          "tableTo": "team",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "sponsor_team_review_sponsor_id_team_id_pk": {
+          "name": "sponsor_team_review_sponsor_id_team_id_pk",
+          "columns": [
+            "sponsor_id",
+            "team_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "sponsor_team_review_score_range": {
+          "name": "sponsor_team_review_score_range",
+          "value": "\"sponsor_team_review\".\"score\" IS NULL OR (\"sponsor_team_review\".\"score\" BETWEEN 1 AND 10)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.sponsor_team_score": {
+      "name": "sponsor_team_score",
+      "schema": "",
+      "columns": {
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "varchar(12)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "judge_name": {
+          "name": "judge_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "score_halves": {
+          "name": "score_halves",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sponsor_team_score_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "sponsor_team_score_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "sponsor_team_score",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "sponsor_team_score_team_id_team_id_fk": {
+          "name": "sponsor_team_score_team_id_team_id_fk",
+          "tableFrom": "sponsor_team_score",
+          "tableTo": "team",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "sponsor_team_score_sponsor_id_team_id_judge_name_pk": {
+          "name": "sponsor_team_score_sponsor_id_team_id_judge_name_pk",
+          "columns": [
+            "sponsor_id",
+            "team_id",
+            "judge_name"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "sponsor_team_score_range": {
+          "name": "sponsor_team_score_range",
+          "value": "\"sponsor_team_score\".\"score_halves\" BETWEEN 2 AND 20"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.sponsor_top5_draft": {
+      "name": "sponsor_top5_draft",
+      "schema": "",
+      "columns": {
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "team_ids": {
+          "name": "team_ids",
+          "type": "varchar(12)[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sponsor_top5_draft_sponsor_id_sponsor_judging_sponsor_id_fk": {
+          "name": "sponsor_top5_draft_sponsor_id_sponsor_judging_sponsor_id_fk",
+          "tableFrom": "sponsor_top5_draft",
+          "tableTo": "sponsor_judging_sponsor",
+          "columnsFrom": [
+            "sponsor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.task_owner_contact": {
+      "name": "task_owner_contact",
+      "schema": "",
+      "columns": {
+        "owner_key": {
+          "name": "owner_key",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "owner_name": {
+          "name": "owner_name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slack_email": {
+          "name": "slack_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slack_user_id": {
+          "name": "slack_user_id",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "looked_up_at": {
+          "name": "looked_up_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.task_reminder_sync": {
+      "name": "task_reminder_sync",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "varchar(32)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tasks_hash": {
+          "name": "tasks_hash",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_synced_at": {
+          "name": "last_synced_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_attempt_at": {
+          "name": "last_attempt_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.task_reminder": {
+      "name": "task_reminder",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "task_key": {
+          "name": "task_key",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner": {
+          "name": "owner",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "task": {
+          "name": "task",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slack_user_id": {
+          "name": "slack_user_id",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "post_at": {
+          "name": "post_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slack_channel": {
+          "name": "slack_channel",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scheduled_message_id": {
+          "name": "scheduled_message_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "route_key": {
+          "name": "route_key",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "task_reminder_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "error": {
+          "name": "error",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "task_reminder_key_idx": {
+          "name": "task_reminder_key_idx",
+          "columns": [
+            {
+              "expression": "task_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "task_reminder_status_idx": {
+          "name": "task_reminder_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -2843,8 +5445,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "judging_seat_id": {
-          "name": "judging_seat_id",
+        "judging_table_id": {
+          "name": "judging_table_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -2874,12 +5476,12 @@
         }
       },
       "foreignKeys": {
-        "team_judging_seat_id_judging_seat_id_fk": {
-          "name": "team_judging_seat_id_judging_seat_id_fk",
+        "team_judging_table_id_judging_table_id_fk": {
+          "name": "team_judging_table_id_judging_table_id_fk",
           "tableFrom": "team",
-          "tableTo": "judging_seat",
+          "tableTo": "judging_table",
           "columnsFrom": [
-            "judging_seat_id"
+            "judging_table_id"
           ],
           "columnsTo": [
             "id"
@@ -2897,11 +5499,11 @@
             "joinCode"
           ]
         },
-        "team_judging_seat_id_unique": {
-          "name": "team_judging_seat_id_unique",
+        "team_judging_table_id_unique": {
+          "name": "team_judging_table_id_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "judging_seat_id"
+            "judging_table_id"
           ]
         }
       },
@@ -2972,6 +5574,19 @@
         },
         "onboarding_steps": {
           "name": "onboarding_steps",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "slack_email": {
+          "name": "slack_email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notifications_seen": {
+          "name": "notifications_seen",
           "type": "text[]",
           "primaryKey": false,
           "notNull": true,
@@ -3120,93 +5735,6 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
-    },
-    "public.judging_seat": {
-      "name": "judging_seat",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "table_number": {
-          "name": "table_number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "seat": {
-          "name": "seat",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "zone": {
-          "name": "zone",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "status": {
-          "name": "status",
-          "type": "judging_seat_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'empty'"
-        },
-        "status_updated_at": {
-          "name": "status_updated_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "judging_seat_table_seat_idx": {
-          "name": "judging_seat_table_seat_idx",
-          "columns": [
-            {
-              "expression": "table_number",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "seat",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "judging_seat_seat_check": {
-          "name": "judging_seat_seat_check",
-          "value": "\"judging_seat\".\"seat\" in (1, 2)"
-        }
-      },
-      "isRLSEnabled": false
     }
   },
   "enums": {
@@ -3262,6 +5790,25 @@
       "values": [
         "judging_complete",
         "manual"
+      ]
+    },
+    "public.coffee_chat_placement_status": {
+      "name": "coffee_chat_placement_status",
+      "schema": "public",
+      "values": [
+        "draft",
+        "sent"
+      ]
+    },
+    "public.coffee_chat_status": {
+      "name": "coffee_chat_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "accepted",
+        "declined",
+        "expired",
+        "cancelled"
       ]
     },
     "public.country": {
@@ -3348,6 +5895,16 @@
         "cancelled"
       ]
     },
+    "public.judging_table_status": {
+      "name": "judging_table_status",
+      "schema": "public",
+      "values": [
+        "empty",
+        "waiting",
+        "being_judged",
+        "finished"
+      ]
+    },
     "public.major": {
       "name": "major",
       "schema": "public",
@@ -3367,6 +5924,16 @@
         "Social Science",
         "Fine Arts/Performing Arts",
         "Other"
+      ]
+    },
+    "public.marketing_notification_status": {
+      "name": "marketing_notification_status",
+      "schema": "public",
+      "values": [
+        "scheduled",
+        "cancelled",
+        "failed",
+        "sent-window-passed"
       ]
     },
     "public.num_of_hackathons": {
@@ -3449,6 +6016,16 @@
         "XL"
       ]
     },
+    "public.sponsor_help_status": {
+      "name": "sponsor_help_status",
+      "schema": "public",
+      "values": [
+        "open",
+        "claimed",
+        "resolved",
+        "cancelled"
+      ]
+    },
     "public.submission_status": {
       "name": "submission_status",
       "schema": "public",
@@ -3456,6 +6033,16 @@
         "draft",
         "submitted",
         "late"
+      ]
+    },
+    "public.task_reminder_status": {
+      "name": "task_reminder_status",
+      "schema": "public",
+      "values": [
+        "scheduled",
+        "cancelled",
+        "failed",
+        "sent-window-passed"
       ]
     },
     "public.team_check_type": {
@@ -3508,16 +6095,6 @@
         "5th+",
         "N/A",
         "Prefer not to answer"
-      ]
-    },
-    "public.judging_seat_status": {
-      "name": "judging_seat_status",
-      "schema": "public",
-      "values": [
-        "empty",
-        "waiting",
-        "being_judged",
-        "finished"
       ]
     }
   },

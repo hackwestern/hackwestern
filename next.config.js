@@ -14,6 +14,9 @@ const config = {
     NEXT_PUBLIC_HACK_START: process.env.HACK_START ?? "",
     NEXT_PUBLIC_HACK_END: process.env.HACK_END ?? "",
   },
+  // Dev only: let phones on the team's private Tailscale network load the
+  // dev server through `tailscale serve` (Next blocks unknown dev origins).
+  allowedDevOrigins: ["*.ts.net", "100.84.66.106"],
   experimental: {
     reactCompiler: true,
   },

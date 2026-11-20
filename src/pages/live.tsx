@@ -9,10 +9,12 @@ import MapTab from "~/components/live/map";
 import FoodMenu from "~/components/live/food-menu";
 import Mentors from "~/components/live/mentors";
 import Sponsors from "~/components/live/sponsors";
+import ScavengerHunt from "~/components/live/scavenger-hunt";
 import EventLogistics from "~/components/live/event-logistics";
 import ContactUs from "~/components/live/contact-us";
 import Activities from "~/components/live/activities";
 import Rewards from "~/components/live/rewards";
+import CoffeeChats from "~/components/live/coffee-chats";
 import Sidebar from "~/components/live/sidebar";
 import Topbar from "~/components/live/topbar";
 import { authOptions } from "~/server/auth";
@@ -49,11 +51,11 @@ const Live = ({ isOrganizer }: { isOrganizer: boolean }) => {
         <Topbar title={pageTitle} isOrganizer={isOrganizer} />
         <Sidebar isOrganizer={isOrganizer} />
         <main className="flex min-w-0 flex-1 flex-col gap-8 overflow-y-auto p-5 md:gap-10 md:p-12">
-          <h1
-            className={`hidden md:block ${isGreeting ? "dashboard-display" : "dashboard-h1"}`}
-          >
-            {isGreeting ? `Hi, ${firstName}!` : pageTitle}
-          </h1>
+          <div className="hidden items-start justify-between gap-4 md:flex">
+            <h1 className={isGreeting ? "dashboard-display" : "dashboard-h1"}>
+              {isGreeting ? `Hi, ${firstName}!` : pageTitle}
+            </h1>
+          </div>
           <TabComponent tab={tab} isOrganizer={isOrganizer} />
         </main>
       </div>
@@ -81,6 +83,8 @@ const TabComponent = ({
       return <Mentors />;
     case "sponsors":
       return <Sponsors />;
+    case "scavenger-hunt":
+      return <ScavengerHunt isOrganizer={isOrganizer} />;
     case "event-logistics":
       return <EventLogistics />;
     case "contact-us":
@@ -89,6 +93,10 @@ const TabComponent = ({
       return <Activities />;
     case "rewards":
       return <Rewards />;
+    // Not in the nav (Slack only, Jazz 2026-11-20): reachable only from the
+    // coffee chat email, so hackers Slack can't find can still answer.
+    case "coffee-chats":
+      return isOrganizer ? <Home isOrganizer /> : <CoffeeChats />;
     default:
       return <Home isOrganizer={isOrganizer} />;
   }

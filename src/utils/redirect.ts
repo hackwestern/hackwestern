@@ -46,7 +46,14 @@ const authRedirect = async (
 
 export const authRedirectOrganizer = async (
   context: GetServerSidePropsContext,
-) => authRedirect(context, "/internal/login", "organizer");
+) => {
+  // Send them back to this page after they sign in.
+  const back = safeCallbackPath(context.resolvedUrl);
+  const destination = back
+    ? `/internal/login?callbackUrl=${encodeURIComponent(back)}`
+    : "/internal/login";
+  return authRedirect(context, destination, "organizer");
+};
 
 export const authRedirectHacker = async (context: GetServerSidePropsContext) =>
   authRedirect(context, "/login");
