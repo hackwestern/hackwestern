@@ -175,16 +175,6 @@
     {
       "auth": "organizer",
       "dynamic": false,
-      "file": "src/pages/internal/rubric.tsx",
-      "hasGetServerSideProps": true,
-      "route": "/internal/rubric",
-      "serverGuards": [
-        "authRedirectOrganizer"
-      ]
-    },
-    {
-      "auth": "organizer",
-      "dynamic": false,
       "file": "src/pages/internal/sponsors.tsx",
       "hasGetServerSideProps": true,
       "route": "/internal/sponsors",
@@ -193,14 +183,12 @@
       ]
     },
     {
-      "auth": "organizer",
+      "auth": "none-detected",
       "dynamic": false,
       "file": "src/pages/internal/team-results.tsx",
       "hasGetServerSideProps": true,
       "route": "/internal/team-results",
-      "serverGuards": [
-        "authRedirectOrganizer"
-      ]
+      "serverGuards": []
     },
     {
       "auth": "none-detected",
@@ -301,6 +289,16 @@
       "hasGetServerSideProps": true,
       "route": "/scan/[activity]",
       "serverGuards": []
+    },
+    {
+      "auth": "organizer",
+      "dynamic": false,
+      "file": "src/pages/scan/project.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/scan/project",
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
     },
     {
       "auth": "none-detected",
@@ -6374,6 +6372,107 @@
           "source": "input validation (data.zodError populated)"
         },
         {
+          "code": "NOT_FOUND",
+          "httpStatus": 404,
+          "message": "No hacker found for this code.",
+          "source": "handler"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/checkIn.getProjectStatus?input=<superjson>",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "submitted": {
+            "type": "boolean"
+          },
+          "team": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "properties": {
+                  "devpostUrl": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "submissionStatus": {
+                    "enum": [
+                      "draft",
+                      "submitted",
+                      "late"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "devpostUrl",
+                  "submissionStatus"
+                ],
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "submitted",
+          "team"
+        ],
+        "type": "object"
+      },
+      "path": "checkIn.getProjectStatus",
+      "source": "src/server/api/routers/check-in.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
           "code": "INTERNAL_SERVER_ERROR",
           "httpStatus": 500,
           "source": "unhandled"
@@ -7699,6 +7798,99 @@
           "source": "auth middleware"
         },
         {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/judging.admin.getDevpostPreview?input=<superjson>",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "teamId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "teamId"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "anyOf": [
+          {
+            "type": "null"
+          },
+          {
+            "properties": {
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "image": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "title": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "url",
+              "title",
+              "description",
+              "image"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "path": "judging.admin.getDevpostPreview",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
           "code": "INTERNAL_SERVER_ERROR",
           "httpStatus": 500,
           "source": "unhandled"
@@ -8069,6 +8261,273 @@
         "type": "object"
       },
       "path": "judging.admin.getProgress",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/judging.admin.getTeamResults?input=<superjson>",
+      "input": null,
+      "output": {
+        "items": {
+          "properties": {
+            "regular": {
+              "properties": {
+                "average": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "count": {
+                  "type": "number"
+                },
+                "criteria": {
+                  "additionalProperties": {
+                    "type": "number"
+                  },
+                  "properties": {},
+                  "type": "object"
+                },
+                "marks": {
+                  "items": {
+                    "properties": {
+                      "judgeId": {
+                        "type": "string"
+                      },
+                      "judgeName": {
+                        "type": "string"
+                      },
+                      "judgeType": {
+                        "enum": [
+                          "organizer",
+                          "sponsored"
+                        ]
+                      },
+                      "notes": {
+                        "type": "string"
+                      },
+                      "ratings": {
+                        "additionalProperties": {
+                          "type": "number"
+                        },
+                        "properties": {},
+                        "type": "object"
+                      },
+                      "score": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "judgeId",
+                      "judgeName",
+                      "judgeType",
+                      "score",
+                      "ratings",
+                      "notes"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "count",
+                "average",
+                "criteria",
+                "marks"
+              ],
+              "type": "object"
+            },
+            "sponsored": {
+              "properties": {
+                "average": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "count": {
+                  "type": "number"
+                },
+                "criteria": {
+                  "additionalProperties": {
+                    "type": "number"
+                  },
+                  "properties": {},
+                  "type": "object"
+                },
+                "marks": {
+                  "items": {
+                    "properties": {
+                      "judgeId": {
+                        "type": "string"
+                      },
+                      "judgeName": {
+                        "type": "string"
+                      },
+                      "judgeType": {
+                        "enum": [
+                          "organizer",
+                          "sponsored"
+                        ]
+                      },
+                      "notes": {
+                        "type": "string"
+                      },
+                      "ratings": {
+                        "additionalProperties": {
+                          "type": "number"
+                        },
+                        "properties": {},
+                        "type": "object"
+                      },
+                      "score": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "judgeId",
+                      "judgeName",
+                      "judgeType",
+                      "score",
+                      "ratings",
+                      "notes"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "count",
+                "average",
+                "criteria",
+                "marks"
+              ],
+              "type": "object"
+            },
+            "team": {
+              "properties": {
+                "adventure": {
+                  "anyOf": [
+                    {
+                      "type": "undefined"
+                    },
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "devpost": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "github": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "normalized": {
+                  "anyOf": [
+                    {
+                      "type": "undefined"
+                    },
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "superLikes": {
+                  "anyOf": [
+                    {
+                      "type": "undefined"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "table": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "table",
+                "github",
+                "devpost"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "team",
+            "regular",
+            "sponsored"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "path": "judging.admin.getTeamResults",
       "source": "src/server/api/routers/judging.ts",
       "type": "query"
     },
