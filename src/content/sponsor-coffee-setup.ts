@@ -396,9 +396,9 @@ export const sponsorSetupCopy = {
     next: "Next",
     nextMetLabel: (name: string) => `Next hacker (${name} is already invited first)`,
     skipLabel: (name: string) => `Skip ${name}`,
-    /** "40 hackers interested in Sun Life" */
+    /** "40 hackers available to shortlist" */
     poolCount: (n: number) => plural(n, "hacker"),
-    poolOf: (sponsor: string) => `interested in ${sponsor}`,
+    poolOf: "available to shortlist",
     listSearch: "Search name, school or program",
     listSearchLabel: "Search hackers",
     noMatch: "No hackers match. Clear the search.",

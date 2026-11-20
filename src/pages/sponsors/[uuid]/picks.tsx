@@ -239,7 +239,7 @@ export default function SponsorJudgingPage() {
 
   return (
     <SponsorShell title={copy.seoTitle}>
-      <div data-tour="judging-intro" className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-1.5">
           <DashboardTag>{data.sponsorName}</DashboardTag>
           {data.sponsorTrack && (
@@ -271,6 +271,15 @@ export default function SponsorJudgingPage() {
             </div>
           )}
       </div>
+
+      {data.teams.length === 0 && (
+        <p
+          role="status"
+          className="m-0 rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface px-4 py-3 text-sm font-semibold text-dashboard-text-medium shadow-dashboard-card"
+        >
+          {copy.noTeamsCurrently}
+        </p>
+      )}
 
       {judge.ready &&
         (!judge.name || switchingJudge) ? (
@@ -334,13 +343,6 @@ export default function SponsorJudgingPage() {
                 type="button"
                 role="tab"
                 id={`step-${s}`}
-                data-tour={
-                  s === "shortlist"
-                    ? "judging-shortlist-tab"
-                    : s === "top"
-                      ? "judging-top-tab"
-                      : undefined
-                }
                 aria-selected={on}
                 aria-controls={`panel-${s}`}
                 aria-disabled={isLocked}

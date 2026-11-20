@@ -504,18 +504,10 @@ function ActionBar({
 }) {
   const b = copy.bar;
   const nFix = board.fixes.length;
-  // A sponsor who changed after invites still needs Noah's Send to re-confirm.
+  // A sponsor who changed after invites still needs its schedule re-confirmed.
   const changed = board.sponsors.some((sp) => sp.changedAfterSend);
   const allSent = board.scheduled && board.draftCount === 0 && board.sentAt && !changed;
   const sentTime = board.sentAt ? timeOf(board.sentAt) : "";
-  // Only Noah, or someone with his view, sends (checked again on the server). If HW Contacts can't be
-  // read, nobody can: say why instead of "Only Noah sends".
-  const sender = board.sender;
-  const whyNot = sender.canSend
-    ? null
-    : sender.reason === "notSender"
-      ? b.onlyNoah
-      : copy.errors.sender[sender.reason];
   return (
     <div data-tour="coffee-send" data-coffee-bar="" className="fixed inset-x-0 bottom-0 z-20 border-t border-dashboard-border-default bg-dashboard-bg-surface px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3 shadow-dashboard-card lg:px-12">
       <div className="mx-auto flex max-w-[1440px] flex-col items-stretch gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
@@ -543,22 +535,14 @@ function ActionBar({
               )}
               <DashboardButton variant="link" disabled={busy || locked} onClick={onAuto}>{b.rerun}</DashboardButton>
             </span>
-            <span className="flex flex-col items-stretch gap-1 sm:flex-row sm:items-center sm:gap-2">
-              {whyNot && (
-                <span id="coffee-send-why" className="text-center text-sm font-medium text-dashboard-text-medium sm:text-right">
-                  {whyNot}
-                </span>
-              )}
-              <DashboardButton
-                variant="primary"
-                disabled={busy || locked || !sender.canSend}
-                aria-describedby={whyNot ? "coffee-send-why" : undefined}
-                onClick={onSend}
-                className="sm:w-auto"
-              >
-                {busy ? b.working : b.send}
-              </DashboardButton>
-            </span>
+            <DashboardButton
+              variant="primary"
+              disabled={busy || locked}
+              onClick={onSend}
+              className="sm:w-auto"
+            >
+              {busy ? b.working : b.send}
+            </DashboardButton>
           </>
         )}
       </div>

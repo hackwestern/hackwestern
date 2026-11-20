@@ -34,6 +34,7 @@ export const sponsorJudgingCopy = {
     body: "Judging is only for sponsors with a prize track, and yours doesn't have one this year. If that's wrong, tell your Hack Western contact.",
   },
   retry: "Try again",
+  noTeamsCurrently: "No teams currently",
 
   steps: {
     label: "Judging steps",
@@ -144,8 +145,8 @@ export const sponsorJudgingCopy = {
   judge: {
     pickTitle: "Who's judging?",
     pickBody:
-      "Pick your name so your scores are yours. Your team sees everyone's scores. This phone remembers your name.",
-    pickLabel: "Your name",
+      "Select your name from the sponsor's coffee-chat reps. Your team sees everyone's scores. This phone remembers your selection.",
+    pickLabel: "Coffee-chat rep",
     onTeam: "On your team",
     someoneElse: "Someone else",
     nameLabel: "Your name",

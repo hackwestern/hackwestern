@@ -1010,3 +1010,5 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 
 **Decision:** Notify hackers on the coffee chat board is open to every signed-in organizer, not only Noah (ANY_ORGANIZER_SENDS in coffee-chat-sender.ts; the HW Contacts check stays in the code but no longer gates). Pressing it sends hackers their invites and confirmations as before. The Friday availability and shortlist deadline is 10:00 PM, and the copy says invites go out at 10:00 PM too (supersedes "about 10:05 PM" from earlier today).
 **Why:** Jazz wants whoever is on shift to be able to send, and one time for sponsors to remember.
+
+**Update (merge with Lucas, 2026-11-20):** Lucas's "verified slack msgs" changed sponsorCandidates to list every admitted hacker who shares, ordered form preference, then in-app preference, then everyone else. That already covers "hackers wanted + 20, at least 40", and shortlisting someone found by search depends on it, so the cap isn't applied to the list. shortlistPoolSize stays in src/lib for a follow-up that sizes only the review queue. Lucas also removed the Noah-only Send check (coffee-chat-sender.ts moved to _to_delete).

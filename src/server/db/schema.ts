@@ -2068,3 +2068,39 @@ export const taskReminderSync = pgTable("task_reminder_sync", {
   lastSyncedAt: timestamp("last_synced_at", { mode: "date", precision: 3 }),
   lastAttemptAt: timestamp("last_attempt_at", { mode: "date", precision: 3 }),
 });
+
+// Marketing notification bot (Allison/Brittney/Anson/Jamie). One Slack
+// scheduled DM per recipient and notify-time, with all tasks at that time
+// grouped into one message.
+export const marketingNotificationStatusEnum = pgEnum(
+  "marketing_notification_status",
+  ["scheduled", "cancelled", "failed", "sent-window-passed"],
+);
+
+export const marketingNotificationReminders = pgTable(
+  "marketing_notification_reminder",
+  {
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    reminderKey: varchar("reminder_key", { length: 64 }).notNull().unique(),
+    recipientName: varchar("recipient_name", { length: 32 }).notNull(),
+    slackUserId: varchar("slack_user_id", { length: 32 }),
+    postAt: timestamp("post_at", { mode: "date", precision: 3 }).notNull(),
+    taskIds: text("task_ids").array().notNull(),
+    text: text("text").notNull(),
+    routeKey: varchar("route_key", { length: 64 }).notNull(),
+    slackChannel: varchar("slack_channel", { length: 32 }),
+    scheduledMessageId: varchar("scheduled_message_id", { length: 64 }),
+    status: marketingNotificationStatusEnum("status").notNull(),
+    error: varchar("error", { length: 255 }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    index("marketing_notification_post_idx").on(t.postAt),
+    index("marketing_notification_status_idx").on(t.status),
+  ],
+);

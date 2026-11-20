@@ -375,7 +375,6 @@ export function BrowseProjects({
               {listed.map((team, i) => (
                 <li
                   key={team.id}
-                  data-tour={i === 0 ? "judging-first-project" : undefined}
                 >
                   {card(team)}
                 </li>

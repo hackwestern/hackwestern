@@ -386,8 +386,6 @@ export const coffeeSessionsCopy = {
     working: "Working…",
     sentAt: (time: string) => `Hackers notified ${time}`,
     nothingToSend: "Nothing new to notify.",
-    /** Beside the disabled Notify button for anyone but Noah (or someone with his HW Contacts "Same view as"). */
-    onlyNoah: "Only Noah (or someone with Noah's view) notifies hackers",
   },
 
   /** The one pause before Notify hackers: it messages hackers and locks their chats. */
@@ -471,13 +469,6 @@ export const coffeeSessionsCopy = {
     bookNoHacker: "That hacker can't be booked: they aren't admitted or didn't agree to share with sponsors.",
     bookSameSponsor: (name: string, sponsor: string) => `${name} already has a chat with ${sponsor}.`,
     workshopsUnknown,
-    /** Why Send is refused (only Noah Medland sends). */
-    sender: {
-      notSender: "Only Noah sends the confirmed schedule.",
-      noLoginEmail:
-        "Noah's row in HW Contacts has no login email, so nobody can send. Add it in the sheet.",
-      sheetUnreadable: "Can't read HW Contacts, so nobody can send right now. Try again in a minute.",
-    },
   },
 
   help: {

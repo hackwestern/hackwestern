@@ -226,7 +226,6 @@ export function ShortlistSend({
               )}
             </div>
             <DashboardButton
-              data-tour="judging-send"
               disabled={
                 send.isPending ||
                 shortlist.length === 0 ||

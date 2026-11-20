@@ -82,18 +82,22 @@ describe("sponsorShortlist.list", () => {
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
-  test("lists only consenting hackers who ranked this sponsor", async () => {
+  test("lists consenting hackers, the ones who ranked this sponsor first", async () => {
     const mine = await sponsor();
     const other = await sponsor();
     const sharedId = await hackerRanking(mine.id, true);
     const privateId = await hackerRanking(mine.id, false);
-    await hackerRanking(other.id, true);
+    const elsewhereId = await hackerRanking(other.id, true);
 
     const res = await anon.sponsorShortlist.list({
       sponsor: mine.id.toUpperCase(),
     });
     expect(res.sponsorName).toBe(mine.name);
-    expect(res.hackers.map((h) => h.name)).toEqual(["Shared Hacker"]);
+    // Every admitted hacker who shares is a candidate (Lucas, 2026-11-20):
+    // this sponsor's own ranking first, then everyone else.
+    const ids = res.hackers.map((h) => h.userId);
+    expect(ids[0]).toBe(sharedId);
+    expect(ids).toContain(elsewhereId);
     expect(res.hackers[0]).toMatchObject({
       userId: sharedId,
       shortlisted: false,

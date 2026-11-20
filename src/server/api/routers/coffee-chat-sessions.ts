@@ -21,7 +21,6 @@ import {
 import { createTRPCRouter, protectedOrganizerProcedure } from "~/server/api/trpc";
 import { mirrorRoomGrid } from "~/server/api/utils/coffee-chat-room-grid-mirror";
 import { mirrorCoffeeInvitesLater } from "~/server/api/utils/coffee-chat-invites-sheet-mirror";
-import { checkCoffeeSender, type SenderCheck } from "~/server/api/utils/coffee-chat-sender";
 import {
   deliverInviteNotices,
   invitesDeliveryLive,
@@ -128,15 +127,8 @@ const sessionId = z.enum(COFFEE_SESSION_IDS);
  * through boardWrite(): one board lock, then checks on a fresh read.
  */
 export const coffeeChatSessionsRouter = createTRPCRouter({
-  /** The board, plus whether this organizer may press Send (Noah only). */
-  getBoard: protectedOrganizerProcedure.query(
-    async ({ ctx }): Promise<SessionBoard & { sender: SenderCheck }> => {
-      const [state, sender] = await Promise.all([
-        loadBoardState(),
-        checkCoffeeSender(ctx.session.user.email),
-      ]);
-      return { ...sessionBoardOf(state), sender };
-    },
+  getBoard: protectedOrganizerProcedure.query(async (): Promise<SessionBoard> =>
+    sessionBoardOf(await loadBoardState()),
   ),
 
   /**
@@ -475,22 +467,12 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
     }),
 
   /**
-   * Send ("Notify hackers" on the board; it can't be undone): only Noah Medland or a "Same view as" Noah row (login email on HW Contacts, read
-   * fresh). Every draft chat becomes sent (sentAt now), sponsors who changed
-   * after invites get their sent chats re-confirmed (sentAt now), then the Room Grid
-   * tab is mirrored (only when sheetWritesEnabled(); locally nothing is
-   * written). If HW Contacts can't be read, nobody can send. Sent chats
-   * are locked from then on; a chat placed later stays a draft (movable)
-   * until the next Send, which marks and invites only the new ones.
+   * Send ("Notify hackers"; any organizer, can't be undone): every draft
+   * chat becomes sent and locked, changed sponsors are re-confirmed, then
+   * hackers are invited. A chat placed later stays a draft until the next
+   * Send, which notifies only the new ones.
    */
-  send: protectedOrganizerProcedure.mutation(async ({ ctx }) => {
-    const sender = await checkCoffeeSender(ctx.session.user.email, { fresh: true });
-    if (!sender.canSend) {
-      throw new TRPCError({
-        code: sender.reason === "notSender" ? "FORBIDDEN" : "PRECONDITION_FAILED",
-        message: errors.sender[sender.reason],
-      });
-    }
+  send: protectedOrganizerProcedure.mutation(async () => {
     const now = new Date();
     // One transaction: mark every draft chat sent, then invite hackers to
     // their seats (scanned → shortlist → interested). Both take the same

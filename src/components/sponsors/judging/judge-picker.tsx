@@ -4,11 +4,7 @@ import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { pressable } from "~/components/sponsors/sponsor-shell";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
-import {
-  JUDGE_NAME_MAX,
-  cleanJudgeName,
-  judgeKey,
-} from "~/lib/sponsor-scoring";
+import { judgeKey } from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
 
 const copy = sponsorJudgingCopy.judge;
@@ -49,9 +45,8 @@ export function useJudgeName(sponsor: string) {
 }
 
 /**
- * "Who's judging?": the sponsor's reps (from Your team) as big buttons,
- * plus "Someone else" with a name field. Picking sets the name for this
- * phone; every score saved after that is theirs.
+ * "Who's judging?": select one of the sponsor's coffee-chat reps. Picking
+ * sets the name for this phone; every score saved after that is theirs.
  */
 export function JudgePicker({
   reps,
@@ -63,8 +58,6 @@ export function JudgePicker({
   onPick: (name: string) => void;
 }) {
   const inputId = useId();
-  const [other, setOther] = useState("");
-  const typed = cleanJudgeName(other);
   return (
     <DashboardPanel className="items-stretch">
       <div className="flex flex-col gap-1">
@@ -75,73 +68,42 @@ export function JudgePicker({
           {copy.pickBody}
         </p>
       </div>
-      {reps.length > 0 && (
-        <div
-          role="group"
-          aria-label={copy.pickLabel}
-          className="grid gap-2 sm:grid-cols-2"
-        >
-          {reps.map((rep) => {
-            const on = current !== null && judgeKey(current) === judgeKey(rep);
-            return (
-              <button
-                key={rep}
-                type="button"
-                aria-pressed={on}
-                onClick={() => onPick(rep)}
-                className={cn(
-                  "flex min-h-14 items-center gap-3 rounded-dashboard-lg border px-3 text-left text-base font-semibold",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
-                  on
-                    ? "border-dashboard-action-primary bg-dashboard-bg-highlight text-dashboard-text-active"
-                    : "border-dashboard-border-default bg-dashboard-bg-surface text-dashboard-text-heavy [@media(hover:hover)]:hover:border-dashboard-border-strong",
-                  pressable,
-                )}
-              >
-                <span
-                  aria-hidden
-                  className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-nav text-sm font-bold text-dashboard-text-medium"
-                >
-                  {rep.trim()[0]?.toUpperCase()}
-                </span>
-                <span className="min-w-0 break-words">{rep}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
-      <form
-        className="flex flex-col gap-1.5"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (typed) onPick(typed);
-        }}
-      >
+      {reps.length === 0 ? (
+        <p className="m-0 rounded-dashboard-lg bg-dashboard-bg-inset px-3 py-3 text-sm font-semibold text-dashboard-text-warning">
+          No coffee-chat reps have been added for this sponsor yet.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-1.5">
         <label
           htmlFor={inputId}
           className="text-sm font-semibold text-dashboard-text-medium"
         >
-          {reps.length > 0 ? copy.someoneElse : copy.nameLabel}
+          {copy.pickLabel}
         </label>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <input
+          <select
             id={inputId}
-            value={other}
-            maxLength={JUDGE_NAME_MAX}
-            autoComplete="name"
-            placeholder={copy.namePlaceholder}
-            onChange={(e) => setOther(e.target.value)}
-            className="min-h-11 w-full min-w-0 rounded-dashboard-md border border-dashboard-border-default bg-dashboard-bg-surface px-3 text-base font-medium text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder focus:border-dashboard-action-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
-          />
-          <DashboardButton
-            type="submit"
-            disabled={!typed}
-            className="shrink-0 disabled:cursor-not-allowed disabled:opacity-dashboard-disabled"
+            value={
+              current &&
+              reps.some((rep) => judgeKey(rep) === judgeKey(current))
+                ? reps.find((rep) => judgeKey(rep) === judgeKey(current))!
+                : ""
+            }
+            onChange={(event) => {
+              if (event.target.value) onPick(event.target.value);
+            }}
+            className="min-h-11 w-full rounded-dashboard-md border border-dashboard-border-default bg-dashboard-bg-surface px-3 text-base font-medium text-dashboard-text-heavy focus:border-dashboard-action-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
           >
-            {copy.start}
-          </DashboardButton>
+            <option value="" disabled>
+              Select a rep
+            </option>
+            {reps.map((rep) => (
+              <option key={rep} value={rep}>
+                {rep}
+              </option>
+            ))}
+          </select>
         </div>
-      </form>
+      )}
     </DashboardPanel>
   );
 }

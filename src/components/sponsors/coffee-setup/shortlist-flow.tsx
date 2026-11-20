@@ -46,10 +46,6 @@ export function ShortlistFlow({
   const router = useRouter();
   const utils = api.useUtils();
   const q = api.sponsorShortlist.list.useQuery({ sponsor }, { retry: 1, refetchOnWindowFocus: false });
-  const info = api.sponsorPortal.getSponsorPortalInfo.useQuery(
-    { sponsor },
-    { refetchOnWindowFocus: false, retry: false },
-  );
   const { announce, clear, region } = useAnnounce();
   // "<name> shortlisted." belongs to the step it happened on.
   useEffect(() => clear(), [step, clear]);
@@ -399,7 +395,7 @@ export function ShortlistFlow({
           <div className="flex flex-col gap-4">
             <p className="m-0 text-base">
               <b className="tabular-nums">{copy.poolCount(data.hackers.length)}</b>{" "}
-              {copy.poolOf(info.data?.sponsorName ?? "")}
+              {copy.poolOf}
             </p>
             <div role="group" aria-label={copy.filterLabel} className={seg.frame}>
               {(["all", "not", "shortlisted"] as const).map((f) => (

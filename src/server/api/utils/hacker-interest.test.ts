@@ -63,6 +63,16 @@ describe("rankInterestRows", () => {
     expect(ranked.map((r) => r.email)).toEqual(["top@x.ca"]);
   });
 
+  test("can prioritize sponsor picks, including those without a completed review", () => {
+    const ranked = rankInterestRows(
+      [row("third@x.ca", 3), row("first@x.ca", 1), row("second@x.ca", 2)],
+      [review("third@x.ca", 9), review("second@x.ca", 5)],
+      null,
+      true,
+    );
+    expect(ranked.map((r) => r.email)).toEqual(["first@x.ca", "second@x.ca", "third@x.ca"]);
+  });
+
   test("matches review emails case-insensitively and dedupes form rows", () => {
     const ranked = rankInterestRows(
       [row("dup@x.ca", 1, "First"), row("dup@x.ca", 2, "Second")],
