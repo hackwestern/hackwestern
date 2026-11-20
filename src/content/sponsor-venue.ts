@@ -53,10 +53,10 @@ export const sponsorVenueCopy = {
   },
   booths: {
     heading: "Sponsor Bay layout",
-    screen: "Projector screen",
-    label: "Sponsor Bay booth layout around the projector screen",
+    screen: "Outside windows",
+    label: "Sponsor Bay booth layout below the outside windows",
     labelMine: (sponsor: string) =>
-      `Sponsor Bay booth layout around the projector screen. Your booth, ${sponsor}, is highlighted.`,
+      `Sponsor Bay booth layout below the outside windows. Your booth, ${sponsor}, is highlighted.`,
     yours: (sponsor: string) => `Your booth is highlighted: ${sponsor}.`,
     /** Inside your own booth on the Map. */
     you: (sponsor: string) => `${sponsor} · you`,
