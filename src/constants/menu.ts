@@ -56,8 +56,8 @@ export const allMeals: AllMealData = {
         vendor: "Mr. & Mrs. Bao",
         allergens: {
           Halal: false,
-          Meat: null,
-          Eggs: null,
+          Meat: true,
+          Eggs: true,
           Nuts: null,
           Pork: null,
           Beef: null,

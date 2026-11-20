@@ -31,7 +31,7 @@ const allergenValue = (value: AllergenInfo[keyof AllergenInfo] | undefined) => {
   if (value === true) return "Yes";
   if (value === false) return "No";
   if (value === "May Contain") return "May contain";
-  return "TBD"; // not confirmed with the vendor yet
+  return "—"; // not confirmed with the vendor
 };
 
 const FoodMenu = () => {
@@ -60,6 +60,10 @@ const FoodMenu = () => {
 
   return (
     <div className="pb-48 font-figtree">
+      <p className="mb-4 max-w-[720px] text-sm font-medium text-dashboard-text-medium">
+        &ldquo;&mdash;&rdquo; means the vendor hasn&apos;t confirmed it. Allergy
+        questions? Ask an organizer.
+      </p>
       <Accordion
         type="multiple"
         className="flex w-full max-w-[720px] flex-col gap-4"
