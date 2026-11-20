@@ -11,6 +11,7 @@ import {
   peopleColumns,
   planAll,
   planFinal,
+  isHelpDesk,
   planUnit,
   readMessages,
   readPeople,
@@ -388,6 +389,36 @@ describe("rendering", () => {
     );
     expect(displayText(text!)).toBe(
       "Hi A<B> & co <3, see @Emily Liu in #C0CEZUSAVH6",
+    );
+  });
+
+  test("POC @HelpDesk: the line naming {poc} becomes the Help Desk line", () => {
+    const messages = readMessages([
+      ["Message", "Template"],
+      [
+        "Check-in: Volunteer",
+        "Hi {first_name}!\n📍 When you arrive, send {poc} a Slack message.\nThanks",
+      ],
+    ]);
+    const unit = (poc: string): Unit => ({
+      email: "a@example.com",
+      name: "Ann Lee",
+      firstName: "Ann",
+      role: "Volunteer",
+      rows: [],
+      shifts: parseShiftList("Sat 9am-3pm", "Volunteer").shifts,
+      poc,
+      note: "",
+    });
+    for (const poc of ["@HelpDesk", "Help Desk", "@help desk"]) {
+      expect(isHelpDesk(poc)).toBe(true);
+      expect(planUnit(unit(poc), messages)[0]?.text).toBe(
+        "Hi Ann!\n📍 Your POC is Jessica. She isn't available at the moment to check you in, so please go to the Help Desk when you arrive.\nThanks",
+      );
+    }
+    expect(isHelpDesk("@Jess Xing")).toBe(false);
+    expect(planUnit(unit("@Jess Xing"), messages)[0]?.text).toBe(
+      "Hi Ann!\n📍 When you arrive, send <@U0CGMK4KX9A> a Slack message.\nThanks",
     );
   });
 });

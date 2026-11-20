@@ -400,6 +400,20 @@ export type RosterRow = PersonRow & {
   isNew?: boolean;
 };
 
+/** A POC cell sending people to the Help Desk ("@HelpDesk", "Help Desk"). */
+export function isHelpDesk(poc: string): boolean {
+  return nameKey(poc).replace(/ /g, "") === "helpdesk";
+}
+
+/** Help Desk POC: each template line naming {poc} becomes the Help Desk line. */
+export function helpDeskTemplate(body: string): string {
+  return body
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => (/\{poc\}/i.test(line) ? copy.helpDesk.checkIn : line))
+    .join("\n");
+}
+
 /** The Slack text for a POC cell: a real mention when we know them. */
 export function pocMention(
   poc: string,
@@ -586,7 +600,7 @@ export function buildRoster(
     }
     if (row.role && !emailOf(row) && !row.flags.some((f) => f.blocking))
       row.flags.push({ text: copy.flags.noEmail, blocking: false });
-    if (row.role && !pocMention(row.poc, pocIds).known)
+    if (row.role && !isHelpDesk(row.poc) && !pocMention(row.poc, pocIds).known)
       row.flags.push({ text: copy.flags.unknownPoc(row.poc), blocking: false });
   }
   return out;
@@ -805,7 +819,8 @@ function message(
   messages: Messages,
   about?: Session,
 ): Planned {
-  const body = messages.templates.get(template.toLowerCase());
+  const found = messages.templates.get(template.toLowerCase());
+  const body = found && isHelpDesk(unit.poc) ? helpDeskTemplate(found) : found;
   const rendered = body
     ? renderTemplate(body, values)
     : { missing: `"${template}"` };
