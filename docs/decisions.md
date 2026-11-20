@@ -866,3 +866,10 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Why:** each follows Jazz's "never" answers or keeps the build inside this worktree's rules (no shared files).
 **Alternatives:** a dialog for every unlit drop (mock v9); a red DashboardButton variant (shared component, main folder first).
 
+
+## 2026-11-19: Shortlisted teams are told at once, every member (Jazz)
+
+**Decision:** When a sponsor sends their round 1 shortlist, every member of each shortlisted team gets their presentation times straight away: a Slack DM (email if Slack can't find them) and the /live notification bell. It runs after the send (waitUntil), only for that sponsor's teams, and never messages anyone twice (the same claim as "Notify teams"). Nothing is sent when a team places in the top 5.
+**Why:** hackers need to know they were picked, and when to present, without waiting for an organizer to press Notify teams.
+**Still manual:** after a room change, the judging board's "Notify teams" to-do tells teams their new room.
+**Alternatives:** organizers press Notify teams (the old flow); also messaging winners (Jazz: no).

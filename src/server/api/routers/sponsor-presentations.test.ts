@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import type * as Env from "~/env";
 
 import { createCaller } from "~/server/api/root";
+import { notifyPresentationTimes } from "~/server/api/routers/sponsor-presentations";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
 import { db } from "~/server/db";
@@ -414,6 +415,28 @@ describe("sponsorPresentations.notify", () => {
     expect(
       (await b.caller.sponsorPresentations.myConfirmation()).confirmedAt,
     ).toBeNull();
+  });
+
+  test("a shortlist send tells only that sponsor's teams, every member, once", async () => {
+    slackToken = "xoxb-test";
+    const { t } = await scheduledTeam("Rm 2110");
+    const other = await scheduledTeam("Rm 2235");
+    const a = await member(t);
+    const b = await member(t);
+    await member(other.t);
+
+    await notifyPresentationTimes({ teamIds: [t] });
+    // Both members of the shortlisted team, nobody on the other team.
+    expect(dm).toHaveBeenCalledTimes(2);
+    const told = dm.mock.calls.map((c) => (c[1] as { email: string }).email);
+    expect(told.sort()).toEqual(
+      [a.session.user.email, b.session.user.email].sort(),
+    );
+    // On /live too, for each member.
+    expect(await b.caller.sponsorPresentations.mine()).toHaveLength(1);
+    // Sending again never messages them twice.
+    await notifyPresentationTimes({ teamIds: [t] });
+    expect(dm).toHaveBeenCalledTimes(2);
   });
 
   test("emails members not on Slack, once, and counts them reached", async () => {

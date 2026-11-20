@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { waitUntil } from "@vercel/functions";
 import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
@@ -202,6 +203,212 @@ export async function teamPresentationsFor(userId: string): Promise<{
 /** A blank name falls back to the email. */
 const displayName = (m: { name: string | null; email: string | null }) =>
   m.name?.trim() ? m.name : (m.email ?? "");
+
+/**
+ * Slack DM each member of every scheduled team (or only `teamIds`) their
+ * rooms and times; a member Slack can't find by email address gets the
+ * same times by email instead (status "emailed"). Each member is claimed
+ * atomically first, so a double click, a retry or the automatic send after
+ * a shortlist never messages anyone twice; by default only members who
+ * don't have their current times yet are sent. `resend` sends everyone
+ * again. Once any member of a team has the current times, they show on
+ * /live. Without SLACK_BOT_TOKEN nothing is sent (PRECONDITION_FAILED).
+ */
+export async function notifyPresentationTimes({
+  resend = false,
+  teamIds,
+}: { resend?: boolean; teamIds?: readonly string[] } = {}) {
+  const token = env.SLACK_BOT_TOKEN;
+  if (!token) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: errors.slackOff,
+    });
+  }
+  const rows = await db
+    .select({
+      sponsorId: sponsorPresentations.sponsorId,
+      teamId: sponsorPresentations.teamId,
+      room: sponsorPresentations.room,
+      startMinute: sponsorPresentations.startMinute,
+      sponsorName: sponsorJudgingSponsors.name,
+      teamName: teams.name,
+    })
+    .from(sponsorPresentations)
+    .innerJoin(
+      sponsorJudgingSponsors,
+      eq(sponsorJudgingSponsors.id, sponsorPresentations.sponsorId),
+    )
+    .innerJoin(teams, eq(teams.id, sponsorPresentations.teamId))
+    .where(
+      and(
+        isNotNull(sponsorPresentations.startMinute),
+        teamIds ? inArray(sponsorPresentations.teamId, [...teamIds]) : undefined,
+      ),
+    );
+  if (rows.length === 0) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: errors.noSchedule,
+    });
+  }
+  const keys = keysByTeam(rows);
+  const byTeam = new Map<
+    string,
+    {
+      name: string;
+      slots: { sponsorName: string; room: string; start: number }[];
+    }
+  >();
+  for (const r of rows) {
+    const t = byTeam.get(r.teamId) ?? { name: r.teamName, slots: [] };
+    t.slots.push({
+      sponsorName: r.sponsorName,
+      room: r.room ?? "",
+      start: r.startMinute!,
+    });
+    byTeam.set(r.teamId, t);
+  }
+  const members = await db
+    .select({
+      id: users.id,
+      teamId: users.teamId,
+      name: users.name,
+      email: users.email,
+      slackEmail: users.slackEmail,
+    })
+    .from(users)
+    .where(inArray(users.teamId, [...byTeam.keys()]));
+  if (members.length === 0) {
+    return {
+      sent: 0,
+      emailed: 0,
+      failed: 0,
+      notOnSlack: [] as string[],
+      skipped: 0,
+    };
+  }
+
+  // Claim: one upsert; only rows it returns get a DM. Never claimed: a
+  // claim still in flight and, unless resending, a member who was
+  // already sent these exact times.
+  const n = sponsorPresentationNotices;
+  const sameTimes = sql`${n.teamId} = excluded.team_id and ${n.slotsKey} = excluded.slots_key`;
+  const inFlight = sql`${n.status} = 'sending' and ${n.claimedAt} > ${STALE_CLAIM}`;
+  const claimed = await db
+    .insert(n)
+    .values(
+      members.map((m) => ({
+        userId: m.id,
+        teamId: m.teamId!,
+        status: "sending",
+        slotsKey: keys.get(m.teamId!)!,
+      })),
+    )
+    .onConflictDoUpdate({
+      target: n.userId,
+      set: {
+        teamId: sql`excluded.team_id`,
+        slotsKey: sql`excluded.slots_key`,
+        status: "sending",
+        claimedAt: sql`now()`,
+        // sentAt only ever describes the stored times.
+        sentAt: sql`case when ${sameTimes} then ${n.sentAt} else null end`,
+      },
+      setWhere: resend
+        ? sql`not (${inFlight})`
+        : sql`not (${inFlight}) and not (${n.sentAt} is not null and ${sameTimes})`,
+    })
+    .returning({ userId: n.userId, claimedAt: n.claimedAt });
+  const claimedIds = new Set(claimed.map((c) => c.userId));
+  // now() is fixed for the whole statement, so every row this call
+  // claimed shares one claimedAt. Outcomes are written only to rows
+  // still holding that claim: a call that outlived the stale window and
+  // lost its rows to a newer call can't overwrite the newer outcome.
+  const claimAt = claimed[0]?.claimedAt ?? null;
+  const targets = members.filter((m) => claimedIds.has(m.id));
+
+  // Slack first (their Slack email, then the email they applied with);
+  // a member Slack can't find is emailed at the email they applied with.
+  const results = await mapPool(targets, DM_CONCURRENCY, async (m) => {
+    const team = byTeam.get(m.teamId!)!;
+    const dmResult = await sendPresentationDm(
+      token,
+      m,
+      team.name,
+      team.slots,
+      undefined,
+      { teamId: m.teamId!, key: keys.get(m.teamId!)! },
+    );
+    const result =
+      dmResult === "not-found"
+        ? await sendPresentationEmail(m, team.name, team.slots)
+        : dmResult;
+    return { member: m, result };
+  });
+
+  // Record each outcome on the rows this call claimed.
+  const outcomes = ["sent", "emailed", "not-found", "failed"] as const;
+  for (const status of outcomes) {
+    const ids = results
+      .filter((r) => r.result === status)
+      .map((r) => r.member.id);
+    if (ids.length === 0) continue;
+    const reached = status === "sent" || status === "emailed";
+    await db
+      .update(n)
+      .set(reached ? { status, sentAt: sql`now()` } : { status })
+      .where(
+        and(
+          inArray(n.userId, ids),
+          eq(n.status, "sending"),
+          claimAt ? eq(n.claimedAt, claimAt) : undefined,
+        ),
+      );
+  }
+  await mirrorSponsorJudgingSoon();
+  return {
+    sent: results.filter((r) => r.result === "sent").length,
+    /** Not on Slack, so emailed instead. */
+    emailed: results.filter((r) => r.result === "emailed").length,
+    failed: results.filter((r) => r.result === "failed").length,
+    /** Not on Slack and no email address: nobody reached them. */
+    notOnSlack: results
+      .filter((r) => r.result === "not-found")
+      .map((r) => displayName(r.member)),
+    /** Members left alone: they already had these times. */
+    skipped: members.length - targets.length,
+  };
+}
+
+/**
+ * Tell every member of `teamIds` their presentation times as soon as their
+ * team is shortlisted (Jazz, 2026-11-19): Slack DM (email if not on Slack)
+ * and the /live notification bell. Runs after the response (waitUntil), so
+ * a sponsor's Send never waits on Slack. Nothing to send (no schedule, no
+ * Slack token) is normal and skipped; other failures are logged, and the
+ * judging board's "Notify teams" to-do still shows who wasn't told.
+ */
+export function notifyShortlistedTeamsLater(teamIds: readonly string[]) {
+  if (teamIds.length === 0) return;
+  waitUntil(
+    notifyPresentationTimes({ teamIds }).then(
+      () => undefined,
+      (error: unknown) => {
+        if (
+          error instanceof TRPCError &&
+          (error.code === "PRECONDITION_FAILED" || error.code === "BAD_REQUEST")
+        ) {
+          return;
+        }
+        console.error(
+          "shortlist notify failed:",
+          error instanceof Error ? error.message : String(error),
+        );
+      },
+    ),
+  );
+}
 
 /**
  * Sunday sponsor presentations (docs/flows/sponsor-judging.md): organizers
@@ -431,165 +638,9 @@ export const sponsorPresentationsRouter = createTRPCRouter({
    */
   notify: protectedOrganizerProcedure
     .input(z.object({ resend: z.boolean().default(false) }).optional())
-    .mutation(async ({ input }) => {
-      const resend = input?.resend ?? false;
-      const token = env.SLACK_BOT_TOKEN;
-      if (!token) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: errors.slackOff,
-        });
-      }
-      const rows = await db
-        .select({
-          sponsorId: sponsorPresentations.sponsorId,
-          teamId: sponsorPresentations.teamId,
-          room: sponsorPresentations.room,
-          startMinute: sponsorPresentations.startMinute,
-          sponsorName: sponsorJudgingSponsors.name,
-          teamName: teams.name,
-        })
-        .from(sponsorPresentations)
-        .innerJoin(
-          sponsorJudgingSponsors,
-          eq(sponsorJudgingSponsors.id, sponsorPresentations.sponsorId),
-        )
-        .innerJoin(teams, eq(teams.id, sponsorPresentations.teamId))
-        .where(isNotNull(sponsorPresentations.startMinute));
-      if (rows.length === 0) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: errors.noSchedule,
-        });
-      }
-      const keys = keysByTeam(rows);
-      const byTeam = new Map<
-        string,
-        {
-          name: string;
-          slots: { sponsorName: string; room: string; start: number }[];
-        }
-      >();
-      for (const r of rows) {
-        const t = byTeam.get(r.teamId) ?? { name: r.teamName, slots: [] };
-        t.slots.push({
-          sponsorName: r.sponsorName,
-          room: r.room ?? "",
-          start: r.startMinute!,
-        });
-        byTeam.set(r.teamId, t);
-      }
-      const members = await db
-        .select({
-          id: users.id,
-          teamId: users.teamId,
-          name: users.name,
-          email: users.email,
-          slackEmail: users.slackEmail,
-        })
-        .from(users)
-        .where(inArray(users.teamId, [...byTeam.keys()]));
-      if (members.length === 0) {
-        return {
-          sent: 0,
-          emailed: 0,
-          failed: 0,
-          notOnSlack: [] as string[],
-          skipped: 0,
-        };
-      }
-
-      // Claim: one upsert; only rows it returns get a DM. Never claimed: a
-      // claim still in flight and, unless resending, a member who was
-      // already sent these exact times.
-      const n = sponsorPresentationNotices;
-      const sameTimes = sql`${n.teamId} = excluded.team_id and ${n.slotsKey} = excluded.slots_key`;
-      const inFlight = sql`${n.status} = 'sending' and ${n.claimedAt} > ${STALE_CLAIM}`;
-      const claimed = await db
-        .insert(n)
-        .values(
-          members.map((m) => ({
-            userId: m.id,
-            teamId: m.teamId!,
-            status: "sending",
-            slotsKey: keys.get(m.teamId!)!,
-          })),
-        )
-        .onConflictDoUpdate({
-          target: n.userId,
-          set: {
-            teamId: sql`excluded.team_id`,
-            slotsKey: sql`excluded.slots_key`,
-            status: "sending",
-            claimedAt: sql`now()`,
-            // sentAt only ever describes the stored times.
-            sentAt: sql`case when ${sameTimes} then ${n.sentAt} else null end`,
-          },
-          setWhere: resend
-            ? sql`not (${inFlight})`
-            : sql`not (${inFlight}) and not (${n.sentAt} is not null and ${sameTimes})`,
-        })
-        .returning({ userId: n.userId, claimedAt: n.claimedAt });
-      const claimedIds = new Set(claimed.map((c) => c.userId));
-      // now() is fixed for the whole statement, so every row this call
-      // claimed shares one claimedAt. Outcomes are written only to rows
-      // still holding that claim: a call that outlived the stale window and
-      // lost its rows to a newer call can't overwrite the newer outcome.
-      const claimAt = claimed[0]?.claimedAt ?? null;
-      const targets = members.filter((m) => claimedIds.has(m.id));
-
-      // Slack first (their Slack email, then the email they applied with);
-      // a member Slack can't find is emailed at the email they applied with.
-      const results = await mapPool(targets, DM_CONCURRENCY, async (m) => {
-        const team = byTeam.get(m.teamId!)!;
-        const dmResult = await sendPresentationDm(
-          token,
-          m,
-          team.name,
-          team.slots,
-          undefined,
-          { teamId: m.teamId!, key: keys.get(m.teamId!)! },
-        );
-        const result =
-          dmResult === "not-found"
-            ? await sendPresentationEmail(m, team.name, team.slots)
-            : dmResult;
-        return { member: m, result };
-      });
-
-      // Record each outcome on the rows this call claimed.
-      const outcomes = ["sent", "emailed", "not-found", "failed"] as const;
-      for (const status of outcomes) {
-        const ids = results
-          .filter((r) => r.result === status)
-          .map((r) => r.member.id);
-        if (ids.length === 0) continue;
-        const reached = status === "sent" || status === "emailed";
-        await db
-          .update(n)
-          .set(reached ? { status, sentAt: sql`now()` } : { status })
-          .where(
-            and(
-              inArray(n.userId, ids),
-              eq(n.status, "sending"),
-              claimAt ? eq(n.claimedAt, claimAt) : undefined,
-            ),
-          );
-      }
-      await mirrorSponsorJudgingSoon();
-      return {
-        sent: results.filter((r) => r.result === "sent").length,
-        /** Not on Slack, so emailed instead. */
-        emailed: results.filter((r) => r.result === "emailed").length,
-        failed: results.filter((r) => r.result === "failed").length,
-        /** Not on Slack and no email address: nobody reached them. */
-        notOnSlack: results
-          .filter((r) => r.result === "not-found")
-          .map((r) => displayName(r.member)),
-        /** Members left alone: they already had these times. */
-        skipped: members.length - targets.length,
-      };
-    }),
+    .mutation(({ input }) =>
+      notifyPresentationTimes({ resend: input?.resend ?? false }),
+    ),
 
   /** Organizers: the Judging board (loadJudgingBoard). */
   board: protectedOrganizerProcedure.query(() => loadJudgingBoard()),
