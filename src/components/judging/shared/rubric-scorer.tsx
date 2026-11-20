@@ -153,6 +153,9 @@ export function RubricScorer({
 }: RubricScorerProps) {
   return (
     <div id="rubric-guide" className="flex flex-col gap-3">
+      <p className="m-0 text-sm font-medium text-dashboard-text-light">
+        {(RUBRIC_MIN + RUBRIC_MAX) / 2} is an average score.
+      </p>
       {rubric.criteria.map((c) => {
         const current = ratingOf(c, ratings);
         const labelId = `rubric-${c.id}`;
