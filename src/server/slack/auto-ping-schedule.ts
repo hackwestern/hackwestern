@@ -5,7 +5,7 @@ import { escapeSlackText } from "./client";
  * Auto-Ping: Slack DMs for HW13 mentors, volunteers and judges, from the
  * Auto-Ping sheet (docs/auto-ping.md). Pure parsing and planning only:
  * schedule grids to shifts, schedule names to People rows, People rows to
- * planned messages. scripts/auto-ping.ts reads and writes the sheet, and
+ * planned messages. src/server/slack/auto-ping-run.ts (run by scripts/auto-ping.ts and the Vercel cron) reads and writes the sheet, and
  * auto-ping-sync.ts keeps Slack's scheduled messages in step.
  */
 

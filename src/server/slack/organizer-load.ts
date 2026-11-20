@@ -12,7 +12,7 @@ import {
 
 /**
  * Reads the HW13 run of show and Contacts sheets and builds the organizer
- * reminder plan. Shared by the reminder bot (scripts/organizer-notifications.ts)
+ * reminder plan. Shared by the reminder bot (scripts/organizer-notifications.ts (CLI; logic in src/server/slack/organizer-run.ts))
  * and the organizer Ping Logs page, so both see exactly the same DMs.
  */
 

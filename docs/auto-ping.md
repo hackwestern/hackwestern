@@ -1,6 +1,6 @@
 # Auto-Ping: Slack DMs for mentors, volunteers and judges
 
-Auto-Ping DMs each HW13 mentor, volunteer and judge on Slack: a check-in before their first shift, a reminder before each later one, a wrap-up between shifts, a Sunday morning note and a final thank you. The plan and spec are in `docs/auto-ping-plan.md`. The code is `scripts/auto-ping.ts`, `src/server/slack/auto-ping-schedule.ts` (parsing and planning) and `src/server/slack/auto-ping-sync.ts` (Slack queue). Copy the bot writes is in `src/content/auto-ping.ts`. The messages themselves are the templates on the Messages tab.
+Auto-Ping DMs each HW13 mentor, volunteer and judge on Slack: a check-in before their first shift, a reminder before each later one, a wrap-up between shifts, a Sunday morning note and a final thank you. The plan and spec are in `docs/auto-ping-plan.md`. The code is `scripts/auto-ping.ts` (CLI) and `src/server/slack/auto-ping-run.ts` (the run itself), `src/server/slack/auto-ping-schedule.ts` (parsing and planning) and `src/server/slack/auto-ping-sync.ts` (Slack queue). Copy the bot writes is in `src/content/auto-ping.ts`. The messages themselves are the templates on the Messages tab.
 
 ## The sheet
 

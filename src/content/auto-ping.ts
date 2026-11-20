@@ -1,6 +1,6 @@
 /**
  * Copy for the Auto-Ping mentor, volunteer and judge messenger
- * (scripts/auto-ping.ts). The messages themselves are templates on the
+ * (src/server/slack/auto-ping-run.ts). The messages themselves are templates on the
  * Auto-Ping sheet's Messages tab; this is everything else the bot writes:
  * Status and Check-before-sending cells, Log results, test labels and errors.
  */

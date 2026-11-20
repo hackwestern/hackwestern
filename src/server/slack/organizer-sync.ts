@@ -83,8 +83,11 @@ export async function syncOrganizerDms(
     fetchImpl?: typeof fetch;
     now?: () => number;
     sleep?: (ms: number) => Promise<void>;
+    /** Count what would change without cancelling or scheduling anything. */
+    dryRun?: boolean;
   } = {},
 ) {
+  const dryRun = options.dryRun ?? false;
   const fetchImpl = options.fetchImpl ?? fetch;
   const now = options.now ?? Date.now;
   const sleep = options.sleep ?? wait;
@@ -157,6 +160,10 @@ export async function syncOrganizerDms(
       kept++;
       continue;
     }
+    if (dryRun) {
+      cancelled++;
+      continue;
+    }
     try {
       await call(
         token,
@@ -171,6 +178,10 @@ export async function syncOrganizerDms(
     }
   }
   for (const dm of wanted.values()) {
+    if (dryRun) {
+      scheduled++;
+      continue;
+    }
     try {
       await call(
         token,

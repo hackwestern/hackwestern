@@ -1,6 +1,6 @@
 /**
  * Slack DM copy for organizer run-of-show reminders
- * (scripts/organizer-notifications.ts). Inputs are already Slack-escaped.
+ * (scripts/organizer-notifications.ts (CLI; logic in src/server/slack/organizer-run.ts)). Inputs are already Slack-escaped.
  */
 export const organizerRemindersCopy = {
   slack: {

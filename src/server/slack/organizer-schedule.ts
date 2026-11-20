@@ -4,7 +4,7 @@ import { escapeSlackText } from "./client";
 /**
  * Organizer reminders from the HW13 Run of Show sheet ("Schedule View" tab).
  * Each task's owners get a Slack DM 15 minutes before the task's row time.
- * Pure parsing and planning; scripts/organizer-notifications.ts reads the
+ * Pure parsing and planning; scripts/organizer-notifications.ts (CLI; logic in src/server/slack/organizer-run.ts) reads the
  * sheet and queues the DMs with syncMarketingReminders.
  */
 
