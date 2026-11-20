@@ -92,6 +92,22 @@ export const env = createEnv({
     // Dedicated service account for sponsor judging Sheets access
     SPONSOR_SHEETS_CLIENT_EMAIL: z.string().optional(),
     SPONSOR_SHEETS_PRIVATE_KEY: z.string().optional(),
+    // Run-of-show sheet (sponsor schedule). Its own service account so it can
+    // differ from the sponsor judging one; falls back to SPONSOR_SHEETS_*.
+    RUN_OF_SHOW_SHEET: z.string().optional(),
+    RUN_OF_SHOW_SHEETS_CLIENT_EMAIL: z.string().optional(),
+    RUN_OF_SHOW_SHEETS_PRIVATE_KEY: z.string().optional(),
+    // "1" lets a non-production server write to the Google Sheets (mirrors,
+    // shortlists, room grid). Unset = writes only in production; never in
+    // tests (sheetWritesEnabled in run-of-show-sheet.ts).
+    SHEET_WRITES: z.string().optional(),
+    // Coffee chat session invites kill switch: "1" on, "0" off. Unset = on
+    // only on the Vercel production deploy (VERCEL_ENV), never previews or a
+    // local `next start`; off in tests unless set (invitesEnabled in
+    // src/server/api/utils/coffee-chat-invites.ts).
+    COFFEE_INVITES_ENABLED: z.string().optional(),
+    // Set by Vercel: "production", "preview" or "development".
+    VERCEL_ENV: z.string().optional(),
     GITHUB_TOKEN: z.string().optional(),
     // ISO 8601 datetime strings for the hacking window used in commit-timing cheat checks
     HACK_START: z.string().datetime().optional(),
@@ -99,9 +115,38 @@ export const env = createEnv({
     // ISO 8601 datetime for the project submission deadline. Submissions after
     // this are marked "late". Unset = no deadline, everything counts as on-time.
     PROJECT_SUBMISSION_DEADLINE: z.string().datetime().optional(),
+    // ISO 8601 datetime when sponsor judging closes (/sponsors/[uuid]/picks):
+    // after it sponsors can't score, shortlist or submit. Unset = never closes.
+    SPONSOR_JUDGING_CLOSES_AT: z.string().datetime({ offset: true }).optional(),
     // Bearer token for /api/cheat-check/sweep, which the sweep worker also uses
     // to re-invoke itself. Leave unset to disable automated sweeps entirely.
     CHEAT_SWEEP_SECRET: z.string().optional(),
+    // The Hack Western Slack app (hackers and the sponsor team share one
+    // workspace and one app). Unset = Slack features are skipped.
+    SLACK_BOT_TOKEN: z.string().optional(),
+    SLACK_SIGNING_SECRET: z.string().optional(),
+    // Sponsor help requests (docs/runbooks/slack-sponsor-help.md). The token
+    // and signing secret override SLACK_* only if help ever needs its own
+    // app. No token or no channel = Slack is skipped; requests still show on
+    // /internal/sponsor-schedule.
+    SPONSOR_HELP_SLACK_BOT_TOKEN: z.string().optional(),
+    SPONSOR_HELP_SLACK_SIGNING_SECRET: z.string().optional(),
+    SPONSOR_HELP_SLACK_CHANNEL: z.string().optional(),
+    // Who to ping, e.g. <!subteam^S0123ABCD> or <!here>.
+    SPONSOR_HELP_SLACK_MENTION: z.string().optional(),
+    // Marketing notification bot (HW13). Use explicit Slack user IDs.
+    MARKETING_NOTIFICATIONS_ENABLED: z.string().optional(),
+    MARKETING_NOTIFICATION_TEST_MODE: z.string().optional(),
+    MARKETING_NOTIFICATION_TEST_RECIPIENT: z.string().optional(),
+    MARKETING_NOTIFICATION_SKIP_IDS: z.string().optional(),
+    MARKETING_NOTIFICATION_SCHEDULE_PATH: z.string().optional(),
+    MARKETING_ALLISON_SLACK_USER_ID: z.string().optional(),
+    MARKETING_BRITTNEY_SLACK_USER_ID: z.string().optional(),
+    MARKETING_ANSON_SLACK_USER_ID: z.string().optional(),
+    MARKETING_JAMIE_SLACK_USER_ID: z.string().optional(),
+
+    // Hacker interest form Google Sheet ID
+    HACKER_INTEREST_FORM: z.string().optional(),
     // Bearer token guarding /api/docs/app (the generated API map). Unset
     // disables the endpoint (503).
     HW_NETWORK_REQUESTS_APP_MAP_TOKEN: z.string().optional(),
@@ -183,11 +228,44 @@ export const env = createEnv({
     SPONSOR_MASTER_SHEET_TAB: process.env.SPONSOR_MASTER_SHEET_TAB,
     SPONSOR_SHEETS_CLIENT_EMAIL: process.env.SPONSOR_SHEETS_CLIENT_EMAIL,
     SPONSOR_SHEETS_PRIVATE_KEY: process.env.SPONSOR_SHEETS_PRIVATE_KEY,
+    RUN_OF_SHOW_SHEET: process.env.RUN_OF_SHOW_SHEET,
+    RUN_OF_SHOW_SHEETS_CLIENT_EMAIL:
+      process.env.RUN_OF_SHOW_SHEETS_CLIENT_EMAIL,
+    RUN_OF_SHOW_SHEETS_PRIVATE_KEY: process.env.RUN_OF_SHOW_SHEETS_PRIVATE_KEY,
+    SHEET_WRITES: process.env.SHEET_WRITES,
+    COFFEE_INVITES_ENABLED: process.env.COFFEE_INVITES_ENABLED,
+    VERCEL_ENV: process.env.VERCEL_ENV,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     HACK_START: process.env.HACK_START,
     HACK_END: process.env.HACK_END,
     PROJECT_SUBMISSION_DEADLINE: process.env.PROJECT_SUBMISSION_DEADLINE,
+    SPONSOR_JUDGING_CLOSES_AT: process.env.SPONSOR_JUDGING_CLOSES_AT,
     CHEAT_SWEEP_SECRET: process.env.CHEAT_SWEEP_SECRET,
+    SLACK_BOT_TOKEN: process.env.SLACK_BOT_TOKEN,
+    SLACK_SIGNING_SECRET: process.env.SLACK_SIGNING_SECRET,
+    SPONSOR_HELP_SLACK_BOT_TOKEN: process.env.SPONSOR_HELP_SLACK_BOT_TOKEN,
+    SPONSOR_HELP_SLACK_SIGNING_SECRET:
+      process.env.SPONSOR_HELP_SLACK_SIGNING_SECRET,
+    SPONSOR_HELP_SLACK_CHANNEL: process.env.SPONSOR_HELP_SLACK_CHANNEL,
+    SPONSOR_HELP_SLACK_MENTION: process.env.SPONSOR_HELP_SLACK_MENTION,
+    MARKETING_NOTIFICATIONS_ENABLED:
+      process.env.MARKETING_NOTIFICATIONS_ENABLED,
+    MARKETING_NOTIFICATION_TEST_MODE:
+      process.env.MARKETING_NOTIFICATION_TEST_MODE,
+    MARKETING_NOTIFICATION_TEST_RECIPIENT:
+      process.env.MARKETING_NOTIFICATION_TEST_RECIPIENT,
+    MARKETING_NOTIFICATION_SKIP_IDS:
+      process.env.MARKETING_NOTIFICATION_SKIP_IDS,
+    MARKETING_NOTIFICATION_SCHEDULE_PATH:
+      process.env.MARKETING_NOTIFICATION_SCHEDULE_PATH,
+    MARKETING_ALLISON_SLACK_USER_ID:
+      process.env.MARKETING_ALLISON_SLACK_USER_ID,
+    MARKETING_BRITTNEY_SLACK_USER_ID:
+      process.env.MARKETING_BRITTNEY_SLACK_USER_ID,
+    MARKETING_ANSON_SLACK_USER_ID: process.env.MARKETING_ANSON_SLACK_USER_ID,
+    MARKETING_JAMIE_SLACK_USER_ID: process.env.MARKETING_JAMIE_SLACK_USER_ID,
+
+    HACKER_INTEREST_FORM: process.env.HACKER_INTEREST_FORM,
     HW_NETWORK_REQUESTS_APP_MAP_TOKEN:
       process.env.HW_NETWORK_REQUESTS_APP_MAP_TOKEN,
     HW_NETWORK_REQUESTS_INGEST_URL: process.env.HW_NETWORK_REQUESTS_INGEST_URL,

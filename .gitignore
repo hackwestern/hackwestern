@@ -70,3 +70,10 @@ traffic-profile.json
 # Cloudflare worker local secrets
 .dev.vars
 .wrangler/
+
+# Organizer reminders: local contact snapshots and sheet-check state
+*.local.csv
+.organizer-sheet-check.txt
+.organizer-state/
+organizer-watch.log
+.organizer-heartbeat.json
