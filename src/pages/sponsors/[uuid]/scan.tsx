@@ -33,7 +33,10 @@ export default function SponsorScanPage() {
     <SponsorShell
       title={copy.seoTitle}
       heading={hacker ? copy.offerTitle : copy.title}
-      headerStart={<BackToChats href={`/sponsors/${id}/coffee-chats`} />}
+      // Only once the URL is read: no "/sponsors//coffee-chats" link.
+      headerStart={
+        validUuid && <BackToChats href={`/sponsors/${id}/coffee-chats`} />
+      }
     >
       {children}
     </SponsorShell>

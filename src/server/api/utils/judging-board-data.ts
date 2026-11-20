@@ -10,8 +10,7 @@ import { teamStatus, type TeamStatus } from "~/lib/judging-board";
 import { orderReps } from "~/lib/sponsor-organizer";
 import { normalizeRoom } from "~/lib/sponsor-presentations";
 import {
-  hasPrizeTrack,
-  isDigitalJudging,
+  judgesOnBoard,
   prizeTrackOf,
   remoteJudgingRoom,
 } from "~/lib/sponsor-prize-tracks";
@@ -58,7 +57,7 @@ async function boardSponsors() {
   return {
     registered,
     sponsors: registered.filter(
-      (s) => hasPrizeTrack(s.name, prizeTracks) && !isDigitalJudging(s.name),
+      (s) => judgesOnBoard(s.name, prizeTracks),
     ),
   };
 }

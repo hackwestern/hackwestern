@@ -74,6 +74,17 @@ export function isDigitalJudging(sponsorName: string): boolean {
   return prizeTrackOf(sponsorName, DIGITAL_JUDGING_SPONSORS) !== null;
 }
 
+/**
+ * Whether the sponsor is on the organizer Judging board (and the Home's
+ * judging panel): a prize track, judged in a room or remotely, not digital.
+ */
+export function judgesOnBoard(
+  sponsorName: string,
+  tracks: readonly string[] = SPONSOR_PRIZE_TRACKS,
+): boolean {
+  return hasPrizeTrack(sponsorName, tracks) && !isDigitalJudging(sponsorName);
+}
+
 /** REMOTE_JUDGING_ROOM for a sponsor that judges remotely, else null. */
 export function remoteJudgingRoom(sponsorName: string): string | null {
   return prizeTrackOf(sponsorName, REMOTE_JUDGING_SPONSORS) !== null

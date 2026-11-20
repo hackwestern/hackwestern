@@ -19,6 +19,8 @@ import {
   protectedOrganizerProcedure,
 } from "~/server/api/trpc";
 import { buildJudgingBoard } from "~/lib/sponsor-judging-rooms";
+import { judgesOnBoard, remoteJudgingRoom } from "~/lib/sponsor-prize-tracks";
+import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import {
   judgingSheet,
   runOfShowFor,
@@ -139,6 +141,7 @@ export const sponsorOrganizerRouter = createTRPCRouter({
         presentations,
         openedAt,
         boardRooms,
+        prizeTracks,
       ] = await Promise.all([
         runOfShowFor(sponsors.map((s) => s.name)),
         judgingSheet(),
@@ -203,7 +206,23 @@ export const sponsorOrganizerRouter = createTRPCRouter({
         round2OpenedAt(),
         // Rooms set on the Judging board win over the sheets.
         db.select().from(sponsorJudgingRooms),
+        prizeTrackSponsors(),
       ]);
+      // The same sponsors, rooms and counts as the Judging board
+      // (loadJudgingBoard): prize track sponsors from the Sponsor Day-Of
+      // checkbox, remote judges in "Remote", picks = the sent shortlist.
+      const judges = sponsors.filter((s) => judgesOnBoard(s.name, prizeTracks));
+      const rooms = new Map(boardRooms.map((r) => [r.sponsorId, r.room]));
+      for (const s of judges) {
+        const remote = remoteJudgingRoom(s.name);
+        if (remote) rooms.set(s.id, remote);
+      }
+      const shortlistSize = new Map(
+        judges.map((s) => [
+          s.name.toLowerCase(),
+          sunday.get(s.id)?.shortlistSentCount ?? 0,
+        ]),
+      );
       return buildSponsorSummaries({
         sponsors,
         setups: runOfShow?.coffeeChats ?? [],
@@ -218,12 +237,15 @@ export const sponsorOrganizerRouter = createTRPCRouter({
         holds,
         limits,
         judging: buildJudgingBoard({
-          sponsors,
+          sponsors: judges,
+          otherSponsors: sponsors.filter((s) => !judges.includes(s)),
           items: runOfShow?.items ?? [],
           runOfShowRead: runOfShow !== null,
           sheet,
-          boardRooms: new Map(boardRooms.map((r) => [r.sponsorId, r.room])),
+          boardRooms: rooms,
+          pickCount: (name) => shortlistSize.get(name.toLowerCase()) ?? null,
         }),
+        prizeTracks,
         sunday,
         presentations: presentations.flatMap((p) =>
           p.start === null

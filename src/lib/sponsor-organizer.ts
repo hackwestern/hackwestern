@@ -238,6 +238,11 @@ export type SponsorSummaries = {
   judging: JudgingBoard | null;
   /** Organizers have opened round 2 (top 5). */
   round2Open: boolean;
+  /**
+   * Prize track sponsors (Sponsor Day-Of checkbox, else the built-in list),
+   * the Judging board's list; null when not given (tests).
+   */
+  prizeTracks: readonly string[] | null;
 };
 
 /**
@@ -340,6 +345,7 @@ export function buildSponsorSummaries({
   sunday = new Map(),
   presentations = [],
   round2Open = false,
+  prizeTracks = null,
   now,
 }: {
   sponsors: readonly {
@@ -383,6 +389,7 @@ export function buildSponsorSummaries({
   /** Placed presentation slots (every sponsor). */
   presentations?: readonly (PresentationSlot & { sponsorId: string })[];
   round2Open?: boolean;
+  prizeTracks?: readonly string[] | null;
   now: Date;
 }): SponsorSummaries {
   const byId = new Map<string, SponsorSummary>();
@@ -523,6 +530,7 @@ export function buildSponsorSummaries({
     totals: summaryTotals(rows),
     judging,
     round2Open,
+    prizeTracks,
   };
 }
 
