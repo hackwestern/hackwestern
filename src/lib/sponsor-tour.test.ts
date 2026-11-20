@@ -22,7 +22,14 @@ import {
   type TourDef,
   type TourStorage,
 } from "~/lib/sponsor-tour";
-import { SPONSOR_TOURS, toursFor } from "~/lib/sponsor-tours";
+import {
+  pageOfTour,
+  pageTourId,
+  SPONSOR_TOURS,
+  stepsByPage,
+  toursFor,
+  WELCOME_TOUR_ID,
+} from "~/lib/sponsor-tours";
 
 const SPONSOR = "89170676-4186-4912-8a06-fa0eda0ff309";
 
@@ -306,16 +313,18 @@ describe("SPONSOR_TOURS", () => {
         )
         .join("\n");
     const source = read(join(process.cwd(), "src"));
-    for (const step of steps) {
-      for (const t of stepTargets(step)) {
-        if (t.startsWith("nav-")) {
-          // The shell's nav items: data-tour={`nav-${item.id}`}.
-          expect(source).toContain("data-tour={`nav-${item.id}`}");
-          expect(source).toMatch(new RegExp(`id: "${t.slice("nav-".length)}"`));
-        } else {
-          expect(source, `data-tour "${t}"`).toMatch(
-            new RegExp(`data-tour=["'\`]${t}["'\`]|tourId="${t}"`),
-          );
+    // Templated names: data-tour={`nav-${item.id}`}, {`judging-tab-${s}`}.
+    const templated = [...source.matchAll(/data-tour=\{`([a-z-]+)\$\{/g)].map(
+      (m) => m[1] ?? "",
+    );
+    for (const def of Object.values(SPONSOR_TOURS)) {
+      for (const step of def.steps) {
+        for (const t of stepTargets(step)) {
+          const literal = new RegExp(
+            `data-tour=["'\`]${t}["'\`]|tourId="${t}"`,
+          ).test(source);
+          const fromTemplate = templated.some((p) => p && t.startsWith(p));
+          expect(literal || fromTemplate, `data-tour "${t}"`).toBe(true);
         }
       }
     }
@@ -325,6 +334,98 @@ describe("SPONSOR_TOURS", () => {
     for (const step of steps) {
       for (const t of stepTargets(step)) expect(t).not.toMatch(/quick/i);
     }
+  });
+});
+
+describe("page tours (Tour this page)", () => {
+  const welcome = SPONSOR_TOURS.welcome.steps;
+
+  it("groups steps by page, keeping tour order", () => {
+    const byPage = stepsByPage([
+      { id: "a", page: "home", target: "a", title: "A", body: "a" },
+      { id: "b", page: "map", target: "b", title: "B", body: "b" },
+      { id: "c", page: "any", target: "c", title: "C", body: "c" },
+      { id: "d", page: "home", target: "d", title: "D", body: "d" },
+    ]);
+    expect(byPage.home?.map((st) => st.id)).toEqual(["a", "d"]);
+    expect(byPage.map?.map((st) => st.id)).toEqual(["b"]);
+    // "any" steps never join a page tour: it would follow the sponsor off.
+    expect(Object.keys(byPage).sort()).toEqual(["home", "map"]);
+  });
+
+  it("has a tour for every portal page, made of that page's own steps", () => {
+    for (const page of [
+      "home",
+      "schedule",
+      "map",
+      "coffeeChats",
+      "scan",
+      "picks",
+    ] as const) {
+      const def = SPONSOR_TOURS[pageTourId(page)];
+      expect(def, page).toBeDefined();
+      expect(def?.steps.length).toBeGreaterThan(0);
+      for (const st of def?.steps ?? []) expect(st.page).toBe(page);
+    }
+  });
+
+  it("reuses the full tour's steps, in the same order", () => {
+    const schedule = SPONSOR_TOURS[pageTourId("schedule")]?.steps ?? [];
+    expect(schedule).toEqual(welcome.filter((st) => st.page === "schedule"));
+    const home = SPONSOR_TOURS[pageTourId("home")]?.steps.map((st) => st.id);
+    expect(home).toEqual([
+      "welcome",
+      "contacts",
+      "up-next",
+      "up-next-buttons",
+      "key-rooms",
+      "judging",
+      "help",
+    ]);
+  });
+
+  it("gives Judging its own 2-4 steps, outside the full tour", () => {
+    const picks = SPONSOR_TOURS[pageTourId("picks")]?.steps ?? [];
+    expect(picks.length).toBeGreaterThanOrEqual(2);
+    expect(picks.length).toBeLessThanOrEqual(4);
+    expect(welcome.some((st) => st.page === "picks")).toBe(false);
+  });
+
+  it("drops the Judging page tour and step without a prize track", () => {
+    const tours = toursFor(false);
+    expect(tours[pageTourId("picks")]).toBeUndefined();
+    expect(tours[pageTourId("home")]?.steps.map((st) => st.id)).not.toContain(
+      "judging",
+    );
+  });
+
+  it("runs a single page's steps without ever navigating", () => {
+    for (const [id, def] of Object.entries(SPONSOR_TOURS)) {
+      const page = pageOfTour(id);
+      if (!page) continue;
+      for (let i = 0; i < def.steps.length; i++) {
+        const r = resolveStep(def, i, page, SPONSOR, () => true);
+        expect(r.kind, `${id} step ${i}`).toBe("show");
+        expect(hrefForMove(def, i, page, SPONSOR)).toBeNull();
+      }
+      // Past its last step it's done (it ends on its page).
+      expect(
+        resolveStep(def, def.steps.length, page, SPONSOR, () => true),
+      ).toEqual({ kind: "done" });
+    }
+  });
+
+  it("tells page tours apart from the full tour", () => {
+    expect(pageOfTour(pageTourId("map"))).toBe("map");
+    expect(pageOfTour(WELCOME_TOUR_ID)).toBeNull();
+    expect(pageOfTour("page:nowhere")).toBeNull();
+  });
+
+  it("restores a running page tour from saved progress", () => {
+    const store = memoryStorage();
+    const id = pageTourId("scan");
+    saveProgress(store, { tour: id, step: 1, sponsor: SPONSOR });
+    expect(loadProgress(store, SPONSOR_TOURS, SPONSOR)?.tour).toBe(id);
   });
 });
 

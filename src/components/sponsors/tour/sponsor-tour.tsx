@@ -21,6 +21,7 @@ import {
   type TourProgress,
 } from "~/lib/sponsor-tour";
 import {
+  pageOfTour,
   toursFor,
   WELCOME_TOUR_ID,
   type SponsorTourId,
@@ -43,8 +44,9 @@ const AWAY_GRACE_MS = 900;
 const SKIP_GRACE_MS = 2500;
 
 /**
- * The sponsor portal tour, drawn over the live page, and on the portal
- * home a one-time "New here?" offer. Progress lives in sessionStorage so
+ * The sponsor portal tours, drawn over the live page: the full tour (the
+ * one-time "New here?" offer on Home, "Take the tour") and each page's own
+ * tour ("Tour this page", which stays on its page). Progress lives in sessionStorage so
  * the tour carries on across pages; the sponsor shell mounts one copy of
  * this on every sponsor page. Started by `startSponsorTour()`.
  */
@@ -86,7 +88,7 @@ export function SponsorTour({
     setProgress(next);
   }, []);
 
-  const def = progress ? tours[progress.tour as SponsorTourId] : undefined;
+  const def = progress ? tours[progress.tour] : undefined;
   const step = def && progress ? def.steps[progress.step] : undefined;
   const targets = useMemo(() => (step ? stepTargets(step) : []), [step]);
   const skippable = !!step && isSkippable(step);
@@ -98,14 +100,18 @@ export function SponsorTour({
   );
 
   const close = useCallback(() => {
-    markWelcomeSeen(getStorage("local"), sponsor);
+    // Only the full tour answers the first-visit offer; a page tour
+    // ("Tour this page") never touches it.
+    if (progress?.tour === WELCOME_TOUR_ID) {
+      markWelcomeSeen(getStorage("local"), sponsor);
+    }
     update(null);
     const back = returnFocus.current;
     returnFocus.current = null;
     if (back?.isConnected) back.focus({ preventScroll: true });
     else
       document.getElementById("sponsor-main")?.focus({ preventScroll: true });
-  }, [sponsor, update]);
+  }, [progress?.tour, sponsor, update]);
 
   /** Move to step `index`; `navigate` false when the app is already going. */
   const moveTo = useCallback(
@@ -132,8 +138,10 @@ export function SponsorTour({
   const start = (id: SponsorTourId) => {
     const tourDef = tours[id];
     if (!tourDef) return;
-    setOffer(false);
-    markWelcomeSeen(getStorage("local"), sponsor);
+    if (id === WELCOME_TOUR_ID) {
+      setOffer(false);
+      markWelcomeSeen(getStorage("local"), sponsor);
+    }
     if (document.activeElement instanceof HTMLElement) {
       returnFocus.current = document.activeElement;
     }
@@ -146,7 +154,7 @@ export function SponsorTour({
   useEffect(() => {
     const onStart = (e: Event) => {
       const id = (e as CustomEvent<unknown>).detail;
-      if (typeof id === "string") startRef.current(id as SponsorTourId);
+      if (typeof id === "string") startRef.current(id);
     };
     window.addEventListener(START_EVENT, onStart);
     return () => window.removeEventListener(START_EVENT, onStart);
@@ -167,6 +175,14 @@ export function SponsorTour({
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
   }, [waitingOn, progress, moveTo]);
+
+  // A page tour never leaves its page: if the sponsor goes elsewhere (the
+  // browser's Back), it just ends.
+  const tourPage = progress ? pageOfTour(progress.tour) : null;
+  const offItsPage = !!tourPage && !!current && tourPage !== current;
+  useEffect(() => {
+    if (offItsPage) update(null);
+  }, [offItsPage, update]);
 
   const found = el?.getAttribute("data-tour") ?? null;
   const resolved =
@@ -197,7 +213,7 @@ export function SponsorTour({
   }, [awayHref]);
 
   let overlay: React.ReactNode = null;
-  if (def && progress && step && resolved) {
+  if (def && progress && step && resolved && !offItsPage) {
     const common = {
       index: progress.step,
       total: def.steps.length,

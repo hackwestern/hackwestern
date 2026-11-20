@@ -9,9 +9,18 @@
 // instead of stopping. The nav steps (nav-*) point at the side nav on
 // tablets and up and at the phone tab bar otherwise; whichever is visible
 // is the target.
+//
+// Each page also has its own tour ("Tour this page"): the same steps,
+// grouped by page, plus the Judging page's own steps below.
 
 import { sponsorTourCopy } from "~/content/sponsor-tour";
-import type { TourDef, TourStep } from "~/lib/sponsor-tour";
+import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
+import {
+  TOUR_PAGES,
+  type TourDef,
+  type TourPage,
+  type TourStep,
+} from "~/lib/sponsor-tour";
 
 const s = sponsorTourCopy.tours.welcome.steps;
 const stage = s.chatsStage;
@@ -158,33 +167,118 @@ const welcomeSteps: TourStep[] = [
   }),
 ];
 
-const tours = {
-  welcome: { id: WELCOME_TOUR_ID, steps: welcomeSteps },
-} satisfies Record<string, TourDef>;
-
-export type SponsorTourId = keyof typeof tours;
-
-export const SPONSOR_TOURS: Record<SponsorTourId, TourDef> = tours;
+// The Judging page's own steps: only in its page tour (the full tour
+// stays on Home for Judging, since the page is locked until Sunday).
+const j = sponsorTourCopy.judgingPage;
+const judgingPageSteps: TourStep[] = [
+  step({
+    id: "judging-intro",
+    page: "picks",
+    placement: "bottom",
+    ...j.intro,
+    variants: [
+      { target: "judging-intro", ...j.intro },
+      { target: "judging-locked", ...j.locked },
+    ],
+  }),
+  step({
+    id: "judging-stages",
+    page: "picks",
+    target: "judging-stages",
+    placement: "bottom",
+    title: j.stages.title,
+    body: j.stages.body(SPONSOR_FINAL_TOP),
+  }),
+  step({
+    id: "judging-score",
+    page: "picks",
+    target: "judging-first-project",
+    placement: "top",
+    ...j.score,
+  }),
+  step({
+    id: "judging-submit",
+    page: "picks",
+    target: "judging-tab-shortlist",
+    placement: "bottom",
+    ...j.submit,
+  }),
+];
 
 /** Steps about Judging (gone for sponsors who don't judge). */
 const JUDGING_STEP_IDS = new Set(["judging"]);
 
+// ------------------------------------------------------------
+// Page tours: one page's steps, started from "Tour this page"
+// ------------------------------------------------------------
+
+export const PAGE_TOUR_PREFIX = "page:";
+
+/** The id of a page's own tour ("page:schedule"). */
+export const pageTourId = (page: TourPage): string =>
+  `${PAGE_TOUR_PREFIX}${page}`;
+
+/** The page a page tour belongs to; null for the full tour. */
+export function pageOfTour(id: string): TourPage | null {
+  if (!id.startsWith(PAGE_TOUR_PREFIX)) return null;
+  const page = id.slice(PAGE_TOUR_PREFIX.length);
+  return page in TOUR_PAGES ? (page as TourPage) : null;
+}
+
+/** A tour's steps grouped by page, in tour order ("any" steps left out:
+ * a page tour never leaves its page). */
+export function stepsByPage(
+  steps: readonly TourStep[],
+): Partial<Record<TourPage, TourStep[]>> {
+  const out: Partial<Record<TourPage, TourStep[]>> = {};
+  for (const st of steps) {
+    if (st.page === "any") continue;
+    (out[st.page] ??= []).push(st);
+  }
+  return out;
+}
+
+/** The full tour plus one tour per page that has steps. */
+function buildTours(
+  welcome: readonly TourStep[],
+  extra: readonly TourStep[],
+): SponsorTours {
+  const tours: SponsorTours = {
+    [WELCOME_TOUR_ID]: { id: WELCOME_TOUR_ID, steps: welcome },
+  };
+  const byPage = stepsByPage([...welcome, ...extra]);
+  for (const page of Object.keys(TOUR_PAGES) as TourPage[]) {
+    const steps = byPage[page];
+    if (steps?.length)
+      tours[pageTourId(page)] = { id: pageTourId(page), steps };
+  }
+  return tours;
+}
+
+export type SponsorTourId = string;
+
+/** Every tour by id: the full tour ("welcome") and "page:<page>" tours. */
+export type SponsorTours = Record<string, TourDef> & { welcome: TourDef };
+
+/** Every tour, for a sponsor with a prize track (or still loading). */
+export const SPONSOR_TOURS: SponsorTours = buildTours(
+  welcomeSteps,
+  judgingPageSteps,
+);
+
+/** Without a prize track: no Judging step, no Judging page tour. */
+const NO_JUDGING_TOURS: SponsorTours = buildTours(
+  welcomeSteps.filter((st) => !JUDGING_STEP_IDS.has(st.id)),
+  [],
+);
+
 /**
  * The tours a sponsor gets. Without a prize track there's no Judging in
- * the nav, so the tour drops its Judging step (it would be skipped anyway;
- * dropping it keeps "Step n of N" right). `undefined` (still loading) keeps
- * it, and the step skips itself if the nav item never shows.
+ * the nav, so the full tour drops its Judging step (it would be skipped
+ * anyway; dropping it keeps "Step n of N" right) and there's no Judging
+ * page tour. `undefined` (still loading) keeps everything; a missing
+ * target skips itself.
  */
-export function toursFor(
-  hasPrizeTrack: boolean | undefined,
-): Record<SponsorTourId, TourDef> {
-  if (hasPrizeTrack !== false) return SPONSOR_TOURS;
-  return {
-    welcome: {
-      ...SPONSOR_TOURS.welcome,
-      steps: SPONSOR_TOURS.welcome.steps.filter(
-        (st) => !JUDGING_STEP_IDS.has(st.id),
-      ),
-    },
-  };
+export function toursFor(hasPrizeTrack: boolean | undefined): SponsorTours {
+  return hasPrizeTrack === false ? NO_JUDGING_TOURS : SPONSOR_TOURS;
 }

@@ -18,11 +18,14 @@ import {
   SponsorHelp,
   SponsorHelpProvider,
 } from "~/components/sponsors/help-button";
+import { PageTourButton } from "~/components/sponsors/tour/page-tour-button";
 import { SponsorTour } from "~/components/sponsors/tour/sponsor-tour";
 import { useNow } from "~/components/sponsors/use-now";
 import { sponsorPortalCopy } from "~/content/sponsor-portal";
 import { sponsorVenueCopy } from "~/content/sponsor-venue";
 import { judgingUnlocked } from "~/lib/sponsor-judging-unlock";
+import { pageOf } from "~/lib/sponsor-tour";
+import { pageTourId, toursFor } from "~/lib/sponsor-tours";
 import { sponsorLogo } from "~/lib/sponsor-logos";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
@@ -186,6 +189,16 @@ export function SponsorShell({
   const topTitle =
     barTitle ?? (active ? copy.titles[active] : sponsorPortalCopy.brand);
   const hasDeskHeader = !!(heading ?? headerStart ?? headerEnd);
+  // "Tour this page": on every sponsor page that has a page tour, except
+  // inside the coffee chat forms (?flow=), whose steps aren't toured.
+  const tourPage = id ? pageOf(router.pathname) : null;
+  const pageTour =
+    tourPage &&
+    !router.query.flow &&
+    toursFor(info.data?.hasPrizeTrack)[pageTourId(tourPage)]
+      ? tourPage
+      : null;
+  const pageName = active ? copy.titles[active] : sponsorPortalCopy.brand;
 
   const frame = (
     <>
@@ -274,19 +287,32 @@ export function SponsorShell({
           {/* Phone top bar: logo, the section's title, Help. */}
           <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-2 border-b border-dashboard-border-default bg-dashboard-bg-nav px-4 pt-[env(safe-area-inset-top)] md:hidden">
             {id ? (
-              <Link
-                href={withPreview(base)}
-                aria-label={copy.homeLink}
-                className="flex min-h-11 min-w-11 shrink-0 items-center px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
-              >
-                <Image src="/shared/horse.svg" alt="" width={26} height={38} />
-              </Link>
+              <div className="flex shrink-0 items-center gap-1">
+                <Link
+                  href={withPreview(base)}
+                  aria-label={copy.homeLink}
+                  className="flex min-h-11 min-w-11 shrink-0 items-center px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+                >
+                  <Image
+                    src="/shared/horse.svg"
+                    alt=""
+                    width={26}
+                    height={38}
+                  />
+                </Link>
+                {pageTour && (
+                  <PageTourButton page={pageTour} pageName={pageName} compact />
+                )}
+              </div>
             ) : (
               <span />
             )}
             <p
               aria-hidden
-              className="pointer-events-none absolute bottom-5 left-1/2 m-0 -translate-x-1/2 whitespace-nowrap text-base font-semibold"
+              // A flex item, not absolutely centred: with "Tour" beside the
+              // logo, a long title ("Scan a hacker") truncates instead of
+              // running into it on narrow phones.
+              className="pointer-events-none m-0 min-w-0 flex-1 truncate text-center text-base font-semibold"
             >
               {topTitle}
             </p>
@@ -307,6 +333,13 @@ export function SponsorShell({
             )}
           >
             <div className="mx-auto flex w-full max-w-[884px] flex-col gap-6 md:gap-8">
+              {/* Tablets and up: "Tour this page" at the top right of the
+                  page, above its heading (phones have it in the top bar). */}
+              {pageTour && (
+                <div className="hidden justify-end md:-mb-4 md:-mt-6 md:flex">
+                  <PageTourButton page={pageTour} pageName={pageName} />
+                </div>
+              )}
               {hasDeskHeader && (
                 <div className="flex flex-col gap-6">
                   {headerStart && (

@@ -16,6 +16,38 @@ export const sponsorTourCopy = {
     text: "Not sure where something is?",
     button: "Take the tour",
   },
+  /** "Tour this page": the phone top bar and the page header. Runs only
+   * the steps on the page you're on. */
+  pageTour: {
+    button: "Tour this page",
+    short: "Tour",
+    label: (page: string) => `Tour this page, ${page}`,
+  },
+  /** The Judging page's own tour (not part of the full tour: the page is
+   * locked until Sunday). */
+  judgingPage: {
+    intro: {
+      title: "Your judging page",
+      body: "Score projects and pick the teams you want to hear present. It saves as you go.",
+    },
+    locked: {
+      title: "Judging opens Sunday",
+      body: "This page unlocks at 9:00 AM Sunday. Come to the judging workshop first.",
+    },
+    stages: {
+      title: "Four stages",
+      body: (top: number) =>
+        `Browse and score, submit your final shortlist, hear presentations, then pick your top ${top}.`,
+    },
+    score: {
+      title: "Score each project",
+      body: "Give each project a score, and tap Save as finalist for the teams you want to hear present.",
+    },
+    submit: {
+      title: "Submit your final shortlist",
+      body: "When you're happy with your finalists, submit them here. You can only submit once.",
+    },
+  },
   offer: {
     title: "New here?",
     body: "Take a 2-minute tour of your portal.",
