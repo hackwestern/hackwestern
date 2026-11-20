@@ -368,4 +368,12 @@ describe("layoutGrid", () => {
       "coffee-chats",
     ]);
   });
+
+  it("leaves out hidden columns: no Coffee chats for a sponsor without chats", () => {
+    expect(layoutGrid([], ["coffee-chats"]).map((c) => c.column)).toEqual([
+      "sponsor-workshop",
+      "food",
+      "spon-booth",
+    ]);
+  });
 });
