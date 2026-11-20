@@ -11,6 +11,7 @@ import {
   House,
   MapIcon,
   ScanLine,
+  Trophy,
   Utensils,
 } from "lucide-react";
 
@@ -399,6 +400,7 @@ const SIDEBAR_ICONS: Record<string, LucideIcon> = {
   activities: ClipboardList,
   rewards: Gift,
   scavenger: Compass,
+  "bonus-tasks": Trophy,
 };
 
 const SidebarIcon = ({

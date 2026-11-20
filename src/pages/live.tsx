@@ -9,6 +9,7 @@ import MapTab from "~/components/live/map";
 import FoodMenu from "~/components/live/food-menu";
 import Mentors from "~/components/live/mentors";
 import Sponsors from "~/components/live/sponsors";
+import ScavengerHunt from "~/components/live/scavenger-hunt";
 import EventLogistics from "~/components/live/event-logistics";
 import ContactUs from "~/components/live/contact-us";
 import Activities from "~/components/live/activities";
@@ -82,6 +83,8 @@ const TabComponent = ({
       return <Mentors />;
     case "sponsors":
       return <Sponsors />;
+    case "bonus-tasks":
+      return <ScavengerHunt isOrganizer={isOrganizer} />;
     case "event-logistics":
       return <EventLogistics />;
     case "contact-us":

@@ -25,6 +25,7 @@ export const SidebarNav = ({
         <SectionLink tab="menu" name="Food Menu" />
         <SectionLink tab="mentors" name="Mentors" />
         <SectionLink tab="sponsors" name="Sponsors" />
+        {!isOrganizer && <SectionLink tab="bonus-tasks" name="Bonus Tasks" />}
         {isOrganizer && (
           <SectionGroup
             icon="scavenger"
