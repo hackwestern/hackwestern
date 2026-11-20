@@ -621,6 +621,34 @@ function SponsorTable({
       writes={writes}
     />
   );
+  /**
+   * The sponsor's portal, one tap from the table (Jazz, 2026-11-19): an
+   * icon link beside the name. Copy link stays in the details.
+   */
+  const portalLink = (r: Row) =>
+    r.sponsorId ? (
+      <a
+        href={`/sponsors/${r.sponsorId}`}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={sponsorOrganizerCopy.board.openPage(r.name)}
+        title={sponsorOrganizerCopy.board.openPage(r.name)}
+        className={cn(
+          "inline-flex size-11 shrink-0 items-center justify-center rounded-dashboard-md text-dashboard-text-light md:size-8",
+          hover.highlightSubtle,
+          press,
+          focusRing,
+        )}
+      >
+        <ExternalLink aria-hidden className="size-4" />
+      </a>
+    ) : null;
+  const nameWithLink = (r: Row, panel: string) => (
+    <div className="flex items-start gap-1">
+      <div className="min-w-0 flex-1">{nameButton(r, panel)}</div>
+      {portalLink(r)}
+    </div>
+  );
   const nameButton = (r: Row, panel: string) => {
     const flags = sponsorFlags(r, day, now).length;
     const isOpen = open.has(keyOf(r));
@@ -678,7 +706,7 @@ function SponsorTable({
                 flagged && "border-l-4 border-l-dashboard-status-warning",
               )}
             >
-              {nameButton(r, panel)}
+              {nameWithLink(r, panel)}
               <dl className="m-0 flex flex-col gap-2.5 text-sm">
                 {columns.map((col) => (
                   <div key={col} className="flex flex-col gap-0.5">
@@ -747,7 +775,7 @@ function SponsorTable({
                         flagged && "border-l-4 border-l-dashboard-status-warning",
                       )}
                     >
-                      {nameButton(r, panel)}
+                      {nameWithLink(r, panel)}
                     </th>
                     {columns.map((col) => (
                       <td key={col} className={cn(td, "max-w-72")}>
