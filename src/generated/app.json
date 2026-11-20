@@ -10787,6 +10787,51 @@
           "source": "unhandled"
         }
       ],
+      "http": "POST /api/trpc/scavengerHunt.deleteReward",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "type": "undefined"
+      },
+      "path": "scavengerHunt.deleteReward",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
       "http": "POST /api/trpc/scavengerHunt.deleteScavengerHuntItem",
       "input": {
         "additionalProperties": false,
@@ -10840,6 +10885,18 @@
             "costPoints": {
               "type": "number"
             },
+            "deletedAt": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "format": "date-time",
+                  "type": "string",
+                  "x-superjson": "Date"
+                }
+              ]
+            },
             "description": {
               "anyOf": [
                 {
@@ -10865,12 +10922,21 @@
                   "type": "number"
                 }
               ]
+            },
+            "status": {
+              "enum": [
+                "draft",
+                "active",
+                "disabled"
+              ]
             }
           },
           "required": [
             "description",
+            "status",
             "id",
             "name",
+            "deletedAt",
             "costPoints",
             "quantity"
           ],
@@ -11539,6 +11605,18 @@
           "costPoints": {
             "type": "number"
           },
+          "deletedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
           "description": {
             "anyOf": [
               {
@@ -11564,12 +11642,21 @@
                 "type": "number"
               }
             ]
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "active",
+              "disabled"
+            ]
           }
         },
         "required": [
           "description",
+          "status",
           "id",
           "name",
+          "deletedAt",
           "costPoints",
           "quantity"
         ],
@@ -11946,6 +12033,88 @@
           "source": "auth middleware"
         },
         {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/scavengerHunt.getScavengerHuntRewards?input=<superjson>",
+      "input": null,
+      "output": {
+        "items": {
+          "properties": {
+            "costPoints": {
+              "type": "number"
+            },
+            "description": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "id": {
+              "type": "number"
+            },
+            "name": {
+              "type": "string"
+            },
+            "quantity": {
+              "anyOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "redemptions": {
+              "type": "number"
+            },
+            "status": {
+              "enum": [
+                "draft",
+                "active",
+                "disabled"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "description",
+            "costPoints",
+            "quantity",
+            "status",
+            "redemptions"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "path": "scavengerHunt.getScavengerHuntRewards",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
           "code": "BAD_REQUEST",
           "httpStatus": 400,
           "source": "input validation (data.zodError populated)"
@@ -12036,12 +12205,6 @@
           "source": "handler"
         },
         {
-          "code": "NOT_FOUND",
-          "httpStatus": 404,
-          "message": "Reward not found",
-          "source": "handler"
-        },
-        {
           "code": "INTERNAL_SERVER_ERROR",
           "httpStatus": 500,
           "source": "unhandled"
@@ -12051,6 +12214,9 @@
       "input": {
         "additionalProperties": false,
         "properties": {
+          "expectedCost": {
+            "type": "integer"
+          },
           "rewardId": {
             "type": "number"
           },
@@ -12068,6 +12234,9 @@
         "properties": {
           "message": {
             "type": "string"
+          },
+          "pointsUsed": {
+            "type": "number"
           },
           "reward": {
             "anyOf": [
@@ -12139,6 +12308,7 @@
         "required": [
           "success",
           "message",
+          "pointsUsed",
           "user",
           "reward"
         ],
@@ -12264,6 +12434,92 @@
         "type": "undefined"
       },
       "path": "scavengerHunt.saveActivity",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "CONFLICT",
+          "httpStatus": 409,
+          "source": "handler"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/scavengerHunt.saveReward",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "costPoints": {
+            "maximum": 32767,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "maximum": 2147483647,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "active"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "output": {
+        "type": "undefined"
+      },
+      "path": "scavengerHunt.saveReward",
       "source": "src/server/api/routers/scavenger-hunt.ts",
       "type": "mutation"
     },
@@ -12420,6 +12676,60 @@
         "type": "undefined"
       },
       "path": "scavengerHunt.setActivityStatus",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/scavengerHunt.setRewardStatus",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "active",
+              "disabled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "type": "undefined"
+      },
+      "path": "scavengerHunt.setRewardStatus",
       "source": "src/server/api/routers/scavenger-hunt.ts",
       "type": "mutation"
     },
