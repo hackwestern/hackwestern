@@ -188,6 +188,11 @@ export function PrefsStep({
     const avail = availableFree(r.free, windows.blocked).length;
     return { rep, ...r, avail, cap: repChatCap(r.chatsWanted, availChats(r.free, windows)) };
   });
+  // The tier's chatting hours across every rep (null = no limit).
+  const usedMinutes = repState.reduce((n, r) => n + r.chatsWanted, 0) * minutes;
+  const maxMinutes = data.maxChatMinutes;
+  const overTier = maxMinutes !== null && usedMinutes > maxMinutes;
+  const roomForOne = maxMinutes === null || usedMinutes + minutes <= maxMinutes;
   const totals = setupTotals(
     format,
     repState.map((r) => ({ chatsWanted: r.chatsWanted, availChats: availChats(r.free, windows) })),
@@ -291,6 +296,19 @@ export function PrefsStep({
           {copy.q3}
         </h3>
         <p className="m-0 text-base text-dashboard-text-medium">{copy.q3Hint}</p>
+        {maxMinutes !== null && (
+          <p
+            role={overTier ? "alert" : undefined}
+            className={cn(
+              "m-0 text-base font-semibold",
+              overTier ? "text-dashboard-text-warning" : "text-dashboard-text-active",
+            )}
+          >
+            {overTier
+              ? copy.overAllowance(maxMinutes, usedMinutes)
+              : copy.allowance(maxMinutes, usedMinutes)}
+          </p>
+        )}
         <ul className="m-0 flex list-none flex-col rounded-dashboard-md border border-dashboard-border-default p-0">
           {repState.map(({ rep, chatsWanted, avail, cap }) => {
             const setChats = (n: number) =>
@@ -316,7 +334,7 @@ export function PrefsStep({
                       <output aria-label={copy.chatsLabel(rep.name)} className="w-8 text-center text-lg font-semibold tabular-nums text-dashboard-text-heavy">
                         {chatsWanted}
                       </output>
-                      <StepBtn label={copy.more(rep.name)} disabled={chatsWanted >= MAX_SETUP_CHATS} onClick={() => setChats(chatsWanted + 1)}>
+                      <StepBtn label={copy.more(rep.name)} disabled={chatsWanted >= MAX_SETUP_CHATS || !roomForOne} onClick={() => setChats(chatsWanted + 1)}>
                         <Plus aria-hidden className="size-4" />
                       </StepBtn>
                     </span>

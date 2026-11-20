@@ -175,6 +175,12 @@ const DAY_OF_HEADERS = {
   notes: ["to do / mismatches"],
   /** Sponsorship tier ("Gold"), for the portal's welcome line. Optional. */
   tier: ["tier", "sponsor tier", "sponsorship tier"],
+  /**
+   * Coffee chat hours the tier allows (a formula from Tier on the Tiers
+   * tab: Gold 4, Silver 3, Bronze 2). The sponsor's chats can't add up to
+   * more (Jazz, 2026-11-20). Optional.
+   */
+  chattingHours: ["chatting hours"],
 } as const;
 
 export type SponsorDayOfColumns = Record<keyof typeof DAY_OF_HEADERS, number>;
@@ -404,6 +410,11 @@ export interface SponsorInfoRecord {
   status: SponsorStatus;
   /** Sponsor Day-Of's "Tier" column ("Gold"); empty when there's none. */
   tier: string;
+  /**
+   * Minutes of coffee chats the tier allows (Sponsor Day-Of's "Chatting
+   * hours" x 60); null = no tier or no column, so no limit.
+   */
+  chattingMinutes: number | null;
   roomNumber: string;
   boothLocation: string;
   hwContact: string;
@@ -446,6 +457,14 @@ function warnOnce(message: string): void {
  * 2026-11-19 merge), so the caller can fall back to the old tab.
  */
 /** "Gold Sponsor" -> "Gold"; placeholders ("-", "N/A", "TBD", "Sponsor") -> "". */
+/** "4" (hours) -> 240 minutes; blank or not a positive number -> null. */
+export function chattingMinutesOf(raw: string): number | null {
+  const hours = Number(raw.trim());
+  return raw.trim() !== "" && Number.isFinite(hours) && hours > 0
+    ? Math.round(hours * 60)
+    : null;
+}
+
 export function normalizeTier(raw: string): string {
   const tier = raw.trim().replace(/\s*sponsors?$/i, "").trim();
   return /^(|-+|—|n\/?a|tbd|none)$/i.test(tier) ? "" : tier;
@@ -484,6 +503,7 @@ export function sponsorInfoFromDayOf(
     map.set(key, {
       status: normalizeSponsorStatus(at(row, c.status)),
       tier: normalizeTier(at(row, c.tier)),
+      chattingMinutes: chattingMinutesOf(at(row, c.chattingHours)),
       roomNumber: normalizeRoomNumber(at(row, c.judgingRoom)),
       boothLocation: normalizeBoothLocation(at(row, c.booth)),
       hwContact: normalizeHwContact(at(row, c.hwLead)),
@@ -674,6 +694,7 @@ export async function fetchAllSponsorInfo(
         map.set(lower, {
           status: normalizeSponsorStatus(cell(row, cols.statusCol)),
           tier: "",
+          chattingMinutes: null,
           roomNumber: normalizeRoomNumber(cell(row, cols.roomCol)),
           boothLocation: normalizeBoothLocation(cell(row, cols.boothCol)),
           hwContact: normalizeHwContact(cell(row, cols.hwContactCol)),

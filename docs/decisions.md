@@ -907,3 +907,8 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 - **Sun 9:45 AM:** sponsors' shortlists must be submitted by now. Go to the Judging board, give each sponsor a room, then send the room details to hackers (Notify teams).
 
 **Why:** one timeline for when hackers hear from us and what the spon team does at each point.
+
+## 2026-11-20: Sponsors can't pick more coffee chat time than their tier allows (Jazz)
+
+**Decision:** A sponsor's chats (every rep's chats x the chat length) can't add up to more than their tier's chatting hours: Gold 4 h, Silver 3 h, Bronze 2 h (the Tiers tab; Sponsor Day-Of's Chatting hours column). The chats step shows the allowance and how much is picked, the + button stops at the limit, and saving over it is refused with the reason. A rep added when the limit is reached starts at 0 chats. No tier, or the sheet unreadable: no limit, so a Google outage never blocks a sponsor.
+**Why:** chat time is part of what each tier buys.
