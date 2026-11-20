@@ -14,7 +14,7 @@ The code: `src/pages/api/cron/pings.ts` (the route), `src/server/slack/pings-cro
 
 Live refuses to run unless `ORGANIZER_NOTIFICATIONS_ENABLED=1` and `AUTO_PING_ENABLED=1`. Both bots treat "disabled" as "cancel everything I queued", so a missing setting would otherwise wipe the whole queue. To pause, set `PINGS_CRON=off`: syncing stops and already queued DMs still go out.
 
-A Postgres advisory lock stops two syncs running at once (Vercel can fire a cron twice). The organizer bot keeps its sheet-check message, heartbeat DMs and a Slack id cache in the `bot_state` table (migration 0051), since Vercel has no lasting disk. Auto-Ping keeps everything in its sheet, as before.
+A Postgres advisory lock stops two syncs running at once (Vercel can fire a cron twice). The organizer bot keeps its sheet-check message, heartbeat DMs and a Slack id cache in the `bot_state` table (migration 0052), since Vercel has no lasting disk. Auto-Ping keeps everything in its sheet, as before.
 
 ## Vercel settings (Production)
 

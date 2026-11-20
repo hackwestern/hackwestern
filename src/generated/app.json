@@ -22,6 +22,22 @@
     {
       "auth": "none-detected",
       "dynamic": false,
+      "file": "src/pages/broadcast/index.tsx",
+      "hasGetServerSideProps": false,
+      "route": "/broadcast",
+      "serverGuards": []
+    },
+    {
+      "auth": "none-detected",
+      "dynamic": false,
+      "file": "src/pages/broadcast/interview.tsx",
+      "hasGetServerSideProps": false,
+      "route": "/broadcast/interview",
+      "serverGuards": []
+    },
+    {
+      "auth": "none-detected",
+      "dynamic": false,
       "file": "src/pages/clock.tsx",
       "hasGetServerSideProps": false,
       "route": "/clock",
@@ -93,6 +109,16 @@
       "hasGetServerSideProps": true,
       "route": "/internal/adjust-status",
       "serverGuards": []
+    },
+    {
+      "auth": "organizer",
+      "dynamic": false,
+      "file": "src/pages/internal/broadcast.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/internal/broadcast",
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
     },
     {
       "auth": "session",
@@ -3918,6 +3944,564 @@
       },
       "path": "auth.verify",
       "source": "src/server/api/routers/auth.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "public",
+      "errors": [
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/broadcast.display?input=<superjson>",
+      "input": null,
+      "output": {
+        "properties": {
+          "activities": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "items": {
+                  "properties": {
+                    "end": {
+                      "format": "date-time",
+                      "type": "string",
+                      "x-superjson": "Date"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "location": {
+                      "type": "string"
+                    },
+                    "start": {
+                      "format": "date-time",
+                      "type": "string",
+                      "x-superjson": "Date"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "location",
+                    "start",
+                    "end"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "hackingEndsAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "hackingStartsAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "interviewName": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "interviewRole": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "leaders": {
+            "items": {
+              "allOf": [
+                {
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "points": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "points"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "properties": {
+                    "rank": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "rank"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "media": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "items": {
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "enum": [
+                        "image",
+                        "video"
+                      ]
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "type",
+                    "url"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "photoSeconds": {
+            "type": "number"
+          },
+          "scheduleFetchedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "videoSeconds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "hackingStartsAt",
+          "hackingEndsAt",
+          "photoSeconds",
+          "videoSeconds",
+          "interviewName",
+          "interviewRole",
+          "leaders",
+          "activities",
+          "scheduleFetchedAt",
+          "media"
+        ],
+        "type": "object"
+      },
+      "path": "broadcast.display",
+      "source": "src/server/api/routers/broadcast.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/broadcast.settings?input=<superjson>",
+      "input": null,
+      "output": {
+        "anyOf": [
+          {
+            "properties": {
+              "driveFolderId": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "hackingEndsAt": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "format": "date-time",
+                    "type": "string",
+                    "x-superjson": "Date"
+                  }
+                ]
+              },
+              "hackingStartsAt": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "format": "date-time",
+                    "type": "string",
+                    "x-superjson": "Date"
+                  }
+                ]
+              },
+              "id": {
+                "type": "number"
+              },
+              "interviewName": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "interviewRole": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "photoSeconds": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              },
+              "videoSeconds": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "updatedAt",
+              "id",
+              "hackingStartsAt",
+              "hackingEndsAt",
+              "photoSeconds",
+              "videoSeconds",
+              "driveFolderId",
+              "interviewName",
+              "interviewRole"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "driveFolderId": {
+                "type": "null"
+              },
+              "hackingEndsAt": {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              },
+              "hackingStartsAt": {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              },
+              "interviewName": {
+                "type": "null"
+              },
+              "interviewRole": {
+                "type": "null"
+              },
+              "photoSeconds": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "type": "null"
+              },
+              "videoSeconds": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "hackingStartsAt",
+              "hackingEndsAt",
+              "photoSeconds",
+              "videoSeconds",
+              "driveFolderId",
+              "interviewName",
+              "interviewRole",
+              "updatedAt"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "path": "broadcast.settings",
+      "source": "src/server/api/routers/broadcast.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/broadcast.updateSettings",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "driveFolderId": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hackingEndsAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hackingStartsAt": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interviewName": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interviewRole": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "photoSeconds": {
+            "maximum": 120,
+            "minimum": 3,
+            "type": "integer"
+          },
+          "videoSeconds": {
+            "maximum": 300,
+            "minimum": 3,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "hackingStartsAt",
+          "hackingEndsAt",
+          "photoSeconds",
+          "videoSeconds",
+          "driveFolderId",
+          "interviewName",
+          "interviewRole"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "anyOf": [
+          {
+            "type": "undefined"
+          },
+          {
+            "properties": {
+              "driveFolderId": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "hackingEndsAt": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "format": "date-time",
+                    "type": "string",
+                    "x-superjson": "Date"
+                  }
+                ]
+              },
+              "hackingStartsAt": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "format": "date-time",
+                    "type": "string",
+                    "x-superjson": "Date"
+                  }
+                ]
+              },
+              "id": {
+                "type": "number"
+              },
+              "interviewName": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "interviewRole": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "photoSeconds": {
+                "type": "number"
+              },
+              "updatedAt": {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              },
+              "videoSeconds": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "updatedAt",
+              "id",
+              "hackingStartsAt",
+              "hackingEndsAt",
+              "photoSeconds",
+              "videoSeconds",
+              "driveFolderId",
+              "interviewName",
+              "interviewRole"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "path": "broadcast.updateSettings",
+      "source": "src/server/api/routers/broadcast.ts",
       "type": "mutation"
     },
     {

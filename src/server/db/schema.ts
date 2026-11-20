@@ -2222,3 +2222,24 @@ export const botState = pgTable("bot_state", {
     .defaultNow()
     .notNull(),
 });
+
+// One row (id 1) of settings for the venue broadcast display (/broadcast),
+// edited by organizers at /internal/broadcast.
+export const broadcastSettings = pgTable("broadcast_settings", {
+  id: integer("id").primaryKey().default(1),
+  hackingStartsAt: timestamp("hacking_starts_at", {
+    mode: "date",
+    precision: 3,
+  }),
+  hackingEndsAt: timestamp("hacking_ends_at", { mode: "date", precision: 3 }),
+  photoSeconds: integer("photo_seconds").notNull().default(8),
+  videoSeconds: integer("video_seconds").notNull().default(20),
+  // Google Drive folder (shared "anyone with the link") the photos come from
+  driveFolderId: varchar("drive_folder_id", { length: 200 }),
+  // Lower third on the live interview screen (/broadcast/interview)
+  interviewName: varchar("interview_name", { length: 120 }),
+  interviewRole: varchar("interview_role", { length: 120 }),
+  updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});

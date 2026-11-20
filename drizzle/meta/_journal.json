@@ -348,22 +348,29 @@
     {
       "idx": 49,
       "version": "7",
-      "when": 1795197592625,
-      "tag": "0049_coffee_chat_reminder",
+      "when": 1795205871308,
+      "tag": "0049_broadcast_settings",
       "breakpoints": true
     },
     {
       "idx": 50,
       "version": "7",
-      "when": 1795198633850,
-      "tag": "0050_room_booking_event",
+      "when": 1795207722027,
+      "tag": "0050_coffee_chat_reminder",
       "breakpoints": true
     },
     {
       "idx": 51,
       "version": "7",
-      "when": 1795206138381,
-      "tag": "0051_bot_state",
+      "when": 1795207723027,
+      "tag": "0051_room_booking_event",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1795207724027,
+      "tag": "0052_bot_state",
       "breakpoints": true
     }
   ]
