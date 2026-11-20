@@ -490,31 +490,62 @@ export type OrganizerReminder = {
   text: string;
 };
 
-/** "4:45 PM to 5:30 PM", or just the start when the end isn't clear. */
-function span(task: Pick<OrganizerTask, "at" | "end">): string {
-  return task.end
-    ? copy.slack.span(clock.format(task.at), clock.format(task.end))
-    : clock.format(task.at);
+const STARTS_LINE = /^starts?\s*:\s*(.+)$/i;
+const etClock = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/Toronto",
+  hour: "numeric",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+/** Minutes after midnight, Eastern. */
+function etMinutes(date: Date): number {
+  const [h, m] = etClock.format(date).split(":").map(Number) as [
+    number,
+    number,
+  ];
+  return h * 60 + m;
 }
 
-function formatReminder(
-  name: string,
-  group: OrganizerTask[],
-  lead: number,
-): string {
+/**
+ * "Starts: 5:00 PM" (the cell's own Starts line, else its row time), then
+ * "Ends: 6:00 PM" from the cell's height when that's clear, then the rest of
+ * the cell. The Starts line isn't repeated in the details.
+ */
+function taskLines(task: OrganizerTask): string[] {
+  const own = task.details.map((d) => STARTS_LINE.exec(d)).find(Boolean);
+  const starts = own ? escapeSlackText(own[1]!.trim()) : clock.format(task.at);
+  // The Starts line's own time ("5:00 PM" in a 4:45 PM row), if it has one.
+  const ownClock = own ? /(\d{1,2}:\d{2})\s*([AP]M)/i.exec(own[1]!) : null;
+  const ownMinutes = ownClock
+    ? minutesOf(`${ownClock[1]} ${ownClock[2]}`)
+    : null;
+  const startsAt =
+    ownMinutes === null
+      ? task.at
+      : new Date(
+          +task.at + ((ownMinutes - etMinutes(task.at) + 1440) % 1440) * 60_000,
+        );
+  // An end that isn't after the start (a one-row cell) says nothing useful.
+  const end = task.end && task.end > startsAt ? task.end : undefined;
+  return [
+    copy.slack.starts(starts),
+    ...(end ? [copy.slack.ends(clock.format(end))] : []),
+    ...task.details
+      .filter((d) => !STARTS_LINE.test(d))
+      .map((line) => `> ${escapeSlackText(line)}`),
+  ];
+}
+
+function formatReminder(name: string, group: OrganizerTask[]): string {
   const lines = [
     group.length === 1
-      ? copy.slack.header(
-          lead,
-          span(group[0]!),
-          escapeSlackText(group[0]!.title),
-        )
-      : copy.slack.headerMany(lead, clock.format(group[0]!.at), group.length),
+      ? copy.slack.header(escapeSlackText(group[0]!.title))
+      : copy.slack.headerMany(group.length),
   ];
   for (const task of group) {
     if (group.length > 1)
-      lines.push(copy.slack.item(escapeSlackText(task.title), span(task)));
-    lines.push(...task.details.map((line) => `> ${escapeSlackText(line)}`));
+      lines.push(copy.slack.item(escapeSlackText(task.title)));
+    lines.push(...taskLines(task));
     const others = task.owners.filter((owner) => owner !== name);
     if (task.everyone) lines.push(copy.slack.everyone);
     else if (task.teams.length)
@@ -566,8 +597,8 @@ export function planTeamPosts(
       if (repeat) continue;
       posted.push({ team, at: +task.at, title });
       const lines = [
-        copy.slack.header(lead, span(task), escapeSlackText(task.title)),
-        ...task.details.map((line) => `> ${escapeSlackText(line)}`),
+        copy.slack.header(escapeSlackText(task.title)),
+        ...taskLines(task),
         copy.slack.teamLine(team, task.owners.join(", ")),
       ];
       posts.push({
@@ -621,7 +652,7 @@ export function planOrganizerReminders(
         recipientName: name,
         postAt: new Date(time - lead * 60_000),
         taskIds: group.map((task) => `${name}/${task.id}`),
-        text: formatReminder(name, group, lead),
+        text: formatReminder(name, group),
       });
     }
   }
