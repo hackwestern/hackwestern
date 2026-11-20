@@ -20,6 +20,7 @@ import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-she
 import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import { db } from "~/server/db";
 import {
+  sponsorJudgingRooms,
   sponsorJudgingSponsors,
   sponsorPresentationNotices,
   sponsorPresentations,
@@ -205,6 +206,11 @@ export async function rebuildPresentationSchedule({
     // A room the schedule already uses stays when no source names one now
     // (a sheet read failing mid-event must never wipe teams' times).
     const usedRoom = new Map(kept.map((k) => [k.sponsorId, k.room]));
+    // Rooms read before the lock may be stale: an organizer's change that
+    // committed since wins (re-read here, under the lock).
+    for (const p of await tx.select().from(sponsorJudgingRooms)) {
+      if (trackIds.has(p.sponsorId)) rooms.set(p.sponsorId, p.room);
+    }
     const requests = sends.map((s) => ({
       sponsorId: s.sponsorId,
       // Clamped to the column, so a long sheet value can't abort this.

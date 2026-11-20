@@ -801,3 +801,18 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 **Decision:** Build v2 with these changes. Team status is only Invite not sent / Waiting / Accepted, and one hacker replying on the Slack bot or the live-site notification accepts for the whole team. No presenting / presented tracking. Phone numbers get a copy icon instead of a Copy button, and each sponsor's head rep number shows with the same icon. Remote teams don't present, so the remote list is out of the presentation flow.
 **Why:** organizers only need to know if a team will show up; presenting/presented is noise, and remote teams never present in a room.
 **Alternatives:** v2 as mocked (told/not told, presenting now, presented, remote column); requiring every team member to confirm.
+
+## 2026-11-19: Judging board build choices (made while building v2; Jazz to confirm)
+
+**Decision:**
+- **Accepting is per team and per set of times.** `sponsor_presentation_confirm` (one row per team) stores which times were confirmed. If a room change gives the team new times, it's Waiting again until someone confirms the new ones. The Slack button carries the times it was sent with, so a button from an older DM is refused ("your times have changed").
+- **The schedule rebuilds itself** whenever a sponsor sends a shortlist or an organizer changes a room (the mock has no Schedule button). Times already given never move: a room change keeps every time and only relabels the room, so those teams need telling again.
+- **On judging day, new teams only get slots at least 10 minutes from now**, never a slot that already passed. After 11:30 a late team isn't placed and can't be ranked.
+- **A sheet outage can't remove a room.** If no source names a sponsor's room during a rebuild, it keeps the room its slots already use.
+- **Remote sponsors (TinyFish)** get no slots and no invites. In round 2 they rank their sent shortlist instead of "teams that presented" (otherwise they'd be locked out).
+- **Rooms set on the board win** over the sponsor sheet and run of show everywhere, including the run-of-show judging panel.
+- **"No scores yet"** shows two slots (12 min) after a sponsor's first presentation; "Top 5 late" after 12:00; shortlist and room to-dos go away at 11:30.
+- **The modal skips each member's "role"** from the mock: hackers have no role field anywhere in the data.
+- **Round 2, sheet sync and the cheat check** stay in an "After presentations" card under the board (not in the mock, but still needed). The old Presentations panel's schedule, notify and by-hacker views are covered by the board and moved to `_to_delete/`.
+**Why:** each keeps a time a team was told from changing under them, or keeps a sponsor from being locked out.
+**Alternatives:** a Schedule button organizers press (the old flow; the mock dropped it); per-member confirms (Jazz chose one reply per team).

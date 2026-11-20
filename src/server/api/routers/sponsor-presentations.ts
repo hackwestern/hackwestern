@@ -661,11 +661,6 @@ export const sponsorPresentationsRouter = createTRPCRouter({
   }),
 
   /**
-   * The signed-in hacker's team's presentations, once any member of the
-   * team was sent these exact times (Slack or email) (so /live and Slack agree; a
-   * reschedule that changes them hides them until notified again).
-   */
-  /**
    * The signed-in hacker confirms their team's times on /live; one member
    * confirming covers the team (Jazz, 2026-11-19).
    */
@@ -680,6 +675,11 @@ export const sponsorPresentationsRouter = createTRPCRouter({
     return { confirmedAt };
   }),
 
+  /**
+   * The signed-in hacker's team's presentations, once any member of the
+   * team was sent these exact times (Slack or email) (so /live and Slack agree; a
+   * reschedule that changes them hides them until notified again).
+   */
   mine: protectedProcedure.query(async ({ ctx }) => {
     const { slots } = await teamPresentationsFor(ctx.session.user.id);
     return slots.map(({ sponsorName, room, start }) => ({

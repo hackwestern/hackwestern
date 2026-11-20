@@ -31,7 +31,8 @@ export function ConfirmTimesButton({
       ]),
   });
 
-  if (confirmed || confirm.isSuccess) {
+  // From the server only: new times make an old confirm stale.
+  if (confirmed) {
     return (
       <p
         role="status"

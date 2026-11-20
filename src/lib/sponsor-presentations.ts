@@ -213,7 +213,7 @@ export function schedulePresentations(
   // Times already given stay: pin each one that still fits.
   const pinned = new Set<string>();
   const pinKey = (sponsorId: string, teamId: string) =>
-    `${sponsorId} ${teamId}`;
+    `${sponsorId}|${teamId}`;
   const keptInOrder = [...keep].sort(
     (a, b) =>
       a.start - b.start ||

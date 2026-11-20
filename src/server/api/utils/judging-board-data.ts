@@ -371,47 +371,62 @@ export async function setJudgingRoom(input: {
 }) {
   const typed = normalizeRoom(input.room);
   if (!typed) throw new TRPCError({ code: "BAD_REQUEST" });
-  // "rm 2110" typed in Other… is Rm 2110.
-  const room =
-    JUDGING_ROOMS.find((r) => r.toLowerCase() === typed.toLowerCase()) ??
-    typed;
   const { sponsors } = await boardSponsors();
   const me = sponsors.find((s) => s.id === input.sponsorId);
   if (!me || remoteJudgingRoom(me.name) !== null) {
     throw new TRPCError({ code: "NOT_FOUND" });
   }
-  const current = await judgingRoomsWithSource(sponsors);
-  const sameRoom = (a: string | undefined, b: string) =>
+  // The sheets are slow: read them before the lock. The board's own rooms
+  // are read again under it, so two organizers can't both take a room.
+  const fromSheets = await judgingRoomsWithSource(sponsors);
+  const onBoard = new Set(sponsors.map((s) => s.id));
+  const same = (a: string | null | undefined, b: string) =>
     a?.toLowerCase() === b.toLowerCase();
-  const holder = sponsors.find(
-    (s) => s.id !== me.id && sameRoom(current.get(s.id)?.room, room),
-  );
-  const mine = current.get(me.id)?.room ?? null;
-  if (holder && (!input.swap || !mine)) {
-    throw new TRPCError({
-      code: "CONFLICT",
-      message: copy.room.takenError(
-        current.get(holder.id)?.room ?? room,
-        holder.name,
-      ),
-    });
-  }
-  await db.transaction(async (tx) => {
+
+  const result = await db.transaction(async (tx) => {
     await scheduleLock(tx);
+    const picked = await tx.select().from(sponsorJudgingRooms);
+    const roomOf = new Map(
+      [...fromSheets].map(([id, r]) => [id, r.room] as const),
+    );
+    for (const p of picked) roomOf.set(p.sponsorId, p.room);
+    // One spelling per room: "rm 2110" is Rm 2110, "foo" is a held "Foo".
+    const room =
+      JUDGING_ROOMS.find((r) => same(r, typed)) ??
+      [...roomOf.values()].find((r) => same(r, typed)) ??
+      typed;
+    const holder = sponsors.find(
+      (s) => s.id !== me.id && same(roomOf.get(s.id), room),
+    );
+    const mine = roomOf.get(me.id) ?? null;
+    if (holder && (!input.swap || !mine)) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: copy.room.takenError(roomOf.get(holder.id) ?? room, holder.name),
+      });
+    }
     const ids = holder ? [me.id, holder.id] : [me.id];
     await tx
       .delete(sponsorJudgingRooms)
       .where(inArray(sponsorJudgingRooms.sponsorId, ids));
-    // Whoever else held this exact room on the board (e.g. a sponsor whose
-    // sheet room now differs) gives it up; the unique index needs that.
-    await tx.delete(sponsorJudgingRooms).where(eq(sponsorJudgingRooms.room, room));
+    // A sponsor no longer on the board (no prize track now) gives up a
+    // room it still held; it doesn't present.
+    const stale = picked
+      .filter((p) => !onBoard.has(p.sponsorId) && same(p.room, room))
+      .map((p) => p.sponsorId);
+    if (stale.length > 0) {
+      await tx
+        .delete(sponsorJudgingRooms)
+        .where(inArray(sponsorJudgingRooms.sponsorId, stale));
+    }
     await tx.insert(sponsorJudgingRooms).values([
       { sponsorId: me.id, room },
       ...(holder && mine ? [{ sponsorId: holder.id, room: mine }] : []),
     ]);
+    return { room, swappedWith: holder?.name ?? null };
   });
   if (!(await rebuildPresentationScheduleQuietly())) {
     await mirrorSponsorJudgingSoon();
   }
-  return { room, swappedWith: holder?.name ?? null };
+  return result;
 }
