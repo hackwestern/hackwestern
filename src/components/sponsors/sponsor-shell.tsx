@@ -1,12 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import * as Popover from "@radix-ui/react-popover";
 import {
   Calendar,
   Coffee,
   House,
-  Lock,
   Map as MapIcon,
   ScanLine,
   Trophy,
@@ -19,9 +17,9 @@ import {
   SponsorHelpProvider,
 } from "~/components/sponsors/help-button";
 import { useNow } from "~/components/sponsors/use-now";
+import { SponsorTour } from "~/components/sponsors/tour/sponsor-tour";
 import { sponsorPortalCopy } from "~/content/sponsor-portal";
 import { sponsorVenueCopy } from "~/content/sponsor-venue";
-import { judgingUnlocked } from "~/lib/sponsor-judging-unlock";
 import { sponsorLogo } from "~/lib/sponsor-logos";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
@@ -64,8 +62,7 @@ type NavItem = {
  * as a raised round button in the middle. Help opens one dialog over the
  * page you're on.
  *
- * Judging only shows for prize track sponsors, greyed and locked until
- * Sunday 9:00 AM (or with ?preview=judging, which the nav links keep).
+ * Judging only shows for prize-track sponsors.
  */
 export function SponsorShell({
   title,
@@ -101,8 +98,6 @@ export function SponsorShell({
   const router = useRouter();
   const raw = router.query.uuid;
   const id = typeof raw === "string" && uuidRegex.test(raw) ? raw : "";
-  const preview = router.query.preview === "judging";
-  const now = useNow();
 
   const info = api.sponsorPortal.getSponsorPortalInfo.useQuery(
     { sponsor: id },
@@ -112,56 +107,49 @@ export function SponsorShell({
 
   const active = NAV_BY_PATH[router.pathname] ?? null;
   const base = `/sponsors/${id}`;
-  const withPreview = (href: string) => {
-    if (!preview) return href;
-    const [path, frag] = href.split("#");
-    return `${path}?preview=judging${frag ? `#${frag}` : ""}`;
-  };
 
   // Hidden for sponsors without a prize track, and while we don't know yet,
   // so it never flashes in for someone who doesn't judge.
   const showJudging = info.data?.hasPrizeTrack === true;
-  // Same rule as the Judging page, so the nav shows it locked while the page is.
-  const judgingOpen = preview || judgingUnlocked(now);
 
-  const scanItem: NavItem = {
-    id: "scan",
-    label: copy.scan,
-    icon: ScanLine,
-    href: `${base}/scan`,
-  };
-  const judgingItem: NavItem | null = showJudging
-    ? {
-        id: "judging",
-        label: copy.judging,
-        tabLabel: copy.judgingTab,
-        icon: Trophy,
-        href: `${base}/picks`,
-        locked: !judgingOpen,
-      }
-    : null;
-  const home: NavItem = { id: "home", label: copy.home, icon: House, href: base };
-  const chats: NavItem = {
-    id: "chats",
-    label: copy.chats,
-    icon: Coffee,
-    href: `${base}/coffee-chats`,
-  };
-  const schedule: NavItem = {
-    id: "schedule",
-    label: copy.schedule,
-    icon: Calendar,
-    href: `${base}/schedule`,
-  };
-  const map: NavItem = { id: "map", label: copy.map, icon: MapIcon, href: `${base}/map` };
-  // Side nav (mock sponsor-chats-v2): Home · Schedule · Map, then "Your
-  // tasks": Chats · Judging. Scan lives in the Chats header and on Home.
-  const sideMain = id ? [home, schedule, map] : [];
-  const sideTasks = id ? [chats, ...(judgingItem ? [judgingItem] : [])] : [];
-  // Phone tab bar: Home · Chats · [Scan] · Schedule · Map (· Judge). Scan
-  // is the exact centre of five; with Judging it's third of six.
-  const tabs = id
-    ? [home, chats, scanItem, schedule, map, ...(judgingItem ? [judgingItem] : [])]
+  const items: NavItem[] = id
+    ? [
+        { id: "home", label: copy.home, icon: House, href: base },
+        {
+          id: "chats",
+          label: copy.chats,
+          icon: Coffee,
+          href: `${base}/coffee-chats`,
+        },
+        { id: "scan", label: copy.scan, icon: ScanLine, href: `${base}/scan` },
+        {
+          id: "schedule",
+          label: copy.schedule,
+          icon: Calendar,
+          href: `${base}/schedule`,
+        },
+        ...(showJudging
+          ? [
+              {
+                id: "judging" as const,
+                label: copy.judging,
+                icon: Trophy,
+                href: `${base}/picks`,
+                note: (info.data?.picksCount ?? 0) > 0
+                  ? copy.judgingSent
+                  : copy.judgingNotSent,
+              },
+            ]
+          : []),
+        {
+          id: "map",
+          label: copy.map,
+          icon: MapIcon,
+          href: `${base}/map`,
+          // The map tour starts from the Map button it used to have.
+          tour: "map",
+        },
+      ]
     : [];
   const topTitle = barTitle ?? (active ? copy.titles[active] : sponsorPortalCopy.brand);
   const hasDeskHeader = !!(heading ?? headerStart ?? headerEnd);
@@ -192,7 +180,7 @@ export function SponsorShell({
           <aside className="hidden md:sticky md:top-0 md:flex md:h-dvh md:w-[300px] md:shrink-0 md:flex-col md:justify-between md:overflow-y-auto md:rounded-r-dashboard-lg md:border-r md:border-dashboard-border-default md:bg-dashboard-bg-nav md:px-6 md:py-12">
             <div className="flex flex-col">
               <Link
-                href={withPreview(base)}
+                href={base}
                 aria-label={copy.homeLink}
                 className="flex items-center gap-3 text-xl leading-default text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
               >
@@ -232,7 +220,7 @@ export function SponsorShell({
                   {sideTasks.map((item) => (
                     <li key={item.id}>
                       <SideNavItem
-                        item={{ ...item, href: withPreview(item.href) }}
+                        item={item}
                         current={item.id === active}
                       />
                     </li>
@@ -254,7 +242,7 @@ export function SponsorShell({
           <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-2 border-b border-dashboard-border-default bg-dashboard-bg-nav px-4 pt-[env(safe-area-inset-top)] md:hidden">
             {id ? (
               <Link
-                href={withPreview(base)}
+                href={base}
                 aria-label={copy.homeLink}
                 className="flex min-h-11 min-w-11 shrink-0 items-center px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
               >
@@ -329,7 +317,7 @@ export function SponsorShell({
               {tabs.map((item) => (
                 <li key={item.id} className="flex min-w-0">
                   <TabItem
-                    item={{ ...item, href: withPreview(item.href) }}
+                    item={item}
                     current={item.id === active}
                   />
                 </li>
@@ -508,31 +496,3 @@ function TabItem({ item, current }: { item: NavItem; current: boolean }) {
   );
 }
 
-/** Judging before it opens: tapping says when, instead of going anywhere. */
-function LockedJudging({
-  side,
-  children,
-}: {
-  side: "right" | "top";
-  children: React.ReactNode;
-}) {
-  return (
-    <Popover.Root>
-      <Popover.Trigger asChild>{children}</Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          side={side}
-          align={side === "top" ? "end" : "start"}
-          sideOffset={8}
-          collisionPadding={16}
-          aria-label={copy.judgingLockedTitle}
-          className="z-50 w-[min(280px,calc(100vw-32px))] rounded-dashboard-lg bg-dashboard-bg-surface p-4 font-figtree text-sm font-medium leading-relaxed text-dashboard-text-medium shadow-dashboard-card duration-150 ease-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:animate-none"
-        >
-          <p role="status" className="m-0">
-            {sponsorVenueCopy.judgingLocked.message}
-          </p>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
-  );
-}

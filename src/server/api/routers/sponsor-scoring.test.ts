@@ -427,28 +427,20 @@ describe("sponsorScoring.submit", () => {
     expect(mirrorSoon).not.toHaveBeenCalled();
   });
 
-  test("a slow sheet write never marks a newer submission synced", async () => {
+  test("a slow sheet write does not mark a one-time submission incorrectly", async () => {
     const s = await sponsor();
     const ids = await shortlistTeams(s.id);
-    const reranked = [...ids].reverse().slice(0, TOP);
-    // While the first ranking's sheet write is in flight, a second ranking
-    // is submitted and its own sheet write fails.
-    mirrorSoon.mockImplementationOnce(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 5));
-      mirrorSoon.mockResolvedValueOnce(DOWN);
-      await anon.sponsorScoring.submit({ sponsor: s.id, teamIds: reranked });
-      return SYNCED;
-    });
-    await expect(
-      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, TOP) }),
-    ).resolves.toMatchObject({ sheetSynced: false });
+    const submitted = ids.slice(0, TOP);
     mirrorSoon.mockResolvedValue(DOWN);
+    await expect(
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: submitted }),
+    ).resolves.toMatchObject({ sheetSynced: false });
     expect(
       (await anon.sponsorScoring.get({ sponsor: s.id })).final,
-    ).toMatchObject({ teamIds: reranked, sheetSynced: false });
+    ).toMatchObject({ teamIds: submitted, sheetSynced: false });
   });
 
-  test("still counts if the sheet write fails; resubmit replaces", async () => {
+  test("still counts if the sheet write fails; resubmission is refused", async () => {
     const s = await sponsor();
     const ids = await shortlistTeams(s.id);
     mirrorSoon.mockResolvedValue(DOWN);
@@ -461,10 +453,9 @@ describe("sponsorScoring.submit", () => {
 
     mirrorSoon.mockReset().mockResolvedValue(SYNCED);
     const reranked = [ids[2]!, ids[0]!, ids[1]!, ...ids.slice(3, TOP)];
-    await anon.sponsorScoring.submit({ sponsor: s.id, teamIds: reranked });
-    expect(
-      (await anon.sponsorScoring.get({ sponsor: s.id })).final,
-    ).toMatchObject({ teamIds: reranked, sheetSynced: true });
+    await expect(
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: reranked }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 });
 
@@ -574,7 +565,7 @@ describe("sponsorScoring.overview", () => {
 });
 
 describe("sponsorScoring.sendShortlist", () => {
-  test("snapshots the shortlist; later edits don't change it until resent", async () => {
+  test("snapshots the shortlist once; later edits and resends are refused", async () => {
     const s = await sponsor();
     const ids = await shortlistTeams(s.id);
     const sent = await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
@@ -588,8 +579,9 @@ describe("sponsorScoring.sendShortlist", () => {
     const res = await anon.sponsorScoring.get({ sponsor: s.id });
     expect(res.round.shortlistSent?.teamIds).toEqual([...ids].sort());
 
-    const again = await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
-    expect(again.teamIds).toEqual(ids.slice(1).sort());
+    await expect(
+      anon.sponsorScoring.sendShortlist({ sponsor: s.id }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
   test("refuses an empty shortlist and a closed round", async () => {

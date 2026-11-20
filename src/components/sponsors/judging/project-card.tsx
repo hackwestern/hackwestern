@@ -33,7 +33,10 @@ import {
 const copy = sponsorJudgingCopy;
 const AVATARS = 4;
 
-const linkChip = dashboardButtonVariants({ variant: "small" });
+const linkChip = cn(
+  dashboardButtonVariants({ variant: "small" }),
+  "min-h-8 px-1.5 text-[11px] md:min-h-8",
+);
 
 export function ProjectLinks({ team }: { team: JudgingTeam }) {
   if (!team.devpostUrl && !team.githubUrl) return null;
@@ -74,17 +77,40 @@ export function ProjectLinks({ team }: { team: JudgingTeam }) {
 export function TeamScores({
   scores,
   me,
+  status,
 }: {
   scores: TeamScoresData | undefined;
   me: string | null;
+  status?: SaveState;
 }) {
   const t = copy.team;
+  const statusText =
+    status === "saving"
+      ? copy.saving
+      : status === "saved"
+        ? copy.saved
+        : status === "error"
+          ? copy.saveFailed
+          : "";
   if (!scores) {
     return (
-      <p className="m-0 flex items-center gap-1.5 text-sm font-medium text-dashboard-text-light">
-        <Users aria-hidden className="size-4 shrink-0" />
-        {t.none}
-      </p>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <p className="m-0 flex items-center gap-1.5 font-medium text-dashboard-text-light">
+          <Users aria-hidden className="size-4 shrink-0" />
+          {t.none}
+        </p>
+        <span
+          aria-live="polite"
+          className={cn(
+            "min-w-20 text-xs font-medium",
+            status === "error"
+              ? "text-dashboard-status-warning"
+              : "text-dashboard-text-light",
+          )}
+        >
+          {statusText}
+        </span>
+      </div>
     );
   }
   const d = scores.disagreement;
@@ -118,6 +144,17 @@ export function TeamScores({
             {t.average(formatScore(Math.round(scores.average * 10) / 10))}
           </span>
         )}
+        <span
+          aria-live="polite"
+          className={cn(
+            "ml-auto min-w-20 text-right text-xs font-medium",
+            status === "error"
+              ? "text-dashboard-status-warning"
+              : "text-dashboard-text-light",
+          )}
+        >
+          {statusText}
+        </span>
       </p>
       {d && (
         <p className="m-0 flex items-start gap-1.5 rounded-dashboard-md bg-dashboard-status-iconBadge px-3 py-2 text-sm font-semibold text-dashboard-text-warning">
@@ -134,7 +171,7 @@ export function TeamScores({
 
 /**
  * One project: who built it, its team ID and Devpost link, tracks and
- * links, this rep's 1-10 score (half points) with the rubric, every rep's
+ * links, this rep's 1-10 score (half points), every rep's
  * score, Save to shortlist and an optional private note. Every change
  * autosaves; the status at the end of the action row says when it's
  * saved or failed (and is announced politely). `owner` is the rep whose
@@ -150,7 +187,6 @@ export function ProjectCard({
   scores,
   owner,
   onScore,
-  onRubric,
 }: {
   team: JudgingTeam;
   review: TeamReview | undefined;
@@ -161,7 +197,6 @@ export function ProjectCard({
   scores: TeamScoresData | undefined;
   owner: string | null;
   onScore: (score: number | null) => void;
-  onRubric: () => void;
 }) {
   const noteId = useId();
   const savedNote = review?.note ?? "";
@@ -241,9 +276,8 @@ export function ProjectCard({
         team={team.name}
         value={myScore}
         onChange={onScore}
-        onRubric={onRubric}
       />
-      <TeamScores scores={scores} me={me} />
+      <TeamScores scores={scores} me={me} status={saveState} />
 
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -280,23 +314,6 @@ export function ProjectCard({
             {copy.note.add}
           </DashboardButton>
         )}
-        <p
-          aria-live="polite"
-          className={cn(
-            "m-0 ml-auto text-sm font-medium",
-            saveState === "error"
-              ? "text-dashboard-status-warning"
-              : "text-dashboard-text-light",
-          )}
-        >
-          {saveState === "saving"
-            ? copy.saving
-            : saveState === "saved"
-              ? copy.saved
-              : saveState === "error"
-                ? copy.saveFailed
-                : ""}
-        </p>
       </div>
 
       {noteOpen && (

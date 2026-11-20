@@ -19,7 +19,7 @@ export const sponsorJudgingCopy = {
   back: "Back to sponsor hub",
   title: "Judging",
   intro: (top: number) =>
-    `Each of you scores projects out of 10, in half points. Save the strongest to your shortlist and send it. After presentations, rank your top ${top}: 1st to ${ordinal(top)} place.`,
+    `Each of you scores projects out of 10, in half points. Shortlist up to 15 teams, send it to us, then rank your top ${top}: 1st to ${ordinal(top)} place after presentations.`,
   trackTag: (track: string) => `Showing teams in ${track}`,
   invalid: {
     title: "Link not recognised",
@@ -35,8 +35,17 @@ export const sponsorJudgingCopy = {
 
   steps: {
     label: "Judging steps",
-    browse: "Browse projects",
-    shortlist: "Your shortlist",
+    browse: "Browse",
+    shortlist: "Shortlist",
+    presentations: "Presentations",
+    top: "Top 5",
+    round1: "Round 1",
+    round2: "Round 2",
+    lockedRound1: "Available during Round 1",
+    lockedRound2: "Available after Round 2 opens",
+    round1Complete: "Round 1 complete",
+    round1Stage: "Round 1 · Shortlist",
+    round2Stage: "Round 2 · Live judging",
   },
 
   browse: {
@@ -221,14 +230,31 @@ export const sponsorJudgingCopy = {
     remove: (team: string) => `Remove ${team} from your shortlist`,
     keyboardHint: "Use the arrow buttons to reorder.",
     moved: (team: string, rank: number) => `${team} moved to number ${rank}.`,
+    selected: (team: string, rank: number) => `${team} selected for place ${rank}.`,
+    slotsHeading: "Your top 5",
+    slotsIntro: "Choose a team for each place, then drag the cards to reorder.",
+    choose: (place: number) => `Choose ${ordinal(place)} place`,
+    chooseTitle: "Choose a team",
+    chooseSearch: "Search presenting teams",
+    chooseTeam: (team: string) => `Choose ${team}`,
+    selectedTeam: "Selected",
+    addTeam: "Choose team",
+    clearTeam: "Clear this place",
+    dragTeam: (team: string) => `Drag ${team} to reorder`,
+  },
+
+  shortlistSubmitConfirm: {
+    title: "Submit your shortlist?",
+    body: (count: number) =>
+      `You are submitting ${count} teams. This action is final and cannot be changed.`,
+    confirm: "Confirm shortlist",
   },
 
   submit: {
     button: (top: number) => `Submit top ${top}`,
-    resubmit: (top: number) => `Resubmit top ${top}`,
     confirmTitle: (top: number) => `Submit these ${top}?`,
     confirmBody:
-      "Hack Western uses this ranking for your prize. You can change it and resubmit while judging is open.",
+      "Hack Western uses this ranking for your prize. This submission is final and cannot be changed.",
     confirm: "Confirm and submit",
     cancel: "Go back",
     submitting: "Submitting…",
@@ -274,6 +300,7 @@ export const sponsorJudgingCopy = {
     noPresenters:
       "No teams are scheduled to present to you. Ask your Hack Western contact.",
     presentsAt: (time: string) => `Presents ${time}`,
+    presentingAt: (time: string) => `Presentation at ${time}`,
   },
 
   errors: {
