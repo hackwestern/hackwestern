@@ -48,7 +48,12 @@ export default async function handler(
     // name is empty for email sign-ups and can be a nickname otherwise
     const application = await db.query.applications.findFirst({
       where: eq(applications.userId, user.id),
-      columns: { firstName: true, lastName: true, realm: true },
+      columns: {
+        firstName: true,
+        lastName: true,
+        realm: true,
+        shirtSize: true,
+      },
     });
     const appName = [application?.firstName, application?.lastName]
       .filter(Boolean)
@@ -59,6 +64,7 @@ export default async function handler(
       name: appName || user.name,
       email: user.email,
       realm: application?.realm ?? null,
+      shirtSize: application?.shirtSize ?? null,
     });
   } catch (error) {
     console.error("Get user error:", error);
