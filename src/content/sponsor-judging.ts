@@ -230,6 +230,17 @@ export const sponsorJudgingCopy = {
     remove: (team: string) => `Remove ${team} from your shortlist`,
     keyboardHint: "Use the arrow buttons to reorder.",
     moved: (team: string, rank: number) => `${team} moved to number ${rank}.`,
+    selected: (team: string, rank: number) => `${team} selected for place ${rank}.`,
+    slotsHeading: "Your top 5",
+    slotsIntro: "Choose a team for each place, then drag the cards to reorder.",
+    choose: (place: number) => `Choose ${ordinal(place)} place`,
+    chooseTitle: "Choose a team",
+    chooseSearch: "Search presenting teams",
+    chooseTeam: (team: string) => `Choose ${team}`,
+    selectedTeam: "Selected",
+    addTeam: "Choose team",
+    clearTeam: "Clear this place",
+    dragTeam: (team: string) => `Drag ${team} to reorder`,
   },
 
   submit: {

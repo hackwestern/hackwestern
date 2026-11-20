@@ -3,7 +3,6 @@ import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import {
   judgeKey,
-  teamIdAndLink,
   type TeamScores as TeamScoresData,
 } from "~/lib/sponsor-scoring";
 import { formatPresentationTime } from "~/lib/sponsor-presentations";
@@ -68,16 +67,15 @@ export function PresentationScoring({
                   {index + 1}
                 </span>
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                  <span className="break-words text-base font-semibold text-dashboard-text-heavy">
-                    {team.name}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="break-words text-base font-semibold text-dashboard-text-heavy">
+                      {team.name}
+                    </span>
+                    <ProjectLinks team={team} />
+                  </div>
                   <span className="text-sm font-semibold tabular-nums text-dashboard-text-active">
                     {copy.round.presentingAt(formatPresentationTime(start))}
                   </span>
-                  <span className="break-all text-xs font-medium tabular-nums text-dashboard-text-light">
-                    {teamIdAndLink(team.id, team.devpostUrl)}
-                  </span>
-                  <ProjectLinks team={team} />
                 </div>
               </div>
               <ScoreControl
