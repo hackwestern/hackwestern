@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { ContactsCard } from "~/components/sponsors/home/contacts-card";
 import { KeyRooms } from "~/components/sponsors/home/key-rooms";
+import { QuickLinks } from "~/components/sponsors/home/quick-links";
 import { UpNext } from "~/components/sponsors/home/up-next";
 import { WelcomeCard } from "~/components/sponsors/home/welcome-card";
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
@@ -15,7 +16,7 @@ import { uuidRegex } from "~/utils/urls";
 
 /**
  * Sponsor portal Home (mock sponsor-chats-v3): "Hi [logo]", the welcome
- * card, Contacts, Up next and Key rooms.
+ * card, Contacts, Up next, Quick links and Key rooms.
  */
 export default function SponsorHubPage() {
   const router = useRouter();
@@ -126,6 +127,7 @@ export default function SponsorHubPage() {
           judging: `${base}/picks`,
         }}
       />
+      <QuickLinks />
       <KeyRooms
         chats={
           setup?.confirmed

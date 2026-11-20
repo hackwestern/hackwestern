@@ -305,6 +305,19 @@ export const sponsorHomeCopy = {
     judgingRoom: (room: string) => `Rm ${room}`,
   },
 
+  quickLinks: {
+    title: "Quick links",
+    /** The sponsor dashboard walkthrough deck, shown embedded. */
+    guide: {
+      label: "How to use your sponsor portal",
+      open: "Open in Google Slides",
+      frameTitle: "Sponsor portal walkthrough slides",
+      embedUrl:
+        "https://docs.google.com/presentation/d/16m0U3NxY7sjpWsI4wYssmo0hQdKLq-_9KMcvfNudG1A/embed?start=false&loop=false&delayms=3000",
+      url: "https://docs.google.com/presentation/d/16m0U3NxY7sjpWsI4wYssmo0hQdKLq-_9KMcvfNudG1A/view",
+    },
+  },
+
   keyRooms: {
     title: "Key rooms",
     lounge: { label: "Sponsor lounge", hint: "All weekend", room: "Rm 2110" },
