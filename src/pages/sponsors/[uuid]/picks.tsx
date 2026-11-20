@@ -7,6 +7,11 @@ import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { DashboardTag } from "~/components/internals/dashboard-tag";
 import { BrowseProjects } from "~/components/sponsors/judging/browse-projects";
 import { PresentationScoring } from "~/components/sponsors/judging/presentation-scoring";
+import {
+  JudgePicker,
+  JudgingAs,
+  useJudgeName,
+} from "~/components/sponsors/judging/judge-picker";
 import { ShortlistRanking } from "~/components/sponsors/judging/shortlist-ranking";
 import { ShortlistSend } from "~/components/sponsors/judging/shortlist-send";
 import { useSponsorJudging } from "~/components/sponsors/judging/use-sponsor-judging";
@@ -16,6 +21,7 @@ import {
   formatPresentationTime,
   judgingRound,
 } from "~/lib/sponsor-presentations";
+import { judgeKey } from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
 import { uuidRegex } from "~/utils/urls";
 
@@ -32,6 +38,26 @@ const ALL_STEPS: readonly Step[] = [
   "top",
 ];
 
+function JudgingIdentity({
+  name,
+  reps,
+  scores,
+  onSwitch,
+}: {
+  name: string;
+  reps: readonly string[];
+  scores: readonly { judge: string }[];
+  onSwitch: () => void;
+}) {
+  const others = [...new Set([
+    ...reps,
+    ...scores.map((score) => score.judge),
+  ])].filter((candidate) => judgeKey(candidate) !== judgeKey(name));
+  return (
+    <JudgingAs name={name} others={others} onSwitch={onSwitch} />
+  );
+}
+
 // Sponsor judging (kept at Lucas's /sponsors/[uuid]/picks URL): each rep
 // picks their name, goes through the submitted projects one at a time or as
 // a list and scores them 1-10 in half points; the sponsor saves some to a
@@ -44,6 +70,8 @@ export default function SponsorJudgingPage() {
   const { query, reviews, scoresByTeam, save, setScore, saveState } =
     useSponsorJudging(uuid, validUuid);
   const data = query.data;
+  const judge = useJudgeName(uuid);
+  const [switchingJudge, setSwitchingJudge] = useState(false);
 
   const [step, setStep] = useState<Step>("browse");
   const stepRefs = useRef(new Map<Step, HTMLButtonElement>());
@@ -179,6 +207,27 @@ export default function SponsorJudgingPage() {
         </p>
       </div>
 
+      {judge.ready &&
+        (!judge.name || switchingJudge) ? (
+          <JudgePicker
+            reps={data.reps}
+            current={judge.name}
+            onPick={(name) => {
+              judge.choose(name);
+              setSwitchingJudge(false);
+            }}
+          />
+        ) : judge.ready && judge.name ? (
+          <JudgingIdentity
+            name={judge.name}
+            reps={data.reps}
+            scores={data.scores}
+            onSwitch={() => setSwitchingJudge(true)}
+          />
+        ) : null}
+
+      {/* Four judging stages stay visible; unavailable stages stay locked. */}
+
       {/* Four judging stages stay visible; unavailable stages stay locked. */}
       <div className="sticky top-0 z-20 -mx-4 bg-dashboard-bg-page/95 px-4 py-2 backdrop-blur-sm sm:-mx-5 sm:px-5">
         <div
@@ -278,9 +327,9 @@ export default function SponsorJudgingPage() {
         aria-labelledby={`step-${step}`}
         className="flex flex-col gap-4"
       >
-        {step === "browse" ? (
+        {!judge.ready || !judge.name || switchingJudge ? null : step === "browse" ? (
           <BrowseProjects
-            sponsor={uuid}
+            me={judge.name}
             data={data}
             reviews={reviews}
             scoresByTeam={scoresByTeam}
@@ -288,9 +337,9 @@ export default function SponsorJudgingPage() {
             onSave={save}
             onScore={setScore}
           />
-        ) : step === "presentations" && presented ? (
+        ) : step === "presentations" && judge.name && presented ? (
           <PresentationScoring
-            sponsor={uuid}
+            me={judge.name}
             data={data}
             scoresByTeam={scoresByTeam}
             saveState={saveState}

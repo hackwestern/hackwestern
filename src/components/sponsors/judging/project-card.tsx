@@ -74,17 +74,40 @@ export function ProjectLinks({ team }: { team: JudgingTeam }) {
 export function TeamScores({
   scores,
   me,
+  status,
 }: {
   scores: TeamScoresData | undefined;
   me: string | null;
+  status?: SaveState;
 }) {
   const t = copy.team;
+  const statusText =
+    status === "saving"
+      ? copy.saving
+      : status === "saved"
+        ? copy.saved
+        : status === "error"
+          ? copy.saveFailed
+          : "";
   if (!scores) {
     return (
-      <p className="m-0 flex items-center gap-1.5 text-sm font-medium text-dashboard-text-light">
-        <Users aria-hidden className="size-4 shrink-0" />
-        {t.none}
-      </p>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <p className="m-0 flex items-center gap-1.5 font-medium text-dashboard-text-light">
+          <Users aria-hidden className="size-4 shrink-0" />
+          {t.none}
+        </p>
+        <span
+          aria-live="polite"
+          className={cn(
+            "min-w-20 text-xs font-medium",
+            status === "error"
+              ? "text-dashboard-status-warning"
+              : "text-dashboard-text-light",
+          )}
+        >
+          {statusText}
+        </span>
+      </div>
     );
   }
   const d = scores.disagreement;
@@ -118,6 +141,17 @@ export function TeamScores({
             {t.average(formatScore(Math.round(scores.average * 10) / 10))}
           </span>
         )}
+        <span
+          aria-live="polite"
+          className={cn(
+            "ml-auto min-w-20 text-right text-xs font-medium",
+            status === "error"
+              ? "text-dashboard-status-warning"
+              : "text-dashboard-text-light",
+          )}
+        >
+          {statusText}
+        </span>
       </p>
       {d && (
         <p className="m-0 flex items-start gap-1.5 rounded-dashboard-md bg-dashboard-status-iconBadge px-3 py-2 text-sm font-semibold text-dashboard-text-warning">
@@ -240,7 +274,7 @@ export function ProjectCard({
         value={myScore}
         onChange={onScore}
       />
-      <TeamScores scores={scores} me={me} />
+      <TeamScores scores={scores} me={me} status={saveState} />
 
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -277,23 +311,6 @@ export function ProjectCard({
             {copy.note.add}
           </DashboardButton>
         )}
-        <p
-          aria-live="polite"
-          className={cn(
-            "m-0 ml-auto text-sm font-medium",
-            saveState === "error"
-              ? "text-dashboard-status-warning"
-              : "text-dashboard-text-light",
-          )}
-        >
-          {saveState === "saving"
-            ? copy.saving
-            : saveState === "saved"
-              ? copy.saved
-              : saveState === "error"
-                ? copy.saveFailed
-                : ""}
-        </p>
       </div>
 
       {noteOpen && (

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import {
@@ -7,7 +7,6 @@ import {
   type TeamScores as TeamScoresData,
 } from "~/lib/sponsor-scoring";
 import { formatPresentationTime } from "~/lib/sponsor-presentations";
-import { JudgePicker, JudgingAs, useJudgeName } from "./judge-picker";
 import { ProjectLinks, TeamScores } from "./project-card";
 import { ScoreControl } from "./score-control";
 import type { JudgingData, SaveState } from "./use-sponsor-judging";
@@ -20,22 +19,18 @@ const copy = sponsorJudgingCopy;
  * mutation is reused, so the team average also appears in the Top 5 view.
  */
 export function PresentationScoring({
-  sponsor,
+  me,
   data,
   scoresByTeam,
   saveState,
   onScore,
 }: {
-  sponsor: string;
+  me: string;
   data: JudgingData;
   scoresByTeam: ReadonlyMap<string, TeamScoresData>;
   saveState: Record<string, SaveState>;
   onScore: (teamId: string, judge: string, score: number | null) => void;
 }) {
-  const judge = useJudgeName(sponsor);
-  const [switching, setSwitching] = useState(false);
-  const me = judge.name;
-
   const teams = useMemo(() => {
     const byId = new Map(data.teams.map((team) => [team.id, team]));
     return data.round.slots.flatMap((slot) => {
@@ -43,29 +38,6 @@ export function PresentationScoring({
       return team ? [{ team, start: slot.start }] : [];
     });
   }, [data.teams, data.round.slots]);
-
-  if (!judge.ready) {
-    return (
-      <div className="h-56 w-full animate-pulse rounded-dashboard-2xl bg-dashboard-bg-surface shadow-dashboard-card motion-reduce:animate-none" />
-    );
-  }
-  if (!me || switching) {
-    return (
-      <JudgePicker
-        reps={data.reps}
-        current={me}
-        onPick={(name) => {
-          judge.choose(name);
-          setSwitching(false);
-        }}
-      />
-    );
-  }
-
-  const others = [...new Set([
-    ...data.reps,
-    ...data.scores.map((score) => score.judge),
-  ])].filter((name) => judgeKey(name) !== judgeKey(me));
 
   if (teams.length === 0) {
     return (
@@ -79,11 +51,6 @@ export function PresentationScoring({
 
   return (
     <div className="flex flex-col gap-4">
-      <JudgingAs
-        name={me}
-        others={others}
-        onSwitch={() => setSwitching(true)}
-      />
       <ol className="m-0 flex list-none flex-col gap-3 p-0">
         {teams.map(({ team, start }, index) => {
           const scores = scoresByTeam.get(team.id);
@@ -118,17 +85,11 @@ export function PresentationScoring({
                 value={myScore}
                 onChange={(score) => onScore(team.id, me, score)}
               />
-              <TeamScores scores={scores} me={me} />
-              {saveState[team.id] === "saving" && (
-                <p className="m-0 text-xs font-medium text-dashboard-text-light">
-                  {copy.saving}
-                </p>
-              )}
-              {saveState[team.id] === "error" && (
-                <p className="m-0 text-xs font-semibold text-dashboard-status-warning">
-                  {copy.saveFailed}
-                </p>
-              )}
+              <TeamScores
+                scores={scores}
+                me={me}
+                status={saveState[team.id]}
+              />
             </li>
           );
         })}

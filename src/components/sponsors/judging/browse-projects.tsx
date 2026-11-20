@@ -17,7 +17,6 @@ import {
   type TeamScores,
 } from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
-import { JudgePicker, JudgingAs, useJudgeName } from "./judge-picker";
 import { ProjectCard } from "./project-card";
 import {
   type JudgingData,
@@ -56,7 +55,7 @@ function saveView(view: View) {
  * score any project.
  */
 export function BrowseProjects({
-  sponsor,
+  me,
   data,
   reviews,
   scoresByTeam,
@@ -64,7 +63,7 @@ export function BrowseProjects({
   onSave,
   onScore,
 }: {
-  sponsor: string;
+  me: string;
   data: JudgingData;
   reviews: ReadonlyMap<string, TeamReview>;
   scoresByTeam: ReadonlyMap<string, TeamScores>;
@@ -72,8 +71,6 @@ export function BrowseProjects({
   onSave: (teamId: string, patch: ReviewPatch) => void;
   onScore: (teamId: string, judge: string, score: number | null) => void;
 }) {
-  const judge = useJudgeName(sponsor);
-  const [switching, setSwitching] = useState(false);
   const [view, setView] = useState<View>("one");
   useEffect(() => setView(readView()), []);
   const [scope, setScope] = useState<Scope>("mine");
@@ -82,7 +79,6 @@ export function BrowseProjects({
   const [sort, setSort] = useState<BrowseSort>("name");
   const [at, setAt] = useState(0);
 
-  const me = judge.name;
   const scorers = useMemo(
     () => [...new Set(data.scores.map((s) => s.judge))],
     [data.scores],
@@ -131,25 +127,6 @@ export function BrowseProjects({
   const index = Math.min(at, Math.max(0, scoped.length - 1));
   const current = scoped[index];
 
-  if (!judge.ready) {
-    return (
-      <div className="h-56 w-full animate-pulse rounded-dashboard-2xl bg-dashboard-bg-surface shadow-dashboard-card motion-reduce:animate-none" />
-    );
-  }
-  if (!me || switching) {
-    return (
-      <JudgePicker
-        reps={data.reps}
-        current={me}
-        onPick={(name) => {
-          judge.choose(name);
-          setSwitching(false);
-          setAt(0);
-        }}
-      />
-    );
-  }
-
   const chooseView = (v: View) => {
     setView(v);
     saveView(v);
@@ -180,12 +157,6 @@ export function BrowseProjects({
 
   return (
     <div className="flex flex-col gap-4">
-      <JudgingAs
-        name={me}
-        others={judges.filter((j) => judgeKey(j) !== judgeKey(me))}
-        onSwitch={() => setSwitching(true)}
-      />
-
       <div className="flex flex-col gap-2">
         <div
           role="group"
