@@ -25,7 +25,12 @@
  *      team (random, or submission order with --in-order), and auto-assigns
  *      every judge a section of the snake so each table gets 3 judges.
  *
- * Flags: --tables N  --rows N  --teams N  --judges N  --in-order
+ *   7. With --marks, every team gets 3 marks from mixed judges: five 0-10
+ *      ratings built from a hidden team quality, a per-judge bias
+ *      (harsh/generous) and noise, so judging_team_scores / judging_normalize()
+ *      have data to chew on.
+ *
+ * Flags: --tables N  --rows N  --teams N  --judges N  --in-order  --marks
  *        --password STR  --emails a@x,b@y  --yes (skip confirm)
  */
 import * as p from "@clack/prompts";
@@ -59,6 +64,7 @@ type Args = {
   password: string;
   emails: string[];
   yes: boolean;
+  marks: boolean;
 };
 
 function parseArgs(argv: string[]): Args {
@@ -71,6 +77,7 @@ function parseArgs(argv: string[]): Args {
     password: "hw13-judging",
     emails: [],
     yes: false,
+    marks: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
@@ -106,6 +113,9 @@ function parseArgs(argv: string[]): Args {
         break;
       case "--yes":
         args.yes = true;
+        break;
+      case "--marks":
+        args.marks = true;
         break;
       default:
         throw new Error(`Unknown flag: ${flag}`);
@@ -225,7 +235,72 @@ async function seedJudging(args: Args) {
   await setupTables({ tableCount: args.tables, rows: args.rows });
   const seating = await seatTeams({ random: args.random });
   const plan = await autoAssign(organizerId);
-  return { seating, plan };
+  const marks = args.marks ? await seedMarks() : 0;
+  return { seating, plan, marks };
+}
+
+const clampRating = (v: number) =>
+  Math.min(10, Math.max(0, Math.round(v * 2) / 2));
+const gauss = () =>
+  faker.number.float({ min: 0, max: 1 }) +
+  faker.number.float({ min: 0, max: 1 }) +
+  faker.number.float({ min: 0, max: 1 }) -
+  1.5;
+
+/**
+ * Three marks per team: rating = team quality + judge bias + noise, in half
+ * steps on 0-10. Judges are picked by rotating strides instead of from the
+ * table assignments, which pair the same trio on a block of tables (disconnected
+ * groups, so biases couldn't be compared). Real judging shuffles judges across
+ * ~3 rounds; this mimics that mixing. A single batch insert per 500 rows.
+ */
+async function seedMarks() {
+  const teamIds = (await db.select({ id: teams.id }).from(teams)).map(
+    (t) => t.id,
+  );
+  const judgeIds = (await db.select({ id: judges.id }).from(judges)).map(
+    (j) => j.id,
+  );
+  const quality = new Map(teamIds.map((id) => [id, 6 + gauss() * 3]));
+  const bias = new Map(judgeIds.map((id) => [id, gauss() * 2.5]));
+  const perTeam = Math.min(3, judgeIds.length);
+  const values = teamIds.flatMap((teamId, i) => {
+    const picked = new Set<number>();
+    for (const idx of [i * 7, i * 3 + 11, i * 5 + 22]) {
+      let j = idx % judgeIds.length;
+      while (picked.has(j) && picked.size < perTeam)
+        j = (j + 1) % judgeIds.length;
+      picked.add(j);
+    }
+    return [...picked].slice(0, perTeam).map((j) => {
+      const judgeId = judgeIds[j]!;
+      const base = quality.get(teamId)! + bias.get(judgeId)!;
+      const rate = () => clampRating(base + gauss() * 1.2);
+      const [impact, creativity, technical, design, adventurous] = [
+        rate(),
+        rate(),
+        rate(),
+        rate(),
+        rate(),
+      ] as [number, number, number, number, number];
+      const mean = (impact + creativity + technical + design + adventurous) / 5;
+      return {
+        teamId,
+        judgeId,
+        score: mean,
+        impactRating: impact,
+        creativityRating: creativity,
+        technicalRating: technical,
+        designRating: design,
+        adventurousRating: adventurous,
+        superLike: mean >= 8 && faker.datatype.boolean(),
+      };
+    });
+  });
+  for (let i = 0; i < values.length; i += 500) {
+    await db.insert(teamMarks).values(values.slice(i, i + 500));
+  }
+  return values.length;
 }
 
 console.log("Judging seed script");
@@ -255,7 +330,7 @@ try {
   }
 
   const started = Date.now();
-  const { seating, plan } = await seedJudging(args);
+  const { seating, plan, marks } = await seedJudging(args);
   const secs = ((Date.now() - started) / 1000).toFixed(1);
 
   console.log(
@@ -264,6 +339,9 @@ try {
       `  ${args.tables} tables in ${args.rows} rows`,
       `  ${seating.seated} teams seated (${args.random ? "random" : "submission order"}), ${seating.emptyTables} tables empty`,
       `  ${plan.judges} judges, ${plan.tablesPerJudge.min}-${plan.tablesPerJudge.max} tables each, ${plan.judgesPerTable} per table`,
+      ...(args.marks
+        ? [`  ${marks} marks written (see judging_team_scores)`]
+        : []),
       ...(args.emails.length > 0
         ? [`  promoted to judges: ${args.emails.join(", ")}`]
         : []),

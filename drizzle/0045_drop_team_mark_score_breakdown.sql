@@ -1,0 +1,1 @@
+ALTER TABLE "team_mark" DROP COLUMN "score_breakdown";

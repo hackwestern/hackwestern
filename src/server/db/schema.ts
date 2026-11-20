@@ -903,16 +903,6 @@ export const judgesRelations = relations(judges, ({ one, many }) => ({
   assignments: many(judgingAssignments),
 }));
 
-/**
- * The rubric behind a mark, as the judge app sends it: a 0-10 rating (half
- * steps) per rubric criterion id, the judge's notes, and their super like.
- */
-export type ScoreBreakdown = {
-  ratings: Record<string, number>;
-  notes?: string | null;
-  superLike?: boolean;
-};
-
 export const teamMarks = pgTable(
   "team_mark",
   {
@@ -924,9 +914,17 @@ export const teamMarks = pgTable(
       .notNull()
       .references(() => judges.id),
     score: real("score").notNull(),
-    // Per-criterion rubric ratings behind `score`, plus notes and super like.
-    // Null when the judge only gave an overall score.
-    scoreBreakdown: jsonb("score_breakdown").$type<ScoreBreakdown>(),
+    // The rubric behind `score`: each criterion rated 0-10 in half steps,
+    // one column per criterion in src/lib/judging-criteria.ts. Null when the
+    // judge used the single slider instead of the rubric.
+    impactRating: real("impact_rating"),
+    creativityRating: real("creativity_rating"),
+    technicalRating: real("technical_rating"),
+    designRating: real("design_rating"),
+    adventurousRating: real("adventurous_rating"),
+    notes: text("notes"),
+    // The judge's "super like" for this team.
+    superLike: boolean("super_like").default(false).notNull(),
     roundType: roundTypeEnum("round_type").default("regular").notNull(),
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()

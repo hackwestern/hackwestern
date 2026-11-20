@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 
 import {
   createTRPCRouter,
@@ -125,6 +125,8 @@ async function getRanking() {
  * Promote one or more existing users to judges (or update their type/tracks
  * if they already are). The PK is the user id, so this upserts on conflict.
  * Sponsored judges carry the tracks they cover; organizer judges have none.
+ * Plain accounts (`hacker`) also become `judge` users; organizers and sponsors
+ * keep their type.
  * All-or-nothing: if any user id is unknown, nothing is written.
  */
 async function addJudges(
@@ -189,6 +191,18 @@ async function addJudges(
         .returning();
       rows.push(row!);
     }
+
+    // Judges are their own account type. Only plain accounts are switched:
+    // an organizer or sponsor who judges keeps their type (and their pages).
+    await tx
+      .update(users)
+      .set({ type: "judge" })
+      .where(
+        and(
+          inArray(users.id, ids),
+          or(eq(users.type, "hacker"), isNull(users.type)),
+        ),
+      );
     return rows;
   });
 }
