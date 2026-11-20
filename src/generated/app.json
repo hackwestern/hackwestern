@@ -181,6 +181,16 @@
     {
       "auth": "organizer",
       "dynamic": false,
+      "file": "src/pages/internal/ping-logs.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/internal/ping-logs",
+      "serverGuards": [
+        "authRedirectOrganizer"
+      ]
+    },
+    {
+      "auth": "organizer",
+      "dynamic": false,
       "file": "src/pages/internal/review.tsx",
       "hasGetServerSideProps": true,
       "route": "/internal/review",
@@ -555,6 +565,27 @@
       ],
       "output": null,
       "route": "/api/cheat-check/sweep",
+      "successStatuses": [
+        200
+      ]
+    },
+    {
+      "auth": [
+        "bearer"
+      ],
+      "errorBodyKeys": [
+        "error"
+      ],
+      "errorStatuses": [
+        401
+      ],
+      "file": "src/pages/api/cron/pings.ts",
+      "input": null,
+      "methods": [
+        "unknown"
+      ],
+      "output": null,
+      "route": "/api/cron/pings",
       "successStatuses": [
         200
       ]
@@ -10836,6 +10867,11 @@
           "source": "input validation (data.zodError populated)"
         },
         {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "handler"
+        },
+        {
           "code": "INTERNAL_SERVER_ERROR",
           "httpStatus": 500,
           "source": "unhandled"
@@ -10845,9 +10881,24 @@
       "input": {
         "additionalProperties": false,
         "properties": {
-          "repId": {
-            "format": "uuid",
+          "bookedBy": {
+            "maxLength": 255,
+            "minLength": 1,
             "type": "string"
+          },
+          "description": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "repIds": {
+            "default": [],
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "type": "array"
           },
           "room": {
             "enum": [
@@ -10874,44 +10925,70 @@
             "type": "string"
           },
           "sponsorId": {
-            "format": "uuid",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
-          "userId": {
-            "maxLength": 255,
-            "minLength": 1,
-            "type": "string"
+          "userIds": {
+            "default": [],
+            "items": {
+              "maxLength": 255,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 30,
+            "type": "array"
           }
         },
         "required": [
           "room",
           "sessionId",
-          "sponsorId",
-          "repId",
-          "userId"
+          "description",
+          "bookedBy"
         ],
         "type": "object"
       },
       "output": {
         "properties": {
-          "chatId": {
+          "bookingId": {
             "type": "string"
           },
-          "name": {
-            "type": "string"
+          "chatIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
           },
-          "placementId": {
-            "type": "string"
-          },
-          "slotTime": {
-            "type": "string"
+          "skipped": {
+            "items": {
+              "properties": {
+                "reason": {
+                  "type": "string"
+                },
+                "userId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "userId",
+                "reason"
+              ],
+              "type": "object"
+            },
+            "type": "array"
           }
         },
         "required": [
-          "placementId",
-          "chatId",
-          "name",
-          "slotTime"
+          "bookingId",
+          "chatIds",
+          "skipped"
         ],
         "type": "object"
       },
@@ -10953,6 +11030,18 @@
       "input": {
         "additionalProperties": false,
         "properties": {
+          "bookedBy": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "forSponsorId": {
             "anyOf": [
               {
@@ -11152,6 +11241,91 @@
           "source": "unhandled"
         }
       ],
+      "http": "GET /api/trpc/coffeeChatSessions.bookingOptions?input=<superjson>",
+      "input": null,
+      "output": {
+        "properties": {
+          "sponsors": {
+            "items": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "reps": {
+                  "items": {
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "reps",
+                "id",
+                "name"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "staff": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "required": [
+          "sponsors",
+          "staff"
+        ],
+        "type": "object"
+      },
+      "path": "coffeeChatSessions.bookingOptions",
+      "source": "src/server/api/routers/coffee-chat-sessions.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
       "http": "GET /api/trpc/coffeeChatSessions.getBoard?input=<superjson>",
       "input": null,
       "output": {
@@ -11159,6 +11333,16 @@
           "bookings": {
             "items": {
               "properties": {
+                "bookedBy": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
                 "forSponsorId": {
                   "anyOf": [
                     {
@@ -11185,6 +11369,12 @@
                     }
                   ]
                 },
+                "repIds": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
                 "room": {
                   "type": "string"
                 },
@@ -11198,7 +11388,9 @@
                 "room",
                 "forSponsorId",
                 "label",
-                "note"
+                "note",
+                "bookedBy",
+                "repIds"
               ],
               "type": "object"
             },
@@ -11900,6 +12092,11 @@
           "source": "handler"
         },
         {
+          "code": "PRECONDITION_FAILED",
+          "httpStatus": 412,
+          "source": "handler"
+        },
+        {
           "code": "INTERNAL_SERVER_ERROR",
           "httpStatus": 500,
           "source": "unhandled"
@@ -12184,12 +12381,16 @@
       },
       "output": {
         "properties": {
+          "cancelled": {
+            "type": "number"
+          },
           "ok": {
             "type": "boolean"
           }
         },
         "required": [
-          "ok"
+          "ok",
+          "cancelled"
         ],
         "type": "object"
       },
@@ -12343,6 +12544,86 @@
       "type": "mutation"
     },
     {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/coffeeChatSessions.syncReminders",
+      "input": null,
+      "output": {
+        "allOf": [
+          {
+            "properties": {
+              "cancelled": {
+                "type": "number"
+              },
+              "failed": {
+                "type": "number"
+              },
+              "kept": {
+                "type": "number"
+              },
+              "none": {
+                "type": "number"
+              },
+              "not-found": {
+                "type": "number"
+              },
+              "off": {
+                "type": "number"
+              },
+              "scheduled": {
+                "type": "number"
+              },
+              "sent": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "cancelled",
+              "failed",
+              "sent",
+              "scheduled",
+              "none",
+              "off",
+              "kept",
+              "not-found"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "left": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "left"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "path": "coffeeChatSessions.syncReminders",
+      "source": "src/server/api/routers/coffee-chat-sessions.ts",
+      "type": "mutation"
+    },
+    {
       "auth": "public",
       "errors": [
         {
@@ -12444,6 +12725,9 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "canEditSubmitted": {
+            "type": "boolean"
           },
           "chatMinutes": {
             "enum": [
@@ -12732,6 +13016,7 @@
           }
         },
         "required": [
+          "canEditSubmitted",
           "scannedCount",
           "chats",
           "sentAt",
@@ -16986,6 +17271,344 @@
       "path": "onboarding.hide",
       "source": "src/server/api/routers/onboarding.ts",
       "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/organizerPings.log?input=<superjson>",
+      "input": null,
+      "output": {
+        "properties": {
+          "bot": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "properties": {
+                  "healthy": {
+                    "type": "boolean"
+                  },
+                  "lastCheckIn": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "format": "date-time",
+                        "type": "string",
+                        "x-superjson": "Date"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "lastCheckIn",
+                  "healthy"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "entries": {
+            "items": {
+              "properties": {
+                "about": {
+                  "type": "string"
+                },
+                "at": {
+                  "format": "date-time",
+                  "type": "string",
+                  "x-superjson": "Date"
+                },
+                "detail": {
+                  "anyOf": [
+                    {
+                      "type": "undefined"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "kind": {
+                  "enum": [
+                    "organizer",
+                    "task",
+                    "help",
+                    "presentation",
+                    "coffee",
+                    "marketing"
+                  ]
+                },
+                "status": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                },
+                "tone": {
+                  "enum": [
+                    "waiting",
+                    "done",
+                    "ok",
+                    "problem"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "at",
+                "to",
+                "about",
+                "status",
+                "tone"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "failed": {
+            "items": {
+              "enum": [
+                "organizer",
+                "task",
+                "help",
+                "presentation",
+                "coffee",
+                "marketing"
+              ]
+            },
+            "type": "array"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "properties": {
+                  "lastSent": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "properties": {
+                          "at": {
+                            "format": "date-time",
+                            "type": "string",
+                            "x-superjson": "Date"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "at",
+                          "to",
+                          "title"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "nextUp": {
+                    "anyOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "properties": {
+                          "at": {
+                            "format": "date-time",
+                            "type": "string",
+                            "x-superjson": "Date"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "at",
+                          "to",
+                          "title"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "people": {
+                    "items": {
+                      "properties": {
+                        "atRisk": {
+                          "type": "number"
+                        },
+                        "lastAt": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "format": "date-time",
+                              "type": "string",
+                              "x-superjson": "Date"
+                            }
+                          ]
+                        },
+                        "missed": {
+                          "type": "number"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "nextAt": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "format": "date-time",
+                              "type": "string",
+                              "x-superjson": "Date"
+                            }
+                          ]
+                        },
+                        "reach": {
+                          "enum": [
+                            "ok",
+                            "noContact",
+                            "noSlack"
+                          ]
+                        },
+                        "received": {
+                          "type": "number"
+                        },
+                        "upcoming": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "reach",
+                        "received",
+                        "missed",
+                        "upcoming",
+                        "atRisk",
+                        "lastAt",
+                        "nextAt"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "sentLastHour": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "people",
+                  "lastSent",
+                  "nextUp",
+                  "sentLastHour"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "now": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "organizerError": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "unpinged": {
+            "items": {
+              "properties": {
+                "at": {
+                  "format": "date-time",
+                  "type": "string",
+                  "x-superjson": "Date"
+                },
+                "reason": {
+                  "anyOf": [
+                    {
+                      "type": "undefined"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                },
+                "title": {
+                  "type": "string"
+                },
+                "unknownNames": {
+                  "anyOf": [
+                    {
+                      "type": "undefined"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "at",
+                "title"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "now",
+          "bot",
+          "health",
+          "unpinged",
+          "organizerError",
+          "entries",
+          "failed"
+        ],
+        "type": "object"
+      },
+      "path": "organizerPings.log",
+      "source": "src/server/api/routers/organizer-pings.ts",
+      "type": "query"
     },
     {
       "auth": "public",
@@ -27280,6 +27903,9 @@
       },
       "output": {
         "properties": {
+          "canEditSubmitted": {
+            "type": "boolean"
+          },
           "hackers": {
             "items": {
               "allOf": [
@@ -27620,7 +28246,8 @@
           "submittedAt",
           "sent",
           "source",
-          "showSource"
+          "showSource",
+          "canEditSubmitted"
         ],
         "type": "object"
       },
