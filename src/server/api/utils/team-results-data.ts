@@ -46,12 +46,12 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
       // Absence is final: a team whose seat has a team_absent stop is out.
       sql`not exists (
         select 1 from judging_assignment a
-        where a.judging_table_id = ${teams.judgingTableId}
+        where a.judging_seat_id = ${teams.judgingSeatId}
           and a.status = 'team_absent'
       )`,
     ),
     columns: { id: true, name: true, githubUrl: true, devpostUrl: true },
-    with: { judgingTable: { columns: { number: true } } },
+    with: { judgingSeat: { columns: { tableNumber: true } } },
   });
 
   const scoreRows = extractRows<{
@@ -71,7 +71,7 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
     teamRows.map((t) => ({
       id: t.id,
       name: t.name,
-      table: t.judgingTable?.number ?? null,
+      table: t.judgingSeat?.tableNumber ?? null,
       github: safeHttpUrl(t.githubUrl),
       devpost: safeHttpUrl(t.devpostUrl),
       superLikes: Number(scores.get(t.id)?.super_likes ?? 0),

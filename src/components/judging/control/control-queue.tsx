@@ -17,7 +17,7 @@ export function ControlQueue({ queue }: { queue: QueueState | undefined }) {
   const utils = api.useUtils();
   const [tableCount, setTableCount] = useState(70);
   const [rows, setRows] = useState(5);
-  const [judgesPerTable, setJudgesPerTable] = useState(3);
+  const [judgesPerSeat, setJudgesPerSeat] = useState(3);
   const [status, setStatus] = useState<Status>(null);
 
   // Start the form from what is saved on the server.
@@ -26,7 +26,7 @@ export function ControlQueue({ queue }: { queue: QueueState | undefined }) {
     if (!settings) return;
     setTableCount(settings.tableCount);
     setRows(settings.rows);
-    setJudgesPerTable(settings.judgesPerTable);
+    setJudgesPerSeat(settings.judgesPerSeat);
   }, [settings]);
 
   const done = (text: string) => {
@@ -41,11 +41,11 @@ export function ControlQueue({ queue }: { queue: QueueState | undefined }) {
     onError: failed("set up the tables"),
   });
   const seat = api.judging.admin.seatTeams.useMutation({
-    onSuccess: () => done("Teams seated at tables."),
+    onSuccess: () => done("Teams seated."),
     onError: failed("seat the teams"),
   });
   const assign = api.judging.admin.autoAssign.useMutation({
-    onSuccess: () => done("Judges assigned to tables."),
+    onSuccess: () => done("Judges assigned to seats."),
     onError: failed("assign judges"),
   });
   const busy = setup.isPending || seat.isPending || assign.isPending;
@@ -80,14 +80,14 @@ export function ControlQueue({ queue }: { queue: QueueState | undefined }) {
         <span className={`text-sm font-semibold ${MUTED}`}>{pill}</span>
       </div>
       <div className="flex flex-wrap items-end gap-3">
-        {num("Judges per table", judgesPerTable, setJudgesPerTable)}
+        {num("Judges per seat", judgesPerSeat, setJudgesPerSeat)}
         <button
           type="button"
           className={BTN_DARK}
           disabled={busy || locked}
           onClick={() => {
             setStatus(null);
-            setup.mutate({ tableCount, rows, judgesPerTable });
+            setup.mutate({ tableCount, rows, judgesPerSeat });
           }}
         >
           {setup.isPending ? "Saving…" : "Set up tables"}
@@ -117,8 +117,8 @@ export function ControlQueue({ queue }: { queue: QueueState | undefined }) {
       </div>
       <p className={`m-0 text-sm ${MUTED}`}>
         Do these in order before judging starts: set up the tables, seat every
-        submitted team at one, then assign organizer judges. After judging
-        starts the plan is locked.
+        submitted team, then assign organizer judges. After judging starts the
+        plan is locked.
       </p>
       <StatusLine status={status} />
     </section>

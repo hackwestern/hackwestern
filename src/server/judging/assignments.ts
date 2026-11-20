@@ -3,7 +3,7 @@
  * judge's start / submit / absent actions. See docs/judging-engine.md.
  *
  * Every write follows the lock order in shared.ts (settings row, then stops by
- * id, then team rows, then table rows by id).
+ * id, then team rows, then seat rows by id).
  */
 import { TRPCError } from "@trpc/server";
 import { and, asc, eq, inArray, max, ne, sql } from "drizzle-orm";
@@ -14,7 +14,7 @@ import { db } from "~/server/db";
 import {
   judges,
   judgingAssignments,
-  judgingTables,
+  judgingSeats,
   teamMarks,
   teams,
 } from "~/server/db/schema";
@@ -30,15 +30,15 @@ import {
   isUniqueViolation,
   lockPlanExclusive,
   lockPlanShared,
-  lockTables,
+  lockSeats,
   notFound,
 } from "~/server/judging/shared";
 
 const INSERT_BATCH = 500;
 
 /**
- * Give every organizer-type judge a section of the snake so each active table
- * gets `judgesPerTable` different judges (see `buildSections`). Judges are
+ * Give every organizer-type judge a section of the snake so each active seat
+ * gets `judgesPerSeat` different judges (see `buildSections`). Judges are
  * taken in the order they were added. Sponsor judges are left out: they judge
  * in their sponsor rooms, and the ranking ignores their marks. Replaces the
  * whole plan, so it's only allowed before judging starts.
@@ -49,11 +49,11 @@ export async function autoAssign(assignedBy: string) {
     await assertNotStarted("re-run auto-assign", tx);
     const settings = await getSettings(tx);
 
-    const tables = await tx
-      .select({ id: judgingTables.id, number: judgingTables.number })
-      .from(judgingTables)
-      .where(eq(judgingTables.isActive, true))
-      .orderBy(asc(judgingTables.number), asc(judgingTables.seat));
+    const seats = await tx
+      .select({ id: judgingSeats.id, tableNumber: judgingSeats.tableNumber })
+      .from(judgingSeats)
+      .where(eq(judgingSeats.isActive, true))
+      .orderBy(asc(judgingSeats.tableNumber), asc(judgingSeats.seat));
     const judgeRows = await tx
       .select({ id: judges.id })
       .from(judges)
@@ -62,7 +62,7 @@ export async function autoAssign(assignedBy: string) {
 
     let sections;
     try {
-      sections = buildSections(tables, judgeRows, settings.judgesPerTable);
+      sections = buildSections(seats, judgeRows, settings.judgesPerSeat);
     } catch (error) {
       if (error instanceof LayoutError) {
         throw new TRPCError({
@@ -74,10 +74,10 @@ export async function autoAssign(assignedBy: string) {
     }
 
     await tx.delete(judgingAssignments).where(sql`true`);
-    const rows = sections.flatMap(({ judge, tables: section }) =>
-      section.map((table, i) => ({
+    const rows = sections.flatMap(({ judge, seats: section }) =>
+      section.map((seat, i) => ({
         judgeId: judge.id,
-        judgingTableId: table.id,
+        judgingSeatId: seat.id,
         position: i + 1,
         assignedBy,
       })),
@@ -88,12 +88,12 @@ export async function autoAssign(assignedBy: string) {
         .values(rows.slice(i, i + INSERT_BATCH));
     }
 
-    const sizes = sections.map((s) => s.tables.length);
+    const sizes = sections.map((s) => s.seats.length);
     return {
-      tables: new Set(tables.map((t) => t.number)).size,
-      seats: tables.length,
+      tables: new Set(seats.map((t) => t.tableNumber)).size,
+      seats: seats.length,
       judges: judgeRows.length,
-      judgesPerTable: settings.judgesPerTable,
+      judgesPerSeat: settings.judgesPerSeat,
       stops: rows.length,
       seatsPerJudge: { min: Math.min(...sizes), max: Math.max(...sizes) },
       floaters: sizes.filter((n) => n === 0).length,
@@ -153,19 +153,20 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
         if (lockedIds.length === 0) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
-            message: "That judge has no unfinished tables to hand off.",
+            message: "That judge has no unfinished seats to hand off.",
           });
         }
         const open = await tx
           .select({
             id: judgingAssignments.id,
-            tableId: judgingAssignments.judgingTableId,
-            tableNumber: judgingTables.number,
+            seatId: judgingAssignments.judgingSeatId,
+            tableNumber: judgingSeats.tableNumber,
+            seat: judgingSeats.seat,
           })
           .from(judgingAssignments)
           .innerJoin(
-            judgingTables,
-            eq(judgingTables.id, judgingAssignments.judgingTableId),
+            judgingSeats,
+            eq(judgingSeats.id, judgingAssignments.judgingSeatId),
           )
           .where(
             inArray(
@@ -174,33 +175,36 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
             ),
           )
           .orderBy(asc(judgingAssignments.position));
-        const tableIds = open.map((s) => s.tableId);
+        const seatIds = open.map((s) => s.seatId);
 
         const clash = await tx
-          .select({ number: judgingTables.number, seat: judgingTables.seat })
+          .select({
+            tableNumber: judgingSeats.tableNumber,
+            seat: judgingSeats.seat,
+          })
           .from(judgingAssignments)
           .innerJoin(
-            judgingTables,
-            eq(judgingTables.id, judgingAssignments.judgingTableId),
+            judgingSeats,
+            eq(judgingSeats.id, judgingAssignments.judgingSeatId),
           )
           .where(
             and(
               eq(judgingAssignments.judgeId, toJudgeId),
               ne(judgingAssignments.status, "cancelled"),
-              inArray(judgingAssignments.judgingTableId, tableIds),
+              inArray(judgingAssignments.judgingSeatId, seatIds),
             ),
           );
         if (clash.length > 0) {
           throw new TRPCError({
             code: "CONFLICT",
             message: `That judge already has table${clash.length === 1 ? "" : "s"} ${clash
-              .sort((x, y) => x.number - y.number || x.seat - y.seat)
+              .sort((x, y) => x.tableNumber - y.tableNumber || x.seat - y.seat)
               .map(seatName)
               .join(", ")}. Pick someone else, like a floater.`,
           });
         }
 
-        // The new judge mustn't have scored any team seated at these tables.
+        // The new judge mustn't have scored any team seated at these seats.
         const scored = await tx
           .select({ name: teams.name })
           .from(teamMarks)
@@ -208,7 +212,7 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
           .where(
             and(
               eq(teamMarks.judgeId, toJudgeId),
-              inArray(teams.judgingTableId, tableIds),
+              inArray(teams.judgingSeatId, seatIds),
             ),
           );
         if (scored.length > 0) {
@@ -220,12 +224,13 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
           });
         }
 
-        // Lock order step 4: take the tables in id order before the status
+        // Lock order step 4: take the seats in id order before the status
         // trigger does, so two hand-offs can't lock them in opposite orders.
-        await lockTables(tx, tableIds);
+        await lockSeats(tx, seatIds);
 
         let position = await nextPosition(tx, toJudgeId);
-        const moved: number[] = [];
+        const moved: { seatId: number; tableNumber: number; seat: number }[] =
+          [];
         for (const stop of open) {
           // Re-check ownership and status in the UPDATE itself, so a stop
           // that changed after the read is never pulled back to `assigned`.
@@ -246,20 +251,24 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
             )
             .returning({ id: judgingAssignments.id });
           if (row) {
-            moved.push(stop.tableNumber);
+            moved.push({
+              seatId: stop.seatId,
+              tableNumber: stop.tableNumber,
+              seat: stop.seat,
+            });
             position++;
           }
         }
-        return { moved: moved.length, tables: moved };
+        return { moved: moved.length, seats: moved };
       }),
-    "Those tables just changed. Refresh and try again.",
+    "Those seats just changed. Refresh and try again.",
   );
 }
 
-/** Organizer top-up: add one table to the end of an organizer judge's list. */
-export async function addJudgeToTable(
+/** Organizer top-up: add one seat to the end of an organizer judge's list. */
+export async function addJudgeToSeat(
   judgeId: string,
-  tableId: number,
+  seatId: number,
   assignedBy: string,
 ) {
   return conflictOnUniqueViolation(
@@ -267,23 +276,23 @@ export async function addJudgeToTable(
       db.transaction(async (tx) => {
         await lockPlanShared(tx);
         assertGeneralJudge(await requireJudge(tx, judgeId));
-        // Take the table lock up front (the insert's status trigger needs it
-        // anyway), so two top-ups at one table, or a top-up racing a hand-off,
+        // Take the seat lock up front (the insert's status trigger needs it
+        // anyway), so two top-ups at one seat, or a top-up racing a hand-off,
         // queue up instead of deadlocking.
-        await lockTables(tx, [tableId]);
-        const table = await tx.query.judgingTables.findFirst({
-          where: eq(judgingTables.id, tableId),
+        await lockSeats(tx, [seatId]);
+        const seatRow = await tx.query.judgingSeats.findFirst({
+          where: eq(judgingSeats.id, seatId),
         });
-        if (!table) throw notFound("Table");
-        if (!table.isActive) {
+        if (!seatRow) throw notFound("Seat");
+        if (!seatRow.isActive) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
-            message: `Table ${seatName(table)} is switched off.`,
+            message: `Table ${seatName(seatRow)} is switched off.`,
           });
         }
         const absent = await tx.query.judgingAssignments.findFirst({
           where: and(
-            eq(judgingAssignments.judgingTableId, tableId),
+            eq(judgingAssignments.judgingSeatId, seatId),
             eq(judgingAssignments.status, "team_absent"),
           ),
           columns: { id: true },
@@ -291,13 +300,13 @@ export async function addJudgeToTable(
         if (absent) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: `The team at table ${seatName(table)} was reported absent, so it can't be judged.`,
+            message: `The team at table ${seatName(seatRow)} was reported absent, so it can't be judged.`,
           });
         }
         const existing = await tx.query.judgingAssignments.findFirst({
           where: and(
             eq(judgingAssignments.judgeId, judgeId),
-            eq(judgingAssignments.judgingTableId, tableId),
+            eq(judgingAssignments.judgingSeatId, seatId),
             ne(judgingAssignments.status, "cancelled"),
           ),
           columns: { id: true },
@@ -305,11 +314,11 @@ export async function addJudgeToTable(
         if (existing) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: `That judge already has table ${seatName(table)}.`,
+            message: `That judge already has table ${seatName(seatRow)}.`,
           });
         }
         const seated = await tx.query.teams.findFirst({
-          where: eq(teams.judgingTableId, tableId),
+          where: eq(teams.judgingSeatId, seatId),
           columns: { id: true, name: true },
         });
         if (seated) {
@@ -332,12 +341,16 @@ export async function addJudgeToTable(
           .insert(judgingAssignments)
           .values({
             judgeId,
-            judgingTableId: tableId,
+            judgingSeatId: seatId,
             position: await nextPosition(tx, judgeId),
             assignedBy,
           })
           .returning();
-        return { ...row!, tableNumber: table.number };
+        return {
+          ...row!,
+          tableNumber: seatRow.tableNumber,
+          seat: seatRow.seat,
+        };
       }),
     "That judge's list just changed. Refresh and try again.",
   );
@@ -387,9 +400,9 @@ export async function cancelStop(assignmentId: number) {
 }
 
 /**
- * Nobody at the table. With `judgeId`, only that judge's own stop. A judge can
+ * Nobody at the seat. With `judgeId`, only that judge's own stop. A judge can
  * also pass the team their screen showed (`expectedTeamId`, null for an empty
- * table); if a different team is seated now, it's refused, so a stale screen
+ * seat); if a different team is seated now, it's refused, so a stale screen
  * can't mark the wrong team absent.
  *
  * Absence is final: the team seated there is disqualified (its seat now has a
@@ -405,7 +418,7 @@ export async function markAbsent(
     await lockPlanShared(tx);
     const target = await tx.query.judgingAssignments.findFirst({
       where: eq(judgingAssignments.id, assignmentId),
-      columns: { judgingTableId: true },
+      columns: { judgingSeatId: true },
     });
     if (!target) throw notFound("Stop");
     // Lock every live stop at the seat in id order (step 2), so two judges
@@ -415,7 +428,7 @@ export async function markAbsent(
       .from(judgingAssignments)
       .where(
         and(
-          eq(judgingAssignments.judgingTableId, target.judgingTableId),
+          eq(judgingAssignments.judgingSeatId, target.judgingSeatId),
           ne(judgingAssignments.status, "cancelled"),
         ),
       )
@@ -426,14 +439,14 @@ export async function markAbsent(
       const [seated] = await tx
         .select({ id: teams.id, name: teams.name })
         .from(teams)
-        .where(eq(teams.judgingTableId, stop.judgingTableId))
+        .where(eq(teams.judgingSeatId, stop.judgingSeatId))
         .for("share");
       if ((seated?.id ?? null) !== expectedTeamId) {
         throw new TRPCError({
           code: "CONFLICT",
           message: seated
-            ? `The team at this table changed (it's now "${seated.name}"). Refresh first.`
-            : "The team at this table moved away. Refresh first.",
+            ? `The team at this seat changed (it's now "${seated.name}"). Refresh first.`
+            : "The team at this seat moved away. Refresh first.",
         });
       }
     }
@@ -449,7 +462,7 @@ export async function markAbsent(
       .set({ status: "cancelled" })
       .where(
         and(
-          eq(judgingAssignments.judgingTableId, row.judgingTableId),
+          eq(judgingAssignments.judgingSeatId, row.judgingSeatId),
           eq(judgingAssignments.status, "assigned"),
         ),
       );
@@ -462,7 +475,7 @@ async function lockStop(tx: Tx, assignmentId: number, judgeId: string) {
   const [stop] = await tx
     .select({
       id: judgingAssignments.id,
-      judgingTableId: judgingAssignments.judgingTableId,
+      judgingSeatId: judgingAssignments.judgingSeatId,
     })
     .from(judgingAssignments)
     .where(
@@ -477,36 +490,36 @@ async function lockStop(tx: Tx, assignmentId: number, judgeId: string) {
 }
 
 /**
- * The team seated at a stop's table, which must be the team the judge's
+ * The team seated at a stop's seat, which must be the team the judge's
  * screen showed (`expectedTeamId`). Holds a share lock on the team row (step
  * 3) so a swap or move can't reseat it until this transaction finishes.
  */
-async function seatedTeamAt(tx: Tx, tableId: number, expectedTeamId: string) {
+async function seatedTeamAt(tx: Tx, seatId: number, expectedTeamId: string) {
   const [team] = await tx
     .select({ id: teams.id, name: teams.name })
     .from(teams)
-    .where(eq(teams.judgingTableId, tableId))
+    .where(eq(teams.judgingSeatId, seatId))
     .for("share");
   if (!team) {
-    const table = await tx.query.judgingTables.findFirst({
-      where: eq(judgingTables.id, tableId),
-      columns: { number: true, seat: true },
+    const seatRow = await tx.query.judgingSeats.findFirst({
+      where: eq(judgingSeats.id, seatId),
+      columns: { tableNumber: true, seat: true },
     });
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: `No team is seated at table ${table ? seatName(table) : "?"}. Report it as absent instead.`,
+      message: `No team is seated at table ${seatRow ? seatName(seatRow) : "?"}. Report it as absent instead.`,
     });
   }
   if (team.id !== expectedTeamId) {
     throw new TRPCError({
       code: "CONFLICT",
-      message: `The team at this table changed (it's now "${team.name}"). Refresh before scoring.`,
+      message: `The team at this seat changed (it's now "${team.name}"). Refresh before scoring.`,
     });
   }
   return team;
 }
 
-/** The judge is at the table. A judge has at most one stop in progress. */
+/** The judge is at the seat. A judge has at most one stop in progress. */
 export async function startStop(
   judgeId: string,
   assignmentId: number,
@@ -515,7 +528,7 @@ export async function startStop(
   const busyError = () =>
     new TRPCError({
       code: "CONFLICT",
-      message: "Finish or report your current table first.",
+      message: "Finish or report your current team first.",
     });
   try {
     return await db.transaction(async (tx) => {
@@ -530,7 +543,7 @@ export async function startStop(
         columns: { id: true },
       });
       if (busy) throw busyError();
-      await seatedTeamAt(tx, stop.judgingTableId, teamId);
+      await seatedTeamAt(tx, stop.judgingSeatId, teamId);
       return transition(
         tx,
         assignmentId,
@@ -548,7 +561,7 @@ export async function startStop(
 }
 
 /**
- * Score a stop: writes the `team_mark` for the team seated at the table (which
+ * Score a stop: writes the `team_mark` for the team seated at the seat (which
  * must be the team the judge saw) and marks the stop done, in one
  * transaction. Submitting straight from `assigned` is allowed. The round type
  * follows the judge type, so normalization reads the mark unchanged.
@@ -563,7 +576,7 @@ export async function submitStop(
   return db.transaction(async (tx) => {
     await lockPlanShared(tx);
     const stop = await lockStop(tx, assignmentId, judge.id);
-    const team = await seatedTeamAt(tx, stop.judgingTableId, teamId);
+    const team = await seatedTeamAt(tx, stop.judgingSeatId, teamId);
 
     await transition(
       tx,
@@ -627,7 +640,7 @@ export async function editMark(
 }
 
 /**
- * Organizer removes a mark. The judge's stop at the team's table goes back to
+ * Organizer removes a mark. The judge's stop at the team's seat goes back to
  * `assigned`, so they can score it again. The stats trigger reverses the
  * judge's aggregates.
  */
@@ -642,9 +655,9 @@ export async function deleteMark(teamMarkId: number) {
 
     const team = await tx.query.teams.findFirst({
       where: eq(teams.id, deleted.teamId),
-      columns: { judgingTableId: true },
+      columns: { judgingSeatId: true },
     });
-    if (team?.judgingTableId == null) return { reopened: false };
+    if (team?.judgingSeatId == null) return { reopened: false };
 
     const reopened = await tx
       .update(judgingAssignments)
@@ -652,7 +665,7 @@ export async function deleteMark(teamMarkId: number) {
       .where(
         and(
           eq(judgingAssignments.judgeId, deleted.judgeId),
-          eq(judgingAssignments.judgingTableId, team.judgingTableId),
+          eq(judgingAssignments.judgingSeatId, team.judgingSeatId),
           eq(judgingAssignments.status, "done"),
         ),
       )

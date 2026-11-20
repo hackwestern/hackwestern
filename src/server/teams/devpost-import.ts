@@ -460,7 +460,7 @@ export async function applyImport(plan: PlannedTeam[]): Promise<ApplySummary> {
     const seated = await tx
       .select({ id: teams.id })
       .from(teams)
-      .where(isNotNull(teams.judgingTableId))
+      .where(isNotNull(teams.judgingSeatId))
       .limit(1);
 
     const summary: ApplySummary = {

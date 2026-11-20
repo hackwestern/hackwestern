@@ -12,10 +12,10 @@ import {
 const range = (n: number) => Array.from({ length: n }, (_, i) => i + 1);
 
 /** How many times each table appears across all sections, and with whom. */
-function coverage(sections: { judge: number; tables: number[] }[]) {
+function coverage(sections: { judge: number; seats: number[] }[]) {
   const byTable = new Map<number, number[]>();
   for (const s of sections) {
-    for (const t of s.tables) {
+    for (const t of s.seats) {
       byTable.set(t, [...(byTable.get(t) ?? []), s.judge]);
     }
   }
@@ -49,8 +49,8 @@ describe("snake grid", () => {
 });
 
 test("seatName tells the two seats at a table apart", () => {
-  expect(seatName({ number: 4, seat: 1 })).toBe("4");
-  expect(seatName({ number: 4, seat: 2 })).toBe("4 (seat 2)");
+  expect(seatName({ tableNumber: 4, seat: 1 })).toBe("4");
+  expect(seatName({ tableNumber: 4, seat: 2 })).toBe("4 (seat 2)");
 });
 
 describe("tablesToSplit", () => {
@@ -76,14 +76,14 @@ describe("tablesToSplit", () => {
 describe("buildSections", () => {
   test("70 tables and 35 judges: 6 tables each, every table judged 3 times", () => {
     const sections = buildSections(range(70), range(35), 3);
-    expect(sections.every((s) => s.tables.length === 6)).toBe(true);
+    expect(sections.every((s) => s.seats.length === 6)).toBe(true);
 
-    expect(sections[0]?.tables).toEqual([1, 2, 3, 4, 5, 6]);
-    expect(sections[1]?.tables).toEqual([7, 8, 9, 10, 11, 12]);
+    expect(sections[0]?.seats).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(sections[1]?.seats).toEqual([7, 8, 9, 10, 11, 12]);
     // Judge 12's run wraps from the end of the snake back to table 1.
-    expect(sections[11]?.tables).toEqual([67, 68, 69, 70, 1, 2]);
-    expect(sections[12]?.tables).toEqual([3, 4, 5, 6, 7, 8]);
-    expect(sections[34]?.tables).toEqual([65, 66, 67, 68, 69, 70]);
+    expect(sections[11]?.seats).toEqual([67, 68, 69, 70, 1, 2]);
+    expect(sections[12]?.seats).toEqual([3, 4, 5, 6, 7, 8]);
+    expect(sections[34]?.seats).toEqual([65, 66, 67, 68, 69, 70]);
 
     const byTable = coverage(sections);
     expect(byTable.size).toBe(70);
@@ -96,7 +96,7 @@ describe("buildSections", () => {
 
   test("uneven counts split as evenly as possible and still cover 3 each", () => {
     const sections = buildSections(range(70), range(31), 3);
-    const sizes = new Set(sections.map((s) => s.tables.length));
+    const sizes = new Set(sections.map((s) => s.seats.length));
     expect([...sizes].sort()).toEqual([6, 7]);
     for (const judgesHere of coverage(sections).values()) {
       expect(new Set(judgesHere).size).toBe(3);
@@ -105,7 +105,7 @@ describe("buildSections", () => {
 
   test("fewer judges means longer sections", () => {
     const sections = buildSections(range(70), range(14), 3);
-    expect(sections.every((s) => s.tables.length === 15)).toBe(true);
+    expect(sections.every((s) => s.seats.length === 15)).toBe(true);
     for (const judgesHere of coverage(sections).values()) {
       expect(new Set(judgesHere).size).toBe(3);
     }
@@ -114,7 +114,7 @@ describe("buildSections", () => {
   test("no judge ever gets the same table twice, at any judge count", () => {
     for (let judges = 3; judges <= 80; judges++) {
       for (const s of buildSections(range(70), range(judges), 3)) {
-        expect(new Set(s.tables).size).toBe(s.tables.length);
+        expect(new Set(s.seats).size).toBe(s.seats.length);
       }
     }
   });
@@ -122,13 +122,13 @@ describe("buildSections", () => {
   test("with exactly 3 judges, each judges every table", () => {
     const sections = buildSections(range(10), range(3), 3);
     for (const s of sections) {
-      expect([...s.tables].sort((a, b) => a - b)).toEqual(range(10));
+      expect([...s.seats].sort((a, b) => a - b)).toEqual(range(10));
     }
   });
 
   test("more judges than visits leaves the extras with nothing", () => {
     const sections = buildSections(range(2), range(10), 3);
-    expect(sections.filter((s) => s.tables.length === 0)).toHaveLength(4);
+    expect(sections.filter((s) => s.seats.length === 0)).toHaveLength(4);
     for (const judgesHere of coverage(sections).values()) {
       expect(new Set(judgesHere).size).toBe(3);
     }

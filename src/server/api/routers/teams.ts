@@ -21,7 +21,7 @@ const teamsSaveSchema = createInsertSchema(teams, {
   submittedAt: true,
   createdAt: true,
   // Organizers seat teams; hackers can't move themselves.
-  judgingTableId: true,
+  judgingSeatId: true,
   // Written by the Devpost import only.
   importFlags: true,
 });
@@ -32,7 +32,7 @@ const teamsSelectSchema = createSelectSchema(teams).omit({
   submittedAt: true,
   createdAt: true,
   // Seating is read through judgingPlan.team.getMyJudging.
-  judgingTableId: true,
+  judgingSeatId: true,
   // Organizer-only notes from the Devpost import.
   importFlags: true,
 });

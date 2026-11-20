@@ -99,89 +99,89 @@ CREATE TRIGGER trg_scavenger_hunt_scan_refund
 AFTER DELETE ON "scavenger_hunt_scan"
 FOR EACH ROW EXECUTE FUNCTION scavenger_hunt_refund_scan_points();
 
--- 4. Live table status: keep judging_table.status in step with who is seated
+-- 4. Live seat status: keep judging_seat.status in step with who is seated
 --    and where each judge's stops stand. Rules, first match wins:
---      empty         no team seated at the table
---      being_judged  a stop at the table is in progress
---      waiting       a stop is still assigned, or the table has no live stops
+--      empty         no team seated at the seat
+--      being_judged  a stop at the seat is in progress
+--      waiting       a stop is still assigned, or the seat has no live stops
 --      finished      every live stop is done or team_absent
 --    Only writes (and bumps status_updated_at) when the status changes.
-CREATE OR REPLACE FUNCTION judging_refresh_table_status(p_table_id integer)
+CREATE OR REPLACE FUNCTION judging_refresh_seat_status(p_seat_id integer)
 RETURNS void AS $$
 DECLARE
-  next_status judging_table_status;
+  next_status judging_seat_status;
 BEGIN
-  IF p_table_id IS NULL THEN
+  IF p_seat_id IS NULL THEN
     RETURN;
   END IF;
 
-  -- Serialize recalculations for this table. Two judges changing stops at the
-  -- same table at once would otherwise each compute from their own snapshot
+  -- Serialize recalculations for this seat. Two judges changing stops at the
+  -- same seat at once would otherwise each compute from their own snapshot
   -- and the last write could be stale. After the lock, the SELECT below sees
   -- whatever the other transaction committed.
-  PERFORM 1 FROM "judging_table" WHERE id = p_table_id FOR UPDATE;
+  PERFORM 1 FROM "judging_seat" WHERE id = p_seat_id FOR UPDATE;
 
   SELECT CASE
     WHEN NOT EXISTS (
-      SELECT 1 FROM "team" t WHERE t.judging_table_id = p_table_id
+      SELECT 1 FROM "team" t WHERE t.judging_seat_id = p_seat_id
     ) THEN 'empty'
     WHEN EXISTS (
       SELECT 1 FROM "judging_assignment" a
-      WHERE a.judging_table_id = p_table_id AND a.status = 'in_progress'
+      WHERE a.judging_seat_id = p_seat_id AND a.status = 'in_progress'
     ) THEN 'being_judged'
     WHEN EXISTS (
       SELECT 1 FROM "judging_assignment" a
-      WHERE a.judging_table_id = p_table_id AND a.status = 'assigned'
+      WHERE a.judging_seat_id = p_seat_id AND a.status = 'assigned'
     ) OR NOT EXISTS (
       SELECT 1 FROM "judging_assignment" a
-      WHERE a.judging_table_id = p_table_id AND a.status <> 'cancelled'
+      WHERE a.judging_seat_id = p_seat_id AND a.status <> 'cancelled'
     ) THEN 'waiting'
     ELSE 'finished'
-  END::judging_table_status
+  END::judging_seat_status
   INTO next_status;
 
-  UPDATE "judging_table"
+  UPDATE "judging_seat"
   SET status = next_status, status_updated_at = now()
-  WHERE id = p_table_id AND status IS DISTINCT FROM next_status;
+  WHERE id = p_seat_id AND status IS DISTINCT FROM next_status;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION judging_assignment_refresh_table() RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION judging_assignment_refresh_seat() RETURNS trigger AS $$
 BEGIN
   IF (TG_OP = 'INSERT') THEN
-    PERFORM judging_refresh_table_status(NEW.judging_table_id);
+    PERFORM judging_refresh_seat_status(NEW.judging_seat_id);
   ELSIF (TG_OP = 'DELETE') THEN
-    PERFORM judging_refresh_table_status(OLD.judging_table_id);
+    PERFORM judging_refresh_seat_status(OLD.judging_seat_id);
   ELSE
-    PERFORM judging_refresh_table_status(OLD.judging_table_id);
-    IF NEW.judging_table_id IS DISTINCT FROM OLD.judging_table_id THEN
-      PERFORM judging_refresh_table_status(NEW.judging_table_id);
+    PERFORM judging_refresh_seat_status(OLD.judging_seat_id);
+    IF NEW.judging_seat_id IS DISTINCT FROM OLD.judging_seat_id THEN
+      PERFORM judging_refresh_seat_status(NEW.judging_seat_id);
     END IF;
   END IF;
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_judging_assignment_table_status ON "judging_assignment";
-CREATE TRIGGER trg_judging_assignment_table_status
+DROP TRIGGER IF EXISTS trg_judging_assignment_seat_status ON "judging_assignment";
+CREATE TRIGGER trg_judging_assignment_seat_status
 AFTER INSERT OR UPDATE OR DELETE ON "judging_assignment"
-FOR EACH ROW EXECUTE FUNCTION judging_assignment_refresh_table();
+FOR EACH ROW EXECUTE FUNCTION judging_assignment_refresh_seat();
 
-CREATE OR REPLACE FUNCTION judging_team_refresh_table() RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION judging_team_refresh_seat() RETURNS trigger AS $$
 BEGIN
   IF (TG_OP = 'INSERT') THEN
-    PERFORM judging_refresh_table_status(NEW.judging_table_id);
+    PERFORM judging_refresh_seat_status(NEW.judging_seat_id);
   ELSIF (TG_OP = 'DELETE') THEN
-    PERFORM judging_refresh_table_status(OLD.judging_table_id);
-  ELSIF NEW.judging_table_id IS DISTINCT FROM OLD.judging_table_id THEN
-    PERFORM judging_refresh_table_status(OLD.judging_table_id);
-    PERFORM judging_refresh_table_status(NEW.judging_table_id);
+    PERFORM judging_refresh_seat_status(OLD.judging_seat_id);
+  ELSIF NEW.judging_seat_id IS DISTINCT FROM OLD.judging_seat_id THEN
+    PERFORM judging_refresh_seat_status(OLD.judging_seat_id);
+    PERFORM judging_refresh_seat_status(NEW.judging_seat_id);
   END IF;
   RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trg_team_judging_table_status ON "team";
-CREATE TRIGGER trg_team_judging_table_status
-AFTER INSERT OR DELETE OR UPDATE OF judging_table_id ON "team"
-FOR EACH ROW EXECUTE FUNCTION judging_team_refresh_table();
+DROP TRIGGER IF EXISTS trg_team_judging_seat_status ON "team";
+CREATE TRIGGER trg_team_judging_seat_status
+AFTER INSERT OR DELETE OR UPDATE OF judging_seat_id ON "team"
+FOR EACH ROW EXECUTE FUNCTION judging_team_refresh_seat();

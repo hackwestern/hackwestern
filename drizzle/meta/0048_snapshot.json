@@ -1187,8 +1187,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "judging_table_id": {
-          "name": "judging_table_id",
+        "judging_seat_id": {
+          "name": "judging_seat_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -1256,8 +1256,8 @@
           "method": "btree",
           "with": {}
         },
-        "judging_assignment_judge_table_idx": {
-          "name": "judging_assignment_judge_table_idx",
+        "judging_assignment_judge_seat_idx": {
+          "name": "judging_assignment_judge_seat_idx",
           "columns": [
             {
               "expression": "judge_id",
@@ -1266,7 +1266,7 @@
               "nulls": "last"
             },
             {
-              "expression": "judging_table_id",
+              "expression": "judging_seat_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1278,11 +1278,11 @@
           "method": "btree",
           "with": {}
         },
-        "judging_assignment_table_idx": {
-          "name": "judging_assignment_table_idx",
+        "judging_assignment_seat_idx": {
+          "name": "judging_assignment_seat_idx",
           "columns": [
             {
-              "expression": "judging_table_id",
+              "expression": "judging_seat_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1324,19 +1324,6 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "judging_assignment_judging_table_id_judging_table_id_fk": {
-          "name": "judging_assignment_judging_table_id_judging_table_id_fk",
-          "tableFrom": "judging_assignment",
-          "tableTo": "judging_table",
-          "columnsFrom": [
-            "judging_table_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "judging_assignment_assigned_by_user_id_fk": {
           "name": "judging_assignment_assigned_by_user_id_fk",
           "tableFrom": "judging_assignment",
@@ -1348,6 +1335,19 @@
             "id"
           ],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "judging_assignment_judging_seat_id_judging_seat_id_fk": {
+          "name": "judging_assignment_judging_seat_id_judging_seat_id_fk",
+          "tableFrom": "judging_assignment",
+          "tableTo": "judging_seat",
+          "columnsFrom": [
+            "judging_seat_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -1382,8 +1382,8 @@
           "notNull": true,
           "default": 5
         },
-        "judges_per_table": {
-          "name": "judges_per_table",
+        "judges_per_seat": {
+          "name": "judges_per_seat",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -1406,93 +1406,6 @@
         "judging_settings_singleton": {
           "name": "judging_settings_singleton",
           "value": "\"judging_settings\".\"id\" = 1"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.judging_table": {
-      "name": "judging_table",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "number": {
-          "name": "number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "seat": {
-          "name": "seat",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "zone": {
-          "name": "zone",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "status": {
-          "name": "status",
-          "type": "judging_table_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'empty'"
-        },
-        "status_updated_at": {
-          "name": "status_updated_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "judging_table_number_seat_idx": {
-          "name": "judging_table_number_seat_idx",
-          "columns": [
-            {
-              "expression": "number",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "seat",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "judging_table_seat_check": {
-          "name": "judging_table_seat_check",
-          "value": "\"judging_table\".\"seat\" in (1, 2)"
         }
       },
       "isRLSEnabled": false
@@ -2923,8 +2836,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "judging_table_id": {
-          "name": "judging_table_id",
+        "judging_seat_id": {
+          "name": "judging_seat_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -2954,12 +2867,12 @@
         }
       },
       "foreignKeys": {
-        "team_judging_table_id_judging_table_id_fk": {
-          "name": "team_judging_table_id_judging_table_id_fk",
+        "team_judging_seat_id_judging_seat_id_fk": {
+          "name": "team_judging_seat_id_judging_seat_id_fk",
           "tableFrom": "team",
-          "tableTo": "judging_table",
+          "tableTo": "judging_seat",
           "columnsFrom": [
-            "judging_table_id"
+            "judging_seat_id"
           ],
           "columnsTo": [
             "id"
@@ -2977,11 +2890,11 @@
             "joinCode"
           ]
         },
-        "team_judging_table_id_unique": {
-          "name": "team_judging_table_id_unique",
+        "team_judging_seat_id_unique": {
+          "name": "team_judging_seat_id_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "judging_table_id"
+            "judging_seat_id"
           ]
         }
       },
@@ -3200,6 +3113,93 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "public.judging_seat": {
+      "name": "judging_seat",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "table_number": {
+          "name": "table_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seat": {
+          "name": "seat",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "zone": {
+          "name": "zone",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "status": {
+          "name": "status",
+          "type": "judging_seat_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'empty'"
+        },
+        "status_updated_at": {
+          "name": "status_updated_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "judging_seat_table_seat_idx": {
+          "name": "judging_seat_table_seat_idx",
+          "columns": [
+            {
+              "expression": "table_number",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "seat",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "judging_seat_seat_check": {
+          "name": "judging_seat_seat_check",
+          "value": "\"judging_seat\".\"seat\" in (1, 2)"
+        }
+      },
+      "isRLSEnabled": false
     }
   },
   "enums": {
@@ -3339,16 +3339,6 @@
         "done",
         "team_absent",
         "cancelled"
-      ]
-    },
-    "public.judging_table_status": {
-      "name": "judging_table_status",
-      "schema": "public",
-      "values": [
-        "empty",
-        "waiting",
-        "being_judged",
-        "finished"
       ]
     },
     "public.major": {
@@ -3511,6 +3501,16 @@
         "5th+",
         "N/A",
         "Prefer not to answer"
+      ]
+    },
+    "public.judging_seat_status": {
+      "name": "judging_seat_status",
+      "schema": "public",
+      "values": [
+        "empty",
+        "waiting",
+        "being_judged",
+        "finished"
       ]
     }
   },

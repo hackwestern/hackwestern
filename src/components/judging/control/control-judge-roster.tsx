@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { api } from "~/utils/api";
+import { seatName } from "~/server/judging/layout";
 import { errorCode } from "~/components/judging/shared/judge-ui";
 import {
   BTN_DARK,
@@ -61,7 +62,7 @@ export function JudgeRoster({
     refetchInterval: 15_000,
   });
   const addJudge = api.judging.admin.addJudgeByEmail.useMutation();
-  const send = api.judging.admin.addJudgeToTable.useMutation();
+  const send = api.judging.admin.addJudgeToSeat.useMutation();
   const [picked, setPicked] = useState<Record<string, string>>({});
 
   const waiting = (queue?.teams ?? []).filter((t) => !t.currentJudgeId);
@@ -70,11 +71,8 @@ export function JudgeRoster({
       t.currentJudgeId ? [[t.currentJudgeId, t] as const] : [],
     ),
   );
-  // Keyed by stop, not table number: a split table's two seats share a number.
-  const teamAtStop = new Map(
-    (progress?.tables ?? []).flatMap((t) =>
-      t.judges.map((s) => [s.assignmentId, t.team?.name ?? null] as const),
-    ),
+  const teamAtSeat = new Map(
+    (progress?.seats ?? []).map((t) => [t.id, t.team?.name ?? null]),
   );
   const stopsByJudge = new Map(
     (progress?.judges ?? []).map((j) => [j.id, j.stops]),
@@ -240,8 +238,8 @@ export function JudgeRoster({
                               key={st.assignmentId}
                               className={`rounded-full px-2 py-1 text-xs font-semibold ${STOP_STYLE[st.status] ?? ""}`}
                             >
-                              {teamAtStop.get(st.assignmentId) ?? "Empty"} · T
-                              {st.tableNumber} ·{" "}
+                              {teamAtSeat.get(st.seatId) ?? "Empty"} · T
+                              {seatName(st)} ·{" "}
                               {STOP_LABEL[st.status] ?? st.status}
                             </li>
                           ))}
@@ -318,19 +316,19 @@ export function JudgeRoster({
                               if (!team) return;
                               setStatus(null);
                               send.mutate(
-                                { judgeId: j.id, tableId: team.tableId },
+                                { judgeId: j.id, seatId: team.seatId },
                                 {
                                   onSuccess: () => {
                                     setStatus({
                                       tone: "ok",
-                                      text: `Added ${name} to table ${team.tableNumber} (${team.teamName}).`,
+                                      text: `Added ${name} to table ${seatName(team)} (${team.teamName}).`,
                                     });
                                     void utils.judging.admin.invalidate();
                                   },
                                   onError: (e) =>
                                     setStatus({
                                       tone: "error",
-                                      text: `Couldn't add ${name} to table ${team.tableNumber}. ${errorText(e)}`,
+                                      text: `Couldn't add ${name} to table ${seatName(team)}. ${errorText(e)}`,
                                     }),
                                 },
                               );

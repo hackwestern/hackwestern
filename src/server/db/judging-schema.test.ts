@@ -7,7 +7,7 @@ import { mockSession } from "~/server/auth";
 import {
   judges,
   judgingAssignments,
-  judgingTables,
+  judgingSeats,
   teamMarks,
   teamTracks,
   teams,
@@ -29,7 +29,7 @@ afterEach(async () => {
   await db.delete(teamMarks).where(sql`true`);
   await db.delete(teamTracks).where(sql`true`);
   await db.delete(teams).where(sql`true`);
-  await db.delete(judgingTables).where(sql`true`);
+  await db.delete(judgingSeats).where(sql`true`);
   await db.delete(judges).where(sql`true`);
 });
 
@@ -117,20 +117,20 @@ describe("team_mark rubric columns", () => {
   });
 });
 
-describe("judging_table.status", () => {
+describe("judging_seat.status", () => {
   test("starts empty and stores each live state", async () => {
     const [table] = await db
-      .insert(judgingTables)
-      .values({ number: 1, zone: "Main gym" })
+      .insert(judgingSeats)
+      .values({ tableNumber: 1, zone: "Main gym" })
       .returning();
     expect(table?.status).toBe("empty");
     expect(table?.statusUpdatedAt).toBeInstanceOf(Date);
 
     for (const status of ["waiting", "being_judged", "finished"] as const) {
       const [row] = await db
-        .update(judgingTables)
+        .update(judgingSeats)
         .set({ status })
-        .where(eq(judgingTables.id, table!.id))
+        .where(eq(judgingSeats.id, table!.id))
         .returning();
       expect(row?.status).toBe(status);
     }

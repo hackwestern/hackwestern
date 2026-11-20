@@ -10,7 +10,7 @@ import { getMyStops } from "~/server/judging/reads";
 import { teamMarks, teams } from "~/server/db/schema";
 
 export interface JudgeTableRow {
-  number: number;
+  tableNumber: number;
   zone: string;
 }
 
@@ -75,16 +75,16 @@ export async function loadJudgeData(
   withComparison: boolean,
 ): Promise<JudgeInitialData> {
   const [tables, seated, linked, judge] = await Promise.all([
-    db.query.judgingTables.findMany({
+    db.query.judgingSeats.findMany({
       // One row per physical table, not per seat.
       where: (t, { and, eq }) => and(eq(t.isActive, true), eq(t.seat, 1)),
-      columns: { number: true, zone: true },
-      orderBy: (t, { asc }) => [asc(t.number)],
+      columns: { tableNumber: true, zone: true },
+      orderBy: (t, { asc }) => [asc(t.tableNumber)],
     }),
     db.query.teams.findMany({
-      where: (t, { isNotNull }) => isNotNull(t.judgingTableId),
+      where: (t, { isNotNull }) => isNotNull(t.judgingSeatId),
       columns: { id: true },
-      with: { judgingTable: { columns: { number: true } } },
+      with: { judgingSeat: { columns: { tableNumber: true } } },
     }),
     db.query.teams.findMany({
       where: or(isNotNull(teams.githubUrl), isNotNull(teams.devpostUrl)),
@@ -98,7 +98,7 @@ export async function loadJudgeData(
 
   const tableByTeam: Record<string, number> = {};
   for (const t of seated) {
-    if (t.judgingTable) tableByTeam[t.id] = t.judgingTable.number;
+    if (t.judgingSeat) tableByTeam[t.id] = t.judgingSeat.tableNumber;
   }
 
   const linksByTeam: Record<string, TeamLinks> = {};

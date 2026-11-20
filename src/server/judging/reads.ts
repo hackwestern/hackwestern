@@ -10,7 +10,7 @@ import { db } from "~/server/db";
 import {
   judges,
   judgingAssignments,
-  judgingTables,
+  judgingSeats,
   teamMarks,
   teams,
   users,
@@ -25,21 +25,21 @@ import {
 } from "~/server/judging/shared";
 
 // Drizzle types a one() relation as always present when it joins on a
-// non-null column, but a table with nobody seated has no team. Widen it.
+// non-null column, but a seat with nobody seated has no team. Widen it.
 const orNull = <T>(value: T): T | null => value ?? null;
 
 /**
  * Everything the organizer console and table map need: the layout, every
- * table with its team, status and judges, every judge's section, floaters,
- * and totals.
+ * seat with its table number, team, status and judges, every judge's section,
+ * floaters, and totals.
  */
 export async function getProgress() {
-  const [settings, started, tables, stops, judgeRows, submitted] =
+  const [settings, started, seats, stops, judgeRows, submitted] =
     await Promise.all([
       getSettings(),
       isJudgingStarted(),
-      db.query.judgingTables.findMany({
-        orderBy: [asc(judgingTables.number), asc(judgingTables.seat)],
+      db.query.judgingSeats.findMany({
+        orderBy: [asc(judgingSeats.tableNumber), asc(judgingSeats.seat)],
         with: { team: { columns: { id: true, name: true } } },
       }),
       db
@@ -48,7 +48,7 @@ export async function getProgress() {
           judgeId: judgingAssignments.judgeId,
           judgeName: users.name,
           judgeEmail: users.email,
-          tableId: judgingAssignments.judgingTableId,
+          seatId: judgingAssignments.judgingSeatId,
           position: judgingAssignments.position,
           status: judgingAssignments.status,
           startedAt: judgingAssignments.startedAt,
@@ -74,17 +74,19 @@ export async function getProgress() {
         .innerJoin(users, eq(users.id, judges.id))
         .orderBy(asc(judges.createdAt), asc(judges.id)),
       db
-        .select({ id: teams.id, judgingTableId: teams.judgingTableId })
+        .select({ id: teams.id, judgingSeatId: teams.judgingSeatId })
         .from(teams)
         .where(inArray(teams.submissionStatus, [...ELIGIBLE_SUBMISSIONS])),
     ]);
 
-  const numberOf = new Map(tables.map((t) => [t.id, t.number]));
-  const stopsByTable = new Map<number, typeof stops>();
+  const seatOf = new Map(
+    seats.map((t) => [t.id, { tableNumber: t.tableNumber, seat: t.seat }]),
+  );
+  const stopsBySeat = new Map<number, typeof stops>();
   const stopsByJudge = new Map<string, typeof stops>();
   const totals = { assigned: 0, in_progress: 0, done: 0, team_absent: 0 };
   for (const s of stops) {
-    stopsByTable.set(s.tableId, [...(stopsByTable.get(s.tableId) ?? []), s]);
+    stopsBySeat.set(s.seatId, [...(stopsBySeat.get(s.seatId) ?? []), s]);
     stopsByJudge.set(s.judgeId, [...(stopsByJudge.get(s.judgeId) ?? []), s]);
     if (s.status !== "cancelled") totals[s.status]++;
   }
@@ -94,18 +96,19 @@ export async function getProgress() {
     started,
     teams: {
       submitted: submitted.length,
-      seated: submitted.filter((t) => t.judgingTableId !== null).length,
+      seated: submitted.filter((t) => t.judgingSeatId !== null).length,
     },
     totals,
-    tables: tables.map((t) => {
-      const here = stopsByTable.get(t.id) ?? [];
+    seats: seats.map((t) => {
+      const here = stopsBySeat.get(t.id) ?? [];
       return {
         id: t.id,
-        number: t.number,
+        tableNumber: t.tableNumber,
+        seat: t.seat,
         zone: t.zone,
         isActive: t.isActive,
         status: t.status,
-        ...snakePosition(t.number, settings.perRow),
+        ...snakePosition(t.tableNumber, settings.perRow),
         team: orNull(t.team),
         judgesDone: here.filter((s) => s.status === "done").length,
         judges: here.map((s) => ({
@@ -130,13 +133,15 @@ export async function getProgress() {
         current: current
           ? {
               assignmentId: current.id,
-              tableNumber: numberOf.get(current.tableId)!,
+              seatId: current.seatId,
+              ...seatOf.get(current.seatId)!,
               startedAt: current.startedAt,
             }
           : null,
         stops: mine.map((s) => ({
           assignmentId: s.id,
-          tableNumber: numberOf.get(s.tableId)!,
+          seatId: s.seatId,
+          ...seatOf.get(s.seatId)!,
           position: s.position,
           status: s.status,
         })),
@@ -166,26 +171,33 @@ export async function getAllJudges() {
       .select({
         judgeId: judgingAssignments.judgeId,
         teamId: teams.id,
-        tableNumber: judgingTables.number,
+        seatId: judgingSeats.id,
+        tableNumber: judgingSeats.tableNumber,
+        seat: judgingSeats.seat,
       })
       .from(judgingAssignments)
       .innerJoin(
-        judgingTables,
-        eq(judgingTables.id, judgingAssignments.judgingTableId),
+        judgingSeats,
+        eq(judgingSeats.id, judgingAssignments.judgingSeatId),
       )
-      .leftJoin(teams, eq(teams.judgingTableId, judgingTables.id))
+      .leftJoin(teams, eq(teams.judgingSeatId, judgingSeats.id))
       .where(eq(judgingAssignments.status, "in_progress")),
   ]);
   const byJudge = new Map(current.map((c) => [c.judgeId, c]));
   return judgeRows.map((j) => ({
     ...j,
     currentTeamId: byJudge.get(j.id)?.teamId ?? null,
-    currentTableNumber: byJudge.get(j.id)?.tableNumber ?? null,
+    currentSeat: (() => {
+      const c = byJudge.get(j.id);
+      return c
+        ? { id: c.seatId, tableNumber: c.tableNumber, seat: c.seat }
+        : null;
+    })(),
   }));
 }
 
 /**
- * A judge's own stops in walking order, each with its table, grid position,
+ * A judge's own stops in walking order, each with its seat, grid position,
  * the team seated there and their score if given. `nextStopId` is the stop in
  * progress, else the first one still assigned.
  */
@@ -198,10 +210,10 @@ export async function getMyStops(judgeId: string) {
         ne(judgingAssignments.status, "cancelled"),
       ),
       orderBy: asc(judgingAssignments.position),
-      columns: { assignedBy: false, judgeId: false, judgingTableId: false },
+      columns: { assignedBy: false, judgeId: false, judgingSeatId: false },
       with: {
-        table: {
-          columns: { id: true, number: true, zone: true },
+        seat: {
+          columns: { id: true, tableNumber: true, seat: true, zone: true },
           with: { team: { columns: JUDGE_TEAM_COLUMNS } },
         },
       },
@@ -209,7 +221,7 @@ export async function getMyStops(judgeId: string) {
   ]);
 
   const teamIds = stops.flatMap((s) => {
-    const team = orNull(s.table.team);
+    const team = orNull(s.seat.team);
     return team ? [team.id] : [];
   });
   const marks =
@@ -249,11 +261,11 @@ export async function getMyStops(judgeId: string) {
     ]),
   );
 
-  const list = stops.map(({ table: { team: seated, ...table }, ...stop }) => {
+  const list = stops.map(({ seat: { team: seated, ...seat }, ...stop }) => {
     const team = orNull(seated);
     return {
       ...stop,
-      table: { ...table, ...snakePosition(table.number, settings.perRow) },
+      seat: { ...seat, ...snakePosition(seat.tableNumber, settings.perRow) },
       team,
       mark: team ? (markByTeam.get(team.id) ?? null) : null,
     };
@@ -309,8 +321,9 @@ export async function getSubmittedMarks(judgeId: string) {
 }
 
 /**
- * What a hacker sees: their table and grid position, and how many of the
- * judges at that table have scored them. Judge identities stay hidden.
+ * What a hacker sees: their seat (table number and grid position), and how
+ * many of the judges at that seat have scored them. Judge identities stay
+ * hidden.
  */
 export async function getTeamJudging(userId: string) {
   const user = await db.query.users.findFirst({
@@ -329,28 +342,31 @@ export async function getTeamJudging(userId: string) {
       where: eq(teams.id, user.teamId),
       columns: { id: true },
       with: {
-        judgingTable: { columns: { id: true, number: true, zone: true } },
+        judgingSeat: {
+          columns: { id: true, tableNumber: true, seat: true, zone: true },
+        },
       },
     }),
   ]);
-  const table = team?.judgingTable ?? null;
-  if (!table) return { table: null, judges: { done: 0, total: 0 } };
+  const seat = team?.judgingSeat ?? null;
+  if (!seat) return { seat: null, judges: { done: 0, total: 0 } };
 
   const counts = await db
     .select({ status: judgingAssignments.status, n: count() })
     .from(judgingAssignments)
     .where(
       and(
-        eq(judgingAssignments.judgingTableId, table.id),
+        eq(judgingAssignments.judgingSeatId, seat.id),
         ne(judgingAssignments.status, "cancelled"),
       ),
     )
     .groupBy(judgingAssignments.status);
   return {
-    table: {
-      number: table.number,
-      zone: table.zone,
-      ...snakePosition(table.number, settings.perRow),
+    seat: {
+      tableNumber: seat.tableNumber,
+      seat: seat.seat,
+      zone: seat.zone,
+      ...snakePosition(seat.tableNumber, settings.perRow),
     },
     judges: {
       done: counts.find((c) => c.status === "done")?.n ?? 0,

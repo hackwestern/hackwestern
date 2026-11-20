@@ -18,9 +18,12 @@ sections of exactly **3 different judges**, so every team gets 3 scores. The
 sections never move; to put a team in a different judge's lineup, organizers
 swap teams between seats.
 
-In the code and the API a seat is a `judging_table` row: `number` is the
-physical table and `seat` (1 or 2, internal only) tells the two seats apart.
-Both teams at a split table show as the same table number.
+**All assignment logic is matched by seat id.** A seat is a `judging_seat`
+row; `team.judging_seat_id` and `judging_assignment.judging_seat_id` point at
+it. A table exists only as the physical place a seat sits: `table_number`
+(position on the snake grid) plus `seat` (1 or 2) to tell the two seats at a
+split table apart. The API sends `seatId`, `tableNumber` and `seat`; screens
+show a seat as `4` or `4 (seat 2)` (`seatName`).
 
 ## Tables and the snake
 
@@ -75,23 +78,23 @@ Both teams at a split table show as the same table number.
 
 ## Auto-assign: judge sections
 
-- Every active table needs **3 judges** (`judges_per_table`). Judges are taken
+- Every active seat needs **3 judges** (`judges_per_seat`). Judges are taken
   in **the order they were added** (`judge.created_at`).
 - Only organizer-type judges get sections. Sponsor judges judge in their
   sponsor rooms (and the ranking ignores sponsored marks), so they're left out
   of auto-assign, hand-offs and top-ups.
-- Lay the snake out 3 times end to end (1..70, 1..70, 1..70 = 210 visits) and
-  cut it into one consecutive run per judge, as evenly as possible. Judge `k`
-  (0-based, of `J`) gets slots `floor(k * S / J)` up to `floor((k + 1) * S / J)`,
-  where `S = tables * 3`; slot `s` is table `(s mod tables) + 1`.
-- Result: every table is covered by exactly 3 different judges, no judge sees a
-  table twice, and each judge walks a short stretch of the snake.
-- Section size adapts to the judge count: 35 judges -> 6 tables each, 30 -> 7,
-  21 -> 10. Fewer than 3 judges is an error (a table can't get 3 different
-  judges).
-- With split tables the slots are seats, not tables: about `3 * teams / judges`
-  stops each. At 6.5 minutes a stop (3 min pitch, 2 min Q&A, 1.5 min buffer),
-  judging takes (most stops) x 6.5 min:
+- Lay the snake of seats (table number order, seat 1 then seat 2) out 3 times
+  end to end (70 seats: 1..70, 1..70, 1..70 = 210 visits) and cut it into one
+  consecutive run per judge, as evenly as possible. Judge `k` (0-based, of
+  `J`) gets slots `floor(k * S / J)` up to `floor((k + 1) * S / J)`, where
+  `S = seats * 3`; slot `s` is seat `s mod seats` in snake order.
+- Result: every seat is covered by exactly 3 different judges, no judge sees a
+  seat twice, and each judge walks a short stretch of the snake.
+- Section size adapts: about `3 * seats / judges` stops each. 70 seats: 35
+  judges -> 6 each, 30 -> 7, 21 -> 10. Fewer than 3 judges is an error (a seat
+  can't get 3 different judges).
+- At 6.5 minutes a stop (3 min pitch, 2 min Q&A, 1.5 min buffer), judging
+  takes (most stops) x 6.5 min:
 
   | Teams \ judges | 35               | 30                | 25                |
   | -------------- | ---------------- | ----------------- | ----------------- |
@@ -99,16 +102,16 @@ Both teams at a split table show as the same table number.
   | 95             | 8-9 (58.5 min)   | 9-10 (65 min)     | 11-12 (78 min)    |
   | 111            | 9-10 (65 min)    | 11-12 (78 min)    | 13-14 (91 min)    |
 - A judge's stops are written in walking order (`position` 1, 2, 3, ...). A run
-  that crosses the end of a pass wraps from the last table back to table 1.
-- All judges judge at the same time. They start at different tables, and
-  because the passes are offset, no two judges are at the same table in the
-  same round if they keep pace. With 6 tables each, the room is done in 6
+  that crosses the end of a pass wraps from the last seat back to the first.
+- All judges judge at the same time. They start at different seats, and
+  because the passes are offset, no two judges are at the same seat in the
+  same round if they keep pace. With 6 stops each, the room is done in 6
   rounds.
-- Sections cover every active table whether or not a team shows up. An empty
-  table is on the team; the judge reports it absent.
+- Sections cover every active seat whether or not a team shows up. An empty
+  seat is on the team; the judge reports it absent.
 - Auto-assign can be re-run (it replaces the plan) until judging starts.
 
-Example, 70 tables and 35 judges:
+Example, 70 tables with one seat each and 35 judges:
 
 ```
 J1 [1-6]   J2 [7-12]  ...  J11 [61-66]  J12 [67-70, 1-2]
@@ -122,7 +125,7 @@ Table 1 is judged by J1, J12 and J24.
 There is no automatic conflict check (decided against: too much complexity
 for the day). If a judge knows a team personally, an organizer fixes it by
 hand: cancel that judge's stop at the seat, then **add another judge to the
-table** (see Day-of fixes). Swapping the team to another seat also works
+seat** (see Day-of fixes). Swapping the team to another seat also works
 before judging starts there.
 
 ## Judging starts
@@ -149,7 +152,7 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
   out teams whose seat has a `team_absent` stop, even marks given before the
   report.
 - Submitting writes the `team_mark` (score + breakdown) for the team seated at
-  the table and marks the stop `done` in one transaction.
+  the seat and marks the stop `done` in one transaction.
 - Start and submit also send the `teamId` the judge's screen showed. If a
   different team is seated there now (an organizer swapped them in the
   meantime), the request is refused so the score can't land on the wrong team;
@@ -158,39 +161,45 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
   `score_breakdown = { ratings: { criterionId: 0-10 in half steps }, notes?, superLike? }`.
 - Organizers deleting a mark reopens its stop (`done` -> `assigned`).
 
-## Table live status
+## Seat live status
 
-`judging_table.status` is kept in sync by a Postgres trigger on
-`judging_assignment` and `team.judging_table_id`:
+`judging_seat.status` is kept in sync by a Postgres trigger on
+`judging_assignment` and `team.judging_seat_id`:
 
 | Status         | Rule (first match wins)                                   |
 | -------------- | --------------------------------------------------------- |
 | `empty`        | No team seated                                            |
-| `being_judged` | A stop at the table is `in_progress`                      |
-| `waiting`      | A stop is still `assigned`, or the table has no stops yet |
+| `being_judged` | A stop at the seat is `in_progress`                       |
+| `waiting`      | A stop is still `assigned`, or the seat has no stops yet  |
 | `finished`     | Every stop is `done`, `team_absent` or `cancelled`        |
 
 ## Day-of fixes (organizers)
 
-- **Swap two teams' tables** (moves a team into other judges' sections).
-  Locked once either table has a stop in progress or finished.
-- **Move a team** to an empty active table (same lock).
+- **Swap two teams' seats** (`swapTeams`; moves each team into the other's
+  judges' sections). Locked once either seat has a stop in progress or
+  finished.
+- **Move a team** to an empty active seat (`moveTeam({ teamId, seatId })`, same
+  lock).
+- **Switch a seat on or off** (`setSeatActive({ seatId, isActive })`).
 - **Hand off a judge:** a judge who leaves gives all their unfinished stops to
   another judge in one action. Refused if the receiving judge already has one
-  of those tables or has already scored a team seated at one.
-- **Add a judge to a table:** top-up when a table needs another score.
-  Refused for a seat reported absent.
+  of those seats or has already scored a team seated at one.
+- **Add a judge to a seat** (`addJudgeToSeat({ judgeId, seatId })`): top-up
+  when a seat needs another score. Refused for a seat reported absent.
 - **Cancel a stop**, or **mark a team absent**.
 - Judges added after auto-assign are **floaters** (no stops) until auto-assign
-  is re-run or an organizer adds them to tables.
+  is re-run or an organizer adds them to seats.
 
 ## Reads
 
-- Organizers: table setup and settings, every table with its team, status and
-  judges done of 3, every judge's stops, floaters, totals by status.
-- Judges: their stops in walking order with table number, grid position,
-  seated team and their score if given, plus which stop is next.
-- Hackers: their table number and grid position, and "N of 3 judges done".
+- Organizers (`getProgress`): table setup and settings, every seat with its
+  table number, team, status and judges done of 3, every judge's stops,
+  floaters, totals by status.
+- Judges (`getMyStops`): their stops in walking order, each with its seat
+  (table number, seat, grid position), seated team and their score if given,
+  plus which stop is next.
+- Hackers (`getMyJudging`): their seat (table number, grid position), and
+  "N of 3 judges done".
 
 ## Cheat check
 
@@ -200,9 +209,10 @@ Organizers can still start a sweep by hand.
 
 ## Normalization
 
-Unchanged. `judging.admin.getLatestRanking` computes each team's normalized
-score from `team_mark` at read time (regular-round marks from organizer-type
-judges).
+`judging.admin.getLatestRanking` computes each team's normalized score from
+`team_mark` at read time (regular-round marks from organizer-type judges). The
+results page reads the in-database normalization (`judging_team_scores`).
+Both leave out teams whose seat has a `team_absent` stop.
 
 ## Trying it locally
 
