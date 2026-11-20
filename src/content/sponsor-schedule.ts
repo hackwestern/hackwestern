@@ -218,8 +218,6 @@ export const scheduleCopy = {
   workshops: {
     heading: "Your workshops",
     runBy: "Run by",
-    runnersTbd:
-      "Not listed yet. Tell your Hack Western contact who's running it.",
     when: "When",
     room: "Room",
     timeTbd: "Time to be confirmed",
