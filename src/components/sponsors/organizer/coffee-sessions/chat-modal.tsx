@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Check, Pencil, Plus, X } from "lucide-react";
+import { Check, Pencil, Plus, TriangleAlert, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import {
@@ -16,6 +16,13 @@ import {
   buildingOf,
   minutesOfClock,
 } from "~/lib/coffee-chat-sessions";
+import {
+  bookRepOf,
+  freeRanges,
+  repBusy,
+} from "~/lib/coffee-chat-book-availability";
+import { coffeeChatTimeOf } from "~/lib/coffee-chat-requests";
+import { formatCoffeeChatTime } from "~/lib/coffee-chats";
 import { cn } from "~/lib/utils";
 import { api, type RouterOutputs } from "~/utils/api";
 import { timeOf } from "./board-summary";
@@ -40,6 +47,9 @@ export type InviteChat =
 export const ALL_KEYS = COFFEE_ROOMS.flatMap((r) =>
   COFFEE_SESSIONS.map((s) => keyOf(r.id, s.id)),
 );
+
+/** Minutes after midnight as "10:00 AM". */
+const clockText = (min: number) => formatCoffeeChatTime(coffeeChatTimeOf(min));
 
 const roomLabel = (room: string) =>
   buildingOf(room) === "ivey" ? rc.iveyRm(room) : rc.rm(room);
@@ -698,16 +708,17 @@ export function BookingForm({
   const sponsors = options.data?.sponsors ?? [];
   const staff = options.data?.staff ?? null;
   const sponsor = sponsors.find((sp) => sp.id === sponsorId);
-  // Reps not already in a chat or another event this session.
-  const reps = (sponsor?.reps ?? []).filter(
-    (r) =>
-      !board.placements.some(
-        (p) => p.repId === r.id && p.sessionId === session,
-      ) &&
-      !board.bookings.some(
-        (b) => b.sessionId === session && b.repIds.includes(r.id),
-      ),
-  );
+  // Every rep, each with why they can't be picked then (same rule as the
+  // server) and their free time that day.
+  const reps = (sponsor?.reps ?? []).map((r) => {
+    const rep = bookRepOf(board, sponsorId, r.id);
+    const busy = repBusy(rep, session, board);
+    return {
+      ...r,
+      busy: busy ? (busy.kind === "chat" ? "chat" : "booked") : null,
+      free: freeRanges(rep, board),
+    };
+  });
   const hackers = api.coffeeChatSessions.bookingHackers.useQuery(
     { sponsorId, q: query.length >= 2 ? query : "" },
     { enabled: !!sponsorId, placeholderData: (prev) => prev },
@@ -877,26 +888,67 @@ export function BookingForm({
               aria-label={bc.reps}
               className="m-0 flex list-none flex-col gap-1.5 p-0"
             >
-              {reps.map((r) => (
-                <li key={r.id}>
-                  <label className={option(repIds.includes(r.id))}>
-                    <input
-                      type="checkbox"
-                      value={r.id}
-                      checked={repIds.includes(r.id)}
-                      onChange={() => setRepIds((ids) => toggle(ids, r.id))}
-                      className={box}
-                    />
-                    <span className="min-w-0 [overflow-wrap:anywhere]">
-                      {r.name}
-                    </span>
-                  </label>
-                </li>
-              ))}
+              {reps.map((r) => {
+                const busyId = `bk-rep-busy-${r.id}`;
+                const freeId = `bk-rep-free-${r.id}`;
+                const free = r.free.length
+                  ? bc.repFree(
+                      r.free
+                        .map((f) => `${clockText(f.start)}–${clockText(f.end)}`)
+                        .join(", "),
+                    )
+                  : bc.repFreeNone;
+                return (
+                  <li key={r.id} className="flex flex-col gap-1">
+                    <label
+                      className={cn(
+                        option(repIds.includes(r.id)),
+                        r.busy && "cursor-not-allowed opacity-70",
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        value={r.id}
+                        checked={repIds.includes(r.id)}
+                        disabled={!!r.busy}
+                        aria-describedby={cn(r.busy && busyId, freeId)}
+                        onChange={() => setRepIds((ids) => toggle(ids, r.id))}
+                        className={box}
+                      />
+                      <span className="min-w-0 [overflow-wrap:anywhere]">
+                        {r.name}
+                      </span>
+                    </label>
+                    {/* Announced when it appears (a sponsor picked); icon + text, not colour alone. */}
+                    <div aria-live="polite">
+                      {r.busy && (
+                        <p
+                          id={busyId}
+                          className="m-0 flex items-start gap-1.5 text-sm font-medium text-dashboard-text-warning"
+                        >
+                          <TriangleAlert
+                            aria-hidden
+                            className="mt-0.5 size-4 flex-none"
+                          />
+                          {r.busy === "chat"
+                            ? bc.repInChat(r.name)
+                            : bc.repBooked(r.name)}
+                        </p>
+                      )}
+                    </div>
+                    <p
+                      id={freeId}
+                      className="m-0 text-sm text-dashboard-text-medium"
+                    >
+                      {free}
+                    </p>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="m-0 text-[15px] text-dashboard-text-medium">
-              {bc.noReps(sessionLabel(session))}
+              {bc.noReps}
             </p>
           )}
         </fieldset>

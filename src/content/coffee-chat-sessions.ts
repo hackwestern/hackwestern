@@ -402,8 +402,16 @@ export const coffeeSessionsCopy = {
     sponsor: "Sponsor",
     sponsorNone: "No sponsor",
     reps: "Reps",
-    /** The sponsor has no reps saved, or none is free then. */
-    noReps: (s: string) => `None of their reps is free at ${s}.`,
+    /** The sponsor has no reps saved. */
+    noReps: "They have no reps saved.",
+    /** Under a rep who can't be picked: in a chat then. */
+    repInChat: (rep: string) =>
+      `${rep} is already in a coffee chat at this time.`,
+    /** Under a rep who can't be picked: a workshop, another event, or not free. */
+    repBooked: (rep: string) => `${rep} is already booked at this time.`,
+    /** A rep's free time that day: "Free today: 10:00 AM–12:00 PM, 1:00–2:00 PM". */
+    repFree: (ranges: string) => `Free today: ${ranges}`,
+    repFreeNone: "Not free in any session today.",
     hackers: "Hackers",
     /** Hackers are invited only to a sponsor's event. */
     hackersNeedSponsor: "Pick a sponsor to invite hackers.",
@@ -536,8 +544,9 @@ export const coffeeSessionsCopy = {
     /** Book an event: too close to the start for an invite to be answered. */
     bookTooLate: (name: string) => `${name}: too close to the start to invite.`,
     /** A rep picked for an event who is busy then. */
-    bookRepBusy: (rep: string, s: string) =>
-      `${rep} already has a chat or event at ${s}.`,
+    bookRepInChat: (rep: string) =>
+      `${rep} is already in a coffee chat at this time.`,
+    bookRepBooked: (rep: string) => `${rep} is already booked at this time.`,
     bookingHasHackers:
       "Hackers were invited to this event, so it can't be moved. Remove it and book again.",
     workshopsUnknown,

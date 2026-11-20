@@ -1192,10 +1192,11 @@ describe("Book an event (a room, optional sponsor, reps and hackers)", () => {
   let shy = "";
 
   beforeAll(async () => {
-    // 1-on-1s: 4 chats = one session. Bea is free 3-4; Ben 3-4 and 4-5 (8 chats).
+    // 1-on-1s: 4 chats = one session. Bea is free 3-4; Ben 3-4 and 4-5 (8 chats); Bo 4-5.
     await addSponsor(name, true, [
       { name: "Bea", chats: 4, free: ["15"] },
       { name: "Ben", chats: 8, free: ["15", "16"] },
+      { name: "Bo", chats: 4, free: ["16"] },
     ]);
     ada = await hackerUser(`Ada${tag}`, true, `brave-otter-${tag}`);
     bob = await hackerUser(`Bob${tag}`);
@@ -1345,7 +1346,7 @@ describe("Book an event (a room, optional sponsor, reps and hackers)", () => {
       room,
       sessionId: "16",
       sponsorId: ids[name]!,
-      repIds: [ids.Bea!, ids.Ben!],
+      repIds: [ids.Ben!, ids.Bo!],
       userIds: [ada, bob, shy, cleo, dee],
     });
     expect(res.chatIds).toHaveLength(2);
@@ -1359,7 +1360,7 @@ describe("Book an event (a room, optional sponsor, reps and hackers)", () => {
     ]);
     expect(await bookingRow(res.bookingId)).toMatchObject({
       forSponsorId: ids[name],
-      repIds: [ids.Bea, ids.Ben],
+      repIds: [ids.Ben, ids.Bo],
     });
     const chats = await chatsOf(res.bookingId);
     expect(chats.map((c) => c.userId).sort()).toEqual([ada, bob].sort());
@@ -1370,7 +1371,7 @@ describe("Book an event (a room, optional sponsor, reps and hackers)", () => {
         slotTime: "16:00",
         durationMinutes: 60,
         room: `Rm ${room}`,
-        repName: "Bea, Ben",
+        repName: "Ben, Bo",
         placementId: null,
         source: "organizer",
         notifiedAt: null,
@@ -1386,9 +1387,9 @@ describe("Book an event (a room, optional sponsor, reps and hackers)", () => {
     expect(jobs.map((j) => j.event)).toEqual(["offered", "offered"]);
     expect(jobs.every((j) => j.notice.group === true)).toBe(true);
     expect(jobs.every((j) => j.notice.bookingId === res.bookingId)).toBe(true);
-    // A rep in this event can't be booked elsewhere then.
+    // Busy reps can't be booked: in this event, or not free then.
     expect(
-      await code(
+      await failed(
         book({
           room: await roomAt("16"),
           sessionId: "16",
@@ -1396,7 +1397,17 @@ describe("Book an event (a room, optional sponsor, reps and hackers)", () => {
           repIds: [ids.Ben!],
         }),
       ),
-    ).toBe("CONFLICT");
+    ).toBe("CONFLICT: Ben is already booked at this time.");
+    expect(
+      await failed(
+        book({
+          room: await roomAt("16"),
+          sessionId: "16",
+          sponsorId: ids[name]!,
+          repIds: [ids.Bea!],
+        }),
+      ),
+    ).toBe("CONFLICT: Bea is already booked at this time.");
 
     // Accepting works like any invite (no board, no refill).
     const accepted = await respondToCoffeeChat(ada, {

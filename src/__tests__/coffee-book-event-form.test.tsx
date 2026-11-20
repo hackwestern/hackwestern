@@ -180,10 +180,35 @@ describe("Book an event form", () => {
       act(() => type(q<HTMLInputElement>("#bk-description")!, "Resume pass"));
       act(() => pick(q<HTMLSelectElement>("#bk-booked-by")!, "Caroline"));
       act(() => pick(q<HTMLSelectElement>("#bk-sponsor")!, "sun"));
+      // Every rep is listed; busy ones say why and can't be picked.
       const reps = q(`ul[aria-label="${bc.reps}"]`)!;
       expect(
         [...reps.querySelectorAll("label")].map((l) => l.textContent),
-      ).toEqual(["Sam", "Sue"]);
+      ).toEqual(["Sam", "Sid", "Sal", "Sue"]);
+      const sid = q<HTMLInputElement>('input[value="sid"]')!;
+      const sal = q<HTMLInputElement>('input[value="sal"]')!;
+      expect(sid.disabled).toBe(true);
+      expect(sal.disabled).toBe(true);
+      expect(q<HTMLInputElement>('input[value="sam"]')!.disabled).toBe(false);
+      expect(q("#bk-rep-busy-sid")!.textContent).toBe(bc.repInChat("Sid"));
+      expect(q("#bk-rep-busy-sal")!.textContent).toBe(bc.repBooked("Sal"));
+      expect(q("#bk-rep-busy-sam")).toBeNull();
+      // Announced, and not colour alone (an icon with the text).
+      expect(
+        q("#bk-rep-busy-sid")!.parentElement!.getAttribute("aria-live"),
+      ).toBe("polite");
+      expect(q("#bk-rep-busy-sid svg")).not.toBeNull();
+      expect(sid.getAttribute("aria-describedby")).toContain("bk-rep-busy-sid");
+      // Free time that day: Sid's chat at 10-11 leaves 11-12 and 1-5.
+      expect(q("#bk-rep-free-sid")!.textContent).toBe(
+        bc.repFree("11:00 AM–12:00 PM, 1:00 PM–5:00 PM"),
+      );
+      expect(q("#bk-rep-free-sam")!.textContent).toBe(
+        bc.repFree("10:00 AM–12:00 PM, 1:00 PM–5:00 PM"),
+      );
+      // A click on a busy rep does nothing.
+      act(() => sid.click());
+      expect(sid.checked).toBe(false);
       act(() => q<HTMLInputElement>('input[value="sam"]')!.click());
       act(() => q<HTMLInputElement>('input[value="sue"]')!.click());
       const scanned = q(`ul[aria-label="${bc.scannedTitle}"]`)!;

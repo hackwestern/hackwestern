@@ -23,6 +23,7 @@ import {
   coffeeChatExpiresAt,
   coffeeChatTimeOf,
 } from "~/lib/coffee-chat-requests";
+import { bookRepOf, repBusy } from "~/lib/coffee-chat-book-availability";
 import { COFFEE_SESSIONS } from "~/lib/coffee-chat-sessions";
 import { inviteRoomLabel } from "~/server/api/utils/coffee-chat-invite-text";
 import {
@@ -36,7 +37,6 @@ import { shortName } from "~/server/api/utils/coffee-chat-invites-sheet-mirror";
 import {
   assertCellFree,
   assertWorkshopsKnown,
-  repInBooking,
   type BoardState,
 } from "~/server/api/utils/coffee-chat-sessions-board";
 import { normalizeHackerId } from "~/server/api/utils/hacker-id";
@@ -53,7 +53,6 @@ import {
 
 const lineErrors = coffeeChatInvitesCopy.line;
 const errors = coffeeSessionsCopy.errors;
-const sessionLabel = (id: string) => coffeeSessionsCopy.sessions[id] ?? id;
 type Conn = typeof db | InviteTx;
 
 export type BookingHacker = {
@@ -218,14 +217,19 @@ export async function bookEvent(
     }
     for (const id of repIds) {
       const rep = reps.find((r) => r.id === id)!;
-      const busy =
-        state.placements.some(
-          (p) => p.repId === id && p.sessionId === input.sessionId,
-        ) || repInBooking(state, id, input.sessionId);
+      // The picker's rule (coffee-chat-book-availability.ts): a chat, an
+      // event, their workshop, or a session they didn't tick free.
+      const busy = repBusy(
+        bookRepOf(state, sponsor.id, id),
+        input.sessionId,
+        state,
+      );
       if (busy) {
         throw fail(
           "CONFLICT",
-          errors.bookRepBusy(rep.name, sessionLabel(input.sessionId)),
+          busy.kind === "chat"
+            ? errors.bookRepInChat(rep.name)
+            : errors.bookRepBooked(rep.name),
         );
       }
       repNames.push(rep.name);
