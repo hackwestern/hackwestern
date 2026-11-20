@@ -9,7 +9,7 @@ import { api } from "~/utils/api";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { cn } from "~/lib/utils";
-import { realmLabel, realmTint, type Realm } from "~/constants/realms";
+import { realmCardColor, realmLabel, type Realm } from "~/constants/realms";
 import jsQR from "jsqr";
 import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
@@ -99,8 +99,8 @@ const HeldResultOverlay = ({
             <span
               className="self-start rounded-full px-4 py-1 text-lg font-semibold uppercase tracking-wide"
               style={{
-                backgroundColor: realmTint[result.realm].tintColor,
-                color: realmTint[result.realm].accent,
+                backgroundColor: realmCardColor[result.realm].background,
+                color: realmCardColor[result.realm].text,
               }}
             >
               {realmLabel[result.realm]} Realm
