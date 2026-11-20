@@ -54,8 +54,8 @@ export function isOrganizerDm(text: string): boolean {
 
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-/** A Slack call that waits out a rate limit (up to 3 times) instead of failing. */
-async function call<T extends SlackResponse>(
+/** A Slack call that waits out a rate limit (up to 3 times) instead of failing. Also used by Auto-Ping. */
+export async function call<T extends SlackResponse>(
   token: string,
   method: string,
   args: Record<string, unknown>,

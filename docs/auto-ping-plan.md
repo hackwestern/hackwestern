@@ -1,6 +1,6 @@
 # Auto-Ping: plan for the mentor, volunteer and judge messenger
 
-Status (2026-11-20, 4:40 AM): the Auto-Ping sheet is set up by hand; the sender is not built yet. Build it next, reusing this PR's Slack code (`src/server/slack/client.ts`, `organizer-sync.ts`).
+Status (2026-11-20): built. How to run, arm and pause it: `docs/auto-ping.md`. Where it differs from this plan (matching by email, held messages instead of dropped lines, Sunday-only "Last day"), `docs/auto-ping.md` and `docs/decisions.md` win.
 
 ## The sheet
 
