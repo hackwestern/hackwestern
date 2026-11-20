@@ -15,7 +15,7 @@ Go through each line, tick it when it works, and write what broke next to it. Ea
 
 ## Notifications (hackers)
 
-- [ ] **Shortlist → every member told.** A sponsor sends a round 1 shortlist (sponsor portal, Judging). Every member of each shortlisted team gets a Slack DM with their presentation times, and an email if Slack can't find them. Nobody gets two.
+- [ ] **Rooms set → every member told.** After an organizer sets the rooms on the judging board and presses Notify teams, every member of each scheduled team gets a Slack DM with their times (email if Slack can't find them). A sponsor sending a shortlist alone messages nobody. Nobody gets two.
 - [ ] **Confirm on Slack.** One team member taps "Confirm our times" in the DM. The DM changes to "Thanks! Your team's times are confirmed." The judging board shows the team as Accepted.
 - [ ] **One confirm covers the team.** After one member confirms, the others' DMs don't need a reply, and the board stays Accepted.
 - [ ] **Nothing on /live.** /live has no notification bell and no presentations card (Slack only).

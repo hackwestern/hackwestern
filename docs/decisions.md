@@ -912,3 +912,11 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 
 **Decision:** A sponsor's chats (every rep's chats x the chat length) can't add up to more than their tier's chatting hours: Gold 4 h, Silver 3 h, Bronze 2 h (the Tiers tab; Sponsor Day-Of's Chatting hours column). The chats step shows the allowance and how much is picked, the + button stops at the limit, and saving over it is refused with the reason. A rep added when the limit is reached starts at 0 chats. No tier, or the sheet unreadable: no limit, so a Google outage never blocks a sponsor.
 **Why:** chat time is part of what each tier buys.
+
+## 2026-11-20: Notifications plan applied (Jazz)
+
+**Decision:**
+- **Judging time lock is back:** sponsors' Judging opens Sunday 9:00 AM (nav and page), undoing the Nov 19 removal.
+- **Shortlists are due 9:45 AM Sunday** (was 9:30): the sponsor timeline, organizer Home and the judging board's "Text lead" warning all say 9:45.
+- **Teams hear their times when the organizer confirms rooms:** an organizer sets the rooms on the judging board and presses Notify teams. A sponsor sending a shortlist no longer messages anyone. Supersedes "Shortlisted teams are told at once" (Nov 19).
+- **Nothing on /live:** hackers get everything by Slack DM (email if Slack can't find them).
