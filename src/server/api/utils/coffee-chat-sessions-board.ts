@@ -133,6 +133,11 @@ export type BoardPlacement = {
   sessionId: string;
   room: string;
   pinned: boolean;
+  /**
+   * Moved by hand to a session the rep didn't tick as free (after an
+   * organizer contacted them): not flagged as a fix for that.
+   */
+  forced: boolean;
   status: "draft" | "sent";
   sentAt: Date | null;
   /**
@@ -220,6 +225,7 @@ export function boardOf(
       type: "chat",
       rep: p.repId,
       pinned: p.pinned || p.status === "sent",
+      ...(p.forced ? { forced: true } : {}),
     };
   }
   return board;
@@ -233,7 +239,9 @@ export function pinsOf(state: BoardState): Pin[] {
     ),
     ...state.placements
       .filter((p) => p.pinned || p.status === "sent")
-      .map((p): Pin => ({ room: p.room, session: p.sessionId, type: "chat", rep: p.repId })),
+      .map(
+        (p): Pin => ({ room: p.room, session: p.sessionId, type: "chat", rep: p.repId, forced: p.forced }),
+      ),
   ];
 }
 
@@ -290,6 +298,7 @@ export async function loadBoardState(
     sessionId: p.sessionId,
     room: p.room,
     pinned: p.pinned,
+    forced: p.forced,
     status: p.status,
     sentAt: p.sentAt,
     // Filled in below, once each sponsor's workshops are known.
@@ -551,13 +560,18 @@ export function assertCellFree(
 /**
  * Throws unless this rep may chat in this session: their sponsor submitted,
  * not during their workshop window, ticked free, and not already elsewhere.
+ * With `allowNotFree` (an organizer contacted the rep first), a session they
+ * didn't tick is allowed; the workshop window and "two places at once" never
+ * are (Jazz, 2026-11-19). Returns true when the session isn't ticked free
+ * (the chat is then "forced").
  */
 export function assertRepCanChat(
   state: BoardState,
   repId: string,
   sessionId: string,
   exceptPlacementId?: string,
-): void {
+  opts: { allowNotFree?: boolean } = {},
+): boolean {
   assertWorkshopsKnown(state);
   const sponsor = state.sponsors.find((s) => s.reps.some((r) => r.id === repId));
   const rep = sponsor?.reps.find((r) => r.id === repId);
@@ -571,9 +585,6 @@ export function assertRepCanChat(
   if (sponsor.blocked.includes(sessionId)) {
     throw new TRPCError({ code: "BAD_REQUEST", message: errors.duringWorkshop(sponsor.name) });
   }
-  if (!rep.free.includes(sessionId)) {
-    throw new TRPCError({ code: "BAD_REQUEST", message: errors.notFree(rep.name, s) });
-  }
   if (
     state.placements.some(
       (p) => p.repId === repId && p.sessionId === sessionId && p.id !== exceptPlacementId,
@@ -581,4 +592,9 @@ export function assertRepCanChat(
   ) {
     throw new TRPCError({ code: "CONFLICT", message: errors.repBusy(rep.name, s) });
   }
+  const notFree = !rep.free.includes(sessionId);
+  if (notFree && !opts.allowNotFree) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: errors.notFree(rep.name, s) });
+  }
+  return notFree;
 }

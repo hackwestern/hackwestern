@@ -610,6 +610,10 @@ export const coffeeChatPlacements = pgTable(
     sessionId: varchar("session_id", { length: 4 }).notNull(),
     room: varchar("room", { length: 8 }).notNull(),
     pinned: boolean("pinned").default(false).notNull(),
+    // Moved by hand to a session the rep didn't tick as free, after an
+    // organizer contacted them (coffee board v12). Never flagged as a fix
+    // for that; Auto-schedule keeps it. A normal move clears it.
+    forced: boolean("forced").default(false).notNull(),
     status: coffeeChatPlacementStatusEnum("status").default("draft").notNull(),
     sentAt: timestamp("sent_at", { mode: "date", precision: 3 }),
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
@@ -646,6 +650,31 @@ export const coffeeChatRoomBookings = pgTable(
       .notNull(),
   },
   (t) => [uniqueIndex("coffee_chat_room_booking_cell_idx").on(t.room, t.sessionId)],
+);
+
+// Organizer edits to one sponsor's line of hackers for coffee chat seats
+// (coffee board v12). kind "front": put first in line, newest first, ahead
+// of booth, shortlist and interested hackers. kind "removed": an organizer
+// took them off one of this sponsor's chats, so they're never offered this
+// sponsor again (like a decline). One row per (sponsor, hacker).
+export const coffeeChatLine = pgTable(
+  "coffee_chat_line",
+  {
+    sponsorId: uuid("sponsor_id")
+      .notNull()
+      .references(() => sponsorJudgingSponsors.id, { onDelete: "cascade" }),
+    userId: varchar("user_id", { length: 255 })
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: varchar("kind", { length: 8 }).$type<"front" | "removed">().notNull(),
+    addedBy: varchar("added_by", { length: 255 }).references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.sponsorId, t.userId] })],
 );
 
 // A hacker's interest ranking of the sponsors (1 = most interested). Feeds each

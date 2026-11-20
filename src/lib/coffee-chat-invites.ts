@@ -10,7 +10,8 @@
  *   cut by the sponsor's workshop window (setup or start minus 15 min, to
  *   end plus 15 min) keeps only the chats that fit.
  * - Each chat has hackersPerChat seats. Exactly one invite per open seat.
- * - Per sponsor: scanned hackers first, then the shortlist, then hackers
+ * - Per sponsor: hackers an organizer put first in line (newest first),
+ *   then scanned hackers, then the shortlist, then hackers
  *   interested in that sponsor (by their rank). Tiers run across all
  *   sponsors in turn (every sponsor's scanned hackers before anyone's
  *   shortlist), one hacker per sponsor at a time, so no sponsor takes the
@@ -255,7 +256,16 @@ export function repChatStarts(
 // The planner
 // ---------------------------------------------------------------------------
 
-export const INVITE_SOURCES = ["scanned", "shortlist", "interested"] as const;
+/**
+ * Candidate tiers in order. "organizer": put first in line by an organizer
+ * on the coffee board (newest first), ahead of everyone else.
+ */
+export const INVITE_SOURCES = [
+  "organizer",
+  "scanned",
+  "shortlist",
+  "interested",
+] as const;
 export type InviteSource = (typeof INVITE_SOURCES)[number];
 
 /** One chat (a set of seats at one time with one rep). */

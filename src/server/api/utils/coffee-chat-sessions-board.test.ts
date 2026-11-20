@@ -15,6 +15,7 @@ const chat: BoardPlacement = {
   sessionId: "10",
   room: "2241",
   pinned: false,
+  forced: false,
   status: "draft",
   sentAt: null,
   window: { start: 600, end: 660 },

@@ -24,6 +24,7 @@ import {
   deliverInviteNotices,
   invitesDeliveryLive,
   invitesEnabled,
+  layoutOf,
   reconcileInvitesAfterChange,
   sendRoundOneInvites,
   type InviteJob,
@@ -91,6 +92,15 @@ async function afterSentChange(r: { jobs: InviteJob[]; sent: boolean }): Promise
   await remirrorIf(r.sent);
 }
 
+/**
+ * How many chats these placements hold (a cell is one rep for one hour: 2
+ * group chats or 4 1-on-1s, fewer in a partial session or past the rep's
+ * wanted chats), as the invites count them.
+ */
+function chatCount(state: BoardState, placements: BoardState["placements"]): number {
+  return layoutOf({ ...state, placements }, () => true).length;
+}
+
 const room = z.enum(COFFEE_ROOM_IDS);
 const sessionId = z.enum(COFFEE_SESSION_IDS);
 
@@ -131,7 +141,25 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         return [{ repId: cell.rep, room: at.room, sessionId: at.session }];
       });
       if (fresh.length) await tx.insert(coffeeChatPlacements).values(fresh);
-      return { placed: fresh.length, fixes: result.fixes.length };
+      // "Placed N chats." counts the chats this run added (after minus before).
+      const sponsorOfRep = new Map(state.sponsors.flatMap((sp) => sp.reps.map((r) => [r.id, sp.id])));
+      const after = [
+        ...state.placements.filter((p) => kept.has(p.id)),
+        ...fresh.map((f, i) => ({
+          id: `new-${i}`,
+          repId: f.repId,
+          sponsorId: sponsorOfRep.get(f.repId) ?? "",
+          sessionId: f.sessionId,
+          room: f.room,
+          pinned: false,
+          forced: false,
+          status: "draft" as const,
+          sentAt: null,
+          window: null,
+        })),
+      ];
+      const chats = Math.max(0, chatCount(state, after) - chatCount(state, state.placements));
+      return { placed: fresh.length, chats, fixes: result.fixes.length };
     });
   }),
 
@@ -189,7 +217,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
           if (sug.to) {
             await tx
               .update(coffeeChatPlacements)
-              .set({ room: sug.to.room, sessionId: sug.to.session, pinned: true })
+              .set({ room: sug.to.room, sessionId: sug.to.session, pinned: true, forced: false })
               .where(eq(coffeeChatPlacements.id, p.id));
             return changed(await reconcileSent(tx, state, fix.sponsor), p.status === "sent");
           }
@@ -223,19 +251,22 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
   /**
    * Move a chat by hand. Pins it and keeps its status: a sent chat stays
    * sent, and its invited hackers are asked to reconfirm the new room or
-   * time (docs/ship/decisions-log.md, Integration 1).
+   * time (docs/ship/decisions-log.md, Integration 1). `force` (after the
+   * organizer contacted the rep): a session the rep didn't tick is allowed
+   * and the chat is marked forced; never their workshop window or two places
+   * at once. A move to a ticked session clears the mark.
    */
   movePlacement: protectedOrganizerProcedure
-    .input(z.object({ placementId: z.string().uuid(), room, sessionId }))
+    .input(z.object({ placementId: z.string().uuid(), room, sessionId, force: z.boolean().default(false) }))
     .mutation(async ({ input }) => {
       const after = await boardWrite(async (tx, state) => {
         const p = state.placements.find((x) => x.id === input.placementId);
         if (!p) throw new TRPCError({ code: "NOT_FOUND", message: errors.unknownPlacement });
-        assertRepCanChat(state, p.repId, input.sessionId, p.id);
+        const forced = assertRepCanChat(state, p.repId, input.sessionId, p.id, { allowNotFree: input.force });
         assertCellFree(state, input.room, input.sessionId, { placementId: p.id });
         await tx
           .update(coffeeChatPlacements)
-          .set({ room: input.room, sessionId: input.sessionId, pinned: true })
+          .set({ room: input.room, sessionId: input.sessionId, pinned: true, forced })
           .where(eq(coffeeChatPlacements.id, p.id));
         return { jobs: await reconcileSent(tx, state, p.sponsorId), sent: p.status === "sent" };
       });
@@ -271,14 +302,17 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
    * like a move. Same checks as a move (rep free, cell empty).
    */
   placeChat: protectedOrganizerProcedure
-    .input(z.object({ repId: z.string().uuid(), room, sessionId }))
+    .input(z.object({ repId: z.string().uuid(), room, sessionId, force: z.boolean().default(false) }))
     .mutation(async ({ input }) => {
       // Undo after Remove. It always places a NEW draft chat: invites of a
       // removed sent chat were cancelled by reconcile and aren't restored
       // (the board only offers Undo for draft chats). A draft needs no
       // reconcile; it reaches hackers on the next Send.
       return boardWrite(async (tx, state) => {
-        assertRepCanChat(state, input.repId, input.sessionId);
+        // Undo of a forced chat puts it back forced (same rules as a forced move).
+        const forced = assertRepCanChat(state, input.repId, input.sessionId, undefined, {
+          allowNotFree: input.force,
+        });
         assertCellFree(state, input.room, input.sessionId);
         // Adding a chat, unlike a move, can push a rep past their cap.
         const rep = state.sched.flatMap((sp) => sp.reps).find((r) => r.id === input.repId);
@@ -288,7 +322,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         }
         const [row] = await tx
           .insert(coffeeChatPlacements)
-          .values({ repId: input.repId, room: input.room, sessionId: input.sessionId, pinned: true })
+          .values({ repId: input.repId, room: input.room, sessionId: input.sessionId, pinned: true, forced })
           .returning({ id: coffeeChatPlacements.id });
         return { id: row!.id };
       });
@@ -386,8 +420,10 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
     // their seats (scanned → shortlist → interested). Both take the same
     // board lock, so a page-load round can't run in between. Messages go
     // out after the commit (deliverInviteNotices never throws).
-    const { sent, reconfirmed, round } = await boardWrite(async (tx, state) => {
+    const { sent, chats, reconfirmed, round } = await boardWrite(async (tx, state) => {
       assertWorkshopsKnown(state);
+      // "Sent N chats." counts chats, not cells.
+      const chats = chatCount(state, state.placements.filter((p) => p.status === "draft"));
       // Stamp after the lock and the state read, so a sponsor save that
       // committed while Send waited is older than this sentAt (else their
       // "Changed after invites" flag would never clear).
@@ -419,13 +455,15 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         touched.filter((t) => !sentIds.has(t.id)).map((t) => repSponsor.get(t.repId)),
       ).size;
       const round = await sendRoundOneInvites(tx, { now: stamp });
-      return { sent, reconfirmed, round };
+      return { sent, chats, reconfirmed, round };
     });
     const delivery = await deliverInviteNotices(round.jobs);
     mirrorCoffeeInvitesLater();
     const mirror = await mirrorRoomGrid(await loadBoardState(), { now });
     return {
       sent: sent.length,
+      /** Chats in the placements this Send marked sent. */
+      chats,
       /** Sponsors who changed after invites, re-confirmed by this Send. */
       reconfirmed,
       sheet: mirror.ok ? ("written" as const) : mirror.error === "disabled" ? ("disabled" as const) : ("failed" as const),

@@ -21,6 +21,7 @@ import {
 import { ApplicationSeeder } from "~/server/db/seed/applicationSeeder";
 import { roomGridRows } from "~/server/api/utils/coffee-chat-room-grid-mirror";
 import { loadBoardState } from "~/server/api/utils/coffee-chat-sessions-board";
+import { layoutOf } from "~/server/api/utils/coffee-chat-invites";
 
 const { names, ros, mirror, hw, deliver } = vi.hoisted(() => {
   const stamp = Date.now();
@@ -207,6 +208,8 @@ describe("board and auto-schedule", () => {
   test("places reps by chats wanted, never in a workshop window", async () => {
     const res = await organizer.coffeeChatSessions.autoSchedule();
     expect(res.placed).toBe(4); // Wes 1, Tia 2, Tom 1
+    // Chats, not cells: Wes 4, Tia 4 + 2, Tom 4 (1-on-1s run 4 an hour).
+    expect(res.chats).toBe(14);
     const wes = await placementOf("Wes");
     expect(wes.map((p) => p.sessionId)).toEqual(["10"]);
     expect((await placementOf("Tia")).length).toBe(2);
@@ -302,7 +305,12 @@ describe("send", () => {
   });
 
   test("marks drafts sent, writes nothing to the sheet, runs the invite round (switched off in tests)", async () => {
+    const before = await loadBoardState();
+    const draftChats = layoutOf(before, (p) => p.status === "draft").length;
     const res = await organizer.coffeeChatSessions.send();
+    // "Sent N chats." counts chats, not cells.
+    expect(res.chats).toBe(draftChats);
+    expect(res.chats).toBeGreaterThan(res.sent);
     // The kill switch is off under vitest, so the round creates and sends nothing.
     expect(res).toMatchObject({
       sheet: "disabled",
@@ -562,5 +570,64 @@ describe("invites follow sent chats", () => {
     });
     // Both hackers on that chat (one from the fix above) move to Tia's 10-11 seats.
     expect(events()).toEqual(["reconfirm", "reconfirm"]);
+  });
+});
+
+describe("forced moves (coffee board v12)", () => {
+  test("after contacting the rep: a session they didn't tick is allowed and marked; their workshop and two places at once never are", async () => {
+    const name = `ForceCo${Date.now()}`;
+    // Fay: 8 chats = 2 sessions, free 10-11 and 11-12 only.
+    await addSponsor(name, true, [{ name: "Fay", chats: 8, free: ["10", "11"] }]);
+    const msg = (p: Promise<unknown>) => p.then(() => "", (e: Error) => e.message);
+    const taken = async (s: string) =>
+      new Set([
+        ...(await db.select().from(coffeeChatPlacements)).filter((p) => p.sessionId === s).map((p) => p.room),
+        ...(await db.select().from(coffeeChatRoomBookings)).filter((b) => b.sessionId === s).map((b) => b.room),
+      ]);
+    const roomAt = async (s: string) => {
+      const used = await taken(s);
+      return (["2241", "2242", "2243", "1348", "1352", "1354", "1356", "1358"] as const).find((r) => !used.has(r))!;
+    };
+    await organizer.coffeeChatSessions.placeChat({ repId: ids.Fay!, room: await roomAt("10"), sessionId: "10" });
+    await organizer.coffeeChatSessions.placeChat({ repId: ids.Fay!, room: await roomAt("11"), sessionId: "11" });
+    const fay = await placementOf("Fay");
+    const at10 = fay.find((p) => p.sessionId === "10")!;
+
+    // Not ticked: refused without force, allowed with it.
+    const to16 = await roomAt("16");
+    expect(await msg(organizer.coffeeChatSessions.movePlacement({ placementId: at10.id, room: to16, sessionId: "16" }))).toBe(
+      "Fay isn't free at 4–5.",
+    );
+    await organizer.coffeeChatSessions.movePlacement({ placementId: at10.id, room: to16, sessionId: "16", force: true });
+    expect((await placementOf("Fay")).find((p) => p.id === at10.id)).toMatchObject({ sessionId: "16", pinned: true, forced: true });
+
+    // Two places at once: refused even with force (the unique index stays).
+    expect(
+      await msg(
+        organizer.coffeeChatSessions.movePlacement({ placementId: at10.id, room: await roomAt("11"), sessionId: "11", force: true }),
+      ),
+    ).toBe("Fay already has a chat at 11–12.");
+    // The workshop window: refused even with force.
+    const [wes] = await placementOf("Wes");
+    expect(
+      await msg(organizer.coffeeChatSessions.movePlacement({ placementId: wes!.id, room: await roomAt("13"), sessionId: "13", force: true })),
+    ).toBe(`That's during ${names.work}'s workshop.`);
+
+    // Never a fix for it, it counts as placed, and Auto-schedule keeps it.
+    const board = await organizer.coffeeChatSessions.getBoard();
+    expect(board.fixes.filter((f) => f.sponsor === ids[name])).toEqual([]);
+    expect(board.sponsors.find((s) => s.name === name)!.status).toMatchObject({ done: 1, total: 1, broken: 0 });
+    expect(board.placements.find((p) => p.id === at10.id)).toMatchObject({ forced: true });
+    await organizer.coffeeChatSessions.autoSchedule();
+    expect((await placementOf("Fay")).find((p) => p.id === at10.id)).toMatchObject({ sessionId: "16", forced: true });
+
+    // Remove and Undo puts it back forced; a normal move to a ticked session clears the mark.
+    await organizer.coffeeChatSessions.removePlacement({ placementId: at10.id });
+    await organizer.coffeeChatSessions.placeChat({ repId: ids.Fay!, room: to16, sessionId: "16", force: true });
+    const back = (await placementOf("Fay")).find((p) => p.sessionId === "16")!;
+    expect(back).toMatchObject({ forced: true, pinned: true });
+    await organizer.coffeeChatSessions.removePlacement({ placementId: (await placementOf("Fay")).find((p) => p.sessionId === "11")!.id });
+    await organizer.coffeeChatSessions.movePlacement({ placementId: back.id, room: await roomAt("11"), sessionId: "11" });
+    expect((await placementOf("Fay")).find((p) => p.id === back.id)).toMatchObject({ sessionId: "11", forced: false });
   });
 });

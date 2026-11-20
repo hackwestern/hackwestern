@@ -68,14 +68,19 @@ export type SchedSponsor = {
   reps: readonly SchedRep[];
 };
 
-export type ChatCell = { type: "chat"; rep: string; pinned?: boolean };
+/**
+ * `forced`: an organizer moved it to a session the rep didn't tick as free,
+ * after contacting them. Not a "notFree" problem; still never during the
+ * sponsor's workshop or with the rep in two places.
+ */
+export type ChatCell = { type: "chat"; rep: string; pinned?: boolean; forced?: boolean };
 export type BookingCell = { type: "booking"; ref: string; pinned: true };
 export type Cell = ChatCell | BookingCell;
 export type Board = Record<string, Cell>;
 
 /** A cell that must stay where it is. */
 export type Pin = { room: string; session: string } & (
-  | { type: "chat"; rep: string }
+  | { type: "chat"; rep: string; forced?: boolean }
   | { type: "booking"; ref: string }
 );
 
@@ -357,7 +362,7 @@ function placePins(board: Board, pins: readonly Pin[]): void {
     if (board[k]) continue;
     if (p.type === "chat") {
       if (repKeyAt(board, p.rep, p.session)) continue;
-      board[k] = { type: "chat", rep: p.rep, pinned: true };
+      board[k] = { type: "chat", rep: p.rep, pinned: true, ...(p.forced ? { forced: true } : {}) };
     } else {
       board[k] = { type: "booking", ref: p.ref, pinned: true };
     }
@@ -422,6 +427,7 @@ export function schedule(
  * session is in their workshop window (the run of show changed), or the rep
  * unticked it. Pinned, sent and moved chats are never re-run by the
  * scheduler, so these have to be checked. Only reps of `sponsors` count.
+ * A forced chat (moved by hand after contacting the rep) is never "notFree".
  */
 export function invalidChats(
   sponsors: readonly SchedSponsor[],
@@ -443,7 +449,7 @@ export function invalidChats(
       ? "notSubmitted"
       : blockedSessions(sp, sessions).has(session)
         ? "workshop"
-        : !rep.free.includes(session)
+        : !rep.free.includes(session) && !v.forced
           ? "notFree"
           : null;
     if (!problem) {
@@ -763,7 +769,7 @@ export function checkBoard(
       continue;
     }
     if (!sp.submitted) bad.push(`${sp.id} not submitted but placed`);
-    if (!rep.free.includes(session)) bad.push(`${rep.id} at ${session} but not free`);
+    if (!rep.free.includes(session) && !v.forced) bad.push(`${rep.id} at ${session} but not free`);
     if (blockedSessions(sp, sessions).has(session)) {
       bad.push(`${rep.id} at ${session} during ${sp.id}'s workshop window`);
     }
