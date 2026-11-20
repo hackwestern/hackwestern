@@ -142,14 +142,38 @@ const reduceMotion = () =>
 
 type Hit = { room: Room; event?: RoomEvent };
 
-const VenueMap = () => {
+/** A room to outline and label, e.g. a sponsor's booth or workshop room */
+export type VenueMapHighlight = {
+  /** Room id from ~/lib/venue-map */
+  room: string;
+  label: string;
+  /** data-tour id for the room's button in the list under the map */
+  tour?: string;
+};
+
+type VenueMapProps = {
+  /** Outlined on the plan and listed under it. None on /live. */
+  highlights?: VenueMapHighlight[];
+  /** Names the list of highlighted rooms */
+  highlightsLabel?: string;
+  /** The floor shown first (default SEI level 1) */
+  initialFloor?: Floor;
+};
+
+const NO_HIGHLIGHTS: VenueMapHighlight[] = [];
+
+const VenueMap = ({
+  highlights = NO_HIGHLIGHTS,
+  highlightsLabel,
+  initialFloor = 1,
+}: VenueMapProps = {}) => {
   const stageRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [stage, setStage] = useState<Size>({ w: 0, h: 0 });
   const [narrow, setNarrow] = useState(false);
-  const [floor, setFloor] = useState<Floor>(1);
+  const [floor, setFloor] = useState<Floor>(initialFloor);
   // The SEI level to go back to after looking at Ivey
-  const seiLevel = useRef<Floor>(1);
+  const seiLevel = useRef<Floor>(initialFloor === IVEY ? 1 : initialFloor);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [day, setDay] = useState<DayIndex | null>(null);
   const [events, setEvents] = useState<RoomEvent[]>([]);
@@ -163,6 +187,20 @@ const VenueMap = () => {
   const userMoved = useRef(false);
   const frame = useRef(0);
   const selected = selectedId ? ROOM_BY_ID[selectedId] : undefined;
+  // Room id -> its highlights, in the order given (rooms not on the map are dropped)
+  const marked = useMemo(() => {
+    const m = new Map<string, VenueMapHighlight[]>();
+    for (const h of highlights) {
+      if (!ROOM_BY_ID[h.room]) continue;
+      m.set(h.room, [...(m.get(h.room) ?? []), h]);
+    }
+    return m;
+  }, [highlights]);
+  const markLabel = (id: string) =>
+    marked
+      .get(id)
+      ?.map((h) => h.label)
+      .join(" · ");
   const fitK = stage.w ? fitView(stage, narrow, false, floor).k : 1;
 
   useEffect(() => {
@@ -566,6 +604,26 @@ const VenueMap = () => {
                 vectorEffect="non-scaling-stroke"
                 pointerEvents="none"
               />
+              {marked.size > 0 && (
+                <g
+                  pointerEvents="none"
+                  className="text-dashboard-action-primary"
+                >
+                  {plan.rooms
+                    .filter((r) => marked.has(r.id))
+                    .map((r) => (
+                      <polygon
+                        key={r.id}
+                        points={points(r.poly)}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinejoin="round"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    ))}
+                </g>
+              )}
               <g pointerEvents="none" textAnchor="middle">
                 {plan.rooms.map((r) => {
                   const detail = labelDetail(r, view.k);
@@ -574,6 +632,9 @@ const VenueMap = () => {
                   const dim = selectedId && r.id !== selectedId;
                   const name = detail === 3 ? r.name : r.short;
                   const number = r.place ? "" : r.id;
+                  // A highlight's label sits above the room name once the room is big enough
+                  const mark = detail >= 2 ? markLabel(r.id) : undefined;
+                  const markW = mark ? mark.length * 6.2 + 16 : 0;
                   return (
                     <g
                       key={r.id}
@@ -584,6 +645,30 @@ const VenueMap = () => {
                       strokeLinejoin="round"
                       paintOrder="stroke"
                     >
+                      {mark && (
+                        <g
+                          className="text-dashboard-action-primary"
+                          stroke="none"
+                        >
+                          <rect
+                            x={-markW / 2}
+                            y={number ? -36 : -26}
+                            width={markW}
+                            height={18}
+                            rx={9}
+                            fill="currentColor"
+                          />
+                          <text
+                            y={number ? -27 : -17}
+                            dominantBaseline="central"
+                            fill="#FFFFFF"
+                            fontSize="11"
+                            fontWeight="700"
+                          >
+                            {mark}
+                          </text>
+                        </g>
+                      )}
                       {detail >= 2 && (
                         <text
                           y={number ? -1 : 4}
@@ -767,6 +852,11 @@ const VenueMap = () => {
               </svg>
             </button>
             <div className="pr-10">
+              {markLabel(selected.id) && (
+                <p className="mb-1.5 inline-flex rounded-full bg-dashboard-action-primary px-2 py-0.5 text-xs font-semibold text-dashboard-text-inverse">
+                  {markLabel(selected.id)}
+                </p>
+              )}
               <h2 className="text-xl font-bold leading-tight text-dashboard-text-heavy md:text-2xl">
                 {selected.name}
               </h2>
@@ -827,6 +917,40 @@ const VenueMap = () => {
           </aside>
         )}
       </div>
+      {marked.size > 0 && (
+        <ul
+          aria-label={highlightsLabel}
+          className="m-0 flex list-none flex-wrap gap-2 p-0"
+        >
+          {[...marked].map(([id, hs]) => {
+            const r = ROOM_BY_ID[id]!;
+            const on = id === selectedId;
+            return (
+              <li key={id} data-tour={hs.find((h) => h.tour)?.tour}>
+                <button
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => select(id)}
+                  className={`flex min-h-11 items-center gap-2 rounded-dashboard-lg border px-3 py-1.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary ${on ? "border-dashboard-action-primary bg-dashboard-bg-highlight" : "border-dashboard-border-default bg-dashboard-bg-surface hover:bg-dashboard-bg-highlight"}`}
+                >
+                  <span
+                    aria-hidden
+                    className="size-2.5 shrink-0 rounded-[3px] border-2 border-dashboard-action-primary"
+                  />
+                  <span className="min-w-0">
+                    <span className="block font-semibold text-dashboard-text-heavy">
+                      {hs.map((h) => h.label).join(" · ")}
+                    </span>
+                    <span className="block text-xs text-dashboard-text-light">
+                      {`${r.place ?? `Room ${r.id}`} · ${where(r.floor)}`}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
       <p className="text-sm font-medium text-dashboard-text-light">
         {narrow
           ? "Tap a room to see what's on there. Pinch to zoom, drag to move."
