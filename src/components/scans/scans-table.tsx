@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
-import { ArrowLeft, ArrowRight, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search, Trash2 } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { cn } from "~/lib/utils";
 
@@ -77,6 +77,7 @@ type ScansTableProps = {
   scans: ScanRow[];
   isLoading?: boolean;
   pagination?: ScansPagination;
+  onDelete?: (scan: ScanRow) => void; // Shows a delete button on each row
 } & FilterProps &
   SearchProps;
 
@@ -89,6 +90,7 @@ export function ScansTable({
   search,
   onSearchChange,
   pagination,
+  onDelete,
 }: ScansTableProps) {
   const showFilters =
     filters !== undefined && filters.length > 0 && onFilterChange !== undefined;
@@ -169,6 +171,11 @@ export function ScansTable({
                     {column.header}
                   </TableHead>
                 ))}
+                {onDelete && (
+                  <TableHead className="w-0 px-3">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -190,6 +197,18 @@ export function ScansTable({
                       {scan[column.key]}
                     </TableCell>
                   ))}
+                  {onDelete && (
+                    <TableCell className="w-0 px-3 py-3">
+                      <button
+                        type="button"
+                        aria-label={`Delete ${scan.event} for ${scan.hackerName}`}
+                        onClick={() => onDelete(scan)}
+                        className="flex cursor-pixel-hover rounded-dashboard-xs p-1 text-dashboard-text-light hover:bg-dashboard-bg-nav hover:text-dashboard-text-warning focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
