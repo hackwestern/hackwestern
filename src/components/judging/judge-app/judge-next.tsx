@@ -29,6 +29,8 @@ interface JudgeNextProps {
   teamName: string | null;
   /** Its table, or null when the team isn't seated yet. */
   table: number | null;
+  /** Who is on the team, so the judge knows who to look for. */
+  members?: string[];
   /** Its round already ended: the judge is finishing it late. */
   late?: boolean;
   /** The other tables in this judge's queue, marked on the map. */
@@ -68,6 +70,7 @@ export function JudgeNext({
   phase,
   teamName,
   table,
+  members = [],
   late = false,
   tables,
   fromTable,
@@ -249,6 +252,9 @@ export function JudgeNext({
           {table === null
             ? `${teamName ?? "This team"} has no table yet. Ask an organizer.`
             : teamName}
+        </span>
+        <span className="text-sm leading-snug text-dashboard-text-light">
+          {members.length > 0 ? members.join(", ") : "No members listed"}
         </span>
       </section>
 

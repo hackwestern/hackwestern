@@ -241,6 +241,20 @@ export async function getMyStops(judgeId: string) {
               inArray(teamMarks.teamId, teamIds),
             ),
           );
+  // Who is on each team, so judges can see the people at the table.
+  const memberRows =
+    teamIds.length === 0
+      ? []
+      : await db
+          .select({ teamId: users.teamId, name: users.name })
+          .from(users)
+          .where(inArray(users.teamId, teamIds));
+  const membersByTeam = new Map<string, string[]>();
+  for (const m of memberRows) {
+    const name = m.name?.trim();
+    if (!m.teamId || !name) continue;
+    membersByTeam.set(m.teamId, [...(membersByTeam.get(m.teamId) ?? []), name]);
+  }
   const markByTeam = new Map(
     marks.map((m) => [
       m.teamId,
@@ -260,7 +274,9 @@ export async function getMyStops(judgeId: string) {
     return {
       ...stop,
       table: { ...table, ...snakePosition(table.number, settings.perRow) },
-      team,
+      team: team
+        ? { ...team, members: membersByTeam.get(team.id) ?? [] }
+        : null,
       mark: team ? (markByTeam.get(team.id) ?? null) : null,
     };
   });

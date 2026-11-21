@@ -31,7 +31,7 @@ import { JudgeFinal } from "~/components/judging/judge-app/judge-final";
 import { JudgeQuestionBank } from "~/components/judging/judge-app/judge-question-bank";
 import {
   JudgeQueueList,
-  useQueueLineup,
+  type QueueLineup,
 } from "~/components/judging/judge-app/judge-queue-list";
 import { JudgeRescore } from "~/components/judging/judge-app/judge-rescore";
 import { VenueMap } from "~/components/judging/judge-app/judge-map";
@@ -276,9 +276,6 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
           .sort((a, b) => a.position - b.position)[0]
       : undefined;
   // My teams lists these: every team the judge can still judge, in order.
-  const membersByTeam = new Map(
-    initial.queueTeams.map((t) => [t.id, t.members]),
-  );
   // Teams marked absent stay in the list, labelled, so the judge sees why.
   const absentStops = (stopsQuery.data?.stops ?? []).filter(
     (s) => s.status === "team_absent",
@@ -293,7 +290,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       stopId: s.id,
       table: s.table.number,
       teamName: s.team?.name ?? "Team",
-      members: (s.team && membersByTeam.get(s.team.id)) ?? [],
+      members: s.team?.members ?? [],
       round: gated ? s.position : null,
       absent: s.status === "team_absent",
       late: missedStops.includes(s),
@@ -340,9 +337,22 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   const allRescored =
     results.length > 0 && results.every((r) => rescored.includes(r.teamId));
 
-  // This judge's queue (kept on the device for now), and the tables it covers
-  // for the map: every queued team not judged yet.
-  const queue = useQueueLineup(judgeKey, initial.queueTeams);
+  // This judge's queue, and the tables it covers for the map: every team
+  // still to judge, in order, with who is on it (from the live stops).
+  const queueTeams = pendingStops
+    .slice()
+    .sort((a, b) => a.position - b.position)
+    .flatMap((s) =>
+      s.team
+        ? [{ id: s.team.id, name: s.team.name, members: s.team.members }]
+        : [],
+    );
+  const queue: QueueLineup = {
+    teams: queueTeams,
+    hydrated: true,
+    requestNewQueue: () => undefined,
+    notice: null,
+  };
   const judgedIds = new Set(results.map((r) => r.teamId));
   const queueTables = [
     ...new Set(
@@ -669,6 +679,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       <JudgeNext
         phase={phase}
         teamName={held?.name ?? null}
+        members={held?.members ?? []}
         table={heldTable}
         late={heldLate}
         judged={results.length}
