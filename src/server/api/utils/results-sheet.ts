@@ -6,49 +6,49 @@
 // judging is live. It can be re-run: every tab is rebuilt from a fresh db
 // snapshot, and completeness scores already typed are kept.
 //
-// The export includes the top TOP_N teams by normalized score plus the top
-// TOP_N by adventure score (teams with no regular-round marks are never
-// included).
+// Teams with no regular-round marks are never included.
 //
 //   "Top 20":            rank, team, Final and super likes, best first,
-//                        capped at 20.
+//                        capped at 20 (a formula over Results).
 //   "Top 20 Adventure":  rank, team, Adventure final and super likes, best
-//                        first, capped at 20. Both are single sheet formulas
-//                        over Results, so they re-sort live as completeness
-//                        is typed. Ties on the score go to more super
-//                        likes, then Results' (overall) order.
-//   "Results":  one bold row per team in overall order, with that team's
-//               judge marks in a collapsed row group under it. Rank is the
-//               overall rank among every team (a team included only for
-//               adventure shows its real rank, e.g. 27).
-//               Columns: Rank, Final (amber), Adventure final (teal), Table,
-//               Team, the Devpost / GitHub links, "Completeness" (blank,
-//               organizers type 0-10 on team rows; red while blank, green
-//               once scored), Judges, then "Normalized" and "Adventure"
-//               from the judging_team_scores view (0-10, adjusted for harsh
-//               / generous judges; blank until judging_normalize() has run),
-//               "Adventurous score" and "Other 4" (the adventurous rating
-//               and the other four ratings as one score, 0-10: normalized
-//               once normalization has run, raw averages before), "Raw
-//               total" (the five rating averages / 5), the judges' plain
+//                        first, capped at 20 (a formula over Results
+//                        Adventure). Both re-sort live as completeness is
+//                        typed. Ties on the score go to more super likes,
+//                        then the source tab's order.
+//   "Results":  the top TOP_N teams overall, one bold row per team with that
+//               team's judge marks in a collapsed row group under it.
+//               Columns: Rank, Final (amber), Table, Team, the Devpost /
+//               GitHub links, "Completeness" (blank, organizers type 0-10 on
+//               team rows; red while blank, green once scored), Judges,
+//               "Normalized" (judging_team_scores view, 0-10, adjusted for
+//               harsh / generous judges; blank until judging_normalize() has
+//               run), "Adventurous score" and "Other 4" (the adventurous
+//               rating and the other four ratings as one score, 0-10:
+//               normalized once normalization has run, raw averages before),
+//               "Raw total" (the five rating averages / 5), the judges' plain
 //               "Average" (judge rows show their own score there) and
 //               "Super likes".
 //               Final = (b × N + Completeness) / (N + 1), N = number of
 //               rubric criteria (5 now, so × 5 / 6), b = Normalized (the
 //               Average until normalized); b alone while Completeness is
 //               blank.
+//   "Results Adventure":  the top TOP_N teams by adventure, in the same
+//               layout, with "Adventure final" (teal) in place of Final and
+//               "Adventure" (the view's adventure_score) in place of
+//               Normalized. Rank is the adventure rank.
 //               Adventure final = 65% × Adventurous score + 35% × the avg of
 //               the other four criteria and completeness:
 //               0.65 × Adventurous + 0.35 × (Other 4 × 4 + Completeness) / 5;
 //               0.65 × Adventurous + 0.35 × Other 4 while Completeness is
 //               blank (= the Adventure score once normalized).
-//               "Super likes" counts hearts from any judge; judge rows
-//               show ♥.
-//   "Sponsor Winners":  one row per judging sponsor (sponsor_judging_sponsor)
-//               with the #1 team of their submitted final Top 5 in the
-//               sponsor portal (sponsor_final_pick), table, links and when
-//               they submitted; "Not submitted yet" until they do.
-// Older exports also wrote Marks and Control tabs; they're removed.
+//               Completeness for a team that is also on Results is looked
+//               up from Results (type it there); teams only on this tab are
+//               typed here.
+//   In both, "Super likes" counts hearts from regular-round judges; judge
+//   rows show ♥. Only the regular judging round is exported: sponsor marks,
+//   sponsor picks and sponsor columns are left out.
+// Older exports also wrote Marks, Control and Sponsor Winners tabs; they're
+// removed.
 //
 // Overall ranking: normalized q (the unclipped estimate, since the top teams
 // all clip to a normalized 10), then the normalized score, then the judge
@@ -60,7 +60,7 @@
 // (results-sheet-client.ts: JUDGING_RESULTS_CLIENT_EMAIL / _PRIVATE_KEY or else SPONSOR_SHEETS_*),
 // which must be an Editor on the spreadsheet. Writes need
 // resultsSheetWritesEnabled().
-// Anything typed into these tabs other than Results' Completeness column is
+// Anything typed into these tabs other than the Completeness columns is
 // overwritten on a re-run (on the Top 20 tabs, only columns A-D).
 import { type sheets_v4 } from "googleapis";
 
@@ -72,35 +72,29 @@ import {
   resultsSheetWritesEnabled,
 } from "~/server/api/utils/results-sheet-client";
 import { type TeamResult } from "~/server/api/utils/team-results";
-import {
-  type SponsorWinner,
-  loadSponsorWinners,
-  loadTeamResults,
-} from "~/server/api/utils/team-results-data";
+import { loadTeamResults } from "~/server/api/utils/team-results-data";
 
+/** The top TOP_N teams overall. */
 export const RESULTS_TAB = "Results";
-/**
- * The export includes the top TOP_N teams overall plus the top TOP_N by
- * adventure (often mostly the same teams).
- */
+/** The top TOP_N teams by adventure, in the same layout. */
+export const RESULTS_ADVENTURE_TAB = "Results Adventure";
+/** Teams per Results tab and per summary. */
 export const TOP_N = 20;
 /**
- * Live summaries (rank, team, score) computed by sheet formulas from
- * Results, so they re-sort as completeness scores are typed.
+ * Live summaries (rank, team, score) computed by sheet formulas from the
+ * Results tabs, so they re-sort as completeness scores are typed.
  */
 export const SUMMARY_TAB = `Top ${TOP_N}`;
 export const ADVENTURE_TAB = `Top ${TOP_N} Adventure`;
-/** Each sponsor's prize-track winner (#1 of their submitted Top 5). */
-export const SPONSOR_WINNERS_TAB = "Sponsor Winners";
 /** Tabs in the order they appear in the spreadsheet. */
-const TABS = [SUMMARY_TAB, ADVENTURE_TAB, SPONSOR_WINNERS_TAB, RESULTS_TAB];
+const TABS = [SUMMARY_TAB, ADVENTURE_TAB, RESULTS_TAB, RESULTS_ADVENTURE_TAB];
 /**
  * Where scores were typed before they moved into Results. Its scores are
  * carried over on the next export, then the tab is removed.
  */
 const LEGACY_COMPLETENESS_TAB = "Completeness";
 /** Written by earlier exports. Removed on the next export. */
-const LEGACY_TABS = ["Control", "Marks"];
+const LEGACY_TABS = ["Control", "Marks", "Sponsor Winners"];
 
 /**
  * A cell value. Plain strings are always written as text — never parsed as
@@ -140,44 +134,57 @@ export const NORMALIZED_LABEL = "Normalized";
 export const ADVENTURE_FINAL_LABEL = "Adventure final";
 /** Not "Adventurous": that is the rubric criterion's column. */
 export const ADVENTUROUS_LABEL = "Adventurous score";
-const RESULTS_HEADER: string[] = [
-  "Rank",
-  "Final",
-  ADVENTURE_FINAL_LABEL,
-  "Table",
-  "Team / Judge",
-  "Devpost",
-  "GitHub",
-  COMPLETENESS_LABEL,
-  "Judges",
-  NORMALIZED_LABEL,
-  "Adventure",
-  ADVENTUROUS_LABEL,
-  "Other 4",
-  "Raw total",
-  "Average",
-  "Super likes",
-  ...DEFAULT_RUBRIC.criteria.map((c) => c.name),
-  "Sponsor judges",
-  "Sponsor average",
-  "Notes",
-  "Team ID",
-];
-if (new Set(RESULTS_HEADER).size !== RESULTS_HEADER.length) {
-  // Rows are built by column label, so every label must be unique.
-  throw new Error("results-sheet: duplicate column label in RESULTS_HEADER");
+export const ADVENTURE_LABEL = "Adventure";
+
+/** Which Results tab: overall (Results) or by adventure (Results Adventure). */
+export type ResultsKind = "overall" | "adventure";
+
+/**
+ * Both Results tabs share one layout; only the score column (B) and the
+ * score-detail column (I) differ, so column letters are the same in both.
+ */
+function resultsHeader(kind: ResultsKind): string[] {
+  const adventure = kind === "adventure";
+  return [
+    "Rank",
+    adventure ? ADVENTURE_FINAL_LABEL : "Final",
+    "Table",
+    "Team / Judge",
+    "Devpost",
+    "GitHub",
+    COMPLETENESS_LABEL,
+    "Judges",
+    adventure ? ADVENTURE_LABEL : NORMALIZED_LABEL,
+    ADVENTUROUS_LABEL,
+    "Other 4",
+    "Raw total",
+    "Average",
+    "Super likes",
+    ...DEFAULT_RUBRIC.criteria.map((c) => c.name),
+    "Notes",
+    "Team ID",
+  ];
+}
+const RESULTS_HEADER = resultsHeader("overall");
+const ADVENTURE_HEADER = resultsHeader("adventure");
+for (const header of [RESULTS_HEADER, ADVENTURE_HEADER]) {
+  if (new Set(header).size !== header.length) {
+    // Rows are built by column label, so every label must be unique.
+    throw new Error("results-sheet: duplicate column label in the header");
+  }
 }
 const col = (label: string) => RESULTS_HEADER.indexOf(label);
 const RANK_COL = col("Rank"); // A
-const FINAL_COL = col("Final"); // B
-const ADVENTURE_FINAL_COL = col(ADVENTURE_FINAL_LABEL); // C
-const NAME_COL = col("Team / Judge"); // E
-const NORMALIZED_COL = col(NORMALIZED_LABEL); // J
-const ADVENTUROUS_COL = col(ADVENTUROUS_LABEL); // L
-const OTHER_FOUR_COL = col("Other 4"); // M
-const AVERAGE_COL = col("Average"); // O
-const SUPER_LIKES_COL = col("Super likes"); // P
-const COMPLETENESS_COL = col(COMPLETENESS_LABEL); // H
+/** Final on Results, Adventure final on Results Adventure. */
+const SCORE_COL = col("Final"); // B
+const NAME_COL = col("Team / Judge"); // D
+const COMPLETENESS_COL = col(COMPLETENESS_LABEL); // G
+/** Normalized on Results, Adventure on Results Adventure. */
+const NORMALIZED_COL = col(NORMALIZED_LABEL); // I
+const ADVENTUROUS_COL = col(ADVENTUROUS_LABEL); // J
+const OTHER_FOUR_COL = col("Other 4"); // K
+const AVERAGE_COL = col("Average"); // M
+const SUPER_LIKES_COL = col("Super likes"); // N
 const TEAM_ID_COL = col("Team ID"); // last
 
 /**
@@ -310,116 +317,160 @@ export function rankByAdventure(results: TeamResult[]): TeamResult[] {
 }
 
 /**
- * The teams the export includes, in overall order: the best `n` overall (see
- * rankTeams) plus the best `n` by adventure (see rankByAdventure). Teams
- * with no regular marks are left out. A tie at a cut-off keeps the team with
- * the lower table order.
+ * The best `n` teams overall (see rankTeams), best first. Teams with no
+ * regular marks are left out. A tie at the cut-off keeps the team with the
+ * lower table order.
  */
 export function topTeams(results: TeamResult[], n = TOP_N): TeamResult[] {
-  const ranked = rankTeams(results)
+  return rankTeams(results)
     .filter(({ rank }) => rank !== null)
+    .slice(0, n)
     .map(({ r }) => r);
-  const keep = new Set(
-    [...ranked.slice(0, n), ...rankByAdventure(results).slice(0, n)].map(
-      (r) => r.team.id,
-    ),
-  );
-  return ranked.filter((r) => keep.has(r.team.id));
+}
+
+/** The best `n` teams by adventure (see rankByAdventure), best first. */
+export function topAdventureTeams(
+  results: TeamResult[],
+  n = TOP_N,
+): TeamResult[] {
+  return rankByAdventure(results).slice(0, n);
 }
 
 /**
- * Results tab: header, then per team (ranked by regular-round average,
- * unmarked teams last in table order) a bold summary row followed by one row
- * per judge mark. Team rows carry the typed completeness score (`scores`, by
- * team ID) and the Final formula. Judge rows put their score under "Average"
- * for the regular round or "Sponsor average" for the sponsored round.
- * Returns the rows, every team row's index, and each team's judge-row range.
+ * Completeness on Results Adventure for a team that is also on Results:
+ * looked up from Results by team ID (the team row is that ID's first row),
+ * so it is typed in one place only.
+ */
+function mirroredCompleteness(row: number): Cell {
+  const id = `${letter(TEAM_ID_COL)}${row}`;
+  const ids = `${RESULTS_TAB}!${letter(TEAM_ID_COL)}2:${letter(TEAM_ID_COL)}`;
+  const comp = `${RESULTS_TAB}!${letter(COMPLETENESS_COL)}2:${letter(COMPLETENESS_COL)}`;
+  return {
+    formula: `=LET(v, XLOOKUP(${id}, ${ids}, ${comp}, ""), IF(v="", "", v))`,
+  };
+}
+
+export interface ResultsRowsOptions {
+  /** Results (overall order, Final) or Results Adventure. */
+  kind?: ResultsKind;
+  /** Only these teams get rows; ranks still count every team. */
+  include?: Set<string>;
+  /**
+   * Results Adventure only: teams also on Results, whose Completeness is
+   * looked up from there instead of typed.
+   */
+  mirrored?: Set<string>;
+}
+
+/**
+ * A Results tab: header, then per team (overall order for Results, adventure
+ * order for Results Adventure; teams without a rank last in table order) a
+ * bold summary row followed by one row per judge mark. Team rows carry the
+ * typed completeness score (`scores`, by team ID) and the Final / Adventure
+ * final formula, then one row per regular-round judge (their score under
+ * "Average"); sponsor marks are left out.
+ * Returns the rows, every team row's index (`typedRows`: the ones whose
+ * Completeness is typed, not mirrored), and each team's judge-row range.
  */
 export function buildResultsRows(
   results: TeamResult[],
   scores = new Map<string, number>(),
-  /** Only these teams get rows; ranks still count every team in `results`. */
-  include?: Set<string>,
-): { rows: SheetRow[]; groups: TeamGroup[]; teamRows: number[] } {
+  { kind = "overall", include, mirrored }: ResultsRowsOptions = {},
+): {
+  rows: SheetRow[];
+  groups: TeamGroup[];
+  teamRows: number[];
+  typedRows: number[];
+} {
   const criteria = DEFAULT_RUBRIC.criteria;
-  const rows: SheetRow[] = [{ cells: RESULTS_HEADER, bold: true }];
+  const adventure = kind === "adventure";
+  const header = adventure ? ADVENTURE_HEADER : RESULTS_HEADER;
+  const rows: SheetRow[] = [{ cells: header, bold: true }];
   const groups: TeamGroup[] = [];
   const teamRows: number[] = [];
-  /** Cells in RESULTS_HEADER order, by column label; missing ones blank. */
+  const typedRows: number[] = [];
+  /** Cells in header order, by column label; missing ones blank. */
   const byLabel = (values: Record<string, Cell>): Cell[] =>
-    RESULTS_HEADER.map((label) => values[label] ?? "");
+    header.map((label) => values[label] ?? "");
+  const ordered = adventure
+    ? rankByAdventure(results).map((r, i) => ({ r, rank: i + 1 }))
+    : rankTeams(results);
 
-  for (const { r, rank } of rankTeams(results)) {
+  for (const { r, rank } of ordered) {
     if (include && !include.has(r.team.id)) continue;
+    const sheetRow = rows.length + 1;
+    const isMirrored = adventure && (mirrored?.has(r.team.id) ?? false);
     teamRows.push(rows.length);
+    if (!isMirrored) typedRows.push(rows.length);
     rows.push({
       bold: true,
       cells: byLabel({
         Rank: rank ?? "",
-        Final: finalFormula(rows.length + 1),
-        [ADVENTURE_FINAL_LABEL]: adventureFinalFormula(rows.length + 1),
+        ...(adventure
+          ? {
+              [ADVENTURE_FINAL_LABEL]: adventureFinalFormula(sheetRow),
+              [ADVENTURE_LABEL]: num(r.team.adventure),
+            }
+          : {
+              Final: finalFormula(sheetRow),
+              [NORMALIZED_LABEL]: num(r.team.normalized),
+            }),
         Table: r.team.table ?? "",
         "Team / Judge": r.team.name,
         Judges: r.regular.count,
-        [NORMALIZED_LABEL]: num(r.team.normalized),
-        Adventure: num(r.team.adventure),
         [ADVENTUROUS_LABEL]: num(r.team.adventurous),
         Devpost: linkCell(r.team.devpost, "Devpost"),
         GitHub: linkCell(r.team.github, "GitHub"),
-        [COMPLETENESS_LABEL]: scores.get(r.team.id) ?? "",
+        [COMPLETENESS_LABEL]: isMirrored
+          ? mirroredCompleteness(sheetRow)
+          : (scores.get(r.team.id) ?? ""),
         "Other 4": num(r.team.otherFour),
         "Raw total": num(r.team.rawTotal),
         Average: num(r.regular.average),
-        "Super likes": r.regular.superLikes + r.sponsored.superLikes,
+        "Super likes": r.regular.superLikes,
         ...Object.fromEntries(
           criteria.map((c) => [c.name, num(r.regular.criteria[c.id])]),
         ),
-        "Sponsor judges": r.sponsored.count,
-        "Sponsor average": num(r.sponsored.average),
         "Team ID": r.team.id,
       }),
     });
 
     const start = rows.length;
-    for (const [round, summary] of [
-      ["regular", r.regular],
-      ["sponsored", r.sponsored],
-    ] as const) {
-      for (const m of summary.marks) {
-        rows.push({
-          cells: byLabel({
-            "Team / Judge": `${JUDGE_PREFIX} ${m.judgeName}`,
-            Judges: round === "regular" ? "judge" : "sponsor",
-            Average: round === "regular" ? num(m.score) : "",
-            "Super likes": m.superLike ? SUPER_LIKE : "",
-            ...Object.fromEntries(
-              criteria.map((c) => [c.name, num(m.ratings[c.id])]),
-            ),
-            "Sponsor average": round === "sponsored" ? num(m.score) : "",
-            Notes: m.notes,
-            "Team ID": r.team.id,
-          }),
-        });
-      }
+    for (const m of r.regular.marks) {
+      rows.push({
+        cells: byLabel({
+          "Team / Judge": `${JUDGE_PREFIX} ${m.judgeName}`,
+          Judges: "judge",
+          Average: num(m.score),
+          "Super likes": m.superLike ? SUPER_LIKE : "",
+          ...Object.fromEntries(
+            criteria.map((c) => [c.name, num(m.ratings[c.id])]),
+          ),
+          Notes: m.notes,
+          "Team ID": r.team.id,
+        }),
+      });
     }
     if (rows.length > start) {
       groups.push({ teamId: r.team.id, start, end: rows.length });
     }
   }
 
-  return { rows, groups, teamRows };
+  return { rows, groups, teamRows, typedRows };
 }
 
 /**
  * Typed completeness scores, by team ID, from whatever is in the sheet now.
- * `resultsTab` is Results as read (header row first); columns are found by
- * header label, so an older Results layout without a Completeness column
- * simply yields nothing. `legacyTab` is the old Completeness tab's E2:F
- * (score, team ID), if it still exists. A score in Results wins.
+ * `resultsTab` / `adventureTab` are Results / Results Adventure as read
+ * (header row first); columns are found by header label, so an older layout
+ * without a Completeness column simply yields nothing. `legacyTab` is the
+ * old Completeness tab's E2:F (score, team ID), if it still exists. A score
+ * in Results wins over Results Adventure, which wins over the legacy tab.
  */
 export function readCompletenessScores(
   resultsTab: unknown[][],
   legacyTab: unknown[][] = [],
+  adventureTab: unknown[][] = [],
 ): Map<string, number> {
   const scores = new Map<string, number>();
   for (const [score, id] of legacyTab) {
@@ -427,17 +478,24 @@ export function readCompletenessScores(
       scores.set(id, score);
     }
   }
-  const header = (resultsTab[0] ?? []).map((h) => String(h ?? ""));
-  const compCol = header.indexOf(COMPLETENESS_LABEL);
-  const idCol = header.indexOf("Team ID");
-  const nameCol = header.indexOf("Team / Judge");
-  if (compCol === -1 || idCol === -1) return scores;
-  for (const row of resultsTab.slice(1)) {
-    const id = row[idCol];
-    const score = row[compCol];
-    const isJudge = String(row[nameCol] ?? "").startsWith(JUDGE_PREFIX);
-    if (!isJudge && typeof id === "string" && id && typeof score === "number") {
-      scores.set(id, score);
+  for (const tab of [adventureTab, resultsTab]) {
+    const header = (tab[0] ?? []).map((h) => String(h ?? ""));
+    const compCol = header.indexOf(COMPLETENESS_LABEL);
+    const idCol = header.indexOf("Team ID");
+    const nameCol = header.indexOf("Team / Judge");
+    if (compCol === -1 || idCol === -1) continue;
+    for (const row of tab.slice(1)) {
+      const id = row[idCol];
+      const score = row[compCol];
+      const isJudge = String(row[nameCol] ?? "").startsWith(JUDGE_PREFIX);
+      if (
+        !isJudge &&
+        typeof id === "string" &&
+        id &&
+        typeof score === "number"
+      ) {
+        scores.set(id, score);
+      }
     }
   }
   return scores;
@@ -556,21 +614,24 @@ function rewriteTabRequests(
   return requests;
 }
 
-/** Results, with collapsed judge groups and the Completeness/Final columns. */
-export function buildResultsRequests(input: {
-  resultsTab: TabState;
-  /** Every team; ranks count them all. */
-  results: TeamResult[];
-  scores: Map<string, number>;
-  /** The teams to write (see topTeams); every team when omitted. */
-  include?: Set<string>;
-}): sheets_v4.Schema$Request[] {
-  const { rows, groups, teamRows } = buildResultsRows(
+/**
+ * A Results tab, with collapsed judge groups and the Completeness and
+ * score (Final / Adventure final) columns.
+ */
+export function buildResultsRequests(
+  input: {
+    tab: TabState;
+    /** Every team; ranks count them all. */
+    results: TeamResult[];
+    scores: Map<string, number>;
+  } & ResultsRowsOptions,
+): sheets_v4.Schema$Request[] {
+  const { rows, groups, teamRows, typedRows } = buildResultsRows(
     input.results,
     input.scores,
-    input.include,
+    input,
   );
-  const sheetId = input.resultsTab.sheetId;
+  const sheetId = input.tab.sheetId;
   const range = (g: TeamGroup): sheets_v4.Schema$DimensionRange => ({
     sheetId,
     dimension: "ROWS",
@@ -656,40 +717,46 @@ export function buildResultsRequests(input: {
   };
 
   return [
-    ...rewriteTabRequests(input.resultsTab, rows, 1),
-    // Completeness is typed on team rows only: validate those, and show them
-    // red while blank, green once scored.
-    ...compCells.map((range) => ({
-      setDataValidation: {
-        range,
-        rule: {
-          condition: {
-            type: "NUMBER_BETWEEN",
-            values: [{ userEnteredValue: "0" }, { userEnteredValue: "10" }],
+    ...rewriteTabRequests(input.tab, rows, 1),
+    // Completeness is typed on team rows only: validate the typed ones, and
+    // show every team row's red while blank, green once scored.
+    ...typedRows
+      .map((row) => cell(COMPLETENESS_COL, row))
+      .map((range) => ({
+        setDataValidation: {
+          range,
+          rule: {
+            condition: {
+              type: "NUMBER_BETWEEN",
+              values: [{ userEnteredValue: "0" }, { userEnteredValue: "10" }],
+            },
+            strict: true,
+            inputMessage: "Completeness, 0 to 10",
           },
-          strict: true,
-          inputMessage: "Completeness, 0 to 10",
         },
-      },
-    })),
+      })),
     ...(compCells.length > 0
       ? [
           statusRule("BLANK", { red: 0.96, green: 0.8, blue: 0.8 }, 0),
           statusRule("NOT_BLANK", { red: 0.8, green: 0.92, blue: 0.78 }, 1),
         ]
       : []),
-    // Final (amber) and Adventure final (teal) stand out: tinted column with
+    // Final (amber) / Adventure final (teal) stands out: tinted column with
     // a border, bigger bold team scores.
-    ...emphasize(FINAL_COL, {
-      header: { red: 0.98, green: 0.74, blue: 0.18 },
-      body: { red: 1, green: 0.95, blue: 0.8 },
-      border: { red: 0.85, green: 0.6, blue: 0.05 },
-    }),
-    ...emphasize(ADVENTURE_FINAL_COL, {
-      header: { red: 0.4, green: 0.8, blue: 0.74 },
-      body: { red: 0.87, green: 0.96, blue: 0.94 },
-      border: { red: 0.15, green: 0.55, blue: 0.5 },
-    }),
+    ...emphasize(
+      SCORE_COL,
+      input.kind === "adventure"
+        ? {
+            header: { red: 0.4, green: 0.8, blue: 0.74 },
+            body: { red: 0.87, green: 0.96, blue: 0.94 },
+            border: { red: 0.15, green: 0.55, blue: 0.5 },
+          }
+        : {
+            header: { red: 0.98, green: 0.74, blue: 0.18 },
+            body: { red: 1, green: 0.95, blue: 0.8 },
+            border: { red: 0.85, green: 0.6, blue: 0.05 },
+          },
+    ),
     ...groups.map((g) => ({ addDimensionGroup: { range: range(g) } })),
     ...groups.map((g) => ({
       updateDimensionGroup: {
@@ -701,66 +768,31 @@ export function buildResultsRequests(input: {
 }
 
 /**
- * A summary tab's formula (in A2, under a plain header row): Results' team
- * rows that have a `scoreCol` value, best first, as rank, team, score,
- * super likes —
- * capped at TOP_N. Ties on the score go to more super likes, then Results'
- * order (the overall ranking). Re-sorts
- * by itself as completeness is typed; blank when Results has no teams.
+ * A summary tab's formula (in A2, under a plain header row): `source`'s team
+ * rows that have a score (Final / Adventure final), best first, as rank,
+ * team, score, super likes — capped at TOP_N. Ties on the score go to more
+ * super likes, then `source`'s order. Re-sorts by itself as completeness is
+ * typed; blank when `source` has no teams.
  */
-export function summaryFormula(scoreCol = FINAL_COL): string {
-  const r = (c: number) => `${RESULTS_TAB}!${letter(c)}2:${letter(c)}`;
+export function summaryFormula(source = RESULTS_TAB): string {
+  const r = (c: number) => `'${source}'!${letter(c)}2:${letter(c)}`;
+  const scoreCol = SCORE_COL;
   return (
     `=IFERROR(ARRAY_CONSTRAIN(LET(t, SORT(FILTER({${r(NAME_COL)}, ${r(scoreCol)}, ROW(${r(NAME_COL)}), ${r(SUPER_LIKES_COL)}}, ${r(RANK_COL)}<>"", ${r(scoreCol)}<>""), 2, FALSE, 4, FALSE, 3, TRUE), ` +
     `{SEQUENCE(ROWS(t)), CHOOSECOLS(t, 1, 2, 4)}), ${TOP_N}, 4), "")`
   );
 }
 
-/**
- * Sponsor Winners tab: one row per judging sponsor with the #1 team of their
- * submitted final Top 5, or "Not submitted yet".
- */
-export function buildSponsorWinnersRows(winners: SponsorWinner[]): SheetRow[] {
-  return [
-    {
-      bold: true,
-      cells: [
-        "Sponsor",
-        "Winner",
-        "Table",
-        "Devpost",
-        "GitHub",
-        "Submitted",
-        "Team ID",
-      ],
-    },
-    ...winners.map(({ sponsor, team, submittedAt }) => ({
-      cells: team
-        ? [
-            sponsor,
-            team.name,
-            team.table ?? "",
-            linkCell(team.devpost, "Devpost"),
-            linkCell(team.github, "GitHub"),
-            submittedAt
-              ? submittedAt.toLocaleString("en-US", {
-                  timeZone: "America/Toronto",
-                  dateStyle: "medium",
-                  timeStyle: "short",
-                })
-              : "",
-            team.id,
-          ]
-        : [sponsor, "Not submitted yet", "", "", "", "", ""],
-    })),
-  ];
-}
-
-/** Writes a summary tab ranking Results' teams by `scoreCol`. */
+/** Writes a summary tab ranking `kind`'s Results tab by its score. */
 export function buildSummaryRequests(
   tab: TabState,
-  scoreCol = FINAL_COL,
+  kind: ResultsKind = "overall",
 ): sheets_v4.Schema$Request[] {
+  const adventure = kind === "adventure";
+  const source = adventure ? RESULTS_ADVENTURE_TAB : RESULTS_TAB;
+  const scoreLabel = (adventure ? ADVENTURE_HEADER : RESULTS_HEADER)[
+    SCORE_COL
+  ]!;
   const sheetId = tab.sheetId;
   return [
     {
@@ -776,14 +808,11 @@ export function buildSummaryRequests(
         // when Results has no teams).
         rows: [
           {
-            values: [
-              "Rank",
-              "Team",
-              RESULTS_HEADER[scoreCol]!,
-              "Super likes",
-            ].map((h) => cellData(h)),
+            values: ["Rank", "Team", scoreLabel, "Super likes"].map((h) =>
+              cellData(h),
+            ),
           },
-          { values: [cellData({ formula: summaryFormula(scoreCol) })] },
+          { values: [cellData({ formula: summaryFormula(source) })] },
         ],
         fields: "userEnteredValue",
       },
@@ -864,10 +893,7 @@ async function ensureTabs(
  * tab move into Results and that tab is removed, as is an old Control tab.
  */
 export async function finalizeResultsSheet(): Promise<{
-  /** Sponsors with a submitted final Top 5, and all judging sponsors. */
-  sponsorWinners: number;
-  sponsors: number;
-  /** Teams written: the top TOP_N overall plus the top TOP_N by adventure. */
+  /** Distinct teams written: top TOP_N overall and top TOP_N by adventure. */
   teams: number;
   /** Teams in the db, written or not. */
   totalTeams: number;
@@ -886,47 +912,58 @@ export async function finalizeResultsSheet(): Promise<{
     );
   }
 
-  const [allResults, sponsorWinners, sheets] = await Promise.all([
+  const [allResults, sheets] = await Promise.all([
     loadTeamResults(),
-    loadSponsorWinners(),
     getResultsSheetsClient(),
   ]);
-  const results = topTeams(allResults);
+  const overallIds = new Set(topTeams(allResults).map((r) => r.team.id));
+  const adventureIds = new Set(
+    topAdventureTeams(allResults).map((r) => r.team.id),
+  );
+  const results = allResults.filter(
+    (r) => overallIds.has(r.team.id) || adventureIds.has(r.team.id),
+  );
   const teamIds = new Set(results.map((r) => r.team.id));
   const tabs = await ensureTabs(sheets, spreadsheetId);
   const legacy = tabs.get(LEGACY_COMPLETENESS_TAB);
   const oldTabs = LEGACY_TABS.flatMap((t) => tabs.get(t) ?? []);
 
+  const lastCol = letter(Math.max(TEAM_ID_COL, 25));
   const read = await sheets.spreadsheets.values.batchGet({
     spreadsheetId,
     ranges: [
-      `${RESULTS_TAB}!A1:${letter(Math.max(TEAM_ID_COL, 25))}`,
+      `'${RESULTS_TAB}'!A1:${lastCol}`,
+      `'${RESULTS_ADVENTURE_TAB}'!A1:${lastCol}`,
       ...(legacy ? [`${LEGACY_COMPLETENESS_TAB}!E2:F`] : []),
     ],
     valueRenderOption: "UNFORMATTED_VALUE",
   });
-  const [resultsRead, legacyRead] = read.data.valueRanges ?? [];
+  const [resultsRead, adventureRead, legacyRead] = read.data.valueRanges ?? [];
   const scores = readCompletenessScores(
     resultsRead?.values ?? [],
     legacyRead?.values ?? [],
+    adventureRead?.values ?? [],
   );
 
   const requests: sheets_v4.Schema$Request[] = [
     ...(legacy ? [{ deleteSheet: { sheetId: legacy.sheetId } }] : []),
     ...oldTabs.map((t) => ({ deleteSheet: { sheetId: t.sheetId } })),
     ...buildResultsRequests({
-      resultsTab: tabs.get(RESULTS_TAB)!,
+      tab: tabs.get(RESULTS_TAB)!,
       results: allResults,
       scores,
-      include: teamIds,
+      include: overallIds,
     }),
-    ...buildSummaryRequests(tabs.get(SUMMARY_TAB)!, FINAL_COL),
-    ...buildSummaryRequests(tabs.get(ADVENTURE_TAB)!, ADVENTURE_FINAL_COL),
-    ...rewriteTabRequests(
-      tabs.get(SPONSOR_WINNERS_TAB)!,
-      buildSponsorWinnersRows(sponsorWinners),
-      1,
-    ),
+    ...buildResultsRequests({
+      tab: tabs.get(RESULTS_ADVENTURE_TAB)!,
+      kind: "adventure",
+      results: allResults,
+      scores,
+      include: adventureIds,
+      mirrored: overallIds,
+    }),
+    ...buildSummaryRequests(tabs.get(SUMMARY_TAB)!, "overall"),
+    ...buildSummaryRequests(tabs.get(ADVENTURE_TAB)!, "adventure"),
   ];
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
@@ -935,10 +972,8 @@ export async function finalizeResultsSheet(): Promise<{
 
   return {
     teams: results.length,
-    sponsorWinners: sponsorWinners.filter((w) => w.team).length,
-    sponsors: sponsorWinners.length,
     totalTeams: allResults.length,
-    marks: results.reduce((n, r) => n + r.regular.count + r.sponsored.count, 0),
+    marks: results.reduce((n, r) => n + r.regular.count, 0),
     scoresKept: [...scores.keys()].filter((id) => teamIds.has(id)).length,
     url: `https://docs.google.com/spreadsheets/d/${spreadsheetId}`,
   };

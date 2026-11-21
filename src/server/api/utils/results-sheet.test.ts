@@ -10,8 +10,8 @@ import {
   buildResultsRows,
   readCompletenessScores,
   adventureScore,
-  buildSponsorWinnersRows,
   rankByAdventure,
+  topAdventureTeams,
   topTeams,
 } from "~/server/api/utils/results-sheet";
 import {
@@ -71,7 +71,7 @@ describe("buildResultsRows", () => {
   });
 
   test("ranks team rows by regular average; unmarked teams last", () => {
-    expect(teamRows.map((r) => r.cells[4])).toEqual([
+    expect(teamRows.map((r) => r.cells[3])).toEqual([
       "Bravo",
       "Alpha",
       "Charlie",
@@ -79,12 +79,11 @@ describe("buildResultsRows", () => {
     expect(teamRows.map((r) => r.cells[0])).toEqual([1, 2, ""]);
   });
 
-  test("each team row is followed by its judge rows", () => {
-    expect(rows.map((r) => r.cells[4])).toEqual([
+  test("each team row is followed by its regular judges' rows; sponsor marks are left out", () => {
+    expect(rows.map((r) => r.cells[3])).toEqual([
       "Team / Judge",
       "Bravo",
       "↳ Jo",
-      "↳ Spon",
       "Alpha",
       "↳ Jo",
       "↳ Sam",
@@ -92,23 +91,21 @@ describe("buildResultsRows", () => {
     ]);
   });
 
-  test("team averages are rounded; judge scores go in their round's column", () => {
-    const alpha = teamRows.find((r) => r.cells[4] === "Alpha")!.cells;
+  test("team averages are rounded; judge scores go under Average; no sponsor columns", () => {
+    const alpha = teamRows.find((r) => r.cells[3] === "Alpha")!.cells;
     expect(alpha[col("Average")]).toBe(6.5);
     expect(alpha[col("Innovation + Impact")]).toBe(6.5);
-    const spon = rows.find((r) => r.cells[4] === "↳ Spon")!.cells;
-    expect(spon[col("Average")]).toBe("");
-    expect(spon[col("Sponsor average")]).toBe(8);
-    expect(spon[col("Notes")]).toBe("great demo");
-    const sam = rows.find((r) => r.cells[4] === "↳ Sam")!.cells;
+    expect(header).not.toContain("Sponsor judges");
+    expect(header).not.toContain("Sponsor average");
+    const sam = rows.find((r) => r.cells[3] === "↳ Sam")!.cells;
     expect(sam[col("Average")]).toBe(7);
   });
 
   test("super likes: count on team rows, heart on judge rows", () => {
     const cellOf = (label: string) =>
-      rows.find((r) => r.cells[4] === label)!.cells[col("Super likes")];
+      rows.find((r) => r.cells[3] === label)!.cells[col("Super likes")];
     expect(cellOf("Alpha")).toBe(1);
-    expect(cellOf("Bravo")).toBe(1); // a sponsor judge's heart counts too
+    expect(cellOf("Bravo")).toBe(0); // a sponsor judge's heart doesn't count
     expect(cellOf("Charlie")).toBe(0);
     expect(cellOf("↳ Sam")).toBe("♥");
     expect(cellOf("↳ Jo")).toBe("");
@@ -116,21 +113,25 @@ describe("buildResultsRows", () => {
 
   test("groups cover exactly the judge rows; unmarked teams get none", () => {
     expect(groups).toEqual([
-      { teamId: "b", start: 2, end: 4 },
-      { teamId: "a", start: 5, end: 7 },
+      { teamId: "b", start: 2, end: 3 },
+      { teamId: "a", start: 4, end: 6 },
     ]);
   });
 });
 
 describe("judge rows", () => {
-  test("carry the round, notes and heart under their own columns", () => {
-    const { rows } = buildResultsRows(results);
+  test("carry the notes and heart under their own columns", () => {
+    const withNotes = buildTeamResults(
+      [team("a", "Alpha", 1)],
+      [mark("a", "Jo", 6, "regular", "great demo", true)],
+    );
+    const { rows } = buildResultsRows(withNotes);
     const header = rows[0]!.cells;
-    const spon = rows.find((r) => r.cells[4] === "↳ Spon")!.cells;
-    expect(spon[header.indexOf("Judges")]).toBe("sponsor");
-    expect(spon[header.indexOf("Notes")]).toBe("great demo");
-    expect(spon[header.indexOf("Super likes")]).toBe("♥");
-    expect(spon[header.indexOf("Team ID")]).toBe("b");
+    const jo = rows.find((r) => r.cells[3] === "↳ Jo")!.cells;
+    expect(jo[header.indexOf("Judges")]).toBe("judge");
+    expect(jo[header.indexOf("Notes")]).toBe("great demo");
+    expect(jo[header.indexOf("Super likes")]).toBe("♥");
+    expect(jo[header.indexOf("Team ID")]).toBe("a");
   });
 });
 
@@ -149,7 +150,7 @@ describe("Results and Marks", () => {
       { range: { sheetId: 1, dimension: "ROWS", startIndex: 2, endIndex: 9 } },
     ];
     const requests = buildResultsRequests({
-      resultsTab: tab(1, { rowGroups: old }),
+      tab: tab(1, { rowGroups: old }),
       results,
       scores: new Map(),
     });
@@ -168,7 +169,7 @@ describe("Results and Marks", () => {
 
   test("grows the grid when there are more rows than the tab has", () => {
     const requests = buildResultsRequests({
-      resultsTab: tab(1, { rowCount: 3 }),
+      tab: tab(1, { rowCount: 3 }),
       results,
       scores: new Map(),
     });
@@ -192,20 +193,21 @@ describe("Completeness and Final columns", () => {
       ]),
     );
     const { rows } = buildResultsRows(results);
-    const alpha = rows.find((r) => r.cells[4] === "Alpha")!.cells;
+    const alpha = rows.find((r) => r.cells[3] === "Alpha")!.cells;
     expect(alpha[at("Technical Complexity")]).toBe(6.5);
   });
 
-  test("Final and Adventure final sit right after Rank; links and Completeness right after the team name", () => {
-    expect(header.slice(0, 3)).toEqual(["Rank", "Final", "Adventure final"]);
-    expect(header.slice(4, 16)).toEqual([
+  test("Final sits right after Rank; links and Completeness right after the team name; no adventure columns", () => {
+    expect(header.slice(0, 3)).toEqual(["Rank", "Final", "Table"]);
+    expect(header).not.toContain("Adventure final");
+    expect(header).not.toContain("Adventure");
+    expect(header.slice(3, 14)).toEqual([
       "Team / Judge",
       "Devpost",
       "GitHub",
       COMPLETENESS_LABEL,
       "Judges",
       "Normalized",
-      "Adventure",
       "Adventurous score",
       "Other 4",
       "Raw total",
@@ -216,7 +218,7 @@ describe("Completeness and Final columns", () => {
 
   test("links show a short name, not the whole URL", () => {
     const { rows } = buildResultsRows(results);
-    const alpha = rows.find((r) => r.cells[4] === "Alpha")!.cells;
+    const alpha = rows.find((r) => r.cells[3] === "Alpha")!.cells;
     expect(alpha[at("Devpost")]).toEqual({
       text: "Devpost",
       link: "https://devpost.com/a",
@@ -233,23 +235,20 @@ describe("Completeness and Final columns", () => {
 
   test("team rows get the typed score and a Final formula for their row", () => {
     const { rows } = buildResultsRows(results, new Map([["a", 8]]));
-    const alphaIndex = rows.findIndex((r) => r.cells[4] === "Alpha");
+    const alphaIndex = rows.findIndex((r) => r.cells[3] === "Alpha");
     const alpha = rows[alphaIndex]!.cells;
     expect(alpha[at(COMPLETENESS_LABEL)]).toBe(8);
     const sheetRow = alphaIndex + 1;
     expect(alpha[at("Final")]).toEqual({
-      formula: `=LET(b, IF(ISNUMBER(J${sheetRow}), J${sheetRow}, O${sheetRow}), IF(b="", "", IF(ISNUMBER(H${sheetRow}), ROUND((b * 5 + H${sheetRow}) / 6, 2), b)))`,
+      formula: `=LET(b, IF(ISNUMBER(I${sheetRow}), I${sheetRow}, M${sheetRow}), IF(b="", "", IF(ISNUMBER(G${sheetRow}), ROUND((b * 5 + G${sheetRow}) / 6, 2), b)))`,
     });
-    expect(alpha[at("Adventure final")]).toEqual({
-      formula: `=IF(OR(L${sheetRow}="", M${sheetRow}=""), "", IF(ISNUMBER(H${sheetRow}), ROUND(0.65 * L${sheetRow} + 0.35 * (M${sheetRow} * 4 + H${sheetRow}) / 5, 2), ROUND(0.65 * L${sheetRow} + 0.35 * M${sheetRow}, 2)))`,
-    });
-    const bravo = rows.find((r) => r.cells[4] === "Bravo")!.cells;
+    const bravo = rows.find((r) => r.cells[3] === "Bravo")!.cells;
     expect(bravo[at(COMPLETENESS_LABEL)]).toBe("");
   });
 
   test("judge rows leave both blank", () => {
     const { rows } = buildResultsRows(results, new Map([["a", 8]]));
-    for (const r of rows.filter((r) => String(r.cells[4]).startsWith("↳"))) {
+    for (const r of rows.filter((r) => String(r.cells[3]).startsWith("↳"))) {
       expect(r.cells[at(COMPLETENESS_LABEL)]).toBe("");
       expect(r.cells[at("Final")]).toBe("");
     }
@@ -257,7 +256,7 @@ describe("Completeness and Final columns", () => {
 
   test("validation and red/green status go on team rows only", () => {
     const requests = buildResultsRequests({
-      resultsTab: tab(1),
+      tab: tab(1),
       results,
       scores: new Map(),
     });
@@ -267,7 +266,7 @@ describe("Completeness and Final columns", () => {
     expect(validated).toEqual(buildResultsRows(results).teamRows);
     expect(
       requests.filter((r) => r.setDataValidation)[0]!.setDataValidation!.range,
-    ).toMatchObject({ startColumnIndex: 7, endColumnIndex: 8 });
+    ).toMatchObject({ startColumnIndex: 6, endColumnIndex: 7 });
     const rules = requests
       .filter((r) => r.addConditionalFormatRule)
       .map((r) => r.addConditionalFormatRule!.rule!);
@@ -280,9 +279,11 @@ describe("Completeness and Final columns", () => {
 
   test("the summary tabs rank by score, then super likes, capped at the top 20", () => {
     expect(summaryFormula()).toBe(
-      '=IFERROR(ARRAY_CONSTRAIN(LET(t, SORT(FILTER({Results!E2:E, Results!B2:B, ROW(Results!E2:E), Results!P2:P}, Results!A2:A<>"", Results!B2:B<>""), 2, FALSE, 4, FALSE, 3, TRUE), {SEQUENCE(ROWS(t)), CHOOSECOLS(t, 1, 2, 4)}), 20, 4), "")',
+      "=IFERROR(ARRAY_CONSTRAIN(LET(t, SORT(FILTER({'Results'!D2:D, 'Results'!B2:B, ROW('Results'!D2:D), 'Results'!N2:N}, 'Results'!A2:A<>\"\", 'Results'!B2:B<>\"\"), 2, FALSE, 4, FALSE, 3, TRUE), {SEQUENCE(ROWS(t)), CHOOSECOLS(t, 1, 2, 4)}), 20, 4), \"\")",
     );
-    expect(summaryFormula(2)).toContain('Results!C2:C<>""');
+    expect(summaryFormula("Results Adventure")).toContain(
+      "'Results Adventure'!B2:B<>\"\"",
+    );
   });
 });
 
@@ -300,6 +301,8 @@ describe("normalized scores", () => {
         normalized: 10,
         normalizedQ: 3.2,
         adventure: 9,
+        adventurous: 9,
+        otherFour: 9,
         rawTotal: 7.5,
       }),
       scored("b", "Bravo", {
@@ -328,7 +331,7 @@ describe("normalized scores", () => {
   const teamRows = rows.filter((r, i) => i > 0 && r.bold);
 
   test("rank by q, then normalized; teams not yet normalized come after", () => {
-    expect(teamRows.map((r) => r.cells[4])).toEqual([
+    expect(teamRows.map((r) => r.cells[3])).toEqual([
       "Alpha",
       "Bravo",
       "Charlie",
@@ -336,11 +339,14 @@ describe("normalized scores", () => {
     ]);
   });
 
-  test("team rows show Normalized, Adventure and Raw total", () => {
+  test("team rows show Normalized and Raw total; Adventure only on Results Adventure", () => {
     const alpha = teamRows[0]!.cells;
     expect(alpha[header.indexOf("Normalized")]).toBe(10);
-    expect(alpha[header.indexOf("Adventure")]).toBe(9);
     expect(alpha[header.indexOf("Raw total")]).toBe(7.5);
+    const adv = buildResultsRows(normalized, new Map(), { kind: "adventure" });
+    const advHeader = adv.rows[0]!.cells as string[];
+    const advAlpha = adv.rows.find((r) => r.cells[3] === "Alpha")!.cells;
+    expect(advAlpha[advHeader.indexOf("Adventure")]).toBe(9);
     const delta = teamRows[3]!.cells;
     expect(delta[header.indexOf("Normalized")]).toBe("");
   });
@@ -349,7 +355,7 @@ describe("normalized scores", () => {
     expect(
       buildResultsRows(results)
         .rows.filter((r, i) => i > 0 && r.bold)
-        .map((r) => r.cells[4]),
+        .map((r) => r.cells[3]),
     ).toEqual(["Bravo", "Alpha", "Charlie"]);
   });
 });
@@ -387,30 +393,71 @@ describe("adventure", () => {
     ]);
   });
 
-  test("the export adds the top teams by adventure to the top overall", () => {
-    // Top 2 overall (a, b) plus top 2 by adventure (d, c), in overall order.
-    expect(topTeams(all, 2).map((r) => r.team.id)).toEqual([
-      "a",
-      "b",
-      "c",
-      "d",
-    ]);
-    expect(topTeams(all, 1).map((r) => r.team.id)).toEqual(["a", "d"]);
+  test("Results takes the top overall, Results Adventure the top by adventure", () => {
+    expect(topTeams(all, 2).map((r) => r.team.id)).toEqual(["a", "b"]);
+    expect(topAdventureTeams(all, 2).map((r) => r.team.id)).toEqual(["d", "c"]);
   });
 
-  test("teams added for adventure keep their real overall rank", () => {
-    const { rows } = buildResultsRows(all, new Map(), new Set(["a", "d"]));
-    const teamRows = rows.filter((r, i) => i > 0 && r.bold);
-    expect(teamRows.map((r) => [r.cells[0], r.cells[4]])).toEqual([
-      [1, "A"],
-      [4, "D"],
-    ]);
+  describe("Results Adventure", () => {
+    const include = new Set(topAdventureTeams(all, 3).map((r) => r.team.id));
+    const mirrored = new Set(["b"]); // b is also on Results
+    const built = buildResultsRows(all, new Map([["c", 6]]), {
+      kind: "adventure",
+      include,
+      mirrored,
+    });
+    const header = built.rows[0]!.cells as string[];
+    const teamRows = built.rows.filter((r, i) => i > 0 && r.bold);
+
+    test("same layout, Adventure final and Adventure in place of Final and Normalized", () => {
+      const overall = buildResultsRows(all).rows[0]!.cells as string[];
+      expect(header).toHaveLength(overall.length);
+      expect(header[1]).toBe("Adventure final");
+      expect(header[overall.indexOf("Normalized")]).toBe("Adventure");
+      expect(header).not.toContain("Final");
+      expect(header.filter((h, i) => h !== overall[i])).toEqual([
+        "Adventure final",
+        "Adventure",
+      ]);
+    });
+
+    test("ranked by adventure, rank counting from 1", () => {
+      expect(teamRows.map((r) => [r.cells[0], r.cells[3]])).toEqual([
+        [1, "D"],
+        [2, "C"],
+        [3, "B"],
+      ]);
+    });
+
+    test("Adventure final formula over this tab's own columns", () => {
+      const i = built.rows.findIndex((r) => r.cells[3] === "C");
+      const row = i + 1;
+      expect(built.rows[i]!.cells[1]).toEqual({
+        formula: `=IF(OR(J${row}="", K${row}=""), "", IF(ISNUMBER(G${row}), ROUND(0.65 * J${row} + 0.35 * (K${row} * 4 + G${row}) / 5, 2), ROUND(0.65 * J${row} + 0.35 * K${row}, 2)))`,
+      });
+    });
+
+    test("Completeness is typed here, or looked up from Results for teams on both", () => {
+      const comp = header.indexOf(COMPLETENESS_LABEL);
+      const c = built.rows.find((r) => r.cells[3] === "C")!.cells;
+      expect(c[comp]).toBe(6);
+      const bIndex = built.rows.findIndex((r) => r.cells[3] === "B");
+      const b = built.rows[bIndex]!.cells;
+      const row = bIndex + 1;
+      expect(b[comp]).toEqual({
+        formula: `=LET(v, XLOOKUP(U${row}, Results!U2:U, Results!G2:G, ""), IF(v="", "", v))`,
+      });
+      // Only typed cells get validated.
+      expect(built.typedRows).toEqual(
+        built.teamRows.filter((r) => r !== bIndex),
+      );
+    });
   });
 
   test("Adventurous and Other 4 are on team rows", () => {
     const { rows } = buildResultsRows(all);
     const header = rows[0]!.cells as string[];
-    const a = rows.find((r) => r.cells[4] === "A")!.cells;
+    const a = rows.find((r) => r.cells[3] === "A")!.cells;
     expect(a[header.indexOf("Adventurous score")]).toBe(3);
     expect(a[header.indexOf("Other 4")]).toBe(6.86);
   });
@@ -425,8 +472,8 @@ describe("keeping typed scores on a re-export", () => {
     );
     // Someone typed 7 for Alpha, and (wrongly) 5 on a judge row.
     const comp = header.indexOf(COMPLETENESS_LABEL);
-    out.find((r) => r[4] === "Alpha")![comp] = 7;
-    out.find((r) => String(r[4]).startsWith("↳"))![comp] = 5;
+    out.find((r) => r[3] === "Alpha")![comp] = 7;
+    out.find((r) => String(r[3]).startsWith("↳"))![comp] = 5;
     return out;
   };
 
@@ -441,6 +488,24 @@ describe("keeping typed scores on a re-export", () => {
         [1, "Alpha", "a"],
       ]).size,
     ).toBe(0);
+  });
+
+  test("scores typed on Results Adventure carry over; Results wins", () => {
+    const adventureTab = [
+      [
+        "Rank",
+        "Adventure final",
+        "Table",
+        "Team / Judge",
+        "Team ID",
+        COMPLETENESS_LABEL,
+      ],
+      [1, 0, 4, "Delta", "d", 6],
+      [2, 0, 1, "Alpha", "a", 2],
+    ];
+    const scores = readCompletenessScores(sheetNow(), [], adventureTab);
+    expect(scores.get("d")).toBe(6);
+    expect(scores.get("a")).toBe(7);
   });
 
   test("scores from the old Completeness tab carry over; Results wins", () => {
@@ -462,7 +527,7 @@ describe("text is never written as a formula", () => {
       [mark("x", "=1+1", 5)],
     );
     const requests = buildResultsRequests({
-      resultsTab: tab(1),
+      tab: tab(1),
       results: evil,
       scores: new Map(),
     });
@@ -509,57 +574,9 @@ describe("top teams only", () => {
     const top = topTeams(many, 3);
     const names = buildResultsRows(top)
       .rows.slice(1)
-      .map((r) => r.cells[4]);
+      .map((r) => r.cells[3]);
     expect(
       names.filter((n) => typeof n === "string" && !n.startsWith("↳")),
     ).toEqual(["T1", "T2", "T3"]);
-  });
-});
-
-describe("Sponsor Winners tab", () => {
-  test("each sponsor's #1, or not submitted yet", () => {
-    const rows = buildSponsorWinnersRows([
-      {
-        sponsor: "Cohere",
-        submittedAt: new Date("2026-11-23T17:30:00Z"),
-        team: {
-          id: "t1",
-          name: "Alpha",
-          table: 4,
-          devpost: "https://devpost.com/a",
-          github: null,
-        },
-      },
-      { sponsor: "Domain.com", submittedAt: null, team: null },
-    ]);
-    expect(rows[0]!.cells).toEqual([
-      "Sponsor",
-      "Winner",
-      "Table",
-      "Devpost",
-      "GitHub",
-      "Submitted",
-      "Team ID",
-    ]);
-    expect(rows[1]!.cells).toEqual([
-      "Cohere",
-      "Alpha",
-      4,
-      { text: "Devpost", link: "https://devpost.com/a" },
-      "",
-      "Nov 23, 2026, 12:30 PM",
-      "t1",
-    ]);
-    expect(rows[2]!.cells.slice(0, 2)).toEqual([
-      "Domain.com",
-      "Not submitted yet",
-    ]);
-  });
-
-  test("a sponsor name starting with = stays text", () => {
-    const rows = buildSponsorWinnersRows([
-      { sponsor: "=HYPERLINK(1)", submittedAt: null, team: null },
-    ]);
-    expect(rows[1]!.cells[0]).toBe("=HYPERLINK(1)");
   });
 });
