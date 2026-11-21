@@ -507,48 +507,38 @@ const ActivityDialog = ({
               </span>
             </label>
           )}
-          <label className="flex flex-col gap-1.5">
-            <span className={LABEL}>Time</span>
-            <span className="relative">
-              <select
-                className={cn(FIELD, "cursor-pixel-hover appearance-none pr-9")}
-                value={timed ? "timed" : "none"}
-                onChange={(e) => setTimed(e.target.value === "timed")}
-              >
-                <option value="timed">Start and end time</option>
-                <option value="none">No set time</option>
-              </select>
-              <ChevronDown
-                aria-hidden="true"
-                className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-dashboard-text-light"
+          <div className="grid grid-cols-2 gap-3">
+            <label className="flex flex-col gap-1.5">
+              <span className={LABEL}>Start</span>
+              <input
+                type="datetime-local"
+                required={timed}
+                disabled={!timed}
+                className={cn(FIELD, DISABLED)}
+                value={startsAt}
+                onChange={(e) => setStartsAt(e.target.value)}
               />
-            </span>
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className={LABEL}>End</span>
+              <input
+                type="datetime-local"
+                required={timed}
+                disabled={!timed}
+                className={cn(FIELD, DISABLED)}
+                value={endsAt}
+                min={startsAt || undefined}
+                onChange={(e) => setEndsAt(e.target.value)}
+              />
+            </label>
+          </div>
+          <label className="flex items-center gap-2">
+            <DashboardCheckbox
+              checked={!timed}
+              onCheckedChange={(c) => setTimed(c !== true)}
+            />
+            <span className={LABEL}>No set time</span>
           </label>
-          {timed && (
-            <div className="grid grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1.5">
-                <span className={LABEL}>Start</span>
-                <input
-                  type="datetime-local"
-                  required
-                  className={FIELD}
-                  value={startsAt}
-                  onChange={(e) => setStartsAt(e.target.value)}
-                />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className={LABEL}>End</span>
-                <input
-                  type="datetime-local"
-                  required
-                  className={FIELD}
-                  value={endsAt}
-                  min={startsAt || undefined}
-                  onChange={(e) => setEndsAt(e.target.value)}
-                />
-              </label>
-            </div>
-          )}
           <label className="flex flex-col gap-1.5">
             <span className={LABEL}>Room</span>
             <input
