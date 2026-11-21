@@ -1,5 +1,5 @@
 // src/server/api/utils/team-results-data.ts
-import { asc, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, ne, or, sql } from "drizzle-orm";
 
 import {
   type TeamResult,
@@ -38,9 +38,17 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
 
   const markedIds = [...new Set(marks.map((m) => m.teamId))];
   const teamRows = await db.query.teams.findMany({
-    where: or(
-      ne(teams.submissionStatus, "draft"),
-      markedIds.length > 0 ? inArray(teams.id, markedIds) : undefined,
+    where: and(
+      or(
+        ne(teams.submissionStatus, "draft"),
+        markedIds.length > 0 ? inArray(teams.id, markedIds) : undefined,
+      ),
+      // Absence is final: a team whose table has a team_absent stop is out.
+      sql`not exists (
+        select 1 from judging_assignment a
+        where a.judging_table_id = ${teams.judgingTableId}
+          and a.status = 'team_absent'
+      )`,
     ),
     columns: { id: true, name: true, githubUrl: true, devpostUrl: true },
     with: { judgingTable: { columns: { number: true } } },

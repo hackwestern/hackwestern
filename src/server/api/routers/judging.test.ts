@@ -664,27 +664,31 @@ describe("judge flow", () => {
       judgeCount: 6,
     });
     const j = js[0]!;
-    const [first, second] = await stopsOf(j.caller);
+    const first = await firstStop(j.caller);
     await org.caller.judging.admin.swapTeams({
       teamAId: teamIds[0]!,
       teamBId: teamIds[11]!,
     });
     await expect(
       j.caller.judging.me.reportAbsent({
-        assignmentId: first!.id,
-        teamId: first!.team!.id,
+        assignmentId: first.id,
+        teamId: first.team!.id,
       }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
     await expect(
       j.caller.judging.me.reportAbsent({
-        assignmentId: first!.id,
+        assignmentId: first.id,
         teamId: null,
       }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
+    // A judge can only act on their current stop, so retry it with the team
+    // seated there now.
+    const fresh = await firstStop(j.caller);
+    expect(fresh.id).toBe(first.id);
     await expect(
       j.caller.judging.me.reportAbsent({
-        assignmentId: second!.id,
-        teamId: second!.team!.id,
+        assignmentId: fresh.id,
+        teamId: fresh.team!.id,
       }),
     ).resolves.toMatchObject({ status: "team_absent" });
   });
@@ -851,10 +855,13 @@ describe("judge flow", () => {
       judgeId: js[0]!.session.user.id,
       tableId: table.id,
     });
-    const empty = (await stopsOf(js[0]!.caller)).find(
-      (s) => s.table.number === 2,
-    );
+    const stops = await stopsOf(js[0]!.caller);
+    const empty = stops.find((s) => s.table.number === 2);
     assertDefined(empty, "expected table 2 in the section");
+    // A judge only acts on their current stop: cancel the ones before it.
+    for (const s of stops.slice(0, stops.indexOf(empty))) {
+      await org.caller.judging.admin.cancelStop({ assignmentId: s.id });
+    }
     expect(empty.team).toBeNull();
     await expect(
       js[0]!.caller.judging.me.submitStop({
@@ -1105,6 +1112,238 @@ describe("handOffJudge / addJudgeToTable / cancel / absent", () => {
   });
 });
 
+/* ---------- current stop, final absence, no-show ---------- */
+
+describe("current stop", () => {
+  test("a judge can't start, submit or report absent a stop that isn't current", async () => {
+    const { judges: js } = await setupRoom({ tableCount: 3, judgeCount: 3 });
+    const [, second] = await stopsOf(js[0]!.caller);
+    assertDefined(second, "expected a second stop");
+    const conflict = { code: "CONFLICT" };
+    await expect(
+      js[0]!.caller.judging.me.startStop({
+        assignmentId: second.id,
+        teamId: second.team?.id ?? "none",
+      }),
+    ).rejects.toMatchObject(conflict);
+    await expect(
+      js[0]!.caller.judging.me.submitStop({
+        assignmentId: second.id,
+        teamId: second.team?.id ?? "none",
+        score: 5,
+      }),
+    ).rejects.toMatchObject(conflict);
+    await expect(
+      js[0]!.caller.judging.me.reportAbsent({
+        assignmentId: second.id,
+        teamId: second.team?.id ?? null,
+      }),
+    ).rejects.toMatchObject(conflict);
+  });
+});
+
+describe("absence is final", () => {
+  test("one absent report closes every open stop at that table", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const stop = await firstStop(js[0]!.caller);
+    await js[0]!.caller.judging.me.reportAbsent({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? null,
+    });
+    const here = await db.query.judgingAssignments.findMany({
+      where: eq(judgingAssignments.judgingTableId, stop.table.id),
+    });
+    expect(here.length).toBeGreaterThan(1);
+    expect(here.every((a) => a.status === "team_absent")).toBe(true);
+
+    // The table is closed to top-ups too.
+    const extra = await makeJudge();
+    await expect(
+      org.caller.judging.admin.addJudgeToTable({
+        judgeId: extra.session.user.id,
+        tableId: stop.table.id,
+      }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  test("deleting a mark doesn't reopen a stop at an absent table", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const stop = await firstStop(js[0]!.caller);
+    await js[0]!.caller.judging.me.submitStop({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? "none",
+      score: 6,
+    });
+    const otherStop = (await stopsOf(js[1]!.caller)).find(
+      (s) => s.table.id === stop.table.id,
+    );
+    assertDefined(otherStop, "expected another judge at the table");
+    await org.caller.judging.admin.markAbsent({ assignmentId: otherStop.id });
+
+    const mark = await db.query.teamMarks.findFirst({
+      where: eq(teamMarks.judgeId, js[0]!.session.user.id),
+    });
+    assertDefined(mark, "expected a mark");
+    const result = await org.caller.judging.admin.deleteTeamMark({
+      teamMarkId: mark.id,
+    });
+    expect(result).toMatchObject({ reopened: false });
+  });
+
+  test("hand-off leaves stops at an absent table behind", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const leaving = js[0]!;
+    const stops = await stopsOf(leaving.caller);
+    await org.caller.judging.admin.markAbsent({
+      assignmentId: stops[1]!.id,
+    });
+    const floater = await makeJudge();
+    const result = await org.caller.judging.admin.handOffJudge({
+      fromJudgeId: leaving.session.user.id,
+      toJudgeId: floater.session.user.id,
+    });
+    expect(result.moved).toBe(stops.length - 1);
+    expect(
+      (await stopsOf(floater.caller)).map((s) => s.table.id),
+    ).not.toContain(stops[1]!.table.id);
+  });
+
+  test("an absent team is left out of the ranking and of judge averages", async () => {
+    const {
+      org,
+      judges: js,
+      teamIds,
+    } = await setupRoom({ tableCount: 2, judgeCount: 3 });
+    const [t1, t2] = teamIds as [string, string];
+    const atT2 = (await stopsOf(js[0]!.caller)).find((s) => s.team?.id === t2);
+    assertDefined(atT2, "expected a stop at team 2");
+    await org.caller.judging.admin.markAbsent({ assignmentId: atT2.id });
+    for (const judge of js) {
+      for (const stop of await stopsOf(judge.caller)) {
+        if (stop.status !== "assigned") continue;
+        await judge.caller.judging.me.submitStop({
+          assignmentId: stop.id,
+          teamId: stop.team?.id ?? "none",
+          score: 6,
+        });
+      }
+    }
+    const ranking = await org.caller.judging.admin.getLatestRanking();
+    expect(ranking.map((r) => r.team_id)).toEqual([t1]);
+  });
+
+  test("getMyJudging tells a team it was reported absent", async () => {
+    const {
+      org,
+      judges: js,
+      teamIds,
+    } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const session = await mockSession(db);
+    await db
+      .update(users)
+      .set({ teamId: teamIds[0] })
+      .where(eq(users.id, session.user.id));
+    const hacker = createCaller(createInnerTRPCContext({ session }));
+    const stop = await firstStop(js[0]!.caller);
+    expect(stop.team?.id).toBe(teamIds[0]);
+    await org.caller.judging.admin.markAbsent({ assignmentId: stop.id });
+    expect(await hacker.judging.team.getMyJudging()).toMatchObject({
+      absent: true,
+    });
+  });
+});
+
+describe("setJudgeNoShow", () => {
+  test("auto-assign skips a no-show judge", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 4,
+    });
+    const gone = js[3]!;
+    await org.caller.judging.admin.setJudgeNoShow({
+      judgeId: gone.session.user.id,
+      noShow: true,
+    });
+    await org.caller.judging.admin.autoAssign();
+    expect(await stopsOf(gone.caller)).toHaveLength(0);
+    const judgesQ = await org.caller.judging.admin.getAllJudges();
+    expect(judgesQ.find((j) => j.id === gone.session.user.id)?.noShow).toBe(
+      true,
+    );
+  });
+
+  test("before judging starts, marking a judge with stops clears the plan", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const result = await org.caller.judging.admin.setJudgeNoShow({
+      judgeId: js[0]!.session.user.id,
+      noShow: true,
+    });
+    expect(result.planCleared).toBeGreaterThan(0);
+    expect(await db.query.judgingAssignments.findMany()).toHaveLength(0);
+  });
+
+  test("after judging starts, a judge with open stops must hand them off first", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const stop = await firstStop(js[1]!.caller);
+    await js[1]!.caller.judging.me.startStop({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? "none",
+    });
+    await expect(
+      org.caller.judging.admin.setJudgeNoShow({
+        judgeId: js[0]!.session.user.id,
+        noShow: true,
+      }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  test("a no-show judge can't take a hand-off or a top-up", async () => {
+    const {
+      org,
+      judges: js,
+      tables,
+    } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const gone = await makeJudge();
+    await org.caller.judging.admin.setJudgeNoShow({
+      judgeId: gone.session.user.id,
+      noShow: true,
+    });
+    await expect(
+      org.caller.judging.admin.handOffJudge({
+        fromJudgeId: js[0]!.session.user.id,
+        toJudgeId: gone.session.user.id,
+      }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    await expect(
+      org.caller.judging.admin.addJudgeToTable({
+        judgeId: gone.session.user.id,
+        tableId: tables[0]!.id,
+      }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  });
+});
+
 /* ---------- marks ---------- */
 
 describe("editTeamMark / deleteTeamMark", () => {
@@ -1223,10 +1462,10 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
       teamId: stop.team?.id ?? "none",
       score: 6,
     });
-    const [, second] = await stopsOf(js[1]!.caller);
+    const next = await firstStop(js[1]!.caller);
     await js[1]!.caller.judging.me.startStop({
-      assignmentId: second!.id,
-      teamId: second!.team?.id ?? "none",
+      assignmentId: next.id,
+      teamId: next.team?.id ?? "none",
     });
 
     const p = await org.caller.judging.admin.getProgress();
@@ -1248,7 +1487,7 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
       col: 2,
     });
     const busy = p.judges.find((j) => j.id === js[1]!.session.user.id);
-    expect(busy?.current?.tableNumber).toBe(second!.table.number);
+    expect(busy?.current?.tableNumber).toBe(next.table.number);
   });
 
   test("getAllJudges shows the team each judge is at right now", async () => {
@@ -1296,6 +1535,7 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
     });
     expect(await hacker.judging.team.getMyJudging()).toEqual({
       table: { number: 1, zone: "Main room", row: 0, col: 0 },
+      absent: false,
       judges: { done: 1, total: 3 },
     });
   });
