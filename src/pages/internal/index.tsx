@@ -24,7 +24,8 @@ const SECTIONS: { title: string; cards: Card[] }[] = [
       {
         href: "/internal/clock",
         title: "Clock",
-        description: "The 10-minute round timer, read only. Rounds run from Judging controls.",
+        description:
+          "The 10-minute round timer, read only. Rounds run from Judging controls.",
       },
       {
         href: "/judge",
