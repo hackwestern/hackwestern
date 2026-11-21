@@ -379,6 +379,13 @@
       "when": 1795244984321,
       "tag": "0053_sponsor_lead_ping",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1795269630987,
+      "tag": "0054_scavenger_untimed_items",
+      "breakpoints": true
     }
   ]
 }

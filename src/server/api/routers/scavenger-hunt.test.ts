@@ -1520,6 +1520,52 @@ describe("scavengerHuntRouter activity endpoints", () => {
     ).rejects.toThrow("End time must be after start time");
   });
 
+  test("an item can have no set time", async () => {
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      startsAt: null,
+      endsAt: null,
+    });
+    const [activity] = await findMine();
+    expect(activity).toMatchObject({ startsAt: null, endsAt: null });
+
+    // A timed activity can become untimed, and back
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      id: activity!.id,
+    });
+    expect((await findMine())[0]?.startsAt).toEqual(base.startsAt);
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      id: activity!.id,
+      startsAt: null,
+      endsAt: null,
+    });
+    expect((await findMine())[0]?.endsAt).toBeNull();
+  });
+
+  test("rejects a start time without an end time, and the reverse", async () => {
+    await expect(
+      organizerCaller.scavengerHunt.saveActivity({ ...base, endsAt: null }),
+    ).rejects.toThrow("Set both a start and an end time, or neither");
+    await expect(
+      organizerCaller.scavengerHunt.saveActivity({ ...base, startsAt: null }),
+    ).rejects.toThrow("Set both a start and an end time, or neither");
+  });
+
+  test("a bonus task with no set time shows to hackers at once", async () => {
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      type: "bonus",
+      winPoints: null,
+      startsAt: null,
+      endsAt: null,
+      status: "active",
+    });
+    const tasks = await caller.scavengerHunt.getTasks();
+    expect(tasks.map((t) => t.name)).toContain(base.name);
+  });
+
   test("hackers can't manage activities", async () => {
     await expect(caller.scavengerHunt.getScavengerHuntItems()).rejects.toThrow(
       TRPCError,

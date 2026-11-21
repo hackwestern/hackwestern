@@ -318,6 +318,7 @@ export const scavengerHuntRouter = createTRPCRouter({
   // Scavenger hunt tasks (open bonus items) for the Scavenger Hunt tab on
   // /live, with whether the current user has already been scanned for each.
   // A task shows up once its start time has passed (Friday 5 PM for all of them).
+  // A task with no set time shows up at once.
   getTasks: protectedProcedure.query(async ({ ctx }) => {
     const rows = await db
       .select({
@@ -338,7 +339,10 @@ export const scavengerHuntRouter = createTRPCRouter({
         and(
           eq(scavengerHuntItems.type, "bonus"),
           isOpen(),
-          lte(scavengerHuntItems.startsAt, sql`now()`),
+          or(
+            isNull(scavengerHuntItems.startsAt),
+            lte(scavengerHuntItems.startsAt, sql`now()`),
+          ),
         ),
       )
       .groupBy(scavengerHuntItems.id)
@@ -571,8 +575,9 @@ export const scavengerHuntRouter = createTRPCRouter({
           id: z.number().optional(), // Omit to create
           name: z.string().trim().min(1).max(100),
           type: z.enum(scavengerHuntItemType.enumValues),
-          startsAt: z.date(),
-          endsAt: z.date(),
+          // Both null for an item with no set time
+          startsAt: z.date().nullable(),
+          endsAt: z.date().nullable(),
           room: z
             .string()
             .trim()
@@ -582,9 +587,14 @@ export const scavengerHuntRouter = createTRPCRouter({
           winPoints: z.number().int().min(0).max(32767).nullable(), // Set only for winnable activities
           status: z.enum(["draft", "active"]).optional(),
         })
-        .refine((a) => a.endsAt > a.startsAt, {
-          message: "End time must be after start time",
-        }),
+        .refine((a) => (a.startsAt === null) === (a.endsAt === null), {
+          message: "Set both a start and an end time, or neither",
+        })
+        .refine(
+          (a) =>
+            a.startsAt === null || a.endsAt === null || a.endsAt > a.startsAt,
+          { message: "End time must be after start time" },
+        ),
     )
     .mutation(async ({ input }) => {
       return withErrorHandling(async () => {
@@ -623,11 +633,12 @@ export const scavengerHuntRouter = createTRPCRouter({
               })
             : undefined;
         if (id !== undefined && !existing) throw activityNotFound();
-        const minute = (d: Date) => Math.floor(d.getTime() / 60_000);
-        const now = minute(new Date());
-        const endChanged =
-          !existing || minute(existing.endsAt) !== minute(input.endsAt);
-        if (endChanged && minute(input.endsAt) <= now) {
+        const minute = (d: Date | null) =>
+          d === null ? null : Math.floor(d.getTime() / 60_000);
+        const now = minute(new Date())!;
+        const end = minute(input.endsAt);
+        const endChanged = !existing || minute(existing.endsAt) !== end;
+        if (endChanged && end !== null && end <= now) {
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "End time must be in the future",
