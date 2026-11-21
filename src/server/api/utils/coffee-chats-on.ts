@@ -30,6 +30,22 @@ export function isOptedOut(
   return !!submittedAt && chatsWanted.every((n) => n === 0);
 }
 
+/**
+ * Pure: does this sponsor do coffee chats at all? Ticked (failing open) and
+ * not opted out. Off = no Chats tab, no availability to chase, and not on
+ * the organizers' coffee board or "no availability" flags.
+ */
+export function doesChats(
+  ticked: ReadonlySet<string> | null,
+  sponsorName: string,
+  submittedAt: Date | null | undefined,
+  chatsWanted: readonly number[],
+): boolean {
+  return (
+    sheetSaysChats(ticked, sponsorName) && !isOptedOut(submittedAt, chatsWanted)
+  );
+}
+
 /** The Sponsor Day-Of checkbox for one sponsor (fails open). */
 export async function sheetChatsOn(sponsorName: string): Promise<boolean> {
   return sheetSaysChats(await coffeeChatSponsorNames(), sponsorName);

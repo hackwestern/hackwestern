@@ -1137,3 +1137,8 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 - **Not changed:** coffee chat availability (Send availability, coffee chat setup saves and their caching) is left alone on purpose. HW lead, booth and room are edited in the sheet, not the app, so they still show within a minute as before. "Link given" is in the database (no sheet copy) and only on the unrendered old Sponsors board.
 **Why:** the shared copy exists to stay under Google's per-minute read limit; write-through keeps that (a write now saves a read instead of costing one), and pins cover the instances the write can't reach.
 **Alternatives:** a shorter or no shared copy (more Sheets reads, back over the limit); a shared cache across instances such as Redis or the database (new infrastructure mid-event); pausing polls while saving (doesn't help a refetch after the save lands on a stale instance).
+
+## 2026-11-20: Sponsors without coffee chats drop off the organizer side too
+- **Decision:** a sponsor not ticked for "Coffee Chats & Interviews" on Sponsor Day-Of (or opted out) is off the coffee board, shows no Coffee chats block on My sponsors, and reads "—" for availability, shortlist, chats and invites on organizer Home. Saved prefs or reps no longer put an unticked sponsor on the board.
+- **Why:** Jazz: sponsors with no coffee chats should not have to fill out availability or anything else; organizers were still being told to chase them.
+- **Alternatives:** keep showing them as "not submitted" (noise); a new "no chats" column (the checkbox already says it). If the checkbox can't be read, the old rule still applies so nobody is hidden by a Google hiccup.

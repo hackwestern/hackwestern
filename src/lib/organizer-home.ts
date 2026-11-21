@@ -81,6 +81,8 @@ export type HomeSponsor = {
   atCcWorkshop: boolean | null;
   /** Coffee chat progress; undefined while loading or unregistered. */
   chats: MySponsorChats | undefined;
+  /** Not signed up for coffee chats (unticked or opted out): chat columns read "—". */
+  noChats?: boolean;
   blocks: readonly RepBlock[];
   /** Sunday rounds; undefined without a summary. */
   sunday: SundayJudging | undefined;
@@ -177,9 +179,9 @@ export function applies(col: HomeColumnKey, s: HomeSponsor): boolean {
     case "availability":
     case "shortlist":
     case "chats":
-      return !s.digital && !!s.sponsorId;
+      return !s.digital && !s.noChats && !!s.sponsorId;
     case "invites":
-      return !s.digital && !!s.chats && s.chats.repsChatting > 0;
+      return !s.digital && !s.noChats && !!s.chats && s.chats.repsChatting > 0;
     case "workshop":
       return s.workshops.some((w) => w.day === "Saturday");
     case "judgingShortlist":
@@ -368,7 +370,7 @@ export function boardCount(
     ).length;
   }
   return sponsors.filter((s) => {
-    if (s.digital || !s.chats) return false;
+    if (s.digital || s.noChats || !s.chats) return false;
     if (!s.chats.prefsSubmittedAt) return true;
     if (day === "Friday")
       return s.chats.repsChatting > 0 && s.chats.invites === 0;

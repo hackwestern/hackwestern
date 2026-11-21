@@ -242,6 +242,8 @@ export function OrganizerHome({
       return {
         ...b,
         chats: data?.chats,
+        // Loaded with no chat progress = not signed up for chats.
+        noChats: !!data && !data.chats,
         blocks: data?.blocks ?? [],
         reps: data?.reps ?? [],
         sunday: summary?.sunday,

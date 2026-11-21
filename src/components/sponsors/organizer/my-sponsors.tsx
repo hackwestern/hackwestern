@@ -38,7 +38,8 @@ export type MySponsor = {
 
 export type MySponsorData = {
   reps: SponsorRep[];
-  chats: MySponsorChats;
+  /** Undefined when the sponsor doesn't do coffee chats. */
+  chats: MySponsorChats | undefined;
   /** Each rep's sent Saturday sessions (the Home's "Chats by rep"). */
   blocks: RepBlock[];
 };
@@ -492,8 +493,9 @@ function SponsorTables({
         </Row>
       </Block>
 
-      {/* Digital sponsors (PCBWay) don't do coffee chats or present. */}
-      {!digital && (
+      {/* Digital sponsors (PCBWay) don't do coffee chats or present, and
+          sponsors not signed up for chats have none to track. */}
+      {!digital && (!data || data.chats) && (
         <Block id="chats" title={copy.sections.chats}>
           <Row id="preferences" label={a.preferences}>
             {!chats ? (

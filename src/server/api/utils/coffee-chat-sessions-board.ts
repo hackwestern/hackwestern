@@ -40,6 +40,7 @@ import { isDigitalJudging } from "~/lib/sponsor-prize-tracks";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { coffeeChatSponsorNames } from "~/server/api/utils/sponsor-sheets";
+import { doesChats } from "~/server/api/utils/coffee-chats-on";
 import { db } from "~/server/db";
 import {
   coffeeChatPlacements,
@@ -314,15 +315,27 @@ export async function loadBoardState(
   }
   const sponsorOfRep = new Map(reps.map((r) => [r.id, r.sponsorId]));
 
-  // Sponsors doing coffee chats: ticked on Sponsor Day-Of, or with
-  // preferences or reps saved. Digital sponsors (PCBWay) never do.
-  const doing = registered.filter(
-    (s) =>
-      !isDigitalJudging(s.name) &&
-      (prefOf.has(s.id) ||
-        reps.some((r) => r.sponsorId === s.id) ||
-        sheetNames.has(s.name.toLowerCase())),
-  );
+  // Sponsors doing coffee chats: ticked on Sponsor Day-Of and not opted out
+  // (Jazz, 2026-11-20: no chats = nothing to chase). Only when the checkbox
+  // can't be read: anyone with preferences or reps saved, or on Coffee Chat
+  // Setup. Digital sponsors (PCBWay) never do.
+  const doing = registered.filter((s) => {
+    if (isDigitalJudging(s.name)) return false;
+    const theirReps = reps.filter((r) => r.sponsorId === s.id);
+    if (ticked !== null) {
+      return doesChats(
+        ticked,
+        s.name,
+        prefOf.get(s.id)?.submittedAt,
+        theirReps.map((r) => r.chatsWanted),
+      );
+    }
+    return (
+      prefOf.has(s.id) ||
+      theirReps.length > 0 ||
+      sheetNames.has(s.name.toLowerCase())
+    );
+  });
 
   const placements: BoardPlacement[] = placementRows.map((p) => ({
     id: p.id,

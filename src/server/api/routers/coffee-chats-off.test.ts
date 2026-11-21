@@ -12,6 +12,7 @@ import { isOptedOut, sheetSaysChats } from "~/server/api/utils/coffee-chats-on";
 import { loadBoardState } from "~/server/api/utils/coffee-chat-sessions-board";
 import { stepsFor, type HomeContext } from "~/lib/sponsor-home";
 import { showChats } from "~/lib/sponsor-chats";
+import { applies } from "~/lib/organizer-home";
 
 // Sponsors without coffee chats (decisions 2026-11-20): the Sponsor Day-Of
 // checkbox (failing open) and the sponsor's own "not doing chats".
@@ -260,5 +261,51 @@ describe("a sponsor who isn't doing chats (the break, and the fix)", () => {
     const row = board.sponsors.find((x) => x.id === s.id);
     expect(row?.status.kind).toBe("none");
     expect(board.placements.filter((p) => p.sponsorId === s.id)).toEqual([]);
+  });
+
+  test("unticked: off the coffee board and nothing to chase on My sponsors / Home", async () => {
+    const off = await sponsor();
+    const on = await sponsor();
+    // Saved prefs used to put an unticked sponsor on the board anyway.
+    await organizer().then((o) =>
+      o.coffeeChatSetup.addRep({
+        sponsor: off.id,
+        name: "Dana",
+        phone: "5195550001",
+      }),
+    );
+    ticked = new Set([on.name.toLowerCase()]);
+    const board = await loadBoardState();
+    expect(board.sponsors.some((x) => x.id === off.id)).toBe(false);
+    expect(board.sponsors.some((x) => x.id === on.id)).toBe(true);
+
+    const mine = await (await organizer()).sponsorOrganizer.mySponsors();
+    expect(mine.sponsors[off.id]?.chats).toBeUndefined();
+    expect(mine.sponsors[on.id]?.chats?.prefsSubmittedAt).toBeNull();
+  });
+
+  test("Home: chat columns read — for a sponsor without chats", () => {
+    const s = {
+      name: "X",
+      sponsorId: "x",
+      status: null,
+      atCcWorkshop: null,
+      chats: undefined,
+      blocks: [],
+      sunday: undefined,
+      missingRoom: false,
+      workshops: [],
+      prizeTrack: false,
+      digital: false,
+    };
+    for (const col of [
+      "availability",
+      "shortlist",
+      "chats",
+      "invites",
+    ] as const) {
+      expect(applies(col, { ...s, noChats: true })).toBe(false);
+    }
+    expect(applies("availability", s)).toBe(true);
   });
 });
