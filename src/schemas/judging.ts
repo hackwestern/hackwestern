@@ -71,6 +71,18 @@ export const setupTablesSchema = z.object({
 });
 export type SetupTablesInput = z.infer<typeof setupTablesSchema>;
 
+export const setRoundConfigSchema = z
+  .object({
+    roundSeconds: z.number().int().min(30).max(3600).optional(),
+    roundsEnabled: z.boolean().optional(),
+  })
+  .refine(
+    (v) => v.roundSeconds !== undefined || v.roundsEnabled !== undefined,
+    {
+      message: "Nothing to change.",
+    },
+  );
+
 export const setTableActiveSchema = z.object({
   tableId,
   isActive: z.boolean(),

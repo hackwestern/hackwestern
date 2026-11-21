@@ -7,6 +7,7 @@ import {
   protectedJudgeProcedure,
   protectedOrganizerProcedure,
   protectedProcedure,
+  publicProcedure,
 } from "~/server/api/trpc";
 import { db, extractRows } from "~/server/db";
 import { judgingAssignments, judges, users } from "~/server/db/schema";
@@ -25,13 +26,27 @@ import {
   seatTeamsSchema,
   setTableActiveSchema,
   setupTablesSchema,
+  setRoundConfigSchema,
   startStopSchema,
   submitStopSchema,
   swapTeamsSchema,
 } from "~/schemas/judging";
 import {
+  endRound,
+  getBoardVisibility,
+  getRoundOverview,
+  getRoundState,
+  setBoardVisibility,
+  pauseRound,
+  resetRounds,
+  resumeRound,
+  setRoundConfig,
+  startRound,
+} from "~/server/judging/rounds";
+import {
   addJudgeToTable,
   autoAssign,
+  clearAssignments,
   cancelStop,
   deleteMark,
   editMark,
@@ -43,6 +58,7 @@ import {
 import {
   getAllJudges,
   getMyStops,
+  getRoundBoard,
   getProgress,
   getSubmittedMarks,
   getTeamJudging,
@@ -301,6 +317,58 @@ export const judgingRouter = createTRPCRouter({
     }),
   }),
 
+  /**
+   * What hackers can see: the rounds, with judges as numbers. Signed in only,
+   * and for hackers only while an organizer has it switched on.
+   */
+  board: createTRPCRouter({
+    /**
+     * The round timer, for the projector clock at /clock. Public: it's only
+     * the round number and the time left, read without changing anything.
+     */
+    getClock: publicProcedure.query(() =>
+      withErrorHandling(() => getRoundState(), "Failed to load the clock"),
+    ),
+
+    /** Is the rounds link and page open to me? Organizers: always. */
+    getAccess: protectedProcedure.query(({ ctx }) =>
+      withErrorHandling(async () => {
+        const [{ shownToHackers }, user] = await Promise.all([
+          getBoardVisibility(),
+          db.query.users.findFirst({
+            where: eq(users.id, ctx.session.user.id),
+            columns: { type: true },
+          }),
+        ]);
+        const isOrganizer = user?.type === "organizer";
+        return {
+          isOrganizer,
+          shownToHackers,
+          visible: isOrganizer || shownToHackers,
+        };
+      }, "Failed to check access"),
+    ),
+
+    get: protectedProcedure.query(({ ctx }) =>
+      withErrorHandling(async () => {
+        const [{ shownToHackers }, user] = await Promise.all([
+          getBoardVisibility(),
+          db.query.users.findFirst({
+            where: eq(users.id, ctx.session.user.id),
+            columns: { type: true },
+          }),
+        ]);
+        if (!shownToHackers && user?.type !== "organizer") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "The rounds aren't open to hackers yet.",
+          });
+        }
+        return getRoundBoard();
+      }, "Failed to load the rounds"),
+    ),
+  }),
+
   team: createTRPCRouter({
     /** My team's table and how many of its judges have scored us. */
     getMyJudging: protectedProcedure.query(async ({ ctx }) => {
@@ -316,6 +384,50 @@ export const judgingRouter = createTRPCRouter({
     getProgress: protectedOrganizerProcedure.query(async () => {
       return withErrorHandling(() => getProgress(), "Failed to get progress");
     }),
+
+    /** Show or hide the rounds board and its menu link for hackers. */
+    setBoardVisible: protectedOrganizerProcedure
+      .input(z.object({ shownToHackers: z.boolean() }))
+      .mutation(({ input }) =>
+        withErrorHandling(
+          () => setBoardVisibility(input.shownToHackers),
+          "Failed to update the rounds visibility",
+        ),
+      ),
+
+    /** Round state for the control room: timer, round number, who is done. */
+    getRound: protectedOrganizerProcedure.query(() =>
+      withErrorHandling(() => getRoundOverview(), "Failed to get the round"),
+    ),
+
+    startRound: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => startRound(), "Failed to start the round"),
+    ),
+
+    pauseRound: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => pauseRound(), "Failed to pause the round"),
+    ),
+
+    resumeRound: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => resumeRound(), "Failed to resume the round"),
+    ),
+
+    endRound: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => endRound(), "Failed to end the round"),
+    ),
+
+    resetRounds: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => resetRounds(), "Failed to reset the rounds"),
+    ),
+
+    setRoundConfig: protectedOrganizerProcedure
+      .input(setRoundConfigSchema)
+      .mutation(({ input }) =>
+        withErrorHandling(
+          () => setRoundConfig(input),
+          "Failed to update the round settings",
+        ),
+      ),
 
     setupTables: protectedOrganizerProcedure
       .input(setupTablesSchema)
@@ -350,6 +462,14 @@ export const judgingRouter = createTRPCRouter({
         "Failed to assign judges",
       );
     }),
+
+    /** Remove every judge's stops and reset the rounds. Before judging starts. */
+    clearAssignments: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(
+        () => clearAssignments(),
+        "Failed to clear the assignments",
+      ),
+    ),
 
     swapTeams: protectedOrganizerProcedure
       .input(swapTeamsSchema)

@@ -96,6 +96,31 @@ J25 [5-10] J26 [11-16] ... J35 [65-70]
 Table 1 is judged by J1, J12 and J24.
 ```
 
+## Timed rounds
+
+Judges don't wander. **Round N is every judge's Nth stop** (`position` N), and
+only the current round's stop can be started, scored or reported absent.
+
+- One row of state, `judging_round`: current round, status, round length
+  (default 10 minutes) and the timer.
+- Organizers press **Start round N** in the control room. Status goes
+  `idle -> running`. Judges see "Waiting for round 1" until then, and a judge
+  with no stop in the round sits it out.
+- **Pause** stops the clock (`running -> paused`, `remaining_ms` kept). Scoring
+  still works while paused. **Resume** carries on from the time left.
+- At 0, or when an organizer ends the round, it is `closed`: the server refuses
+  every start, score and absent report ("Time's up"). A running round whose
+  `ends_at` has passed is treated as closed when read, so nothing has to tick.
+- An organizer then starts the next round. Starting is refused while a round is
+  open and after the last round (the most stops any judge has).
+- **Reset** goes back to before round 1; marks are kept. Turning "Judges follow
+  the rounds" off (`rounds_enabled = false`) lets judges go in any order, a
+  safety valve for the day. Organizer fixes (absent by an organizer, hand-offs,
+  edits to marks) are not tied to the round.
+- Screens get the round from `judging.me.getMyStops` (polled every 4s, with the
+  server clock so a wrong device clock doesn't skew the countdown) and
+  `judging.admin.getRound`.
+
 ## Judging starts
 
 Judging has started once any stop is `in_progress`, `done` or `team_absent`.

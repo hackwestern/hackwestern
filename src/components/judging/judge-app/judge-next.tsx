@@ -3,6 +3,11 @@ import { VenueMap } from "~/components/judging/judge-app/judge-map";
 import { walkHint } from "~/components/judging/judge-app/judge-directions";
 import { type ReactNode } from "react";
 import {
+  RoundClock,
+  RoundWait,
+  type RoundView,
+} from "~/components/judging/judge-app/judge-round";
+import {
   card,
   fullWidth,
   warningBanner,
@@ -13,6 +18,7 @@ export type NextPhase =
   | "welcome"
   | "team"
   | "none"
+  | "waitRound"
   | "rescoreReady"
   | "finished";
 
@@ -44,6 +50,10 @@ interface JudgeNextProps {
   starting: boolean;
   /** Shown on the welcome screen above Start judging: the teams lined up. */
   queueList?: ReactNode;
+  /** The timed round, when rounds are on. */
+  round?: RoundView | null;
+  /** This judge's next table and its round, for the waiting screen. */
+  upcoming?: { table: number; round: number } | null;
 }
 
 /** The "Next" tab: a welcome first, then the team the server picked. */
@@ -65,6 +75,8 @@ export function JudgeNext({
   onStartRescore,
   starting,
   queueList,
+  round,
+  upcoming = null,
 }: JudgeNextProps) {
   const errorBanner = error ? (
     <p role="alert" className={warningBanner}>
@@ -81,6 +93,10 @@ export function JudgeNext({
         Finding your next team…
       </p>
     );
+  }
+
+  if (phase === "waitRound" && round) {
+    return <RoundWait view={round} upcoming={upcoming} />;
   }
 
   if (phase === "welcome") {
@@ -231,18 +247,7 @@ export function JudgeNext({
         </section>
       )}
 
-      {/* Placeholder clock: static until the pitch timer is wired up. */}
-      <section
-        aria-label="Presentation time"
-        className={`${card} flex items-center justify-between gap-3 px-4 py-3`}
-      >
-        <span className="text-base font-medium text-dashboard-text-heavy">
-          Presentation
-        </span>
-        <span className="font-mono text-3xl font-bold tabular-nums text-dashboard-text-heavy">
-          02:41
-        </span>
-      </section>
+      {round && <RoundClock view={round} />}
 
       <DashboardButton type="button" onClick={onJudge} className={fullWidth}>
         Judge this team

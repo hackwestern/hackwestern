@@ -14,11 +14,13 @@ import { db } from "~/server/db";
 import {
   judges,
   judgingAssignments,
+  judgingRound,
   judgingTables,
   teamMarks,
   teams,
 } from "~/server/db/schema";
 import { LayoutError, buildSections } from "~/server/judging/layout";
+import { assertStopOpen } from "~/server/judging/rounds";
 import {
   OPEN_STATUSES,
   type StopStatus,
@@ -128,6 +130,34 @@ async function requireJudge(tx: Tx, judgeId: string) {
   });
   if (!judge) throw notFound("Judge");
   return judge;
+}
+
+/**
+ * Back to before assignment: remove every judge's stops and put the rounds
+ * back to before round 1. Teams stay seated and tables stay set up, so
+ * Auto-assign can be run again. Like auto-assign it's refused once judging has
+ * started, so no scored stop is ever lost.
+ */
+export async function clearAssignments() {
+  return db.transaction(async (tx) => {
+    await lockPlanExclusive(tx);
+    await assertNotStarted("clear the assignments", tx);
+    const removed = await tx
+      .delete(judgingAssignments)
+      .where(sql`true`)
+      .returning({ id: judgingAssignments.id });
+    await tx
+      .update(judgingRound)
+      .set({
+        currentRound: 0,
+        status: "idle",
+        endsAt: null,
+        remainingMs: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(judgingRound.id, 1));
+    return { removed: removed.length };
+  });
 }
 
 /**
@@ -394,6 +424,7 @@ export async function markAbsent(
     await lockPlanShared(tx);
     if (judgeId && expectedTeamId !== undefined) {
       const stop = await lockStop(tx, assignmentId, judgeId);
+      await assertStopOpen(tx, stop.position);
       const [seated] = await tx
         .select({ id: teams.id, name: teams.name })
         .from(teams)
@@ -424,6 +455,7 @@ async function lockStop(tx: Tx, assignmentId: number, judgeId: string) {
     .select({
       id: judgingAssignments.id,
       judgingTableId: judgingAssignments.judgingTableId,
+      position: judgingAssignments.position,
     })
     .from(judgingAssignments)
     .where(
@@ -482,6 +514,7 @@ export async function startStop(
     return await db.transaction(async (tx) => {
       await lockPlanShared(tx);
       const stop = await lockStop(tx, assignmentId, judgeId);
+      await assertStopOpen(tx, stop.position);
       const busy = await tx.query.judgingAssignments.findFirst({
         where: and(
           eq(judgingAssignments.judgeId, judgeId),
@@ -524,6 +557,7 @@ export async function submitStop(
   return db.transaction(async (tx) => {
     await lockPlanShared(tx);
     const stop = await lockStop(tx, assignmentId, judge.id);
+    await assertStopOpen(tx, stop.position);
     const team = await seatedTeamAt(tx, stop.judgingTableId, teamId);
 
     await transition(

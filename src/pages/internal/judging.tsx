@@ -2,10 +2,11 @@ import Link from "next/link";
 import { useMemo } from "react";
 import SEO from "~/components/seo";
 import { InternalPage } from "~/components/internals/page-shell";
+import { ControlRoundGrid } from "~/components/judging/control/control-round-grid";
+import { ControlRoundsBar } from "~/components/judging/control/control-rounds-bar";
 import { ControlProgress } from "~/components/judging/control/control-progress";
 import { ControlRounds } from "~/components/judging/control/control-rounds";
 import { ControlTablesStatus } from "~/components/judging/control/control-tables-status";
-import { ControlQueueTable } from "~/components/judging/control/control-queue-table";
 import {
   errorText,
   queueFromProgress,
@@ -30,6 +31,9 @@ export default function JudgingControlRoom() {
     [progressQ.data],
   );
   const judgesQ = api.judging.admin.getAllJudges.useQuery(undefined, poll);
+  const roundQ = api.judging.admin.getRound.useQuery(undefined, {
+    refetchInterval: 3000,
+  });
 
   const queries = [progressQ, judgesQ];
   // The oldest of the two, so the label never claims fresher data than shown.
@@ -73,14 +77,20 @@ export default function JudgingControlRoom() {
           </p>
         )}
 
-        <ControlProgress queue={queue} judges={judgesQ.data} now={now} />
+        <ControlProgress
+          queue={queue}
+          judges={judgesQ.data}
+          round={roundQ.data}
+          now={now}
+        />
 
+        <ControlRoundsBar now={now} />
         <ControlTablesStatus
           progress={progressQ.data}
           queue={queue}
           now={now}
         />
-        <ControlQueueTable queue={queue} now={now} />
+        <ControlRoundGrid progress={progressQ.data} round={roundQ.data} />
         <ControlRounds queue={queue} />
       </InternalPage>
     </>

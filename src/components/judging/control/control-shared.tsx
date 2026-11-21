@@ -3,6 +3,7 @@ import { trackEnum } from "~/server/db/schema";
 import { type RouterOutputs } from "~/utils/api";
 
 export type Progress = RouterOutputs["judging"]["admin"]["getProgress"];
+export type RoundOverview = RouterOutputs["judging"]["admin"]["getRound"];
 
 // The "still to judge" view the control room cards render, built from the
 // table-section engine's progress read (see queueFromProgress).
