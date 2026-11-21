@@ -341,8 +341,9 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     phase = "loading";
   } else if (finished) phase = "finished";
   else if (held) phase = "team";
-  else if (gated && pendingStops.length > 0) phase = "waitRound";
+  // Before their first team, judges see who's in their queue (conflicts).
   else if (!started) phase = "welcome";
+  else if (gated && pendingStops.length > 0) phase = "waitRound";
   else if (queueDone) phase = "rescoreReady";
   else phase = "none";
 
