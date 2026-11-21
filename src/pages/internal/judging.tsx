@@ -31,6 +31,9 @@ export default function JudgingControlRoom() {
     [progressQ.data],
   );
   const judgesQ = api.judging.admin.getAllJudges.useQuery(undefined, poll);
+  const roundQ = api.judging.admin.getRound.useQuery(undefined, {
+    refetchInterval: 3000,
+  });
 
   const queries = [progressQ, judgesQ];
   // The oldest of the two, so the label never claims fresher data than shown.
@@ -74,7 +77,12 @@ export default function JudgingControlRoom() {
           </p>
         )}
 
-        <ControlProgress queue={queue} judges={judgesQ.data} now={now} />
+        <ControlProgress
+          queue={queue}
+          judges={judgesQ.data}
+          round={roundQ.data}
+          now={now}
+        />
 
         <ControlRoundsBar now={now} />
         <ControlTablesStatus
