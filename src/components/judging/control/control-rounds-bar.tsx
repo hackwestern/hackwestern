@@ -268,7 +268,7 @@ export function ControlRoundsBar({ now }: { now: number }) {
             onClick={() => {
               if (
                 window.confirm(
-                  `End round ${r.round} now? Judges can't submit any more scores in it.`,
+                  `End round ${r.round} now? Judges move on to the next round. Anyone who hasn't scored can still finish that team late from My teams.`,
                 )
               )
                 end.mutate();

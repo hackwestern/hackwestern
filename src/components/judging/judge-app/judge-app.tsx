@@ -259,6 +259,13 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         .filter((s) => !pendingStops.includes(s))
         .sort((a, b) => a.position - b.position)
     : [];
+  // New tables to judge (a hand-off, a top-up, or a step left on this phone
+  // from a test run) send the judge back to the first pass.
+  useEffect(() => {
+    if (!hydrated || stage === "first" || pendingStops.length === 0) return;
+    setStage("first");
+    writeStage(judgeKey, "first");
+  }, [hydrated, stage, pendingStops.length, judgeKey]);
   const activeStops = !gated
     ? pendingStops
     : roundOpen

@@ -99,8 +99,10 @@ Table 1 is judged by J1, J12 and J24.
 
 ## Timed rounds
 
-Judges don't wander. **Round N is every judge's Nth stop** (`position` N), and
-only the current round's stop can be started, scored or reported absent.
+Judges don't wander. **Round N is every judge's Nth stop** (`position` N).
+Stops in future rounds are refused; any stop whose round has started can be
+started, scored or reported absent, so a judge who runs out of time can still
+finish that team late.
 
 - One row of state, `judging_round`: current round, status, round length
   (default 10 minutes) and the timer.
@@ -109,9 +111,16 @@ only the current round's stop can be started, scored or reported absent.
   with no stop in the round sits it out.
 - **Pause** stops the clock (`running -> paused`, `remaining_ms` kept). Scoring
   still works while paused. **Resume** carries on from the time left.
-- At 0, or when an organizer ends the round, it is `closed`: the server refuses
-  every start, score and absent report ("Time's up"). A running round whose
-  `ends_at` has passed is treated as closed when read, so nothing has to tick.
+- At 0, or when an organizer ends the round, it is `closed`. Stops still in
+  progress are released back to `assigned`. A running round whose `ends_at` has
+  passed is treated as closed when read, so nothing has to tick.
+- **Late scoring.** An unscored stop from a round that has ended is "missed".
+  The judge moves on: the Next screen shows the current round's table (or "Up
+  next" between rounds), and My teams lists the missed team with a **Score
+  late** button, during the first pass and while re-scoring. A late score made
+  while re-scoring counts as re-scored. The score form stays on the team it was
+  opened for even if the next round starts, so a score never lands on another
+  team.
 - An organizer then starts the next round. Starting is refused while a round is
   open and after the last round (the most stops any judge has).
 - **Reset** goes back to before round 1; marks are kept. Turning "Judges follow
@@ -139,7 +148,8 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
 - A judge has at most one stop `in_progress` at a time.
 - A judge can only act on their **current stop**: the one in progress, else
   their first `assigned` stop in walking order. Start, submit and report absent
-  are refused for any other stop.
+  are refused for any other stop, except stops from rounds that have already
+  ended (late scoring, see Timed rounds).
 - Submitting writes the `team_mark` (score + breakdown) for the team seated at
   the table and marks the stop `done` in one transaction.
 - Start and submit also send the `teamId` the judge's screen showed. If a

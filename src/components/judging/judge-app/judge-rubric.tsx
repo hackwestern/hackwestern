@@ -280,7 +280,7 @@ export function JudgeRubric({
             ? `Mark table ${table} as not here?`
             : "Mark this team as not here?"
         }
-        description="No score will be saved. You won't be given this team again."
+        description="This takes the team out of judging for every judge. Only an organizer can undo it."
         confirmLabel="Team not here"
         cancelLabel="Keep scoring"
         onConfirm={() => void absent()}
