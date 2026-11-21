@@ -1142,3 +1142,9 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 - **Decision:** a sponsor not ticked for "Coffee Chats & Interviews" on Sponsor Day-Of (or opted out) is off the coffee board, shows no Coffee chats block on My sponsors, and reads "—" for availability, shortlist, chats and invites on organizer Home. Saved prefs or reps no longer put an unticked sponsor on the board.
 - **Why:** Jazz: sponsors with no coffee chats should not have to fill out availability or anything else; organizers were still being told to chase them.
 - **Alternatives:** keep showing them as "not submitted" (noise); a new "no chats" column (the checkbox already says it). If the checkbox can't be read, the old rule still applies so nobody is hidden by a Google hiccup.
+
+## 2026-11-21: Home table sort + filter, Add a rep in Book an event, coffee chats until 9 PM
+- **Sort:** press a Home column header to sort (first press = furthest along, e.g. most chats; again flips). Phones get a Sort by menu. "—" cells always last.
+- **Filter:** Show All / Judging / Coffee chats / Workshop / To fix above the table.
+- **Add a rep:** Book an event can add a rep the sponsor forgot. Organizer-only `addEventRep`: 0 chats, free all day, no "changed after Send", so schedules and invites stay put. Alternative (reuse the sponsor addRep) rejected: it gives default chats and flags the sponsor as changed.
+- **9 PM:** sessions 17-20 (5-9 PM) added. Existing reps are not free then (nothing saved); new sponsor-added reps start free in the daytime only. Jazz: assume reps have not said they are free in the evening.

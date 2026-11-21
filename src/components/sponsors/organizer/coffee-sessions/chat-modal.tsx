@@ -699,6 +699,33 @@ export function BookingForm({
   const [q, setQ] = useState("");
   const [query, setQuery] = useState("");
   const [err, setErr] = useState<string | null>(null);
+  // "+ Add a rep": a rep the sponsor forgot, saved and ticked here.
+  const [adding, setAdding] = useState(false);
+  const [newRep, setNewRep] = useState({ name: "", phone: "" });
+  const [addRepErr, setAddRepErr] = useState<string | null>(null);
+  const utils = api.useUtils();
+  const addRep = api.coffeeChatSessions.addEventRep.useMutation({
+    onSuccess: async (rep) => {
+      setRepIds((ids) => [...ids, rep.id]);
+      setNewRep({ name: "", phone: "" });
+      setAdding(false);
+      setAddRepErr(null);
+      await utils.coffeeChatSessions.bookingOptions.invalidate();
+    },
+    onError: (e) => setAddRepErr(e.message),
+  });
+  const saveRep = () => {
+    const name = newRep.name.trim();
+    const phone = newRep.phone.trim();
+    if (!name || !phone) return setAddRepErr(bc.addRepNeed);
+    addRep.mutate({ sponsorId, name, phone });
+  };
+  // Enter in the add-rep fields saves the rep, not the whole booking.
+  const saveOnEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    saveRep();
+  };
   // Search once typing pauses.
   useEffect(() => {
     const t = setTimeout(() => setQuery(q.trim()), 250);
@@ -866,6 +893,8 @@ export function BookingForm({
           onChange={(e) => {
             setSponsorId(e.target.value);
             setRepIds([]);
+            setAdding(false);
+            setAddRepErr(null);
             setUserIds([]);
           }}
         >
@@ -950,6 +979,83 @@ export function BookingForm({
             <p className="m-0 text-[15px] text-dashboard-text-medium">
               {bc.noReps}
             </p>
+          )}
+          {/* A rep the sponsor forgot: add them here, ticked right away. */}
+          {adding ? (
+            <div className="flex flex-col gap-2 rounded-dashboard-md border border-dashboard-border-default p-3">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input
+                  aria-label={bc.addRepName}
+                  placeholder={bc.addRepName}
+                  className={input}
+                  value={newRep.name}
+                  maxLength={255}
+                  autoComplete="off"
+                  onKeyDown={saveOnEnter}
+                  onChange={(e) =>
+                    setNewRep((v) => ({ ...v, name: e.target.value }))
+                  }
+                />
+                <input
+                  aria-label={bc.addRepPhone}
+                  placeholder={bc.addRepPhone}
+                  className={input}
+                  type="tel"
+                  value={newRep.phone}
+                  maxLength={32}
+                  autoComplete="off"
+                  onKeyDown={saveOnEnter}
+                  onChange={(e) =>
+                    setNewRep((v) => ({ ...v, phone: e.target.value }))
+                  }
+                />
+              </div>
+              <p className="m-0 text-sm text-dashboard-text-medium">
+                {bc.addRepHint}
+              </p>
+              {addRepErr && (
+                <p
+                  role="alert"
+                  className="m-0 text-sm font-medium text-dashboard-text-warning"
+                >
+                  {addRepErr}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <DashboardButton
+                  type="button"
+                  variant="primary"
+                  className="h-11"
+                  disabled={addRep.isPending}
+                  onClick={saveRep}
+                >
+                  {addRep.isPending ? bc.addRepSaving : bc.addRepSave}
+                </DashboardButton>
+                <DashboardButton
+                  type="button"
+                  variant="outline"
+                  className="h-11"
+                  onClick={() => {
+                    setAdding(false);
+                    setAddRepErr(null);
+                  }}
+                >
+                  {bc.addRepCancel}
+                </DashboardButton>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className={cn(
+                "min-h-11 self-start rounded-dashboard-md px-2 text-[15px] font-semibold text-dashboard-action-primary",
+                "[@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
+                focusRing,
+              )}
+            >
+              {bc.addRep}
+            </button>
           )}
         </fieldset>
       )}

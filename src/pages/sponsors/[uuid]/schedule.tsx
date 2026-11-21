@@ -139,7 +139,7 @@ export default function SponsorSchedulePage() {
               title: copy.chatsPlaceholder,
               location: null,
               start: 600,
-              end: 1020,
+              end: 1260,
             },
           ];
   // The run of show's own coffee chat row is replaced by the sponsor's chats.

@@ -67,7 +67,7 @@ export const COFFEE_CHAT_ROOM_PEOPLE = 6;
  * Saturday coffee chat rooms organizers give sponsors blocks in (same
  * labels as migration 0040). Docs/decisions.md 2026-11-15.
  */
-// Rm 1348-1358 added (Jazz, 2026-11-18): also Sat 10 AM-5 PM.
+// Rm 1348-1358 added (Jazz, 2026-11-18): also Sat 10 AM-5 PM; all rooms until 9 PM (2026-11-21).
 export const COFFEE_CHAT_ROOMS = [
   "Rm 2241",
   "Rm 2242",

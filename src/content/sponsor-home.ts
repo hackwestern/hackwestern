@@ -155,7 +155,7 @@ export const AGENDA: AgendaStep[] = [
     id: "sp",
     day: 1,
     start: 600,
-    end: 1020,
+    end: 1260,
     title: "Coffee chats",
     sub: "We confirm your reps' times and rooms at 10:00 PM Friday.",
     action: "chats",
