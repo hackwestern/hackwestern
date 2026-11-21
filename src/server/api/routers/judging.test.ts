@@ -681,12 +681,14 @@ describe("judge flow", () => {
         teamId: null,
       }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
+    // Team 12 now sits at the first stop's table.
     await expect(
       j.caller.judging.me.reportAbsent({
-        assignmentId: second!.id,
-        teamId: second!.team!.id,
+        assignmentId: first!.id,
+        teamId: teamIds[11]!,
       }),
     ).resolves.toMatchObject({ status: "team_absent" });
+    expect(second).toBeDefined();
   });
 
   test("auto-assign counts only organizer judges toward the 3 per table", async () => {
@@ -856,6 +858,15 @@ describe("judge flow", () => {
     );
     assertDefined(empty, "expected table 2 in the section");
     expect(empty.team).toBeNull();
+    // The added table is last in the route; score the stops before it first.
+    for (const stop of await stopsOf(js[0]!.caller)) {
+      if (stop.id === empty.id) break;
+      await js[0]!.caller.judging.me.submitStop({
+        assignmentId: stop.id,
+        teamId: stop.team?.id ?? "none",
+        score: 5,
+      });
+    }
     await expect(
       js[0]!.caller.judging.me.submitStop({
         assignmentId: empty.id,
@@ -867,6 +878,80 @@ describe("judge flow", () => {
       assignmentId: empty.id,
     });
     expect(row.status).toBe("team_absent");
+  });
+
+  test("a judge can only start, score or report absent on their current stop", async () => {
+    const { judges: js } = await setupRoom({ tableCount: 3, judgeCount: 3 });
+    const j = js[0]!;
+    const [a, b] = await stopsOf(j.caller);
+    const notCurrent = {
+      code: "CONFLICT",
+      message: "That isn't your current table. Refresh your list.",
+    };
+    await expect(
+      j.caller.judging.me.startStop({
+        assignmentId: b!.id,
+        teamId: b!.team?.id ?? "none",
+      }),
+    ).rejects.toMatchObject(notCurrent);
+    await expect(
+      j.caller.judging.me.submitStop({
+        assignmentId: b!.id,
+        teamId: b!.team?.id ?? "none",
+        score: 5,
+      }),
+    ).rejects.toMatchObject(notCurrent);
+    await expect(
+      j.caller.judging.me.reportAbsent({ assignmentId: b!.id }),
+    ).rejects.toMatchObject(notCurrent);
+    // Once the current stop is done, the next one is current.
+    await j.caller.judging.me.submitStop({
+      assignmentId: a!.id,
+      teamId: a!.team?.id ?? "none",
+      score: 5,
+    });
+    await expect(
+      j.caller.judging.me.startStop({
+        assignmentId: b!.id,
+        teamId: b!.team?.id ?? "none",
+      }),
+    ).resolves.toMatchObject({ status: "in_progress" });
+  });
+
+  test("absence is final: every other judge's open stop at the table closes", async () => {
+    const { judges: js } = await setupRoom({ tableCount: 3, judgeCount: 3 });
+    const first = await firstStop(js[0]!.caller);
+    const tableNumber = first.table.number;
+    // Another judge is mid-score at the same table.
+    const other = (await stopsOf(js[1]!.caller)).find(
+      (s) => s.table.number === tableNumber,
+    );
+    assertDefined(other, "expected the table in the second judge's section");
+    await js[1]!.caller.judging.me.startStop({
+      assignmentId: other.id,
+      teamId: other.team?.id ?? "none",
+    });
+
+    await js[0]!.caller.judging.me.reportAbsent({
+      assignmentId: first.id,
+      teamId: first.team?.id ?? null,
+    });
+
+    for (const j of js) {
+      const stop = (await stopsOf(j.caller)).find(
+        (s) => s.table.number === tableNumber,
+      );
+      expect(stop?.status).toBe("team_absent");
+    }
+    // The judge who was mid-score can't submit for the absent team.
+    await expect(
+      js[1]!.caller.judging.me.submitStop({
+        assignmentId: other.id,
+        teamId: other.team?.id ?? "none",
+        score: 7,
+      }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+    expect((await tableByNumber(tableNumber)).status).toBe("finished");
   });
 
   test("judges can't touch another judge's stops", async () => {
@@ -1223,10 +1308,10 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
       teamId: stop.team?.id ?? "none",
       score: 6,
     });
-    const [, second] = await stopsOf(js[1]!.caller);
+    const second = await firstStop(js[1]!.caller);
     await js[1]!.caller.judging.me.startStop({
-      assignmentId: second!.id,
-      teamId: second!.team?.id ?? "none",
+      assignmentId: second.id,
+      teamId: second.team?.id ?? "none",
     });
 
     const p = await org.caller.judging.admin.getProgress();
@@ -1248,7 +1333,7 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
       col: 2,
     });
     const busy = p.judges.find((j) => j.id === js[1]!.session.user.id);
-    expect(busy?.current?.tableNumber).toBe(second!.table.number);
+    expect(busy?.current?.tableNumber).toBe(second.table.number);
   });
 
   test("getAllJudges shows the team each judge is at right now", async () => {
@@ -1354,6 +1439,8 @@ describe("cheat check sweep trigger", () => {
     await org.caller.judging.admin.autoAssign();
     for (const j of js) {
       for (const stop of await stopsOf(j.caller)) {
+        // Another judge already reported this table absent, which closed it.
+        if (stop.status !== "assigned") continue;
         if (stop.team) {
           await j.caller.judging.me.submitStop({
             assignmentId: stop.id,
@@ -1456,6 +1543,23 @@ describe("getLatestRanking", () => {
     expect(byTeam.get(t2)).toBeCloseTo(-1, 5);
     expect(ranking[0]?.team_id).toBe(t1);
     expect(Number(ranking[0]?.num_marks)).toBe(3);
+  });
+  test("a team reported absent leaves the ranking, and its marks don't count", async () => {
+    const {
+      org,
+      judges: js,
+      teamIds,
+    } = await setupRoom({ tableCount: 3, judgeCount: 3 });
+    // Judge 1 scores every team; judge 2 then finds the first team gone.
+    await scoreAll(js[0]!, 6);
+    const first = await firstStop(js[1]!.caller);
+    await js[1]!.caller.judging.me.reportAbsent({
+      assignmentId: first.id,
+      teamId: first.team?.id ?? null,
+    });
+    const ranking = await org.caller.judging.admin.getLatestRanking();
+    expect(ranking.map((r) => r.team_id)).not.toContain(first.team?.id);
+    expect(ranking).toHaveLength(teamIds.length - 1);
   });
 });
 
