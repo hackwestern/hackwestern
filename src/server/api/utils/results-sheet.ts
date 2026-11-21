@@ -97,6 +97,7 @@ const num = (n: number | null | undefined): Cell =>
 export const COMPLETENESS_LABEL = "Completeness (0-10)";
 const RESULTS_HEADER: string[] = [
   "Rank",
+  "Final",
   "Table",
   "Team / Judge",
   "Judges",
@@ -104,7 +105,6 @@ const RESULTS_HEADER: string[] = [
   "Devpost",
   "GitHub",
   COMPLETENESS_LABEL,
-  "Final",
   "Super likes",
   ...DEFAULT_RUBRIC.criteria.map((c) => c.name),
   "Sponsor judges",
@@ -114,10 +114,10 @@ const RESULTS_HEADER: string[] = [
 ];
 const col = (label: string) => RESULTS_HEADER.indexOf(label);
 const RANK_COL = col("Rank"); // A
-const NAME_COL = col("Team / Judge"); // C
-const AVERAGE_COL = col("Average"); // E
-const COMPLETENESS_COL = col(COMPLETENESS_LABEL); // H
-const FINAL_COL = col("Final"); // I
+const NAME_COL = col("Team / Judge"); // D
+const AVERAGE_COL = col("Average"); // F
+const COMPLETENESS_COL = col(COMPLETENESS_LABEL); // I
+const FINAL_COL = col("Final"); // B
 const TEAM_ID_COL = col("Team ID"); // last
 
 /**
@@ -219,6 +219,7 @@ export function buildResultsRows(
       bold: true,
       cells: [
         rank ?? "",
+        finalFormula(rows.length + 1),
         r.team.table ?? "",
         r.team.name,
         r.regular.count,
@@ -226,7 +227,6 @@ export function buildResultsRows(
         linkCell(r.team.devpost, "Devpost"),
         linkCell(r.team.github, "GitHub"),
         scores.get(r.team.id) ?? "",
-        finalFormula(rows.length + 1),
         r.regular.superLikes + r.sponsored.superLikes,
         ...criteria.map((c) => num(r.regular.criteria[c.id])),
         r.sponsored.count,
@@ -246,10 +246,10 @@ export function buildResultsRows(
           cells: [
             "",
             "",
+            "",
             `${JUDGE_PREFIX} ${m.judgeName}`,
             round === "regular" ? "judge" : "sponsor",
             round === "regular" ? num(m.score) : "",
-            "",
             "",
             "",
             "",

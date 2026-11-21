@@ -69,7 +69,7 @@ describe("buildResultsRows", () => {
   });
 
   test("ranks team rows by regular average; unmarked teams last", () => {
-    expect(teamRows.map((r) => r.cells[2])).toEqual([
+    expect(teamRows.map((r) => r.cells[3])).toEqual([
       "Bravo",
       "Alpha",
       "Charlie",
@@ -78,7 +78,7 @@ describe("buildResultsRows", () => {
   });
 
   test("each team row is followed by its judge rows", () => {
-    expect(rows.map((r) => r.cells[2])).toEqual([
+    expect(rows.map((r) => r.cells[3])).toEqual([
       "Team / Judge",
       "Bravo",
       "↳ Jo",
@@ -91,20 +91,20 @@ describe("buildResultsRows", () => {
   });
 
   test("team averages are rounded; judge scores go in their round's column", () => {
-    const alpha = teamRows.find((r) => r.cells[2] === "Alpha")!.cells;
+    const alpha = teamRows.find((r) => r.cells[3] === "Alpha")!.cells;
     expect(alpha[col("Average")]).toBe(6.5);
     expect(alpha[col("Innovation + Impact")]).toBe(6.5);
-    const spon = rows.find((r) => r.cells[2] === "↳ Spon")!.cells;
+    const spon = rows.find((r) => r.cells[3] === "↳ Spon")!.cells;
     expect(spon[col("Average")]).toBe("");
     expect(spon[col("Sponsor average")]).toBe(8);
     expect(spon[col("Notes")]).toBe("great demo");
-    const sam = rows.find((r) => r.cells[2] === "↳ Sam")!.cells;
+    const sam = rows.find((r) => r.cells[3] === "↳ Sam")!.cells;
     expect(sam[col("Average")]).toBe(7);
   });
 
   test("super likes: count on team rows, heart on judge rows", () => {
     const cellOf = (label: string) =>
-      rows.find((r) => r.cells[2] === label)!.cells[col("Super likes")];
+      rows.find((r) => r.cells[3] === label)!.cells[col("Super likes")];
     expect(cellOf("Alpha")).toBe(1);
     expect(cellOf("Bravo")).toBe(1); // a sponsor judge's heart counts too
     expect(cellOf("Charlie")).toBe(0);
@@ -192,23 +192,23 @@ describe("Completeness and Final columns", () => {
       ]),
     );
     const { rows } = buildResultsRows(results);
-    const alpha = rows.find((r) => r.cells[2] === "Alpha")!.cells;
+    const alpha = rows.find((r) => r.cells[3] === "Alpha")!.cells;
     expect(alpha[at("Technical Complexity")]).toBe(6.5);
   });
 
-  test("sit right after Average and the links", () => {
-    expect(header.slice(4, 9)).toEqual([
+  test("Final sits right after Rank; Completeness after Average and the links", () => {
+    expect(header.slice(0, 2)).toEqual(["Rank", "Final"]);
+    expect(header.slice(5, 9)).toEqual([
       "Average",
       "Devpost",
       "GitHub",
       COMPLETENESS_LABEL,
-      "Final",
     ]);
   });
 
   test("links show a short name, not the whole URL", () => {
     const { rows } = buildResultsRows(results);
-    const alpha = rows.find((r) => r.cells[2] === "Alpha")!.cells;
+    const alpha = rows.find((r) => r.cells[3] === "Alpha")!.cells;
     expect(alpha[at("Devpost")]).toEqual({
       text: "Devpost",
       link: "https://devpost.com/a",
@@ -225,20 +225,20 @@ describe("Completeness and Final columns", () => {
 
   test("team rows get the typed score and a Final formula for their row", () => {
     const { rows } = buildResultsRows(results, new Map([["a", 8]]));
-    const alphaIndex = rows.findIndex((r) => r.cells[2] === "Alpha");
+    const alphaIndex = rows.findIndex((r) => r.cells[3] === "Alpha");
     const alpha = rows[alphaIndex]!.cells;
     expect(alpha[at(COMPLETENESS_LABEL)]).toBe(8);
     const sheetRow = alphaIndex + 1;
     expect(alpha[at("Final")]).toEqual({
-      formula: `=IF(E${sheetRow}="", "", IF(ISNUMBER(H${sheetRow}), ROUND((E${sheetRow} * 5 + H${sheetRow}) / 6, 2), E${sheetRow}))`,
+      formula: `=IF(F${sheetRow}="", "", IF(ISNUMBER(I${sheetRow}), ROUND((F${sheetRow} * 5 + I${sheetRow}) / 6, 2), F${sheetRow}))`,
     });
-    const bravo = rows.find((r) => r.cells[2] === "Bravo")!.cells;
+    const bravo = rows.find((r) => r.cells[3] === "Bravo")!.cells;
     expect(bravo[at(COMPLETENESS_LABEL)]).toBe("");
   });
 
   test("judge rows leave both blank", () => {
     const { rows } = buildResultsRows(results, new Map([["a", 8]]));
-    for (const r of rows.filter((r) => String(r.cells[2]).startsWith("↳"))) {
+    for (const r of rows.filter((r) => String(r.cells[3]).startsWith("↳"))) {
       expect(r.cells[at(COMPLETENESS_LABEL)]).toBe("");
       expect(r.cells[at("Final")]).toBe("");
     }
@@ -257,7 +257,7 @@ describe("Completeness and Final columns", () => {
     expect(validated).toEqual(buildResultsRows(results).teamRows);
     expect(
       requests.filter((r) => r.setDataValidation)[0]!.setDataValidation!.range,
-    ).toMatchObject({ startColumnIndex: 7, endColumnIndex: 8 });
+    ).toMatchObject({ startColumnIndex: 8, endColumnIndex: 9 });
     const rules = requests
       .filter((r) => r.addConditionalFormatRule)
       .map((r) => r.addConditionalFormatRule!.rule!);
@@ -270,7 +270,7 @@ describe("Completeness and Final columns", () => {
 
   test("the summary tab ranks Results' team rows by Final", () => {
     expect(summaryFormula()).toBe(
-      '={"Rank", "Team", "Final"; LET(t, SORT(FILTER({Results!C2:C, Results!I2:I}, Results!A2:A<>""), 2, FALSE), {SEQUENCE(ROWS(t)), t})}',
+      '={"Rank", "Team", "Final"; LET(t, SORT(FILTER({Results!D2:D, Results!B2:B}, Results!A2:A<>""), 2, FALSE), {SEQUENCE(ROWS(t)), t})}',
     );
   });
 });
@@ -284,8 +284,8 @@ describe("keeping typed scores on a re-export", () => {
     );
     // Someone typed 7 for Alpha, and (wrongly) 5 on a judge row.
     const comp = header.indexOf(COMPLETENESS_LABEL);
-    out.find((r) => r[2] === "Alpha")![comp] = 7;
-    out.find((r) => String(r[2]).startsWith("↳"))![comp] = 5;
+    out.find((r) => r[3] === "Alpha")![comp] = 7;
+    out.find((r) => String(r[3]).startsWith("↳"))![comp] = 5;
     return out;
   };
 
@@ -365,7 +365,7 @@ describe("top teams only", () => {
     const top = topTeams(many, 3);
     const names = buildResultsRows(top)
       .rows.slice(1)
-      .map((r) => r.cells[2]);
+      .map((r) => r.cells[3]);
     expect(
       names.filter((n) => typeof n === "string" && !n.startsWith("↳")),
     ).toEqual(["T1", "T2", "T3"]);
