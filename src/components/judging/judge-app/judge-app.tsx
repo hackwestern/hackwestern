@@ -24,6 +24,7 @@ import {
 import {
   type JudgedTeam,
   JudgeTeams,
+  type UpcomingTeam,
 } from "~/components/judging/judge-app/judge-teams";
 import { JudgeComparison } from "~/components/judging/judge-app/judge-comparison";
 import { JudgeFinal } from "~/components/judging/judge-app/judge-final";
@@ -256,6 +257,19 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
           .filter((s) => s.position > roundView.state.round)
           .sort((a, b) => a.position - b.position)[0]
       : undefined;
+  // My teams lists these: every team the judge can still judge, in order.
+  const membersByTeam = new Map(
+    initial.queueTeams.map((t) => [t.id, t.members]),
+  );
+  const upcomingTeams: UpcomingTeam[] = [...pendingStops]
+    .sort((a, b) => a.position - b.position)
+    .map((s) => ({
+      stopId: s.id,
+      table: s.table.number,
+      teamName: s.team?.name ?? "Team",
+      members: (s.team && membersByTeam.get(s.team.id)) ?? [],
+      round: gated ? s.position : null,
+    }));
   const held = heldStop?.team ?? null;
   const heldTable = held ? (initial.tableByTeam[held.id] ?? null) : null;
 
@@ -665,6 +679,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       ) : (
         <JudgeTeams
           results={results}
+          upcoming={upcomingTeams}
           stage={stage}
           rescored={rescored}
           canSubmit={stage === "rescore" && allRescored}
