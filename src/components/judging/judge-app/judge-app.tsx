@@ -20,6 +20,8 @@ import {
 import {
   JudgeRubric,
   type ScoreSubmission,
+  clearTeamDraft,
+  completeDraft,
 } from "~/components/judging/judge-app/judge-rubric";
 import {
   type JudgedTeam,
@@ -644,6 +646,46 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     setScoringStopId(null);
     setNextError("That team was closed meanwhile. Check the Next tab.");
   }, [scoring, scoringStopId, stopsQuery.data]);
+
+  // When a round's time runs out, a fully rated draft for that round's team is
+  // sent as if the judge pressed Submit (even from another tab or after a
+  // reload). An incomplete draft stays a missed team, scored late from My teams.
+  const roundWasOpen = useRef(false);
+  const autoSubmitting = useRef(false);
+  const autoSubmit = useRef<() => void>(() => undefined);
+  autoSubmit.current = () => {
+    if (!gated || autoSubmitting.current) return;
+    const stop = openStops.find(
+      (s) => s.position === roundView?.state.round && s.team,
+    );
+    const teamId = stop?.team?.id;
+    if (!stop || !teamId) return;
+    const draft = completeDraft(RUBRIC, judgeKey, teamId);
+    if (!draft) return;
+    autoSubmitting.current = true;
+    void (async () => {
+      try {
+        await submit.mutateAsync({
+          assignmentId: stop.id,
+          teamId,
+          score: draft.score,
+          breakdown: toBreakdown(draft.ratings, draft.notes, draft.superLike),
+        });
+        clearTeamDraft(judgeKey, teamId);
+        if (scoring && scoringStopId === stop.id) await finishTeam();
+        else await Promise.all([marksQuery.refetch(), stopsQuery.refetch()]);
+      } catch {
+        // Not sent: the team stays missed and can be scored late.
+      } finally {
+        autoSubmitting.current = false;
+      }
+    })();
+  };
+  useEffect(() => {
+    const justClosed = roundWasOpen.current && !roundOpen;
+    roundWasOpen.current = roundOpen;
+    if (justClosed) autoSubmit.current();
+  }, [roundOpen]);
 
   // What the Score tab has open, whichever tab is showing.
   const editOpen = editingTeam !== undefined && canEdit;

@@ -67,6 +67,32 @@ function clearDraft(key: string) {
   }
 }
 
+/**
+ * A judge's saved draft for a team, as a submission, when every criterion is
+ * rated (for the end-of-round autosave). Null when it isn't complete.
+ */
+export function completeDraft(
+  rubric: Rubric,
+  judgeKey: string,
+  teamId: string,
+): ScoreSubmission | null {
+  const draft = readDraft(`${judgeKey}-${teamId}`);
+  const count = rubric.criteria.length;
+  const result = scoreRubric(rubric, draft.ratings);
+  if (count === 0 || result.rated !== count) return null;
+  return {
+    ratings: draft.ratings,
+    score: result.score,
+    notes: draft.notes.trim(),
+    superLike: draft.superLike,
+  };
+}
+
+/** Drops a team's draft once its score reached the server. */
+export function clearTeamDraft(judgeKey: string, teamId: string) {
+  clearDraft(`${judgeKey}-${teamId}`);
+}
+
 type SaveState = "saved" | "saving" | "error";
 
 const SAVE_LABEL: Record<SaveState, string> = {
