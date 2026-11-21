@@ -5,6 +5,7 @@ import { InternalPage } from "~/components/internals/page-shell";
 import { ControlRoundGrid } from "~/components/judging/control/control-round-grid";
 import { ControlRoundsBar } from "~/components/judging/control/control-rounds-bar";
 import { ControlProgress } from "~/components/judging/control/control-progress";
+import { ControlBoardToggle } from "~/components/judging/control/control-board-toggle";
 import { ControlRounds } from "~/components/judging/control/control-rounds";
 import { ControlTablesStatus } from "~/components/judging/control/control-tables-status";
 import {
@@ -53,6 +54,7 @@ export default function JudgingControlRoom() {
         }
         actions={
           <>
+            <ControlBoardToggle />
             <Link
               href="/judge"
               className="inline-flex min-h-11 items-center rounded-[10px] bg-[#5b3fa0] px-4 text-[15px] font-bold text-white no-underline hover:bg-[#3f2a75]"
