@@ -14,6 +14,8 @@ import {
 } from "~/lib/sponsor-organizer";
 import { repBlocks, type RepBlock } from "~/lib/organizer-home";
 import { fetchHwContacts } from "~/server/api/utils/sponsor-hw-contacts";
+import { doesChats } from "~/server/api/utils/coffee-chats-on";
+import { coffeeChatSponsorNames } from "~/server/api/utils/sponsor-sheets";
 import {
   createTRPCRouter,
   protectedOrganizerProcedure,
@@ -278,7 +280,7 @@ export const sponsorOrganizerRouter = createTRPCRouter({
    * only; phones come from the database and emails never leave the server.
    */
   mySponsors: protectedOrganizerProcedure.query(async ({ ctx }) => {
-    const [user, contacts, sponsors, prefs, reps, placements, invites] =
+    const [user, contacts, sponsors, prefs, reps, placements, invites, ticked] =
       await Promise.all([
         db.query.users.findFirst({
           where: eq(users.id, ctx.session.user.id),
@@ -286,7 +288,10 @@ export const sponsorOrganizerRouter = createTRPCRouter({
         }),
         fetchHwContacts(),
         db
-          .select({ id: sponsorJudgingSponsors.id })
+          .select({
+            id: sponsorJudgingSponsors.id,
+            name: sponsorJudgingSponsors.name,
+          })
           .from(sponsorJudgingSponsors),
         db
           .select({
@@ -326,14 +331,30 @@ export const sponsorOrganizerRouter = createTRPCRouter({
           })
           .from(coffeeChats)
           .where(isNotNull(coffeeChats.placementId)),
+        // Sponsor Day-Of's "Coffee Chats & Interviews" checkbox.
+        coffeeChatSponsorNames(),
       ]);
     const sponsorOfRep = new Map(reps.map((r) => [r.id, r.sponsorId]));
     const out: Record<
       string,
-      { reps: SponsorRep[]; chats: MySponsorChats; blocks: RepBlock[] }
+      {
+        reps: SponsorRep[];
+        /** Undefined when the sponsor doesn't do coffee chats. */
+        chats: MySponsorChats | undefined;
+        blocks: RepBlock[];
+      }
     > = {};
-    for (const { id } of sponsors) {
+    for (const { id, name: sponsorName } of sponsors) {
       const mine = reps.filter((r) => r.sponsorId === id);
+      const pref = prefs.find((p) => p.sponsorId === id) ?? null;
+      // Not doing chats (unticked or opted out): no chat progress, so the
+      // Home and My sponsors don't chase them for availability.
+      const chatsOn = doesChats(
+        ticked,
+        sponsorName,
+        pref?.submittedAt,
+        mine.map((r) => r.chatsWanted),
+      );
       const theirPlacements = placements.filter(
         (p) => sponsorOfRep.get(p.repId) === id,
       );
@@ -354,12 +375,14 @@ export const sponsorOrganizerRouter = createTRPCRouter({
             position,
           }),
         ),
-        chats: mySponsorChats({
-          pref: prefs.find((p) => p.sponsorId === id) ?? null,
-          reps: mine,
-          placements: theirPlacements,
-          invites: theirInvites,
-        }),
+        chats: chatsOn
+          ? mySponsorChats({
+              pref,
+              reps: mine,
+              placements: theirPlacements,
+              invites: theirInvites,
+            })
+          : undefined,
       };
     }
     const rows = contacts?.value ?? [];

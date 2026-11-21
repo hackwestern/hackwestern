@@ -7,6 +7,8 @@ import {
 } from "~/components/sponsors/schedule-states";
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { sponsorScanCopy as copy } from "~/content/sponsor-scan";
+import { NoChats } from "~/components/sponsors/coffee-setup/no-chats";
+import { showChats } from "~/lib/sponsor-chats";
 import { badgeCodeOf } from "~/lib/use-qr-scanner";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
@@ -24,6 +26,10 @@ export default function SponsorScanPage() {
       : null;
 
   // Only to tell a wrong link apart early (and it warms the rep list).
+  const portalInfo = api.sponsorPortal.getSponsorPortalInfo.useQuery(
+    { sponsor: id },
+    { enabled: validUuid, refetchOnWindowFocus: false, retry: false },
+  );
   const sponsorQ = api.coffeeChatSetup.get.useQuery(
     { sponsor: id },
     { enabled: validUuid, retry: false, refetchOnWindowFocus: false },
@@ -43,6 +49,10 @@ export default function SponsorScanPage() {
   );
 
   if (!router.isReady) return shell(<ScheduleSkeleton />);
+  // Scanning invites a hacker to a coffee chat: not for sponsors without.
+  if (validUuid && !showChats(portalInfo.data)) {
+    return shell(<NoChats homeHref={`/sponsors/${id}`} />);
+  }
   if (!validUuid || sponsorQ.error?.data?.code === "NOT_FOUND") {
     return shell(<InvalidLink />);
   }

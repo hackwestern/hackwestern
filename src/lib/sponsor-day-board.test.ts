@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { RunOfShowItem } from "~/lib/run-of-show";
 import {
+  fridayCounts,
   hasArrived,
   parseDayParam,
   round1State,
@@ -60,6 +61,30 @@ describe("Friday", () => {
     expect(hasArrived("Not arrived")).toBe(false);
     expect(hasArrived("Checked in")).toBe(true);
     expect(hasArrived("Left")).toBe(true);
+  });
+
+  it("leaves digital sponsors out of the arrived and link counts", () => {
+    const counts = fridayCounts(
+      [
+        { status: "Checked in", digital: false, sponsorId: "A" },
+        { status: "Not arrived", digital: false, sponsorId: "b" },
+        { status: "Left", digital: false, sponsorId: null },
+        // Digital: never arrive, no portal link.
+        { status: "Not arrived", digital: true, sponsorId: "D" },
+        { status: "Not arrived", digital: true, sponsorId: null },
+      ],
+      [
+        { sponsorId: "a", linkGivenAt: "2026-11-20T22:00:00Z" },
+        { sponsorId: "b", linkGivenAt: null },
+        { sponsorId: "d", linkGivenAt: null },
+      ],
+    );
+    expect(counts).toEqual({
+      arrived: 2,
+      expected: 3,
+      linkGiven: 1,
+      linkExpected: 2,
+    });
   });
 });
 

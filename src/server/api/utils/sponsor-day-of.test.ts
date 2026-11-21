@@ -10,10 +10,12 @@ vi.mock("~/server/api/utils/run-of-show-sheet", async (importOriginal) => ({
 
 import {
   fetchAllSponsorInfo,
+  isDigitalFormat,
   normalizeTier,
   parseSponsorDayOfColumns,
   parseSponsorDayOfRows,
   sheetSponsorsFromDayOf,
+  sponsorDayOfCache,
   sponsorInfoFromDayOf,
   type SheetsClient,
 } from "~/server/api/utils/sponsor-sheets";
@@ -145,6 +147,7 @@ describe("Sponsor Day-Of reads", () => {
       atCcWorkshop: null,
       // No "Chatting hours" column in this header: no limit.
       chattingMinutes: null,
+      digital: false,
     });
     // Blank cells read as before: Not arrived, TBD, an em dash, empty.
     expect(info.get("globex")).toMatchObject({
@@ -159,7 +162,21 @@ describe("Sponsor Day-Of reads", () => {
       hwContact: "—",
       roomNumber: "Remote",
       hasPrizeTrack: true,
+      digital: true,
     });
+    expect(info.get("globex")?.digital).toBe(false);
+  });
+
+  test("In person / Digital: only Digital counts, blank is in person", () => {
+    expect(isDigitalFormat("Digital")).toBe(true);
+    expect(isDigitalFormat(" digital ")).toBe(true);
+    expect(isDigitalFormat("In person")).toBe(false);
+    expect(isDigitalFormat("")).toBe(false);
+    const noColumn = parseSponsorDayOfRows("Sponsor Day-Of", [
+      ["Sponsor Name", "Status"],
+      ["Acme", "Not arrived"],
+    ])!;
+    expect(sponsorInfoFromDayOf(noColumn)?.get("acme")?.digital).toBe(false);
   });
 
   test("an optional Tier column feeds the portal's welcome line", () => {
@@ -313,6 +330,8 @@ describe("sponsor status writes", () => {
     expect(sponsorStatusCell(dayOf, " globex ")).toEqual({
       ok: true,
       range: "'Sponsor Day-Of'!E3",
+      rowIndex: 2,
+      col: 4,
     });
     expect(sponsorStatusCell(dayOf, "Every on-site sponsor")).toEqual({
       ok: false,
@@ -341,6 +360,20 @@ describe("sponsor status writes", () => {
       writeSponsorStatus(sheets, "id", "Nobody", "Left"),
     ).resolves.toEqual({ ok: false, reason: "not-found" });
     expect(updates).toHaveLength(1);
+  });
+
+  test("the shared copy holds the new status straight after the write", async () => {
+    const { sheets } = fakeSheets({ "Sponsor Day-Of": ROWS });
+    await writeSponsorStatus(sheets, "id", "Globex", "Checked in");
+    const load = vi.fn(async () => dayOf);
+    const after = await sponsorDayOfCache.read("id", load);
+    // No extra read of the sheet, and the other rows are as read.
+    expect(load).not.toHaveBeenCalled();
+    const info = sponsorInfoFromDayOf(after!)!;
+    expect(info.get("globex")?.status).toBe("Checked in");
+    expect(info.get("acme")?.status).toBe("Checked in");
+    expect(info.get("initech")?.status).toBe("Not arrived");
+    sponsorDayOfCache.clear();
   });
 
   test("no Sponsor Day-Of tab is reported, not created", async () => {
@@ -421,6 +454,14 @@ describe("At CC workshop (coffee chat workshop attendance)", () => {
     expect(on.updates).toEqual([
       { range: "'Sponsor Day-Of'!K3", values: [[true]] },
     ]);
+    // The shared copy reads it back as the sheet will: ticked.
+    const after = await sponsorDayOfCache.read("id", () =>
+      Promise.reject(new Error("should not read")),
+    );
+    expect(sponsorInfoFromDayOf(after!)!.get("globex")?.atCcWorkshop).toBe(
+      true,
+    );
+    sponsorDayOfCache.clear();
     // No column yet: reported, nothing written.
     const old = fakeSheets({ "Sponsor Day-Of": ROWS });
     await expect(

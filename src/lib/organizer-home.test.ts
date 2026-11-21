@@ -146,9 +146,20 @@ describe("doneColumns", () => {
 
 describe("sponsorsOnDay", () => {
   it("shows digital sponsors only on Sunday", () => {
-    const pcb = sponsor({ name: "PCBWay", digital: true });
+    const pcb = sponsor({ name: "PCBWay", digital: true, prizeTrack: true });
     expect(sponsorsOnDay("Saturday", [pcb])).toEqual([]);
     expect(sponsorsOnDay("Sunday", [pcb])).toEqual([pcb]);
+  });
+
+  it("never shows a digital sponsor without a prize track", () => {
+    const shopify = sponsor({
+      name: "Shopify",
+      digital: true,
+      prizeTrack: false,
+    });
+    for (const day of ["Friday", "Saturday", "Sunday"] as const) {
+      expect(sponsorsOnDay(day, [shopify])).toEqual([]);
+    }
   });
 });
 

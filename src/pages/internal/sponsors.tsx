@@ -11,6 +11,7 @@ import {
   useOrganizerLocation,
 } from "~/components/sponsors/organizer/organizer-tabs";
 import { RunOfShowTab } from "~/components/sponsors/organizer/run-of-show-tab";
+import { useSheetSponsors } from "~/components/sponsors/organizer/use-sponsor-writes";
 import { OrganizerTour } from "~/components/sponsors/tour/organizer-tour";
 import {
   LoadError,
@@ -54,10 +55,9 @@ export default function SponsorOrganizerHome() {
     refetchOnWindowFocus: true,
     retry: 1,
   });
-  // Same query (and cache) as the Sponsors tab's board, for the HW leads.
-  const sheetSponsors = api.sponsorDashboard.getSponsors.useQuery(undefined, {
-    refetchInterval: 30000,
-  });
+  // The Home's sheet rows (status pills, HW leads), with its own recent
+  // writes kept over an older server copy.
+  const sheetSponsors = useSheetSponsors();
   const me = mine.data?.me ?? null;
   const contactNames = useMemo(
     () => mine.data?.contactNames ?? [],

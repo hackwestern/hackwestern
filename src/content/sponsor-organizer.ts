@@ -144,6 +144,9 @@ export const sponsorOrganizerCopy = {
       boothTbd: "Booth TBD",
       linkGiven: (time: string) => `Given ${time}`,
       linkNotGiven: "Not given yet",
+      /** Digital sponsors aren't on site and get no portal link. */
+      digital: "Digital: not on site",
+      digitalNoLink: "None (digital sponsor)",
       notRegistered: "No private link yet. Sync from the sponsor sheet.",
       /** The sheet writes seats as "2230 (50)": say "2230 · 50 seats". */
       workshop: (when: string, room: string | null) =>
@@ -331,6 +334,14 @@ export const sponsorOrganizerCopy = {
         : `Mark ${name}'s portal link as given`,
     linkFailed: (message: string) =>
       `Couldn't save the portal link: ${message}`,
+    /**
+     * Sponsor Day-Of "In person / Digital" = Digital: not on site, so no
+     * arrival to mark and no portal link to hand out.
+     */
+    digital: "Digital",
+    digitalLabel: (name: string) =>
+      `${name} is a digital sponsor: not on site, so there's no arrival to track`,
+    digitalNoLink: "No portal link (digital)",
     // Saturday
     slot: (time: string, booked: number, needed: number) =>
       `${time} ${booked}/${needed}`,

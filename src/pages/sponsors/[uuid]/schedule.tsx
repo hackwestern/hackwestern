@@ -23,6 +23,7 @@ import {
   buildSponsorTimeline,
   type TimelineEntry,
 } from "~/lib/sponsor-timeline";
+import { showChats } from "~/lib/sponsor-chats";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
@@ -58,6 +59,10 @@ export default function SponsorSchedulePage() {
     refetchInterval: 60_000,
   });
   const [showHackathon, setShowHackathon] = useShowHackathon();
+  const portalInfo = api.sponsorPortal.getSponsorPortalInfo.useQuery(
+    { sponsor: id },
+    { enabled: validUuid, refetchOnWindowFocus: false, retry: false },
+  );
   // The sponsor's coffee chats (session model): sent chats with invites.
   const setupQ = api.coffeeChatSetup.get.useQuery(
     { sponsor: id },
@@ -95,8 +100,10 @@ export default function SponsorSchedulePage() {
     setup?.reps.find((r) => r.id === repId)?.name ?? "";
   const chatReps =
     setup?.reps.filter((r) => setup.chats.some((c) => c.repId === r.id)) ?? [];
+  // No coffee chats: no chat blocks at all (lib/sponsor-chats).
+  const chatsOn = showChats(portalInfo.data);
   const chatEntries: TimelineEntry[] =
-    shownDay !== "Saturday" || !setup
+    shownDay !== "Saturday" || !setup || !chatsOn
       ? []
       : confirmed
         ? setup.chats
@@ -191,6 +198,8 @@ export default function SponsorSchedulePage() {
         <DayGrid
           day={shownDay}
           entries={entries}
+          // No coffee chats: no empty Coffee chats column either.
+          hiddenColumns={chatsOn ? [] : ["coffee-chats"]}
           now={now}
           headerStart={
             <DayPicker

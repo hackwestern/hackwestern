@@ -91,6 +91,7 @@ export function ChatsHome({
           >
             {data.reps.length ? copy.stageNew.continue : copy.stageNew.start}
           </Link>
+          <OptOut sponsor={sponsor} />
         </section>
       )}
       {(stage === "prefs" || stage === "short") && (
@@ -394,6 +395,80 @@ function Confirmed({ data, teamHref }: { data: SetupData; teamHref: string }) {
               <AlertDialog.Cancel asChild>
                 <button type="button" className={btn.outline}>
                   {warn.cancel}
+                </button>
+              </AlertDialog.Cancel>
+            </div>
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
+    </>
+  );
+}
+
+/**
+ * "We're not doing coffee chats": a clean way out of the required Send
+ * availability step (decisions 2026-11-20). Asks once, then submits with no
+ * chats; the portal drops Chats and Scan and nothing nags.
+ */
+function OptOut({ sponsor }: { sponsor: string }) {
+  const router = useRouter();
+  const utils = api.useUtils();
+  const [asking, setAsking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const o = sponsorSetupCopy.optOut;
+  const optOut = api.coffeeChatSetup.optOut.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.coffeeChatSetup.get.invalidate({ sponsor }),
+        utils.sponsorPortal.getSponsorPortalInfo.invalidate({ sponsor }),
+      ]);
+      setAsking(false);
+      await router.push(`/sponsors/${sponsor}`);
+    },
+    onError: (e) => setError(e.message),
+  });
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setError(null);
+          setAsking(true);
+        }}
+        className="min-h-11 self-start px-1 text-sm font-medium text-dashboard-text-light underline underline-offset-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:text-dashboard-text-heavy"
+      >
+        {o.button}
+      </button>
+      <AlertDialog.Root open={asking} onOpenChange={setAsking}>
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40" />
+          <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-32px)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-dashboard-lg bg-dashboard-bg-surface p-6 font-figtree shadow-dashboard-card">
+            <AlertDialog.Title className="m-0 text-xl font-bold text-dashboard-text-heavy">
+              {o.title}
+            </AlertDialog.Title>
+            <AlertDialog.Description className="m-0 text-base text-dashboard-text-medium">
+              {o.body}
+            </AlertDialog.Description>
+            {error && (
+              <p
+                role="alert"
+                className="m-0 text-sm text-dashboard-text-warning"
+              >
+                {error}
+              </p>
+            )}
+            <div className="flex flex-col gap-2 sm:flex-row-reverse">
+              <button
+                type="button"
+                className={btn.primary}
+                aria-disabled={optOut.isPending || undefined}
+                onClick={() => !optOut.isPending && optOut.mutate({ sponsor })}
+              >
+                {o.confirm}
+              </button>
+              <AlertDialog.Cancel asChild>
+                <button type="button" className={btn.outline}>
+                  {o.cancel}
                 </button>
               </AlertDialog.Cancel>
             </div>
