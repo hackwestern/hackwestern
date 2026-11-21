@@ -15479,6 +15479,9 @@
           "emptyTables": {
             "type": "number"
           },
+          "planCleared": {
+            "type": "number"
+          },
           "random": {
             "type": "boolean"
           },
@@ -15512,6 +15515,7 @@
           "random",
           "seated",
           "emptyTables",
+          "planCleared",
           "seating"
         ],
         "type": "object"
