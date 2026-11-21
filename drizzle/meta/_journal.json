@@ -383,8 +383,15 @@
     {
       "idx": 54,
       "version": "7",
-      "when": 1795267353017,
-      "tag": "0054_judge_no_show",
+      "when": 1795267111211,
+      "tag": "0054_redemption_cost_points",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1795289602334,
+      "tag": "0055_judge_no_show",
       "breakpoints": true
     }
   ]

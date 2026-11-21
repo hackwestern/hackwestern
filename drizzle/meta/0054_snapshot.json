@@ -1,5 +1,5 @@
 {
-  "id": "db8cb505-4874-4d11-9a32-ac9ae9922ca6",
+  "id": "c514ca52-3e5a-4e7b-83b7-33fb8170037e",
   "prevId": "1b3ad4c3-d65f-4d29-abae-8ac42464c51b",
   "version": "7",
   "dialect": "postgresql",
@@ -2336,13 +2336,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "no_show": {
-          "name": "no_show",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
         "marks_count": {
           "name": "marks_count",
           "type": "integer",
@@ -3212,6 +3205,12 @@
         "reward_id": {
           "name": "reward_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cost_points": {
+          "name": "cost_points",
+          "type": "smallint",
           "primaryKey": false,
           "notNull": true
         },
