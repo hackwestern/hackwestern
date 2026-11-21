@@ -2300,11 +2300,12 @@ describe("timed rounds", () => {
     expect((await admin.getRound()).judgingStarted).toBe(true);
   });
 
-  test("after the last round, a missed table gets a catch-up round", async () => {
+  test("after the last round, tables whose judge never came get a catch-up round", async () => {
     const room = await roundsRoom();
     const admin = room.org.caller.judging.admin;
-    const [first] = room.judges;
+    const [first, second] = room.judges;
     assertDefined(first, "judge");
+    assertDefined(second, "judge");
     const total = (await admin.getRound()).totalRounds;
     const missedTable = (await stopAt(first, 1)).table.number;
 
@@ -2312,8 +2313,18 @@ describe("timed rounds", () => {
       await admin.startRound();
       for (const j of room.judges) {
         const stop = (await stopsOf(j.caller)).find((s) => s.position === n);
-        // The first judge misses their round 1 table.
-        if (stop?.team && !(j === first && n === 1)) await score(j, stop);
+        if (!stop?.team) continue;
+        // The first judge never comes to their round 1 table.
+        if (j === first && n === 1) continue;
+        // The second judge starts their round 2 table but doesn't rate it.
+        if (j === second && n === 2) {
+          await j.caller.judging.me.startStop({
+            assignmentId: stop.id,
+            teamId: stop.team.id,
+          });
+          continue;
+        }
+        await score(j, stop);
       }
       await admin.endRound();
       if (n < total) {
@@ -2321,14 +2332,24 @@ describe("timed rounds", () => {
       }
     }
 
+    // Only the never-started table is missed; the started one stays the
+    // second judge's to score late.
     expect((await admin.getRound()).missed).toBe(1);
+    const started = await stopAt(second, 2);
+    expect(started.status).toBe("assigned");
+
+    // A team saying their judge never came makes it missed too.
+    await admin.reportJudgeMissing({ assignmentId: started.id });
+    expect((await admin.getRound()).missed).toBe(2);
+
     expect(await admin.planCatchUp()).toMatchObject({
-      moved: 1,
+      moved: 2,
       skipped: 0,
       totalRounds: total + 1,
     });
     expect((await admin.getRound()).missed).toBe(0);
-    // Same judge (still present), same table, now in the catch-up round.
+    // Every other judge has seen that team here, so it goes back to the same
+    // judge, same table, in the catch-up round.
     const moved = await stopAt(first, total + 1);
     expect(moved.table.number).toBe(missedTable);
     expect((await admin.startRound()).round).toBe(total + 1);

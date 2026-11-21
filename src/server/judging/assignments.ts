@@ -510,6 +510,20 @@ async function transition(
   });
 }
 
+/**
+ * A team says their judge never came. The stop goes back to never started, so
+ * the catch-up round gives that table to another judge. Unscored stops only.
+ */
+export async function reportJudgeMissing(assignmentId: number) {
+  return db.transaction(async (tx) => {
+    await lockPlanShared(tx);
+    return transition(tx, assignmentId, OPEN_STATUSES, {
+      status: "assigned",
+      startedAt: null,
+    });
+  });
+}
+
 export async function cancelStop(assignmentId: number) {
   return db.transaction(async (tx) => {
     await lockPlanShared(tx);

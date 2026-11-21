@@ -123,14 +123,17 @@ finish that team late.
   team.
 - An organizer then starts the next round. Starting is refused while a round is
   open and after the last round (the most stops any judge has).
-- **Catch-up round.** After the last round ends, the control room shows how
-  many tables were missed (still unscored when their round ended) and a
-  **Start catch-up round** button. Each missed table moves (same table, new
-  judge and round) into a round after the last: the judge who had it keeps it
-  if they're present, otherwise a present judge who hasn't seen that team,
-  fewest catch-up tables first. One table per judge per round, so extras spill
-  into a second catch-up round. A table every present judge has already seen
-  stays missed.
+- **Catch-up round.** A table is "missed" when its judge never came: unscored
+  and never started (nobody pressed "Judge this team") in a round that has
+  ended, or a team told an organizer their judge never came ("Didn't come" in
+  the table dialog). A started but unrated table isn't missed: the judge saw
+  the team and scores it late from My teams. After the last round ends, the
+  control room shows the missed count and a **Start catch-up round** button.
+  Each missed table moves (same table, new judge and round) into a round after
+  the last, to a present judge who hasn't seen that team, fewest catch-up
+  tables first; the judge who never came gets it back only if nobody else can.
+  One table per judge per round, so extras spill into a second catch-up round.
+  A table every present judge has already seen stays missed.
 - A judge marked no-show after judging starts keeps their tables; the unscored
   ones are picked up by the catch-up round (or can be handed off).
 - **Reset** goes back to before round 1; marks are kept. Turning "Judges follow

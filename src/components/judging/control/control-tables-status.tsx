@@ -215,6 +215,7 @@ function SpotDialog({
   const [addId, setAddId] = useState("");
   const addJudge = api.judging.admin.addJudgeToTable.useMutation();
   const cancel = api.judging.admin.cancelStop.useMutation();
+  const missing = api.judging.admin.reportJudgeMissing.useMutation();
   const absent = api.judging.admin.markAbsent.useMutation();
   const undo = api.judging.admin.undoAbsent.useMutation();
   const busy =
@@ -307,8 +308,34 @@ function SpotDialog({
                           {JUDGE_STATUS[j.status] ?? j.status}
                           {j.status === "in_progress" && j.startedAt
                             ? ` · ${formatHold(now - new Date(j.startedAt).getTime())}`
-                            : ""}
+                            : j.status === "assigned" && j.startedAt
+                              ? " · started"
+                              : ""}
                         </span>
+                        {isOpenStop(j.status) && j.startedAt && (
+                          <button
+                            type="button"
+                            className={`${BTN_OUTLINE} text-sm`}
+                            disabled={busy}
+                            aria-label={`Report that ${j.name} never came to table ${number}`}
+                            onClick={() => {
+                              if (
+                                !window.confirm(
+                                  `Table ${number} says ${j.name} never came? This table then gets another judge in the catch-up round.`,
+                                )
+                              )
+                                return;
+                              void act(async () => {
+                                await missing.mutateAsync({
+                                  assignmentId: j.assignmentId,
+                                });
+                                return `Table ${number} will get another judge in the catch-up round.`;
+                              });
+                            }}
+                          >
+                            Didn&apos;t come
+                          </button>
+                        )}
                         {isOpenStop(j.status) && (
                           <button
                             type="button"

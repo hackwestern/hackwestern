@@ -55,6 +55,7 @@ import {
   editMark,
   handOffJudge,
   markAbsent,
+  reportJudgeMissing,
   restartRehearsal,
   setJudgeNoShow,
   startStop,
@@ -559,6 +560,16 @@ export const judgingRouter = createTRPCRouter({
           return row;
         }, "Failed to cancel stop");
       }),
+
+    /** A team says their judge never came: the table joins the catch-up round. */
+    reportJudgeMissing: protectedOrganizerProcedure
+      .input(assignmentIdSchema)
+      .mutation(({ input }) =>
+        withErrorHandling(
+          () => reportJudgeMissing(input.assignmentId),
+          "Failed to report the judge missing",
+        ),
+      ),
 
     markAbsent: protectedOrganizerProcedure
       .input(assignmentIdSchema)

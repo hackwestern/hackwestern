@@ -10,7 +10,7 @@
  * open.
  */
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, inArray, lt, lte, ne, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, lt, lte, ne, sql } from "drizzle-orm";
 
 import { db } from "~/server/db";
 import {
@@ -136,11 +136,13 @@ async function lockHeldStops(tx: Tx): Promise<number[]> {
   return held.map((h) => h.id);
 }
 
+// startedAt is kept: a judge who started a team has seen it, so that table
+// isn't "missed" (see missedStops) and stays theirs to score late.
 async function releaseStops(tx: Tx, ids: number[]) {
   if (ids.length === 0) return;
   await tx
     .update(judgingAssignments)
-    .set({ status: "assigned", startedAt: null })
+    .set({ status: "assigned" })
     .where(inArray(judgingAssignments.id, ids));
 }
 
@@ -366,9 +368,11 @@ export async function setRoundConfig(input: {
 }
 
 /**
- * Tables still unscored from rounds that have ended ("missed"): positions up
- * to the current round once it's closed, else before it. Only tables with a
- * team; absent tables aren't open, so they don't count.
+ * Tables whose judge never came ("missed"): unscored, never started (the judge
+ * didn't press "Judge this team", or an organizer reported the judge missing),
+ * in a round that has ended. A started but unscored table isn't missed: the
+ * judge saw the team and scores it late. Only tables with a team; absent
+ * tables aren't open, so they don't count.
  */
 async function missedStops(tx: Tx, state: RoundState) {
   if (!state.enabled || state.round === 0) return [];
@@ -390,7 +394,8 @@ async function missedStops(tx: Tx, state: RoundState) {
     )
     .where(
       and(
-        inArray(judgingAssignments.status, ["assigned", "in_progress"]),
+        eq(judgingAssignments.status, "assigned"),
+        isNull(judgingAssignments.startedAt),
         ended,
       ),
     )
@@ -399,8 +404,9 @@ async function missedStops(tx: Tx, state: RoundState) {
 
 /**
  * After the last round has ended: move every missed table into catch-up
- * rounds. The judge who had it keeps it if they're present; otherwise it goes
- * to a present judge who hasn't seen that team, fewest catch-up tables first.
+ * rounds. It goes to a present judge who hasn't seen that team, fewest
+ * catch-up tables first; the judge who never came gets it back only when
+ * nobody else can take it.
  * One table per judge per round, so extra ones spill into the next catch-up
  * round. The stop is moved (same table, new judge and round), never copied.
  */
@@ -457,8 +463,8 @@ export async function planCatchUp() {
         .filter((id) => id !== m.judgeId)
         .sort((a, b) => (load.get(a) ?? 0) - (load.get(b) ?? 0));
       const candidates = [
-        ...(present.includes(m.judgeId) ? [m.judgeId] : []),
         ...others,
+        ...(present.includes(m.judgeId) ? [m.judgeId] : []),
       ].filter((id) => !tables.get(id)?.has(m.tableId));
 
       // The candidate free soonest; ties go to the earlier one in the list.
@@ -520,7 +526,7 @@ export async function getRoundOverview() {
     judgingStarted: await isJudgingStarted(),
     /** This deploy may restart a rehearsal (dev site only). */
     canRestartRehearsal: rehearsalRestartAllowed(),
-    /** Tables still unscored from rounds that have ended. */
+    /** Tables whose judge never came, from rounds that have ended. */
     missed: (await missedStops(db, state)).length,
     stops: {
       total: stops.length,
