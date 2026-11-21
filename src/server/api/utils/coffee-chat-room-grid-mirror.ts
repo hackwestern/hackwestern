@@ -2,7 +2,7 @@
  * One-way mirror of the confirmed coffee chat schedule to the locked
  * "Coffee Chat Room Grid" tab (docs/decisions.md 2026-11-19): note rows,
  * group header row 3 (near rooms B-D, Ivey E-I), header row 4, then one row
- * per 15 minutes from 10:00 AM to 4:45 PM. Each chat or booking is one block:
+ * per 15 minutes from 10:00 AM to 8:45 PM. Each chat or booking is one block:
  * its text ("sponsor · rep · format · chats", no hacker names) in its first
  * row, its rows merged (4 for a full session, fewer for a partial one), and
  * organizer bookings grey. Runs only when sheetWritesEnabled() (production,
@@ -37,7 +37,7 @@ const sheetCopy = coffeeSessionsCopy.sheet;
 export const ROOM_GRID_TAB = sheetCopy.tab;
 const WIDTH = 1 + COFFEE_ROOMS.length;
 const FIRST = 10 * 60;
-const LAST = 16 * 60 + 45;
+const LAST = 20 * 60 + 45;
 const STEP = 15;
 /** Rows above the first time row (note, blank, groups, header). */
 const HEAD_ROWS = 4;

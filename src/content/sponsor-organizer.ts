@@ -531,6 +531,24 @@ export const sponsorOrganizerCopy = {
     doneChipShow: (label: string) => `Show ${label}`,
     tableLabel: (day: string) => `Sponsors on ${day}`,
     sponsor: "Sponsor",
+    /** Show filter above the table. */
+    filterLabel: "Show",
+    filters: {
+      all: "All",
+      judging: "Judging",
+      chats: "Coffee chats",
+      workshop: "Workshop",
+      flagged: "To fix",
+    },
+    filterNoMatch: "No sponsors match this filter.",
+    /** Column header buttons: press to sort, press again to flip. */
+    sortBy: (label: string) => `Sort by ${label}`,
+    /** The phone-width sort menu (no column headers there). */
+    sortLabel: "Sort by",
+    sortDefault: "Sponsor (A–Z)",
+    sortNameDesc: "Sponsor (Z–A)",
+    sortMost: (label: string) => `${label}: furthest along first`,
+    sortLeast: (label: string) => `${label}: least along first`,
     toFix: (n: number) => (n === 1 ? "1 to fix" : `${n} to fix`),
     none: "—",
     noSponsors: "No sponsors to show.",

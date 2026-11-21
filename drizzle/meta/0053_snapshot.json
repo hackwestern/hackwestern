@@ -1,5 +1,5 @@
 {
-  "id": "2e5c8b5f-ef06-4491-a5f9-13e4044220c7",
+  "id": "1b3ad4c3-d65f-4d29-abae-8ac42464c51b",
   "prevId": "0830323b-98cd-498d-8b62-5820b7046a29",
   "version": "7",
   "dialect": "postgresql",
@@ -2579,79 +2579,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.judging_round": {
-      "name": "judging_round",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "default": 1
-        },
-        "rounds_enabled": {
-          "name": "rounds_enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "current_round": {
-          "name": "current_round",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "status": {
-          "name": "status",
-          "type": "judging_round_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'idle'"
-        },
-        "round_seconds": {
-          "name": "round_seconds",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 600
-        },
-        "ends_at": {
-          "name": "ends_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "remaining_ms": {
-          "name": "remaining_ms",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp (3)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "judging_round_singleton": {
-          "name": "judging_round_singleton",
-          "value": "\"judging_round\".\"id\" = 1"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.judging_settings": {
       "name": "judging_settings",
       "schema": "",
@@ -4143,6 +4070,68 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sponsor_lead_ping": {
+      "name": "sponsor_lead_ping",
+      "schema": "",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slack_channel": {
+          "name": "slack_channel",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message_id": {
+          "name": "message_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "post_at": {
+          "name": "post_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_key": {
+          "name": "content_key",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -6171,16 +6160,6 @@
         "done",
         "team_absent",
         "cancelled"
-      ]
-    },
-    "public.judging_round_status": {
-      "name": "judging_round_status",
-      "schema": "public",
-      "values": [
-        "idle",
-        "running",
-        "paused",
-        "closed"
       ]
     },
     "public.judging_table_status": {

@@ -46,8 +46,13 @@ export type AgendaStep = {
   /** Its button and sub-line are about coffee chats (booth scanning): a
    * sponsor without chats sees the row without them. */
   chatsExtras?: boolean;
-  /** Done once the sponsor has sent this. */
-  doneWhen?: "availability" | "shortlist";
+  /**
+   * Done once the sponsor has sent this. "finalists" (judging shortlist
+   * sent) and "top5" (top 5 submitted) are read only by the HW lead's
+   * Slack pings (src/server/slack/sponsor-lead-pings.ts), which skip a
+   * done step; the Home marks those rows by time.
+   */
+  doneWhen?: "availability" | "shortlist" | "finalists" | "top5";
   /** Saturday's coffee chat placeholder, replaced by the real chats once
    * organizers send them. */
   chatsPlaceholder?: boolean;
@@ -155,7 +160,7 @@ export const AGENDA: AgendaStep[] = [
     id: "sp",
     day: 1,
     start: 600,
-    end: 1020,
+    end: 1260,
     title: "Coffee chats",
     sub: "We confirm your reps' times and rooms at 10:00 PM Friday.",
     action: "chats",
@@ -206,6 +211,7 @@ export const AGENDA: AgendaStep[] = [
     title: `Pick your finalists, up to ${SHORTLIST_MAX}`,
     action: "judging",
     prizeOnly: true,
+    doneWhen: "finalists",
   },
   {
     id: "u4",
@@ -225,6 +231,7 @@ export const AGENDA: AgendaStep[] = [
     title: "Submit your top 5",
     action: "judging",
     prizeOnly: true,
+    doneWhen: "top5",
   },
   {
     id: "u6",

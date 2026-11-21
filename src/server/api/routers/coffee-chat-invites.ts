@@ -30,6 +30,12 @@ import {
   replaceInvite,
   sponsorLineView,
 } from "~/server/api/utils/coffee-chat-line";
+import { sponsorLeadSlackCopy } from "~/content/sponsor-lead-slack";
+import {
+  esc,
+  organizerActor,
+  reportSponsorChange,
+} from "~/server/slack/sponsor-lead-feed";
 import { db } from "~/server/db";
 import {
   deliverInviteNotices,
@@ -310,6 +316,15 @@ export const coffeeChatInvitesRouter = createTRPCRouter({
       );
       await deliverInviteNotices(out.jobs);
       mirrorCoffeeInvitesLater();
+      reportSponsorChange({
+        sponsorName: out.jobs[0]?.notice.sponsorName ?? null,
+        group: "replaced",
+        text: sponsorLeadSlackCopy.feed.replaced(
+          esc(out.removed),
+          out.invited ? esc(out.invited) : null,
+        ),
+        actor: organizerActor(ctx.session.user),
+      });
       return { removed: out.removed, invited: out.invited };
     }),
 
@@ -329,6 +344,12 @@ export const coffeeChatInvitesRouter = createTRPCRouter({
         await deliverInviteNotices(out.jobs);
         mirrorCoffeeInvitesLater();
       }
+      reportSponsorChange({
+        sponsorId: input.sponsorId,
+        group: "putFirst",
+        text: sponsorLeadSlackCopy.feed.putFirst(esc(out.name)),
+        actor: organizerActor(ctx.session.user),
+      });
       return { name: out.name };
     }),
 });

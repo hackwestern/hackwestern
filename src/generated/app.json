@@ -10747,6 +10747,86 @@
           "source": "input validation (data.zodError populated)"
         },
         {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "handler"
+        },
+        {
+          "code": "NOT_FOUND",
+          "httpStatus": 404,
+          "source": "handler"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/coffeeChatSessions.addEventRep",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "phone": {
+            "maxLength": 32,
+            "minLength": 1,
+            "type": "string"
+          },
+          "sponsorId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sponsorId",
+          "name",
+          "phone"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "path": "coffeeChatSessions.addEventRep",
+      "source": "src/server/api/routers/coffee-chat-sessions.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
           "code": "CONFLICT",
           "httpStatus": 409,
           "source": "handler"
@@ -10920,7 +11000,11 @@
               "13",
               "14",
               "15",
-              "16"
+              "16",
+              "17",
+              "18",
+              "19",
+              "20"
             ],
             "type": "string"
           },
@@ -11079,7 +11163,11 @@
               "13",
               "14",
               "15",
-              "16"
+              "16",
+              "17",
+              "18",
+              "19",
+              "20"
             ],
             "type": "string"
           }
@@ -12130,7 +12218,11 @@
               "13",
               "14",
               "15",
-              "16"
+              "16",
+              "17",
+              "18",
+              "19",
+              "20"
             ],
             "type": "string"
           }
@@ -12219,7 +12311,11 @@
               "13",
               "14",
               "15",
-              "16"
+              "16",
+              "17",
+              "18",
+              "19",
+              "20"
             ],
             "type": "string"
           }
@@ -12308,7 +12404,11 @@
               "13",
               "14",
               "15",
-              "16"
+              "16",
+              "17",
+              "18",
+              "19",
+              "20"
             ],
             "type": "string"
           }
@@ -13257,11 +13357,15 @@
                       "13",
                       "14",
                       "15",
-                      "16"
+                      "16",
+                      "17",
+                      "18",
+                      "19",
+                      "20"
                     ],
                     "type": "string"
                   },
-                  "maxItems": 6,
+                  "maxItems": 10,
                   "type": "array"
                 },
                 "id": {
@@ -15375,6 +15479,9 @@
           "emptyTables": {
             "type": "number"
           },
+          "planCleared": {
+            "type": "number"
+          },
           "random": {
             "type": "boolean"
           },
@@ -15408,6 +15515,7 @@
           "random",
           "seated",
           "emptyTables",
+          "planCleared",
           "seating"
         ],
         "type": "object"
@@ -22074,6 +22182,118 @@
       },
       "path": "sponsorJudging.listAllTeams",
       "source": "src/server/api/routers/sponsor-judging.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/sponsorOrganizer.leadPings?input=<superjson>",
+      "input": null,
+      "output": {
+        "properties": {
+          "mode": {
+            "enum": [
+              "off",
+              "dry",
+              "live"
+            ]
+          },
+          "pings": {
+            "items": {
+              "properties": {
+                "dueAt": {
+                  "format": "date-time",
+                  "type": "string",
+                  "x-superjson": "Date"
+                },
+                "item": {
+                  "type": "string"
+                },
+                "lead": {
+                  "type": "string"
+                },
+                "postAt": {
+                  "format": "date-time",
+                  "type": "string",
+                  "x-superjson": "Date"
+                },
+                "sponsorName": {
+                  "type": "string"
+                },
+                "state": {
+                  "enum": [
+                    "sent",
+                    "scheduled",
+                    "planned",
+                    "past"
+                  ]
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sponsorName",
+                "item",
+                "lead",
+                "dueAt",
+                "postAt",
+                "text",
+                "state"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "readable": {
+            "type": "boolean"
+          },
+          "unmatched": {
+            "items": {
+              "properties": {
+                "lead": {
+                  "type": "string"
+                },
+                "sponsor": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sponsor",
+                "lead"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "mode",
+          "readable",
+          "pings",
+          "unmatched"
+        ],
+        "type": "object"
+      },
+      "path": "sponsorOrganizer.leadPings",
+      "source": "src/server/api/routers/sponsor-organizer.ts",
       "type": "query"
     },
     {

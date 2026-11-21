@@ -1,6 +1,9 @@
 import { Fragment, useMemo, useState } from "react";
 import Link from "next/link";
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   ChevronDown,
   CircleCheck,
   Coffee,
@@ -34,12 +37,17 @@ import {
   eventToday,
   flagsFor,
   HOME_COLUMNS,
+  HOME_FILTERS,
   isDone,
+  matchesFilter,
   minutesInto,
+  sortHomeRows,
   sponsorFlags,
   sponsorsOnDay,
   upNext,
   type HomeColumnKey,
+  type HomeFilter,
+  type HomeSort,
   type HomeFlag,
   type HomeSponsor,
 } from "~/lib/organizer-home";
@@ -282,6 +290,25 @@ export function OrganizerHome({
   const chips = HOME_COLUMNS[day].filter(
     (c) => done.has(c) && !unhidden.has(`${day}:${c}`),
   );
+  // Press a column header to sort by it (Jazz, 2026-11-21): first press puts
+  // the most progress on top (e.g. most chats), the next flips it. A sort on
+  // a column the day doesn't show is ignored.
+  const [sort, setSort] = useState<HomeSort | null>(null);
+  // Show filter: only sponsors with judging, coffee chats, a workshop, or
+  // something to fix (Jazz, 2026-11-21).
+  const [filter, setFilter] = useState<HomeFilter>("all");
+  const filtered = shown.filter((s) => matchesFilter(s, filter, day, now));
+  const activeSort =
+    sort && (sort.key === "sponsor" || columns.includes(sort.key))
+      ? sort
+      : null;
+  const onSort = (key: HomeSort["key"]) =>
+    setSort((prev) =>
+      prev?.key === key
+        ? { key, dir: prev.dir === "desc" ? "asc" : "desc" }
+        : // Rows already start A–Z, so a first press on Sponsor shows Z–A.
+          { key, dir: "desc" },
+    );
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set());
   const toggle = (key: string) =>
     setOpen((prev) => {
@@ -507,6 +534,41 @@ export function OrganizerHome({
           </div>
         )}
 
+        {shown.length > 0 && (
+          <div
+            role="group"
+            aria-label={copy.filterLabel}
+            className="flex flex-wrap items-center gap-1.5"
+          >
+            <span className="mr-1 text-sm font-semibold text-dashboard-text-heavy">
+              {copy.filterLabel}
+            </span>
+            {HOME_FILTERS.map((f) => (
+              <button
+                key={f}
+                type="button"
+                aria-pressed={filter === f}
+                onClick={() => setFilter(f)}
+                className={cn(
+                  "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold md:min-h-9",
+                  press,
+                  focusRing,
+                  filter === f
+                    ? "border-dashboard-action-primary bg-dashboard-action-primary text-dashboard-text-inverse"
+                    : cn(
+                        "border-dashboard-border-default text-dashboard-text-medium",
+                        hover.highlight,
+                      ),
+                )}
+              >
+                {copy.filters[f]}
+                <span className="tabular-nums opacity-80">
+                  {shown.filter((s) => matchesFilter(s, f, day, now)).length}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
         {writes.note && (
           <p
             role={writes.note.tone === "error" ? "alert" : "status"}
@@ -529,12 +591,19 @@ export function OrganizerHome({
           <p className="m-0 text-sm text-dashboard-text-medium">
             {view === "mine" && me ? copy.noneLed : copy.noSponsors}
           </p>
+        ) : filtered.length === 0 ? (
+          <p className="m-0 text-sm text-dashboard-text-medium">
+            {copy.filterNoMatch}
+          </p>
         ) : (
           <SponsorTable
             day={day}
             now={now}
-            rows={shown as Row[]}
+            rows={sortHomeRows(filtered as Row[], activeSort, day, now)}
             columns={columns}
+            sort={activeSort}
+            onSort={onSort}
+            onSortPick={setSort}
             open={open}
             onToggle={toggle}
             me={me}
@@ -659,11 +728,17 @@ function SponsorTable({
   me,
   contactNames,
   writes,
+  sort,
+  onSort,
+  onSortPick,
 }: {
   day: RunOfShowDay;
   now: Date;
   rows: Row[];
   columns: HomeColumnKey[];
+  sort: HomeSort | null;
+  onSort: (key: HomeSort["key"]) => void;
+  onSortPick: (sort: HomeSort | null) => void;
   open: ReadonlySet<string>;
   onToggle: (key: string) => void;
   me: OrganizerContact | null;
@@ -743,8 +818,79 @@ function SponsorTable({
     );
   };
 
+  const ariaSort = (key: HomeSort["key"]) =>
+    sort?.key === key
+      ? sort.dir === "asc"
+        ? "ascending"
+        : "descending"
+      : undefined;
+  const sortButton = (key: HomeSort["key"], label: string) => {
+    const Icon =
+      sort?.key !== key
+        ? ArrowUpDown
+        : sort.dir === "asc"
+          ? ArrowUp
+          : ArrowDown;
+    return (
+      <button
+        type="button"
+        onClick={() => onSort(key)}
+        title={copy.sortBy(label)}
+        className={cn(
+          "-mx-1 -my-0.5 inline-flex items-start gap-1 rounded-dashboard-sm px-1 py-0.5 text-left font-semibold",
+          hover.highlightSubtle,
+          press,
+          focusRing,
+        )}
+      >
+        {label}
+        <Icon
+          aria-hidden
+          className={cn(
+            "mt-px size-3.5 shrink-0",
+            sort?.key === key
+              ? "text-dashboard-text-heavy"
+              : "text-dashboard-text-light",
+          )}
+        />
+      </button>
+    );
+  };
+  const sortPick = sort ? `${sort.key}:${sort.dir}` : "";
+
   return (
     <>
+      {/* Phones and tablets have no column headers: a Sort by menu instead. */}
+      <label className="flex items-center gap-2 text-sm font-semibold text-dashboard-text-heavy lg:hidden">
+        {copy.sortLabel}
+        <select
+          value={sortPick}
+          onChange={(e) => {
+            const [key, dir] = e.target.value.split(":") as [
+              HomeSort["key"],
+              HomeSort["dir"],
+            ];
+            onSortPick(e.target.value ? { key, dir } : null);
+          }}
+          className={cn(
+            "min-h-11 min-w-0 flex-1 rounded-dashboard-md border border-dashboard-border-default bg-dashboard-bg-surface px-3 py-2 text-base font-normal text-dashboard-text-heavy sm:flex-none",
+            focusRing,
+          )}
+        >
+          <option value="">{copy.sortDefault}</option>
+          <option value="sponsor:desc">{copy.sortNameDesc}</option>
+          {columns.map((col) => (
+            <Fragment key={col}>
+              <option value={`${col}:desc`}>
+                {copy.sortMost(copy.columns[col])}
+              </option>
+              <option value={`${col}:asc`}>
+                {copy.sortLeast(copy.columns[col])}
+              </option>
+            </Fragment>
+          ))}
+        </select>
+      </label>
       {/*
        * Under 1024px: one compact row per sponsor, the day's fields as
        * label | value lines, so nothing scrolls sideways (Jazz, 2026-11-20).
@@ -806,17 +952,19 @@ function SponsorTable({
             <tr className="bg-dashboard-bg-inset text-xs font-semibold text-dashboard-text-heavy">
               <th
                 scope="col"
+                aria-sort={ariaSort("sponsor")}
                 className="w-40 border-b border-dashboard-border-subtle bg-dashboard-bg-inset px-2 py-2.5 xl:w-52 xl:px-2.5"
               >
-                {copy.sponsor}
+                {sortButton("sponsor", copy.sponsor)}
               </th>
               {columns.map((col) => (
                 <th
                   key={col}
                   scope="col"
+                  aria-sort={ariaSort(col)}
                   className="border-b border-dashboard-border-subtle px-2 py-2.5 align-bottom xl:px-2.5"
                 >
-                  {copy.columns[col]}
+                  {sortButton(col, copy.columns[col])}
                   {copy.columnSub[col] && (
                     <span className="block font-medium text-dashboard-text-light">
                       {copy.columnSub[col]}

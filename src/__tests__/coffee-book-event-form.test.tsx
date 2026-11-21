@@ -15,9 +15,15 @@ const { useQuery, useOptions } = vi.hoisted(() => ({
 }));
 vi.mock("~/utils/api", () => ({
   api: {
+    useUtils: () => ({
+      coffeeChatSessions: { bookingOptions: { invalidate: vi.fn() } },
+    }),
     coffeeChatSessions: {
       bookingHackers: { useQuery },
       bookingOptions: { useQuery: useOptions },
+      addEventRep: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
     },
   },
 }));
@@ -201,10 +207,10 @@ describe("Book an event form", () => {
       expect(sid.getAttribute("aria-describedby")).toContain("bk-rep-busy-sid");
       // Free time that day: Sid's chat at 10-11 leaves 11-12 and 1-5.
       expect(q("#bk-rep-free-sid")!.textContent).toBe(
-        bc.repFree("11:00 AM–12:00 PM, 1:00 PM–5:00 PM"),
+        bc.repFree("11:00 AM–12:00 PM, 1:00 PM–9:00 PM"),
       );
       expect(q("#bk-rep-free-sam")!.textContent).toBe(
-        bc.repFree("10:00 AM–12:00 PM, 1:00 PM–5:00 PM"),
+        bc.repFree("10:00 AM–12:00 PM, 1:00 PM–9:00 PM"),
       );
       // A click on a busy rep does nothing.
       act(() => sid.click());
