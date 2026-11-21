@@ -151,6 +151,27 @@ export function hackingPhase(
   return { phase: "after" };
 }
 
+// Shuffle for the photo gallery: every item plays once before any repeats, and
+// never the current item twice in a row. Items added mid-round join that round.
+export function pickNextMedia(
+  ids: string[],
+  currentId: string | undefined,
+  shown: string[],
+  random: () => number = Math.random,
+): { nextId: string; shown: string[] } | null {
+  const seen = new Set(shown);
+  if (currentId) seen.add(currentId);
+  const others = ids.filter((id) => id !== currentId);
+  const fresh = others.filter((id) => !seen.has(id));
+  const pool = fresh.length ? fresh : others;
+  const nextId = pool[Math.floor(random() * pool.length)];
+  if (!nextId) return null;
+  return {
+    nextId,
+    shown: fresh.length ? [...seen] : currentId ? [currentId] : [],
+  };
+}
+
 // The broadcast photo folder: accepts a folder link ("…/folders/<id>?usp=sharing") or a bare folder id.
 export function driveFolderIdFrom(value: string): string | null {
   const trimmed = value.trim();
