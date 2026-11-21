@@ -7,7 +7,6 @@ import { ControlRoundsBar } from "~/components/judging/control/control-rounds-ba
 import { ControlProgress } from "~/components/judging/control/control-progress";
 import { ControlRounds } from "~/components/judging/control/control-rounds";
 import { ControlTablesStatus } from "~/components/judging/control/control-tables-status";
-import { ControlQueueTable } from "~/components/judging/control/control-queue-table";
 import {
   errorText,
   queueFromProgress,
@@ -91,7 +90,6 @@ export default function JudgingControlRoom() {
           queue={queue}
           now={now}
         />
-        <ControlQueueTable queue={queue} now={now} />
         <ControlRoundGrid progress={progressQ.data} round={roundQ.data} />
         <ControlRounds queue={queue} />
       </InternalPage>
