@@ -1569,6 +1569,7 @@ export const judges = pgTable("judge", {
     .references(() => users.id),
   type: judgeTypeEnum("type").default("organizer").notNull(),
   track: trackEnum("track").array(), // array of tracks for sponsored judges
+  noShow: boolean("no_show").default(false).notNull(),
 
   // Derived stats used for score normalization
   // markCount = n, markSum = S, markSquaredSum = S2
@@ -2129,6 +2130,7 @@ export const scavengerHuntRedemptions = pgTable(
     rewardId: integer("reward_id")
       .notNull()
       .references(() => scavengerHuntRewards.id),
+    costPoints: smallint("cost_points").notNull(),
     scannerId: varchar("scanner_id", { length: 255 }).references(
       () => users.id,
       { onDelete: "set null" },

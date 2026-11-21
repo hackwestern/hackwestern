@@ -23,6 +23,7 @@ import {
   StatusLine,
   TD,
   TH,
+  errorText,
 } from "./control-shared";
 
 const STOP_STYLE: Record<string, string> = {
@@ -156,6 +157,7 @@ export function JudgeRoster({
     refetchInterval: 15_000,
   });
   const addJudge = api.judging.admin.addJudgeByEmail.useMutation();
+  const noShow = api.judging.admin.setJudgeNoShow.useMutation();
   const teamAtTable = new Map(
     (progress?.tables ?? []).map((t) => [t.number, t.team?.name ?? null]),
   );
@@ -261,6 +263,7 @@ export function JudgeRoster({
           <thead>
             <tr className={`text-left ${MUTED}`}>
               <th className={TH}>Name</th>
+              <th className={TH}>No-show</th>
               <th className={TH}>Marks</th>
               <th className={TH}>Avg score</th>
               <th className={TH}>Assigned teams</th>
@@ -301,6 +304,40 @@ export function JudgeRoster({
                       {j.name && (
                         <span className={`text-xs ${MUTED}`}>{j.email}</span>
                       )}
+                    </button>
+                  </td>
+                  <td className={TD}>
+                    <button
+                      type="button"
+                      className={`${BTN_OUTLINE} text-sm`}
+                      disabled={noShow.isPending}
+                      onClick={() => {
+                        const name = j.name ?? j.email;
+                        setStatus(null);
+                        noShow.mutate(
+                          { judgeId: j.id, noShow: !j.noShow },
+                          {
+                            onSuccess: (r) => {
+                              setStatus({
+                                tone: "ok",
+                                text: `${name} is ${r.noShow ? "marked as a no-show" : "back on the roster"}.${
+                                  r.planCleared > 0
+                                    ? " The judge plan was cleared: run auto-assign again."
+                                    : ""
+                                }`,
+                              });
+                              void utils.judging.admin.invalidate();
+                            },
+                            onError: (e) =>
+                              setStatus({
+                                tone: "error",
+                                text: `Couldn't update ${name}. ${errorText(e)}`,
+                              }),
+                          },
+                        );
+                      }}
+                    >
+                      {j.noShow ? "Undo no-show" : "Mark no-show"}
                     </button>
                   </td>
                   <td className={`${TD} tabular-nums`}>{j.marksCount}</td>

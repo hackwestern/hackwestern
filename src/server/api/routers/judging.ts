@@ -24,6 +24,7 @@ import {
   moveTeamSchema,
   reportAbsentSchema,
   seatTeamsSchema,
+  setJudgeNoShowSchema,
   setTableActiveSchema,
   setupTablesSchema,
   setRoundConfigSchema,
@@ -52,6 +53,7 @@ import {
   editMark,
   handOffJudge,
   markAbsent,
+  setJudgeNoShow,
   startStop,
   submitStop,
 } from "~/server/judging/assignments";
@@ -109,7 +111,15 @@ async function getRanking() {
     normalized_score: number;
     num_marks: number;
   }>(sql`
-    WITH judge_stats AS (
+    WITH absent_teams AS (
+      -- Absence is final: a team whose table has a team_absent stop is out,
+      -- and its marks don't shift its judges' averages either.
+      SELECT t.id
+      FROM team t
+      JOIN judging_assignment a ON a.judging_table_id = t.judging_table_id
+      WHERE a.status = 'team_absent'
+    ),
+    judge_stats AS (
       SELECT
         m.judge_id,
         AVG(m.score) AS mu,
@@ -117,6 +127,7 @@ async function getRanking() {
       FROM team_mark m
       JOIN "judge" j ON j.id = m.judge_id
       WHERE m.round_type = 'regular' AND j.type = 'organizer'
+        AND m.team_id NOT IN (SELECT id FROM absent_teams)
       GROUP BY m.judge_id
     )
     SELECT
@@ -128,6 +139,7 @@ async function getRanking() {
     JOIN judge_stats js ON js.judge_id = m.judge_id
     JOIN team t ON t.id = m.team_id
     WHERE m.round_type = 'regular'
+      AND m.team_id NOT IN (SELECT id FROM absent_teams)
     GROUP BY m.team_id, t.name
     ORDER BY normalized_score DESC NULLS LAST
   `);
@@ -435,6 +447,16 @@ export const judgingRouter = createTRPCRouter({
         return withErrorHandling(
           () => setupTables(input),
           "Failed to set up tables",
+        );
+      }),
+
+    /** Mark a judge as a no-show, or undo it. */
+    setJudgeNoShow: protectedOrganizerProcedure
+      .input(setJudgeNoShowSchema)
+      .mutation(async ({ input }) => {
+        return withErrorHandling(
+          () => setJudgeNoShow(input.judgeId, input.noShow),
+          "Failed to update the judge",
         );
       }),
 

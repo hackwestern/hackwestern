@@ -6,7 +6,7 @@
  * id, then team rows, then table rows by id).
  */
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, inArray, max, ne, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, max, ne, sql } from "drizzle-orm";
 
 import { markColumnsFromBreakdown } from "~/lib/judging-criteria";
 import { type ScoreBreakdown } from "~/schemas/judging";
@@ -20,15 +20,17 @@ import {
   teams,
 } from "~/server/db/schema";
 import { LayoutError, buildSections } from "~/server/judging/layout";
-import { assertStopOpen } from "~/server/judging/rounds";
+import { assertStopOpen, openPositionFloor } from "~/server/judging/rounds";
 import {
   OPEN_STATUSES,
   type StopStatus,
   type Tx,
+  absentTableIds,
   assertGeneralJudge,
   assertNotStarted,
   conflictOnUniqueViolation,
   getSettings,
+  isJudgingStarted,
   isUniqueViolation,
   lockPlanExclusive,
   lockPlanShared,
@@ -66,7 +68,7 @@ export async function autoAssign(assignedBy: string) {
     const judgeRows = await tx
       .select({ id: judges.id })
       .from(judges)
-      .where(eq(judges.type, "organizer"))
+      .where(and(eq(judges.type, "organizer"), eq(judges.noShow, false)))
       .orderBy(asc(judges.createdAt), asc(judges.id));
 
     let sections;
@@ -126,10 +128,68 @@ async function nextPosition(tx: Tx, judgeId: string) {
 async function requireJudge(tx: Tx, judgeId: string) {
   const judge = await tx.query.judges.findFirst({
     where: eq(judges.id, judgeId),
-    columns: { id: true, type: true },
+    columns: { id: true, type: true, noShow: true },
   });
   if (!judge) throw notFound("Judge");
   return judge;
+}
+
+/** A judge marked as a no-show can't be given stops. */
+function assertPresent(judge: { noShow: boolean }) {
+  if (judge.noShow) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "That judge is marked as a no-show. Undo that first.",
+    });
+  }
+}
+
+/**
+ * Mark a judge as a no-show, or undo it. No-show judges are left out of
+ * auto-assign and can't receive hand-offs or top-ups. Before judging starts,
+ * marking a judge who already has stops clears the plan (re-run auto-assign).
+ * After it starts, their unfinished stops must be handed off first.
+ */
+export async function setJudgeNoShow(judgeId: string, noShow: boolean) {
+  return db.transaction(async (tx) => {
+    await lockPlanExclusive(tx);
+    const judge = await requireJudge(tx, judgeId);
+    if (judge.noShow === noShow) return { judgeId, noShow, planCleared: 0 };
+
+    let planCleared = 0;
+    if (noShow) {
+      const stops = await tx
+        .select({ status: judgingAssignments.status })
+        .from(judgingAssignments)
+        .where(
+          and(
+            eq(judgingAssignments.judgeId, judgeId),
+            ne(judgingAssignments.status, "cancelled"),
+          ),
+        );
+      if (stops.length > 0) {
+        if (await isJudgingStarted(tx)) {
+          if (stops.some((s) => OPEN_STATUSES.includes(s.status))) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message:
+                "Judging has started and that judge still has stops. Hand them off first.",
+            });
+          }
+        } else {
+          planCleared = (
+            await tx
+              .delete(judgingAssignments)
+              .where(sql`true`)
+              .returning({ id: judgingAssignments.id })
+          ).length;
+        }
+      }
+    }
+
+    await tx.update(judges).set({ noShow }).where(eq(judges.id, judgeId));
+    return { judgeId, noShow, planCleared };
+  });
 }
 
 /**
@@ -171,7 +231,9 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
       db.transaction(async (tx) => {
         await lockPlanShared(tx);
         await requireJudge(tx, fromJudgeId);
-        assertGeneralJudge(await requireJudge(tx, toJudgeId));
+        const toJudge = await requireJudge(tx, toJudgeId);
+        assertGeneralJudge(toJudge);
+        assertPresent(toJudge);
 
         // Lock the leaving judge's open stops in id order (lock order step 2),
         // then read them in walking order.
@@ -192,7 +254,7 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
             message: "That judge has no unfinished tables to hand off.",
           });
         }
-        const open = await tx
+        const stops = await tx
           .select({
             id: judgingAssignments.id,
             tableId: judgingAssignments.judgingTableId,
@@ -210,6 +272,18 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
             ),
           )
           .orderBy(asc(judgingAssignments.position));
+        // A table reported absent is closed: its stop stays where it is.
+        const absent = await absentTableIds(
+          stops.map((s) => s.tableId),
+          tx,
+        );
+        const open = stops.filter((s) => !absent.has(s.tableId));
+        if (open.length === 0) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "That judge has no unfinished tables to hand off.",
+          });
+        }
         const tableIds = open.map((s) => s.tableId);
 
         const clash = await tx
@@ -302,7 +376,9 @@ export async function addJudgeToTable(
     () =>
       db.transaction(async (tx) => {
         await lockPlanShared(tx);
-        assertGeneralJudge(await requireJudge(tx, judgeId));
+        const judge = await requireJudge(tx, judgeId);
+        assertGeneralJudge(judge);
+        assertPresent(judge);
         // Take the table lock up front (the insert's status trigger needs it
         // anyway), so two top-ups at one table, or a top-up racing a hand-off,
         // queue up instead of deadlocking.
@@ -315,6 +391,12 @@ export async function addJudgeToTable(
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
             message: `Table ${table.number} is switched off.`,
+          });
+        }
+        if ((await absentTableIds([tableId], tx)).has(tableId)) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: `The team at table ${table.number} was reported absent, so it can't be judged.`,
           });
         }
         const existing = await tx.query.judgingAssignments.findFirst({
@@ -414,6 +496,10 @@ export async function cancelStop(assignmentId: number) {
  * also pass the team their screen showed (`expectedTeamId`, null for an empty
  * table); if a different team is seated now, it's refused, so a stale screen
  * can't mark the wrong team absent.
+ *
+ * Absence is final: the team seated there is disqualified (its table now has
+ * a `team_absent` stop), and every other open stop at the table (assigned or
+ * in progress) is marked `team_absent` too, which counts as closed.
  */
 export async function markAbsent(
   assignmentId: number,
@@ -422,6 +508,28 @@ export async function markAbsent(
 ) {
   return db.transaction(async (tx) => {
     await lockPlanShared(tx);
+    const target = await tx.query.judgingAssignments.findFirst({
+      where: eq(judgingAssignments.id, assignmentId),
+      columns: { judgingTableId: true },
+    });
+    if (!target) throw notFound("Stop");
+    // Lock every live stop at the table in id order (step 2), so two judges
+    // reporting the same table absent at once wait instead of deadlocking.
+    await tx
+      .select({ id: judgingAssignments.id })
+      .from(judgingAssignments)
+      .where(
+        and(
+          eq(judgingAssignments.judgingTableId, target.judgingTableId),
+          ne(judgingAssignments.status, "cancelled"),
+        ),
+      )
+      .orderBy(asc(judgingAssignments.id))
+      .for("update");
+    if (judgeId) {
+      await lockStop(tx, assignmentId, judgeId);
+      await assertCurrentStop(tx, judgeId, assignmentId);
+    }
     if (judgeId && expectedTeamId !== undefined) {
       const stop = await lockStop(tx, assignmentId, judgeId);
       await assertStopOpen(tx, stop.position);
@@ -439,14 +547,60 @@ export async function markAbsent(
         });
       }
     }
-    return transition(
+    const row = await transition(
       tx,
       assignmentId,
       OPEN_STATUSES,
       { status: "team_absent", completedAt: new Date() },
       judgeId,
     );
+    // The other judges' current and future stops for this team close too.
+    await tx
+      .update(judgingAssignments)
+      .set({ status: "team_absent", completedAt: new Date() })
+      .where(
+        and(
+          eq(judgingAssignments.judgingTableId, row.judgingTableId),
+          inArray(judgingAssignments.status, OPEN_STATUSES),
+        ),
+      );
+    return row;
   });
+}
+
+/**
+ * A judge only works on their current stop: the one in progress, else their
+ * first assigned stop in walking order. An open stop that isn't the current
+ * one is refused; a closed stop is left to `transition`, which says why.
+ */
+async function assertCurrentStop(
+  tx: Tx,
+  judgeId: string,
+  assignmentId: number,
+) {
+  const floor = await openPositionFloor(tx);
+  const open = await tx
+    .select({
+      id: judgingAssignments.id,
+      status: judgingAssignments.status,
+    })
+    .from(judgingAssignments)
+    .where(
+      and(
+        eq(judgingAssignments.judgeId, judgeId),
+        inArray(judgingAssignments.status, OPEN_STATUSES),
+        gte(judgingAssignments.position, floor),
+      ),
+    )
+    .orderBy(asc(judgingAssignments.position));
+  if (!open.some((s) => s.id === assignmentId)) return;
+  const current = open.find((s) => s.status === "in_progress") ?? open[0];
+  if (current?.id !== assignmentId) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "That isn't your current team. Refresh your list.",
+    });
+  }
 }
 
 /** Lock one of a judge's stops for the rest of the transaction (step 2). */
@@ -515,6 +669,7 @@ export async function startStop(
       await lockPlanShared(tx);
       const stop = await lockStop(tx, assignmentId, judgeId);
       await assertStopOpen(tx, stop.position);
+      await assertCurrentStop(tx, judgeId, assignmentId);
       const busy = await tx.query.judgingAssignments.findFirst({
         where: and(
           eq(judgingAssignments.judgeId, judgeId),
@@ -558,6 +713,7 @@ export async function submitStop(
     await lockPlanShared(tx);
     const stop = await lockStop(tx, assignmentId, judge.id);
     await assertStopOpen(tx, stop.position);
+    await assertCurrentStop(tx, judge.id, assignmentId);
     const team = await seatedTeamAt(tx, stop.judgingTableId, teamId);
 
     await transition(
@@ -640,6 +796,11 @@ export async function deleteMark(teamMarkId: number) {
       columns: { judgingTableId: true },
     });
     if (team?.judgingTableId == null) return { reopened: false };
+    if (
+      (await absentTableIds([team.judgingTableId], tx)).has(team.judgingTableId)
+    ) {
+      return { reopened: false };
+    }
 
     const reopened = await tx
       .update(judgingAssignments)

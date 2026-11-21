@@ -97,12 +97,8 @@
           "name": "account_userId_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -110,10 +106,7 @@
       "compositePrimaryKeys": {
         "account_provider_providerAccountId_pk": {
           "name": "account_provider_providerAccountId_pk",
-          "columns": [
-            "provider",
-            "providerAccountId"
-          ]
+          "columns": ["provider", "providerAccountId"]
         }
       },
       "uniqueConstraints": {},
@@ -389,12 +382,8 @@
           "name": "application_user_id_user_id_fk",
           "tableFrom": "application",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -436,9 +425,7 @@
         "preregistration_email_unique": {
           "name": "preregistration_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -474,12 +461,8 @@
           "name": "reset_password_token_userId_user_id_fk",
           "tableFrom": "reset_password_token",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -584,12 +567,8 @@
           "name": "review_reviewer_user_id_user_id_fk",
           "tableFrom": "review",
           "tableTo": "user",
-          "columnsFrom": [
-            "reviewer_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["reviewer_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -597,12 +576,8 @@
           "name": "review_applicant_user_id_application_user_id_fk",
           "tableFrom": "review",
           "tableTo": "application",
-          "columnsFrom": [
-            "applicant_user_id"
-          ],
-          "columnsTo": [
-            "user_id"
-          ],
+          "columnsFrom": ["applicant_user_id"],
+          "columnsTo": ["user_id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -610,12 +585,8 @@
           "name": "review_applicant_user_id_user_id_fk",
           "tableFrom": "review",
           "tableTo": "user",
-          "columnsFrom": [
-            "applicant_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["applicant_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -623,10 +594,7 @@
       "compositePrimaryKeys": {
         "review_reviewer_user_id_applicant_user_id_pk": {
           "name": "review_reviewer_user_id_applicant_user_id_pk",
-          "columns": [
-            "reviewer_user_id",
-            "applicant_user_id"
-          ]
+          "columns": ["reviewer_user_id", "applicant_user_id"]
         }
       },
       "uniqueConstraints": {},
@@ -677,9 +645,7 @@
         "scavenger_hunt_item_code_unique": {
           "name": "scavenger_hunt_item_code_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "code"
-          ]
+          "columns": ["code"]
         }
       },
       "policies": {},
@@ -738,12 +704,8 @@
           "name": "scavenger_hunt_redemption_user_id_user_id_fk",
           "tableFrom": "scavenger_hunt_redemption",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -751,12 +713,8 @@
           "name": "scavenger_hunt_redemption_reward_id_scavenger_hunt_reward_id_fk",
           "tableFrom": "scavenger_hunt_redemption",
           "tableTo": "scavenger_hunt_reward",
-          "columnsFrom": [
-            "reward_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["reward_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -877,12 +835,8 @@
           "name": "scavenger_hunt_scan_user_id_user_id_fk",
           "tableFrom": "scavenger_hunt_scan",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -890,12 +844,8 @@
           "name": "scavenger_hunt_scan_scanner_id_user_id_fk",
           "tableFrom": "scavenger_hunt_scan",
           "tableTo": "user",
-          "columnsFrom": [
-            "scanner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["scanner_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -903,12 +853,8 @@
           "name": "scavenger_hunt_scan_item_id_scavenger_hunt_item_id_fk",
           "tableFrom": "scavenger_hunt_scan",
           "tableTo": "scavenger_hunt_item",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -916,10 +862,7 @@
       "compositePrimaryKeys": {
         "scavenger_hunt_scan_user_id_item_id_pk": {
           "name": "scavenger_hunt_scan_user_id_item_id_pk",
-          "columns": [
-            "user_id",
-            "item_id"
-          ]
+          "columns": ["user_id", "item_id"]
         }
       },
       "uniqueConstraints": {},
@@ -972,12 +915,8 @@
           "name": "session_userId_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "userId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1119,10 +1058,7 @@
       "compositePrimaryKeys": {
         "verification_token_identifier_token_pk": {
           "name": "verification_token_identifier_token_pk",
-          "columns": [
-            "identifier",
-            "token"
-          ]
+          "columns": ["identifier", "token"]
         }
       },
       "uniqueConstraints": {},
@@ -1148,25 +1084,12 @@
     "public.avatar_colour": {
       "name": "avatar_colour",
       "schema": "public",
-      "values": [
-        "red",
-        "orange",
-        "yellow",
-        "green",
-        "blue",
-        "purple",
-        "pink"
-      ]
+      "values": ["red", "orange", "yellow", "green", "blue", "purple", "pink"]
     },
     "public.country": {
       "name": "country",
       "schema": "public",
-      "values": [
-        "Canada",
-        "United States",
-        "India",
-        "Other"
-      ]
+      "values": ["Canada", "United States", "India", "Other"]
     },
     "public.race/ethnicity": {
       "name": "race/ethnicity",
@@ -1233,12 +1156,7 @@
     "public.num_of_hackathons": {
       "name": "num_of_hackathons",
       "schema": "public",
-      "values": [
-        "0",
-        "1-3",
-        "4-6",
-        "7+"
-      ]
+      "values": ["0", "1-3", "4-6", "7+"]
     },
     "public.sexual_orientation": {
       "name": "sexual_orientation",
@@ -1257,11 +1175,7 @@
     "public.user_type": {
       "name": "user_type",
       "schema": "public",
-      "values": [
-        "hacker",
-        "organizer",
-        "sponsor"
-      ]
+      "values": ["hacker", "organizer", "sponsor"]
     },
     "public.year_of_study": {
       "name": "year_of_study",

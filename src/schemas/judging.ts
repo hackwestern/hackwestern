@@ -113,6 +113,11 @@ export const handOffJudgeSchema = z
 
 export const addJudgeToTableSchema = z.object({ judgeId, tableId });
 
+export const setJudgeNoShowSchema = z.object({
+  judgeId,
+  noShow: z.boolean(),
+});
+
 // `id` is the user id being promoted to a judge. Stats columns are
 // server-derived, so they're omitted. `track` needs the array override
 // (drizzle-zod v0.5 generates a single-value schema for `.array()` columns).

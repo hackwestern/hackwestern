@@ -66,6 +66,7 @@ export async function getProgress() {
         .select({
           id: judges.id,
           type: judges.type,
+          noShow: judges.noShow,
           marksCount: judges.marksCount,
           createdAt: judges.createdAt,
           name: users.name,
@@ -126,6 +127,7 @@ export async function getProgress() {
         name: j.name ?? j.email,
         email: j.email,
         type: j.type,
+        noShow: j.noShow,
         marksCount: j.marksCount,
         isFloater: mine.length === 0,
         current: current
@@ -154,6 +156,7 @@ export async function getAllJudges() {
         id: judges.id,
         type: judges.type,
         track: judges.track,
+        noShow: judges.noShow,
         marksCount: judges.marksCount,
         marksSum: judges.marksSum,
         createdAt: judges.createdAt,
@@ -337,7 +340,8 @@ export async function getTeamJudging(userId: string) {
     }),
   ]);
   const table = team?.judgingTable ?? null;
-  if (!table) return { table: null, judges: { done: 0, total: 0 } };
+  if (!table)
+    return { table: null, absent: false, judges: { done: 0, total: 0 } };
 
   const counts = await db
     .select({ status: judgingAssignments.status, n: count() })
@@ -355,6 +359,8 @@ export async function getTeamJudging(userId: string) {
       zone: table.zone,
       ...snakePosition(table.number, settings.perRow),
     },
+    // Reported absent: disqualified, and every stop at the table is closed.
+    absent: counts.some((c) => c.status === "team_absent"),
     judges: {
       done: counts.find((c) => c.status === "done")?.n ?? 0,
       total: counts.reduce((sum, c) => sum + c.n, 0),

@@ -210,6 +210,17 @@ export async function assertStopOpen(tx: Tx, position: number) {
   }
 }
 
+/**
+ * The lowest stop position a judge can still be asked to do. Stops from rounds
+ * that have ended were missed, so they must not block the judge's current
+ * stop. 0 when rounds are off.
+ */
+export async function openPositionFloor(tx: Tx) {
+  const row = await readRow(tx, "share");
+  if (!row.roundsEnabled) return 0;
+  return resolveRound(row, 0).round;
+}
+
 /* ---------------------------- organizer actions ---------------------------- */
 
 /** Open the next round and start its timer. */

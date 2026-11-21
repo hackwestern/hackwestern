@@ -67,6 +67,7 @@ swap teams between tables.
 - Only organizer-type judges get sections. Sponsor judges judge in their
   sponsor rooms (and the ranking ignores sponsored marks), so they're left out
   of auto-assign, hand-offs and top-ups.
+- Judges marked as a **no-show** are left out too (see Day-of fixes).
 - Lay the occupied spots out in snake order 3 times end to end and
   cut it into one consecutive run per judge, as evenly as possible. Judge `k`
   (0-based, of `J`) gets slots `floor(k * S / J)` up to `floor((k + 1) * S / J)`,
@@ -136,6 +137,9 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
 ```
 
 - A judge has at most one stop `in_progress` at a time.
+- A judge can only act on their **current stop**: the one in progress, else
+  their first `assigned` stop in walking order. Start, submit and report absent
+  are refused for any other stop.
 - Submitting writes the `team_mark` (score + breakdown) for the team seated at
   the table and marks the stop `done` in one transaction.
 - Start and submit also send the `teamId` the judge's screen showed. If a
@@ -144,7 +148,22 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
   the judge refreshes and scores the team that's there.
 - Score format (from the judge app): `score` 0-10, plus
   `score_breakdown = { ratings: { criterionId: 0-10 in half steps }, notes?, superLike? }`.
-- Organizers deleting a mark reopens its stop (`done` -> `assigned`).
+- Organizers deleting a mark reopens its stop (`done` -> `assigned`), except
+  at a table whose team was reported absent.
+
+### Absence is final
+
+- The first absent report at a table (by a judge or an organizer) disqualifies
+  the team seated there. Every other open stop at that table (assigned or in
+  progress) becomes `team_absent` at once, which counts as closed.
+- No endpoint gives an absent table a live stop again: top-ups are refused,
+  hand-offs leave its stops behind, and deleting a mark doesn't reopen one.
+- Disqualified teams are left out of the team results page and the ranking.
+  Their marks also don't count toward judge averages in the ranking.
+- The control room's round count leaves out absent tables, so a round can
+  complete.
+- Known limit: the in-database normalization (`judging_team_scores`) still
+  uses an absent team's earlier marks for judge averages.
 
 ## Table live status
 
@@ -169,6 +188,10 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
   of those tables or has already scored a team seated at one.
 - **Add a judge to a table:** top-up when a table needs another score.
 - **Cancel a stop**, or **mark a team absent**.
+- **Mark a judge as a no-show** (Judges and Teams page): auto-assign skips
+  them, and hand-offs and top-ups to them are refused. Before judging starts,
+  marking a judge who already has stops clears the plan (run auto-assign
+  again). After it starts, hand off their unfinished stops first.
 - Judges added after auto-assign are **floaters** (no stops) until auto-assign
   is re-run or an organizer adds them to tables.
 
@@ -178,7 +201,8 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
   judges done of 3, every judge's stops, floaters, totals by status.
 - Judges: their stops in walking order with table number, grid position,
   seated team and their score if given, plus which stop is next.
-- Hackers: their table number and grid position, and "N of 3 judges done".
+- Hackers: their table number and grid position, "N of 3 judges done", and
+  whether their team was reported absent.
 
 ## Cheat check
 
