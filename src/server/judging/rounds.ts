@@ -17,6 +17,7 @@ import { judgingAssignments, judgingRound, teams } from "~/server/db/schema";
 import {
   type Tx,
   isJudgingStarted,
+  rehearsalRestartAllowed,
   lockPlanShared,
 } from "~/server/judging/shared";
 
@@ -382,6 +383,8 @@ export async function getRoundOverview() {
     ...state,
     /** Judging has started, so the assignments can't be cleared any more. */
     judgingStarted: await isJudgingStarted(),
+    /** This deploy may restart a rehearsal (dev site only). */
+    canRestartRehearsal: rehearsalRestartAllowed(),
     stops: {
       total: stops.length,
       done: stops.filter(

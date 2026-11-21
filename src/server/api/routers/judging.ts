@@ -53,6 +53,7 @@ import {
   editMark,
   handOffJudge,
   markAbsent,
+  restartRehearsal,
   setJudgeNoShow,
   startStop,
   submitStop,
@@ -490,6 +491,14 @@ export const judgingRouter = createTRPCRouter({
       withErrorHandling(
         () => clearAssignments(),
         "Failed to clear the assignments",
+      ),
+    ),
+
+    /** Dev site only: wipe judging scores and assignments for a new rehearsal. */
+    restartRehearsal: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(
+        () => restartRehearsal(),
+        "Failed to restart the rehearsal",
       ),
     ),
 

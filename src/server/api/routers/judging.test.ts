@@ -2223,6 +2223,41 @@ describe("timed rounds", () => {
     expect((await admin.getRound()).judgingStarted).toBe(true);
   });
 
+  test("restarting a rehearsal only works on the dev site, and wipes scores and stops", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    const admin = room.org.caller.judging.admin;
+    await admin.startRound();
+    await score(judge, await stopAt(judge, 1));
+
+    // Not a Vercel preview deploy (production, or a local server): refused.
+    vi.stubEnv("VERCEL_ENV", "production");
+    expect((await admin.getRound()).canRestartRehearsal).toBe(false);
+    await expect(admin.restartRehearsal()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect((await admin.getRound()).judgingStarted).toBe(true);
+
+    vi.stubEnv("VERCEL_ENV", "preview");
+    try {
+      expect((await admin.getRound()).canRestartRehearsal).toBe(true);
+      const result = await admin.restartRehearsal();
+      expect(result.marks).toBeGreaterThan(0);
+      expect(await stopsOf(judge.caller)).toHaveLength(0);
+      expect(await admin.getRound()).toMatchObject({
+        round: 0,
+        status: "idle",
+        judgingStarted: false,
+      });
+      // Ready for a new plan.
+      await admin.autoAssign();
+      expect((await stopsOf(judge.caller)).length).toBeGreaterThan(0);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   test("hackers only see the rounds board while an organizer turns it on, without judge identities or scores", async () => {
     const room = await roundsRoom();
     const [judge] = room.judges;

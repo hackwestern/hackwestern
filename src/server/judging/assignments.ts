@@ -34,6 +34,7 @@ import {
   isUniqueViolation,
   lockPlanExclusive,
   lockPlanShared,
+  rehearsalRestartAllowed,
   lockTables,
   notFound,
 } from "~/server/judging/shared";
@@ -217,6 +218,42 @@ export async function clearAssignments() {
       })
       .where(eq(judgingRound.id, 1));
     return { removed: removed.length };
+  });
+}
+
+/**
+ * Rehearsals only (see rehearsalRestartAllowed): delete every regular judging
+ * score and every assignment, and put the rounds back before round 1. Teams,
+ * tables, judges and sponsor scores stay, so Auto-assign can run again.
+ */
+export async function restartRehearsal() {
+  if (!rehearsalRestartAllowed()) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Restarting is only for rehearsals on the dev site.",
+    });
+  }
+  return db.transaction(async (tx) => {
+    await lockPlanExclusive(tx);
+    const marks = await tx
+      .delete(teamMarks)
+      .where(eq(teamMarks.roundType, "regular"))
+      .returning({ id: teamMarks.id });
+    const stops = await tx
+      .delete(judgingAssignments)
+      .where(sql`true`)
+      .returning({ id: judgingAssignments.id });
+    await tx
+      .update(judgingRound)
+      .set({
+        currentRound: 0,
+        status: "idle",
+        endsAt: null,
+        remainingMs: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(judgingRound.id, 1));
+    return { marks: marks.length, stops: stops.length };
   });
 }
 

@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, asc, eq, inArray } from "drizzle-orm";
 
+import { env } from "~/env";
 import { type Transaction, db } from "~/server/db";
 import {
   judgingAssignments,
@@ -14,6 +15,15 @@ import {
 } from "~/server/judging/layout";
 
 export type Tx = Transaction | typeof db;
+
+/**
+ * Restarting a rehearsal wipes judging scores, so it only works on Vercel
+ * preview deploys (the dev branch and PR previews, which use the dev
+ * database). Never on the production deploy, and not on a local server.
+ */
+export function rehearsalRestartAllowed(): boolean {
+  return (process.env.VERCEL_ENV ?? env.VERCEL_ENV) === "preview";
+}
 export type StopStatus = (typeof judgingAssignments.$inferSelect)["status"];
 
 /** Statuses a stop can still move out of. */

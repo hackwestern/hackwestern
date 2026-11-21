@@ -72,7 +72,10 @@ export function ControlRoundsBar({ now }: { now: number }) {
   const config = api.judging.admin.setRoundConfig.useMutation(
     run("save the settings"),
   );
-  const busy = [start, pause, resume, end, reset, clear, config].some(
+  const restart = api.judging.admin.restartRehearsal.useMutation(
+    run("restart the rehearsal"),
+  );
+  const busy = [start, pause, resume, end, reset, clear, config, restart].some(
     (m) => m.isPending,
   );
 
@@ -314,6 +317,24 @@ export function ControlRoundsBar({ now }: { now: number }) {
         >
           {clear.isPending ? "Clearing…" : "Assignments: clear all"}
         </button>
+        {r.canRestartRehearsal && (
+          <button
+            type="button"
+            className="min-h-11 rounded-[10px] border-[1.5px] border-[#b42318] bg-[#b42318] px-3.5 text-[15px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={busy}
+            title="Dev site only. Deletes every judging score and assignment."
+            onClick={() => {
+              if (
+                window.confirm(
+                  "Restart the rehearsal? This deletes every judging score and every assignment on the dev site. Teams, tables and judges stay. Then run Auto-assign judges again.",
+                )
+              )
+                restart.mutate();
+            }}
+          >
+            {restart.isPending ? "Restarting…" : "Restart rehearsal (dev only)"}
+          </button>
+        )}
         {r.judgingStarted && (
           <span className={`text-xs ${MUTED}`}>
             Assignments are locked once judging starts.

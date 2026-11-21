@@ -216,6 +216,15 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     refetchInterval: 4000,
   });
   const marksQuery = api.judging.me.getSubmittedTeamMarks.useQuery();
+  // A rehearsal restart wipes the scores: a judge left on a later step with
+  // none goes back to the first pass.
+  useEffect(() => {
+    if (!hydrated || stage === "first" || marksQuery.data?.length !== 0) return;
+    setStage("first");
+    writeStage(judgeKey, "first");
+    setRescored([]);
+    writeRescored(judgeKey, []);
+  }, [hydrated, stage, marksQuery.data, judgeKey]);
   const startStop = api.judging.me.startStop.useMutation();
   const submit = api.judging.me.submitStop.useMutation();
   const edit = api.judging.me.editTeamMark.useMutation();
