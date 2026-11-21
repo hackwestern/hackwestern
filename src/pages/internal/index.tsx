@@ -12,24 +12,14 @@ const SECTIONS: { title: string; cards: Card[] }[] = [
       {
         href: "/internal/judging",
         title: "Judging Controls",
-        description: "Queue, judge progress, rankings and sponsor tracks.",
-        note: "API not wired up yet",
+        description:
+          "Run the event: tables, seating, progress, queue and rankings.",
       },
       {
         href: "/internal/roster",
-        title: "Judge Roster",
-        description: "See judges and add new ones.",
-      },
-      {
-        href: "/internal/rubric",
-        title: "Rubric",
-        description: "Preview the judging rubric.",
-      },
-      {
-        href: "/internal/team-results",
-        title: "Team Results",
-        description: "Scores and results per team.",
-        note: "API not wired up yet",
+        title: "Judges and Teams",
+        description:
+          "Individual judges and teams: add judges, send teams, see scores.",
       },
       {
         href: "/internal/clock",
@@ -41,6 +31,17 @@ const SECTIONS: { title: string; cards: Card[] }[] = [
         title: "My judging",
         description: "The judge phone view.",
         note: "API not wired up yet",
+      },
+    ],
+  },
+  {
+    title: "Slack",
+    cards: [
+      {
+        href: "/internal/ping-logs",
+        title: "Ping Logs",
+        description:
+          "Is the reminder bot running, and who gets pinged for what from the run of show.",
       },
     ],
   },

@@ -341,8 +341,43 @@
     {
       "idx": 48,
       "version": "7",
-      "when": 1795141253433,
-      "tag": "0048_redemption_cost_points",
+      "when": 1795165834220,
+      "tag": "0048_sponsor_dashboard",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1795205871308,
+      "tag": "0049_broadcast_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1795207722027,
+      "tag": "0050_coffee_chat_reminder",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1795207723027,
+      "tag": "0051_room_booking_event",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1795207724027,
+      "tag": "0052_bot_state",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1795226331234,
+      "tag": "0053_redemption_cost_points",
       "breakpoints": true
     }
   ]

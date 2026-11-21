@@ -5,8 +5,12 @@ import type { GetServerSidePropsContext } from "next";
 import { db } from "~/server/db";
 import GoogleAuthButton from "~/components/auth/googleauth-button";
 import GithubAuthButton from "~/components/auth/githubauth-button";
+import { useRouter } from "next/router";
+import { safeCallbackPath } from "~/lib/safe-callback";
 
 export default function Login() {
+  const router = useRouter();
+  const callbackUrl = safeCallbackPath(router.query.callbackUrl) ?? "/internal";
   return (
     <>
       <SEO title="Organizer Login" noindex />
@@ -16,8 +20,8 @@ export default function Login() {
             Hack Western Organizer
           </h1>
           <div className="flex w-72 flex-col items-center gap-5">
-            <GoogleAuthButton redirect="/internal" />
-            <GithubAuthButton redirect="/internal" />
+            <GoogleAuthButton redirect={callbackUrl} />
+            <GithubAuthButton redirect={callbackUrl} />
           </div>
         </div>
       </main>
@@ -37,7 +41,8 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     if (user?.type === "organizer") {
       return {
         redirect: {
-          destination: "/internal",
+          destination:
+            safeCallbackPath(context.query.callbackUrl) ?? "/internal",
           permanent: false,
         },
       };

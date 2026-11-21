@@ -9,6 +9,7 @@ import { api } from "~/utils/api";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { cn } from "~/lib/utils";
+import { realmCardColor, realmLabel, type Realm } from "~/constants/realms";
 import jsQR from "jsqr";
 import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
@@ -38,6 +39,96 @@ interface LegacyNavigator extends Navigator {
     error: (error: Error) => void,
   ) => void;
 }
+
+type HeldResult = {
+  kind: "success" | "already" | "error";
+  name?: string;
+  realm?: Realm | null;
+  shirtSize?: string | null;
+  message?: string;
+};
+
+const HELD_STYLES = {
+  success: {
+    title: "✓ Checked in",
+    tint: "bg-dashboard-status-live/15",
+    text: "text-dashboard-status-live",
+  },
+  already: {
+    title: "Already checked in",
+    tint: "bg-dashboard-status-warning/15",
+    text: "text-dashboard-status-warning",
+  },
+  error: {
+    title: "✗ Can't check in",
+    tint: "bg-red-100",
+    text: "text-red-800",
+  },
+} as const;
+
+// Covers the camera until Next (or "Photo ID checked") is tapped, or Enter
+const HeldResultOverlay = ({
+  result,
+  onNext,
+}: {
+  result: HeldResult;
+  onNext: () => void;
+}) => {
+  const style = HELD_STYLES[result.kind];
+  return (
+    <div
+      role="alertdialog"
+      aria-live="assertive"
+      aria-label={style.title}
+      className="fixed inset-0 z-50 bg-dashboard-bg-surface font-figtree"
+    >
+      <div
+        className={cn(
+          "flex h-full w-full flex-col gap-6 px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))]",
+          style.tint,
+        )}
+      >
+        <p className={cn("text-2xl font-bold", style.text)}>{style.title}</p>
+        <div className="flex flex-1 flex-col justify-center gap-4">
+          {result.name && (
+            <p className="break-words text-[44px] font-bold leading-[1.1] text-dashboard-text-heavy md:text-[64px]">
+              {result.name}
+            </p>
+          )}
+          {result.realm && (
+            <span
+              className="self-start rounded-full px-4 py-1 text-lg font-semibold uppercase tracking-wide"
+              style={{
+                backgroundColor: realmCardColor[result.realm].background,
+                color: realmCardColor[result.realm].text,
+              }}
+            >
+              {realmLabel[result.realm]} Realm
+            </span>
+          )}
+          {result.shirtSize && (
+            <p className="text-2xl font-semibold text-dashboard-text-heavy">
+              Shirt size: {result.shirtSize}
+            </p>
+          )}
+          {result.message && (
+            <p className={cn("text-xl font-semibold", style.text)}>
+              {result.message}
+            </p>
+          )}
+        </div>
+        {/* A new check-in can't be cleared without confirming the ID */}
+        <DashboardButton
+          autoFocus
+          onClick={onNext}
+          className="h-16 w-full text-xl font-semibold"
+        >
+          {result.kind === "success" ? "Photo ID checked" : "Next"}
+        </DashboardButton>
+      </div>
+    </div>
+  );
+};
 
 const ScanActivityPage = () => {
   const router = useRouter();
@@ -80,6 +171,10 @@ const ScanActivityPage = () => {
 
   const activityName = itemData?.name ?? "Activity";
   const isWinnable = itemData?.winPoints != null;
+  // Check-in holds each result on screen until the organizer taps Next, so
+  // they can compare the name with the hacker's photo ID
+  const holdResults = /regist|check[\s-]?in/i.test(itemData?.name ?? "");
+  const [held, setHeld] = useState<HeldResult | null>(null);
 
   // QR Code scanning using camera stream
   const scanQRCode = async (): Promise<string | null> => {
@@ -314,21 +409,34 @@ const ScanActivityPage = () => {
     }
   };
 
-  // Look up a hacker's name for the toast, falling back to their ID
-  const fetchUserName = async (userId: string) => {
+  // Look up a hacker's name and realm for the result, falling back to their ID
+  const fetchUser = async (
+    userId: string,
+  ): Promise<{
+    name: string;
+    realm: Realm | null;
+    shirtSize: string | null;
+  }> => {
     try {
       const userResponse = await fetch(
         `/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`,
       );
-      if (!userResponse.ok) return userId;
+      if (!userResponse.ok)
+        return { name: userId, realm: null, shirtSize: null };
       const userData = (await userResponse.json()) as {
         name?: string;
         email?: string;
+        realm?: Realm | null;
+        shirtSize?: string | null;
       };
-      return userData?.name ?? userData?.email ?? userId;
+      return {
+        name: userData?.name ?? userData?.email ?? userId,
+        realm: userData?.realm ?? null,
+        shirtSize: userData?.shirtSize ?? null,
+      };
     } catch (userError) {
       console.error("Error fetching user info:", userError);
-      return userId;
+      return { name: userId, realm: null, shirtSize: null };
     }
   };
 
@@ -355,8 +463,12 @@ const ScanActivityPage = () => {
         itemId: itemData.id,
         activityType: isWinnable ? activityTypeRef.current : undefined,
       });
-      const userName = await fetchUserName(userId);
+      const { name: userName, realm, shirtSize } = await fetchUser(userId);
       setStatus("success");
+      if (holdResults) {
+        setHeld({ kind: "success", name: userName, realm, shirtSize });
+        return; // scanning resumes when the organizer taps Next
+      }
       toast(
         <span>
           <span className="font-semibold">{userName}</span> scanned successfully
@@ -365,8 +477,29 @@ const ScanActivityPage = () => {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "";
       setStatus("error");
+      if (holdResults) {
+        const { name: userName, realm, shirtSize } = await fetchUser(userId);
+        // fetchUser falls back to the scanned code when nobody matches
+        const name = userName !== userId ? userName : undefined;
+        if (message.includes("already scanned")) {
+          setHeld({ kind: "already", name, realm, shirtSize });
+        } else if (/UNAUTHORIZED|FORBIDDEN|not an organizer/.test(message)) {
+          setHeld({
+            kind: "error",
+            name,
+            message: "Log in as an organizer to scan.",
+          });
+        } else {
+          setHeld({
+            kind: "error",
+            name,
+            message: message || "Failed to process scan. Please try again.",
+          });
+        }
+        return; // scanning resumes when the organizer taps Next
+      }
       if (message.includes("already scanned")) {
-        const userName = await fetchUserName(userId);
+        const { name: userName } = await fetchUser(userId);
         toast.error(
           <span>
             <span className="font-semibold">{userName}</span> was already
@@ -393,8 +526,19 @@ const ScanActivityPage = () => {
 
   // Navigation is now handled directly in processScan after setting success status
 
+  // Close the held result and scan again. The same badge is ignored for a few
+  // seconds in case it's still in front of the camera.
+  const next = () => {
+    const last = lastScanRef.current;
+    if (last) lastScanRef.current = { value: last.value, at: Date.now() };
+    setHeld(null);
+    setStatus("scanning");
+    isProcessingRef.current = false;
+  };
+
   return (
     <div className="flex h-dvh w-full flex-col bg-dashboard-bg-nav font-figtree">
+      {held && <HeldResultOverlay result={held} onNext={next} />}
       {itemLoading && (
         <p className="fixed inset-0 flex items-center justify-center text-base font-medium text-dashboard-text-medium">
           Loading activity...

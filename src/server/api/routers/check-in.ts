@@ -6,7 +6,13 @@ import {
   protectedOrganizerProcedure,
 } from "~/server/api/trpc";
 import { db } from "~/server/db";
-import { applications, dayOfRegistrations } from "~/server/db/schema";
+import {
+  applications,
+  dayOfRegistrations,
+  teams,
+  users,
+} from "~/server/db/schema";
+import { ELIGIBLE_SUBMISSIONS } from "~/server/judging/shared";
 import { isAdmittedStatus } from "~/lib/admission";
 import { isUserApprovedForEvent } from "~/server/api/utils/approval";
 import { resolveScannedUserId } from "~/server/api/utils/hacker-id";
@@ -141,6 +147,54 @@ export const checkInRouter = createTRPCRouter({
         isApproved: isAccepted,
         signedInAt: dayOf?.signedInAt ?? null,
         approvedOnDayOf: dayOf?.approved ?? false,
+      };
+    }),
+
+  /**
+   * Hardware return: has the scanned hacker's team submitted a project?
+   * Teams come from the Devpost import, so before it runs nobody has one.
+   */
+  getProjectStatus: protectedOrganizerProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ input }) => {
+      const userId = await resolveScannedUserId(input.userId);
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+        columns: { name: true, email: true, teamId: true },
+      });
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No hacker found for this code.",
+        });
+      }
+
+      const [application, team] = await Promise.all([
+        db.query.applications.findFirst({
+          where: eq(applications.userId, userId),
+          columns: { firstName: true, lastName: true },
+        }),
+        user.teamId
+          ? db.query.teams.findFirst({
+              where: eq(teams.id, user.teamId),
+              columns: { name: true, devpostUrl: true, submissionStatus: true },
+            })
+          : undefined,
+      ]);
+
+      // The application name matches their photo ID; the account name can be empty
+      const appName = [application?.firstName, application?.lastName]
+        .filter(Boolean)
+        .join(" ");
+
+      return {
+        name: appName || (user.name ?? user.email),
+        submitted:
+          !!team &&
+          (ELIGIBLE_SUBMISSIONS as readonly string[]).includes(
+            team.submissionStatus,
+          ),
+        team: team ?? null,
       };
     }),
 });

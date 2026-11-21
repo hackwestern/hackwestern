@@ -48,3 +48,26 @@ vi.mock("~/server/mail", () => ({
 vi.mock("dns/promises", () => ({
   resolveMx: vi.fn().mockResolvedValue([{ exchange: "mx.test", priority: 10 }]),
 }));
+
+// No test may reach Slack, Mailjet or Google with the real fetch. Tests that
+// stub fetch (vi.stubGlobal or a fetch dependency) never get here; anything
+// that falls through to the real network for these hosts fails loudly.
+const BLOCKED_HOSTS = [/(^|\.)slack\.com$/, /(^|\.)mailjet\.com$/, /(^|\.)googleapis\.com$/];
+const realFetch = globalThis.fetch;
+globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+  const url = new URL(input instanceof Request ? input.url : String(input));
+  if (BLOCKED_HOSTS.some((host) => host.test(url.hostname))) {
+    throw new Error(`Test tried to reach ${url.hostname}: mock it.`);
+  }
+  return realFetch(input, init);
+}) as typeof fetch;
+
+// No test may write to a Google Sheet: the run-of-show service account is
+// Editor on the live sheet. sheetWritesEnabled() (run-of-show-sheet.ts)
+// returns false whenever process.env.VITEST is set, so both mirrors write
+// nothing and getSheetsClient asks for the read-only scope. A test that
+// exercises a write mocks sheetWritesEnabled AND googleapis (or passes a
+// fake sheet). SHEET_WRITES is also blanked for the suite (vitest.config.ts).
+if (!process.env.VITEST) {
+  throw new Error("vitest.setup.ts expects process.env.VITEST to be set");
+}

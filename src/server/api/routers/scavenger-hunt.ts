@@ -8,6 +8,7 @@ import {
   isNull,
   isNotNull,
   gt,
+  lte,
   desc,
   ilike,
   count,
@@ -313,6 +314,64 @@ export const scavengerHuntRouter = createTRPCRouter({
         message: "Failed to fetch items: " + JSON.stringify(error),
       });
     }
+  }),
+
+  // Scavenger hunt tasks (open bonus items) for the Scavenger Hunt tab on
+  // /live, with whether the current user has already been scanned for each.
+  // A task shows up once its start time has passed (Friday 5 PM for all of them).
+  getTasks: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await db
+      .select({
+        id: scavengerHuntItems.id,
+        name: scavengerHuntItems.name,
+        points: scavengerHuntItems.points,
+        scannedAt: sql<Date | null>`min(${scavengerHuntScans.createdAt})`,
+      })
+      .from(scavengerHuntItems)
+      .leftJoin(
+        scavengerHuntScans,
+        and(
+          eq(scavengerHuntScans.itemId, scavengerHuntItems.id),
+          eq(scavengerHuntScans.userId, ctx.session.user.id),
+        ),
+      )
+      .where(
+        and(
+          eq(scavengerHuntItems.type, "bonus"),
+          isOpen(),
+          lte(scavengerHuntItems.startsAt, sql`now()`),
+        ),
+      )
+      .groupBy(scavengerHuntItems.id)
+      .orderBy(scavengerHuntItems.points, scavengerHuntItems.name);
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      points: row.points,
+      // Raw SQL aggregates come back as strings
+      scannedAt: row.scannedAt ? new Date(row.scannedAt) : null,
+    }));
+  }),
+
+  // Prizes hackers can spend points on, for the Scavenger Hunt tab on /live
+  getPrizes: protectedProcedure.query(async () => {
+    return withErrorHandling(
+      () =>
+        db
+          .select({
+            id: scavengerHuntRewards.id,
+            name: scavengerHuntRewards.name,
+            costPoints: scavengerHuntRewards.costPoints,
+            quantity: scavengerHuntRewards.quantity,
+          })
+          .from(scavengerHuntRewards)
+          .where(
+            and(eq(scavengerHuntRewards.status, "active"), rewardNotDeleted()),
+          )
+          .orderBy(scavengerHuntRewards.costPoints, scavengerHuntRewards.name),
+      "Failed to fetch prizes",
+    );
   }),
 
   // Get All Scavenger Hunt Rewards (only accessible to organizers)
