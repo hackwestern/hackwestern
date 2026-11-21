@@ -411,7 +411,7 @@ function SwapDialog({
 
 /**
  * Live room map. Each box is a physical table holding two spots, numbered
- * sequentially (1, 2 | 3, 4 | ...), and fills with its team and judging
+ * sequentially (1, 2 | 3, 4 | ...; flipped on right-to-left rows), and fills with its team and judging
  * progress. Tables run in a snake like the judges' map: row one left to
  * right, row two right to left.
  */
@@ -570,17 +570,24 @@ export function ControlTablesStatus({
           >
             {order.map((p) => {
               const first = (p - 1) * SPOTS_PER_TABLE + 1;
+              // On right-to-left rows the lower spot goes on the right, so
+              // the numbers keep running along the snake (20, then 21 | 22
+              // read right to left).
+              const reversed = Math.floor((p - 1) / COLS) % 2 === 1;
               return (
                 <div key={p} className="flex">
-                  {Array.from({ length: SPOTS_PER_TABLE }, (_, k) => (
-                    <SpotBox
-                      key={k}
-                      number={first + k}
-                      spot={byNumber.get(first + k)}
-                      now={now}
-                      onOpen={() => setOpenSpot(first + k)}
-                    />
-                  ))}
+                  {Array.from({ length: SPOTS_PER_TABLE }, (_, k) => {
+                    const n = first + (reversed ? SPOTS_PER_TABLE - 1 - k : k);
+                    return (
+                      <SpotBox
+                        key={n}
+                        number={n}
+                        spot={byNumber.get(n)}
+                        now={now}
+                        onOpen={() => setOpenSpot(n)}
+                      />
+                    );
+                  })}
                 </div>
               );
             })}
