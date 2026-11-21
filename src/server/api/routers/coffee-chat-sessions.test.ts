@@ -615,7 +615,7 @@ describe("send", () => {
       "Rm 1358",
     ]);
     expect(rows[4]![0]).toBe("10:00 AM");
-    expect(rows.at(-1)![0]).toBe("4:45 PM");
+    expect(rows.at(-1)![0]).toBe("8:45 PM");
     expect(rows[4]![8]).toBe(`${names.work} · Wes · 1-on-1 · 15 min · 4 chats`);
     expect(rows[5]![8]).toBe("");
   });

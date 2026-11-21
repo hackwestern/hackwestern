@@ -65,7 +65,8 @@ describe("freeRanges", () => {
     const rep: BookRep = { id: "bo", free: null, blocked: [] };
     expect(freeRanges(rep, { placements: [], bookings: [] })).toEqual([
       { start: 600, end: 720 },
-      { start: 780, end: 1020 },
+      // Until 9 PM (2026-11-21).
+      { start: 780, end: 1260 },
     ]);
   });
 

@@ -17,6 +17,7 @@ import {
 import { effectiveCoffeeChatStatus } from "~/lib/coffee-chat-requests";
 import {
   COFFEE_SESSIONS,
+  EVENING_START,
   COFFEE_SESSION_IDS,
   MAX_HACKERS_PER_CHAT,
   MIN_HACKERS_PER_CHAT,
@@ -60,8 +61,8 @@ import {
 const errors = sponsorSetupCopy.errors;
 
 const sponsorInput = z.string().uuid();
-const repName = z.string().trim().min(1).max(255);
-const repPhone = z
+export const repName = z.string().trim().min(1).max(255);
+export const repPhone = z
   .string()
   .trim()
   .min(1)
@@ -440,9 +441,11 @@ export const coffeeChatSetupRouter = createTRPCRouter({
             id: coffeeChatReps.id,
             isPrimary: coffeeChatReps.isPrimary,
           });
-        const open = COFFEE_SESSIONS.map((s) => s.id as string).filter(
-          (id) => !setup.blocked.includes(id),
-        );
+        // Free by default in the daytime sessions only: the 5-9 PM ones
+        // start unticked until the rep says they're free then.
+        const open = COFFEE_SESSIONS.filter((s) => s.start < EVENING_START)
+          .map((s) => s.id as string)
+          .filter((id) => !setup.blocked.includes(id));
         if (open.length) {
           await tx
             .insert(coffeeChatRepSessions)

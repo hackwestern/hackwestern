@@ -56,11 +56,15 @@ import {
 } from "~/server/api/utils/coffee-chat-sessions-board";
 import {
   coffeeChatPlacements,
+  coffeeChatRepSessions,
   coffeeChatReps,
   coffeeChatRoomBookings,
   coffeeChats,
   sponsorJudgingSponsors,
 } from "~/server/db/schema";
+import { MAX_SETUP_REPS } from "~/lib/coffee-chat-setup";
+import { mirrorCoffeeChatSetupLater } from "~/server/api/utils/coffee-chat-setup-sheet-mirror";
+import { repName, repPhone } from "~/server/api/routers/coffee-chat-setup";
 
 const errors = coffeeSessionsCopy.errors;
 
@@ -559,6 +563,65 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       staff,
     };
   }),
+
+  /**
+   * Book an event's "+ Add a rep" (Jazz, 2026-11-21): a rep the sponsor
+   * forgot, added by an organizer. Unlike the sponsor's own addRep it asks
+   * for no chats (0), is free every session, and doesn't count as "changed
+   * after Send", so the coffee chat schedule and invites stay as they are.
+   */
+  addEventRep: protectedOrganizerProcedure
+    .input(
+      z.object({
+        sponsorId: z.string().uuid(),
+        name: repName,
+        phone: repPhone,
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const rep = await db.transaction(async (tx) => {
+        const [sponsor] = await tx
+          .select({ id: sponsorJudgingSponsors.id })
+          .from(sponsorJudgingSponsors)
+          .where(eq(sponsorJudgingSponsors.id, input.sponsorId))
+          .for("update");
+        if (!sponsor) throw new TRPCError({ code: "NOT_FOUND" });
+        const existing = await tx
+          .select({
+            isPrimary: coffeeChatReps.isPrimary,
+            position: coffeeChatReps.position,
+          })
+          .from(coffeeChatReps)
+          .where(eq(coffeeChatReps.sponsorId, sponsor.id));
+        if (existing.length >= MAX_SETUP_REPS) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: errors.tooManyReps(MAX_SETUP_REPS),
+          });
+        }
+        const [added] = await tx
+          .insert(coffeeChatReps)
+          .values({
+            sponsorId: sponsor.id,
+            name: input.name,
+            phone: input.phone,
+            isPrimary: !existing.some((r) => r.isPrimary),
+            chatsWanted: 0,
+            position: Math.max(-1, ...existing.map((r) => r.position)) + 1,
+          })
+          .returning({ id: coffeeChatReps.id, name: coffeeChatReps.name });
+        // Free all day; the sponsor's workshop still blocks its session.
+        await tx.insert(coffeeChatRepSessions).values(
+          COFFEE_SESSION_IDS.map((id) => ({
+            repId: added!.id,
+            sessionId: id,
+          })),
+        );
+        return added!;
+      });
+      mirrorCoffeeChatSetupLater();
+      return rep;
+    }),
 
   /**
    * Book an event on an empty cell (coffee-chat-book.ts): description and

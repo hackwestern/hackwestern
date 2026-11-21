@@ -10,6 +10,7 @@ import {
   MIN_PHONE_DIGITS,
   phoneDigits,
 } from "~/lib/coffee-chat-setup";
+import { type CoffeeSessionId } from "~/lib/coffee-chat-sessions";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import {
@@ -111,7 +112,7 @@ export function TeamStep({
                 {
                   id: back.id,
                   chatsWanted: rep.chatsWanted,
-                  free: rep.free as ("10" | "11" | "13" | "14" | "15" | "16")[],
+                  free: rep.free as CoffeeSessionId[],
                 },
               ],
               confirmAfterInvites,

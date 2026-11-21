@@ -105,7 +105,8 @@ describe("blockedSessions", () => {
       sunlife: "13,14,15",
       canadalife: "13,14",
       scotia: "10,11",
-      qnx: "15,16",
+      // Its end + 15 runs into the 5 PM session too.
+      qnx: "15,16,17",
       startech: "",
     });
   });
