@@ -31,7 +31,7 @@ export type ScoreBreakdown = z.infer<typeof scoreBreakdownSchema>;
 
 const score = z.number().min(SCORE_MIN).max(SCORE_MAX);
 const assignmentId = z.number().int().positive();
-const seatId = z.number().int().positive();
+const tableId = z.number().int().positive();
 const teamId = z.string().min(1);
 const judgeId = z.string().min(1);
 
@@ -66,14 +66,13 @@ export const editTeamMarkSchema = z.object({
 export const setupTablesSchema = z.object({
   tableCount: z.number().int().min(1).max(500),
   rows: z.number().int().min(1).max(100),
-  judgesPerSeat: z.number().int().min(1).max(10).optional(),
+  judgesPerTable: z.number().int().min(1).max(10).optional(),
   zone: z.string().trim().min(1).max(64).optional(),
 });
 export type SetupTablesInput = z.infer<typeof setupTablesSchema>;
 
-// Physical table on/off (both seats), or just its second seat.
-export const toggleTableSchema = z.object({
-  tableNumber: z.number().int().positive(),
+export const setTableActiveSchema = z.object({
+  tableId,
   isActive: z.boolean(),
 });
 
@@ -91,7 +90,7 @@ export const swapTeamsSchema = z
     path: ["teamBId"],
   });
 
-export const moveTeamSchema = z.object({ teamId, seatId });
+export const moveTeamSchema = z.object({ teamId, tableId });
 
 export const handOffJudgeSchema = z
   .object({ fromJudgeId: judgeId, toJudgeId: judgeId })
@@ -100,12 +99,7 @@ export const handOffJudgeSchema = z
     path: ["toJudgeId"],
   });
 
-export const addSeatToJudgeSchema = z.object({ judgeId, seatId });
-
-export const setJudgeNoShowSchema = z.object({
-  judgeId,
-  noShow: z.boolean(),
-});
+export const addJudgeToTableSchema = z.object({ judgeId, tableId });
 
 // `id` is the user id being promoted to a judge. Stats columns are
 // server-derived, so they're omitted. `track` needs the array override

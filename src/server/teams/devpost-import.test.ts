@@ -6,7 +6,7 @@ import { mockSession } from "~/server/auth";
 import {
   judges,
   judgingAssignments,
-  judgingSeats,
+  judgingTables,
   teamTracks,
   teams,
   users,
@@ -123,7 +123,7 @@ const teamAt = (devpostUrl: string) =>
 
 afterEach(async () => {
   await db.delete(judgingAssignments).where(sql`true`);
-  await db.delete(judgingSeats).where(sql`true`);
+  await db.delete(judgingTables).where(sql`true`);
   await db
     .update(users)
     .set({ teamId: null, hackerId: null })
@@ -341,7 +341,7 @@ describe("applyImport", () => {
       githubUrl: "https://github.com/x/rover",
       tracks: ["Best Domain"],
       importFlags: [{ reason: "not_hacker", members: [hid(60)] }],
-      judgingSeatId: null,
+      judgingTableId: null,
     });
     expect(team?.joinCode).toHaveLength(6);
     const linked = await db.query.users.findMany({
@@ -395,12 +395,12 @@ describe("applyImport", () => {
     const u1 = url();
     await run([{ title: "Seated", url: u1 }]);
     const [table] = await db
-      .insert(judgingSeats)
-      .values({ tableNumber: 901, zone: "Main" })
+      .insert(judgingTables)
+      .values({ number: 901, zone: "Main" })
       .returning();
     await db
       .update(teams)
-      .set({ judgingSeatId: table!.id })
+      .set({ judgingTableId: table!.id })
       .where(eq(teams.devpostUrl, u1));
 
     const { summary } = await run([
@@ -414,12 +414,12 @@ describe("applyImport", () => {
     const { user } = await mockSession(db);
     await db.insert(judges).values({ id: user.id });
     const [table] = await db
-      .insert(judgingSeats)
-      .values({ tableNumber: 902, zone: "Main" })
+      .insert(judgingTables)
+      .values({ number: 902, zone: "Main" })
       .returning();
     await db.insert(judgingAssignments).values({
       judgeId: user.id,
-      judgingSeatId: table!.id,
+      judgingTableId: table!.id,
       position: 1,
       status: "in_progress",
     });

@@ -1,11 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import * as Popover from "@radix-ui/react-popover";
-import { Compass } from "lucide-react";
-import {
-  hoverTint,
-  pressable,
-} from "~/components/sponsors/sponsor-shell-styles";
 import { TourOffer } from "~/components/sponsors/tour/tour-offer";
 import { TourOverlay } from "~/components/sponsors/tour/tour-overlay";
 import { useTarget } from "~/components/sponsors/tour/use-tour-target";
@@ -15,53 +9,63 @@ import {
   getStorage,
   hasSeenWelcome,
   hrefForMove,
+  isSkippable,
   loadProgress,
   markWelcomeSeen,
   pageOf,
   resolveStep,
   saveProgress,
+  skipFrom,
+  stepTargets,
   type TourDef,
   type TourProgress,
 } from "~/lib/sponsor-tour";
 import {
-  howToToursFor,
+  pageOfTour,
   toursFor,
-  tourName,
   WELCOME_TOUR_ID,
   type SponsorTourId,
 } from "~/lib/sponsor-tours";
 import { uuidRegex } from "~/utils/urls";
-import { cn } from "~/lib/utils";
 
-/** Window event other controls (the side nav's "How this works") fire to
- * start a tour, so the page keeps a single tour instance. */
+/** Window event the entry points (Home's and Help's "Take the tour") fire
+ * to start a tour, so the page keeps a single tour instance. */
 const START_EVENT = "sponsor-tour:start";
 
 /** Start a tour from anywhere on a sponsor page. */
-export function startSponsorTour(id: SponsorTourId) {
+export function startSponsorTour(id: SponsorTourId = WELCOME_TOUR_ID) {
   window.dispatchEvent(new CustomEvent(START_EVENT, { detail: id }));
 }
 
 /** How long to wait for a click's own navigation before offering a link. */
 const AWAY_GRACE_MS = 900;
+/** How long an optional step waits for its target (the page's data may
+ * still be loading) before it's skipped. */
+const SKIP_GRACE_MS = 2500;
 
 /**
- * The sponsor portal's guided tours: a "How to" pill for the page header
- * (replay the portal tour or start a quick how-to), the tour itself drawn
- * over the live page, and on the portal home a one-time "Take the tour?"
- * offer. Progress lives in sessionStorage so a tour carries on across
- * pages; each sponsor page mounts its own copy of this.
+ * The sponsor portal tours, drawn over the live page: the full tour (the
+ * one-time "New here?" offer on Home, "Take the tour") and each page's own
+ * tour ("Tour this page", which stays on its page). Progress lives in sessionStorage so
+ * the tour carries on across pages; the sponsor shell mounts one copy of
+ * this on every sponsor page. Started by `startSponsorTour()`.
  */
 export function SponsorTour({
   offerWelcome = false,
   hasPrizeTrack,
+  hasCoffeeChats = true,
 }: {
   offerWelcome?: boolean;
-  /** False drops the Judging steps and how-to (no Judging in the nav). */
+  /** False drops the Judging step (no Judging in the nav). */
   hasPrizeTrack?: boolean;
+  /** False drops the Chats and Scan steps (no coffee chats). */
+  hasCoffeeChats?: boolean;
 }) {
   const router = useRouter();
-  const tours = useMemo(() => toursFor(hasPrizeTrack), [hasPrizeTrack]);
+  const tours = useMemo(
+    () => toursFor(hasPrizeTrack, hasCoffeeChats),
+    [hasPrizeTrack, hasCoffeeChats],
+  );
   const sponsor =
     typeof router.query.uuid === "string" && uuidRegex.test(router.query.uuid)
       ? router.query.uuid
@@ -69,8 +73,8 @@ export function SponsorTour({
   const current = pageOf(router.pathname);
   const [progress, setProgress] = useState<TourProgress | null>(null);
   const [offer, setOffer] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  /** What had focus before the tour, to give it back after. */
+  const returnFocus = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!sponsor) return;
@@ -90,33 +94,48 @@ export function SponsorTour({
     setProgress(next);
   }, []);
 
-  const def = progress ? tours[progress.tour as SponsorTourId] : undefined;
+  const def = progress ? tours[progress.tour] : undefined;
   const step = def && progress ? def.steps[progress.step] : undefined;
+  const targets = useMemo(() => (step ? stepTargets(step) : []), [step]);
+  const skippable = !!step && isSkippable(step);
   const { el, settled } = useTarget(
-    step?.placement === "center" ? undefined : step?.target,
+    targets,
     // The route is in the key so a new page always gets a fresh search.
     `${progress?.tour}:${progress?.step}:${router.asPath}`,
+    skippable ? SKIP_GRACE_MS : undefined,
   );
 
   const close = useCallback(() => {
+    // Only the full tour answers the first-visit offer; a page tour
+    // ("Tour this page") never touches it.
     if (progress?.tour === WELCOME_TOUR_ID) {
       markWelcomeSeen(getStorage("local"), sponsor);
     }
     update(null);
-    triggerRef.current?.focus({ preventScroll: true });
+    const back = returnFocus.current;
+    returnFocus.current = null;
+    if (back?.isConnected) back.focus({ preventScroll: true });
+    else
+      document.getElementById("sponsor-main")?.focus({ preventScroll: true });
   }, [progress?.tour, sponsor, update]);
 
   /** Move to step `index`; `navigate` false when the app is already going. */
   const moveTo = useCallback(
-    (index: number, navigate = true) => {
+    (index: number, opts: { back?: boolean; navigate?: boolean } = {}) => {
       if (!progress || !def) return;
       if (index < 0) return;
       if (index >= def.steps.length) {
         close();
         return;
       }
-      update({ ...progress, step: index });
-      const href = navigate ? hrefForMove(def, index, current, sponsor) : null;
+      const next: TourProgress = { ...progress, step: index };
+      if (opts.back) next.back = true;
+      else delete next.back;
+      update(next);
+      const href =
+        opts.navigate === false
+          ? null
+          : hrefForMove(def, index, current, sponsor);
       if (href) void router.push(href);
     },
     [progress, def, close, update, current, sponsor, router],
@@ -125,11 +144,14 @@ export function SponsorTour({
   const start = (id: SponsorTourId) => {
     const tourDef = tours[id];
     if (!tourDef) return;
-    setOffer(false);
-    setMenuOpen(false);
-    if (id === WELCOME_TOUR_ID) markWelcomeSeen(getStorage("local"), sponsor);
-    const next = { tour: id, step: 0, sponsor };
-    update(next);
+    if (id === WELCOME_TOUR_ID) {
+      setOffer(false);
+      markWelcomeSeen(getStorage("local"), sponsor);
+    }
+    if (document.activeElement instanceof HTMLElement) {
+      returnFocus.current = document.activeElement;
+    }
+    update({ tour: id, step: 0, sponsor });
     const href = hrefForMove(tourDef, 0, current, sponsor);
     if (href) void router.push(href);
   };
@@ -138,9 +160,7 @@ export function SponsorTour({
   useEffect(() => {
     const onStart = (e: Event) => {
       const id = (e as CustomEvent<unknown>).detail;
-      if (typeof id === "string") {
-        startRef.current(id as SponsorTourId);
-      }
+      if (typeof id === "string") startRef.current(id);
     };
     window.addEventListener(START_EVENT, onStart);
     return () => window.removeEventListener(START_EVENT, onStart);
@@ -155,20 +175,40 @@ export function SponsorTour({
     const onClick = (e: MouseEvent) => {
       if (e.target instanceof Node && waitingOn.contains(e.target)) {
         const at = progress.step + 1;
-        setTimeout(() => moveTo(at, false), 0);
+        setTimeout(() => moveTo(at, { navigate: false }), 0);
       }
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
   }, [waitingOn, progress, moveTo]);
 
+  // A page tour never leaves its page: if the sponsor goes elsewhere (the
+  // browser's Back), it just ends.
+  const tourPage = progress ? pageOfTour(progress.tour) : null;
+  const offItsPage = !!tourPage && !!current && tourPage !== current;
+  useEffect(() => {
+    if (offItsPage) update(null);
+  }, [offItsPage, update]);
+
+  const found = el?.getAttribute("data-tour") ?? null;
+  const resolved =
+    def && progress
+      ? resolveStep(def, progress.step, current, sponsor, (t) => t === found)
+      : null;
+
+  // A step whose target never showed up: skip it, the same way the sponsor
+  // was going (Back keeps going back).
+  const skipNow = resolved?.kind === "skip" && settled;
+  useEffect(() => {
+    if (!skipNow || !progress || !def) return;
+    const next = skipFrom(progress.step, !!progress.back, def.steps.length);
+    if (next) moveTo(next.step, { back: next.back });
+    else close();
+  }, [skipNow, progress, def, moveTo, close]);
+
   // A step on another page with no navigation under way (a click that
   // didn't navigate, or the sponsor wandered off): after a moment, offer
   // to take them there.
-  const resolved =
-    def && progress
-      ? resolveStep(def, progress.step, current, sponsor, () => !!el)
-      : null;
   const [away, setAway] = useState(false);
   const awayHref = resolved?.kind === "navigate" ? resolved.href : null;
   useEffect(() => {
@@ -179,12 +219,11 @@ export function SponsorTour({
   }, [awayHref]);
 
   let overlay: React.ReactNode = null;
-  if (def && progress && step && resolved) {
+  if (def && progress && step && resolved && !offItsPage) {
     const common = {
-      step,
       index: progress.step,
       total: def.steps.length,
-      onBack: () => moveTo(progress.step - 1),
+      onBack: () => moveTo(progress.step - 1, { back: true }),
       onClose: close,
     };
     if (resolved.kind === "navigate") {
@@ -192,6 +231,7 @@ export function SponsorTour({
         overlay = (
           <TourOverlay
             {...common}
+            step={step}
             anchor={null}
             nextLabel={copy.callout.goThere}
             onNext={() => void router.push(awayHref)}
@@ -199,15 +239,17 @@ export function SponsorTour({
         );
       }
     } else if (resolved.kind === "show" && settled) {
+      const shown = resolved.step;
       overlay = (
         <TourOverlay
           {...common}
+          step={shown}
           anchor={resolved.anchored ? el : null}
           onNext={() => {
             // Next on a click step does the click for them, so keyboard
             // users get the same result (the link opens, the map opens).
             const clickable = el && clickTargetOf(el);
-            if (step.waitForClick && clickable instanceof HTMLElement) {
+            if (shown.waitForClick && clickable instanceof HTMLElement) {
               clickable.click();
             } else moveTo(progress.step + 1);
           }}
@@ -220,43 +262,6 @@ export function SponsorTour({
 
   return (
     <>
-      <Popover.Root open={menuOpen} onOpenChange={setMenuOpen}>
-        <Popover.Trigger asChild>
-          <button
-            ref={triggerRef}
-            type="button"
-            aria-label={copy.menu.label}
-            className={cn(
-              // Tablets and up; on phones the same guides sit in Help.
-              "hidden min-h-11 min-w-11 items-center justify-center gap-1.5 rounded-dashboard-lg border border-dashboard-border-default bg-dashboard-bg-surface px-3 text-sm font-semibold text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary md:inline-flex",
-              hoverTint,
-              pressable,
-            )}
-          >
-            <Compass
-              aria-hidden
-              className="size-5 shrink-0 text-dashboard-text-active"
-            />
-            <span>{copy.menu.button}</span>
-          </button>
-        </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Content
-            align="end"
-            sideOffset={8}
-            collisionPadding={16}
-            // Starting a tour moves focus to the callout; don't pull it back.
-            onCloseAutoFocus={(e) => progress && e.preventDefault()}
-            className="z-50 flex w-[min(280px,calc(100vw-32px))] flex-col gap-1 rounded-dashboard-2xl bg-dashboard-bg-surface p-2 font-figtree font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card duration-150 ease-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 motion-reduce:animate-none"
-          >
-            <p className="dashboard-section-label m-0 px-3 pb-1 pt-2 text-dashboard-text-light">
-              {copy.menu.heading}
-            </p>
-            <SponsorTourList hasPrizeTrack={hasPrizeTrack} onPick={start} />
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
-
       {offer && !progress && (
         <TourOffer
           text={copy.offer}
@@ -267,61 +272,7 @@ export function SponsorTour({
           }}
         />
       )}
-
       {overlay}
     </>
-  );
-}
-
-/**
- * The how-to guides, then the portal tour: the How to menu (tablets and
- * up) and Help's "Show me how" (every size) list the same tours.
- */
-export function SponsorTourList({
-  hasPrizeTrack,
-  onPick,
-}: {
-  hasPrizeTrack?: boolean;
-  onPick: (id: SponsorTourId) => void;
-}) {
-  return (
-    <ul className="m-0 flex list-none flex-col p-0">
-      {howToToursFor(hasPrizeTrack).map((id) => (
-        <li key={id}>
-          <MenuItem onClick={() => onPick(id)}>{tourName(id)}</MenuItem>
-        </li>
-      ))}
-      <li className="mt-1 border-t border-dashboard-border-subtle pt-1">
-        <MenuItem onClick={() => onPick(WELCOME_TOUR_ID)}>
-          <Compass
-            aria-hidden
-            className="size-4 shrink-0 text-dashboard-action-primary"
-          />
-          {copy.menu.welcome}
-        </MenuItem>
-      </li>
-    </ul>
-  );
-}
-
-function MenuItem({
-  onClick,
-  children,
-}: {
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex min-h-11 w-full items-center gap-2 rounded-dashboard-lg px-3 text-left text-base font-semibold text-dashboard-text-heavy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary",
-        hoverTint,
-        pressable,
-      )}
-    >
-      {children}
-    </button>
   );
 }

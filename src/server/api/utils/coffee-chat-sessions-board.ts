@@ -40,6 +40,7 @@ import { isDigitalJudging } from "~/lib/sponsor-prize-tracks";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import { getRunOfShow } from "~/server/api/utils/run-of-show-sheet";
 import { coffeeChatSponsorNames } from "~/server/api/utils/sponsor-sheets";
+import { doesChats } from "~/server/api/utils/coffee-chats-on";
 import { db } from "~/server/db";
 import {
   coffeeChatPlacements,
@@ -149,6 +150,10 @@ export type BoardBooking = {
   forSponsorId: string | null;
   label: string;
   note: string | null;
+  /** Who on the sponsorship team booked it; null on older bookings. */
+  bookedBy: string | null;
+  /** The sponsor's reps in it (Book an event); empty when none. */
+  repIds: string[];
 };
 
 export type SessionBoard = {
@@ -310,15 +315,27 @@ export async function loadBoardState(
   }
   const sponsorOfRep = new Map(reps.map((r) => [r.id, r.sponsorId]));
 
-  // Sponsors doing coffee chats: ticked on Sponsor Day-Of, or with
-  // preferences or reps saved. Digital sponsors (PCBWay) never do.
-  const doing = registered.filter(
-    (s) =>
-      !isDigitalJudging(s.name) &&
-      (prefOf.has(s.id) ||
-        reps.some((r) => r.sponsorId === s.id) ||
-        sheetNames.has(s.name.toLowerCase())),
-  );
+  // Sponsors doing coffee chats: ticked on Sponsor Day-Of and not opted out
+  // (Jazz, 2026-11-20: no chats = nothing to chase). Only when the checkbox
+  // can't be read: anyone with preferences or reps saved, or on Coffee Chat
+  // Setup. Digital sponsors (PCBWay) never do.
+  const doing = registered.filter((s) => {
+    if (isDigitalJudging(s.name)) return false;
+    const theirReps = reps.filter((r) => r.sponsorId === s.id);
+    if (ticked !== null) {
+      return doesChats(
+        ticked,
+        s.name,
+        prefOf.get(s.id)?.submittedAt,
+        theirReps.map((r) => r.chatsWanted),
+      );
+    }
+    return (
+      prefOf.has(s.id) ||
+      theirReps.length > 0 ||
+      sheetNames.has(s.name.toLowerCase())
+    );
+  });
 
   const placements: BoardPlacement[] = placementRows.map((p) => ({
     id: p.id,
@@ -340,6 +357,8 @@ export async function loadBoardState(
     forSponsorId: b.forSponsorId,
     label: b.label,
     note: b.note,
+    bookedBy: b.bookedBy,
+    repIds: b.repIds ?? [],
   }));
   const board = boardOf(placements, boardBookings);
   const latest = (ds: (Date | null | undefined)[]) => {
@@ -570,6 +589,17 @@ export function assertWorkshopsKnown(
   }
 }
 
+/** True when an organizer booking holds this rep in this session. */
+export function repInBooking(
+  state: Pick<BoardState, "bookings">,
+  repId: string,
+  sessionId: string,
+): boolean {
+  return state.bookings.some(
+    (b) => b.sessionId === sessionId && b.repIds.includes(repId),
+  );
+}
+
 /** Throws a clear error unless (room, session) is a real, empty cell. */
 export function assertCellFree(
   state: BoardState,
@@ -649,7 +679,8 @@ export function assertRepCanChat(
         p.repId === repId &&
         p.sessionId === sessionId &&
         p.id !== exceptPlacementId,
-    )
+    ) ||
+    repInBooking(state, repId, sessionId)
   ) {
     throw new TRPCError({
       code: "CONFLICT",

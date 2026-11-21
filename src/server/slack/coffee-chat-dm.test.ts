@@ -10,7 +10,11 @@ import {
   sponsorJudgingSponsors,
   users,
 } from "~/server/db/schema";
-import { sendCoffeeChatDm } from "~/server/slack/coffee-chat-dm";
+import { sessionInviteEmail } from "~/server/api/utils/coffee-chat-email";
+import {
+  coffeeChatDmMessage,
+  sendCoffeeChatDm,
+} from "~/server/slack/coffee-chat-dm";
 
 vi.mock("~/env", async (importOriginal) => {
   const original = await importOriginal<typeof Env>();
@@ -218,5 +222,69 @@ describe("notifyCoffeeChat Slack channel", () => {
     const posts = slack.calls.filter((c) => c.method === "chat.postMessage");
     expect(posts).toHaveLength(1);
     expect(slack.calls[0]!.args.get("email")).toBe(email);
+  });
+});
+
+describe("session invite names the chat (Group / 1-on-1)", () => {
+  const session = {
+    ...CHAT,
+    placementId: "22222222-2222-4222-8222-222222222222",
+    repName: "Riley",
+  };
+
+  test("group", () => {
+    const dm = coffeeChatDmMessage({ ...session, group: true });
+    expect(dm.text).toBe("You're invited to a Group Coffee Chat with StarTech");
+    expect(JSON.stringify(dm.blocks)).toContain(
+      "*StarTech* invited you to a Group Coffee Chat with Riley.",
+    );
+    const email = sessionInviteEmail({ ...session, group: true });
+    expect(email.subject).toBe(
+      "You're invited to a Group Coffee Chat with StarTech",
+    );
+    expect(email.text).toContain(
+      "StarTech invited you to a Group Coffee Chat with Riley at Hack Western.",
+    );
+  });
+
+  test("1-on-1", () => {
+    const dm = coffeeChatDmMessage({ ...session, group: false });
+    expect(dm.text).toBe(
+      "You're invited to a 1-on-1 Coffee Chat with StarTech",
+    );
+    expect(sessionInviteEmail({ ...session, group: false }).subject).toBe(
+      "You're invited to a 1-on-1 Coffee Chat with StarTech",
+    );
+  });
+});
+
+describe("Ivey invites carry the walk warning and a map link", () => {
+  const session = {
+    ...CHAT,
+    placementId: "22222222-2222-4222-8222-222222222222",
+    repName: "Riley",
+    group: false,
+  };
+
+  test("Slack DM and email at Ivey", () => {
+    const dm = JSON.stringify(
+      coffeeChatDmMessage({ ...session, room: "Rm 1348" }).blocks,
+    );
+    expect(dm).toContain(
+      "⚠️ This chat is in a different building (Ivey), a 15-minute walk away. <https://www.hackwestern.com/live?tab=map&amp;building=ivey|Check map>",
+    );
+    const email = sessionInviteEmail({ ...session, room: "Rm 1348" });
+    expect(email.text).toContain(
+      "⚠️ This chat is in a different building (Ivey), a 15-minute walk away.",
+    );
+    expect(email.html).toContain(
+      '<a href="https://www.hackwestern.com/live?tab=map&amp;building=ivey">Check map</a>',
+    );
+  });
+
+  test("not at Ivey: no warning", () => {
+    const dm = JSON.stringify(coffeeChatDmMessage(session).blocks);
+    expect(dm).not.toContain("different building");
+    expect(sessionInviteEmail(session).text).not.toContain("Check map");
   });
 });

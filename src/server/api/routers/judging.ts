@@ -14,7 +14,7 @@ import { maybeTriggerSweepOnJudgingComplete } from "~/server/api/utils/cheat-che
 import {
   type AddJudgeInput,
   addJudgeByEmailSchema,
-  addSeatToJudgeSchema,
+  addJudgeToTableSchema,
   addJudgesSchema,
   assignmentIdSchema,
   deleteTeamMarkSchema,
@@ -23,22 +23,20 @@ import {
   moveTeamSchema,
   reportAbsentSchema,
   seatTeamsSchema,
-  setJudgeNoShowSchema,
+  setTableActiveSchema,
   setupTablesSchema,
-  toggleTableSchema,
   startStopSchema,
   submitStopSchema,
   swapTeamsSchema,
 } from "~/schemas/judging";
 import {
-  addSeatToJudge,
+  addJudgeToTable,
   autoAssign,
   cancelStop,
   deleteMark,
   editMark,
   handOffJudge,
   markAbsent,
-  setJudgeNoShow,
   startStop,
   submitStop,
 } from "~/server/judging/assignments";
@@ -54,10 +52,9 @@ import { getDevpostPreview } from "~/server/judging/devpost-preview";
 import {
   moveTeam,
   seatTeams,
+  setTableActive,
   setupTables,
   swapTeams,
-  toggleSecondSeat,
-  toggleTable,
 } from "~/server/judging/room";
 
 /**
@@ -96,15 +93,7 @@ async function getRanking() {
     normalized_score: number;
     num_marks: number;
   }>(sql`
-    WITH absent_teams AS (
-      -- Absence is final: a team whose seat has a team_absent stop is out,
-      -- and its marks don't shift its judges' averages either.
-      SELECT t.id
-      FROM team t
-      JOIN judging_assignment a ON a.judging_seat_id = t.judging_seat_id
-      WHERE a.status = 'team_absent'
-    ),
-    judge_stats AS (
+    WITH judge_stats AS (
       SELECT
         m.judge_id,
         AVG(m.score) AS mu,
@@ -112,7 +101,6 @@ async function getRanking() {
       FROM team_mark m
       JOIN "judge" j ON j.id = m.judge_id
       WHERE m.round_type = 'regular' AND j.type = 'organizer'
-        AND m.team_id NOT IN (SELECT id FROM absent_teams)
       GROUP BY m.judge_id
     )
     SELECT
@@ -124,7 +112,6 @@ async function getRanking() {
     JOIN judge_stats js ON js.judge_id = m.judge_id
     JOIN team t ON t.id = m.team_id
     WHERE m.round_type = 'regular'
-      AND m.team_id NOT IN (SELECT id FROM absent_teams)
     GROUP BY m.team_id, t.name
     ORDER BY normalized_score DESC NULLS LAST
   `);
@@ -163,9 +150,9 @@ async function addJudges(
       });
     }
 
-    // A judge with stops keeps judging the general room; switching them to
+    // A judge with tables keeps judging the general room; switching them to
     // sponsored would quietly drop their scores from the ranking. Hand their
-    // stops off first.
+    // tables off first.
     const toSponsored = inputs
       .filter((i) => i.type === "sponsored")
       .map((i) => i.id);
@@ -189,7 +176,7 @@ async function addJudges(
             .map((b) => b.name ?? "This judge")
             .join(
               ", ",
-            )} still ${busy.length === 1 ? "has" : "have"} judging stops. Hand them off before making them a sponsor judge.`,
+            )} still ${busy.length === 1 ? "has" : "have"} judging tables. Hand them off before making them a sponsor judge.`,
         });
       }
     }
@@ -226,7 +213,7 @@ async function addJudges(
 export const judgingRouter = createTRPCRouter({
   me: createTRPCRouter({
     /**
-     * My stops in walking order, with each seat (table number, grid position) and
+     * My stops in walking order, with each table's number, grid position and
      * seated team, my score if given, and which stop is next. Also who I am
      * as a judge and whether my account can open the control room.
      */
@@ -246,7 +233,7 @@ export const judgingRouter = createTRPCRouter({
           // only accounts can open the control room.
           canManage: account?.type === "organizer",
         };
-      }, "Failed to get your stops");
+      }, "Failed to get your tables");
     }),
 
     startStop: protectedJudgeProcedure
@@ -255,7 +242,7 @@ export const judgingRouter = createTRPCRouter({
         return withErrorHandling(
           () =>
             startStop(ctx.session.user.id, input.assignmentId, input.teamId),
-          "Failed to start this stop",
+          "Failed to start this table",
         );
       }),
 
@@ -315,7 +302,7 @@ export const judgingRouter = createTRPCRouter({
   }),
 
   team: createTRPCRouter({
-    /** My team's seat and how many of its judges have scored us. */
+    /** My team's table and how many of its judges have scored us. */
     getMyJudging: protectedProcedure.query(async ({ ctx }) => {
       return withErrorHandling(
         () => getTeamJudging(ctx.session.user.id),
@@ -325,7 +312,7 @@ export const judgingRouter = createTRPCRouter({
   }),
 
   admin: createTRPCRouter({
-    /** Layout, every seat (team, status, judges) and every judge's section. */
+    /** Layout, every table (team, status, judges) and every judge's section. */
     getProgress: protectedOrganizerProcedure.query(async () => {
       return withErrorHandling(() => getProgress(), "Failed to get progress");
     }),
@@ -339,33 +326,12 @@ export const judgingRouter = createTRPCRouter({
         );
       }),
 
-    /** Mark a judge as a no-show, or undo it. */
-    setJudgeNoShow: protectedOrganizerProcedure
-      .input(setJudgeNoShowSchema)
+    setTableActive: protectedOrganizerProcedure
+      .input(setTableActiveSchema)
       .mutation(async ({ input }) => {
         return withErrorHandling(
-          () => setJudgeNoShow(input.judgeId, input.noShow),
-          "Failed to update the judge",
-        );
-      }),
-
-    /** Switch a whole table (both seats) on or off. */
-    toggleTable: protectedOrganizerProcedure
-      .input(toggleTableSchema)
-      .mutation(async ({ input }) => {
-        return withErrorHandling(
-          () => toggleTable(input.tableNumber, input.isActive),
+          () => setTableActive(input.tableId, input.isActive),
           "Failed to update table",
-        );
-      }),
-
-    /** Switch a table's second seat on or off. */
-    toggleSecondSeat: protectedOrganizerProcedure
-      .input(toggleTableSchema)
-      .mutation(async ({ input }) => {
-        return withErrorHandling(
-          () => toggleSecondSeat(input.tableNumber, input.isActive),
-          "Failed to update seat 2",
         );
       }),
 
@@ -398,7 +364,7 @@ export const judgingRouter = createTRPCRouter({
       .input(moveTeamSchema)
       .mutation(async ({ input }) => {
         return withErrorHandling(
-          () => moveTeam(input.teamId, input.seatId),
+          () => moveTeam(input.teamId, input.tableId),
           "Failed to move team",
         );
       }),
@@ -408,17 +374,17 @@ export const judgingRouter = createTRPCRouter({
       .mutation(async ({ input }) => {
         return withErrorHandling(
           () => handOffJudge(input.fromJudgeId, input.toJudgeId),
-          "Failed to hand off stops",
+          "Failed to hand off tables",
         );
       }),
 
-    addSeatToJudge: protectedOrganizerProcedure
-      .input(addSeatToJudgeSchema)
+    addJudgeToTable: protectedOrganizerProcedure
+      .input(addJudgeToTableSchema)
       .mutation(async ({ ctx, input }) => {
         return withErrorHandling(
           () =>
-            addSeatToJudge(input.judgeId, input.seatId, ctx.session.user.id),
-          "Failed to add seat to judge",
+            addJudgeToTable(input.judgeId, input.tableId, ctx.session.user.id),
+          "Failed to add judge to table",
         );
       }),
 
@@ -490,7 +456,7 @@ export const judgingRouter = createTRPCRouter({
         }, "Failed to add judge");
       }),
 
-    /** Remove a mark; the judge's stop at that seat reopens for a re-score. */
+    /** Remove a mark; the judge's stop at that table reopens for a re-score. */
     deleteTeamMark: protectedOrganizerProcedure
       .input(deleteTeamMarkSchema)
       .mutation(async ({ input }) => {

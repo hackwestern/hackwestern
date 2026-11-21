@@ -1049,8 +1049,8 @@ describe("delivery: each invite once, retried until it goes out", () => {
 
     // Past the day's last chat: no lock, no board read.
     resetInviteRoundThrottle();
-    expect(await runDueInviteRounds(at("16:50"))).toEqual({ status: "over" });
-    expect(await previewDueInviteRound(at("16:50"))).toMatchObject({
+    expect(await runDueInviteRounds(at("20:50"))).toEqual({ status: "over" });
+    expect(await previewDueInviteRound(at("20:50"))).toMatchObject({
       status: "over",
     });
     vi.setSystemTime(FRI_10PM);

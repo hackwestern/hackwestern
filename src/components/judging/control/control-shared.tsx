@@ -5,18 +5,15 @@ import { type RouterOutputs } from "~/utils/api";
 export type Progress = RouterOutputs["judging"]["admin"]["getProgress"];
 
 // The "still to judge" view the control room cards render, built from the
-// seat-section engine's progress read (see queueFromProgress).
+// table-section engine's progress read (see queueFromProgress).
 export type QueueTeam = {
   teamId: string;
   teamName: string;
-  seatId: number;
+  tableId: number;
   tableNumber: number;
-  seat: number;
-  /** The table has an active seat 2, so seats show as "4 (seat 1)". */
-  split: boolean;
-  /** Judges at this seat who haven't finished yet. */
+  /** Judges at this table who haven't finished yet. */
   roundsRemaining: number;
-  /** Judges at this seat who have scored the team. */
+  /** Judges at this table who have scored the team. */
   seenJudges: number;
   tracks: (typeof trackEnum.enumValues)[number][];
   currentJudgeId: string | null;
@@ -24,7 +21,7 @@ export type QueueTeam = {
   assignedAt: Date | string | null;
 };
 /**
- * The engine has no stored "round". Each seat is judged by `total` judges, so
+ * The engine has no stored "round". Each table is judged by `total` judges, so
  * round N is the Nth judge to score every team. We're in the earliest round
  * some seated team still hasn't finished.
  */
@@ -47,32 +44,22 @@ export type QueueState = {
   started: boolean;
 };
 
-/** Table numbers with an active seat 2. */
-export function splitTables(p: Progress): Set<number> {
-  return new Set(
-    p.seats.filter((s) => s.seat === 2 && s.isActive).map((s) => s.tableNumber),
-  );
-}
-
-/** Teams whose seat still has judges to go, plus the headline totals. */
+/** Teams whose table still has judges to go, plus the headline totals. */
 export function queueFromProgress(p: Progress): QueueState {
   const teams: QueueTeam[] = [];
-  const split = splitTables(p);
-  for (const t of p.seats) {
+  for (const t of p.tables) {
     if (!t.team || !t.isActive) continue;
     const remaining = t.judges.filter(
       (j) => j.status === "assigned" || j.status === "in_progress",
     );
-    // A seat with nobody assigned yet is still waiting for its judges.
+    // A table with nobody assigned yet is still waiting for its judges.
     if (t.judges.length > 0 && remaining.length === 0) continue;
     const current = t.judges.find((j) => j.status === "in_progress");
     teams.push({
       teamId: t.team.id,
       teamName: t.team.name,
-      seatId: t.id,
-      tableNumber: t.tableNumber,
-      seat: t.seat,
-      split: split.has(t.tableNumber),
+      tableId: t.id,
+      tableNumber: t.number,
       roundsRemaining: remaining.length,
       seenJudges: t.judgesDone,
       tracks: [],
@@ -81,13 +68,8 @@ export function queueFromProgress(p: Progress): QueueState {
       assignedAt: current?.startedAt ?? null,
     });
   }
-  // A seat reported absent is out: its other stops were cancelled, so it would
-  // never reach the round's judge count.
-  const seated = p.seats.filter(
-    (t) =>
-      t.team && t.isActive && !t.judges.some((j) => j.status === "team_absent"),
-  );
-  const total = p.settings.judgesPerSeat;
+  const seated = p.tables.filter((t) => t.team && t.isActive);
+  const total = p.settings.judgesPerTable;
   const finished = seated.length
     ? Math.min(...seated.map((t) => t.judgesDone))
     : 0;

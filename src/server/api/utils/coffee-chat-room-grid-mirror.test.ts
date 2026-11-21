@@ -103,6 +103,8 @@ const state: Pick<BoardState, "sponsors" | "placements" | "bookings"> = {
       forSponsorId: null,
       label: "Mentors",
       note: "Resumes",
+      bookedBy: null,
+      repIds: [],
     },
   ], // an older booking: its note is kept but not shown
 };
@@ -151,7 +153,7 @@ describe("roomGridRequests", () => {
   const grid = {
     sheetId: 42,
     startRowIndex: 4,
-    endRowIndex: 4 + 28,
+    endRowIndex: 4 + 44,
     startColumnIndex: 1,
     endColumnIndex: 9,
   };

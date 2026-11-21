@@ -619,3 +619,13 @@ export function formatRange(start: number, end: number): string {
   const b = formatTime(end);
   return a.slice(-2) === b.slice(-2) ? `${a.slice(0, -3)}–${b}` : `${a}–${b}`;
 }
+
+/**
+ * The floor a map link asks for: ?building=ivey opens the Ivey building
+ * (the Ivey walk disclaimer's "Check map"); anything else, the default.
+ */
+export function floorForQuery(
+  building: string | string[] | undefined,
+): Floor | undefined {
+  return building === "ivey" ? IVEY : undefined;
+}

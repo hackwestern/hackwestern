@@ -32,11 +32,14 @@ export type MySponsor = {
   atCcWorkshop: boolean | null;
   /** False when the sheet didn't load (status unknown). */
   fromSheet: boolean;
+  /** Sponsor Day-Of "In person / Digital" = Digital: not on site. */
+  digital: boolean;
 };
 
 export type MySponsorData = {
   reps: SponsorRep[];
-  chats: MySponsorChats;
+  /** Undefined when the sponsor doesn't do coffee chats. */
+  chats: MySponsorChats | undefined;
   /** Each rep's sent Saturday sessions (the Home's "Chats by rep"). */
   blocks: RepBlock[];
 };
@@ -347,7 +350,8 @@ function SponsorTables({
     (w) => w.sponsor?.toLowerCase() === sponsor.name.toLowerCase(),
   );
   const chats = data?.chats;
-  const digital = isDigitalJudging(sponsor.name);
+  // Not on site (the sheet says Digital) or a digital prize track.
+  const digital = sponsor.digital || isDigitalJudging(sponsor.name);
   const judging = summary ? round1State(summary.sunday) : null;
   const slots = summary?.sunday.slots ?? [];
 
@@ -398,6 +402,8 @@ function SponsorTables({
         <Row id="arrival" label={a.arrival}>
           {status === null ? (
             <Muted>{dayCopy.noSheet}</Muted>
+          ) : digital ? (
+            <Muted>{v.digital}</Muted>
           ) : (
             <span data-tour="org-pills" className="inline-flex">
               <Pill
@@ -420,7 +426,7 @@ function SponsorTables({
                 ? sponsor.boothLocation
                 : v.boothTbd}
             </span>
-            {status !== null && (
+            {status !== null && !digital && (
               <Pill
                 label={a.booth}
                 sponsor={sponsor.name}
@@ -435,9 +441,11 @@ function SponsorTables({
         <Row id="portal-link" label={a.portalLink}>
           <span className="flex flex-wrap items-center gap-2">
             <span>
-              {summary?.linkGivenAt
-                ? v.linkGiven(dayTime(summary.linkGivenAt))
-                : v.linkNotGiven}
+              {digital
+                ? v.digitalNoLink
+                : summary?.linkGivenAt
+                  ? v.linkGiven(dayTime(summary.linkGivenAt))
+                  : v.linkNotGiven}
             </span>
             {copyLink}
           </span>
@@ -485,8 +493,9 @@ function SponsorTables({
         </Row>
       </Block>
 
-      {/* Digital sponsors (PCBWay) don't do coffee chats or present. */}
-      {!digital && (
+      {/* Digital sponsors (PCBWay) don't do coffee chats or present, and
+          sponsors not signed up for chats have none to track. */}
+      {!digital && (!data || data.chats) && (
         <Block id="chats" title={copy.sections.chats}>
           <Row id="preferences" label={a.preferences}>
             {!chats ? (

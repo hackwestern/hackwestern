@@ -8,6 +8,7 @@ import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import type { SetupData } from "./shared";
+import { SubmittedNote } from "./submitted-summary";
 import { YourChats } from "./your-chats";
 
 const copy = sponsorSetupCopy.page;
@@ -48,6 +49,8 @@ export function ChatsHome({
   shortlistHref: string;
 }) {
   const stage = stageOf(data);
+  // Submitted once: sponsors can't change a sent step (organizers can).
+  const canChange = (sentAt: Date | null) => !sentAt || data.canEditSubmitted;
   const shortlistQ = api.sponsorShortlist.list.useQuery(
     { sponsor },
     { enabled: !!data.submittedAt, retry: 1, refetchOnWindowFocus: false },
@@ -66,6 +69,7 @@ export function ChatsHome({
       {stage === "new" && (
         <section
           aria-labelledby="stage-new"
+          data-tour="chats-start"
           className={cn(
             card,
             "gap-3.5 border-t-[6px] border-dashboard-action-primary",
@@ -87,13 +91,14 @@ export function ChatsHome({
           >
             {data.reps.length ? copy.stageNew.continue : copy.stageNew.start}
           </Link>
+          <OptOut sponsor={sponsor} />
         </section>
       )}
       {(stage === "prefs" || stage === "short") && (
         <div className="flex flex-col gap-2">
           <DoneLine
             text={copy.availabilitySent}
-            action={copy.change}
+            action={canChange(data.submittedAt) ? copy.change : undefined}
             label={copy.changeLabel}
             href={changeHref}
           />
@@ -101,16 +106,20 @@ export function ChatsHome({
             <DoneLine
               text={copy.shortlistSent}
               count={picked}
-              action={copy.edit}
+              action={
+                canChange(data.shortlistSubmittedAt) ? copy.edit : undefined
+              }
               label={copy.editLabel}
               href={shortlistHref}
             />
           )}
+          {!data.canEditSubmitted && <SubmittedNote />}
         </div>
       )}
       {stage === "prefs" && (
         <section
           aria-labelledby="stage-short"
+          data-tour="chats-shortlist"
           className={cn(
             card,
             "gap-3.5 border-t-[6px] border-dashboard-group-border",
@@ -161,7 +170,11 @@ export function ChatsHome({
         </section>
       )}
       {stage === "short" && (
-        <section aria-labelledby="stage-wait" className={card}>
+        <section
+          aria-labelledby="stage-wait"
+          data-tour="chats-waiting"
+          className={card}
+        >
           <div className="flex items-center gap-4">
             <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-dashboard-bg-highlight text-dashboard-text-active">
               <Clock aria-hidden className="size-6" />
@@ -257,6 +270,7 @@ function StepsLine({
   return (
     <ol
       aria-label={s.label}
+      data-tour="chats-steps"
       className="m-0 grid list-none grid-cols-[auto_auto_minmax(0,1fr)] items-start gap-x-3 p-0"
     >
       {item(one, 1, s.one, sub1)}
@@ -280,7 +294,8 @@ function DoneLine({
 }: {
   text: string;
   count?: number;
-  action: string;
+  /** "Change" / "Edit"; none once the sponsor can't change it. */
+  action?: string;
   label: string;
   href: string;
 }) {
@@ -298,12 +313,16 @@ function DoneLine({
           <span className="tabular-nums"> ({count})</span>
         )}
       </b>
-      <span aria-hidden className="text-dashboard-text-light">
-        ·
-      </span>
-      <Link href={href} aria-label={label} className={btn.link}>
-        {action}
-      </Link>
+      {action && (
+        <>
+          <span aria-hidden className="text-dashboard-text-light">
+            ·
+          </span>
+          <Link href={href} aria-label={label} className={btn.link}>
+            {action}
+          </Link>
+        </>
+      )}
     </p>
   );
 }
@@ -319,7 +338,11 @@ function Confirmed({ data, teamHref }: { data: SetupData; teamHref: string }) {
   const warn = sponsorSetupCopy.afterInvites;
   return (
     <>
-      <section aria-label={s.label} className={card}>
+      <section
+        aria-label={s.label}
+        data-tour="chats-confirmed"
+        className={card}
+      >
         <p className="m-0 text-lg tabular-nums text-dashboard-text-medium">
           <b className="text-[28px] font-extrabold tracking-tight text-dashboard-text-heavy">
             {confirmed}
@@ -338,13 +361,17 @@ function Confirmed({ data, teamHref }: { data: SetupData; teamHref: string }) {
         </p>
       </section>
       <YourChats data={data} />
-      <button
-        type="button"
-        onClick={() => setAsking(true)}
-        className="min-h-11 self-start px-1 font-medium text-dashboard-text-light underline underline-offset-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:text-dashboard-text-heavy"
-      >
-        {copy.changeAsk}
-      </button>
+      {data.submittedAt && !data.canEditSubmitted ? (
+        <SubmittedNote />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAsking(true)}
+          className="min-h-11 self-start px-1 font-medium text-dashboard-text-light underline underline-offset-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:text-dashboard-text-heavy"
+        >
+          {copy.changeAsk}
+        </button>
+      )}
       <AlertDialog.Root open={asking} onOpenChange={setAsking}>
         <AlertDialog.Portal>
           <AlertDialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40" />
@@ -368,6 +395,80 @@ function Confirmed({ data, teamHref }: { data: SetupData; teamHref: string }) {
               <AlertDialog.Cancel asChild>
                 <button type="button" className={btn.outline}>
                   {warn.cancel}
+                </button>
+              </AlertDialog.Cancel>
+            </div>
+          </AlertDialog.Content>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
+    </>
+  );
+}
+
+/**
+ * "We're not doing coffee chats": a clean way out of the required Send
+ * availability step (decisions 2026-11-20). Asks once, then submits with no
+ * chats; the portal drops Chats and Scan and nothing nags.
+ */
+function OptOut({ sponsor }: { sponsor: string }) {
+  const router = useRouter();
+  const utils = api.useUtils();
+  const [asking, setAsking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const o = sponsorSetupCopy.optOut;
+  const optOut = api.coffeeChatSetup.optOut.useMutation({
+    onSuccess: async () => {
+      await Promise.all([
+        utils.coffeeChatSetup.get.invalidate({ sponsor }),
+        utils.sponsorPortal.getSponsorPortalInfo.invalidate({ sponsor }),
+      ]);
+      setAsking(false);
+      await router.push(`/sponsors/${sponsor}`);
+    },
+    onError: (e) => setError(e.message),
+  });
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setError(null);
+          setAsking(true);
+        }}
+        className="min-h-11 self-start px-1 text-sm font-medium text-dashboard-text-light underline underline-offset-[3px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dashboard-action-primary [@media(hover:hover)]:hover:text-dashboard-text-heavy"
+      >
+        {o.button}
+      </button>
+      <AlertDialog.Root open={asking} onOpenChange={setAsking}>
+        <AlertDialog.Portal>
+          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40" />
+          <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 flex w-[calc(100%-32px)] max-w-md -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-dashboard-lg bg-dashboard-bg-surface p-6 font-figtree shadow-dashboard-card">
+            <AlertDialog.Title className="m-0 text-xl font-bold text-dashboard-text-heavy">
+              {o.title}
+            </AlertDialog.Title>
+            <AlertDialog.Description className="m-0 text-base text-dashboard-text-medium">
+              {o.body}
+            </AlertDialog.Description>
+            {error && (
+              <p
+                role="alert"
+                className="m-0 text-sm text-dashboard-text-warning"
+              >
+                {error}
+              </p>
+            )}
+            <div className="flex flex-col gap-2 sm:flex-row-reverse">
+              <button
+                type="button"
+                className={btn.primary}
+                aria-disabled={optOut.isPending || undefined}
+                onClick={() => !optOut.isPending && optOut.mutate({ sponsor })}
+              >
+                {o.confirm}
+              </button>
+              <AlertDialog.Cancel asChild>
+                <button type="button" className={btn.outline}>
+                  {o.cancel}
                 </button>
               </AlertDialog.Cancel>
             </div>

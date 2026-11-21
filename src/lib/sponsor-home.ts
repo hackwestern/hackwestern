@@ -25,6 +25,9 @@ export type HomeChat = {
 
 export type HomeContext = {
   hasPrizeTrack: boolean;
+  /** Coffee chats on (Sponsor Day-Of checkbox, not opted out). Off: no
+   * availability, shortlist or chat rows, and no Scan buttons. */
+  hasCoffeeChats: boolean;
   availabilitySent: boolean;
   shortlistSent: boolean;
   /** Organizers sent the chats: Saturday shows them instead of the placeholder. */
@@ -74,10 +77,17 @@ export function eventClock(now: Date): {
 /** One day's steps, in time order (the all-day note first). */
 export function stepsFor(day: 0 | 1 | 2, ctx: HomeContext): AgendaStep[] {
   let steps = AGENDA.filter(
-    (s) => s.day === day && (!s.prizeOnly || ctx.hasPrizeTrack),
+    (s) =>
+      s.day === day &&
+      (!s.prizeOnly || ctx.hasPrizeTrack) &&
+      (!s.chatsOnly || ctx.hasCoffeeChats),
+  ).map((s) =>
+    s.chatsExtras && !ctx.hasCoffeeChats
+      ? { ...s, action: undefined, sub: undefined }
+      : s,
   );
   if (day === 1) {
-    if (ctx.confirmed && ctx.chats.length > 0) {
+    if (ctx.hasCoffeeChats && ctx.confirmed && ctx.chats.length > 0) {
       steps = [
         ...steps.filter((s) => !s.chatsPlaceholder),
         ...ctx.chats.map(
@@ -92,6 +102,7 @@ export function stepsFor(day: 0 | 1 | 2, ctx: HomeContext): AgendaStep[] {
               c.building === "ivey" ? `Ivey, Rm ${c.room}` : `Rm ${c.room}`,
             sub: copy.chatSub(c.chats, c.confirmed),
             action: "yourChats",
+            ivey: c.building === "ivey",
           }),
         ),
       ];

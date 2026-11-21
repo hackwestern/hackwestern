@@ -55,6 +55,7 @@ import {
   mirrorSponsorJudgingSoon,
 } from "~/server/api/utils/sponsor-judging-sheet-mirror";
 import { db, type Transaction } from "~/server/db";
+import { syncLeadPingsLater } from "~/server/slack/sponsor-lead-pings";
 import {
   coffeeChatReps,
   sponsorFinalPicks,
@@ -299,6 +300,8 @@ async function saveFinal(sponsorId: string, teamIds: string[]) {
       target: sponsorFinalPicks.sponsorId,
       set: { teamIds, submittedAt, sheetSyncedAt: null },
     });
+  // Their lead's "Submit your top 5" ping is no longer needed.
+  syncLeadPingsLater([sponsorId]);
   const sheetSynced = await syncFinalToSheet(sponsorId, submittedAt);
   return { teamIds, ineligibleCount: 0, submittedAt, sheetSynced };
 }
@@ -658,6 +661,8 @@ export const sponsorScoringRouter = createTRPCRouter({
           target: sponsorShortlistSends.sponsorId,
           set: { teamIds, sentAt },
         });
+      // Their lead's "Pick your finalists" ping is no longer needed.
+      syncLeadPingsLater([sponsor.id]);
       // The Judging board schedules each shortlist as it arrives; times
       // already given never move (judging board v2). A rebuild rewrites
       // the Sponsor Judging tab itself.

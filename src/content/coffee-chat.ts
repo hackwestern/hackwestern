@@ -140,7 +140,7 @@ export const coffeeChatCopy = {
     navBadge: (n: number) =>
       `${n} ${n === 1 ? "chat" : "chats"} waiting for your answer`,
     intro:
-      "Sponsors who meet you can offer a short chat on Saturday. Answer here before the reply-by time.",
+      "Sponsors who meet you can offer a short chat on Saturday. Answer here or on Slack before the reply-by time.",
     codeHeading: "Your hacker code",
     codeHint: "Sponsors can scan your badge or type this code.",
     noCode:
@@ -158,7 +158,7 @@ export const coffeeChatCopy = {
     pendingEmpty: "Nothing waiting for an answer.",
     upcomingEmpty: "No accepted chats yet.",
     empty:
-      "No coffee chats yet. When a sponsor offers you one, it shows up here.",
+      "Coffee chat invites have been sent out, and unfortunately you weren't selected. You can still connect with our sponsors at the Sponsor Bay in the SM Atrium! Stop by to chat with their representatives, ask questions and learn about opportunities!",
     loading: "Loading your coffee chats…",
     loadError: "Couldn't load your coffee chats.",
     retry: "Try again",

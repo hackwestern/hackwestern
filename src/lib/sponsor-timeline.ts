@@ -53,6 +53,8 @@ export type TimelineEntry = {
   task?: RunOfShowTask;
   /** Booked coffee chats behind a "coffee-chat" entry (from the DB). */
   booking?: CoffeeChatBooking;
+  /** A coffee chat at Ivey: the details show the walk note. */
+  ivey?: boolean;
 };
 
 /** One sponsor's booked coffee chats at one start, in one room. */
@@ -400,19 +402,23 @@ export function gridColumnOf(
 /**
  * Entries per grid column, each column laid out in its own lanes. Columns
  * other than Workshops, Sponsor Bay and Coffee chats are left out when
- * empty (so hiding hackathon events hides their column).
+ * empty (so hiding hackathon events hides their column). `hidden` columns
+ * are left out entirely (Coffee chats for a sponsor without chats).
  */
 export function layoutGrid(
   entries: readonly TimelineEntry[],
+  hidden: readonly GridColumn[] = [],
 ): { column: GridColumn; entries: LaidOutEntry[] }[] {
-  return GRID_COLUMNS.map((column) => ({
-    column,
-    entries: assignLanes(
-      entries
-        .filter((e) => gridColumnOf(e) === column)
-        .sort((a, b) => a.start - b.start),
-    ),
-  })).filter((c) => ALWAYS_SHOWN.has(c.column) || c.entries.length > 0);
+  return GRID_COLUMNS.filter((column) => !hidden.includes(column))
+    .map((column) => ({
+      column,
+      entries: assignLanes(
+        entries
+          .filter((e) => gridColumnOf(e) === column)
+          .sort((a, b) => a.start - b.start),
+      ),
+    }))
+    .filter((c) => ALWAYS_SHOWN.has(c.column) || c.entries.length > 0);
 }
 
 /**

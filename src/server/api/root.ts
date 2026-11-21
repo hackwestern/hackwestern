@@ -11,6 +11,7 @@ import { reviewRouter } from "./routers/review";
 import { qrRouter } from "./routers/qr-code-generation";
 import { teamsRouter } from "./routers/teams";
 import { teamFinderRouter } from "./routers/team-finder";
+import { broadcastRouter } from "./routers/broadcast";
 import { sponsorJudgingRouter } from "./routers/sponsor-judging";
 import { sponsorDashboardRouter } from "./routers/sponsor-dashboard";
 import { sponsorPortalRouter } from "./routers/sponsor-portal";
@@ -28,6 +29,7 @@ import { sponsorScoringRouter } from "./routers/sponsor-scoring";
 import { onboardingRouter } from "./routers/onboarding";
 import { taskRemindersRouter } from "./routers/task-reminders";
 import { notificationsRouter } from "./routers/notifications";
+import { organizerPingsRouter } from "./routers/organizer-pings";
 
 /**
  * This is the primary router for your server.
@@ -47,6 +49,7 @@ export const appRouter = createTRPCRouter({
   scavengerHunt: scavengerHuntRouter,
   teams: teamsRouter,
   teamFinder: teamFinderRouter,
+  broadcast: broadcastRouter,
   sponsorJudging: sponsorJudgingRouter,
   sponsorDashboard: sponsorDashboardRouter,
   sponsorPortal: sponsorPortalRouter,
@@ -64,6 +67,7 @@ export const appRouter = createTRPCRouter({
   onboarding: onboardingRouter,
   taskReminders: taskRemindersRouter,
   notifications: notificationsRouter,
+  organizerPings: organizerPingsRouter,
 });
 
 // export type definition of API

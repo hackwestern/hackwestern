@@ -242,6 +242,8 @@ export type HwContact = {
   phone: string;
   loginEmail: string;
   sameViewAs: string;
+  /** The Team (or Position) column, e.g. "Sponsorship"; "" when none. */
+  team?: string;
 };
 
 /**
@@ -254,6 +256,7 @@ export function hwContactColumns(header: readonly unknown[]): {
   phone: number;
   loginEmail: number;
   sameViewAs: number;
+  team: number;
 } | null {
   const cells = header.map((c) =>
     String(c ?? "")
@@ -269,6 +272,7 @@ export function hwContactColumns(header: readonly unknown[]): {
       (c) => c.includes("login") && c.includes("email"),
     ),
     sameViewAs: cells.findIndex((c) => c.includes("same view")),
+    team: cells.findIndex((c) => c === "team" || c.includes("position")),
   };
 }
 
@@ -292,6 +296,7 @@ export function parseHwContacts(
         phone: normalizePhoneNumber(at(row, cols.phone)),
         loginEmail: at(row, cols.loginEmail),
         sameViewAs: at(row, cols.sameViewAs).replace(/\s+/g, " "),
+        team: at(row, cols.team),
       }))
       .filter((c) => c.name && c.name.toLowerCase() !== "name");
   }
@@ -324,4 +329,23 @@ export const hwContactsCache = createLastGoodLoader(
  */
 export function fetchHwContacts(): Promise<LastGood<HwContact[]> | null> {
   return hwContactsCache.get();
+}
+
+/**
+ * The sponsorship team's names, in sheet order (Book an event's "Booked
+ * by"): HW Contacts rows whose Team or Position says Sponsorship, or every
+ * row when the tab has no such column (it lists the sponsorship team).
+ */
+export function sponsorshipTeamNames(contacts: readonly HwContact[]): string[] {
+  const hasTeam = contacts.some((c) => c.team);
+  const names = contacts
+    .filter((c) => !hasTeam || /spons/i.test(c.team ?? ""))
+    .map((c) => c.name);
+  return [...new Set(names)];
+}
+
+/** sponsorshipTeamNames from the cached tab; null when it was never read. */
+export async function fetchSponsorshipTeamNames(): Promise<string[] | null> {
+  const contacts = await fetchHwContacts();
+  return contacts ? sponsorshipTeamNames(contacts.value) : null;
 }

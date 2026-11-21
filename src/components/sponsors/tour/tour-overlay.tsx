@@ -5,7 +5,12 @@ import { DashboardButton } from "~/components/internals/dashboard-button";
 import { pressable } from "~/components/sponsors/sponsor-shell-styles";
 import { sponsorTourCopy } from "~/content/sponsor-tour";
 import {
+  PHONE_GAP,
+  phoneDock,
+  phoneScrollPlan,
   placeCallout,
+  type PhoneChrome,
+  type PhoneDock,
   type Rect,
   type TourPlacement,
   type TourStep,
@@ -16,8 +21,21 @@ const copy = sponsorTourCopy.callout;
 
 /** Space between the target and the highlight ring. */
 const RING_PAD = 6;
-/** Below this the callout is a bottom sheet (Tailwind's `sm`). */
-const NARROW_QUERY = "(max-width: 639px)";
+/** Phones, upright (below Tailwind's `sm`) or on their side (short): the
+ * callout docks to a screen edge instead of floating beside the target. */
+const NARROW_QUERY = "(max-width: 639px), (max-height: 499px)";
+/** The dim over everything but the target. */
+const DIM = "rgb(4 34 57 / 0.72)";
+
+/** The sponsor shell's phone top bar and tab bar heights, if shown. */
+function phoneChrome(): PhoneChrome {
+  const h = (sel: string) =>
+    document.querySelector(sel)?.getBoundingClientRect().height ?? 0;
+  return {
+    topBar: h("[data-sponsor-topbar]"),
+    bottomBar: h("[data-sponsor-tabbar]"),
+  };
+}
 
 function useMediaQuery(query: string) {
   const [matches, setMatches] = useState(false);
@@ -110,14 +128,63 @@ export function TourOverlay({
     return () => cancelAnimationFrame(frame);
   }, [anchor]);
 
-  // Bring the target into view once per step.
+  // Phones: which edge the callout docks to. Decided once the target has
+  // scrolled into place (not every frame, so it never flips mid-scroll).
+  const inTabBar = !!anchor?.closest("[data-sponsor-tabbar]");
+  const [dock, setDock] = useState<PhoneDock>("bottom");
+  const calloutHeight = size?.height ?? 0;
+  const measured = calloutHeight > 0;
+
+  // Phones: room to scroll past the end of the page while the tour runs,
+  // so a target near the bottom can still rise clear of a bottom callout
+  // (a short page like Chats can't scroll it there otherwise).
   useEffect(() => {
-    anchor?.scrollIntoView({
-      block: "center",
-      inline: "nearest",
-      behavior: reduceMotion ? "auto" : "smooth",
-    });
-  }, [anchor, step.id, reduceMotion]);
+    if (!narrow || !measured) return;
+    const body = document.body;
+    const before = body.style.paddingBottom;
+    body.style.paddingBottom = `${calloutHeight + PHONE_GAP * 2}px`;
+    return () => {
+      body.style.paddingBottom = before;
+    };
+    // Set once per mount: re-padding on every size change would jump.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [narrow, measured]);
+
+  // Bring the target into view once per step. On phones it goes into the
+  // part of the screen the callout leaves free (clear of the top bar and
+  // the callout), centred if it fits, else showing its start; then the
+  // callout docks away from it.
+  useEffect(() => {
+    if (!anchor) return;
+    const behavior: ScrollBehavior = reduceMotion ? "auto" : "smooth";
+    if (!narrow) {
+      anchor.scrollIntoView({ block: "center", inline: "nearest", behavior });
+      return;
+    }
+    if (!measured) return;
+    const el = anchor as HTMLElement;
+    const vh = window.innerHeight;
+    const height = el.getBoundingClientRect().height;
+    const plan = phoneScrollPlan(height, calloutHeight, vh, phoneChrome());
+    const saved = [el.style.scrollMarginTop, el.style.scrollMarginBottom];
+    el.style.scrollMarginTop = `${plan.marginTop}px`;
+    el.style.scrollMarginBottom = `${plan.marginBottom}px`;
+    // A tab bar item is fixed: nothing to scroll.
+    if (!inTabBar) {
+      el.scrollIntoView({ block: plan.block, inline: "nearest", behavior });
+    }
+    el.style.scrollMarginTop = saved[0] ?? "";
+    el.style.scrollMarginBottom = saved[1] ?? "";
+    const decide = () =>
+      setDock(
+        phoneDock(el.getBoundingClientRect(), calloutHeight, vh, inTabBar),
+      );
+    const id = setTimeout(decide, reduceMotion ? 0 : 450);
+    return () => clearTimeout(id);
+    // calloutHeight is read when `measured` turns true; later size changes
+    // mustn't scroll the page again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anchor, step.id, reduceMotion, narrow, measured, inTabBar]);
 
   useLayoutEffect(() => {
     const el = calloutRef.current;
@@ -135,21 +202,38 @@ export function TourOverlay({
     calloutRef.current?.focus({ preventScroll: true });
     setAnnouncement("");
     const id = requestAnimationFrame(() =>
-      setAnnouncement(copy.announce(index + 1, total, step.title, step.body)),
+      setAnnouncement(
+        `${copy.announce(index + 1, total, step.title, step.body)}${
+          index === 0 ? ` ${copy.keys}` : ""
+        }`,
+      ),
     );
     return () => cancelAnimationFrame(id);
   }, [index, total, step.title, step.body]);
 
   // Escape closes the innermost thing only: when focus is inside another
   // dialog (the venue map, even with the tour drawn inside it), that dialog
-  // closes first and the next Escape closes the tour.
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  // closes first and the next Escape closes the tour. The arrow keys move
+  // Next and Back, except while typing or inside another dialog.
+  const keysRef = useRef({ onClose, onNext, onBack, first: index === 0 });
+  keysRef.current = { onClose, onNext, onBack, first: index === 0 };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || e.defaultPrevented) return;
-      if (e.target instanceof Element && insideOtherDialog(e.target)) return;
-      closeRef.current();
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      const t = e.target instanceof Element ? e.target : null;
+      if (t && insideOtherDialog(t)) return;
+      const keys = keysRef.current;
+      if (e.key === "Escape") {
+        keys.onClose();
+        return;
+      }
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      if (t?.closest("input, textarea, select, [contenteditable='true']")) {
+        return;
+      }
+      e.preventDefault();
+      if (e.key === "ArrowRight") keys.onNext();
+      else if (!keys.first) keys.onBack();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -166,7 +250,6 @@ export function TourOverlay({
   // wider than this overlay's own phone breakpoint) always gets its
   // callout above it, whatever the step asks for: beside a bottom tab
   // there's no room.
-  const inTabBar = !!anchor?.closest("[data-sponsor-tabbar]");
 
   let calloutStyle: React.CSSProperties | undefined;
   if (!narrow && hole && size && viewport.width) {
@@ -181,14 +264,9 @@ export function TourOverlay({
     calloutStyle = { top: placed.top, left: placed.left };
   }
   const centred = !narrow && !hole;
-  // Phones dock the callout as a bottom sheet; for a tab bar target, or
-  // any target down where that sheet would cover it, dock it to the top.
-  const dockTop =
-    narrow &&
-    !!hole &&
-    (inTabBar ||
-      (viewport.height > 0 &&
-        hole.top + hole.height > viewport.height - (size?.height ?? 0)));
+  // Phones dock the callout to the edge away from the target (decided in
+  // the scroll effect); with no target it sits at the bottom.
+  const dockTop = narrow && !!hole && dock === "top";
   const waiting = step.waitForClick && !!hole;
   const last = index === total - 1;
 
@@ -206,10 +284,12 @@ export function TourOverlay({
           {/* The dim, as a huge shadow around the ring. */}
           <div
             aria-hidden
-            className="pointer-events-none fixed z-[60] rounded-dashboard-lg outline outline-2 outline-offset-0 outline-dashboard-action-primary"
+            className="pointer-events-none fixed z-[60] rounded-dashboard-lg outline outline-[3px] outline-offset-0 outline-dashboard-action-primary"
             style={{
               ...hole,
-              boxShadow: "0 0 0 9999px rgb(4 34 57 / 0.55)",
+              // A white halo outside the blue ring, then the dim: the
+              // target reads clearly even on a light page.
+              boxShadow: `0 0 0 6px rgb(255 255 255 / 0.95), 0 0 0 9999px ${DIM}`,
             }}
           />
           {/* Click blockers around the cutout (and over it unless the step
@@ -255,7 +335,7 @@ export function TourOverlay({
         <div
           aria-hidden
           className={cn(layer, "inset-0")}
-          style={{ background: "rgb(4 34 57 / 0.55)" }}
+          style={{ background: DIM }}
         />
       )}
 
@@ -269,19 +349,25 @@ export function TourOverlay({
         style={calloutStyle}
         className={cn(
           layer,
-          "flex flex-col gap-3 bg-dashboard-bg-surface p-5 font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card focus:outline-none",
+          // The text scrolls inside a capped height; the controls never do.
+          "flex flex-col gap-3 rounded-dashboard-2xl bg-dashboard-bg-surface p-4 font-medium leading-default text-dashboard-text-heavy shadow-dashboard-card focus:outline-none sm:p-5",
           "duration-200 ease-out animate-in fade-in-0 motion-reduce:animate-none",
-          narrow && dockTop
-            ? "inset-x-0 top-0 rounded-b-dashboard-2xl pt-[max(1.25rem,env(safe-area-inset-top))] slide-in-from-top-4"
-            : narrow
-              ? "inset-x-0 bottom-0 rounded-t-dashboard-2xl pb-[max(1.25rem,env(safe-area-inset-bottom))] slide-in-from-bottom-4"
-              : "w-[min(340px,calc(100vw-32px))] rounded-dashboard-2xl zoom-in-95",
+          narrow
+            ? cn(
+                // 12px from the sides, clear of the notch and home bar.
+                // On a phone on its side it stays a readable width, centred.
+                "inset-x-3 mx-auto max-h-[min(60dvh,calc(100dvh-1.5rem-env(safe-area-inset-top)-env(safe-area-inset-bottom)))] max-w-[560px]",
+                dockTop
+                  ? "top-[max(0.75rem,calc(env(safe-area-inset-top)+0.5rem))] slide-in-from-top-4"
+                  : "bottom-[max(0.75rem,calc(env(safe-area-inset-bottom)+0.5rem))] slide-in-from-bottom-4",
+              )
+            : "max-h-[calc(100dvh-2rem)] w-[min(340px,calc(100vw-32px))] zoom-in-95",
           centred && "inset-0 m-auto h-fit",
           // Hidden until measured, so it never flashes at 0,0.
           !narrow && hole && !calloutStyle && "invisible",
         )}
       >
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex shrink-0 items-center justify-between gap-3">
           <span className="text-xs font-semibold uppercase tracking-wider text-dashboard-text-light">
             {copy.progress(index + 1, total)}
           </span>
@@ -297,7 +383,7 @@ export function TourOverlay({
             <X aria-hidden className="size-5" />
           </button>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="-mx-1 flex min-h-0 flex-col gap-1 overflow-y-auto overscroll-contain px-1">
           <h2 id={titleId} className="m-0 text-lg font-semibold">
             {step.title}
           </h2>
@@ -306,11 +392,11 @@ export function TourOverlay({
           </p>
         </div>
         {waiting && (
-          <p className="m-0 rounded-dashboard-lg bg-dashboard-bg-highlight px-3 py-2 text-sm font-medium text-dashboard-text-active">
+          <p className="m-0 shrink-0 rounded-dashboard-lg bg-dashboard-bg-highlight px-3 py-2 text-sm font-medium text-dashboard-text-active">
             {copy.clickHint}
           </p>
         )}
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex shrink-0 items-center justify-between gap-2">
           <DashboardButton
             variant="link"
             onClick={onClose}

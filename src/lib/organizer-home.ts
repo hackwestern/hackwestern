@@ -81,6 +81,8 @@ export type HomeSponsor = {
   atCcWorkshop: boolean | null;
   /** Coffee chat progress; undefined while loading or unregistered. */
   chats: MySponsorChats | undefined;
+  /** Not signed up for coffee chats (unticked or opted out): chat columns read "—". */
+  noChats?: boolean;
   blocks: readonly RepBlock[];
   /** Sunday rounds; undefined without a summary. */
   sunday: SundayJudging | undefined;
@@ -94,7 +96,10 @@ export type HomeSponsor = {
   }[];
   /** Has a prize track (judges on Sunday). */
   prizeTrack: boolean;
-  /** Digital prize track (PCBWay): no booth, chats or room. */
+  /**
+   * Not on site (Sponsor Day-Of "In person / Digital" = Digital, or a
+   * digital prize track like PCBWay): no arrival, booth, chats or room.
+   */
   digital: boolean;
 };
 
@@ -174,9 +179,9 @@ export function applies(col: HomeColumnKey, s: HomeSponsor): boolean {
     case "availability":
     case "shortlist":
     case "chats":
-      return !s.digital && !!s.sponsorId;
+      return !s.digital && !s.noChats && !!s.sponsorId;
     case "invites":
-      return !s.digital && !!s.chats && s.chats.repsChatting > 0;
+      return !s.digital && !s.noChats && !!s.chats && s.chats.repsChatting > 0;
     case "workshop":
       return s.workshops.some((w) => w.day === "Saturday");
     case "judgingShortlist":
@@ -334,7 +339,10 @@ export function sponsorsOnDay(
   day: RunOfShowDay,
   sponsors: readonly HomeSponsor[],
 ): HomeSponsor[] {
-  return sponsors.filter((s) => !s.digital || day === "Sunday");
+  // Digital sponsors show only on Sunday, and only to judge.
+  return sponsors.filter(
+    (s) => !s.digital || (day === "Sunday" && s.prizeTrack),
+  );
 }
 
 /**
@@ -362,7 +370,7 @@ export function boardCount(
     ).length;
   }
   return sponsors.filter((s) => {
-    if (s.digital || !s.chats) return false;
+    if (s.digital || s.noChats === true || !s.chats) return false;
     if (!s.chats.prefsSubmittedAt) return true;
     if (day === "Friday")
       return s.chats.repsChatting > 0 && s.chats.invites === 0;
@@ -423,4 +431,110 @@ export function upNext(
         ),
       }
     : { kind: "none" };
+}
+
+/** A Home table sort: the Sponsor column or a day column, and its direction. */
+export type HomeSort = {
+  key: "sponsor" | HomeColumnKey;
+  dir: "desc" | "asc";
+};
+
+/**
+ * What a cell sorts by: bigger = further along (done, more chats, earlier
+ * workshop). null = the cell reads "—" and always sorts last.
+ */
+export function sortValue(
+  col: HomeColumnKey,
+  s: HomeSponsor,
+  day: RunOfShowDay,
+  now: Date,
+): number | null {
+  if (!applies(col, s)) return null;
+  switch (col) {
+    case "availability":
+      return s.chats?.prefsSubmittedAt ? 1 : 0;
+    case "shortlist":
+      return s.chats?.shortlistSubmittedAt ? 1 : 0;
+    case "invites":
+      // Accepted first, then invites out.
+      return s.chats ? s.chats.accepted * 1000 + s.chats.invites : 0;
+    case "chats": {
+      // Most confirmed chats first, then most waiting.
+      const confirmed = s.blocks.reduce((n, b) => n + b.accepted, 0);
+      const waiting = s.blocks.reduce((n, b) => n + b.waiting, 0);
+      return confirmed * 1000 + waiting;
+    }
+    case "workshop": {
+      const starts = s.workshops
+        .filter((w) => w.day === "Saturday")
+        .map((w) => minutesInto("Saturday", at("Saturday", w.start)));
+      // Earliest first.
+      return starts.length ? -Math.min(...starts) : null;
+    }
+    default:
+      // Done above not done; an open flag sorts lowest.
+      if (flagsFor(col, s, day, now).length > 0) return -1;
+      return isDone(col, s, day, now) ? 1 : 0;
+  }
+}
+
+/**
+ * The Home table's rows in sort order. On a day column, "desc" puts the
+ * most progress at the top (the first press), "asc" the least. On Sponsor,
+ * asc is A–Z. Ties keep the
+ * incoming (A–Z) order; "—" cells always go last.
+ */
+export function sortHomeRows<T extends HomeSponsor>(
+  rows: readonly T[],
+  sort: HomeSort | null,
+  day: RunOfShowDay,
+  now: Date,
+): T[] {
+  if (!sort) return [...rows];
+  const sign = sort.dir === "desc" ? -1 : 1;
+  if (sort.key === "sponsor") {
+    // Names: asc = A–Z.
+    return [...rows].sort((a, b) => sign * a.name.localeCompare(b.name));
+  }
+  const col = sort.key;
+  const keyed = rows.map((r, i) => ({ r, i, v: sortValue(col, r, day, now) }));
+  keyed.sort((a, b) => {
+    if (a.v === null || b.v === null) {
+      if (a.v === b.v) return a.i - b.i;
+      return a.v === null ? 1 : -1;
+    }
+    return a.v === b.v ? a.i - b.i : sign * (a.v - b.v);
+  });
+  return keyed.map((k) => k.r);
+}
+
+/** The Home table's Show filter (Jazz, 2026-11-21). */
+export const HOME_FILTERS = [
+  "all",
+  "judging",
+  "chats",
+  "workshop",
+  "flagged",
+] as const;
+export type HomeFilter = (typeof HOME_FILTERS)[number];
+
+/** Does a sponsor pass the Show filter? */
+export function matchesFilter(
+  s: HomeSponsor,
+  filter: HomeFilter,
+  day: RunOfShowDay,
+  now: Date,
+): boolean {
+  switch (filter) {
+    case "all":
+      return true;
+    case "judging":
+      return s.prizeTrack;
+    case "chats":
+      return !s.digital && !s.noChats && !!s.sponsorId;
+    case "workshop":
+      return s.workshops.length > 0;
+    case "flagged":
+      return sponsorFlags(s, day, now).length > 0;
+  }
 }

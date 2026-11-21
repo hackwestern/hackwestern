@@ -9,6 +9,7 @@ import { api } from "~/utils/api";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { cn } from "~/lib/utils";
+import { realmCardColor, realmLabel, type Realm } from "~/constants/realms";
 import jsQR from "jsqr";
 import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
@@ -42,6 +43,8 @@ interface LegacyNavigator extends Navigator {
 type HeldResult = {
   kind: "success" | "already" | "error";
   name?: string;
+  realm?: Realm | null;
+  shirtSize?: string | null;
   message?: string;
 };
 
@@ -90,6 +93,22 @@ const HeldResultOverlay = ({
           {result.name && (
             <p className="break-words text-[44px] font-bold leading-[1.1] text-dashboard-text-heavy md:text-[64px]">
               {result.name}
+            </p>
+          )}
+          {result.realm && (
+            <span
+              className="self-start rounded-full px-4 py-1 text-lg font-semibold uppercase tracking-wide"
+              style={{
+                backgroundColor: realmCardColor[result.realm].background,
+                color: realmCardColor[result.realm].text,
+              }}
+            >
+              {realmLabel[result.realm]} Realm
+            </span>
+          )}
+          {result.shirtSize && (
+            <p className="text-2xl font-semibold text-dashboard-text-heavy">
+              Shirt size: {result.shirtSize}
             </p>
           )}
           {result.message && (
@@ -390,21 +409,34 @@ const ScanActivityPage = () => {
     }
   };
 
-  // Look up a hacker's name for the toast, falling back to their ID
-  const fetchUserName = async (userId: string) => {
+  // Look up a hacker's name and realm for the result, falling back to their ID
+  const fetchUser = async (
+    userId: string,
+  ): Promise<{
+    name: string;
+    realm: Realm | null;
+    shirtSize: string | null;
+  }> => {
     try {
       const userResponse = await fetch(
         `/api/scavenger-hunt/get-user?userId=${encodeURIComponent(userId)}`,
       );
-      if (!userResponse.ok) return userId;
+      if (!userResponse.ok)
+        return { name: userId, realm: null, shirtSize: null };
       const userData = (await userResponse.json()) as {
         name?: string;
         email?: string;
+        realm?: Realm | null;
+        shirtSize?: string | null;
       };
-      return userData?.name ?? userData?.email ?? userId;
+      return {
+        name: userData?.name ?? userData?.email ?? userId,
+        realm: userData?.realm ?? null,
+        shirtSize: userData?.shirtSize ?? null,
+      };
     } catch (userError) {
       console.error("Error fetching user info:", userError);
-      return userId;
+      return { name: userId, realm: null, shirtSize: null };
     }
   };
 
@@ -431,10 +463,10 @@ const ScanActivityPage = () => {
         itemId: itemData.id,
         activityType: isWinnable ? activityTypeRef.current : undefined,
       });
-      const userName = await fetchUserName(userId);
+      const { name: userName, realm, shirtSize } = await fetchUser(userId);
       setStatus("success");
       if (holdResults) {
-        setHeld({ kind: "success", name: userName });
+        setHeld({ kind: "success", name: userName, realm, shirtSize });
         return; // scanning resumes when the organizer taps Next
       }
       toast(
@@ -446,11 +478,11 @@ const ScanActivityPage = () => {
       const message = error instanceof Error ? error.message : "";
       setStatus("error");
       if (holdResults) {
-        const userName = await fetchUserName(userId);
-        // fetchUserName falls back to the scanned code when nobody matches
+        const { name: userName, realm, shirtSize } = await fetchUser(userId);
+        // fetchUser falls back to the scanned code when nobody matches
         const name = userName !== userId ? userName : undefined;
         if (message.includes("already scanned")) {
-          setHeld({ kind: "already", name });
+          setHeld({ kind: "already", name, realm, shirtSize });
         } else if (/UNAUTHORIZED|FORBIDDEN|not an organizer/.test(message)) {
           setHeld({
             kind: "error",
@@ -467,7 +499,7 @@ const ScanActivityPage = () => {
         return; // scanning resumes when the organizer taps Next
       }
       if (message.includes("already scanned")) {
-        const userName = await fetchUserName(userId);
+        const { name: userName } = await fetchUser(userId);
         toast.error(
           <span>
             <span className="font-semibold">{userName}</span> was already

@@ -19,7 +19,11 @@ export function ContactsCard({ sponsor }: { sponsor: string }) {
   const { loading, failed, lead, emergency } = useHelpContacts(sponsor);
   const missing = sponsorHelpCopy.contacts;
   return (
-    <section aria-labelledby="contacts-heading" className={card}>
+    <section
+      aria-labelledby="contacts-heading"
+      data-tour="home-contacts"
+      className={card}
+    >
       <CardTitle id="contacts-heading" icon={<Phone aria-hidden />}>
         {copy.title}
       </CardTitle>

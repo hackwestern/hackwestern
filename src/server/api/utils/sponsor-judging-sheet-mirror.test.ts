@@ -134,6 +134,10 @@ const fixture: JudgingSheetInput = {
     ["t2", "https://devpost.com/software/bravo/"],
     ["t3", null],
   ]),
+  teamGithub: new Map([
+    ["t1", "https://github.com/hw/alpha/"],
+    ["t3", "  "],
+  ]),
   members: new Map([
     ["t1", ["Ada Lovelace", "Alan Turing"]],
     ["t2", ["Grace Hopper"]],
@@ -240,6 +244,30 @@ describe("judgingSheetRows", () => {
           "Digital sponsor: top 5 entered by the spon team from Devpost links.",
         ],
         [],
+        // Top 5 by sponsor: one row per place, full links in their own
+        // columns; a missing or blank link stays empty.
+        ["Top 5 by sponsor"],
+        ["Sponsor", "Place", "Team ID", "Team", "Devpost", "GitHub"],
+        [
+          "Scotiabank",
+          "1st place",
+          "t1",
+          "Alpha",
+          "https://devpost.com/software/alpha",
+          "https://github.com/hw/alpha/",
+        ],
+        ["Scotiabank", "2nd place", "t3", "Charlie", "", ""],
+        ["Scotiabank", "3rd place", "t5", "t5", "", ""],
+        [
+          "Scotiabank",
+          "4th place",
+          "t2",
+          "Bravo",
+          "https://devpost.com/software/bravo/",
+          "",
+        ],
+        ["Scotiabank", "5th place", "t4", "Delta", "", ""],
+        [],
         ["Presentations"],
         ["Sponsor", "Team ID", "Team", "Members", "Time", "Room", "Notified"],
         // Placed slots in time order, then teams with no slot.
@@ -291,6 +319,10 @@ describe("judgingSheetRows", () => {
       ["TinyFish", "Not started", "Not open"],
       ["PCBWay", "No round 1 (digital)", "Waiting for the spon team"],
     ]);
+    // No top 5 yet: one line says so.
+    expect(rows.find((r) => r[0]?.startsWith("No sponsor"))?.[0]).toBe(
+      "No sponsor has sent their top 5 yet.",
+    );
     // Ends on the presentations header: no rows under it.
     expect(rows.at(-1)!.slice(0, 2)).toEqual(["Sponsor", "Team ID"]);
   });

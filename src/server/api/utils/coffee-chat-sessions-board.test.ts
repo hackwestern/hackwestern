@@ -27,6 +27,8 @@ const booking: BoardBooking = {
   forSponsorId: null,
   label: "Mentors",
   note: null,
+  bookedBy: null,
+  repIds: [],
 };
 const state = {
   workshopsAvailable: true,

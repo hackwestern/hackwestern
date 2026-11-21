@@ -41,11 +41,23 @@ export type AgendaStep = {
   note?: boolean;
   /** Only for sponsors with a prize track. */
   prizeOnly?: boolean;
-  /** Done once the sponsor has sent this. */
-  doneWhen?: "availability" | "shortlist";
+  /** Only for sponsors who do coffee chats (Sponsor Day-Of checkbox). */
+  chatsOnly?: boolean;
+  /** Its button and sub-line are about coffee chats (booth scanning): a
+   * sponsor without chats sees the row without them. */
+  chatsExtras?: boolean;
+  /**
+   * Done once the sponsor has sent this. "finalists" (judging shortlist
+   * sent) and "top5" (top 5 submitted) are read only by the HW lead's
+   * Slack pings (src/server/slack/sponsor-lead-pings.ts), which skip a
+   * done step; the Home marks those rows by time.
+   */
+  doneWhen?: "availability" | "shortlist" | "finalists" | "top5";
   /** Saturday's coffee chat placeholder, replaced by the real chats once
    * organizers send them. */
   chatsPlaceholder?: boolean;
+  /** A coffee chat at Ivey: shows the walk note (src/content/ivey-walk.ts). */
+  ivey?: boolean;
 };
 
 export const AGENDA: AgendaStep[] = [
@@ -59,6 +71,7 @@ export const AGENDA: AgendaStep[] = [
     where: "Sponsor workshop, Rm 2110",
     action: "chats",
     doneWhen: "availability",
+    chatsOnly: true,
   },
   {
     id: "f2",
@@ -77,6 +90,7 @@ export const AGENDA: AgendaStep[] = [
     where: "Sponsor Bay (SM Atrium)",
     sub: "Scan hackers you meet. They're invited first.",
     action: "scan",
+    chatsExtras: true,
   },
   {
     id: "f5",
@@ -94,6 +108,7 @@ export const AGENDA: AgendaStep[] = [
     title: "Back to your booth",
     where: "Sponsor Bay (SM Atrium)",
     action: "scan",
+    chatsExtras: true,
   },
   {
     id: "f7",
@@ -104,14 +119,16 @@ export const AGENDA: AgendaStep[] = [
     title: "Submit your shortlist",
     action: "chats",
     doneWhen: "shortlist",
+    chatsOnly: true,
   },
   {
     id: "f8",
     day: 0,
-    start: 1325,
-    end: 1325,
+    start: 1320,
+    end: 1320,
     title: "We confirm your chat times and invite hackers",
     sub: "Nothing to do.",
+    chatsOnly: true,
   },
   {
     id: "f9",
@@ -143,11 +160,12 @@ export const AGENDA: AgendaStep[] = [
     id: "sp",
     day: 1,
     start: 600,
-    end: 1020,
+    end: 1260,
     title: "Coffee chats",
     sub: "We confirm your reps' times and rooms at 10:00 PM Friday.",
     action: "chats",
     chatsPlaceholder: true,
+    chatsOnly: true,
   },
   { id: "s4", day: 1, start: 720, end: 810, title: "Lunch", where: "Rm 1230" },
   {
@@ -193,6 +211,7 @@ export const AGENDA: AgendaStep[] = [
     title: `Pick your finalists, up to ${SHORTLIST_MAX}`,
     action: "judging",
     prizeOnly: true,
+    doneWhen: "finalists",
   },
   {
     id: "u4",
@@ -212,6 +231,7 @@ export const AGENDA: AgendaStep[] = [
     title: "Submit your top 5",
     action: "judging",
     prizeOnly: true,
+    doneWhen: "top5",
   },
   {
     id: "u6",

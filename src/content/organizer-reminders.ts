@@ -1,19 +1,19 @@
 /**
  * Slack DM copy for organizer run-of-show reminders
- * (scripts/organizer-notifications.ts). Inputs are already Slack-escaped.
+ * (scripts/organizer-notifications.ts (CLI; logic in src/server/slack/organizer-run.ts)). Inputs are already Slack-escaped.
  */
 export const organizerRemindersCopy = {
   slack: {
-    /** First line when one task is due. */
-    header: (lead: number, time: string, title: string) =>
-      `⏰ In ${lead} min (${time}): *${title}*`,
+    /** First line when one task is due (the DM arrives 15 min before the row time). */
+    header: (title: string) => `⏰ Coming up: *${title}*`,
     /** First line when several of the person's tasks share a time. */
-    headerMany: (lead: number, time: string, count: number) =>
-      `⏰ In ${lead} min (${time}): ${count} things`,
-    /** Each task's title and time when several are listed. */
-    item: (title: string, time: string) => `• *${title}* (${time})`,
-    /** A task's start and end, from its height on the run of show. */
-    span: (start: string, end: string) => `${start} to ${end}`,
+    headerMany: (count: number) => `⏰ Coming up: ${count} things`,
+    /** Each task's title when several are listed. */
+    item: (title: string) => `• *${title}*`,
+    /** The cell's own "Starts:" time, else its row time. */
+    starts: (time: string) => `Starts: ${time}`,
+    /** From the cell's height on the run of show; left out when not clear. */
+    ends: (time: string) => `Ends: ${time}`,
     /** The other owners of the task. */
     with: (names: string) => `👥 With: ${names}`,
     /** The owner line names a team ("Spon"); names are its other members. */

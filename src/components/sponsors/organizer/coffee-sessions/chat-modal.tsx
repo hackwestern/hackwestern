@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Check, Pencil, Plus, X } from "lucide-react";
+import { Check, Pencil, Plus, TriangleAlert, X } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
 import { coffeeSessionsCopy } from "~/content/coffee-chat-sessions";
 import {
@@ -16,6 +16,13 @@ import {
   buildingOf,
   minutesOfClock,
 } from "~/lib/coffee-chat-sessions";
+import {
+  bookRepOf,
+  freeRanges,
+  repBusy,
+} from "~/lib/coffee-chat-book-availability";
+import { coffeeChatTimeOf } from "~/lib/coffee-chat-requests";
+import { formatCoffeeChatTime } from "~/lib/coffee-chats";
 import { cn } from "~/lib/utils";
 import { api, type RouterOutputs } from "~/utils/api";
 import { timeOf } from "./board-summary";
@@ -41,16 +48,21 @@ export const ALL_KEYS = COFFEE_ROOMS.flatMap((r) =>
   COFFEE_SESSIONS.map((s) => keyOf(r.id, s.id)),
 );
 
+/** Minutes after midnight as "10:00 AM". */
+const clockText = (min: number) => formatCoffeeChatTime(coffeeChatTimeOf(min));
+
 const roomLabel = (room: string) =>
   buildingOf(room) === "ivey" ? rc.iveyRm(room) : rc.rm(room);
 
-/** Book an event: a rep of a sponsor and a hacker, in this cell. */
+/** Book an event in this cell: what, who booked it, and optional people. */
 export type BookEvent = {
   room: string;
   session: string;
-  sponsorId: string;
-  repId: string;
-  userId: string;
+  description: string;
+  bookedBy: string;
+  sponsorId: string | null;
+  repIds: string[];
+  userIds: string[];
 };
 
 /** What the modal shows: a cell's detail, or the booking form. */
@@ -106,10 +118,10 @@ export function ChatModal({
         <Dialog.Content
           aria-describedby={undefined}
           onOpenAutoFocus={(e) => {
-            // The booking form starts on Sponsor; a detail on ×.
+            // The booking form starts on Description; a detail on ×.
             if (view?.kind !== "book") return;
             e.preventDefault();
-            document.getElementById("bk-sponsor")?.focus();
+            document.getElementById("bk-description")?.focus();
           }}
           onCloseAutoFocus={(e) => {
             e.preventDefault();
@@ -234,6 +246,7 @@ function CellDetail({
     return (
       <div className={pad}>
         <Head sub={`${where} · ${rc.adhoc}`}>{c.booking.label}</Head>
+        <BookingFacts booking={c.booking} />
         {actions}
       </div>
     );
@@ -342,6 +355,46 @@ function CellDetail({
         </p>
       ) : (
         actions
+      )}
+    </div>
+  );
+}
+
+/** A booking's who: booked by, the sponsor and its reps (when set). */
+function BookingFacts({
+  booking,
+}: {
+  booking: SessionBoardData["bookings"][number];
+}) {
+  const bc = copy.booking;
+  const needNames = !!booking.forSponsorId;
+  const options = api.coffeeChatSessions.bookingOptions.useQuery(undefined, {
+    enabled: needNames,
+  });
+  const sponsor = options.data?.sponsors.find(
+    (sp) => sp.id === booking.forSponsorId,
+  );
+  const reps = (sponsor?.reps ?? [])
+    .filter((r) => booking.repIds.includes(r.id))
+    .map((r) => r.name);
+  if (!booking.bookedBy && !sponsor) return null;
+  return (
+    <div className="flex flex-col gap-1 text-[15px]">
+      {booking.bookedBy && (
+        <p className="m-0 font-semibold">{bc.bookedByLine(booking.bookedBy)}</p>
+      )}
+      {sponsor && (
+        <p className="m-0 flex items-center gap-2">
+          <span className="rounded-dashboard-sm bg-dashboard-bg-inset px-1.5 py-0.5">
+            <Logo name={sponsor.name} />
+          </span>
+          <span>{sponsor.name}</span>
+        </p>
+      )}
+      {reps.length > 0 && (
+        <p className="m-0 text-dashboard-text-medium">
+          {bc.repsLine(reps.join(", "))}
+        </p>
       )}
     </div>
   );
@@ -620,9 +673,10 @@ function HackerList({
 
 /**
  * Book an event on an empty cell (room and session fixed, from the cell):
- * Sponsor, then one of its reps free then, then a hacker. Hackers the
- * sponsor scanned come first; a search by name or hacker ID is second.
- * Focus starts on Sponsor.
+ * Description and Booked by (required), then an optional sponsor (any
+ * registered sponsor), any of its reps free then, and any hackers (scanned
+ * at the sponsor's booth first, then a search by name or hacker ID). Focus
+ * starts on Description.
  */
 export function BookingForm({
   board,
@@ -637,31 +691,61 @@ export function BookingForm({
 }) {
   const bc = copy.booking;
   const { room, session } = initial;
+  const [description, setDescription] = useState("");
+  const [bookedBy, setBookedBy] = useState("");
   const [sponsorId, setSponsorId] = useState("");
-  const [repId, setRepId] = useState("");
-  const [userId, setUserId] = useState("");
+  const [repIds, setRepIds] = useState<string[]>([]);
+  const [userIds, setUserIds] = useState<string[]>([]);
   const [q, setQ] = useState("");
   const [query, setQuery] = useState("");
   const [err, setErr] = useState<string | null>(null);
+  // "+ Add a rep": a rep the sponsor forgot, saved and ticked here.
+  const [adding, setAdding] = useState(false);
+  const [newRep, setNewRep] = useState({ name: "", phone: "" });
+  const [addRepErr, setAddRepErr] = useState<string | null>(null);
+  const utils = api.useUtils();
+  const addRep = api.coffeeChatSessions.addEventRep.useMutation({
+    onSuccess: async (rep) => {
+      setRepIds((ids) => [...ids, rep.id]);
+      setNewRep({ name: "", phone: "" });
+      setAdding(false);
+      setAddRepErr(null);
+      await utils.coffeeChatSessions.bookingOptions.invalidate();
+    },
+    onError: (e) => setAddRepErr(e.message),
+  });
+  const saveRep = () => {
+    const name = newRep.name.trim();
+    const phone = newRep.phone.trim();
+    if (!name || !phone) return setAddRepErr(bc.addRepNeed);
+    addRep.mutate({ sponsorId, name, phone });
+  };
+  // Enter in the add-rep fields saves the rep, not the whole booking.
+  const saveOnEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    saveRep();
+  };
   // Search once typing pauses.
   useEffect(() => {
     const t = setTimeout(() => setQuery(q.trim()), 250);
     return () => clearTimeout(t);
   }, [q]);
-  const sponsors = board.sponsors.filter(
-    (sp) => sp.submitted && sp.reps.length > 0,
-  );
+  const options = api.coffeeChatSessions.bookingOptions.useQuery();
+  const sponsors = options.data?.sponsors ?? [];
+  const staff = options.data?.staff ?? null;
   const sponsor = sponsors.find((sp) => sp.id === sponsorId);
-  // Reps who can chat then: ticked free, not their workshop, not placed elsewhere.
-  const reps = (sponsor?.reps ?? []).filter(
-    (r) =>
-      r.chatsWanted > 0 &&
-      r.free.includes(session) &&
-      !sponsor!.blocked.includes(session) &&
-      !board.placements.some(
-        (p) => p.repId === r.id && p.sessionId === session,
-      ),
-  );
+  // Every rep, each with why they can't be picked then (same rule as the
+  // server) and their free time that day.
+  const reps = (sponsor?.reps ?? []).map((r) => {
+    const rep = bookRepOf(board, sponsorId, r.id);
+    const busy = repBusy(rep, session, board);
+    return {
+      ...r,
+      busy: busy ? (busy.kind === "chat" ? "chat" : "booked") : null,
+      free: freeRanges(rep, board),
+    };
+  });
   const hackers = api.coffeeChatSessions.bookingHackers.useQuery(
     { sponsorId, q: query.length >= 2 ? query : "" },
     { enabled: !!sponsorId, placeholderData: (prev) => prev },
@@ -670,7 +754,16 @@ export function BookingForm({
   const found = (hackers.data?.found ?? []).filter(
     (h) => !scanned.some((x) => x.userId === h.userId),
   );
+  const toggle = (list: string[], id: string) =>
+    list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
   const field = "flex min-w-0 flex-col gap-1.5";
+  const label = "text-sm font-semibold";
+  const optionalTag = (
+    <span className="font-normal text-dashboard-text-light">
+      {" "}
+      {bc.optional}
+    </span>
+  );
   const input = cn(
     "min-h-11 w-full rounded-dashboard-md border border-dashboard-border-default bg-dashboard-bg-surface px-3 py-2.5 text-base text-dashboard-text-heavy placeholder:text-dashboard-text-placeholder",
     focusRing,
@@ -682,18 +775,21 @@ export function BookingForm({
         ? "border-dashboard-action-primary bg-dashboard-bg-highlight"
         : "border-dashboard-border-default",
     );
-  const hackerList = (list: typeof scanned, label: string) => (
-    <ul aria-label={label} className="m-0 flex list-none flex-col gap-1.5 p-0">
+  const box = "size-[18px] flex-none accent-dashboard-action-primary";
+  const hackerList = (list: typeof scanned, listLabel: string) => (
+    <ul
+      aria-label={listLabel}
+      className="m-0 flex list-none flex-col gap-1.5 p-0"
+    >
       {list.map((h) => (
         <li key={h.userId}>
-          <label className={option(userId === h.userId)}>
+          <label className={option(userIds.includes(h.userId))}>
             <input
-              type="radio"
-              name="bk-hacker"
+              type="checkbox"
               value={h.userId}
-              checked={userId === h.userId}
-              onChange={() => setUserId(h.userId)}
-              className="size-[18px] flex-none accent-dashboard-action-primary"
+              checked={userIds.includes(h.userId)}
+              onChange={() => setUserIds((ids) => toggle(ids, h.userId))}
+              className={box}
             />
             <span className="min-w-0 [overflow-wrap:anywhere]">
               {bc.hackerLine(h.name, h.hackerId)}
@@ -708,16 +804,23 @@ export function BookingForm({
       className={pad}
       onSubmit={(e) => {
         e.preventDefault();
-        if (!sponsorId) return setErr(bc.needSponsor);
-        if (!repId) return setErr(bc.needRep);
-        if (!userId) return setErr(bc.needHacker);
+        if (!description.trim()) return setErr(bc.needDescription);
+        if (!bookedBy) return setErr(bc.needBookedBy);
         if (cellAt(board, keyOf(room, session))) {
           return setErr(
             copy.errors.roomTaken(rc.rm(room), sessionLabel(session)),
           );
         }
         setErr(null);
-        onBook({ room, session, sponsorId, repId, userId });
+        onBook({
+          room,
+          session,
+          description: description.trim(),
+          bookedBy,
+          sponsorId: sponsorId || null,
+          repIds: sponsorId ? repIds : [],
+          userIds: sponsorId ? userIds : [],
+        });
       }}
     >
       <div className="flex items-start justify-between gap-2">
@@ -740,8 +843,48 @@ export function BookingForm({
         </Dialog.Close>
       </div>
       <div className={field}>
-        <label htmlFor="bk-sponsor" className="text-sm font-semibold">
+        <label htmlFor="bk-description" className={label}>
+          {bc.description}
+        </label>
+        <input
+          id="bk-description"
+          className={input}
+          value={description}
+          aria-required
+          maxLength={255}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder={bc.descriptionPlaceholder}
+          autoComplete="off"
+        />
+      </div>
+      <div className={field}>
+        <label htmlFor="bk-booked-by" className={label}>
+          {bc.bookedBy}
+        </label>
+        <select
+          id="bk-booked-by"
+          className={input}
+          value={bookedBy}
+          aria-required
+          onChange={(e) => setBookedBy(e.target.value)}
+        >
+          <option value="">{bc.bookedByPick}</option>
+          {(staff ?? []).map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+        {options.isSuccess && !staff?.length && (
+          <p className="m-0 text-sm text-dashboard-text-warning">
+            {bc.noStaff}
+          </p>
+        )}
+      </div>
+      <div className={field}>
+        <label htmlFor="bk-sponsor" className={label}>
           {bc.sponsor}
+          {optionalTag}
         </label>
         <select
           id="bk-sponsor"
@@ -749,13 +892,13 @@ export function BookingForm({
           value={sponsorId}
           onChange={(e) => {
             setSponsorId(e.target.value);
-            setRepId("");
-            setUserId("");
+            setRepIds([]);
+            setAdding(false);
+            setAddRepErr(null);
+            setUserIds([]);
           }}
         >
-          <option value="">
-            {sponsors.length ? bc.sponsorPick : bc.noSponsors}
-          </option>
+          <option value="">{bc.sponsorNone}</option>
           {sponsors.map((sp) => (
             <option key={sp.id} value={sp.id}>
               {sp.name}
@@ -764,79 +907,215 @@ export function BookingForm({
         </select>
       </div>
       {sponsor && (
-        <div className={field}>
-          <label htmlFor="bk-rep" className="text-sm font-semibold">
-            {bc.rep}
-          </label>
-          {reps.length ? (
-            <select
-              id="bk-rep"
-              className={input}
-              value={repId}
-              onChange={(e) => setRepId(e.target.value)}
-            >
-              <option value="">{bc.repPick}</option>
-              {reps.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <p
-              id="bk-rep"
-              className="m-0 text-[15px] text-dashboard-text-warning"
-            >
-              {bc.noReps(sessionLabel(session))}
-            </p>
-          )}
-        </div>
-      )}
-      {sponsor && repId && (
-        <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
-          <legend className="mb-1 p-0 text-sm font-semibold">
-            {bc.hacker}
+        <fieldset className="m-0 flex min-w-0 flex-col gap-1.5 border-0 p-0">
+          <legend className={cn(label, "mb-1 p-0")}>
+            {bc.reps}
+            {optionalTag}
           </legend>
-          <h3 className="m-0 text-[15px] font-bold">{bc.scannedTitle}</h3>
-          {hackers.isLoading ? (
-            <p className="m-0 text-[15px] text-dashboard-text-medium">
-              {bc.loading}
-            </p>
-          ) : scanned.length ? (
-            hackerList(scanned, bc.scannedTitle)
+          {reps.length ? (
+            <ul
+              aria-label={bc.reps}
+              className="m-0 flex list-none flex-col gap-1.5 p-0"
+            >
+              {reps.map((r) => {
+                const busyId = `bk-rep-busy-${r.id}`;
+                const freeId = `bk-rep-free-${r.id}`;
+                const free = r.free.length
+                  ? bc.repFree(
+                      r.free
+                        .map((f) => `${clockText(f.start)}–${clockText(f.end)}`)
+                        .join(", "),
+                    )
+                  : bc.repFreeNone;
+                return (
+                  <li key={r.id} className="flex flex-col gap-1">
+                    <label
+                      className={cn(
+                        option(repIds.includes(r.id)),
+                        r.busy && "cursor-not-allowed opacity-70",
+                      )}
+                    >
+                      <input
+                        type="checkbox"
+                        value={r.id}
+                        checked={repIds.includes(r.id)}
+                        disabled={!!r.busy}
+                        aria-describedby={cn(r.busy && busyId, freeId)}
+                        onChange={() => setRepIds((ids) => toggle(ids, r.id))}
+                        className={box}
+                      />
+                      <span className="min-w-0 [overflow-wrap:anywhere]">
+                        {r.name}
+                      </span>
+                    </label>
+                    {/* Announced when it appears (a sponsor picked); icon + text, not colour alone. */}
+                    <div aria-live="polite">
+                      {r.busy && (
+                        <p
+                          id={busyId}
+                          className="m-0 flex items-start gap-1.5 text-sm font-medium text-dashboard-text-warning"
+                        >
+                          <TriangleAlert
+                            aria-hidden
+                            className="mt-0.5 size-4 flex-none"
+                          />
+                          {r.busy === "chat"
+                            ? bc.repInChat(r.name)
+                            : bc.repBooked(r.name)}
+                        </p>
+                      )}
+                    </div>
+                    <p
+                      id={freeId}
+                      className="m-0 text-sm text-dashboard-text-medium"
+                    >
+                      {free}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
           ) : (
             <p className="m-0 text-[15px] text-dashboard-text-medium">
-              {bc.scannedNone}
+              {bc.noReps}
             </p>
           )}
-          <label htmlFor="bk-search" className="mt-1 text-sm font-semibold">
-            {bc.searchLabel}
-          </label>
-          <input
-            id="bk-search"
-            type="search"
-            className={input}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder={bc.searchPlaceholder}
-            autoComplete="off"
-            spellCheck={false}
-          />
-          {query.length < 2 ? (
-            <p className="m-0 text-sm text-dashboard-text-light">
-              {bc.searchHint}
-            </p>
-          ) : found.length ? (
-            hackerList(found, bc.searchLabel)
-          ) : (
-            !hackers.isFetching && (
+          {/* A rep the sponsor forgot: add them here, ticked right away. */}
+          {adding ? (
+            <div className="flex flex-col gap-2 rounded-dashboard-md border border-dashboard-border-default p-3">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <input
+                  aria-label={bc.addRepName}
+                  placeholder={bc.addRepName}
+                  className={input}
+                  value={newRep.name}
+                  maxLength={255}
+                  autoComplete="off"
+                  onKeyDown={saveOnEnter}
+                  onChange={(e) =>
+                    setNewRep((v) => ({ ...v, name: e.target.value }))
+                  }
+                />
+                <input
+                  aria-label={bc.addRepPhone}
+                  placeholder={bc.addRepPhone}
+                  className={input}
+                  type="tel"
+                  value={newRep.phone}
+                  maxLength={32}
+                  autoComplete="off"
+                  onKeyDown={saveOnEnter}
+                  onChange={(e) =>
+                    setNewRep((v) => ({ ...v, phone: e.target.value }))
+                  }
+                />
+              </div>
               <p className="m-0 text-sm text-dashboard-text-medium">
-                {bc.searchNone}
+                {bc.addRepHint}
               </p>
-            )
+              {addRepErr && (
+                <p
+                  role="alert"
+                  className="m-0 text-sm font-medium text-dashboard-text-warning"
+                >
+                  {addRepErr}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <DashboardButton
+                  type="button"
+                  variant="primary"
+                  className="h-11"
+                  disabled={addRep.isPending}
+                  onClick={saveRep}
+                >
+                  {addRep.isPending ? bc.addRepSaving : bc.addRepSave}
+                </DashboardButton>
+                <DashboardButton
+                  type="button"
+                  variant="outline"
+                  className="h-11"
+                  onClick={() => {
+                    setAdding(false);
+                    setAddRepErr(null);
+                  }}
+                >
+                  {bc.addRepCancel}
+                </DashboardButton>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className={cn(
+                "min-h-11 self-start rounded-dashboard-md px-2 text-[15px] font-semibold text-dashboard-action-primary",
+                "[@media(hover:hover)]:hover:bg-dashboard-bg-highlight",
+                focusRing,
+              )}
+            >
+              {bc.addRep}
+            </button>
           )}
         </fieldset>
       )}
+      <fieldset className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0">
+        <legend className={cn(label, "mb-1 p-0")}>
+          {bc.hackers}
+          {optionalTag}
+        </legend>
+        {!sponsor ? (
+          <p className="m-0 text-[15px] text-dashboard-text-medium">
+            {bc.hackersNeedSponsor}
+          </p>
+        ) : (
+          <>
+            {userIds.length > 0 && (
+              <p className="m-0 text-sm font-semibold" aria-live="polite">
+                {bc.picked(userIds.length)}
+              </p>
+            )}
+            <h3 className="m-0 text-[15px] font-bold">{bc.scannedTitle}</h3>
+            {hackers.isLoading ? (
+              <p className="m-0 text-[15px] text-dashboard-text-medium">
+                {bc.loading}
+              </p>
+            ) : scanned.length ? (
+              hackerList(scanned, bc.scannedTitle)
+            ) : (
+              <p className="m-0 text-[15px] text-dashboard-text-medium">
+                {bc.scannedNone}
+              </p>
+            )}
+            <label htmlFor="bk-search" className={cn(label, "mt-1")}>
+              {bc.searchLabel}
+            </label>
+            <input
+              id="bk-search"
+              type="search"
+              className={input}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder={bc.searchPlaceholder}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            {query.length < 2 ? (
+              <p className="m-0 text-sm text-dashboard-text-light">
+                {bc.searchHint}
+              </p>
+            ) : found.length ? (
+              hackerList(found, bc.searchLabel)
+            ) : (
+              !hackers.isFetching && (
+                <p className="m-0 text-sm text-dashboard-text-medium">
+                  {bc.searchNone}
+                </p>
+              )
+            )}
+          </>
+        )}
+      </fieldset>
       {err && (
         <p
           role="alert"
@@ -845,7 +1124,7 @@ export function BookingForm({
           {err}
         </p>
       )}
-      <p className="m-0 text-sm text-dashboard-text-medium">{bc.lockedNote}</p>
+      <p className="m-0 text-sm text-dashboard-text-medium">{bc.inviteNote}</p>
       <div className="flex flex-wrap gap-2">
         <DashboardButton
           type="submit"

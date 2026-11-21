@@ -1,0 +1,49 @@
+Message,Template,When it's sent
+Check-in: Mentor,"💜 Hi {first_name}! Your first Hack Western 13 mentor shift starts soon: {this_shift}
+
+📍 When you arrive, send {poc} a Slack message saying you're here and where you are. They'll come find you with your shirt, badge and where to go.
+
+🕒 All your shifts: {shift}
+💬 Mentor channel: {mentor_channel}
+{note}
+Thank you so much for giving your weekend to our hackers 🐴",30 min before their first shift
+Check-in: Volunteer,"💚 Hi {first_name}! Your first Hack Western 13 volunteer shift starts soon: {this_shift}
+
+📍 When you arrive, send {poc} a Slack message saying you're here and where you are. They'll come find you with your shirt, badge and first task.
+
+🕒 All your shifts: {shift}
+💬 Volunteer channel: {volunteer_channel}
+{note}
+This weekend runs on people like you. Thank you so much 🐴",30 min before their first shift
+Check-in: Judge,"⭐ Hi {first_name}! Judging at Hack Western 13 starts soon: {this_shift}
+
+📍 When you arrive, send {poc} a Slack message saying you're here and where you are. They'll come find you with your badge and get you set up.
+
+💬 Judges channel: {judge_channel}
+{note}
+Hackers have been building all weekend and can't wait to show you. Thank you so much for judging 🐴",30 min before judging starts
+Shift reminder: second shift,"⏰ Shift #2 starts in 15 min: {this_shift}!
+Thanks for coming back, {first_name}. The hackers are lucky to have you 🥹",15 min before their 2nd shift (when it isn't their last)
+Shift reminder: third shift,"⏰ Shift #3 starts in 15 min: {this_shift}!
+Three shifts in, you're a Hack Western legend {first_name} 🏆",15 min before their 3rd shift (when it isn't their last)
+Shift reminder: last shift,"⏰ Your last shift starts in 15 min: {this_shift}!
+Last one, {first_name}! Thank you for showing up again and again this weekend 💖",15 min before their final shift (when they have 2 or more)
+After a shift,"🙌 That's a wrap on your shift, {first_name}! Thank you so much.
+Go grab some food and rest up. Next up for you: {next_shift}",When a shift ends and they have another one
+Last day,"🌅 Good morning {first_name}! It's the last day of Hack Western 13.
+You've got {this_shift} today. Thank you for sticking with us all weekend 💛","Morning of their last day, if it's a different day from their first"
+Final thank you: Mentor,"💜 Hack Western 13 is a wrap!
+{hackers} hackers built {projects} projects this weekend, and so many of them got unstuck because of you. Thank you for your time, your patience and your expertise, {first_name}. We couldn't have done it without you :) 🐴",Sunday after closing ceremony
+Final thank you: Volunteer,"💚 Hack Western 13 is a wrap!
+{hackers} hackers built {projects} projects this weekend, and none of it happens without the people behind the scenes. Thank you so much for your time and energy, {first_name}. We couldn't have done it without you :) 🐴",Sunday after closing ceremony
+Final thank you: Judge,"⭐ Hack Western 13 is a wrap!
+{hackers} hackers built {projects} projects, and you helped every team get seen and heard. Thank you so much for your time and thoughtful feedback, {first_name}. We couldn't have done it without you :) 🐴",Sunday after closing ceremony
+
+Fill-ins (Jess fills these once; every message uses them)
+{mentor_channel},C0CEZUSAVH6,Slack channel ID for mentors (starts with C). Shows as a #channel link
+{volunteer_channel},,Slack channel ID for volunteers (starts with C). Shows as a #channel link
+{judge_channel},C0CDZB3DQ2X,Slack channel ID for judges. Shows as a #channel link
+{hackers},,Number of hackers (fill Sunday)
+{projects},,Number of projects submitted (fill Sunday)
+
+"Filled in per person from the People tab: {first_name}, {shift} (all shifts), {this_shift}, {next_shift}, {poc}, {note}. Shifts come from the Mentor and Volunteer schedule tabs. If anything except {note} is blank, the message is held (not sent) and Status says what is missing. A blank {note} just leaves that line out."

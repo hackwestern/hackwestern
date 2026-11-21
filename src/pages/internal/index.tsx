@@ -35,6 +35,17 @@ const SECTIONS: { title: string; cards: Card[] }[] = [
     ],
   },
   {
+    title: "Slack",
+    cards: [
+      {
+        href: "/internal/ping-logs",
+        title: "Ping Logs",
+        description:
+          "Is the reminder bot running, and who gets pinged for what from the run of show.",
+      },
+    ],
+  },
+  {
     title: "Integrity",
     cards: [
       {

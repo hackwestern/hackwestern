@@ -4,6 +4,8 @@ import {
   doneColumns,
   flagsFor,
   repBlocks,
+  matchesFilter,
+  sortHomeRows,
   sponsorFlags,
   sponsorsOnDay,
   upNext,
@@ -146,9 +148,20 @@ describe("doneColumns", () => {
 
 describe("sponsorsOnDay", () => {
   it("shows digital sponsors only on Sunday", () => {
-    const pcb = sponsor({ name: "PCBWay", digital: true });
+    const pcb = sponsor({ name: "PCBWay", digital: true, prizeTrack: true });
     expect(sponsorsOnDay("Saturday", [pcb])).toEqual([]);
     expect(sponsorsOnDay("Sunday", [pcb])).toEqual([pcb]);
+  });
+
+  it("never shows a digital sponsor without a prize track", () => {
+    const shopify = sponsor({
+      name: "Shopify",
+      digital: true,
+      prizeTrack: false,
+    });
+    for (const day of ["Friday", "Saturday", "Sunday"] as const) {
+      expect(sponsorsOnDay(day, [shopify])).toEqual([]);
+    }
   });
 });
 
@@ -271,5 +284,78 @@ describe("upNext", () => {
     expect(upNext("Friday", tasks, at("Saturday", "12:05"), isNoah)).toEqual({
       kind: "over",
     });
+  });
+});
+
+describe("sortHomeRows", () => {
+  const block = (accepted: number, waiting: number) => ({
+    repName: "Rep",
+    sessionId: "s1",
+    room: "2241",
+    start: 600,
+    end: 660,
+    accepted,
+    waiting,
+  });
+  const sat = at("Saturday", "09:00");
+  const rows = [
+    sponsor({ name: "Accenture", sponsorId: "a", blocks: [block(1, 0)] }),
+    sponsor({ name: "Bell", sponsorId: "b", blocks: [] }),
+    sponsor({ name: "Canada Life", sponsorId: "c", blocks: [block(3, 1)] }),
+    sponsor({ name: "Digital Co", sponsorId: null }),
+  ];
+  const names = (r: HomeSponsor[]) => r.map((s) => s.name);
+
+  it("keeps the incoming order with no sort", () => {
+    expect(names(sortHomeRows(rows, null, "Saturday", sat))).toEqual(
+      names(rows),
+    );
+  });
+
+  it("puts the sponsors with the most chats on top, and '—' last either way", () => {
+    expect(
+      names(sortHomeRows(rows, { key: "chats", dir: "desc" }, "Saturday", sat)),
+    ).toEqual(["Canada Life", "Accenture", "Bell", "Digital Co"]);
+    expect(
+      names(sortHomeRows(rows, { key: "chats", dir: "asc" }, "Saturday", sat)),
+    ).toEqual(["Bell", "Accenture", "Canada Life", "Digital Co"]);
+  });
+
+  it("sorts by name both ways", () => {
+    expect(
+      names(sortHomeRows(rows, { key: "sponsor", dir: "desc" }, "Friday", sat)),
+    ).toEqual(["Digital Co", "Canada Life", "Bell", "Accenture"]);
+  });
+
+  it("puts sponsors who sent availability first, ties A–Z", () => {
+    const r = [
+      sponsor({ name: "A", chats: { ...chats, prefsSubmittedAt: null } }),
+      sponsor({ name: "B" }),
+      sponsor({ name: "C" }),
+    ];
+    expect(
+      names(
+        sortHomeRows(r, { key: "availability", dir: "desc" }, "Friday", sat),
+      ),
+    ).toEqual(["B", "C", "A"]);
+  });
+});
+
+describe("matchesFilter", () => {
+  const now = at("Saturday", "09:00");
+  it("keeps only judging, chat, workshop or flagged sponsors", () => {
+    const judge = sponsor({ name: "J", prizeTrack: true });
+    const noJudge = sponsor({ name: "N", prizeTrack: false, noChats: true });
+    const ws = sponsor({
+      name: "W",
+      workshops: [{ day: "Saturday", start: "13:00", end: null }],
+    });
+    expect(matchesFilter(judge, "judging", "Saturday", now)).toBe(true);
+    expect(matchesFilter(noJudge, "judging", "Saturday", now)).toBe(false);
+    expect(matchesFilter(noJudge, "chats", "Saturday", now)).toBe(false);
+    expect(matchesFilter(judge, "chats", "Saturday", now)).toBe(true);
+    expect(matchesFilter(ws, "workshop", "Saturday", now)).toBe(true);
+    expect(matchesFilter(judge, "workshop", "Saturday", now)).toBe(false);
+    expect(matchesFilter(noJudge, "all", "Saturday", now)).toBe(true);
   });
 });

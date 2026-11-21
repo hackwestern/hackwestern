@@ -23,6 +23,7 @@ import {
   buildSponsorTimeline,
   type TimelineEntry,
 } from "~/lib/sponsor-timeline";
+import { showChats } from "~/lib/sponsor-chats";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
 
@@ -58,6 +59,10 @@ export default function SponsorSchedulePage() {
     refetchInterval: 60_000,
   });
   const [showHackathon, setShowHackathon] = useShowHackathon();
+  const portalInfo = api.sponsorPortal.getSponsorPortalInfo.useQuery(
+    { sponsor: id },
+    { enabled: validUuid, refetchOnWindowFocus: false, retry: false },
+  );
   // The sponsor's coffee chats (session model): sent chats with invites.
   const setupQ = api.coffeeChatSetup.get.useQuery(
     { sponsor: id },
@@ -95,8 +100,10 @@ export default function SponsorSchedulePage() {
     setup?.reps.find((r) => r.id === repId)?.name ?? "";
   const chatReps =
     setup?.reps.filter((r) => setup.chats.some((c) => c.repId === r.id)) ?? [];
+  // No coffee chats: no chat blocks at all (lib/sponsor-chats).
+  const chatsOn = showChats(portalInfo.data);
   const chatEntries: TimelineEntry[] =
-    shownDay !== "Saturday" || !setup
+    shownDay !== "Saturday" || !setup || !chatsOn
       ? []
       : confirmed
         ? setup.chats
@@ -109,6 +116,7 @@ export default function SponsorSchedulePage() {
                 category: "coffee-chat" as const,
                 title: copy.chatTitle(repName(c.repId)),
                 location: room,
+                ivey: c.building === "ivey",
                 start: minutesOf(c.start),
                 end: minutesOf(c.end),
                 booking: {
@@ -131,7 +139,7 @@ export default function SponsorSchedulePage() {
               title: copy.chatsPlaceholder,
               location: null,
               start: 600,
-              end: 1020,
+              end: 1260,
             },
           ];
   // The run of show's own coffee chat row is replaced by the sponsor's chats.
@@ -186,20 +194,33 @@ export default function SponsorSchedulePage() {
           </p>
         </div>
       )}
-      <DayGrid
-        day={shownDay}
-        entries={entries}
-        now={now}
-        headerStart={<DayPicker value={shownDay} onChange={setDay} large />}
-        headerEnd={
-          <HackathonToggle
-            showHackathon={showHackathon}
-            onShowHackathonChange={setShowHackathon}
-          />
-        }
-        sponsorName={data.sponsorName}
-        workshops={data.workshops}
-      />
+      <div data-tour="schedule-grid" className="min-w-0">
+        <DayGrid
+          day={shownDay}
+          entries={entries}
+          // No coffee chats: no empty Coffee chats column either.
+          hiddenColumns={chatsOn ? [] : ["coffee-chats"]}
+          now={now}
+          headerStart={
+            <DayPicker
+              value={shownDay}
+              onChange={setDay}
+              large
+              tourId="schedule-days"
+            />
+          }
+          headerEnd={
+            <span data-tour="schedule-hackathon" className="inline-flex">
+              <HackathonToggle
+                showHackathon={showHackathon}
+                onShowHackathonChange={setShowHackathon}
+              />
+            </span>
+          }
+          sponsorName={data.sponsorName}
+          workshops={data.workshops}
+        />
+      </div>
     </>,
   );
 }

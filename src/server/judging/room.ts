@@ -1,6 +1,6 @@
 /**
- * Room setup and seating: the physical table layout, which seats are in use,
- * and which team sits at which seat. See docs/judging-engine.md.
+ * Room setup and seating: the table layout, which tables are in use, and
+ * which team sits at which table. See docs/judging-engine.md.
  */
 import { randomInt } from "node:crypto";
 
@@ -11,11 +11,11 @@ import { db } from "~/server/db";
 import {
   judgingAssignments,
   judgingSettings,
-  judgingSeats,
+  judgingTables,
   teams,
 } from "~/server/db/schema";
 import { type SetupTablesInput } from "~/schemas/judging";
-import { tablesPerRow, tablesToSplit } from "~/server/judging/layout";
+import { snakePosition, tablesPerRow } from "~/server/judging/layout";
 import {
   ELIGIBLE_SUBMISSIONS,
   type Tx,
@@ -25,11 +25,9 @@ import {
   isJudgingStarted,
   lockPlanExclusive,
   lockPlanShared,
-  lockSeats,
+  lockTables,
   notFound,
-  seatLabel,
-  seatLabels,
-  seatsHaveStarted,
+  tablesHaveStarted,
 } from "~/server/judging/shared";
 
 const DEFAULT_ZONE = "Main room";
@@ -53,7 +51,7 @@ export async function setupTables(input: SetupTablesInput) {
     await lockPlanExclusive(tx);
     await assertNotStarted("change the table setup", tx);
     const current = await getSettings(tx);
-    const judgesPerSeat = input.judgesPerSeat ?? current.judgesPerSeat;
+    const judgesPerTable = input.judgesPerTable ?? current.judgesPerTable;
 
     await tx
       .insert(judgingSettings)
@@ -61,14 +59,14 @@ export async function setupTables(input: SetupTablesInput) {
         id: 1,
         tableCount: input.tableCount,
         rows: input.rows,
-        judgesPerSeat,
+        judgesPerTable,
       })
       .onConflictDoUpdate({
         target: judgingSettings.id,
         set: {
           tableCount: input.tableCount,
           rows: input.rows,
-          judgesPerSeat,
+          judgesPerTable,
           updatedAt: new Date(),
         },
       });
@@ -79,33 +77,33 @@ export async function setupTables(input: SetupTablesInput) {
     await tx
       .select({ id: teams.id })
       .from(teams)
-      .innerJoin(judgingSeats, eq(judgingSeats.id, teams.judgingSeatId))
-      .where(gt(judgingSeats.tableNumber, input.tableCount))
+      .innerJoin(judgingTables, eq(judgingTables.id, teams.judgingTableId))
+      .where(gt(judgingTables.number, input.tableCount))
       .orderBy(asc(teams.id))
       .for("update", { of: teams });
 
     const planCleared = await clearPlan(tx);
 
     const removed = await tx
-      .delete(judgingSeats)
-      .where(gt(judgingSeats.tableNumber, input.tableCount))
-      .returning({ tableNumber: judgingSeats.tableNumber });
+      .delete(judgingTables)
+      .where(gt(judgingTables.number, input.tableCount))
+      .returning({ id: judgingTables.id });
 
     const existing = await tx
-      .select({ tableNumber: judgingSeats.tableNumber })
-      .from(judgingSeats);
-    const have = new Set(existing.map((t) => t.tableNumber));
-    const missing: { tableNumber: number; zone: string }[] = [];
+      .select({ number: judgingTables.number })
+      .from(judgingTables);
+    const have = new Set(existing.map((t) => t.number));
+    const missing: { number: number; zone: string }[] = [];
     for (let n = 1; n <= input.tableCount; n++) {
       if (!have.has(n))
-        missing.push({ tableNumber: n, zone: input.zone ?? DEFAULT_ZONE });
+        missing.push({ number: n, zone: input.zone ?? DEFAULT_ZONE });
     }
     if (missing.length > 0) {
-      await tx.insert(judgingSeats).values(missing);
+      await tx.insert(judgingTables).values(missing);
     }
     if (input.zone) {
       await tx
-        .update(judgingSeats)
+        .update(judgingTables)
         .set({ zone: input.zone })
         .where(sql`true`);
     }
@@ -114,133 +112,68 @@ export async function setupTables(input: SetupTablesInput) {
       tableCount: input.tableCount,
       rows: input.rows,
       perRow: tablesPerRow(input),
-      judgesPerSeat,
+      judgesPerTable,
       tablesCreated: missing.length,
-      tablesRemoved: new Set(removed.map((s) => s.tableNumber)).size,
+      tablesRemoved: removed.length,
       planCleared,
     };
   });
 }
 
 /**
- * Switch these seats on or off. A seat with a team seated can't be switched
- * off (move the team first). Before judging starts this clears the plan
- * (sections change); after, a seat being switched off must have no live stops.
+ * Switch a table on or off. A table with a team seated can't be switched off.
+ * Before judging starts this clears the plan (sections change); after, the
+ * table must have no live stops.
  */
-async function switchSeats(
-  tx: Tx,
-  seats: (typeof judgingSeats.$inferSelect)[],
-  isActive: boolean,
-) {
-  const changing = seats.filter((s) => s.isActive !== isActive);
-  if (changing.length === 0) return 0;
-  const ids = changing.map((s) => s.id);
-  const labels = await seatLabels(tx, changing);
-  const label = (id: number) => labels[ids.indexOf(id)]!;
-
-  if (!isActive) {
-    const seated = await tx.query.teams.findFirst({
-      where: inArray(teams.judgingSeatId, ids),
-      columns: { name: true, judgingSeatId: true },
+export async function setTableActive(tableId: number, isActive: boolean) {
+  return db.transaction(async (tx) => {
+    await lockPlanExclusive(tx);
+    const table = await tx.query.judgingTables.findFirst({
+      where: eq(judgingTables.id, tableId),
     });
-    if (seated) {
-      throw new TRPCError({
-        code: "CONFLICT",
-        message: `"${seated.name}" is seated at ${label(seated.judgingSeatId!)}. Move them first.`,
-      });
-    }
-  }
+    if (!table) throw notFound("Table");
+    if (table.isActive === isActive) return { ...table, planCleared: 0 };
 
-  let planCleared = 0;
-  if (await isJudgingStarted(tx)) {
     if (!isActive) {
-      const live = await tx.query.judgingAssignments.findFirst({
-        where: and(
-          inArray(judgingAssignments.judgingSeatId, ids),
-          sql`${judgingAssignments.status} <> 'cancelled'`,
-        ),
-        columns: { judgingSeatId: true },
+      const seated = await tx.query.teams.findFirst({
+        where: eq(teams.judgingTableId, tableId),
+        columns: { name: true },
       });
-      if (live) {
+      if (seated) {
         throw new TRPCError({
           code: "CONFLICT",
-          message: `${label(live.judgingSeatId)} still has judges assigned. Cancel those stops first.`,
+          message: `"${seated.name}" is seated at table ${table.number}. Move them first.`,
         });
       }
     }
-  } else {
-    planCleared = await clearPlan(tx);
-  }
-
-  await tx
-    .update(judgingSeats)
-    .set({ isActive })
-    .where(inArray(judgingSeats.id, ids));
-  return planCleared;
-}
-
-async function seatsAtTable(tx: Tx, tableNumber: number) {
-  const seats = await tx
-    .select()
-    .from(judgingSeats)
-    .where(eq(judgingSeats.tableNumber, tableNumber))
-    .orderBy(asc(judgingSeats.seat));
-  if (seats.length === 0) throw notFound("Table");
-  return seats;
-}
-
-/**
- * Switch a whole table on or off: both its seats. Use it when a table can't
- * be used at all. Turning a table back on turns both seats on.
- */
-export async function toggleTable(tableNumber: number, isActive: boolean) {
-  return db.transaction(async (tx) => {
-    await lockPlanExclusive(tx);
-    const seats = await seatsAtTable(tx, tableNumber);
-    const planCleared = await switchSeats(tx, seats, isActive);
-    return {
-      tableNumber,
-      seats: await seatsAtTable(tx, tableNumber),
-      planCleared,
-    };
-  });
-}
-
-/**
- * Switch a table's second seat on or off, so the table can (or can't) take a
- * second team. Seat 2 is never on while seat 1 is off. Switching off a seat 2
- * that doesn't exist yet adds it as a switched-off marker, so seating never
- * splits that table.
- */
-export async function toggleSecondSeat(tableNumber: number, isActive: boolean) {
-  return db.transaction(async (tx) => {
-    await lockPlanExclusive(tx);
-    const seats = await seatsAtTable(tx, tableNumber);
-    const first = seats.find((s) => s.seat === 1);
-    const second = seats.find((s) => s.seat === 2);
-    if (isActive && first && !first.isActive) {
-      throw new TRPCError({
-        code: "PRECONDITION_FAILED",
-        message: `Table ${tableNumber} is switched off. Switch the table on first.`,
-      });
-    }
 
     let planCleared = 0;
-    if (second) {
-      planCleared = await switchSeats(tx, [second], isActive);
-    } else if (!isActive) {
-      await tx.insert(judgingSeats).values({
-        tableNumber,
-        seat: 2,
-        zone: first?.zone ?? DEFAULT_ZONE,
-        isActive: false,
-      });
+    if (await isJudgingStarted(tx)) {
+      if (!isActive) {
+        const live = await tx.query.judgingAssignments.findFirst({
+          where: and(
+            eq(judgingAssignments.judgingTableId, tableId),
+            sql`${judgingAssignments.status} <> 'cancelled'`,
+          ),
+          columns: { id: true },
+        });
+        if (live) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: `Table ${table.number} still has judges assigned. Cancel those stops first.`,
+          });
+        }
+      }
+    } else {
+      planCleared = await clearPlan(tx);
     }
-    return {
-      tableNumber,
-      seats: await seatsAtTable(tx, tableNumber),
-      planCleared,
-    };
+
+    const [row] = await tx
+      .update(judgingTables)
+      .set({ isActive })
+      .where(eq(judgingTables.id, tableId))
+      .returning();
+    return { ...row!, planCleared };
   });
 }
 
@@ -254,134 +187,76 @@ function shuffle<T>(items: T[]): T[] {
 }
 
 /**
- * Seat every submitted team at an active seat, one per seat, in snake order.
- * Each table has one seat; once there are more teams than active tables,
- * some tables get a second seat (spread evenly, see `tablesToSplit`), up to 2
- * teams per table. Tables whose seat 2 is switched off are never split.
- * Random by default; `random: false` seats in submission order. Replaces any
- * previous seating, and clears the plan if the seats changed. Locked once
- * judging starts.
+ * Fill one active spot per physical table before using the second spots.
+ * Replaces previous seating and clears the judge plan. Locked once judging starts.
  */
 export async function seatTeams({ random }: { random: boolean }) {
   return db.transaction(async (tx) => {
     await lockPlanExclusive(tx);
     await assertNotStarted("re-seat teams", tx);
+    const perRow = tablesPerRow(await getSettings(tx));
 
     const submitted = await tx
       .select({ id: teams.id, name: teams.name })
       .from(teams)
       .where(inArray(teams.submissionStatus, [...ELIGIBLE_SUBMISSIONS]))
       .orderBy(sql`${teams.submittedAt} asc nulls last`, asc(teams.id));
-    const physical = await tx
-      .select({
-        id: judgingSeats.id,
-        tableNumber: judgingSeats.tableNumber,
-        zone: judgingSeats.zone,
-      })
-      .from(judgingSeats)
-      .where(and(eq(judgingSeats.isActive, true), eq(judgingSeats.seat, 1)))
-      .orderBy(asc(judgingSeats.tableNumber));
+    const tables = await tx
+      .select({ id: judgingTables.id, number: judgingTables.number })
+      .from(judgingTables)
+      .where(eq(judgingTables.isActive, true))
+      .orderBy(asc(judgingTables.number));
 
-    const seconds = await tx
-      .select({
-        id: judgingSeats.id,
-        tableNumber: judgingSeats.tableNumber,
-        isActive: judgingSeats.isActive,
-      })
-      .from(judgingSeats)
-      .where(eq(judgingSeats.seat, 2));
-    const secondOff = new Set(
-      seconds.filter((s) => !s.isActive).map((s) => s.tableNumber),
-    );
-    const splittable = physical.filter((t) => !secondOff.has(t.tableNumber));
-    const splits = Math.max(0, submitted.length - physical.length);
-    const split = tablesToSplit(splittable, splittable.length + splits);
-    if (!split) {
+    if (submitted.length > tables.length) {
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
-        message: `${submitted.length} teams submitted but only ${physical.length + splittable.length} seats can be used. Switch on more tables or seats.`,
+        message: `${submitted.length} teams submitted but only ${tables.length} tables are active. Add or switch on more tables.`,
       });
     }
 
-    const wanted = new Set(split.map((t) => t.tableNumber));
-    // A switched-off seat 2 stays, so the table keeps being skipped.
-    const stale = seconds.filter(
-      (s) => s.isActive && !wanted.has(s.tableNumber),
-    );
-    const have = new Set(seconds.map((s) => s.tableNumber));
-    const missing = split.filter((t) => !have.has(t.tableNumber));
-
-    let planCleared = 0;
-    if (stale.length > 0 || missing.length > 0) {
-      // Same order as setupTables: lock the seated team rows before
-      // clearPlan's status trigger locks tables.
-      await tx
-        .select({ id: teams.id })
-        .from(teams)
-        .where(isNotNull(teams.judgingSeatId))
-        .orderBy(asc(teams.id))
-        .for("update");
-      planCleared = await clearPlan(tx);
+    // Pair columns from the left edge of each row. The coordinates come
+    // from the full layout, so switching a spot off cannot shift its pair.
+    const firstSpots: typeof tables = [];
+    const secondSpots: typeof tables = [];
+    const seenPairs = new Set<number>();
+    const pairsPerRow = Math.ceil(perRow / 2);
+    for (const table of tables) {
+      const { row, col } = snakePosition(table.number, perRow);
+      const pair = row * pairsPerRow + Math.floor(col / 2);
+      if (seenPairs.has(pair)) {
+        secondSpots.push(table);
+      } else {
+        seenPairs.add(pair);
+        firstSpots.push(table);
+      }
     }
-
+    const spots = [...firstSpots, ...secondSpots];
     const order = random ? shuffle(submitted) : submitted;
 
     await tx
       .update(teams)
-      .set({ judgingSeatId: null })
-      .where(isNotNull(teams.judgingSeatId));
-    if (stale.length > 0) {
-      await tx.delete(judgingSeats).where(
-        inArray(
-          judgingSeats.id,
-          stale.map((s) => s.id),
-        ),
-      );
-    }
-    if (missing.length > 0) {
-      await tx.insert(judgingSeats).values(
-        missing.map((t) => ({
-          tableNumber: t.tableNumber,
-          seat: 2,
-          zone: t.zone,
-        })),
-      );
-    }
-    const seats = await tx
-      .select({
-        id: judgingSeats.id,
-        tableNumber: judgingSeats.tableNumber,
-        seat: judgingSeats.seat,
-      })
-      .from(judgingSeats)
-      .where(eq(judgingSeats.isActive, true))
-      .orderBy(asc(judgingSeats.tableNumber), asc(judgingSeats.seat));
-    const seating: {
-      teamId: string;
-      teamName: string;
-      seatId: number;
-      tableNumber: number;
-      seat: number;
-    }[] = [];
+      .set({ judgingTableId: null })
+      .where(isNotNull(teams.judgingTableId));
+    const seating: { teamId: string; teamName: string; tableNumber: number }[] =
+      [];
     for (const [i, team] of order.entries()) {
-      const seat = seats[i]!;
+      const table = spots[i]!;
       await tx
         .update(teams)
-        .set({ judgingSeatId: seat.id })
+        .set({ judgingTableId: table.id })
         .where(eq(teams.id, team.id));
       seating.push({
         teamId: team.id,
         teamName: team.name,
-        seatId: seat.id,
-        tableNumber: seat.tableNumber,
-        seat: seat.seat,
+        tableNumber: table.number,
       });
     }
 
+    const planCleared = await clearPlan(tx);
     return {
       random,
       seated: seating.length,
-      emptySeats: seats.length - seating.length,
+      emptyTables: tables.length - seating.length,
       planCleared,
       seating,
     };
@@ -389,18 +264,18 @@ export async function seatTeams({ random }: { random: boolean }) {
 }
 
 /**
- * Before reseating anyone at these seats: lock every stop at them, then make
+ * Before reseating anyone at these tables: lock every stop at them, then make
  * sure judging hasn't started at either. Locking the stops first means a judge
  * starting or submitting there finishes before this check runs (and the move
  * is refused), or waits until the move is done and scores whoever sits there
  * then. Same lock order as assignments.ts: stops first, then team rows.
  */
-async function lockSeatsForReseat(tableIds: number[], tx: Tx) {
+async function lockTablesForReseat(tableIds: number[], tx: Tx) {
   if (tableIds.length > 0) {
     await tx
       .select({ id: judgingAssignments.id })
       .from(judgingAssignments)
-      .where(inArray(judgingAssignments.judgingSeatId, tableIds))
+      .where(inArray(judgingAssignments.judgingTableId, tableIds))
       .orderBy(asc(judgingAssignments.id))
       .for("update");
   }
@@ -408,23 +283,23 @@ async function lockSeatsForReseat(tableIds: number[], tx: Tx) {
 }
 
 async function refuseIfStarted(tableIds: number[], tx: Tx) {
-  if (await seatsHaveStarted(tableIds, tx)) {
+  if (await tablesHaveStarted(tableIds, tx)) {
     throw new TRPCError({
       code: "CONFLICT",
       message:
-        "Judging has already started at one of these seats, so the team can't move.",
+        "Judging has already started at one of these tables, so the team can't move.",
     });
   }
 }
 
 /**
- * Swap two teams' seats, which moves each team into the other's judges'
- * sections. Locked once either seat has a stop in progress or finished.
+ * Swap two teams' tables, which moves each team into the other's judges'
+ * sections. Locked once either table has a stop in progress or finished.
  */
 export async function swapTeams(teamAId: string, teamBId: string) {
   return conflictOnUniqueViolation(
     () => swapTeamsTx(teamAId, teamBId),
-    "One of these seats just changed. Refresh and try again.",
+    "One of these tables just changed. Refresh and try again.",
   );
 }
 
@@ -436,7 +311,7 @@ async function swapTeamsTx(teamAId: string, teamBId: string) {
         .select({
           id: teams.id,
           name: teams.name,
-          seatId: teams.judgingSeatId,
+          tableId: teams.judgingTableId,
         })
         .from(teams)
         .where(inArray(teams.id, [teamAId, teamBId]))
@@ -445,133 +320,147 @@ async function swapTeamsTx(teamAId: string, teamBId: string) {
       const a = pair.find((t) => t.id === teamAId);
       const b = pair.find((t) => t.id === teamBId);
       if (!a || !b) throw notFound("Team");
-      if (a.seatId === null || b.seatId === null) {
+      if (a.tableId === null || b.tableId === null) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
-          message: "Both teams need to be seated before they can swap seats.",
+          message: "Both teams need to be seated before they can swap tables.",
         });
       }
       return {
-        a: { ...a, seatId: a.seatId },
-        b: { ...b, seatId: b.seatId },
+        a: { ...a, tableId: a.tableId },
+        b: { ...b, tableId: b.tableId },
       };
     };
 
-    // Stops first, then the team rows (see lockSeatsForReseat).
+    // Stops first, then the team rows (see lockTablesForReseat).
     const seen = await readPair(false);
-    await lockSeatsForReseat([seen.a.seatId, seen.b.seatId], tx);
+    await lockTablesForReseat([seen.a.tableId, seen.b.tableId], tx);
     const { a, b } = await readPair(true);
-    if (a.seatId !== seen.a.seatId || b.seatId !== seen.b.seatId) {
+    if (a.tableId !== seen.a.tableId || b.tableId !== seen.b.tableId) {
       throw new TRPCError({
         code: "CONFLICT",
         message: "One of these teams just moved. Refresh and try again.",
       });
     }
 
-    // Lock order step 4: both seats, in id order, before the status trigger.
-    // Every stop insert or status change takes these seat locks too, so a
+    // Lock order step 4: both tables, in id order, before the status trigger.
+    // Every stop insert or status change takes these table locks too, so a
     // re-check now also catches a stop that appeared after the first check.
-    await lockSeats(tx, [a.seatId, b.seatId]);
-    await refuseIfStarted([a.seatId, b.seatId], tx);
+    await lockTables(tx, [a.tableId, b.tableId]);
+    await refuseIfStarted([a.tableId, b.tableId], tx);
 
-    // Clear one seat first so the one-team-per-seat rule holds throughout.
+    // Clear one seat first so the one-team-per-table rule holds throughout.
     await tx
       .update(teams)
-      .set({ judgingSeatId: null })
+      .set({ judgingTableId: null })
       .where(eq(teams.id, a.id));
     await tx
       .update(teams)
-      .set({ judgingSeatId: a.seatId })
+      .set({ judgingTableId: a.tableId })
       .where(eq(teams.id, b.id));
     await tx
       .update(teams)
-      .set({ judgingSeatId: b.seatId })
+      .set({ judgingTableId: b.tableId })
       .where(eq(teams.id, a.id));
 
-    const seats = await tx
-      .select({
-        seatId: judgingSeats.id,
-        tableNumber: judgingSeats.tableNumber,
-        seat: judgingSeats.seat,
-      })
-      .from(judgingSeats)
-      .where(inArray(judgingSeats.id, [a.seatId, b.seatId]));
-    const seatOf = (id: number) => seats.find((t) => t.seatId === id)!;
+    const numbers = await tx
+      .select({ id: judgingTables.id, number: judgingTables.number })
+      .from(judgingTables)
+      .where(inArray(judgingTables.id, [a.tableId, b.tableId]));
+    const numberOf = (id: number) => numbers.find((t) => t.id === id)?.number;
     return {
-      teamA: { id: a.id, name: a.name, ...seatOf(b.seatId) },
-      teamB: { id: b.id, name: b.name, ...seatOf(a.seatId) },
+      teamA: { id: a.id, name: a.name, tableNumber: numberOf(b.tableId)! },
+      teamB: { id: b.id, name: b.name, tableNumber: numberOf(a.tableId)! },
     };
   });
 }
 
-/** Move a team to an empty active seat. Same lock as swapping. */
-export async function moveTeam(teamId: string, seatId: number) {
+/** Move a team to an empty active table. Same lock as swapping. */
+export async function moveTeam(teamId: string, tableId: number) {
   return conflictOnUniqueViolation(
-    () => moveTeamTx(teamId, seatId),
-    "That seat was just taken. Refresh and try again.",
+    () => moveTeamTx(teamId, tableId),
+    "That table was just taken. Refresh and try again.",
   );
 }
 
-async function moveTeamTx(teamId: string, seatId: number) {
+async function moveTeamTx(teamId: string, tableId: number) {
   return db.transaction(async (tx) => {
     await lockPlanShared(tx);
     const team = await tx.query.teams.findFirst({
       where: eq(teams.id, teamId),
-      columns: { id: true, name: true, judgingSeatId: true },
+      columns: { id: true, name: true, judgingTableId: true },
     });
     if (!team) throw notFound("Team");
-    const seatRow = await tx.query.judgingSeats.findFirst({
-      where: eq(judgingSeats.id, seatId),
+    const table = await tx.query.judgingTables.findFirst({
+      where: eq(judgingTables.id, tableId),
     });
-    if (!seatRow) throw notFound("Seat");
-    const label = await seatLabel(tx, seatRow);
-    const moved = {
-      teamId,
-      seatId,
-      tableNumber: seatRow.tableNumber,
-      seat: seatRow.seat,
-    };
-    if (team.judgingSeatId === seatId) return moved;
-    if (!seatRow.isActive) {
+    if (!table) throw notFound("Table");
+    if (team.judgingTableId === tableId) {
+      return { teamId, tableNumber: table.number };
+    }
+    if (!table.isActive) {
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
-        message: `${label} is switched off.`,
+        message: `Table ${table.number} is switched off.`,
       });
     }
     const occupant = await tx.query.teams.findFirst({
-      where: eq(teams.judgingSeatId, seatId),
+      where: eq(teams.judgingTableId, tableId),
       columns: { name: true },
     });
     if (occupant) {
       throw new TRPCError({
         code: "CONFLICT",
-        message: `${label} already has "${occupant.name}". Swap them instead.`,
+        message: `Table ${table.number} already has "${occupant.name}". Swap them instead.`,
       });
     }
-    // Stops first, then the team row (see lockSeatsForReseat).
-    await lockSeatsForReseat(
-      team.judgingSeatId === null ? [seatId] : [team.judgingSeatId, seatId],
+    // Stops first, then the team row (see lockTablesForReseat).
+    await lockTablesForReseat(
+      team.judgingTableId === null ? [tableId] : [team.judgingTableId, tableId],
       tx,
     );
     const [locked] = await tx
-      .select({ seatId: teams.judgingSeatId })
+      .select({ tableId: teams.judgingTableId })
       .from(teams)
       .where(eq(teams.id, teamId))
       .for("update");
-    if (locked?.seatId !== team.judgingSeatId) {
+    if (locked?.tableId !== team.judgingTableId) {
       throw new TRPCError({
         code: "CONFLICT",
         message: "This team just moved. Refresh and try again.",
       });
     }
     const touched =
-      team.judgingSeatId === null ? [seatId] : [team.judgingSeatId, seatId];
-    await lockSeats(tx, touched);
+      team.judgingTableId === null ? [tableId] : [team.judgingTableId, tableId];
+    await lockTables(tx, touched);
     await refuseIfStarted(touched, tx);
     await tx
       .update(teams)
-      .set({ judgingSeatId: seatId })
+      .set({ judgingTableId: tableId })
       .where(eq(teams.id, teamId));
-    return moved;
+    if (team.judgingTableId !== null) {
+      const pendingAtSource = and(
+        eq(judgingAssignments.judgingTableId, team.judgingTableId),
+        eq(judgingAssignments.status, "assigned"),
+      );
+      const pendingAtDestination = await tx.query.judgingAssignments.findFirst({
+        where: and(
+          eq(judgingAssignments.judgingTableId, tableId),
+          eq(judgingAssignments.status, "assigned"),
+        ),
+        columns: { id: true },
+      });
+      // Existing plans can already have stops at an empty destination.
+      // Otherwise carry the team's pending stops to its new spot.
+      if (pendingAtDestination) {
+        await tx.delete(judgingAssignments).where(pendingAtSource);
+      } else {
+        await tx
+          .update(judgingAssignments)
+          .set({ judgingTableId: tableId })
+          .where(pendingAtSource);
+      }
+    }
+    return { teamId, tableNumber: table.number };
   });
 }

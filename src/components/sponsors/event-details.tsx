@@ -1,6 +1,9 @@
+import { useRouter } from "next/router";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Clock, MapPin, User, Users, X } from "lucide-react";
+import { IveyWalkNote } from "~/components/ivey-walk-note";
 import { coffeeChatCopy } from "~/content/coffee-chat";
+import { iveyWalkCopy } from "~/content/ivey-walk";
 import { scheduleCopy } from "~/content/sponsor-schedule";
 import {
   formatClock,
@@ -124,6 +127,10 @@ function Body({
       : [];
   const happening = isTask ? entriesAt(entry.start, entries) : [];
   const owner = entry.task?.owner ?? null;
+  // A sponsor's own Ivey chat: Check map opens their portal map on Ivey.
+  const router = useRouter();
+  const uuid = typeof router.query.uuid === "string" ? router.query.uuid : "";
+  const mapHref = uuid ? iveyWalkCopy.sponsorMapPath(uuid) : null;
 
   return (
     <>
@@ -181,6 +188,13 @@ function Body({
               label={details.where}
             >
               {location ?? scheduleCopy.noLocation}
+              {entry.ivey && (
+                <IveyWalkNote
+                  who="sponsor"
+                  mapHref={mapHref}
+                  className="mt-1"
+                />
+              )}
             </Row>
             {sponsors.length > 0 && (
               <Row

@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { Coffee, MapPin } from "lucide-react";
+import { useRouter } from "next/router";
+import { Coffee, MapPin, TriangleAlert } from "lucide-react";
+import { IveyWalkNote } from "~/components/ivey-walk-note";
 import { card, CardTitle, chip, seg } from "~/components/sponsors/portal-ui";
+import { iveyWalkCopy } from "~/content/ivey-walk";
 import { sponsorSetupCopy } from "~/content/sponsor-coffee-setup";
 import { COFFEE_SESSIONS } from "~/lib/coffee-chat-sessions";
 import { roomLabel } from "~/lib/sponsor-home";
@@ -35,6 +38,9 @@ function StatusDot({ status }: { status: Hacker["status"] }) {
  * or Waiting: declined people and empty seats aren't shown.
  */
 export function YourChats({ data }: { data: SetupData }) {
+  const router = useRouter();
+  const uuid = typeof router.query.uuid === "string" ? router.query.uuid : "";
+  const mapHref = uuid ? iveyWalkCopy.sponsorMapPath(uuid) : null;
   const [rep, setRep] = useState<string | null>(null);
   const [view, setView] = useState<"calendar" | "list">("calendar");
   const chatReps = data.reps.filter((r) =>
@@ -258,6 +264,9 @@ export function YourChats({ data }: { data: SetupData }) {
                     />
                     {copy.room(c.room)} · {copy.building(c.building)}
                   </p>
+                  {c.building === "ivey" && (
+                    <IveyWalkNote who="sponsor" mapHref={mapHref} />
+                  )}
                   {c.hackers.length === 0 ? (
                     <p className="m-0 text-sm text-dashboard-text-light">
                       {copy.hackers(0)}
@@ -301,8 +310,18 @@ function ChatBlock({ chat, data }: { chat: Chat; data: SetupData }) {
       `${String(Number(chat.start.slice(0, 2)) + 1).padStart(2, "0")}:00`;
   return (
     <div className="flex h-full min-w-0 flex-col gap-0.5 rounded-dashboard-sm border-l-4 border-dashboard-action-primary bg-dashboard-bg-highlight p-2 text-[11.5px] text-dashboard-text-medium">
-      <b className="text-xs font-bold text-dashboard-text-heavy">
+      <b className="flex items-center gap-1 text-xs font-bold text-dashboard-text-heavy">
         {copy.room(chat.room)} · {copy.building(chat.building)}
+        {/* Small block: the icon carries the Ivey walk note (tooltip and screen readers). */}
+        {chat.building === "ivey" && (
+          <TriangleAlert
+            role="img"
+            aria-label={iveyWalkCopy.sponsor}
+            className="size-3.5 flex-none text-dashboard-text-warning"
+          >
+            <title>{iveyWalkCopy.sponsor}</title>
+          </TriangleAlert>
+        )}
       </b>
       <span>
         {copy.chatCount(chat.chats)} ·{" "}

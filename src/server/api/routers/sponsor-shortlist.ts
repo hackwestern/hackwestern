@@ -30,6 +30,11 @@ import {
   type SponsorCandidate,
 } from "~/server/api/utils/sponsor-shortlist";
 import { mirrorCoffeeChatSetupLater } from "~/server/api/utils/coffee-chat-setup-sheet-mirror";
+import {
+  assertNotLocked,
+  isOrganizerCaller,
+} from "~/server/api/utils/submit-lock";
+import { assertChatsOn } from "~/server/api/utils/coffee-chats-on";
 import { db } from "~/server/db";
 import {
   applications,
@@ -376,6 +381,8 @@ export const sponsorShortlistRouter = createTRPCRouter({
       sent: boolean;
       source: CandidateSource;
       showSource: boolean;
+      /** A signed-in organizer: may reopen a submitted shortlist. */
+      canEditSubmitted: boolean;
     }> => {
       const sponsor = await findSponsor(input.sponsor);
       const [candidates, ids, showSource, setup, scanned] = await Promise.all([
@@ -409,6 +416,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
         sent: setup.confirmed,
         source: candidates.source,
         showSource,
+        canEditSubmitted: showSource,
       };
     },
   ),
@@ -449,8 +457,9 @@ export const sponsorShortlistRouter = createTRPCRouter({
    */
   add: publicProcedure
     .input(z.object({ sponsor: sponsorInput, userId: userIdInput }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const sponsor = await findSponsor(input.sponsor);
+      await assertChatsOn(sponsor.name, await isOrganizerCaller(ctx));
       const { hackers } = await sponsorCandidates(sponsor);
       // A candidate, or any admitted hacker found by search. One found by
       // search must share with sponsors: invites only go to hackers who do.
@@ -503,8 +512,9 @@ export const sponsorShortlistRouter = createTRPCRouter({
    */
   remove: publicProcedure
     .input(z.object({ sponsor: sponsorInput, userId: userIdInput }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const sponsor = await findSponsor(input.sponsor);
+      await assertChatsOn(sponsor.name, await isOrganizerCaller(ctx));
       await db.transaction(async (tx) => {
         await lockSponsor(tx, sponsor.id);
         await assertShortlistOpen(tx, sponsor.id, { needPrefs: false });
@@ -530,12 +540,17 @@ export const sponsorShortlistRouter = createTRPCRouter({
    */
   submit: publicProcedure
     .input(z.object({ sponsor: sponsorInput }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const sponsor = await findSponsor(input.sponsor);
+      const organizer = await isOrganizerCaller(ctx);
+      await assertChatsOn(sponsor.name, organizer);
       const now = new Date();
       await db.transaction(async (tx) => {
         await lockSponsor(tx, sponsor.id);
-        await assertShortlistOpen(tx, sponsor.id, { allowSubmitted: true });
+        // Submitted once: a sponsor can't submit again (organizers can).
+        await assertShortlistOpen(tx, sponsor.id, {
+          allowSubmitted: organizer,
+        });
         const { cap, picked } = await capState(tx, sponsor);
         if (picked > cap) {
           throw new TRPCError({
@@ -553,13 +568,23 @@ export const sponsorShortlistRouter = createTRPCRouter({
       return { submittedAt: now };
     }),
 
-  /** Edit shortlist: back to not submitted until they submit again. */
+  /**
+   * Edit shortlist: back to not submitted until they submit again.
+   * Organizers only once it's submitted (sponsors submit once).
+   */
   reopen: publicProcedure
     .input(z.object({ sponsor: sponsorInput }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const sponsor = await findSponsor(input.sponsor);
+      const organizer = await isOrganizerCaller(ctx);
+      await assertChatsOn(sponsor.name, organizer);
       await db.transaction(async (tx) => {
         await lockSponsor(tx, sponsor.id);
+        const [pref] = await tx
+          .select({ at: coffeeChatPrefs.shortlistSubmittedAt })
+          .from(coffeeChatPrefs)
+          .where(eq(coffeeChatPrefs.sponsorId, sponsor.id));
+        assertNotLocked(pref?.at, organizer, setupErrors.shortlistLocked);
         await tx
           .update(coffeeChatPrefs)
           .set({ shortlistSubmittedAt: null })

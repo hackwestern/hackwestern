@@ -10,6 +10,7 @@ import {
   FlowHeader,
 } from "~/components/sponsors/coffee-setup/shared";
 import { ShortlistFlow } from "~/components/sponsors/coffee-setup/shortlist-flow";
+import { AvailabilitySummary } from "~/components/sponsors/coffee-setup/submitted-summary";
 import { TeamStep } from "~/components/sponsors/coffee-setup/team-step";
 import {
   InvalidLink,
@@ -18,6 +19,8 @@ import {
 } from "~/components/sponsors/schedule-states";
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { sponsorSetupCopy as copy } from "~/content/sponsor-coffee-setup";
+import { NoChats } from "~/components/sponsors/coffee-setup/no-chats";
+import { showChats } from "~/lib/sponsor-chats";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
@@ -49,6 +52,10 @@ export default function SponsorCoffeeChatsPage() {
   const router = useRouter();
   const id = typeof router.query.uuid === "string" ? router.query.uuid : "";
   const validUuid = uuidRegex.test(id);
+  const portalInfo = api.sponsorPortal.getSponsorPortalInfo.useQuery(
+    { sponsor: id },
+    { enabled: validUuid, refetchOnWindowFocus: false, retry: false },
+  );
   const q = api.coffeeChatSetup.get.useQuery(
     { sponsor: id },
     {
@@ -96,6 +103,10 @@ export default function SponsorCoffeeChatsPage() {
     );
   if (!router.isReady || (validUuid && q.isLoading))
     return shell(<ScheduleSkeleton />);
+  // Not signed up for coffee chats (or opted out): a short note, no forms.
+  if (validUuid && !showChats(portalInfo.data)) {
+    return shell(<NoChats homeHref={`/sponsors/${id}`} />);
+  }
   if (!validUuid || q.error?.data?.code === "NOT_FOUND")
     return shell(<InvalidLink />);
   if (!q.data) return shell(<LoadError onRetry={() => void q.refetch()} />);
@@ -104,6 +115,13 @@ export default function SponsorCoffeeChatsPage() {
   const prefsHref = (step: number) => `${base}?flow=prefs&step=${step}`;
   const shortlistHref = (step: number) => `${base}?flow=shortlist&step=${step}`;
   const screen = screenOf(router.query);
+
+  // Submitted once (decisions 2026-11-20): after Send availability a
+  // sponsor sees a read-only summary, not the forms. Organizers on the
+  // portal link still get the forms.
+  if (screen.flow === "prefs" && data.submittedAt && !data.canEditSubmitted) {
+    return shell(<AvailabilitySummary data={data} homeHref={base} />);
+  }
 
   if (screen.flow === "prefs") {
     const f = copy.prefsFlow;
