@@ -24,7 +24,7 @@ const SECTIONS: { title: string; cards: Card[] }[] = [
       {
         href: "/internal/clock",
         title: "Clock",
-        description: "Start, pause and reset the shared 5-minute pitch clock.",
+        description: "The 10-minute round timer, read only. Rounds run from Judging controls.",
       },
       {
         href: "/judge",

@@ -386,6 +386,13 @@
       "when": 1795252758444,
       "tag": "0054_judging_rounds_visibility",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1795254781566,
+      "tag": "0055_drop_pitch_clock",
+      "breakpoints": true
     }
   ]
 }

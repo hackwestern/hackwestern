@@ -3,7 +3,6 @@ import { applicationRouter } from "./routers/application";
 import { authRouter } from "./routers/auth";
 import { judgingRouter } from "./routers/judging";
 import { checkInRouter } from "./routers/check-in";
-import { clockRouter } from "./routers/clock";
 import { cheatCheckRouter } from "./routers/cheat-check";
 import { preregistrationRouter } from "./routers/preregistration";
 import { scavengerHuntRouter } from "./routers/scavenger-hunt";
@@ -41,7 +40,6 @@ export const appRouter = createTRPCRouter({
   auth: authRouter,
   judging: judgingRouter,
   checkIn: checkInRouter,
-  clock: clockRouter,
   cheatCheck: cheatCheckRouter,
   preregistration: preregistrationRouter,
   review: reviewRouter,
