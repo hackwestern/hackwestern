@@ -37,7 +37,13 @@ export function ControlRoundGrid({
   const teamAt = new Map(
     (progress?.tables ?? []).map((t) => [t.number, t.team?.name ?? null]),
   );
-  const judges = (progress?.judges ?? []).filter((j) => j.stops.length > 0);
+  // A stop at an empty table isn't shown: that judge sits the round out.
+  const judges = (progress?.judges ?? [])
+    .map((j) => ({
+      ...j,
+      stops: j.stops.filter((s) => teamAt.get(s.tableNumber) != null),
+    }))
+    .filter((j) => j.stops.length > 0);
   const rounds = Math.max(
     0,
     ...judges.flatMap((j) => j.stops.map((s) => s.position)),
@@ -120,10 +126,10 @@ export function ControlRoundGrid({
                             {stop ? (
                               <div
                                 className={`flex min-h-[44px] flex-col rounded-lg border px-2 py-1 ${CELL[stop.status]}`}
-                                title={`${j.name}, round ${n}: table ${stop.tableNumber}${team ? ` · ${team}` : " · empty"}`}
+                                title={`${j.name}, round ${n}: table ${stop.tableNumber}${team ? ` · ${team}` : ""}`}
                               >
                                 <span className="line-clamp-2 text-xs font-semibold leading-tight">
-                                  {team ?? "Empty table"}
+                                  {team}
                                 </span>
                                 <span className="text-[11px] tabular-nums opacity-70">
                                   Table {stop.tableNumber}

@@ -159,8 +159,12 @@ export function JudgeRoster({
   const teamAtTable = new Map(
     (progress?.tables ?? []).map((t) => [t.number, t.team?.name ?? null]),
   );
+  // A stop at an empty table isn't shown: the judge has nothing to do there.
   const stopsByJudge = new Map(
-    (progress?.judges ?? []).map((j) => [j.id, j.stops]),
+    (progress?.judges ?? []).map((j) => [
+      j.id,
+      j.stops.filter((st) => teamAtTable.get(st.tableNumber) != null),
+    ]),
   );
 
   const [query, setQuery] = useState("");

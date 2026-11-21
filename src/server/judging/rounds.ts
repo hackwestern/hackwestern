@@ -13,7 +13,7 @@ import { TRPCError } from "@trpc/server";
 import { and, eq, ne, sql } from "drizzle-orm";
 
 import { db } from "~/server/db";
-import { judgingAssignments, judgingRound } from "~/server/db/schema";
+import { judgingAssignments, judgingRound, teams } from "~/server/db/schema";
 import { type Tx } from "~/server/judging/shared";
 
 export type RoundStatus = "idle" | "running" | "paused" | "closed";
@@ -27,7 +27,7 @@ export interface RoundState {
   enabled: boolean;
   /** The round in progress or last run (1-based); 0 before round 1. */
   round: number;
-  /** Rounds the plan needs: the most stops any judge has. */
+  /** Rounds the plan needs: the most stops any judge has at a table with a team. */
   totalRounds: number;
   status: RoundStatus;
   roundSeconds: number;
@@ -53,12 +53,20 @@ async function readRow(tx: Tx, lock?: "share" | "update"): Promise<Row> {
   return row!;
 }
 
+/**
+ * Rounds the plan needs: the most stops any judge has at a table with a team.
+ * A stop at an empty table isn't shown to the judge, so it isn't a round.
+ */
 async function totalRounds(tx: Tx): Promise<number> {
   const [row] = await tx
     .select({
       n: sql<number>`coalesce(max(${judgingAssignments.position}), 0)`,
     })
     .from(judgingAssignments)
+    .innerJoin(
+      teams,
+      eq(teams.judgingTableId, judgingAssignments.judgingTableId),
+    )
     .where(ne(judgingAssignments.status, "cancelled"));
   return Number(row?.n ?? 0);
 }
@@ -280,6 +288,10 @@ export async function getRoundOverview() {
       : await db
           .select({ status: judgingAssignments.status })
           .from(judgingAssignments)
+          .innerJoin(
+            teams,
+            eq(teams.judgingTableId, judgingAssignments.judgingTableId),
+          )
           .where(
             and(
               eq(judgingAssignments.position, state.round),

@@ -1860,6 +1860,28 @@ describe("timed rounds", () => {
     expect(state.roundSeconds).toBe(120);
   });
 
+  test("stops at empty tables aren't rounds", async () => {
+    // 4 tables but 2 teams: tables 3 and 4 are empty.
+    const room = await setupRoom({
+      tableCount: 4,
+      teamCount: 2,
+      judgeCount: 3,
+    });
+    const admin = room.org.caller.judging.admin;
+    await admin.setRoundConfig({ roundsEnabled: true });
+
+    const overview = await admin.getRound();
+    expect(overview.totalRounds).toBe(2);
+
+    await admin.startRound();
+    // Only stops with a team count towards "judges done".
+    expect((await admin.getRound()).stops.total).toBe(3);
+    await admin.endRound();
+    await admin.startRound();
+    await admin.endRound();
+    await expect(admin.startRound()).rejects.toThrow(/last round/i);
+  });
+
   test("with rounds off, judges can go in any order", async () => {
     const room = await setupRoom({ tableCount: 4, judgeCount: 3 });
     const [judge] = room.judges;
