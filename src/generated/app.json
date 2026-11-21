@@ -13754,6 +13754,9 @@
               }
             ]
           },
+          "noShow": {
+            "type": "boolean"
+          },
           "track": {
             "anyOf": [
               {
@@ -13785,6 +13788,7 @@
           "createdAt",
           "id",
           "track",
+          "noShow",
           "marksCount",
           "marksSum",
           "marksSquaredSum",
@@ -13964,6 +13968,9 @@
               "minLength": 1,
               "type": "string"
             },
+            "noShow": {
+              "type": "boolean"
+            },
             "track": {
               "anyOf": [
                 {
@@ -14037,6 +14044,9 @@
             "marksSum": {
               "type": "number"
             },
+            "noShow": {
+              "type": "boolean"
+            },
             "track": {
               "anyOf": [
                 {
@@ -14067,6 +14077,7 @@
             "createdAt",
             "id",
             "track",
+            "noShow",
             "marksCount",
             "marksSum",
             "marksSquaredSum",
@@ -14394,6 +14405,9 @@
                 }
               ]
             },
+            "noShow": {
+              "type": "boolean"
+            },
             "track": {
               "anyOf": [
                 {
@@ -14425,6 +14439,7 @@
             "id",
             "type",
             "track",
+            "noShow",
             "marksCount",
             "marksSum",
             "createdAt",
@@ -14661,6 +14676,9 @@
                 "name": {
                   "type": "string"
                 },
+                "noShow": {
+                  "type": "boolean"
+                },
                 "stops": {
                   "items": {
                     "properties": {
@@ -14705,6 +14723,7 @@
                 "name",
                 "email",
                 "type",
+                "noShow",
                 "marksCount",
                 "isFloater",
                 "current",
@@ -15521,6 +15540,72 @@
         "type": "object"
       },
       "path": "judging.admin.seatTeams",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.setJudgeNoShow",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "judgeId": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "noShow": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "judgeId",
+          "noShow"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "judgeId": {
+            "type": "string"
+          },
+          "noShow": {
+            "type": "boolean"
+          },
+          "planCleared": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "judgeId",
+          "noShow",
+          "planCleared"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.setJudgeNoShow",
       "source": "src/server/api/routers/judging.ts",
       "type": "mutation"
     },
@@ -16773,6 +16858,9 @@
         "anyOf": [
           {
             "properties": {
+              "absent": {
+                "type": "boolean"
+              },
               "judges": {
                 "properties": {
                   "done": {
@@ -16794,12 +16882,16 @@
             },
             "required": [
               "table",
+              "absent",
               "judges"
             ],
             "type": "object"
           },
           {
             "properties": {
+              "absent": {
+                "type": "boolean"
+              },
               "judges": {
                 "properties": {
                   "done": {
@@ -16841,6 +16933,7 @@
             },
             "required": [
               "table",
+              "absent",
               "judges"
             ],
             "type": "object"
