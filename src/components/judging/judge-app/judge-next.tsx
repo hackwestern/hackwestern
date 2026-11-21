@@ -218,7 +218,7 @@ export function JudgeNext({
             id="next-table-label"
             className="text-base font-medium text-dashboard-text-light"
           >
-            Next table
+            {round ? "Your table" : "Next table"}
           </span>
           {hint && (
             <span className="rounded-full bg-dashboard-bg-highlight px-3 py-1 text-sm font-semibold text-dashboard-text-active">
@@ -236,6 +236,13 @@ export function JudgeNext({
         </span>
       </section>
 
+      {/* Table, time, then the action: on a phone these stay above the fold. */}
+      {round && <RoundClock view={round} nextTable={upcoming?.table ?? null} />}
+
+      <DashboardButton type="button" onClick={onJudge} className={fullWidth}>
+        Judge this team
+      </DashboardButton>
+
       {table !== null && (
         <section aria-label="Floor map" className={`${card} p-3.5`}>
           <VenueMap
@@ -246,12 +253,6 @@ export function JudgeNext({
           />
         </section>
       )}
-
-      {round && <RoundClock view={round} />}
-
-      <DashboardButton type="button" onClick={onJudge} className={fullWidth}>
-        Judge this team
-      </DashboardButton>
     </>
   );
 }

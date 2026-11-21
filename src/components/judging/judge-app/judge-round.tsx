@@ -35,6 +35,9 @@ export function roundIsOpen(view: RoundView, now: number): boolean {
 /** Under this the timer turns to a warning colour. */
 const URGENT_MS = 60_000;
 
+/** The last 1:30 of a round: score and walk to the next table. */
+const BUFFER_MS = 90_000;
+
 /** Red for the last minute and when time is up. Calm purple otherwise. */
 const WARN = "#b42318";
 
@@ -43,7 +46,14 @@ const WARN = "#b42318";
  * Goes red for the last minute and when time is up, and dims while an
  * organizer has it paused. Fills whatever width it is given.
  */
-export function RoundClock({ view }: { view: RoundView }) {
+export function RoundClock({
+  view,
+  nextTable = null,
+}: {
+  view: RoundView;
+  /** This judge's table in the next round, named in the buffer message. */
+  nextTable?: number | null;
+}) {
   const now = useNow(500);
   const { state } = view;
   const left = roundLeftMs(view, now);
@@ -51,6 +61,7 @@ export function RoundClock({ view }: { view: RoundView }) {
   const paused = state.status === "paused";
   const over = !open && !paused;
   const warn = over || (open && !paused && left <= URGENT_MS);
+  const buffer = open && !paused && left <= BUFFER_MS;
   const total = Math.max(1, state.roundSeconds * 1000);
   const pct = over ? 0 : Math.min(100, (left / total) * 100);
 
@@ -64,9 +75,25 @@ export function RoundClock({ view }: { view: RoundView }) {
           Round {state.round} of {state.totalRounds}
         </span>
         <span className="text-sm font-semibold text-dashboard-text-light">
-          {paused ? "Paused" : over ? "Time's up" : "Time left"}
+          {paused
+            ? "Paused"
+            : over
+              ? "Time's up"
+              : buffer
+                ? "Buffer"
+                : "Time left"}
         </span>
       </div>
+      {buffer && (
+        <p
+          role="status"
+          className="rounded-dashboard-sm bg-dashboard-bg-highlight px-4 py-3 text-center text-base font-semibold text-dashboard-text-active"
+        >
+          {nextTable !== null
+            ? `Buffer: submit your score and move to table ${nextTable}.`
+            : "Buffer: submit your score. That was your last table."}
+        </p>
+      )}
       <span
         role="timer"
         style={warn ? { color: WARN } : undefined}
