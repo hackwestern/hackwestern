@@ -52,9 +52,26 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
     super_likes: number | string;
     normalized_score: number | string | null;
     adventure_score: number | string | null;
+    raw_total: number | string | null;
+    adventurous: number | string | null;
+    other_four: number | string | null;
+    q: number | string | null;
   }>(
     await db.execute(
-      sql`SELECT team_id, super_likes, normalized_score, adventure_score FROM judging_team_scores`,
+      sql`SELECT s.team_id, s.super_likes, s.normalized_score, s.adventure_score, s.raw_total, nt.q,
+            -- Normalized once judging_normalize() has run; raw averages before.
+            coalesce(na.final_score, s.avg_adventurous) AS adventurous,
+            coalesce(no.final_score,
+              (coalesce(s.avg_impact, 0) + coalesce(s.avg_creativity, 0)
+                + coalesce(s.avg_technical, 0) + coalesce(s.avg_design, 0)) / 4.0
+            ) AS other_four
+          FROM judging_team_scores s
+          LEFT JOIN judging_normalized_team nt
+            ON nt.team_id = s.team_id AND nt.series = 'total'
+          LEFT JOIN judging_normalized_team na
+            ON na.team_id = s.team_id AND na.series = 'adventurous'
+          LEFT JOIN judging_normalized_team no
+            ON no.team_id = s.team_id AND no.series = 'other'`,
     ),
   );
   const num = (v: number | string | null) => (v === null ? null : Number(v));
@@ -70,6 +87,10 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
       superLikes: Number(scores.get(t.id)?.super_likes ?? 0),
       normalized: num(scores.get(t.id)?.normalized_score ?? null),
       adventure: num(scores.get(t.id)?.adventure_score ?? null),
+      normalizedQ: num(scores.get(t.id)?.q ?? null),
+      rawTotal: num(scores.get(t.id)?.raw_total ?? null),
+      adventurous: num(scores.get(t.id)?.adventurous ?? null),
+      otherFour: num(scores.get(t.id)?.other_four ?? null),
     })),
     marks.map((m) => ({
       teamId: m.teamId,

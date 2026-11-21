@@ -16,6 +16,24 @@ export interface TeamInfo {
   normalized?: number | null;
   /** Adventure score (0-10), null until normalized. */
   adventure?: number | null;
+  /**
+   * The normalization's unclipped team estimate (judging_normalized_team.q,
+   * "total" series). Orders teams that all clip to a normalized 10.
+   */
+  normalizedQ?: number | null;
+  /** Sum of the five per-criterion averages / 5 (0-10), every round. */
+  rawTotal?: number | null;
+  /**
+   * The adventurous rating (0-10): normalized (judging_normalized_team,
+   * "adventurous" series) once normalization has run, the raw average of
+   * adventurous_rating (every round) before. Null without one.
+   */
+  adventurous?: number | null;
+  /**
+   * The other four ratings as one 0-10 score: normalized ("other" series)
+   * once normalization has run, the raw mean of their averages before.
+   */
+  otherFour?: number | null;
 }
 
 /** One judge's mark on one team, as read from team_mark. */

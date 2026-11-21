@@ -24,7 +24,7 @@ export function ControlResultsSheet() {
       setUrl(r.url);
       setStatus({
         tone: "ok",
-        text: `Wrote the top ${r.teams} of ${r.totalTeams} teams and their ${r.marks} marks.${r.scoresKept > 0 ? ` Kept ${r.scoresKept} completeness score${r.scoresKept === 1 ? "" : "s"}.` : ""}`,
+        text: `Wrote ${r.teams} of ${r.totalTeams} teams (the top 20 overall and the top 20 by adventure) and their ${r.marks} marks.${r.scoresKept > 0 ? ` Kept ${r.scoresKept} completeness score${r.scoresKept === 1 ? "" : "s"}.` : ""}`,
       });
     },
     onError: (e) =>
@@ -40,10 +40,10 @@ export function ControlResultsSheet() {
         Results spreadsheet
       </h2>
       <p className={`m-0 text-sm ${MUTED}`}>
-        When judging is over, write the top 20 teams by judge average, with
-        their marks, to the Google Sheet. Then type completeness scores in the
-        Results tab. Press it again to refresh; completeness scores already
-        typed are kept.
+        When judging is over, write the top 20 teams overall and the top 20 by
+        adventure, with their marks, to the Google Sheet. Then type completeness
+        scores in the Results tab. Press it again to refresh; completeness
+        scores already typed are kept.
       </p>
       <div className="flex flex-wrap items-center gap-2.5">
         <button

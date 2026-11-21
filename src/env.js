@@ -96,6 +96,13 @@ export const env = createEnv({
     // tabs, rewritten on every mark). Share it with SPONSOR_SHEETS_CLIENT_EMAIL.
     // Unset = no sync.
     JUDGING_RESULTS_SHEET: z.string().optional(),
+    // "1" lets a non-production server write the judging results sheet only
+    // (other sheets still follow SHEET_WRITES). SHEET_WRITES=0 still wins.
+    JUDGING_RESULTS_SHEET_WRITES: z.string().optional(),
+    // The results sheet's own service account; falls back to
+    // SPONSOR_SHEETS_* when unset (results-sheet-client.ts).
+    JUDGING_RESULTS_CLIENT_EMAIL: z.string().optional(),
+    JUDGING_RESULTS_PRIVATE_KEY: z.string().optional(),
     // Run-of-show sheet (sponsor schedule). Its own service account so it can
     // differ from the sponsor judging one; falls back to SPONSOR_SHEETS_*.
     RUN_OF_SHOW_SHEET: z.string().optional(),
@@ -245,6 +252,9 @@ export const env = createEnv({
     SPONSOR_SHEETS_CLIENT_EMAIL: process.env.SPONSOR_SHEETS_CLIENT_EMAIL,
     SPONSOR_SHEETS_PRIVATE_KEY: process.env.SPONSOR_SHEETS_PRIVATE_KEY,
     JUDGING_RESULTS_SHEET: process.env.JUDGING_RESULTS_SHEET,
+    JUDGING_RESULTS_SHEET_WRITES: process.env.JUDGING_RESULTS_SHEET_WRITES,
+    JUDGING_RESULTS_CLIENT_EMAIL: process.env.JUDGING_RESULTS_CLIENT_EMAIL,
+    JUDGING_RESULTS_PRIVATE_KEY: process.env.JUDGING_RESULTS_PRIVATE_KEY,
     RUN_OF_SHOW_SHEET: process.env.RUN_OF_SHOW_SHEET,
     RUN_OF_SHOW_SHEETS_CLIENT_EMAIL:
       process.env.RUN_OF_SHOW_SHEETS_CLIENT_EMAIL,

