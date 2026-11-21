@@ -1846,15 +1846,12 @@
           "primaryKey": false,
           "notNull": true
         },
-<<<<<<< HEAD
-=======
         "scanner_id": {
           "name": "scanner_id",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
         },
->>>>>>> main
         "created_at": {
           "name": "created_at",
           "type": "timestamp (3)",
@@ -1906,8 +1903,6 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
-<<<<<<< HEAD
-=======
         },
         "scavenger_hunt_redemption_scanner_id_user_id_fk": {
           "name": "scavenger_hunt_redemption_scanner_id_user_id_fk",
@@ -1921,7 +1916,6 @@
           ],
           "onDelete": "set null",
           "onUpdate": "no action"
->>>>>>> main
         }
       },
       "compositePrimaryKeys": {},
@@ -2603,58 +2597,12 @@
           "primaryKey": false,
           "notNull": true
         },
-<<<<<<< HEAD
-        "impact_rating": {
-          "name": "impact_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "creativity_rating": {
-          "name": "creativity_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "technical_rating": {
-          "name": "technical_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "design_rating": {
-          "name": "design_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "adventurous_rating": {
-          "name": "adventurous_rating",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "super_like": {
-          "name": "super_like",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-=======
         "score_breakdown": {
           "name": "score_breakdown",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         },
->>>>>>> main
         "round_type": {
           "name": "round_type",
           "type": "round_type",
@@ -2886,15 +2834,12 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": false
-<<<<<<< HEAD
-=======
         },
         "import_flags": {
           "name": "import_flags",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
->>>>>>> main
         }
       },
       "indexes": {
