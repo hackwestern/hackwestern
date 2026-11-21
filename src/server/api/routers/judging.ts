@@ -31,6 +31,7 @@ import {
   startStopSchema,
   submitStopSchema,
   swapTeamsSchema,
+  undoAbsentSchema,
 } from "~/schemas/judging";
 import {
   endRound,
@@ -57,6 +58,7 @@ import {
   setJudgeNoShow,
   startStop,
   submitStop,
+  undoAbsent,
 } from "~/server/judging/assignments";
 import {
   getAllJudges,
@@ -557,6 +559,16 @@ export const judgingRouter = createTRPCRouter({
           await maybeTriggerSweepOnJudgingComplete();
           return row;
         }, "Failed to mark team absent");
+      }),
+
+    /** Undo an absent report: the table's absent stops reopen. */
+    undoAbsent: protectedOrganizerProcedure
+      .input(undoAbsentSchema)
+      .mutation(async ({ input }) => {
+        return withErrorHandling(
+          () => undoAbsent(input.tableId),
+          "Failed to undo the absent report",
+        );
       }),
 
     getLatestRanking: protectedOrganizerProcedure.query(async () => {

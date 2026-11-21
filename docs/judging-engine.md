@@ -168,6 +168,7 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
   progress) becomes `team_absent` at once, which counts as closed.
 - No endpoint gives an absent table a live stop again: top-ups are refused,
   hand-offs leave its stops behind, and deleting a mark doesn't reopen one.
+  The one exception is an organizer's **Undo absent** (see Day-of fixes).
 - Disqualified teams are left out of the team results page and the ranking.
   Their marks also don't count toward judge averages in the ranking.
 - The control room's round count leaves out absent tables, so a round can
@@ -197,7 +198,16 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
   another judge in one action. Refused if the receiving judge already has one
   of those tables or has already scored a team seated at one.
 - **Add a judge to a table:** top-up when a table needs another score.
+- Hand-offs and top-ups go **after the receiving judge's last stop** (the next
+  free `position`). With timed rounds a stop at position N opens once round N
+  starts, which can add a round at the end. With late scoring (stops at or
+  below the current round can be scored), a stop that lands at or below the
+  current round opens at once, e.g. a floater's first stops.
 - **Cancel a stop**, or **mark a team absent**.
+- **Undo absent:** every `team_absent` stop at the table goes back to
+  `assigned` (start and finish times cleared), with the judges who had them, so
+  the team is judged and ranked again. Stops that were `done` stay done. If a
+  judge who had one of those stops has left, cancel it and add someone else.
 - **Mark a judge as a no-show** (Judges and Teams page): auto-assign skips
   them, and hand-offs and top-ups to them are refused. Before judging starts,
   marking a judge who already has stops clears the plan (run auto-assign

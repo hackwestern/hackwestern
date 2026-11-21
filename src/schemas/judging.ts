@@ -113,6 +113,8 @@ export const handOffJudgeSchema = z
 
 export const addJudgeToTableSchema = z.object({ judgeId, tableId });
 
+export const undoAbsentSchema = z.object({ tableId });
+
 export const setJudgeNoShowSchema = z.object({
   judgeId,
   noShow: z.boolean(),

@@ -1115,6 +1115,45 @@ describe("handOffJudge / addJudgeToTable / cancel / absent", () => {
       "done",
     ]);
   });
+
+  test("undoAbsent reopens every absent stop at the table", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const stop = await firstStop(js[0]!.caller);
+    await js[0]!.caller.judging.me.startStop({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? "none",
+    });
+    await org.caller.judging.admin.markAbsent({ assignmentId: stop.id });
+
+    const result = await org.caller.judging.admin.undoAbsent({
+      tableId: stop.table.id,
+    });
+    const here = await db.query.judgingAssignments.findMany({
+      where: eq(judgingAssignments.judgingTableId, stop.table.id),
+    });
+    expect(here.length).toBeGreaterThan(1);
+    expect(result.reopened).toBe(here.length);
+    for (const a of here) {
+      expect(a).toMatchObject({
+        status: "assigned",
+        startedAt: null,
+        completedAt: null,
+      });
+    }
+
+    // The team can be scored again, and there's nothing left to undo.
+    await js[0]!.caller.judging.me.submitStop({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? "none",
+      score: 6,
+    });
+    await expect(
+      org.caller.judging.admin.undoAbsent({ tableId: stop.table.id }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  });
 });
 
 /* ---------- current stop, final absence, no-show ---------- */

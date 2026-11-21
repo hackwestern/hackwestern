@@ -606,6 +606,47 @@ export async function markAbsent(
 }
 
 /**
+ * Organizer undo of an absent report: every `team_absent` stop at the table
+ * goes back to `assigned`, with the judges who had them, so the team can be
+ * judged after all. The one exception to "absence is final".
+ */
+export async function undoAbsent(tableId: number) {
+  return db.transaction(async (tx) => {
+    await lockPlanShared(tx);
+    // Lock every live stop at the table in id order (step 2), as markAbsent
+    // does, so an undo and an absent report at the same table queue up.
+    await tx
+      .select({ id: judgingAssignments.id })
+      .from(judgingAssignments)
+      .where(
+        and(
+          eq(judgingAssignments.judgingTableId, tableId),
+          ne(judgingAssignments.status, "cancelled"),
+        ),
+      )
+      .orderBy(asc(judgingAssignments.id))
+      .for("update");
+    const reopened = await tx
+      .update(judgingAssignments)
+      .set({ status: "assigned", startedAt: null, completedAt: null })
+      .where(
+        and(
+          eq(judgingAssignments.judgingTableId, tableId),
+          eq(judgingAssignments.status, "team_absent"),
+        ),
+      )
+      .returning({ id: judgingAssignments.id });
+    if (reopened.length === 0) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "That table isn't marked absent.",
+      });
+    }
+    return { reopened: reopened.length };
+  });
+}
+
+/**
  * A judge only works on their current stop: the one in progress, else their
  * first assigned stop in walking order. An open stop that isn't the current
  * one is refused; a closed stop is left to `transition`, which says why.
