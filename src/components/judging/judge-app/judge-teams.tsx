@@ -39,6 +39,8 @@ export interface UpcomingTeam {
   round: number | null;
   /** The team was marked absent: it can't be judged. */
   absent: boolean;
+  /** Its round ended before it was scored: it can still be scored late. */
+  late: boolean;
 }
 
 interface JudgeTeamsProps {
@@ -100,9 +102,13 @@ export function JudgeTeams({
                     : "No members listed"}
                 </span>
               </span>
-              {(u.absent || u.round !== null) && (
+              {(u.absent || u.late || u.round !== null) && (
                 <span className="shrink-0 text-xs font-semibold text-dashboard-text-light">
-                  {u.absent ? "Absent" : `Round ${u.round}`}
+                  {u.absent
+                    ? "Absent"
+                    : u.late
+                      ? "Time ran out"
+                      : `Round ${u.round}`}
                 </span>
               )}
             </li>

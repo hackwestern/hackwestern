@@ -41,7 +41,7 @@ export function ControlRounds({
   // null follows the live round.
   const [picked, setPicked] = useState<number | "all" | null>(null);
   const chosen = picked ?? currentRound;
-  const round = chosen === "all" ? "all" : Math.min(chosen, total);
+  const round = chosen === "all" ? "all" : Math.max(1, Math.min(chosen, total));
 
   // Timed rounds: which stop (round) a judge had at each table.
   const stopRound = useMemo(() => {

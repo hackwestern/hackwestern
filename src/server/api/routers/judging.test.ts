@@ -2087,9 +2087,8 @@ describe("timed rounds", () => {
 
     const seen = await judge.caller.judging.me.getMyStops();
     expect(seen.round).toMatchObject({ round: 1, status: "closed" });
-    await expect(score(judge, await stopAt(judge, 1))).rejects.toThrow(
-      /time's up/i,
-    );
+    // The judge can still finish the team late.
+    await expect(score(judge, await stopAt(judge, 1))).resolves.toBeDefined();
 
     const next = await room.org.caller.judging.admin.startRound();
     expect(next).toMatchObject({ round: 2, status: "running" });
@@ -2112,7 +2111,7 @@ describe("timed rounds", () => {
     expect(resumed.endsAt).not.toBeNull();
   });
 
-  test("ending a round blocks scores; rounds can't overlap or pass the last", async () => {
+  test("ending a round still allows late scores; rounds can't overlap or pass the last", async () => {
     const room = await roundsRoom();
     const [judge] = room.judges;
     assertDefined(judge, "judge");
@@ -2121,9 +2120,7 @@ describe("timed rounds", () => {
     await expect(admin.startRound()).rejects.toThrow(/still open/i);
 
     await admin.endRound();
-    await expect(score(judge, await stopAt(judge, 1))).rejects.toThrow(
-      /time's up/i,
-    );
+    await expect(score(judge, await stopAt(judge, 1))).resolves.toBeDefined();
 
     for (const n of [2, 3, 4]) {
       expect((await admin.startRound()).round).toBe(n);
@@ -2179,6 +2176,10 @@ describe("timed rounds", () => {
         teamId: second.team?.id ?? "none",
       }),
     ).resolves.toBeDefined();
+
+    // The missed team can still be scored late, during a later round.
+    await expect(score(judge, await stopAt(judge, 1))).resolves.toBeDefined();
+    expect((await stopAt(judge, 1)).status).toBe("done");
   });
 
   test("ending a round releases judges still mid-score", async () => {

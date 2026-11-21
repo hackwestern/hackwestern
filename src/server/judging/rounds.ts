@@ -180,9 +180,10 @@ const precondition = (message: string) =>
   new TRPCError({ code: "PRECONDITION_FAILED", message });
 
 /**
- * Judge side: may a stop at `position` be started or scored right now? Takes a
- * share lock on the round row, so an organizer ending the round either waits
- * for this to finish or makes it refuse.
+ * Judge side: may a stop at `position` be started or scored right now? Any
+ * stop whose round has started can be: a judge who runs out of time (or missed
+ * a round) can still finish that team late. Takes a share lock on the round
+ * row, so it can't race an organizer starting the next round.
  */
 export async function assertStopOpen(tx: Tx, position: number) {
   const row = await readRow(tx, "share");
@@ -196,16 +197,6 @@ export async function assertStopOpen(tx: Tx, position: number) {
   if (position > state.round) {
     throw precondition(
       `That table is for round ${position}. Wait for it to start.`,
-    );
-  }
-  if (position < state.round) {
-    throw precondition(
-      `That table was for round ${position}, which has ended. Ask an organizer.`,
-    );
-  }
-  if (state.status === "closed") {
-    throw precondition(
-      `Time's up for round ${state.round}. Wait for the next round to start.`,
     );
   }
 }

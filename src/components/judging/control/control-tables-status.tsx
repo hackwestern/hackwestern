@@ -612,13 +612,16 @@ export function ControlTablesStatus({
       ) : (
         <>
           <ul className="m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-sm">
-            {(Object.keys(KINDS) as Kind[]).map((k) => (
-              <li key={k} className="flex items-center gap-1.5">
-                <span className={`size-2.5 rounded-full ${KINDS[k].dot}`} />
-                {styleOf(k, round).label}
-                <span className={`tabular-nums ${MUTED}`}>{counts[k]}</span>
-              </li>
-            ))}
+            {(Object.keys(KINDS) as Kind[])
+              // "No judge this round" only means something while a round is on.
+              .filter((k) => k !== "free" || round !== null)
+              .map((k) => (
+                <li key={k} className="flex items-center gap-1.5">
+                  <span className={`size-2.5 rounded-full ${KINDS[k].dot}`} />
+                  {styleOf(k, round).label}
+                  <span className={`tabular-nums ${MUTED}`}>{counts[k]}</span>
+                </li>
+              ))}
           </ul>
           <div
             className="grid gap-1.5"

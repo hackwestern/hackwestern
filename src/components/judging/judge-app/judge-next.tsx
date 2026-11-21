@@ -10,6 +10,7 @@ import {
 import {
   card,
   fullWidth,
+  infoBanner,
   warningBanner,
 } from "~/components/judging/shared/judge-ui";
 
@@ -28,6 +29,8 @@ interface JudgeNextProps {
   teamName: string | null;
   /** Its table, or null when the team isn't seated yet. */
   table: number | null;
+  /** Its round already ended: the judge is finishing it late. */
+  late?: boolean;
   /** The other tables in this judge's queue, marked on the map. */
   tables: number[];
   /** The table the judge just finished, where the walk hint starts. Null for their first team. */
@@ -65,6 +68,7 @@ export function JudgeNext({
   phase,
   teamName,
   table,
+  late = false,
   tables,
   fromTable,
   seen,
@@ -249,7 +253,13 @@ export function JudgeNext({
       </section>
 
       {/* Table, time, then the action: on a phone these stay above the fold. */}
-      {round && <RoundClock view={round} nextTable={upcoming?.table ?? null} />}
+      {late ? (
+        <p role="status" className={infoBanner}>
+          Time ran out for this team. You can still score it now.
+        </p>
+      ) : (
+        round && <RoundClock view={round} nextTable={upcoming?.table ?? null} />
+      )}
 
       <DashboardButton type="button" onClick={onJudge} className={fullWidth}>
         Judge this team

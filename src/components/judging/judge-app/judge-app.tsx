@@ -233,8 +233,8 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     : null;
   const gated = roundView?.state.enabled === true;
   const roundOpen = roundView ? roundIsOpen(roundView, Date.now()) : false;
-  // A stop whose round has passed without a score is missed: it can't be done
-  // any more, so it doesn't hold the judge back from the next round or re-scoring.
+  // A stop whose round has passed without a score is missed. It doesn't hold the
+  // judge back from the next round, but it can still be scored late.
   const pendingStops = !gated
     ? openStops
     : openStops.filter(
@@ -242,11 +242,20 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
           s.position > (roundView?.state.round ?? 0) ||
           (s.position === roundView?.state.round && roundOpen),
       );
+  const missedStops = gated
+    ? openStops
+        .filter((s) => !pendingStops.includes(s))
+        .sort((a, b) => a.position - b.position)
+    : [];
+  // The open round's stop comes first, then any missed ones to finish late.
   const activeStops = !gated
     ? pendingStops
-    : roundOpen
-      ? pendingStops.filter((s) => s.position === roundView?.state.round)
-      : [];
+    : [
+        ...(roundOpen
+          ? pendingStops.filter((s) => s.position === roundView?.state.round)
+          : []),
+        ...missedStops,
+      ];
   const heldStop =
     activeStops.find((s) => s.status === "in_progress") ??
     activeStops[0] ??
@@ -265,7 +274,11 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   const absentStops = (stopsQuery.data?.stops ?? []).filter(
     (s) => s.status === "team_absent",
   );
-  const upcomingTeams: UpcomingTeam[] = [...pendingStops, ...absentStops]
+  const upcomingTeams: UpcomingTeam[] = [
+    ...pendingStops,
+    ...missedStops,
+    ...absentStops,
+  ]
     .sort((a, b) => a.position - b.position)
     .map((s) => ({
       stopId: s.id,
@@ -274,6 +287,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       members: (s.team && membersByTeam.get(s.team.id)) ?? [],
       round: gated ? s.position : null,
       absent: s.status === "team_absent",
+      late: missedStops.includes(s),
     }));
   // This judge's stop in the open round, once it's closed: scored or absent.
   const roundStop = gated
@@ -291,6 +305,8 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     if (s.team) tableByTeam[s.team.id] = s.table.number;
   }
   const held = heldStop?.team ?? null;
+  // The judge is finishing a team whose round already ended.
+  const heldLate = heldStop !== null && missedStops.includes(heldStop);
   const heldTable = held ? (tableByTeam[held.id] ?? null) : null;
 
   const results: JudgedTeam[] = (marksQuery.data ?? [])
@@ -645,6 +661,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         phase={phase}
         teamName={held?.name ?? null}
         table={heldTable}
+        late={heldLate}
         judged={results.length}
         busy={findingNext}
         error={nextError ?? finishError}

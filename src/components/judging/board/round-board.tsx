@@ -129,10 +129,25 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
     () => (board ? buildRows(board.stops, view) : []),
     [board, view],
   );
-  const q = query.trim().toLowerCase();
-  const shown = q ? rows.filter((r) => r.search.includes(q)) : rows;
   const round = board?.round;
   const current = round?.enabled && round.round > 0 ? round.round : null;
+  // A hacker's own team: its row goes first, and a card says where judging is.
+  const mine = teamQ.data;
+  const myKey = mine?.table ? `t${mine.table.number}` : null;
+  const myStop =
+    mine?.table && current !== null
+      ? board?.stops.find(
+          (s) => s.table === mine.table?.number && s.round === current,
+        )
+      : undefined;
+  const q = query.trim().toLowerCase();
+  const matching = q ? rows.filter((r) => r.search.includes(q)) : rows;
+  const shown = myKey
+    ? [
+        ...matching.filter((r) => r.key === myKey),
+        ...matching.filter((r) => r.key !== myKey),
+      ]
+    : matching;
 
   if (accessQ.data && !open) {
     return (
@@ -166,6 +181,31 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
           </p>
         )}
       </header>
+
+      {mine?.table && !mine.absent && (
+        <section
+          aria-label="Your team"
+          className={`${card} flex flex-col gap-1 p-4`}
+        >
+          <span className="text-sm font-semibold text-dashboard-text-light">
+            Your team · Table {mine.table.number}
+          </span>
+          <span className="text-xl font-bold text-dashboard-text-heavy">
+            {current === null
+              ? "Judging hasn't started yet."
+              : myStop?.status === "now"
+                ? `A judge is at your table for round ${current}.`
+                : myStop?.status === "done"
+                  ? `Your round ${current} judge is done.`
+                  : myStop?.status === "upcoming"
+                    ? `A judge comes to your table in round ${current}.`
+                    : `No judge at your table in round ${current}.`}
+          </span>
+          <span className="text-sm font-medium text-dashboard-text-light">
+            {mine.judges.done} of {mine.judges.total} judges done
+          </span>
+        </section>
+      )}
 
       {teamQ.data?.absent && (
         <p role="status" className={warningBanner}>
@@ -284,7 +324,7 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
                       </span>
                       {r.sub && (
                         <span className="text-xs font-medium text-dashboard-text-light">
-                          {r.sub}
+                          {r.key === myKey ? `${r.sub} · Your team` : r.sub}
                         </span>
                       )}
                     </th>

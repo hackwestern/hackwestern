@@ -96,7 +96,8 @@ export function ControlProgress({
   const holders = new Set(
     queue.teams.flatMap((t) => (t.currentJudgeId ? [t.currentJudgeId] : [])),
   );
-  const organizers = judges;
+  // Judges marked no-show aren't judging, so they aren't counted.
+  const organizers = judges.filter((j) => !j.noShow);
   const busy = organizers.filter((j) => holders.has(j.id)).length;
 
   let longest: { ms: number; judge: string; team: string } | null = null;
@@ -157,6 +158,8 @@ export function ControlProgress({
           {timed.round === 0 && timed.totalRounds > 0 && (
             <span className={`text-[13px] ${MUTED}`}>
               {timed.totalRounds} rounds planned. Start round 1 below.
+              {queue.regularMarks > 0 &&
+                ` Rounds were reset: the ${queue.regularMarks} scores already given are kept.`}
             </span>
           )}
         </Tile>
@@ -199,7 +202,14 @@ export function ControlProgress({
         value={`${busy} ${roundsOn ? "scoring" : "judging"} · ${
           organizers.length - busy
         } ${roundsOn ? "waiting" : "free"}`}
-      />
+      >
+        <span className={`text-[13px] ${MUTED}`}>
+          {organizers.length} judges.{" "}
+          {roundsOn
+            ? "Scoring = has a team open on their phone."
+            : "Judging = holding a team."}
+        </span>
+      </Tile>
       <Tile
         label="Longest hold"
         value={longest ? formatHold(longest.ms) : "—"}
