@@ -370,7 +370,7 @@ export function boardCount(
     ).length;
   }
   return sponsors.filter((s) => {
-    if (s.digital || s.noChats || !s.chats) return false;
+    if (s.digital || s.noChats === true || !s.chats) return false;
     if (!s.chats.prefsSubmittedAt) return true;
     if (day === "Friday")
       return s.chats.repsChatting > 0 && s.chats.invites === 0;
