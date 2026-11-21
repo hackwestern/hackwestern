@@ -2016,6 +2016,25 @@ describe("timed rounds", () => {
     });
   });
 
+  test("the projector clock reads the round timer without logging in", async () => {
+    const room = await roundsRoom();
+    const admin = room.org.caller.judging.admin;
+    const anon = createCaller(createInnerTRPCContext({ session: null }));
+
+    expect(await anon.judging.board.getClock()).toMatchObject({
+      round: 0,
+      status: "idle",
+    });
+    await admin.startRound();
+    const running = await anon.judging.board.getClock();
+    expect(running).toMatchObject({ round: 1, status: "running" });
+    expect(running.remainingMs).toBeGreaterThan(0);
+    // Reading it never changes anything.
+    expect((await admin.getRound()).status).toBe("running");
+    await admin.pauseRound();
+    expect((await anon.judging.board.getClock()).status).toBe("paused");
+  });
+
   test("stops at empty tables aren't rounds", async () => {
     // 4 tables but 2 teams: tables 3 and 4 are empty.
     const room = await setupRoom({

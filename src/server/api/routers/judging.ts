@@ -7,6 +7,7 @@ import {
   protectedJudgeProcedure,
   protectedOrganizerProcedure,
   protectedProcedure,
+  publicProcedure,
 } from "~/server/api/trpc";
 import { db, extractRows } from "~/server/db";
 import { judgingAssignments, judges, users } from "~/server/db/schema";
@@ -34,6 +35,7 @@ import {
   endRound,
   getBoardVisibility,
   getRoundOverview,
+  getRoundState,
   setBoardVisibility,
   pauseRound,
   resetRounds,
@@ -320,6 +322,14 @@ export const judgingRouter = createTRPCRouter({
    * and for hackers only while an organizer has it switched on.
    */
   board: createTRPCRouter({
+    /**
+     * The round timer, for the projector clock at /clock. Public: it's only
+     * the round number and the time left, read without changing anything.
+     */
+    getClock: publicProcedure.query(() =>
+      withErrorHandling(() => getRoundState(), "Failed to load the clock"),
+    ),
+
     /** Is the rounds link and page open to me? Organizers: always. */
     getAccess: protectedProcedure.query(({ ctx }) =>
       withErrorHandling(async () => {
