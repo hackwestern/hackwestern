@@ -53,12 +53,6 @@ export default function JudgingControlRoom() {
         actions={
           <>
             <Link
-              href="/internal/roster"
-              className="inline-flex min-h-11 items-center rounded-[10px] border border-[#5b3fa0] px-4 text-[15px] font-bold text-[#5b3fa0] no-underline hover:bg-white"
-            >
-              Judges &amp; teams
-            </Link>
-            <Link
               href="/judge"
               className="inline-flex min-h-11 items-center rounded-[10px] bg-[#5b3fa0] px-4 text-[15px] font-bold text-white no-underline hover:bg-[#3f2a75]"
             >
@@ -91,7 +85,11 @@ export default function JudgingControlRoom() {
           now={now}
         />
         <ControlRoundGrid progress={progressQ.data} round={roundQ.data} />
-        <ControlRounds queue={queue} />
+        <ControlRounds
+          queue={queue}
+          progress={progressQ.data}
+          timed={roundQ.data}
+        />
       </InternalPage>
     </>
   );
