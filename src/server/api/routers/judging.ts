@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { z } from "zod";
 import { and, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 
 import {
@@ -47,6 +48,8 @@ import {
   getSubmittedMarks,
   getTeamJudging,
 } from "~/server/judging/reads";
+import { loadTeamResults } from "~/server/api/utils/team-results-data";
+import { getDevpostPreview } from "~/server/judging/devpost-preview";
 import {
   moveTeam,
   seatTeams,
@@ -409,6 +412,15 @@ export const judgingRouter = createTRPCRouter({
     getLatestRanking: protectedOrganizerProcedure.query(async () => {
       return withErrorHandling(() => getRanking(), "Failed to get ranking");
     }),
+
+    /** Every team with its marks, oldest first, for the per-round view. */
+    getTeamResults: protectedOrganizerProcedure.query(() =>
+      withErrorHandling(() => loadTeamResults(), "Failed to load results"),
+    ),
+
+    getDevpostPreview: protectedOrganizerProcedure
+      .input(z.object({ teamId: z.string() }))
+      .query(({ input }) => getDevpostPreview(input.teamId)),
 
     getAllJudges: protectedOrganizerProcedure.query(async () => {
       return withErrorHandling(() => getAllJudges(), "Failed to get judges");

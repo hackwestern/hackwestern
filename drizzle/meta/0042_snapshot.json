@@ -1,5 +1,5 @@
 {
-  "id": "0051c70b-6466-446e-be6c-0dffc9d69110",
+  "id": "21930618-7ed2-4662-a768-42ae2e4f3c17",
   "prevId": "4eb146ae-a9cb-4504-aae1-389e96453b16",
   "version": "7",
   "dialect": "postgresql",
@@ -1846,6 +1846,15 @@
           "primaryKey": false,
           "notNull": true
         },
+<<<<<<< HEAD
+=======
+        "scanner_id": {
+          "name": "scanner_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+>>>>>>> main
         "created_at": {
           "name": "created_at",
           "type": "timestamp (3)",
@@ -1897,6 +1906,22 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
+<<<<<<< HEAD
+=======
+        },
+        "scavenger_hunt_redemption_scanner_id_user_id_fk": {
+          "name": "scavenger_hunt_redemption_scanner_id_user_id_fk",
+          "tableFrom": "scavenger_hunt_redemption",
+          "tableTo": "user",
+          "columnsFrom": [
+            "scanner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+>>>>>>> main
         }
       },
       "compositePrimaryKeys": {},
@@ -2578,6 +2603,7 @@
           "primaryKey": false,
           "notNull": true
         },
+<<<<<<< HEAD
         "impact_rating": {
           "name": "impact_rating",
           "type": "real",
@@ -2621,6 +2647,8 @@
           "notNull": true,
           "default": false
         },
+=======
+>>>>>>> main
         "score_breakdown": {
           "name": "score_breakdown",
           "type": "jsonb",

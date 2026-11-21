@@ -1,6 +1,6 @@
 {
-  "id": "cbd69950-5f85-45bc-a213-39e5dd388a48",
-  "prevId": "0051c70b-6466-446e-be6c-0dffc9d69110",
+  "id": "2cd4aae1-6dd6-4893-a06b-e167539b8813",
+  "prevId": "21930618-7ed2-4662-a768-42ae2e4f3c17",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1846,6 +1846,15 @@
           "primaryKey": false,
           "notNull": true
         },
+<<<<<<< HEAD
+=======
+        "scanner_id": {
+          "name": "scanner_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+>>>>>>> main
         "created_at": {
           "name": "created_at",
           "type": "timestamp (3)",
@@ -1897,6 +1906,22 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
+<<<<<<< HEAD
+=======
+        },
+        "scavenger_hunt_redemption_scanner_id_user_id_fk": {
+          "name": "scavenger_hunt_redemption_scanner_id_user_id_fk",
+          "tableFrom": "scavenger_hunt_redemption",
+          "tableTo": "user",
+          "columnsFrom": [
+            "scanner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+>>>>>>> main
         }
       },
       "compositePrimaryKeys": {},
@@ -2578,6 +2603,7 @@
           "primaryKey": false,
           "notNull": true
         },
+<<<<<<< HEAD
         "impact_rating": {
           "name": "impact_rating",
           "type": "real",
@@ -2621,6 +2647,14 @@
           "notNull": true,
           "default": false
         },
+=======
+        "score_breakdown": {
+          "name": "score_breakdown",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+>>>>>>> main
         "round_type": {
           "name": "round_type",
           "type": "round_type",
@@ -2852,6 +2886,15 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": false
+<<<<<<< HEAD
+=======
+        },
+        "import_flags": {
+          "name": "import_flags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+>>>>>>> main
         }
       },
       "indexes": {

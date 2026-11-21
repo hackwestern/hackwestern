@@ -1,12 +1,17 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Calendar,
+  ClipboardList,
+  Compass,
+  Coffee,
   Gavel,
+  Gift,
   GraduationCap,
   Handshake,
   House,
   MapIcon,
   ScanLine,
+  Trophy,
   Utensils,
 } from "lucide-react";
 
@@ -389,8 +394,13 @@ const SIDEBAR_ICONS: Record<string, LucideIcon> = {
   menu: Utensils,
   mentors: GraduationCap,
   sponsors: Handshake,
+  "coffee-chats": Coffee,
   scan: ScanLine,
   judge: Gavel,
+  activities: ClipboardList,
+  rewards: Gift,
+  scavenger: Compass,
+  "scavenger-hunt": Trophy,
 };
 
 const SidebarIcon = ({

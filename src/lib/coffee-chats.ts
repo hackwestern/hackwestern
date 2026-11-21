@@ -11,7 +11,10 @@
  * the sheet grid builder/parser.
  */
 
-export const COFFEE_CHAT_TAB = "Coffee Chats";
+// Not "Coffee Chats": the run-of-show sheet already has a tab by that name
+// (each sponsor's chat setup), and the sponsor sheets are being merged into
+// it (Jazz, 2026-11-18). Sharing the name would overwrite that setup tab.
+export const COFFEE_CHAT_TAB = "Coffee Chat Room Grid";
 
 export const COFFEE_CHAT_SLOT_MINUTES = 15;
 

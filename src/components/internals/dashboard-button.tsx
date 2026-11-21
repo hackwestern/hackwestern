@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
+import { hover, press } from "~/components/internals/interaction";
 import { cn } from "~/lib/utils";
 
 export const dashboardButtonVariants = cva(
@@ -13,14 +14,35 @@ export const dashboardButtonVariants = cva(
   {
     variants: {
       variant: {
-        primary:
+        primary: cn(
           "h-11 w-full gap-2.5 rounded-dashboard-lg bg-dashboard-action-primary px-4 pb-3 pt-2.5 text-base text-dashboard-text-inverse shadow-dashboard-primary-btn hover:bg-dashboard-text-active md:h-auto md:w-auto",
+          // Disabled: faded, a not-allowed cursor, and no hover colour (pointer
+          // events stay on so the cursor shows; a disabled button never clicks).
+          "disabled:pointer-events-auto disabled:cursor-not-allowed disabled:opacity-dashboard-disabled disabled:hover:bg-dashboard-action-primary",
+        ),
         secondary:
           "gap-0 rounded-full border border-dashboard-border-default bg-dashboard-bg-surface p-[10px] text-[0px] text-dashboard-text-medium shadow-dashboard-secondary-btn hover:bg-dashboard-bg-highlight disabled:opacity-dashboard-disabled md:gap-2 md:px-4 md:py-[9px] md:text-[16px]",
         tertiary:
           "gap-2.5 py-1 text-sm text-dashboard-text-medium hover:text-dashboard-text-light md:text-[16px]",
+        destructive:
+          "h-11 w-full gap-2.5 rounded-dashboard-lg bg-dashboard-action-destructive px-4 pb-3 pt-2.5 text-base text-dashboard-text-inverse hover:bg-dashboard-action-destructiveHover disabled:opacity-dashboard-disabled md:h-auto md:w-auto",
+        neutral:
+          "h-11 w-full gap-2.5 rounded-dashboard-lg bg-dashboard-action-neutral px-4 pb-3 pt-2.5 text-base text-dashboard-text-heavy hover:bg-dashboard-action-neutralHover disabled:opacity-dashboard-disabled md:h-auto md:w-auto",
         outline:
           "h-10 gap-2 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-3.5 text-sm text-dashboard-text-heavy hover:bg-dashboard-bg-highlight",
+        // Compact outline button for dense ops screens: 44px tall on touch,
+        // 36px on desktop.
+        small: cn(
+          "min-h-11 gap-1.5 rounded-dashboard-md border border-dashboard-border-control bg-dashboard-bg-surface px-2.5 text-sm font-semibold text-dashboard-text-heavy md:min-h-9 disabled:opacity-dashboard-disabled",
+          hover.highlight,
+          press,
+        ),
+        // A text link with a button's hit area, for in-page actions.
+        link: cn(
+          "min-h-11 gap-1.5 rounded-dashboard-md px-2 text-sm font-semibold text-dashboard-text-link md:min-h-9 disabled:text-dashboard-text-disabled",
+          hover.highlight,
+          press,
+        ),
       },
     },
     defaultVariants: { variant: "primary" },

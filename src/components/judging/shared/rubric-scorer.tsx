@@ -154,7 +154,8 @@ export function RubricScorer({
   return (
     <div id="rubric-guide" className="flex flex-col gap-3">
       <p className="m-0 text-sm font-medium text-dashboard-text-light">
-        {(RUBRIC_MIN + RUBRIC_MAX) / 2} is an average score.
+        {(RUBRIC_MIN + RUBRIC_MAX) / 2} is average. Most teams should land near
+        it, with few at the extremes.
       </p>
       {rubric.criteria.map((c) => {
         const current = ratingOf(c, ratings);

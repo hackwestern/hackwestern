@@ -2,7 +2,7 @@ import { type GetServerSidePropsContext } from "next";
 import SEO from "~/components/seo";
 import { Button } from "~/components/ui/button";
 import { ClockDisplay } from "~/components/clock/clock-display";
-import { InternalNavbar } from "~/components/internals/navbar";
+import { InternalPage } from "~/components/internals/page-shell";
 import { useClock } from "~/hooks/use-clock";
 import { useToast } from "~/hooks/use-toast";
 import { api } from "~/utils/api";
@@ -31,36 +31,40 @@ export default function InternalClock() {
   return (
     <>
       <SEO title="Clock Control" description="Organizer clock." noindex />
-      <InternalNavbar />
-      <main className="flex flex-col items-center gap-8 py-12">
-        <ClockDisplay />
-        <div className="flex gap-3">
-          <Button
-            disabled={busy || !state || status === "running"}
-            onClick={() => (status === "paused" ? resume : start).mutate()}
-          >
-            {status === "paused" ? "Resume" : "Start 5:00"}
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={busy || status !== "running"}
-            onClick={() => pause.mutate()}
-          >
-            Pause
-          </Button>
-          <Button
-            variant="outline"
-            disabled={busy || !state || status === "idle"}
-            onClick={() => reset.mutate()}
-          >
-            Reset
-          </Button>
+      <InternalPage
+        title="Pitch clock"
+        subtitle="Start, pause and reset the shared 5-minute clock."
+      >
+        <div className="flex flex-col items-center gap-8 rounded-2xl border border-[#d6dbe5] bg-white p-6 py-12 sm:p-8">
+          <ClockDisplay />
+          <div className="flex gap-3">
+            <Button
+              disabled={busy || !state || status === "running"}
+              onClick={() => (status === "paused" ? resume : start).mutate()}
+            >
+              {status === "paused" ? "Resume" : "Start 5:00"}
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={busy || status !== "running"}
+              onClick={() => pause.mutate()}
+            >
+              Pause
+            </Button>
+            <Button
+              variant="outline"
+              disabled={busy || !state || status === "idle"}
+              onClick={() => reset.mutate()}
+            >
+              Reset
+            </Button>
+          </div>
+          <p className="text-sm text-slate-500">
+            Hackers see this at <code>/clock</code>. Updates reach them within
+            ~2 seconds.
+          </p>
         </div>
-        <p className="text-sm text-slate-500">
-          Hackers see this at <code>/clock</code>. Updates reach them within ~2
-          seconds.
-        </p>
-      </main>
+      </InternalPage>
     </>
   );
 }

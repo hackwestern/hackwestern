@@ -9,8 +9,8 @@
  *      and users on the sponsorseed.hackwestern.dev domain (their
  *      applications cascade; team members elsewhere keep their rows).
  *   2. Inserts `--teams` teams — devpost/github links, sponsor-track
- *      coverage (General plus one or more sponsor tracks round-robin, some
- *      General-only), one "late" and one "draft" submission so the
+ *      coverage (70% in Canada Life's track, plus the other Hack Western
+ *      sponsor tracks), one "late" and one "draft" submission so the
  *      submitted-only filter on the picks page is visible.
  *   3. Adds 2-4 members per team (users + applications with names). One
  *      team has no members at all so the "No members listed" card state
@@ -19,7 +19,9 @@
  *      Sponsor mappings live in sponsor_judging_sponsor and are NOT
  *      touched by this script.
  *
- * Flags: --teams N  --yes (skip confirm)
+ * Flags: --teams N  --canada-life-track TRACK  --yes (skip confirm)
+ * TRACK is one of the values in src/lib/sponsor-track.ts. The script auto-
+ * reads Canada Life's track from the sponsor sheet; use the flag to override.
  */
 import * as p from "@clack/prompts";
 import { faker } from "@faker-js/faker";
@@ -27,17 +29,20 @@ import { asc, like } from "drizzle-orm";
 
 import { conn, db } from "..";
 import { applications, sponsorJudgingSponsors, teams, users } from "../schema";
+import { TRACK_VALUES, type TrackValue } from "~/lib/sponsor-track";
+import { fetchSponsorTrack } from "~/server/api/utils/sponsor-judging-teams";
 
 const SEED_TEAM_ID_PREFIX = "sp";
 const SEED_EMAIL_DOMAIN = "sponsorseed.hackwestern.dev";
 
 type Args = {
   teams: number;
+  canadaLifeTrack: TrackValue | null;
   yes: boolean;
 };
 
 function parseArgs(): Args {
-  const args: Args = { teams: 15, yes: false };
+  const args: Args = { teams: 15, canadaLifeTrack: null, yes: false };
   const argv = process.argv.slice(2).filter((arg) => arg !== "--");
   for (let i = 0; i < argv.length; i++) {
     switch (argv[i]) {
@@ -45,6 +50,17 @@ function parseArgs(): Args {
         args.teams = Number.parseInt(argv[i + 1] ?? "", 10);
         i += 1;
         break;
+      case "--canada-life-track": {
+        const value = argv[i + 1];
+        i += 1;
+        if (!value || !TRACK_VALUES.includes(value as TrackValue)) {
+          throw new Error(
+            `--canada-life-track must be one of: ${TRACK_VALUES.join(", ")}`,
+          );
+        }
+        args.canadaLifeTrack = value as TrackValue;
+        break;
+      }
       case "--yes":
         args.yes = true;
         break;
@@ -56,25 +72,25 @@ function parseArgs(): Args {
   return args;
 }
 
-const SPONSOR_TRACKS = [
-  "Best Use of Cohere",
-  "Best Use of AntiGravity",
-  "Best Domain",
-] as const;
-
-// Deterministic mix: most teams General + one sponsor track, a couple
-// General-only, one multi-track, so filters and tags have variety.
+// 70% of the teams use Canada Life's actual track. The remaining teams
+// round-robin across the other sponsor tracks, with General still included
+// so there is a small cross-track/multi-track mix.
 function tracksForTeam(
   index: number,
-): ("General" | (typeof SPONSOR_TRACKS)[number])[] {
-  const patterns: ("General" | (typeof SPONSOR_TRACKS)[number])[][] = [
-    ["General", SPONSOR_TRACKS[0]],
-    ["General", SPONSOR_TRACKS[1]],
-    ["General", SPONSOR_TRACKS[2]],
-    ["General"],
-    ["General", SPONSOR_TRACKS[0], SPONSOR_TRACKS[2]],
-  ];
-  return patterns[index % patterns.length]!;
+  canadaLifeTrack: TrackValue,
+): TrackValue[] {
+  if (index % 10 < 7) {
+    return canadaLifeTrack === "General"
+      ? ["General"]
+      : ["General", canadaLifeTrack];
+  }
+
+  const otherTracks = TRACK_VALUES.filter(
+    (track) => track !== canadaLifeTrack && track !== "General",
+  );
+  const track =
+    otherTracks[index % Math.max(1, otherTracks.length)] ?? "General";
+  return track === "General" ? ["General"] : ["General", track];
 }
 
 function submissionStatusForTeam(
@@ -97,6 +113,26 @@ function memberCountForTeam(index: number): number {
 
 async function seedSponsorPicks(args: Args): Promise<void> {
   const spinner = p.spinner();
+  let canadaLifeTrack = args.canadaLifeTrack;
+
+  if (!canadaLifeTrack) {
+    const sponsors = await db.query.sponsorJudgingSponsors.findMany();
+    const canadaLife = sponsors.find((sponsor) =>
+      sponsor.name.toLowerCase().includes("canada life"),
+    );
+    if (canadaLife) {
+      try {
+        canadaLifeTrack = await fetchSponsorTrack(canadaLife.name);
+      } catch (error) {
+        console.warn(
+          "Could not read Canada Life's track from the sponsor sheet.",
+          error instanceof Error ? error.message : error,
+        );
+      }
+    }
+  }
+  canadaLifeTrack ??= "General";
+  console.log(`Canada Life track: ${canadaLifeTrack}`);
 
   await db.transaction(async (tx) => {
     // 1. Wipe this script's previous output only.
@@ -123,7 +159,7 @@ async function seedSponsorPicks(args: Args): Promise<void> {
       devpostUrl: `https://devpost.com/software/${id}-${faker.hacker.adjective()}`,
       githubUrl: `https://github.com/hackwestern/${id}-${faker.hacker.noun()}`,
       submissionStatus: submissionStatusForTeam(i, args.teams),
-      tracks: tracksForTeam(i),
+      tracks: tracksForTeam(i, canadaLifeTrack),
     }));
     await tx.insert(teams).values(teamRows);
 
@@ -170,9 +206,12 @@ async function seedSponsorPicks(args: Args): Promise<void> {
   });
 
   // 4. Point the user at a real sponsor's picks page (mappings untouched).
-  const sponsor = await db.query.sponsorJudgingSponsors.findFirst({
+  const sponsors = await db.query.sponsorJudgingSponsors.findMany({
     orderBy: asc(sponsorJudgingSponsors.createdAt),
   });
+  const sponsor =
+    sponsors.find((row) => row.name.toLowerCase().includes("canada life")) ??
+    sponsors[0];
   if (sponsor) {
     console.log(`\nTry the picks page as an existing sponsor:`);
     console.log(
@@ -195,7 +234,7 @@ const args = parseArgs();
 p.intro("Sponsor-picks team seed");
 if (!args.yes) {
   const shouldSeed = await p.confirm({
-    message: `Seed ${args.teams} teams (wipes previous sp* sponsor-picks seed data only)?`,
+    message: `Seed ${args.teams} teams, 70% in Canada Life's track (wipes previous sp* sponsor-picks seed data only)?`,
   });
   if (!shouldSeed) {
     p.outro("Stopped seed script.");

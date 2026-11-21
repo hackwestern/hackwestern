@@ -4,6 +4,9 @@ import { safeCallbackPath } from "./safe-callback";
 describe("safeCallbackPath", () => {
   it("keeps paths on this site", () => {
     expect(safeCallbackPath("/rsvp")).toBe("/rsvp");
+    expect(safeCallbackPath("/internal/sponsor-schedule")).toBe(
+      "/internal/sponsor-schedule",
+    );
     expect(safeCallbackPath("/rsvp?celebrate=1")).toBe("/rsvp?celebrate=1");
   });
 

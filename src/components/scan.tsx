@@ -96,14 +96,24 @@ const Scan = () => {
         {/* Header */}
         <header className="flex flex-wrap items-center justify-between gap-4">
           <h1 className="dashboard-h1">Choose an activity</h1>
-          <DashboardButton
-            variant="outline"
-            onClick={() => {
-              void router.push("/scavenger/redeem");
-            }}
-          >
-            Redeem Points
-          </DashboardButton>
+          <div className="flex flex-wrap gap-2">
+            <DashboardButton
+              variant="outline"
+              onClick={() => {
+                void router.push("/scavenger/redeem");
+              }}
+            >
+              Redeem Points
+            </DashboardButton>
+            <DashboardButton
+              variant="outline"
+              onClick={() => {
+                void router.push("/scan/project");
+              }}
+            >
+              Hardware return
+            </DashboardButton>
+          </div>
         </header>
 
         <div className="flex flex-col gap-6 md:max-w-[640px]">

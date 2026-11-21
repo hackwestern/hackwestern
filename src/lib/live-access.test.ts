@@ -24,10 +24,10 @@ describe("liveAccessRedirect", () => {
   });
 
   it.each(["ACCEPTED", "DECLINED", "REJECTED", "IN_PROGRESS", null])(
-    "sends hackers with status %s to the dashboard",
+    "sends hackers with status %s to the live access page",
     (status) => {
       expect(liveAccessRedirect({ type: "hacker", status }, afterRsvp)).toBe(
-        "/dashboard",
+        "/live-access",
       );
     },
   );

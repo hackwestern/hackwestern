@@ -8,7 +8,6 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/router";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import { LogisticsSidebar } from "./logistics-sidebar";
-import LogisticsTopbar from "./logistics-topbar";
 
 // Markdown styling from the Figma event logistics pages: 24px Medium section
 // headings, 16px body, 36px between sections and 12px under each heading.
@@ -165,16 +164,17 @@ const EventLogistics = () => {
 
   return (
     <div className="flex h-full flex-row gap-12 pr-2 font-figtree">
+      {/* Always reserve the scrollbar's space so Prev/Next don't jump when a
+          longer page adds a scrollbar */}
       <div
         ref={scrollRef}
-        className="flex min-w-0 max-w-[717px] flex-1 flex-col overflow-auto pb-16"
+        className="flex min-w-0 max-w-[717px] flex-1 flex-col overflow-auto pb-16 [scrollbar-gutter:stable]"
       >
         {/* Stays pinned while the page content scrolls underneath */}
         <div className="sticky top-0 z-10 flex flex-col gap-[18px] border-b border-dashboard-border-default bg-dashboard-bg-page pb-[18px]">
           <div className="flex items-center gap-[18px]">
             <div className="flex min-w-0 flex-1 flex-col gap-[7px]">
               <div className="flex items-center gap-2">
-                <LogisticsTopbar />
                 <p className="text-sm font-medium leading-default text-dashboard-text-light">
                   Page {step} of {lastStep}
                 </p>

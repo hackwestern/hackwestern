@@ -8,7 +8,7 @@ export const PackingList: Item[] = [
   {
     id: "photo-id",
     heading: "🪪 Valid Photo ID",
-    desc: "You'll need a valid photo ID (Student ID, Driver's License, Health Card, etc.) to check-in!",
+    desc: "You'll need a valid government-issued photo ID (Driver's License, Passport, Health Card, etc.) to check-in. Student IDs don't count!",
   },
   {
     id: "tech",

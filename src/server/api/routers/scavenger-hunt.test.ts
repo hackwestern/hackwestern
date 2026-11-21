@@ -556,129 +556,128 @@ describe("scavengerHuntRouter basic endpoints", () => {
 });
 
 describe("scavengerHuntRouter redemption endpoints", () => {
-  const initialBalance = 100;
-  const initialEarned = 100;
-
-  // redeem tests
-  describe("redeem", () => {
-    let testReward: Awaited<ReturnType<typeof insertTestReward>>;
-
-    beforeEach(async () => {
-      // Create a fresh reward for each test
-      testReward = await insertTestReward();
-
-      // Reset user's scavenger hunt balance and points
-      await db
-        .update(users)
-        .set({
-          scavengerHuntBalance: initialBalance,
-          scavengerHuntEarned: initialEarned,
-        })
-        .where(eq(users.id, session.user.id));
-
-      // Clean up any existing redemptions for this user
-      await db
-        .delete(scavengerHuntRedemptions)
-        .where(eq(scavengerHuntRedemptions.userId, session.user.id));
-    });
-
-    afterEach(async () => {
-      // Clean up redemptions
-      await db
-        .delete(scavengerHuntRedemptions)
-        .where(eq(scavengerHuntRedemptions.userId, session.user.id));
-
-      // Clean up test reward if it still exists
-      if (testReward) {
-        await db
-          .delete(scavengerHuntRewards)
-          .where(eq(scavengerHuntRewards.id, testReward.id));
-      }
-    });
-
-    test("successfully redeems reward and deducts points", async () => {
-      const redeemResult = await caller.scavengerHunt.redeem({
-        rewardId: testReward.id,
-      });
-
-      expect(redeemResult.success).toBe(true);
-      expect(redeemResult.message).toBe("Reward redeemed successfully");
-
-      // Check that redemption was recorded
-      const redemption = await db.query.scavengerHuntRedemptions.findFirst({
-        where: and(
-          eq(scavengerHuntRedemptions.userId, session.user.id),
-          eq(scavengerHuntRedemptions.rewardId, testReward.id),
-        ),
-      });
-      expect(redemption).not.toBeNull();
-      expect(redemption?.rewardId).toBe(testReward.id);
-
-      // Check that points were deducted
-      const updatedUser = await db.query.users.findFirst({
-        where: eq(users.id, session.user.id),
-      });
-      expect(updatedUser?.scavengerHuntBalance).toBe(
-        initialBalance - testReward.costPoints,
-      );
-      // Earned points should remain the same
-      expect(updatedUser?.scavengerHuntEarned).toBe(100);
-    });
-
-    test("throws error if reward not found", async () => {
-      const nonExistentRewardId = 99999;
-
-      try {
-        await caller.scavengerHunt.redeem({ rewardId: nonExistentRewardId });
-        expect.fail("Route should return a TRPCError");
-      } catch (err) {
-        expect(err).toBeInstanceOf(TRPCError);
-        const trpcErr = err as TRPCError;
-        expect(trpcErr.code).toBe("NOT_FOUND");
-        expect(trpcErr.message).toBe("Reward not found");
-      }
-    });
-
-    test("throws error if user is not authenticated", async () => {
-      const unauthenticatedCtx = createInnerTRPCContext({ session: null });
-      const unauthenticatedCaller = createCaller(unauthenticatedCtx);
-
-      try {
-        (await unauthenticatedCaller.scavengerHunt.redeem({
-          rewardId: testReward.id,
-        }),
-          expect.fail("Route should return a TRPCError"));
-      } catch (err) {
-        expect(err).toBeInstanceOf(TRPCError);
-        const trpcErr = err as TRPCError;
-        expect(trpcErr.code).toBe("UNAUTHORIZED");
-        expect(trpcErr.message).toBe("UNAUTHORIZED");
-      }
-    });
-
-    test("throws error if user has insufficient balance", async () => {
-      // Set user balance to less than reward cost
-      await db
-        .update(users)
-        .set({
-          scavengerHuntBalance: testReward.costPoints - 1,
-          scavengerHuntEarned: 100,
-        })
-        .where(eq(users.id, session.user.id));
-
-      try {
-        await caller.scavengerHunt.redeem({ rewardId: testReward.id });
-        expect.fail("Route should return a TRPCError");
-      } catch (err) {
-        expect(err).toBeInstanceOf(TRPCError);
-        const trpcErr = err as TRPCError;
-        expect(trpcErr.code).toBe("BAD_REQUEST");
-        expect(trpcErr.message).toBe(
-          "User does not have enough points to redeem reward",
-        );
-      }
-    });
-  });
+  // redeem tests (commented out with the self-redeem endpoint)
+  // describe("redeem", () => {
+  //   const initialBalance = 100;
+  //   const initialEarned = 100;
+  //   let testReward: Awaited<ReturnType<typeof insertTestReward>>;
+  //
+  //   beforeEach(async () => {
+  //     // Create a fresh reward for each test
+  //     testReward = await insertTestReward();
+  //
+  //     // Reset user's scavenger hunt balance and points
+  //     await db
+  //       .update(users)
+  //       .set({
+  //         scavengerHuntBalance: initialBalance,
+  //         scavengerHuntEarned: initialEarned,
+  //       })
+  //       .where(eq(users.id, session.user.id));
+  //
+  //     // Clean up any existing redemptions for this user
+  //     await db
+  //       .delete(scavengerHuntRedemptions)
+  //       .where(eq(scavengerHuntRedemptions.userId, session.user.id));
+  //   });
+  //
+  //   afterEach(async () => {
+  //     // Clean up redemptions
+  //     await db
+  //       .delete(scavengerHuntRedemptions)
+  //       .where(eq(scavengerHuntRedemptions.userId, session.user.id));
+  //
+  //     // Clean up test reward if it still exists
+  //     if (testReward) {
+  //       await db
+  //         .delete(scavengerHuntRewards)
+  //         .where(eq(scavengerHuntRewards.id, testReward.id));
+  //     }
+  //   });
+  //
+  //   test("successfully redeems reward and deducts points", async () => {
+  //     const redeemResult = await caller.scavengerHunt.redeem({
+  //       rewardId: testReward.id,
+  //     });
+  //
+  //     expect(redeemResult.success).toBe(true);
+  //     expect(redeemResult.message).toBe("Reward redeemed successfully");
+  //
+  //     // Check that redemption was recorded
+  //     const redemption = await db.query.scavengerHuntRedemptions.findFirst({
+  //       where: and(
+  //         eq(scavengerHuntRedemptions.userId, session.user.id),
+  //         eq(scavengerHuntRedemptions.rewardId, testReward.id),
+  //       ),
+  //     });
+  //     expect(redemption).not.toBeNull();
+  //     expect(redemption?.rewardId).toBe(testReward.id);
+  //
+  //     // Check that points were deducted
+  //     const updatedUser = await db.query.users.findFirst({
+  //       where: eq(users.id, session.user.id),
+  //     });
+  //     expect(updatedUser?.scavengerHuntBalance).toBe(
+  //       initialBalance - testReward.costPoints,
+  //     );
+  //     // Earned points should remain the same
+  //     expect(updatedUser?.scavengerHuntEarned).toBe(100);
+  //   });
+  //
+  //   test("throws error if reward not found", async () => {
+  //     const nonExistentRewardId = 99999;
+  //
+  //     try {
+  //       await caller.scavengerHunt.redeem({ rewardId: nonExistentRewardId });
+  //       expect.fail("Route should return a TRPCError");
+  //     } catch (err) {
+  //       expect(err).toBeInstanceOf(TRPCError);
+  //       const trpcErr = err as TRPCError;
+  //       expect(trpcErr.code).toBe("NOT_FOUND");
+  //       expect(trpcErr.message).toBe("Reward not found");
+  //     }
+  //   });
+  //
+  //   test("throws error if user is not authenticated", async () => {
+  //     const unauthenticatedCtx = createInnerTRPCContext({ session: null });
+  //     const unauthenticatedCaller = createCaller(unauthenticatedCtx);
+  //
+  //     try {
+  //       (await unauthenticatedCaller.scavengerHunt.redeem({
+  //         rewardId: testReward.id,
+  //       }),
+  //         expect.fail("Route should return a TRPCError"));
+  //     } catch (err) {
+  //       expect(err).toBeInstanceOf(TRPCError);
+  //       const trpcErr = err as TRPCError;
+  //       expect(trpcErr.code).toBe("UNAUTHORIZED");
+  //       expect(trpcErr.message).toBe("UNAUTHORIZED");
+  //     }
+  //   });
+  //
+  //   test("throws error if user has insufficient balance", async () => {
+  //     // Set user balance to less than reward cost
+  //     await db
+  //       .update(users)
+  //       .set({
+  //         scavengerHuntBalance: testReward.costPoints - 1,
+  //         scavengerHuntEarned: 100,
+  //       })
+  //       .where(eq(users.id, session.user.id));
+  //
+  //     try {
+  //       await caller.scavengerHunt.redeem({ rewardId: testReward.id });
+  //       expect.fail("Route should return a TRPCError");
+  //     } catch (err) {
+  //       expect(err).toBeInstanceOf(TRPCError);
+  //       const trpcErr = err as TRPCError;
+  //       expect(trpcErr.code).toBe("BAD_REQUEST");
+  //       expect(trpcErr.message).toBe(
+  //         "User does not have enough points to redeem reward",
+  //       );
+  //     }
+  //   });
+  // });
 
   // getRedemptions tests
   describe("getRedemptions", () => {
@@ -720,7 +719,10 @@ describe("scavengerHuntRouter redemption endpoints", () => {
 
     test("returns user's redemptions", async () => {
       // Redeem a reward first
-      await caller.scavengerHunt.redeem({ rewardId: testReward.id });
+      await organizerCaller.scavengerHunt.redeemForUser({
+        userId: session.user.id,
+        rewardId: testReward.id,
+      });
 
       const redemptions = await caller.scavengerHunt.getRedemptions();
 
@@ -743,8 +745,14 @@ describe("scavengerHuntRouter redemption endpoints", () => {
         .where(eq(users.id, session.user.id));
 
       // Redeem both rewards
-      await caller.scavengerHunt.redeem({ rewardId: testReward.id });
-      await caller.scavengerHunt.redeem({ rewardId: secondReward.id });
+      await organizerCaller.scavengerHunt.redeemForUser({
+        userId: session.user.id,
+        rewardId: testReward.id,
+      });
+      await organizerCaller.scavengerHunt.redeemForUser({
+        userId: session.user.id,
+        rewardId: secondReward.id,
+      });
 
       const redemptions = await caller.scavengerHunt.getRedemptions();
 
@@ -822,12 +830,11 @@ describe("scavengerHuntRouter redemption endpoints", () => {
     });
 
     test("returns redemptions for requested user", async () => {
-      // Create a context for the test user to redeem
-      const testUserCtx = createInnerTRPCContext({ session: testUser });
-      const testUserCaller = createCaller(testUserCtx);
-
-      // Test user redeems a reward
-      await testUserCaller.scavengerHunt.redeem({ rewardId: testReward.id });
+      // An organizer redeems a reward for the test user
+      await organizerCaller.scavengerHunt.redeemForUser({
+        userId: testUser.user.id,
+        rewardId: testReward.id,
+      });
 
       // Organizer queries the redemptions
       const redemptions =
@@ -950,6 +957,86 @@ describe("scavengerHuntRouter scan endpoints", () => {
       const result = await organizerCaller.scavengerHunt.getAllScans({});
       expect(result.scans).toEqual([]);
       expect(result.total).toBe(0);
+    });
+
+    test("redeemForUser records the organizer as the scanner", async () => {
+      const reward = await insertTestReward({ costPoints: 5 });
+      try {
+        await db
+          .update(users)
+          .set({ scavengerHuntBalance: 10 })
+          .where(eq(users.id, testUser1.user.id));
+
+        await organizerCaller.scavengerHunt.redeemForUser({
+          userId: testUser1.user.id,
+          rewardId: reward.id,
+        });
+
+        const redemption = await db.query.scavengerHuntRedemptions.findFirst({
+          where: eq(scavengerHuntRedemptions.rewardId, reward.id),
+        });
+        expect(redemption?.scannerId).toBe(organizerSession.user.id);
+      } finally {
+        await db
+          .delete(scavengerHuntRedemptions)
+          .where(eq(scavengerHuntRedemptions.rewardId, reward.id));
+        await db
+          .delete(scavengerHuntRewards)
+          .where(eq(scavengerHuntRewards.id, reward.id));
+      }
+    });
+
+    test("includes reward redemptions under All and Rewards only", async () => {
+      const reward = await insertTestReward({
+        name: faker.string.alphanumeric(12),
+      });
+      try {
+        await db.insert(scavengerHuntRedemptions).values({
+          userId: testUser1.user.id,
+          rewardId: reward.id,
+          scannerId: organizerSession.user.id,
+        });
+        await db.insert(scavengerHuntScans).values({
+          userId: testUser2.user.id,
+          itemId: testItem1.id,
+          scannerId: organizerSession.user.id,
+        });
+
+        const all = await organizerCaller.scavengerHunt.getAllScans({
+          search: reward.name,
+        });
+        expect(all.total).toBe(1);
+        expect(all.scans[0]).toMatchObject({
+          event: `${reward.name} (Reward)`,
+          scanner: organizerSession.user.name ?? organizerSession.user.email,
+        });
+
+        const rewards = await organizerCaller.scavengerHunt.getAllScans({
+          filter: "rewards",
+          search: reward.name,
+        });
+        expect(rewards.scans).toHaveLength(1);
+
+        const activities = await organizerCaller.scavengerHunt.getAllScans({
+          filter: "activities",
+          search: reward.name,
+        });
+        expect(activities.scans).toEqual([]);
+
+        const allUnfiltered = await organizerCaller.scavengerHunt.getAllScans(
+          {},
+        );
+        const events = allUnfiltered.scans.map((scan) => scan.event);
+        expect(events).toContain(`${reward.name} (Reward)`);
+        expect(events).toContain(testItem1.name);
+      } finally {
+        await db
+          .delete(scavengerHuntRedemptions)
+          .where(eq(scavengerHuntRedemptions.rewardId, reward.id));
+        await db
+          .delete(scavengerHuntRewards)
+          .where(eq(scavengerHuntRewards.id, reward.id));
+      }
     });
 
     test("throws error if user is not an organizer", async () => {
@@ -1146,4 +1233,614 @@ describe("scavengerHuntRouter item status", () => {
       ).rejects.toThrow("can't be scanned");
     },
   );
+});
+
+const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
+
+describe("scavengerHuntRouter activity endpoints", () => {
+  afterEach(async () => {
+    const items = await db.query.scavengerHuntItems.findMany({
+      where: (t, { like }) => like(t.name, "ACT-TEST%"),
+    });
+    for (const item of items) {
+      await db
+        .delete(scavengerHuntScans)
+        .where(eq(scavengerHuntScans.itemId, item.id));
+      await db
+        .delete(scavengerHuntItems)
+        .where(eq(scavengerHuntItems.id, item.id));
+    }
+  });
+
+  const base = {
+    name: "ACT-TEST Dinner",
+    type: "meal" as const,
+    startsAt: new Date(Date.now() + DAY),
+    endsAt: new Date(Date.now() + DAY + 2 * HOUR),
+    room: "Rm 1230",
+    points: 5,
+    winPoints: null,
+  };
+  const findMine = async () =>
+    (await organizerCaller.scavengerHunt.getScavengerHuntItems()).filter((a) =>
+      a.name?.startsWith("ACT-TEST"),
+    );
+
+  test("creates and edits an activity", async () => {
+    await organizerCaller.scavengerHunt.saveActivity(base);
+    const [created] = await findMine();
+    expect(created).toMatchObject({
+      type: "meal",
+      status: "active",
+      room: "Rm 1230",
+      points: 5,
+      winPoints: null,
+      scans: 0,
+    });
+
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      id: created!.id,
+      name: "ACT-TEST Cup Stacking",
+      type: "activity",
+      winPoints: 50,
+    });
+    const [edited] = await findMine();
+    expect(edited).toMatchObject({
+      id: created!.id,
+      name: "ACT-TEST Cup Stacking",
+      type: "activity",
+      winPoints: 50,
+    });
+  });
+
+  test("drops win points for types that can't be won", async () => {
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      winPoints: 10,
+    });
+    expect((await findMine())[0]?.winPoints).toBeNull();
+  });
+
+  test("drafts and disabled items are hidden from the scanner and can't be scanned", async () => {
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      status: "draft",
+    });
+    const [draft] = await findMine();
+    expect(draft?.status).toBe("draft");
+
+    const scannable = async () =>
+      (await caller.scavengerHunt.getAllScavengerHuntItems()).map((i) => i.id);
+    expect(await scannable()).not.toContain(draft!.id);
+    await expect(
+      organizerCaller.scavengerHunt.scan({
+        userId: session.user.id,
+        itemId: draft!.id,
+      }),
+    ).rejects.toThrow("This activity is a draft");
+
+    await organizerCaller.scavengerHunt.setActivityStatus({
+      id: draft!.id,
+      status: "active",
+    });
+    expect(await scannable()).toContain(draft!.id);
+
+    await organizerCaller.scavengerHunt.setActivityStatus({
+      id: draft!.id,
+      status: "disabled",
+    });
+    expect(await scannable()).not.toContain(draft!.id);
+    expect((await findMine())[0]?.status).toBe("disabled");
+  });
+
+  test("counts scans and hides deleted activities", async () => {
+    await organizerCaller.scavengerHunt.saveActivity(base);
+    const [activity] = await findMine();
+    await organizerCaller.scavengerHunt.scan({
+      userId: session.user.id,
+      itemId: activity!.id,
+    });
+    expect((await findMine())[0]?.scans).toBe(1);
+
+    await organizerCaller.scavengerHunt.deleteScavengerHuntItem({
+      itemId: activity!.id,
+    });
+    expect(await findMine()).toHaveLength(0);
+  });
+
+  test("attendance and win scans are counted separately", async () => {
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      type: "activity",
+      winPoints: 20,
+    });
+    const [activity] = await findMine();
+    for (const activityType of ["attendance", "win"] as const) {
+      await organizerCaller.scavengerHunt.scan({
+        userId: session.user.id,
+        itemId: activity!.id,
+        activityType,
+      });
+    }
+    expect((await findMine())[0]).toMatchObject({ scans: 1, winScans: 1 });
+  });
+
+  test("editing or disabling a deleted activity fails", async () => {
+    await organizerCaller.scavengerHunt.saveActivity(base);
+    const [activity] = await findMine();
+    await organizerCaller.scavengerHunt.deleteScavengerHuntItem({
+      itemId: activity!.id,
+    });
+    await expect(
+      organizerCaller.scavengerHunt.saveActivity({ ...base, id: activity!.id }),
+    ).rejects.toThrow("This activity was deleted");
+    await expect(
+      organizerCaller.scavengerHunt.setActivityStatus({
+        id: activity!.id,
+        status: "disabled",
+      }),
+    ).rejects.toThrow("This activity was deleted");
+  });
+
+  test("rejects a duplicate name, ignoring case", async () => {
+    await organizerCaller.scavengerHunt.saveActivity(base);
+    await expect(
+      organizerCaller.scavengerHunt.saveActivity({
+        ...base,
+        name: "act-test dinner",
+        type: "workshop",
+      }),
+    ).rejects.toThrow('An activity named "act-test dinner" already exists');
+
+    // Saving an activity under its own name is not a duplicate
+    const [activity] = await findMine();
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      id: activity!.id,
+      points: 7,
+    });
+    expect((await findMine())[0]?.points).toBe(7);
+  });
+
+  test("a new or changed end time must be in the future", async () => {
+    const past = {
+      startsAt: new Date(Date.now() - 2 * HOUR),
+      endsAt: new Date(Date.now() - HOUR),
+    };
+    await expect(
+      organizerCaller.scavengerHunt.saveActivity({ ...base, ...past }),
+    ).rejects.toThrow("End time must be in the future");
+
+    await organizerCaller.scavengerHunt.saveActivity(base);
+    const [activity] = await findMine();
+    await expect(
+      organizerCaller.scavengerHunt.saveActivity({
+        ...base,
+        id: activity!.id,
+        ...past,
+      }),
+    ).rejects.toThrow("End time must be in the future");
+  });
+
+  test("an activity that already started can be created", async () => {
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      startsAt: new Date(Date.now() - HOUR),
+      endsAt: new Date(Date.now() + HOUR),
+    });
+    expect(await findMine()).toHaveLength(1);
+  });
+
+  test("a finished activity can be edited if its times don't change", async () => {
+    await organizerCaller.scavengerHunt.saveActivity(base);
+    const [activity] = await findMine();
+    const past = {
+      startsAt: new Date(Date.now() - 2 * HOUR),
+      endsAt: new Date(Date.now() - HOUR),
+    };
+    await db
+      .update(scavengerHuntItems)
+      .set(past)
+      .where(eq(scavengerHuntItems.id, activity!.id));
+
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      ...past,
+      id: activity!.id,
+      room: "Rm 2230",
+    });
+    expect((await findMine())[0]?.room).toBe("Rm 2230");
+  });
+
+  test("changing points updates the balances of hackers who scanned it", async () => {
+    const pointsOf = async () => {
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, session.user.id),
+      });
+      return [
+        user?.scavengerHuntEarned ?? 0,
+        user?.scavengerHuntBalance ?? 0,
+      ] as const;
+    };
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      type: "activity",
+      points: 10,
+      winPoints: 50,
+    });
+    const [activity] = await findMine();
+    const [earned0, balance0] = await pointsOf();
+    for (const activityType of ["attendance", "win"] as const) {
+      await organizerCaller.scavengerHunt.scan({
+        userId: session.user.id,
+        itemId: activity!.id,
+        activityType,
+      });
+    }
+    expect(await pointsOf()).toEqual([earned0 + 60, balance0 + 60]);
+
+    // +5 attendance, -10 win
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      id: activity!.id,
+      type: "activity",
+      points: 15,
+      winPoints: 40,
+    });
+    expect(await pointsOf()).toEqual([earned0 + 55, balance0 + 55]);
+
+    // No longer winnable, so the win scan is worth 0
+    await organizerCaller.scavengerHunt.saveActivity({
+      ...base,
+      id: activity!.id,
+      type: "workshop",
+      points: 15,
+      winPoints: null,
+    });
+    expect(await pointsOf()).toEqual([earned0 + 15, balance0 + 15]);
+  });
+
+  test("rejects an end time equal to the start time", async () => {
+    await expect(
+      organizerCaller.scavengerHunt.saveActivity({
+        ...base,
+        endsAt: base.startsAt,
+      }),
+    ).rejects.toThrow("End time must be after start time");
+  });
+
+  test("rejects an end time before the start time", async () => {
+    await expect(
+      organizerCaller.scavengerHunt.saveActivity({
+        ...base,
+        endsAt: new Date(base.startsAt.getTime() - HOUR),
+      }),
+    ).rejects.toThrow("End time must be after start time");
+  });
+
+  test("hackers can't manage activities", async () => {
+    await expect(caller.scavengerHunt.getScavengerHuntItems()).rejects.toThrow(
+      TRPCError,
+    );
+    await expect(caller.scavengerHunt.saveActivity(base)).rejects.toThrow(
+      TRPCError,
+    );
+  });
+});
+
+describe("scavengerHuntRouter reward endpoints", () => {
+  // Tests here change the hacker's points, so each one puts them back
+  let points: {
+    scavengerHuntBalance: number | null;
+    scavengerHuntEarned: number | null;
+  };
+  beforeEach(async () => {
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+    });
+    points = {
+      scavengerHuntBalance: user!.scavengerHuntBalance,
+      scavengerHuntEarned: user!.scavengerHuntEarned,
+    };
+  });
+
+  afterEach(async () => {
+    await db.update(users).set(points).where(eq(users.id, session.user.id));
+    const rewards = await db.query.scavengerHuntRewards.findMany({
+      where: (t, { like }) => like(t.name, "RWD-TEST%"),
+    });
+    for (const reward of rewards) {
+      await db
+        .delete(scavengerHuntRedemptions)
+        .where(eq(scavengerHuntRedemptions.rewardId, reward.id));
+      await db
+        .delete(scavengerHuntRewards)
+        .where(eq(scavengerHuntRewards.id, reward.id));
+    }
+  });
+
+  const base = {
+    name: "RWD-TEST Hoodie",
+    description: "Black, all sizes",
+    costPoints: 50,
+    quantity: 20,
+  };
+  const findMine = async () =>
+    (await organizerCaller.scavengerHunt.getScavengerHuntRewards()).filter(
+      (r) => r.name.startsWith("RWD-TEST"),
+    );
+
+  test("creates and edits a reward", async () => {
+    await organizerCaller.scavengerHunt.saveReward(base);
+    const [created] = await findMine();
+    expect(created).toMatchObject({
+      ...base,
+      status: "active",
+      redemptions: 0,
+    });
+
+    await organizerCaller.scavengerHunt.saveReward({
+      id: created!.id,
+      name: "RWD-TEST Sticker",
+      description: "  ",
+      costPoints: 5,
+      quantity: null,
+    });
+    const [edited] = await findMine();
+    expect(edited).toMatchObject({
+      id: created!.id,
+      name: "RWD-TEST Sticker",
+      description: null,
+      costPoints: 5,
+      quantity: null,
+    });
+  });
+
+  test("rejects a duplicate name, ignoring case", async () => {
+    await organizerCaller.scavengerHunt.saveReward(base);
+    await expect(
+      organizerCaller.scavengerHunt.saveReward({
+        ...base,
+        name: "rwd-test HOODIE",
+      }),
+    ).rejects.toThrow("already exists");
+  });
+
+  test("a deleted reward's name can be used again", async () => {
+    await organizerCaller.scavengerHunt.saveReward(base);
+    const [created] = await findMine();
+    await organizerCaller.scavengerHunt.deleteReward({ id: created!.id });
+    expect(await findMine()).toHaveLength(0);
+
+    await organizerCaller.scavengerHunt.saveReward(base);
+    expect(await findMine()).toHaveLength(1);
+  });
+
+  test.each(["draft", "disabled"] as const)(
+    "a %s reward is hidden from redeem pages and can't be redeemed",
+    async (status) => {
+      const reward = await insertTestReward({ name: "RWD-TEST Mug", status });
+
+      const open = await organizerCaller.scavengerHunt.getAllRewards();
+      expect(open.map((r) => r.id)).not.toContain(reward.id);
+      await expect(
+        organizerCaller.scavengerHunt.getRewardById({ id: reward.id }),
+      ).rejects.toThrow("Reward not found");
+      await expect(
+        organizerCaller.scavengerHunt.redeemForUser({
+          userId: session.user.id,
+          rewardId: reward.id,
+        }),
+      ).rejects.toThrow("Reward not found");
+      // Still listed for organizers
+      expect((await findMine())[0]).toMatchObject({ id: reward.id, status });
+    },
+  );
+
+  test("disabling and enabling a reward", async () => {
+    const reward = await insertTestReward({ name: "RWD-TEST Mug" });
+    await organizerCaller.scavengerHunt.setRewardStatus({
+      id: reward.id,
+      status: "disabled",
+    });
+    expect((await findMine())[0]?.status).toBe("disabled");
+    await organizerCaller.scavengerHunt.setRewardStatus({
+      id: reward.id,
+      status: "active",
+    });
+    expect((await findMine())[0]?.status).toBe("active");
+  });
+
+  test("counts redemptions, which stay after the reward is deleted", async () => {
+    const reward = await insertTestReward({ name: "RWD-TEST Mug" });
+    await db
+      .insert(scavengerHuntRedemptions)
+      .values({ userId: session.user.id, rewardId: reward.id });
+    expect((await findMine())[0]?.redemptions).toBe(1);
+
+    await organizerCaller.scavengerHunt.deleteReward({ id: reward.id });
+    const left = await db.query.scavengerHuntRedemptions.findMany({
+      where: eq(scavengerHuntRedemptions.rewardId, reward.id),
+    });
+    expect(left).toHaveLength(1);
+  });
+
+  test("editing or disabling a deleted reward fails", async () => {
+    const reward = await insertTestReward({ name: "RWD-TEST Mug" });
+    await organizerCaller.scavengerHunt.deleteReward({ id: reward.id });
+    await expect(
+      organizerCaller.scavengerHunt.saveReward({ ...base, id: reward.id }),
+    ).rejects.toThrow("deleted");
+    await expect(
+      organizerCaller.scavengerHunt.setRewardStatus({
+        id: reward.id,
+        status: "disabled",
+      }),
+    ).rejects.toThrow("deleted");
+  });
+
+  test("an edit changes only the fields it sends", async () => {
+    await organizerCaller.scavengerHunt.saveReward(base);
+    const [created] = await findMine();
+    // A redemption while the edit dialog is open
+    await db
+      .update(scavengerHuntRewards)
+      .set({ quantity: 19 })
+      .where(eq(scavengerHuntRewards.id, created!.id));
+
+    await organizerCaller.scavengerHunt.saveReward({
+      id: created!.id,
+      description: "Grey",
+    });
+    expect((await findMine())[0]).toMatchObject({
+      ...base,
+      description: "Grey",
+      quantity: 19,
+    });
+  });
+
+  test("an edit that sends nothing still checks the reward exists", async () => {
+    const reward = await insertTestReward({ name: "RWD-TEST Mug" });
+    await organizerCaller.scavengerHunt.saveReward({ id: reward.id });
+    await organizerCaller.scavengerHunt.deleteReward({ id: reward.id });
+    await expect(
+      organizerCaller.scavengerHunt.saveReward({ id: reward.id }),
+    ).rejects.toThrow("deleted");
+  });
+
+  test("a new reward needs a name and a cost", async () => {
+    await expect(
+      organizerCaller.scavengerHunt.saveReward({ name: "RWD-TEST Mug" }),
+    ).rejects.toThrow(TRPCError);
+  });
+
+  test("names can be up to 255 characters", async () => {
+    const name = "RWD-TEST " + "x".repeat(246);
+    await organizerCaller.scavengerHunt.saveReward({ ...base, name });
+    expect((await findMine())[0]?.name).toHaveLength(255);
+    await expect(
+      organizerCaller.scavengerHunt.saveReward({ ...base, name: name + "x" }),
+    ).rejects.toThrow(TRPCError);
+  });
+
+  test("redeeming uses the current price and returns it", async () => {
+    const reward = await insertTestReward({
+      name: "RWD-TEST Mug",
+      costPoints: 10,
+    });
+    await db
+      .update(users)
+      .set({ scavengerHuntBalance: 100, scavengerHuntEarned: 100 })
+      .where(eq(users.id, session.user.id));
+    await organizerCaller.scavengerHunt.saveReward({
+      id: reward.id,
+      costPoints: 30,
+    });
+
+    const result = await organizerCaller.scavengerHunt.redeemForUser({
+      userId: session.user.id,
+      rewardId: reward.id,
+    });
+    expect(result.pointsUsed).toBe(30);
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+    });
+    expect(user?.scavengerHuntBalance).toBe(70);
+  });
+
+  test("a price raised above the balance is an error", async () => {
+    const reward = await insertTestReward({
+      name: "RWD-TEST Mug",
+      costPoints: 10,
+    });
+    await db
+      .update(users)
+      .set({ scavengerHuntBalance: 20 })
+      .where(eq(users.id, session.user.id));
+    await organizerCaller.scavengerHunt.saveReward({
+      id: reward.id,
+      costPoints: 50,
+    });
+    await expect(
+      organizerCaller.scavengerHunt.redeemForUser({
+        userId: session.user.id,
+        rewardId: reward.id,
+      }),
+    ).rejects.toThrow("not have enough points");
+  });
+
+  test("a hacker with no balance yet can't redeem", async () => {
+    const reward = await insertTestReward({
+      name: "RWD-TEST Mug",
+      costPoints: 10,
+    });
+    await db
+      .update(users)
+      .set({ scavengerHuntBalance: null })
+      .where(eq(users.id, session.user.id));
+    await expect(
+      organizerCaller.scavengerHunt.redeemForUser({
+        userId: session.user.id,
+        rewardId: reward.id,
+      }),
+    ).rejects.toThrow("not have enough points");
+  });
+
+  test("a scan at an old price is rejected", async () => {
+    const reward = await insertTestReward({
+      name: "RWD-TEST Mug",
+      costPoints: 30,
+    });
+    await db
+      .update(users)
+      .set({ scavengerHuntBalance: 100 })
+      .where(eq(users.id, session.user.id));
+    await expect(
+      organizerCaller.scavengerHunt.redeemForUser({
+        userId: session.user.id,
+        rewardId: reward.id,
+        expectedCost: 10,
+      }),
+    ).rejects.toThrow("The price changed to 30 points");
+    const result = await organizerCaller.scavengerHunt.redeemForUser({
+      userId: session.user.id,
+      rewardId: reward.id,
+      expectedCost: 30,
+    });
+    expect(result.pointsUsed).toBe(30);
+  });
+
+  test("the last one can't be redeemed twice", async () => {
+    const reward = await insertTestReward({
+      name: "RWD-TEST Mug",
+      costPoints: 1,
+      quantity: 1,
+    });
+    await db
+      .update(users)
+      .set({ scavengerHuntBalance: 100 })
+      .where(eq(users.id, session.user.id));
+    const redeem = () =>
+      organizerCaller.scavengerHunt.redeemForUser({
+        userId: session.user.id,
+        rewardId: reward.id,
+      });
+    await redeem();
+    await expect(redeem()).rejects.toThrow("Reward is out of stock");
+    expect((await findMine())[0]?.quantity).toBe(0);
+  });
+
+  test("hackers can't manage rewards", async () => {
+    await expect(
+      caller.scavengerHunt.getScavengerHuntRewards(),
+    ).rejects.toThrow(TRPCError);
+    await expect(caller.scavengerHunt.saveReward(base)).rejects.toThrow(
+      TRPCError,
+    );
+    await expect(caller.scavengerHunt.deleteReward({ id: 1 })).rejects.toThrow(
+      TRPCError,
+    );
+  });
 });

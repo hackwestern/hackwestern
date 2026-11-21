@@ -54,7 +54,7 @@ const RedeemPage = () => {
     {
       staleTime: 30000, // Cache for 30 seconds to reduce refetches
       refetchOnWindowFocus: false, // Don't refetch when window regains focus
-      refetchOnMount: false, // Don't refetch on mount if data is still fresh
+      refetchOnMount: true, // Don't refetch on mount if data is still fresh
       refetchOnReconnect: false, // Don't refetch on reconnect if data is still fresh
     },
   );

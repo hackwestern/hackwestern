@@ -1,4 +1,10 @@
+import {
+  chatsOptedOut,
+  sheetChatsOn,
+} from "~/server/api/utils/coffee-chats-on";
+import { isOrganizerCaller } from "~/server/api/utils/submit-lock";
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -13,6 +19,8 @@ import {
   mergeCoffeeChatBookings,
   sortCoffeeChatSlots,
 } from "~/lib/coffee-chats";
+import { hasPrizeTrack } from "~/lib/sponsor-prize-tracks";
+import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
   fetchAllChosenTeams,
@@ -31,12 +39,46 @@ import {
   fetchHwContactPhones,
   lookupHwContactPhones,
 } from "~/server/api/utils/sponsor-hw-contacts";
+import { fetchRankedInterestRows } from "~/server/api/utils/hacker-interest";
+import { db } from "~/server/db";
+import { sponsorFinalPicks } from "~/server/db/schema";
 
 export const sponsorPortalRouter = createTRPCRouter({
   /**
+   * Return the highest-scoring applicants who selected this sponsor in the
+   * interest form. The private sponsor UUID gates access; the form supplies
+   * the contact links and the database supplies the application score.
+   */
+  getInterestedHackers: publicProcedure
+    .input(z.object({ sponsor: z.string().uuid() }))
+    .query(async ({ input }) => {
+      try {
+        const sponsorName = await resolveSponsorName(input.sponsor);
+        const ranked = await fetchRankedInterestRows(sponsorName);
+        const hackers = ranked.map((row, index) => ({
+          name: row.name,
+          resumeUrl: row.resumeUrl || null,
+          extraLink: row.extraLink || null,
+          rank: index + 1,
+        }));
+
+        return { sponsorName, hackers };
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to load interested hackers",
+        });
+      }
+    }),
+
+  /**
    * Get public sponsor portal info for /sponsors/[id]. Public.
    * Resolves the sponsor UUID to its name, then loads their HW contact
-   * from the master sheet and their room number and booth location
+   * from the Sponsor Day-Of tab and their room number and booth location
    * from the "sponsor info" tab. The HW contact name is matched against
    * the HW contacts sheet to attach a phone number when one is listed.
    * Also returns their coffee-chat allowance ("Coffee Chat Max Minutes"
@@ -46,22 +88,51 @@ export const sponsorPortalRouter = createTRPCRouter({
    */
   getSponsorPortalInfo: publicProcedure
     .input(z.object({ sponsor: z.string().uuid() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      // The name comes from our database; only the rest needs the sheet. If
+      // the sheet can't be read, still return the name (welcome + logo) with
+      // the sheet fields blank, instead of failing the whole portal.
+      const sponsorName = await resolveSponsorName(input.sponsor);
+      // Coffee chats on or off, read once here for every portal page
+      // (coffee-chats-on.ts): the Sponsor Day-Of checkbox (an unreadable
+      // sheet counts as on) and the sponsor's own "not doing chats".
+      const [chatsTicked, chatsOptedOutNow, viewerIsOrganizer] =
+        await Promise.all([
+          sheetChatsOn(sponsorName),
+          chatsOptedOut(input.sponsor.toLowerCase()),
+          isOrganizerCaller(ctx),
+        ]);
+      const chats = {
+        hasCoffeeChats: chatsTicked && !chatsOptedOutNow,
+        chatsOptedOut: chatsOptedOutNow,
+        /** A signed-in organizer on the portal link sees Chats regardless. */
+        viewerIsOrganizer,
+      };
       try {
-        const sponsorName = await resolveSponsorName(input.sponsor);
         const sheets = await getSheetsClient();
         const spreadsheetId = getSpreadsheetId();
 
-        const [sponsorInfoMap, picksMap, contactPhones, coffeeChatGrid] =
-          await Promise.all([
-            fetchAllSponsorInfo(sheets, spreadsheetId),
-            fetchAllChosenTeams(sheets, spreadsheetId),
-            fetchHwContactPhones(),
-            fetchCoffeeChatGrid(sheets, spreadsheetId),
-          ]);
+        const [
+          sponsorInfoMap,
+          picksMap,
+          contactPhones,
+          coffeeChatGrid,
+          finalPick,
+        ] = await Promise.all([
+          fetchAllSponsorInfo(sheets, spreadsheetId),
+          fetchAllChosenTeams(sheets, spreadsheetId),
+          fetchHwContactPhones(),
+          fetchCoffeeChatGrid(sheets, spreadsheetId),
+          db.query.sponsorFinalPicks.findFirst({
+            where: eq(sponsorFinalPicks.sponsorId, input.sponsor.toLowerCase()),
+            columns: { teamIds: true },
+          }),
+        ]);
 
         const info = sponsorInfoMap.get(sponsorName.toLowerCase());
-        const picks = picksMap.get(sponsorName) ?? [];
+        // The submitted ranking (sponsor_final_pick) wins over the sheet,
+        // which can lag behind it while a sheet write is pending.
+        const picks = finalPick?.teamIds ?? picksMap.get(sponsorName) ?? [];
         // The sponsor info tab on the judging sheet is the only source for
         // the HW contact; an empty cell stays "—".
         const hwContact = info?.hwContact ?? "—";
@@ -76,74 +147,47 @@ export const sponsorPortalRouter = createTRPCRouter({
           sponsorName,
           hwContact,
           hwContactPhone: hwContactPhones[0] ?? null,
+          // Sponsor Day-Of's "Tier" column, for the welcome line; null when
+          // the sheet has no tier for them.
+          tier: info?.tier ? info.tier : null,
           roomNumber: info?.roomNumber ?? "TBD",
           boothLocation: info?.boothLocation ?? "TBD",
           // Empty string when blank so the portal can omit the workshop card.
           workshopLocation: info?.workshopLocation ?? null,
           workshopTime: info?.workshopTime ?? null,
           picksCount: picks.length,
+          // Only prize track sponsors judge (src/content/sponsor-prize-tracks.ts);
+          // the others see a "No prize track" tile instead of Judging.
+          hasPrizeTrack: hasPrizeTrack(sponsorName, await prizeTrackSponsors()),
           // Coffee chats: 0 minutes means the sponsor never sees the booking
           // link at all.
           maxCoffeeChatMinutes,
           maxCoffeeChatBlocks: coffeeChatBlocksFor(maxCoffeeChatMinutes),
           coffeeChatBookedCount,
+          ...chats,
+          sheetFailed: false,
         };
       } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error
-              ? error.message
-              : "Failed to load sponsor portal information",
-        });
-      }
-    }),
-
-  /**
-   * Coffee-chat booking board for the sponsor portal. Public (queries are
-   * keyed by the sponsor's private UUID, like the picks endpoints).
-   * Returns the sponsor's allowance (from "Coffee Chat Max Minutes" on the
-   * sponsor info tab), the slots they have already booked, and every slot
-   * that is held by someone else so the grid can shade them.
-   */
-  getCoffeeChatSchedule: publicProcedure
-    .input(z.object({ sponsor: z.string().uuid() }))
-    .query(async ({ input }) => {
-      try {
-        const sponsorName = await resolveSponsorName(input.sponsor);
-        const sheets = await getSheetsClient();
-        const spreadsheetId = getSpreadsheetId();
-
-        const [sponsorInfoMap, grid] = await Promise.all([
-          fetchAllSponsorInfo(sheets, spreadsheetId),
-          fetchCoffeeChatGrid(sheets, spreadsheetId),
-        ]);
-
-        const maxCoffeeChatMinutes =
-          sponsorInfoMap.get(sponsorName.toLowerCase())?.maxCoffeeChatMinutes ??
-          0;
-
+        console.error("sponsor portal: sheet read failed", error);
         return {
           sponsorName,
-          maxCoffeeChatMinutes,
-          maxBlocks: coffeeChatBlocksFor(maxCoffeeChatMinutes),
-          myBooked: sortCoffeeChatSlots(
-            grid.filter((booking) => isBookedBy(booking, sponsorName)),
-          ).map(({ room, time }) => ({ room, time })),
-          othersBooked: sortCoffeeChatSlots(
-            grid.filter((booking) => !isBookedBy(booking, sponsorName)),
-          ),
+          hwContact: null,
+          hwContactPhone: null,
+          tier: null,
+          roomNumber: "TBD",
+          boothLocation: "TBD",
+          workshopLocation: null,
+          workshopTime: null,
+          picksCount: 0,
+          hasPrizeTrack: hasPrizeTrack(sponsorName, await prizeTrackSponsors()),
+          maxCoffeeChatMinutes: 0,
+          maxCoffeeChatBlocks: coffeeChatBlocksFor(0),
+          coffeeChatBookedCount: 0,
+          ...chats,
+          // The blanks above are unknowns, not real values: the page says
+          // it couldn't load rather than "not assigned".
+          sheetFailed: true,
         };
-      } catch (error) {
-        if (error instanceof TRPCError) throw error;
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            error instanceof Error
-              ? error.message
-              : "Failed to load the coffee chat schedule",
-        });
       }
     }),
 
