@@ -146,6 +146,9 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   const [startedLocal, setStartedLocal] = useState(false);
   // The judge pressed "Judge this team" for the team they hold.
   const [scoring, setScoring] = useState(false);
+  // The stop the score form was opened for. It stays the one being scored even
+  // if its round ends or the next starts, so a score never lands on another team.
+  const [scoringStopId, setScoringStopId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const [findingNext, setFindingNext] = useState(false);
@@ -242,8 +245,8 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     : null;
   const gated = roundView?.state.enabled === true;
   const roundOpen = roundView ? roundIsOpen(roundView, Date.now()) : false;
-  // A stop whose round has passed without a score is missed. It doesn't hold the
-  // judge back from the next round, but it can still be scored late.
+  // A stop whose round has passed without a score is missed. The judge moves on
+  // to the next round and can score it late from My teams.
   const pendingStops = !gated
     ? openStops
     : openStops.filter(
@@ -256,35 +259,30 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         .filter((s) => !pendingStops.includes(s))
         .sort((a, b) => a.position - b.position)
     : [];
-  // The open round's stop comes first, then any missed ones to finish late.
   const activeStops = !gated
     ? pendingStops
-    : [
-        ...(roundOpen
-          ? pendingStops.filter((s) => s.position === roundView?.state.round)
-          : []),
-        ...missedStops,
-      ];
+    : roundOpen
+      ? pendingStops.filter((s) => s.position === roundView?.state.round)
+      : [];
   const heldStop =
-    activeStops.find((s) => s.status === "in_progress") ??
-    activeStops[0] ??
-    null;
+    scoring && scoringStopId !== null
+      ? (openStops.find((s) => s.id === scoringStopId) ?? null)
+      : (activeStops.find((s) => s.status === "in_progress") ??
+        activeStops[0] ??
+        null);
   const upcomingStop =
     gated && roundView
       ? pendingStops
           .filter((s) => s.position > roundView.state.round)
           .sort((a, b) => a.position - b.position)[0]
       : undefined;
-  // My teams lists these: every team the judge can still judge, in order.
-  // Teams marked absent stay in the list, labelled, so the judge sees why.
-  const absentStops = (stopsQuery.data?.stops ?? []).filter(
-    (s) => s.status === "team_absent",
-  );
-  const upcomingTeams: UpcomingTeam[] = [
-    ...pendingStops,
-    ...missedStops,
-    ...absentStops,
-  ]
+  // My teams lists the judge's whole route in a fixed order: scored, absent
+  // and missed teams stay in place, and the one to judge now is highlighted.
+  const currentStopId =
+    (activeStops.find((s) => s.status === "in_progress") ?? activeStops[0])
+      ?.id ?? null;
+  const upcomingTeams: UpcomingTeam[] = (stopsQuery.data?.stops ?? [])
+    .filter((s) => s.status !== "cancelled" && s.team)
     .sort((a, b) => a.position - b.position)
     .map((s) => ({
       stopId: s.id,
@@ -294,6 +292,8 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       round: gated ? s.position : null,
       absent: s.status === "team_absent",
       late: missedStops.includes(s),
+      done: s.status === "done",
+      current: s.id === currentStopId,
     }));
   // This judge's stop in the open round, once it's closed: scored or absent.
   const roundStop = gated
@@ -412,6 +412,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   const finishTeam = async () => {
     setFindingNext(true);
     setScoring(false);
+    setScoringStopId(null);
     setTab("next");
     await Promise.all([marksQuery.refetch(), stopsQuery.refetch()]);
     setFindingNext(false);
@@ -419,6 +420,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
 
   const submitScore = async (s: ScoreSubmission): Promise<boolean> => {
     if (!held || !heldStop) return false;
+    const late = heldLate;
     setScoreError(null);
     setSending(true);
     try {
@@ -442,7 +444,14 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       return false;
     }
     setSending(false);
+    // A late score while re-scoring counts as re-scored.
+    if (stage === "rescore" && !rescored.includes(held.id)) {
+      const next = [...rescored, held.id];
+      setRescored(next);
+      writeRescored(judgeKey, next);
+    }
     await finishTeam();
+    if (late) setTab("teams");
     return true;
   };
 
@@ -568,26 +577,73 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   const judgeThisTeam = async () => {
     setScoreError(null);
     if (!heldStop || !held) return;
-    try {
-      await startStop.mutateAsync({
-        assignmentId: heldStop.id,
-        teamId: held.id,
-      });
-    } catch (error) {
-      if (errorCode(error) === "CONFLICT") {
-        // A different team was seated here meanwhile (e.g. after a swap).
-        setNextError("That table changed. Reloading your list.");
-        await utils.judging.me.getMyStops.invalidate();
-        return;
+    // Already started (e.g. the page reloaded mid-score): just reopen the form.
+    if (heldStop.status !== "in_progress") {
+      try {
+        await startStop.mutateAsync({
+          assignmentId: heldStop.id,
+          teamId: held.id,
+        });
+      } catch (error) {
+        if (errorCode(error) === "CONFLICT") {
+          // A different team was seated here meanwhile (e.g. after a swap).
+          setNextError("That table changed. Reloading your list.");
+          await utils.judging.me.getMyStops.invalidate();
+          return;
+        }
       }
     }
+    setScoringStopId(heldStop.id);
     setScoring(true);
     setTab("score");
   };
 
+  // Score a team whose round ended first: from My teams, also while re-scoring.
+  const scoreLate = async (stopId: number) => {
+    const stop = missedStops.find((s) => s.id === stopId);
+    if (!stop?.team) return;
+    setScoreError(null);
+    setFinishError(null);
+    if (stop.status !== "in_progress") {
+      try {
+        await startStop.mutateAsync({
+          assignmentId: stop.id,
+          teamId: stop.team.id,
+        });
+      } catch (error) {
+        if (errorCode(error) === "CONFLICT") {
+          setFinishError(friendlyError(error));
+          await utils.judging.me.getMyStops.invalidate();
+          return;
+        }
+      }
+    }
+    setScoringStopId(stop.id);
+    setScoring(true);
+    setTab("score");
+  };
+
+  // The team being scored was closed meanwhile (scored, absent or moved):
+  // leave the form instead of showing another team.
+  useEffect(() => {
+    if (!scoring || scoringStopId === null || !stopsQuery.data) return;
+    const stillOpen = stopsQuery.data.stops.some(
+      (s) =>
+        s.id === scoringStopId &&
+        (s.status === "assigned" || s.status === "in_progress"),
+    );
+    if (stillOpen) return;
+    setScoring(false);
+    setScoringStopId(null);
+    setNextError("That team was closed meanwhile. Check the Next tab.");
+  }, [scoring, scoringStopId, stopsQuery.data]);
+
   // What the Score tab has open, whichever tab is showing.
   const editOpen = editingTeam !== undefined && canEdit;
-  const scoreOpen = (scoring && held !== null && canScoreNew) || editOpen;
+  // A missed team can be scored late until the judge submits.
+  const canScoreLate = heldLate && stage !== "submitted";
+  const scoreOpen =
+    (scoring && held !== null && (canScoreNew || canScoreLate)) || editOpen;
   const editing = tab === "score" && editOpen;
   const scoringPage = tab === "score" && scoreOpen;
 
@@ -640,7 +696,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         onCancel={closeEdit}
         onOpenQuestions={() => changeTab("questions")}
       />
-    ) : scoring && held && canScoreNew ? (
+    ) : scoring && held && (canScoreNew || canScoreLate) ? (
       <JudgeRubric
         key={held.id}
         judgeKey={judgeKey}
@@ -737,6 +793,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
           canSubmit={stage === "rescore" && allRescored}
           error={finishError}
           onEdit={editTeam}
+          onScoreLate={(stopId) => void scoreLate(stopId)}
           onSubmit={() => setConfirm("submit")}
         />
       );

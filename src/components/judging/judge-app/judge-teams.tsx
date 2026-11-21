@@ -41,6 +41,10 @@ export interface UpcomingTeam {
   absent: boolean;
   /** Its round ended before it was scored: it can still be scored late. */
   late: boolean;
+  /** Already scored. */
+  done: boolean;
+  /** The team to judge right now. */
+  current: boolean;
 }
 
 interface JudgeTeamsProps {
@@ -56,6 +60,8 @@ interface JudgeTeamsProps {
   error: string | null;
   /** Opens this mark to change it. */
   onEdit: (markId: number) => void;
+  /** Opens the score form for a team whose round ended first. */
+  onScoreLate: (stopId: number) => void;
   onSubmit: () => void;
 }
 
@@ -69,6 +75,7 @@ export function JudgeTeams({
   results,
   upcoming,
   stage,
+  onScoreLate,
   rescored,
   canSubmit,
   error,
@@ -78,18 +85,18 @@ export function JudgeTeams({
   const stillToJudge = upcoming.length > 0 && (
     <>
       <p className="m-0 px-1 text-sm text-dashboard-text-light">
-        Your next tables, in order.
+        Your tables, in order. The highlighted one is now.
       </p>
-      <section
-        aria-label="Teams still to judge"
-        className={`${card} overflow-hidden`}
-      >
+      <section aria-label="Your tables" className={`${card} overflow-hidden`}>
         <ul className="m-0 list-none p-0">
           {upcoming.map((u, i) => (
             <li
               key={u.stopId}
+              aria-current={u.current ? "step" : undefined}
               className={`flex items-start justify-between gap-3 px-4 py-3 ${
                 i > 0 ? "border-t border-dashboard-border-subtle" : ""
+              } ${u.current ? "bg-dashboard-bg-highlight" : ""} ${
+                u.done || u.absent ? "opacity-60" : ""
               }`}
             >
               <span className="flex min-w-0 flex-col gap-0.5">
@@ -102,14 +109,29 @@ export function JudgeTeams({
                     : "No members listed"}
                 </span>
               </span>
-              {(u.absent || u.late || u.round !== null) && (
-                <span className="shrink-0 text-xs font-semibold text-dashboard-text-light">
-                  {u.absent
-                    ? "Absent"
-                    : u.late
-                      ? "Time ran out"
-                      : `Round ${u.round}`}
+              {u.late && !u.absent ? (
+                <DashboardButton
+                  type="button"
+                  variant="outline"
+                  onClick={() => onScoreLate(u.stopId)}
+                  className="shrink-0"
+                >
+                  Score late
+                </DashboardButton>
+              ) : u.current ? (
+                <span className="shrink-0 rounded-full bg-dashboard-action-primary px-2.5 py-0.5 text-xs font-semibold text-white">
+                  Now
                 </span>
+              ) : (
+                (u.absent || u.done || u.round !== null) && (
+                  <span className="shrink-0 text-xs font-semibold text-dashboard-text-light">
+                    {u.absent
+                      ? "Absent"
+                      : u.done
+                        ? "Scored"
+                        : `Round ${u.round}`}
+                  </span>
+                )
               )}
             </li>
           ))}
