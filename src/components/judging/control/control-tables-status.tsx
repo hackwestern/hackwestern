@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/components/ui/dialog";
+import { MAP_COLS } from "~/components/judging/map/map-data";
 import { DEFAULT_RUBRIC } from "~/components/judging/shared/rubric-scorer";
 import { api } from "~/utils/api";
 import {
@@ -34,8 +35,8 @@ const MIN_PHYSICAL_TABLES = 70;
 const SPOTS_PER_TABLE = 2;
 /** DB tables the room needs: one per team spot. */
 const SPOT_COUNT = MIN_PHYSICAL_TABLES * SPOTS_PER_TABLE;
-/** Tables per row, in snake order. Sized so the whole room fits on screen. */
-const COLS = 10;
+/** Tables per row, in snake order: the room's 5 rows of 14, as on the map. */
+const COLS = MAP_COLS;
 
 const KINDS: Record<Kind, { label: string; box: string; dot: string }> = {
   judging: {
