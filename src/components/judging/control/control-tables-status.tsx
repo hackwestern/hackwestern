@@ -18,6 +18,7 @@ import {
   MUTED,
   type Progress,
   type QueueState,
+  type RoundOverview,
   type Status,
   StatusLine,
   errorText,
@@ -25,7 +26,7 @@ import {
 } from "./control-shared";
 
 type Spot = Progress["tables"][number];
-type Kind = "judging" | "waiting" | "finished" | "empty" | "off";
+type Kind = "judging" | "waiting" | "finished" | "free" | "empty" | "off";
 
 /** Physical tables drawn, even before the DB has rows for all of them. */
 const MIN_PHYSICAL_TABLES = 70;
@@ -52,6 +53,11 @@ const KINDS: Record<Kind, { label: string; box: string; dot: string }> = {
     box: "border-[#8cc99a] bg-[#e3f4e6]",
     dot: "bg-[#1f8a3a]",
   },
+  free: {
+    label: "No judge this round",
+    box: "border-[#d6dbe5] bg-white",
+    dot: "bg-[#8a96a8]",
+  },
   empty: {
     label: "No team",
     box: "border-[#d6dbe5] bg-white",
@@ -64,9 +70,34 @@ const KINDS: Record<Kind, { label: string; box: string; dot: string }> = {
   },
 };
 
-function kindOf(s: Spot | undefined): Kind {
+/** With timed rounds, what the waiting and done colours mean. */
+const ROUND_LABELS: Partial<Record<Kind, string>> = {
+  waiting: "Waiting for this round's judge",
+  finished: "Scored this round",
+};
+
+/** A kind's colours, with labels for the current round when rounds are on. */
+function styleOf(kind: Kind, round: number | null) {
+  const label = round !== null ? ROUND_LABELS[kind] : undefined;
+  return label ? { ...KINDS[kind], label } : KINDS[kind];
+}
+
+/**
+ * With timed rounds (`round` set), only this round's stop counts: a table
+ * goes green once its judge submits, and every table resets when the next
+ * round starts. Without rounds, green means all its judges are done.
+ */
+function kindOf(s: Spot | undefined, round: number | null = null): Kind {
   if (!s?.isActive) return "off";
   if (!s.team) return "empty";
+  if (round !== null) {
+    const stop = s.judges.find(
+      (j) => j.position === round && j.status !== "cancelled",
+    );
+    if (!stop) return "free";
+    if (stop.status === "in_progress") return "judging";
+    return stop.status === "assigned" ? "waiting" : "finished";
+  }
   if (s.judges.some((j) => j.status === "in_progress")) return "judging";
   const open = s.judges.some((j) => j.status === "assigned");
   if (s.judges.length > 0 && !open) return "finished";
@@ -77,15 +108,17 @@ function SpotBox({
   number,
   spot,
   now,
+  round,
   onOpen,
 }: {
   number: number;
   spot: Spot | undefined;
   now: number;
+  round: number | null;
   onOpen: () => void;
 }) {
-  const kind = kindOf(spot);
-  const style = KINDS[kind];
+  const kind = kindOf(spot, round);
+  const style = styleOf(kind, round);
   const current = spot?.judges.find((j) => j.status === "in_progress");
   const held = current?.startedAt
     ? formatHold(now - new Date(current.startedAt).getTime())
@@ -138,11 +171,13 @@ function SpotDialog({
   number,
   spot,
   now,
+  round,
   onClose,
 }: {
   number: number | null;
   spot: Spot | undefined;
   now: number;
+  round: number | null;
   onClose: () => void;
 }) {
   const open = number !== null;
@@ -152,7 +187,7 @@ function SpotDialog({
     refetchInterval: 3000,
   });
   const result = resultsQ.data?.find((r) => r.team.id === teamId);
-  const kind = KINDS[kindOf(spot)];
+  const kind = styleOf(kindOf(spot, round), round);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -419,11 +454,15 @@ export function ControlTablesStatus({
   progress,
   queue,
   now,
+  timed,
 }: {
   progress: Progress | undefined;
   queue: QueueState | undefined;
   now: number;
+  /** The timed rounds: tables are coloured for the current round. */
+  timed: RoundOverview | undefined;
 }) {
+  const round = timed?.enabled && timed.round > 0 ? timed.round : null;
   const utils = api.useUtils();
   const [status, setStatus] = useState<Status>(null);
   const [openSpot, setOpenSpot] = useState<number | null>(null);
@@ -525,11 +564,12 @@ export function ControlTablesStatus({
     judging: 0,
     waiting: 0,
     finished: 0,
+    free: 0,
     empty: 0,
     off: 0,
   };
   for (let n = 1; n <= physical * SPOTS_PER_TABLE; n++)
-    counts[kindOf(byNumber.get(n))]++;
+    counts[kindOf(byNumber.get(n), round)]++;
 
   return (
     <section className={CARD} aria-labelledby="tables-status-title">
@@ -574,7 +614,7 @@ export function ControlTablesStatus({
             {(Object.keys(KINDS) as Kind[]).map((k) => (
               <li key={k} className="flex items-center gap-1.5">
                 <span className={`size-2.5 rounded-full ${KINDS[k].dot}`} />
-                {KINDS[k].label}
+                {styleOf(k, round).label}
                 <span className={`tabular-nums ${MUTED}`}>{counts[k]}</span>
               </li>
             ))}
@@ -599,6 +639,7 @@ export function ControlTablesStatus({
                         number={n}
                         spot={byNumber.get(n)}
                         now={now}
+                        round={round}
                         onOpen={() => setOpenSpot(n)}
                       />
                     );
@@ -622,6 +663,7 @@ export function ControlTablesStatus({
         number={openSpot}
         spot={openSpot === null ? undefined : byNumber.get(openSpot)}
         now={now}
+        round={round}
         onClose={() => setOpenSpot(null)}
       />
     </section>

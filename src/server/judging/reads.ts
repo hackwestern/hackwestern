@@ -116,6 +116,7 @@ export async function getProgress() {
           name: s.judgeName ?? s.judgeEmail,
           status: s.status,
           startedAt: s.startedAt,
+          position: s.position,
         })),
       };
     }),

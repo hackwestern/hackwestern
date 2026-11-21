@@ -83,6 +83,7 @@ export default function JudgingControlRoom() {
           progress={progressQ.data}
           queue={queue}
           now={now}
+          timed={roundQ.data}
         />
         <ControlRoundGrid progress={progressQ.data} round={roundQ.data} />
         <ControlRounds

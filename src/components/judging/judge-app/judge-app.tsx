@@ -69,7 +69,7 @@ const toBreakdown = (ratings: Ratings, notes: string, superLike: boolean) => ({
 // The server doesn't know about it yet, so it guides this app, not the judging
 // router.
 //   first     score each assigned team (no project links)
-//   rescore   go back through every review, with the links
+//   rescore   go back through every review
 //   final     review the final scores and submit
 //   submitted scores locked; the comparison with other judges is shown
 type Stage = "first" | "rescore" | "final" | "submitted";
@@ -599,12 +599,6 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         team={editingTeam}
         rubric={RUBRIC}
         mode={stage === "rescore" ? "rescore" : "edit"}
-        links={
-          // Project links stay hidden until re-scoring.
-          stage === "first"
-            ? undefined
-            : initial.linksByTeam[editingTeam.teamId]
-        }
         saving={edit.isPending}
         error={editError}
         onSave={saveEdit}

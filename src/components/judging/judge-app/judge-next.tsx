@@ -173,9 +173,8 @@ export function JudgeNext({
           </h1>
           <p className="text-base font-medium text-dashboard-text-light">
             You&apos;ve judged all {judged} {judged === 1 ? "team" : "teams"} in
-            your queue. Now go back through each one, this time with their
-            GitHub and Devpost, and settle on your final scores. Once every team
-            is re-scored, you can submit.
+            your queue. Now go back through each one and settle on your final
+            scores. Once every team is re-scored, you can submit.
           </p>
         </section>
         {errorBanner}
