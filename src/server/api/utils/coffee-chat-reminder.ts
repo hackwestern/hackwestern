@@ -185,6 +185,11 @@ export function desiredReminder(
 }
 
 export type StoredReminder = typeof coffeeChatReminders.$inferSelect;
+/** The fields planReminder reads (a sponsor lead ping row has them too). */
+export type ReminderRow = Pick<
+  StoredReminder,
+  "kind" | "messageId" | "postAt" | "contentKey" | "createdAt"
+>;
 
 /** A send-now claim older than this without a message id was never sent. */
 export const STALE_CLAIM_MS = 60_000;
@@ -195,7 +200,7 @@ export const STALE_CLAIM_MS = 60_000;
 export const RECALL_MARGIN_MS = 90_000;
 
 /** A send-now claim (no message id yet) left over from a cut-off sync. */
-export function isStaleClaim(stored: StoredReminder, now: Date): boolean {
+export function isStaleClaim(stored: ReminderRow, now: Date): boolean {
   return (
     stored.kind === "sent" &&
     stored.messageId === "" &&
@@ -203,12 +208,12 @@ export function isStaleClaim(stored: StoredReminder, now: Date): boolean {
   );
 }
 
-export type ReminderPlan =
+export type ReminderPlan<S extends ReminderRow = StoredReminder> =
   | { action: "keep" }
   | { action: "none" }
   | {
       action: "change";
-      cancel: StoredReminder | null;
+      cancel: S | null;
       create: DesiredReminder | null;
     };
 
@@ -218,11 +223,11 @@ export type ReminderPlan =
  * by a new one scheduled for later (the chat moved to a later time). A
  * room move inside the last 15 minutes is told by the room-move DM.
  */
-export function planReminder(
-  stored: StoredReminder | null,
+export function planReminder<S extends ReminderRow = StoredReminder>(
+  stored: S | null,
   desired: DesiredReminder | null,
   now: Date,
-): ReminderPlan {
+): ReminderPlan<S> {
   if (!stored) {
     return desired
       ? { action: "change", cancel: null, create: desired }

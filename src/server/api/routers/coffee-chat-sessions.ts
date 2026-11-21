@@ -43,6 +43,15 @@ import {
 } from "~/server/api/utils/coffee-chat-notify";
 import { fetchSponsorshipTeamNames } from "~/server/api/utils/sponsor-hw-contacts";
 import { db } from "~/server/db";
+import { sponsorLeadSlackCopy } from "~/content/sponsor-lead-slack";
+import {
+  esc,
+  organizerActor,
+  reportSponsorChange,
+  sessionTime,
+  type FeedEvent,
+} from "~/server/slack/sponsor-lead-feed";
+import { syncLeadPingsLater } from "~/server/slack/sponsor-lead-pings";
 import {
   assertCellFree,
   assertRepCanChat,
@@ -67,6 +76,74 @@ import { mirrorCoffeeChatSetupLater } from "~/server/api/utils/coffee-chat-setup
 import { repName, repPhone } from "~/server/api/routers/coffee-chat-setup";
 
 const errors = coffeeSessionsCopy.errors;
+const feedCopy = sponsorLeadSlackCopy.feed;
+
+/** A board change for the sponsor's HW lead, before the actor is added. */
+type BoardFeed = Omit<FeedEvent, "actor">[];
+
+/** After the commit: tell each sponsor's HW lead (sponsor-lead-feed.ts). */
+function reportBoard(
+  user: { email?: string | null; name?: string | null },
+  feed: BoardFeed,
+): void {
+  if (feed.length === 0) return;
+  const actor = organizerActor(user);
+  reportSponsorChange(feed.map((e) => ({ ...e, actor })));
+}
+
+/** The rep's name on the board, escaped for Slack ("" when gone). */
+function repNameOf(state: BoardState, repId: string): string {
+  const rep = state.sponsors
+    .flatMap((sp) => sp.reps)
+    .find((r) => r.id === repId);
+  return esc(rep?.name ?? "");
+}
+
+/** "2:00 PM" for a sponsor's session (the usable part when a workshop cuts it). */
+function timeFor(state: BoardState, sponsorId: string, sessionId: string) {
+  const sponsor = state.sponsors.find((sp) => sp.id === sponsorId);
+  return sessionTime(sessionId, sponsor?.partial[sessionId]);
+}
+
+type Cell = { repId: string; room: string; sessionId: string };
+
+/**
+ * Auto-schedule's change per sponsor: one line for each sponsor whose
+ * chats (rep, room, session) differ after the run.
+ */
+function autoScheduleFeed(
+  state: BoardState,
+  after: readonly Cell[],
+  sponsorOfRep: ReadonlyMap<string, string>,
+): BoardFeed {
+  const keys = (list: readonly Cell[]) => {
+    const out = new Map<string, Set<string>>();
+    for (const p of list) {
+      const sponsorId = sponsorOfRep.get(p.repId);
+      if (!sponsorId) continue;
+      const set = out.get(sponsorId) ?? new Set<string>();
+      set.add(`${p.repId}|${p.room}|${p.sessionId}`);
+      out.set(sponsorId, set);
+    }
+    return out;
+  };
+  const before = keys(state.placements);
+  const now = keys(after);
+  const ids = new Set([...before.keys(), ...now.keys()]);
+  return [...ids].flatMap((sponsorId) => {
+    const a = before.get(sponsorId) ?? new Set<string>();
+    const b = now.get(sponsorId) ?? new Set<string>();
+    if (a.size === b.size && [...a].every((k) => b.has(k))) return [];
+    return [
+      {
+        sponsorId,
+        group: "autoSchedule" as const,
+        text: feedCopy.autoSchedule(b.size),
+        latestOnly: true,
+      },
+    ];
+  });
+}
 
 /**
  * Re-mirror the Room Grid tab after a change to something already sent
@@ -164,8 +241,8 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
    * What's left needs the organizer ("fewer chats", or a sent chat that
    * breaks a rule now).
    */
-  autoSchedule: protectedOrganizerProcedure.mutation(async () => {
-    return boardWrite(async (tx, state) => {
+  autoSchedule: protectedOrganizerProcedure.mutation(async ({ ctx }) => {
+    const { feed, ...out } = await boardWrite(async (tx, state) => {
       assertWorkshopsKnown(state);
       const result = schedule(
         state.sched,
@@ -247,8 +324,11 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         chats,
         fixed: fixed.applied.length,
         fixes: fixed.left.length,
+        feed: autoScheduleFeed(state, after, sponsorOfRep),
       };
     });
+    reportBoard(ctx.session.user, feed);
+    return out;
   }),
 
   /**
@@ -258,7 +338,8 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
    */
   applyFix: protectedOrganizerProcedure
     .input(z.object({ fixId: z.string().min(1).max(200) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      let fixSponsor: string | null = null;
       const { kind, ...after } = await boardWrite(async (tx, state) => {
         assertWorkshopsKnown(state);
         const fix = boardFixes(
@@ -273,6 +354,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
             message: errors.unknownFix,
           });
         const sug = fix.suggestion;
+        fixSponsor = fix.sponsor;
         try {
           applySuggestion(state.sched, COFFEE_SESSIONS, state.board, {}, sug);
         } catch {
@@ -374,6 +456,11 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         return untouched;
       });
       await afterSentChange(after);
+      if (fixSponsor) {
+        reportBoard(ctx.session.user, [
+          { sponsorId: fixSponsor, group: "fix", text: feedCopy.fix(kind) },
+        ]);
+      }
       return { kind };
     }),
 
@@ -393,8 +480,8 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         force: z.boolean().default(false),
       }),
     )
-    .mutation(async ({ input }) => {
-      const after = await boardWrite(async (tx, state) => {
+    .mutation(async ({ ctx, input }) => {
+      const { feed, ...after } = await boardWrite(async (tx, state) => {
         const p = state.placements.find((x) => x.id === input.placementId);
         if (!p)
           throw new TRPCError({
@@ -417,12 +504,25 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
             forced,
           })
           .where(eq(coffeeChatPlacements.id, p.id));
+        const feed: BoardFeed = [
+          {
+            sponsorId: p.sponsorId,
+            group: "moved",
+            text: feedCopy.moved(
+              repNameOf(state, p.repId),
+              timeFor(state, p.sponsorId, input.sessionId),
+              input.room,
+            ),
+          },
+        ];
         return {
           jobs: await reconcileSent(tx, state, p.sponsorId),
           sent: p.status === "sent",
+          feed,
         };
       });
       await afterSentChange(after);
+      reportBoard(ctx.session.user, feed);
       return { ok: true };
     }),
 
@@ -432,8 +532,8 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
    */
   removePlacement: protectedOrganizerProcedure
     .input(z.object({ placementId: z.string().uuid() }))
-    .mutation(async ({ input }) => {
-      const after = await boardWrite(async (tx, state) => {
+    .mutation(async ({ ctx, input }) => {
+      const { feed, ...after } = await boardWrite(async (tx, state) => {
         const p = state.placements.find((x) => x.id === input.placementId);
         if (p) assertNotSent(p);
         // Before the delete: it cascades the invites.
@@ -449,9 +549,23 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
             code: "NOT_FOUND",
             message: errors.unknownPlacement,
           });
-        return { jobs, sent: gone[0]!.status === "sent" };
+        const feed: BoardFeed = p
+          ? [
+              {
+                sponsorId: p.sponsorId,
+                group: "removed",
+                text: feedCopy.removed(
+                  repNameOf(state, p.repId),
+                  timeFor(state, p.sponsorId, p.sessionId),
+                  p.room,
+                ),
+              },
+            ]
+          : [];
+        return { jobs, sent: gone[0]!.status === "sent", feed };
       });
       await afterSentChange(after);
+      reportBoard(ctx.session.user, feed);
       return { ok: true };
     }),
 
@@ -468,12 +582,12 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         force: z.boolean().default(false),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       // Undo after Remove. It always places a NEW draft chat: invites of a
       // removed sent chat were cancelled by reconcile and aren't restored
       // (the board only offers Undo for draft chats). A draft needs no
       // reconcile; it reaches hackers on the next Send.
-      return boardWrite(async (tx, state) => {
+      const { feed, ...out } = await boardWrite(async (tx, state) => {
         // Undo of a forced chat puts it back forced (same rules as a forced move).
         const forced = assertRepCanChat(
           state,
@@ -508,8 +622,26 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
             forced,
           })
           .returning({ id: coffeeChatPlacements.id });
-        return { id: row!.id };
+        const sponsorId = state.sponsors.find((sp) =>
+          sp.reps.some((r) => r.id === input.repId),
+        )?.id;
+        const feed: BoardFeed = sponsorId
+          ? [
+              {
+                sponsorId,
+                group: "placed",
+                text: feedCopy.placed(
+                  repNameOf(state, input.repId),
+                  timeFor(state, sponsorId, input.sessionId),
+                  input.room,
+                ),
+              },
+            ]
+          : [];
+        return { id: row!.id, feed };
       });
+      reportBoard(ctx.session.user, feed);
+      return out;
     }),
 
   /**
@@ -664,6 +796,20 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         mirrorCoffeeInvitesLater();
       }
       await remirrorIf(true);
+      if (input.sponsorId) {
+        reportBoard(ctx.session.user, [
+          {
+            sponsorId: input.sponsorId,
+            group: "booked",
+            text: feedCopy.booked(
+              esc(input.description),
+              sessionTime(input.sessionId),
+              input.room,
+              out.chatIds.length,
+            ),
+          },
+        ]);
+      }
       return out;
     }),
 
@@ -694,7 +840,7 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      return boardWrite(async (tx, state) => {
+      const booked = await boardWrite(async (tx, state) => {
         assertWorkshopsKnown(state);
         assertCellFree(state, input.room, input.sessionId);
         if (input.forSponsorId) {
@@ -721,15 +867,32 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
           .returning({ id: coffeeChatRoomBookings.id });
         return { id: row!.id };
       });
+      if (input.forSponsorId) {
+        reportBoard(ctx.session.user, [
+          {
+            sponsorId: input.forSponsorId,
+            group: "booked",
+            text: feedCopy.booked(
+              esc(input.label),
+              sessionTime(input.sessionId),
+              input.room,
+              0,
+            ),
+          },
+        ]);
+      }
+      return booked;
     }),
 
   /** Once the schedule was sent, booking changes re-mirror the Room Grid tab. */
   moveBooking: protectedOrganizerProcedure
     .input(z.object({ bookingId: z.string().uuid(), room, sessionId }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      let booking: BoardState["bookings"][number] | undefined;
       const sent = await boardWrite(async (tx, state) => {
         assertWorkshopsKnown(state);
-        if (!state.bookings.some((b) => b.id === input.bookingId)) {
+        booking = state.bookings.find((b) => b.id === input.bookingId);
+        if (!booking) {
           throw new TRPCError({
             code: "NOT_FOUND",
             message: errors.unknownBooking,
@@ -762,13 +925,28 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
         return anySent(state);
       });
       await remirrorIf(sent);
+      if (booking?.forSponsorId) {
+        reportBoard(ctx.session.user, [
+          {
+            sponsorId: booking.forSponsorId,
+            group: "bookingMoved",
+            text: feedCopy.bookingMoved(
+              esc(booking.label),
+              sessionTime(input.sessionId),
+              input.room,
+            ),
+          },
+        ]);
+      }
       return { ok: true };
     }),
 
   removeBooking: protectedOrganizerProcedure
     .input(z.object({ bookingId: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      let booking: BoardState["bookings"][number] | undefined;
       const { sent, cancelled } = await boardWrite(async (tx, state) => {
+        booking = state.bookings.find((b) => b.id === input.bookingId);
         // Its hackers' live invites are called off first (and told).
         const cancelled = await tx
           .update(coffeeChats)
@@ -800,6 +978,15 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
       );
       if (cancelled.length) mirrorCoffeeInvitesLater();
       await remirrorIf(sent || cancelled.length > 0);
+      if (booking?.forSponsorId) {
+        reportBoard(ctx.session.user, [
+          {
+            sponsorId: booking.forSponsorId,
+            group: "bookingRemoved",
+            text: feedCopy.bookingRemoved(esc(booking.label), cancelled.length),
+          },
+        ]);
+      }
       return { ok: true, cancelled: cancelled.length };
     }),
 
@@ -809,13 +996,13 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
    * hackers are invited. A chat placed later stays a draft until the next
    * Send, which notifies only the new ones.
    */
-  send: protectedOrganizerProcedure.mutation(async () => {
+  send: protectedOrganizerProcedure.mutation(async ({ ctx }) => {
     const now = new Date();
     // One transaction: mark every draft chat sent, then invite hackers to
     // their seats (scanned → shortlist → interested). Both take the same
     // board lock, so a page-load round can't run in between. Messages go
     // out after the commit (deliverInviteNotices never throws).
-    const { sent, chats, reconfirmed, round } = await boardWrite(
+    const { sent, chats, reconfirmed, round, newlySent } = await boardWrite(
       async (tx, state) => {
         assertWorkshopsKnown(state);
         // "Sent N chats." counts chats, not cells.
@@ -864,11 +1051,38 @@ export const coffeeChatSessionsRouter = createTRPCRouter({
             .map((t) => repSponsor.get(t.repId)),
         ).size;
         const round = await sendRoundOneInvites(tx, { now: stamp });
-        return { sent, chats, reconfirmed, round };
+        // Per sponsor, for their HW lead: the sessions this Send sent.
+        const newlySent = new Map<string, { name: string; sessions: number }>();
+        for (const p of state.placements) {
+          if (p.status !== "draft") continue;
+          const sp = state.sponsors.find((x) => x.id === p.sponsorId);
+          if (!sp) continue;
+          const entry = newlySent.get(sp.id) ?? { name: sp.name, sessions: 0 };
+          entry.sessions++;
+          newlySent.set(sp.id, entry);
+        }
+        return { sent, chats, reconfirmed, round, newlySent };
       },
     );
     const delivery = await deliverInviteNotices(round.jobs);
     mirrorCoffeeInvitesLater();
+    // One line per sponsor (sessions sent, hackers invited), and their HW
+    // lead's chat pings scheduled now rather than on the next cron.
+    reportBoard(
+      ctx.session.user,
+      [...newlySent].map(([sponsorId, { name, sessions }]) => ({
+        sponsorId,
+        sponsorName: name,
+        group: "sent" as const,
+        text: feedCopy.sent(
+          sessions,
+          round.jobs.filter(
+            (j) => j.event === "offered" && j.notice.sponsorName === name,
+          ).length,
+        ),
+      })),
+    );
+    syncLeadPingsLater([...newlySent.keys()]);
     const mirror = await mirrorRoomGrid(await loadBoardState(), { now });
     return {
       sent: sent.length,
