@@ -12,11 +12,12 @@
 //   "Top 20":   rank, team and Final, best first — a single sheet formula
 //               over Results, so it re-sorts live as completeness is typed.
 //   "Results":  one bold row per team, ranked by judge average, with that
-//               team's judge marks in a collapsed row group under it. Next to
-//               Average: Devpost / GitHub links, "Completeness" (blank,
-//               organizers type 0-10 on team rows; red while blank, green
-//               once scored) and "Final" (highlighted) — a formula that
-//               counts completeness as one more rubric criterion:
+//               team's judge marks in a collapsed row group under it.
+//               "Final" (highlighted) sits right after Rank. Next to Average:
+//               Devpost / GitHub links and "Completeness" (blank, organizers
+//               type 0-10 on team rows; red while blank, green once scored).
+//               Final is a formula that counts completeness as one more
+//               rubric criterion:
 //               (Average × N + Completeness) / (N + 1), N = number of rubric
 //               criteria (5 now, so × 5 / 6); the Average alone while
 //               Completeness is blank. "Super likes" counts hearts from any
