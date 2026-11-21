@@ -30,10 +30,7 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
       designRating: teamMarks.designRating,
       adventurousRating: teamMarks.adventurousRating,
       notes: teamMarks.notes,
-<<<<<<< HEAD
       superLike: teamMarks.superLike,
-=======
->>>>>>> main
     })
     .from(teamMarks)
     .innerJoin(judges, eq(judges.id, teamMarks.judgeId))
@@ -83,10 +80,7 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
       score: m.score,
       ratings: ratingsFromColumns(m),
       notes: m.notes ?? "",
-<<<<<<< HEAD
       superLike: m.superLike,
-=======
->>>>>>> main
     })),
   );
 }

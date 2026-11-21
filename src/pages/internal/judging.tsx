@@ -3,7 +3,6 @@ import { useMemo } from "react";
 import SEO from "~/components/seo";
 import { InternalPage } from "~/components/internals/page-shell";
 import { ControlProgress } from "~/components/judging/control/control-progress";
-import { ControlQueue } from "~/components/judging/control/control-queue";
 import { ControlResultsSheet } from "~/components/judging/control/control-results-sheet";
 import { ControlRounds } from "~/components/judging/control/control-rounds";
 import { ControlTablesStatus } from "~/components/judging/control/control-tables-status";
@@ -77,31 +76,6 @@ export default function JudgingControlRoom() {
 
         <ControlProgress queue={queue} judges={judgesQ.data} now={now} />
 
-<<<<<<< HEAD
-          <ControlQueue queue={queue} />
-          <ControlProgress queue={queue} judges={judgesQ.data} now={now} />
-
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:items-start">
-            <ControlJudges
-              judges={judgesQ.data}
-              queue={queue}
-              now={now}
-              myId={session?.user.id}
-            />
-            <ControlRanking ranking={rankingQ.data} queue={queue} />
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2 xl:items-start">
-            <ControlQueueTable queue={queue} now={now} />
-            <div className="flex min-w-0 flex-col gap-5">
-              <ControlSponsorTracks />
-              <ControlAddJudge />
-              <ControlResultsSheet />
-            </div>
-          </div>
-        </div>
-      </div>
-=======
         <ControlTablesStatus
           progress={progressQ.data}
           queue={queue}
@@ -109,8 +83,8 @@ export default function JudgingControlRoom() {
         />
         <ControlQueueTable queue={queue} now={now} />
         <ControlRounds queue={queue} />
+        <ControlResultsSheet />
       </InternalPage>
->>>>>>> main
     </>
   );
 }

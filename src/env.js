@@ -244,9 +244,7 @@ export const env = createEnv({
     SPONSOR_MASTER_SHEET_TAB: process.env.SPONSOR_MASTER_SHEET_TAB,
     SPONSOR_SHEETS_CLIENT_EMAIL: process.env.SPONSOR_SHEETS_CLIENT_EMAIL,
     SPONSOR_SHEETS_PRIVATE_KEY: process.env.SPONSOR_SHEETS_PRIVATE_KEY,
-<<<<<<< HEAD
     JUDGING_RESULTS_SHEET: process.env.JUDGING_RESULTS_SHEET,
-=======
     RUN_OF_SHOW_SHEET: process.env.RUN_OF_SHOW_SHEET,
     RUN_OF_SHOW_SHEETS_CLIENT_EMAIL:
       process.env.RUN_OF_SHOW_SHEETS_CLIENT_EMAIL,
@@ -254,7 +252,6 @@ export const env = createEnv({
     SHEET_WRITES: process.env.SHEET_WRITES,
     COFFEE_INVITES_ENABLED: process.env.COFFEE_INVITES_ENABLED,
     VERCEL_ENV: process.env.VERCEL_ENV,
->>>>>>> main
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     HACK_START: process.env.HACK_START,
     HACK_END: process.env.HACK_END,
