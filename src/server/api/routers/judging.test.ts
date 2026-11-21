@@ -1938,6 +1938,43 @@ describe("timed rounds", () => {
     expect((await admin.getRound()).judgingStarted).toBe(true);
   });
 
+  test("the public board shows rounds without judge identities or scores", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    await room.org.caller.judging.admin.startRound();
+    await score(judge, await stopAt(judge, 1));
+
+    const anon = createCaller(createInnerTRPCContext({ session: null }));
+    const board = await anon.judging.board.get();
+    expect(board.round).toMatchObject({ round: 1, status: "running" });
+    expect(board.stops.length).toBeGreaterThan(0);
+
+    // Judges are numbers, never ids, names or emails.
+    for (const stop of board.stops) {
+      expect(Object.keys(stop).sort()).toEqual([
+        "judge",
+        "round",
+        "status",
+        "table",
+        "team",
+      ]);
+      expect(stop.judge).toBeGreaterThan(0);
+    }
+    expect(JSON.stringify(board)).not.toContain(judge.session.user.id);
+    expect(JSON.stringify(board)).not.toContain(
+      judge.session.user.email ?? "@",
+    );
+
+    // The scored stop shows as done, the rest of round 1 as happening now,
+    // and later rounds as coming up.
+    const mine = board.stops.filter((s) => s.round === 1);
+    expect(mine.some((s) => s.status === "done")).toBe(true);
+    expect(
+      board.stops.some((s) => s.round > 1 && s.status === "upcoming"),
+    ).toBe(true);
+  });
+
   test("stops at empty tables aren't rounds", async () => {
     // 4 tables but 2 teams: tables 3 and 4 are empty.
     const room = await setupRoom({

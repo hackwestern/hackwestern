@@ -7,6 +7,7 @@ import {
   protectedJudgeProcedure,
   protectedOrganizerProcedure,
   protectedProcedure,
+  publicProcedure,
 } from "~/server/api/trpc";
 import { db, extractRows } from "~/server/db";
 import { judgingAssignments, judges, users } from "~/server/db/schema";
@@ -54,6 +55,7 @@ import {
 import {
   getAllJudges,
   getMyStops,
+  getRoundBoard,
   getProgress,
   getSubmittedMarks,
   getTeamJudging,
@@ -310,6 +312,13 @@ export const judgingRouter = createTRPCRouter({
         "Failed to get submitted team marks",
       );
     }),
+  }),
+
+  /** What hackers can see: the rounds, with judges as numbers. No login. */
+  board: createTRPCRouter({
+    get: publicProcedure.query(() =>
+      withErrorHandling(() => getRoundBoard(), "Failed to load the rounds"),
+    ),
   }),
 
   team: createTRPCRouter({
