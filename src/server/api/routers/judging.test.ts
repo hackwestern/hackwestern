@@ -1542,6 +1542,9 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
       table: { number: 1, zone: "Main room", row: 0, col: 0 },
       absent: false,
       judges: { done: 1, total: 3 },
+      // Rounds are off in this room.
+      round: null,
+      thisRound: null,
     });
   });
 });

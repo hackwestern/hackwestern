@@ -358,7 +358,41 @@ export async function getTeamJudging(userId: string) {
   ]);
   const table = team?.judgingTable ?? null;
   if (!table)
-    return { table: null, absent: false, judges: { done: 0, total: 0 } };
+    return {
+      table: null,
+      absent: false,
+      judges: { done: 0, total: 0 },
+      round: null,
+      thisRound: null,
+    };
+
+  // With timed rounds: is a judge at this team's table in the current round?
+  const round = await getRoundState();
+  const current = round.enabled && round.round > 0 ? round.round : null;
+  const [roundStop] =
+    current === null
+      ? []
+      : await db
+          .select({ status: judgingAssignments.status })
+          .from(judgingAssignments)
+          .where(
+            and(
+              eq(judgingAssignments.judgingTableId, table.id),
+              eq(judgingAssignments.position, current),
+              ne(judgingAssignments.status, "cancelled"),
+            ),
+          )
+          .limit(1);
+  const roundOpen = round.status === "running" || round.status === "paused";
+  const thisRound: "now" | "done" | "none" | null =
+    current === null
+      ? null
+      : roundStop?.status === "done"
+        ? "done"
+        : roundStop?.status === "in_progress" ||
+            (roundStop?.status === "assigned" && roundOpen)
+          ? "now"
+          : "none";
 
   const counts = await db
     .select({ status: judgingAssignments.status, n: count() })
@@ -382,6 +416,8 @@ export async function getTeamJudging(userId: string) {
       done: counts.find((c) => c.status === "done")?.n ?? 0,
       total: counts.reduce((sum, c) => sum + c.n, 0),
     },
+    round: current,
+    thisRound,
   };
 }
 
