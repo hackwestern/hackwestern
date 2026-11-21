@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
+import { SWEEP_NOT_CONFIGURED } from "~/lib/cheat-checks/constants";
 
 const filterCopy = sponsorPresentationsCopy.cheatCheckFilter;
 
@@ -20,7 +21,7 @@ const SweepStatus = () => {
   const utils = api.useUtils();
   const status = api.cheatCheck.getSweepStatus.useQuery(undefined, {
     refetchInterval: (query) =>
-      query.state.data?.sweep.status === "running" ? 10_000 : false,
+      query.state.data?.latest?.sweep.status === "running" ? 10_000 : false,
   });
   const refresh = () => void utils.cheatCheck.getSweepStatus.invalidate();
   const start = api.cheatCheck.startSweep.useMutation({ onSettled: refresh });
@@ -28,7 +29,8 @@ const SweepStatus = () => {
     onSettled: refresh,
   });
 
-  const data = status.data;
+  const configured = status.data?.configured !== false;
+  const data = status.data?.latest;
   const sweep = data?.sweep;
   const running = sweep?.status === "running";
   const pausedUntil =
@@ -39,9 +41,9 @@ const SweepStatus = () => {
   let line: string;
   if (status.error) {
     line = `Failed to load sweep status: ${status.error.message}`;
-  } else if (data === undefined) {
+  } else if (!status.data) {
     line = "Loading sweep status...";
-  } else if (!sweep) {
+  } else if (!data || !sweep) {
     line = "No sweep has run yet.";
   } else {
     const failed = data.items.failed > 0 ? `, ${data.items.failed} failed` : "";
@@ -58,10 +60,11 @@ const SweepStatus = () => {
     }
   }
 
-  const note =
-    start.error?.message ??
-    resume.error?.message ??
-    (resume.data && !resume.data.resumed ? resume.data.reason : undefined);
+  const note = !configured
+    ? SWEEP_NOT_CONFIGURED
+    : (start.error?.message ??
+      resume.error?.message ??
+      (resume.data && !resume.data.resumed ? resume.data.reason : undefined));
 
   return (
     <div className="z-10 mb-4 flex w-full max-w-6xl flex-col gap-2 px-4 font-secondary text-sm sm:flex-row sm:items-center sm:justify-between">
@@ -75,7 +78,7 @@ const SweepStatus = () => {
             variant="primary"
             size="sm"
             onClick={() => resume.mutate()}
-            disabled={resume.isPending}
+            disabled={!configured || resume.isPending}
           >
             {resume.isPending ? "Resuming..." : "Resume sweep"}
           </Button>
@@ -84,7 +87,7 @@ const SweepStatus = () => {
           variant="primary"
           size="sm"
           onClick={() => start.mutate()}
-          disabled={running || start.isPending}
+          disabled={!configured || running || start.isPending}
         >
           {start.isPending ? "Starting..." : "Run sweep"}
         </Button>

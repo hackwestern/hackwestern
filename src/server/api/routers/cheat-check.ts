@@ -19,6 +19,7 @@ import { GroupResults } from "~/lib/cheat-checks/groupResults";
 import { TeamResults } from "~/lib/cheat-checks/finalTeamResult";
 import {
   HACKER_CHECK_TYPES,
+  SWEEP_NOT_CONFIGURED,
   TEAM_CHECK_TYPES,
 } from "~/lib/cheat-checks/constants";
 import type {
@@ -44,6 +45,19 @@ import {
   kickWorker,
   resumeSweep,
 } from "~/server/api/utils/cheat-check-sweep";
+
+/**
+ * Without the secret the worker never starts, so a sweep row would sit in
+ * `running` forever and block every later sweep. Refuse before touching one.
+ */
+function requireSweepSecret() {
+  if (!env.CHEAT_SWEEP_SECRET) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: SWEEP_NOT_CONFIGURED,
+    });
+  }
+}
 
 const userIdInput = z.object({ userId: z.string() });
 const teamIdInput = z.object({ teamId: z.string() });
@@ -358,9 +372,13 @@ export const cheatCheckRouter = createTRPCRouter({
   /**
    * Progress of the running sweep, or of the most recent one if none is running.
    * `stalled` means the worker has gone quiet and the sweep needs resuming.
+   * `configured` is false when CHEAT_SWEEP_SECRET is unset (sweeps can't run).
    */
   getSweepStatus: protectedOrganizerProcedure.query(async () => {
-    return getSweepStatus();
+    return {
+      configured: Boolean(env.CHEAT_SWEEP_SECRET),
+      latest: await getSweepStatus(),
+    };
   }),
 
   /**
@@ -368,6 +386,7 @@ export const cheatCheckRouter = createTRPCRouter({
    * items abandoned by a dead worker back in the queue, and starts a new worker.
    */
   resumeSweep: protectedOrganizerProcedure.mutation(async () => {
+    requireSweepSecret();
     return resumeSweep();
   }),
 
@@ -382,6 +401,7 @@ export const cheatCheckRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input }) => {
+      requireSweepSecret();
       const sweep = await createSweep("manual", {
         forceRerun: input.forceRerun,
       });
