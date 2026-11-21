@@ -7,7 +7,14 @@ import {
 } from "~/server/api/utils/team-results";
 import { ratingsFromColumns } from "~/lib/judging-criteria";
 import { db, extractRows } from "~/server/db";
-import { judges, teamMarks, teams, users } from "~/server/db/schema";
+import {
+  judges,
+  sponsorFinalPicks,
+  sponsorJudgingSponsors,
+  teamMarks,
+  teams,
+  users,
+} from "~/server/db/schema";
 
 /**
  * Read-only data for the organizer results page, loaded straight from the db in
@@ -104,6 +111,70 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
       superLike: m.superLike,
     })),
   );
+}
+
+/** One sponsor's prize-track winner: #1 of their submitted final Top 5. */
+export interface SponsorWinner {
+  sponsor: string;
+  /** Null until the sponsor submits their final ranking. */
+  team: {
+    id: string;
+    name: string;
+    table: number | null;
+    devpost: string | null;
+    github: string | null;
+  } | null;
+  submittedAt: Date | null;
+}
+
+/**
+ * Every judging sponsor (sponsor_judging_sponsor) with the first team of
+ * their submitted final ranking (sponsor_final_pick.team_ids[0]), sponsors in
+ * name order. Sponsors who haven't submitted have no team.
+ */
+export async function loadSponsorWinners(): Promise<SponsorWinner[]> {
+  const picks = await db
+    .select({
+      sponsor: sponsorJudgingSponsors.name,
+      teamIds: sponsorFinalPicks.teamIds,
+      submittedAt: sponsorFinalPicks.submittedAt,
+    })
+    .from(sponsorJudgingSponsors)
+    .leftJoin(
+      sponsorFinalPicks,
+      eq(sponsorFinalPicks.sponsorId, sponsorJudgingSponsors.id),
+    )
+    .orderBy(asc(sponsorJudgingSponsors.name));
+
+  const winnerIds = [
+    ...new Set(picks.flatMap((p) => (p.teamIds?.[0] ? [p.teamIds[0]] : []))),
+  ];
+  const teamRows =
+    winnerIds.length > 0
+      ? await db.query.teams.findMany({
+          where: inArray(teams.id, winnerIds),
+          columns: { id: true, name: true, githubUrl: true, devpostUrl: true },
+          with: { judgingTable: { columns: { number: true } } },
+        })
+      : [];
+  const byId = new Map(teamRows.map((t) => [t.id, t]));
+
+  return picks.map((p) => {
+    const t = p.teamIds?.[0] ? byId.get(p.teamIds[0]) : undefined;
+    return {
+      sponsor: p.sponsor,
+      submittedAt: p.submittedAt,
+      team: t
+        ? {
+            id: t.id,
+            name: t.name,
+            table: t.judgingTable?.number ?? null,
+            devpost: safeHttpUrl(t.devpostUrl),
+            github: safeHttpUrl(t.githubUrl),
+          }
+        : null,
+    };
+  });
 }
 
 /** Team-submitted URLs are untrusted, so only http(s) ones become buttons. */

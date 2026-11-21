@@ -10,6 +10,7 @@ import {
   buildResultsRows,
   readCompletenessScores,
   adventureScore,
+  buildSponsorWinnersRows,
   rankByAdventure,
   topTeams,
 } from "~/server/api/utils/results-sheet";
@@ -512,5 +513,53 @@ describe("top teams only", () => {
     expect(
       names.filter((n) => typeof n === "string" && !n.startsWith("↳")),
     ).toEqual(["T1", "T2", "T3"]);
+  });
+});
+
+describe("Sponsor Winners tab", () => {
+  test("each sponsor's #1, or not submitted yet", () => {
+    const rows = buildSponsorWinnersRows([
+      {
+        sponsor: "Cohere",
+        submittedAt: new Date("2026-11-23T17:30:00Z"),
+        team: {
+          id: "t1",
+          name: "Alpha",
+          table: 4,
+          devpost: "https://devpost.com/a",
+          github: null,
+        },
+      },
+      { sponsor: "Domain.com", submittedAt: null, team: null },
+    ]);
+    expect(rows[0]!.cells).toEqual([
+      "Sponsor",
+      "Winner",
+      "Table",
+      "Devpost",
+      "GitHub",
+      "Submitted",
+      "Team ID",
+    ]);
+    expect(rows[1]!.cells).toEqual([
+      "Cohere",
+      "Alpha",
+      4,
+      { text: "Devpost", link: "https://devpost.com/a" },
+      "",
+      "Nov 23, 2026, 12:30 PM",
+      "t1",
+    ]);
+    expect(rows[2]!.cells.slice(0, 2)).toEqual([
+      "Domain.com",
+      "Not submitted yet",
+    ]);
+  });
+
+  test("a sponsor name starting with = stays text", () => {
+    const rows = buildSponsorWinnersRows([
+      { sponsor: "=HYPERLINK(1)", submittedAt: null, team: null },
+    ]);
+    expect(rows[1]!.cells[0]).toBe("=HYPERLINK(1)");
   });
 });

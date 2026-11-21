@@ -44,6 +44,10 @@
 //               blank (= the Adventure score once normalized).
 //               "Super likes" counts hearts from any judge; judge rows
 //               show ♥.
+//   "Sponsor Winners":  one row per judging sponsor (sponsor_judging_sponsor)
+//               with the #1 team of their submitted final Top 5 in the
+//               sponsor portal (sponsor_final_pick), table, links and when
+//               they submitted; "Not submitted yet" until they do.
 // Older exports also wrote Marks and Control tabs; they're removed.
 //
 // Overall ranking: normalized q (the unclipped estimate, since the top teams
@@ -68,7 +72,11 @@ import {
   resultsSheetWritesEnabled,
 } from "~/server/api/utils/results-sheet-client";
 import { type TeamResult } from "~/server/api/utils/team-results";
-import { loadTeamResults } from "~/server/api/utils/team-results-data";
+import {
+  type SponsorWinner,
+  loadSponsorWinners,
+  loadTeamResults,
+} from "~/server/api/utils/team-results-data";
 
 export const RESULTS_TAB = "Results";
 /**
@@ -82,8 +90,10 @@ export const TOP_N = 20;
  */
 export const SUMMARY_TAB = `Top ${TOP_N}`;
 export const ADVENTURE_TAB = `Top ${TOP_N} Adventure`;
+/** Each sponsor's prize-track winner (#1 of their submitted Top 5). */
+export const SPONSOR_WINNERS_TAB = "Sponsor Winners";
 /** Tabs in the order they appear in the spreadsheet. */
-const TABS = [SUMMARY_TAB, ADVENTURE_TAB, RESULTS_TAB];
+const TABS = [SUMMARY_TAB, ADVENTURE_TAB, SPONSOR_WINNERS_TAB, RESULTS_TAB];
 /**
  * Where scores were typed before they moved into Results. Its scores are
  * carried over on the next export, then the tab is removed.
@@ -706,6 +716,46 @@ export function summaryFormula(scoreCol = FINAL_COL): string {
   );
 }
 
+/**
+ * Sponsor Winners tab: one row per judging sponsor with the #1 team of their
+ * submitted final Top 5, or "Not submitted yet".
+ */
+export function buildSponsorWinnersRows(winners: SponsorWinner[]): SheetRow[] {
+  return [
+    {
+      bold: true,
+      cells: [
+        "Sponsor",
+        "Winner",
+        "Table",
+        "Devpost",
+        "GitHub",
+        "Submitted",
+        "Team ID",
+      ],
+    },
+    ...winners.map(({ sponsor, team, submittedAt }) => ({
+      cells: team
+        ? [
+            sponsor,
+            team.name,
+            team.table ?? "",
+            linkCell(team.devpost, "Devpost"),
+            linkCell(team.github, "GitHub"),
+            submittedAt
+              ? submittedAt.toLocaleString("en-US", {
+                  timeZone: "America/Toronto",
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })
+              : "",
+            team.id,
+          ]
+        : [sponsor, "Not submitted yet", "", "", "", "", ""],
+    })),
+  ];
+}
+
 /** Writes a summary tab ranking Results' teams by `scoreCol`. */
 export function buildSummaryRequests(
   tab: TabState,
@@ -814,6 +864,9 @@ async function ensureTabs(
  * tab move into Results and that tab is removed, as is an old Control tab.
  */
 export async function finalizeResultsSheet(): Promise<{
+  /** Sponsors with a submitted final Top 5, and all judging sponsors. */
+  sponsorWinners: number;
+  sponsors: number;
   /** Teams written: the top TOP_N overall plus the top TOP_N by adventure. */
   teams: number;
   /** Teams in the db, written or not. */
@@ -833,8 +886,9 @@ export async function finalizeResultsSheet(): Promise<{
     );
   }
 
-  const [allResults, sheets] = await Promise.all([
+  const [allResults, sponsorWinners, sheets] = await Promise.all([
     loadTeamResults(),
+    loadSponsorWinners(),
     getResultsSheetsClient(),
   ]);
   const results = topTeams(allResults);
@@ -868,6 +922,11 @@ export async function finalizeResultsSheet(): Promise<{
     }),
     ...buildSummaryRequests(tabs.get(SUMMARY_TAB)!, FINAL_COL),
     ...buildSummaryRequests(tabs.get(ADVENTURE_TAB)!, ADVENTURE_FINAL_COL),
+    ...rewriteTabRequests(
+      tabs.get(SPONSOR_WINNERS_TAB)!,
+      buildSponsorWinnersRows(sponsorWinners),
+      1,
+    ),
   ];
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
@@ -876,6 +935,8 @@ export async function finalizeResultsSheet(): Promise<{
 
   return {
     teams: results.length,
+    sponsorWinners: sponsorWinners.filter((w) => w.team).length,
+    sponsors: sponsorWinners.length,
     totalTeams: allResults.length,
     marks: results.reduce((n, r) => n + r.regular.count + r.sponsored.count, 0),
     scoresKept: [...scores.keys()].filter((id) => teamIds.has(id)).length,

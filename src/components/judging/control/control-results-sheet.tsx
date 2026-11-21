@@ -24,7 +24,7 @@ export function ControlResultsSheet() {
       setUrl(r.url);
       setStatus({
         tone: "ok",
-        text: `Wrote ${r.teams} of ${r.totalTeams} teams (the top 20 overall and the top 20 by adventure) and their ${r.marks} marks.${r.scoresKept > 0 ? ` Kept ${r.scoresKept} completeness score${r.scoresKept === 1 ? "" : "s"}.` : ""}`,
+        text: `Wrote ${r.teams} of ${r.totalTeams} teams (the top 20 overall and the top 20 by adventure) and their ${r.marks} marks. Sponsor winners: ${r.sponsorWinners} of ${r.sponsors} sponsors have submitted.${r.scoresKept > 0 ? ` Kept ${r.scoresKept} completeness score${r.scoresKept === 1 ? "" : "s"}.` : ""}`,
       });
     },
     onError: (e) =>
