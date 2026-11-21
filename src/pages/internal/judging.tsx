@@ -15,7 +15,7 @@ import {
 import { api } from "~/utils/api";
 import { authRedirectOrganizer } from "~/utils/redirect";
 
-const POLL_MS = 5000;
+const POLL_MS = 3000;
 
 function ago(ms: number): string {
   const s = Math.max(0, Math.round(ms / 1000));

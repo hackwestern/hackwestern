@@ -149,7 +149,7 @@ function SpotDialog({
   const teamId = spot?.team?.id;
   const resultsQ = api.judging.admin.getTeamResults.useQuery(undefined, {
     enabled: open && !!teamId,
-    refetchInterval: 15_000,
+    refetchInterval: 3000,
   });
   const result = resultsQ.data?.find((r) => r.team.id === teamId);
   const kind = KINDS[kindOf(spot)];

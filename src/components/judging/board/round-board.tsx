@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react";
 
 import { RoundClock } from "~/components/judging/judge-app/judge-round";
-import { card, field } from "~/components/judging/shared/judge-ui";
+import {
+  card,
+  field,
+  warningBanner,
+} from "~/components/judging/shared/judge-ui";
 import { api, type RouterOutputs } from "~/utils/api";
 
 type Board = RouterOutputs["judging"]["board"]["get"];
@@ -107,6 +111,12 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
     enabled: open,
     refetchInterval: POLL_MS,
   });
+  // A hacker's own team, to tell them if it was marked absent.
+  const teamQ = api.judging.team.getMyJudging.useQuery(undefined, {
+    enabled: open && !isOrganizer,
+    refetchInterval: POLL_MS,
+    retry: false,
+  });
   const [view, setView] = useState<View>("team");
   const [query, setQuery] = useState("");
 
@@ -157,10 +167,18 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
         )}
       </header>
 
+      {teamQ.data?.absent && (
+        <p role="status" className={warningBanner}>
+          Your team was marked absent, so it&apos;s out of judging. If
+          that&apos;s a mistake, find an organizer now.
+        </p>
+      )}
+
       {round?.enabled && round.round > 0 && (
         <div>
           <RoundClock
             view={{ state: round, fetchedAt: boardQ.dataUpdatedAt }}
+            forJudge={false}
           />
         </div>
       )}

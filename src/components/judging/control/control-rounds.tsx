@@ -28,7 +28,7 @@ export function ControlRounds({ queue }: { queue: QueueState | undefined }) {
   const round = picked === "all" ? "all" : Math.min(picked, total);
 
   const resultsQ = api.judging.admin.getTeamResults.useQuery(undefined, {
-    refetchInterval: 15_000,
+    refetchInterval: 3000,
   });
 
   const rows = useMemo(() => {

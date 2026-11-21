@@ -56,6 +56,8 @@ interface JudgeNextProps {
   upcoming?: { table: number; round: number } | null;
   /** This judge already scored their table in the open round. */
   scoredRound?: boolean;
+  /** This round's table, when its team was marked absent. */
+  absentTable?: number | null;
 }
 
 /** The "Next" tab: a welcome first, then the team the server picked. */
@@ -80,6 +82,7 @@ export function JudgeNext({
   round,
   upcoming = null,
   scoredRound = false,
+  absentTable = null,
 }: JudgeNextProps) {
   const errorBanner = error ? (
     <p role="alert" className={warningBanner}>
@@ -99,7 +102,14 @@ export function JudgeNext({
   }
 
   if (phase === "waitRound" && round) {
-    return <RoundWait view={round} upcoming={upcoming} scored={scoredRound} />;
+    return (
+      <RoundWait
+        view={round}
+        upcoming={upcoming}
+        scored={scoredRound}
+        absentTable={absentTable}
+      />
+    );
   }
 
   if (phase === "welcome") {

@@ -261,7 +261,11 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   const membersByTeam = new Map(
     initial.queueTeams.map((t) => [t.id, t.members]),
   );
-  const upcomingTeams: UpcomingTeam[] = [...pendingStops]
+  // Teams marked absent stay in the list, labelled, so the judge sees why.
+  const absentStops = (stopsQuery.data?.stops ?? []).filter(
+    (s) => s.status === "team_absent",
+  );
+  const upcomingTeams: UpcomingTeam[] = [...pendingStops, ...absentStops]
     .sort((a, b) => a.position - b.position)
     .map((s) => ({
       stopId: s.id,
@@ -269,13 +273,17 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       teamName: s.team?.name ?? "Team",
       members: (s.team && membersByTeam.get(s.team.id)) ?? [],
       round: gated ? s.position : null,
+      absent: s.status === "team_absent",
     }));
-  // This judge already scored their table in the open round.
-  const scoredRound =
-    gated &&
-    (stopsQuery.data?.stops ?? []).some(
-      (s) => s.position === roundView?.state.round && s.status === "done",
-    );
+  // This judge's stop in the open round, once it's closed: scored or absent.
+  const roundStop = gated
+    ? (stopsQuery.data?.stops ?? []).find(
+        (s) => s.position === roundView?.state.round,
+      )
+    : undefined;
+  const scoredRound = roundStop?.status === "done";
+  const absentTable =
+    roundStop?.status === "team_absent" ? roundStop.table.number : null;
   // Table numbers from the live stops win over the page-load snapshot, which
   // goes stale when organizers move teams or change routes.
   const tableByTeam: Record<string, number> = { ...initial.tableByTeam };
@@ -663,6 +671,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
             : null
         }
         scoredRound={scoredRound}
+        absentTable={absentTable}
         queueList={<JudgeQueueList queue={queue} tableByTeam={tableByTeam} />}
       />
     );

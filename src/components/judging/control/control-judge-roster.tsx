@@ -59,7 +59,7 @@ function JudgeHistory({
   teamAtTable: Map<number, string | null>;
 }) {
   const resultsQ = api.judging.admin.getTeamResults.useQuery(undefined, {
-    refetchInterval: 15_000,
+    refetchInterval: 3000,
   });
   const marks = (resultsQ.data ?? []).flatMap((r) =>
     (["regular", "sponsored"] as const).flatMap((round) =>
@@ -154,7 +154,7 @@ export function JudgeRoster({
   const utils = api.useUtils();
   const judgesQuery = api.judging.admin.getAllJudges.useQuery(undefined, {
     // Keeps "judging a team" roughly live without a manual refresh.
-    refetchInterval: 15_000,
+    refetchInterval: 3000,
   });
   const addJudge = api.judging.admin.addJudgeByEmail.useMutation();
   const noShow = api.judging.admin.setJudgeNoShow.useMutation();

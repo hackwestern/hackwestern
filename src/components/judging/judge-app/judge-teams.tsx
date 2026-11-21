@@ -37,6 +37,8 @@ export interface UpcomingTeam {
   members: string[];
   /** The timed round it's in, or null when rounds are off. */
   round: number | null;
+  /** The team was marked absent: it can't be judged. */
+  absent: boolean;
 }
 
 interface JudgeTeamsProps {
@@ -74,7 +76,7 @@ export function JudgeTeams({
   const stillToJudge = upcoming.length > 0 && (
     <>
       <p className="m-0 px-1 text-sm text-dashboard-text-light">
-        Still to judge, in order.
+        Your next tables, in order.
       </p>
       <section
         aria-label="Teams still to judge"
@@ -98,9 +100,9 @@ export function JudgeTeams({
                     : "No members listed"}
                 </span>
               </span>
-              {u.round !== null && (
+              {(u.absent || u.round !== null) && (
                 <span className="shrink-0 text-xs font-semibold text-dashboard-text-light">
-                  Round {u.round}
+                  {u.absent ? "Absent" : `Round ${u.round}`}
                 </span>
               )}
             </li>
