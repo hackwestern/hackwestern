@@ -49,10 +49,13 @@ const WARN = "#b42318";
 export function RoundClock({
   view,
   nextTable = null,
+  toScore = true,
 }: {
   view: RoundView;
   /** This judge's table in the next round, named in the buffer message. */
   nextTable?: number | null;
+  /** False when this judge has no score to send this round. */
+  toScore?: boolean;
 }) {
   const now = useNow(500);
   const { state } = view;
@@ -89,9 +92,13 @@ export function RoundClock({
           role="status"
           className="rounded-dashboard-sm bg-dashboard-bg-highlight px-4 py-3 text-center text-base font-semibold text-dashboard-text-active"
         >
-          {nextTable !== null
-            ? `Buffer: submit your score and move to table ${nextTable}.`
-            : "Buffer: submit your score. That was your last table."}
+          {!toScore
+            ? nextTable !== null
+              ? `Buffer: move to table ${nextTable}.`
+              : "Buffer: that was your last table."
+            : nextTable !== null
+              ? `Buffer: submit your score and move to table ${nextTable}.`
+              : "Buffer: submit your score. That was your last table."}
         </p>
       )}
       <span
@@ -125,10 +132,13 @@ export function RoundClock({
 export function RoundWait({
   view,
   upcoming,
+  scored,
 }: {
   view: RoundView;
   /** This judge's next table and the round it is for. */
   upcoming: { table: number; round: number } | null;
+  /** This judge already sent a score in the open round. */
+  scored: boolean;
 }) {
   const now = useNow(500);
   const { state } = view;
@@ -139,6 +149,9 @@ export function RoundWait({
   if (state.status === "idle") {
     title = "Waiting for round 1";
     body = "The organizers will start the first round. Stay close.";
+  } else if (open && scored) {
+    title = "Score sent";
+    body = `You're done with round ${state.round}. Wait for the next round.`;
   } else if (open) {
     title = "Sitting this one out";
     body = `You have no table in round ${state.round}. Hang tight for the next.`;
@@ -165,7 +178,13 @@ export function RoundWait({
           {body}
         </p>
       </section>
-      {state.status !== "idle" && <RoundClock view={view} />}
+      {state.status !== "idle" && (
+        <RoundClock
+          view={view}
+          nextTable={upcoming?.table ?? null}
+          toScore={false}
+        />
+      )}
       {upcoming && (
         <section
           aria-label="Your next table"

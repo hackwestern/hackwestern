@@ -54,6 +54,8 @@ interface JudgeNextProps {
   round?: RoundView | null;
   /** This judge's next table and its round, for the waiting screen. */
   upcoming?: { table: number; round: number } | null;
+  /** This judge already scored their table in the open round. */
+  scoredRound?: boolean;
 }
 
 /** The "Next" tab: a welcome first, then the team the server picked. */
@@ -77,6 +79,7 @@ export function JudgeNext({
   queueList,
   round,
   upcoming = null,
+  scoredRound = false,
 }: JudgeNextProps) {
   const errorBanner = error ? (
     <p role="alert" className={warningBanner}>
@@ -96,7 +99,7 @@ export function JudgeNext({
   }
 
   if (phase === "waitRound" && round) {
-    return <RoundWait view={round} upcoming={upcoming} />;
+    return <RoundWait view={round} upcoming={upcoming} scored={scoredRound} />;
   }
 
   if (phase === "welcome") {

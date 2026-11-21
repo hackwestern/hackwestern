@@ -270,14 +270,26 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       members: (s.team && membersByTeam.get(s.team.id)) ?? [],
       round: gated ? s.position : null,
     }));
+  // This judge already scored their table in the open round.
+  const scoredRound =
+    gated &&
+    (stopsQuery.data?.stops ?? []).some(
+      (s) => s.position === roundView?.state.round && s.status === "done",
+    );
+  // Table numbers from the live stops win over the page-load snapshot, which
+  // goes stale when organizers move teams or change routes.
+  const tableByTeam: Record<string, number> = { ...initial.tableByTeam };
+  for (const s of stopsQuery.data?.stops ?? []) {
+    if (s.team) tableByTeam[s.team.id] = s.table.number;
+  }
   const held = heldStop?.team ?? null;
-  const heldTable = held ? (initial.tableByTeam[held.id] ?? null) : null;
+  const heldTable = held ? (tableByTeam[held.id] ?? null) : null;
 
   const results: JudgedTeam[] = (marksQuery.data ?? [])
     .map((m) => ({
       markId: m.id,
       teamId: m.teamId,
-      table: initial.tableByTeam[m.teamId] ?? null,
+      table: tableByTeam[m.teamId] ?? null,
       teamName: m.team.name,
       // Empty for a slider-only mark, so its sliders start empty.
       ratings: { ...m.ratings },
@@ -303,7 +315,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     ...new Set(
       queue.teams
         .filter((t) => !judgedIds.has(t.id))
-        .map((t) => initial.tableByTeam[t.id])
+        .map((t) => tableByTeam[t.id])
         .filter((n): n is number => n !== undefined && n !== heldTable),
     ),
   ];
@@ -649,9 +661,8 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
             ? { table: upcomingStop.table.number, round: upcomingStop.position }
             : null
         }
-        queueList={
-          <JudgeQueueList queue={queue} tableByTeam={initial.tableByTeam} />
-        }
+        scoredRound={scoredRound}
+        queueList={<JudgeQueueList queue={queue} tableByTeam={tableByTeam} />}
       />
     );
   } else if (tab === "score") {
@@ -665,7 +676,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         <JudgeComparison
           data={initial.comparison}
           rubric={RUBRIC}
-          tableByTeam={initial.tableByTeam}
+          tableByTeam={tableByTeam}
           refreshing={refreshing}
           onRefresh={() => void loadComparison()}
         />
