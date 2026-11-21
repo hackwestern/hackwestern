@@ -47,6 +47,7 @@ export default function JudgingControlRoom() {
       <SEO title="Judging control room" noindex />
       <InternalPage
         title="Judging control room"
+        wide
         subtitle={
           updatedAt ? `Updated ${ago(now - updatedAt)} ago` : "Loading…"
         }
