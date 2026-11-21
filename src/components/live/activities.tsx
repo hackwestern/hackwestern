@@ -67,7 +67,7 @@ const typeLabel = (a: Activity) => {
 };
 
 // datetime-local needs local "YYYY-MM-DDTHH:mm"
-const toInputValue = (d: Date | undefined) => {
+const toInputValue = (d: Date | null | undefined) => {
   if (!d) return "";
   const local = new Date(d.getTime() - d.getTimezoneOffset() * 60_000);
   return local.toISOString().slice(0, 16);
@@ -251,16 +251,23 @@ const Activities = () => {
                           blue,
                         )}
                       >
-                        {formatEventTime(a.startsAt, {
-                          weekday: "short",
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
-                        –
-                        {formatEventTime(a.endsAt, {
-                          hour: "numeric",
-                          minute: "2-digit",
-                        })}
+                        {a.startsAt && a.endsAt ? (
+                          <>
+                            {formatEventTime(a.startsAt, {
+                              weekday: "short",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
+                            –
+                            {formatEventTime(a.endsAt, {
+                              weekday: "short",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
+                          </>
+                        ) : (
+                          "----"
+                        )}
                       </TableCell>
                       {details.slice(1).map(([label, value]) => (
                         <TableCell
@@ -380,6 +387,10 @@ const ActivityDialog = ({
   const [winnable, setWinnable] = useState(
     activity ? activity.winPoints !== null : false,
   );
+  // An item with no set time has no start or end, and never shows as happening now
+  const [timed, setTimed] = useState(
+    activity ? activity.startsAt !== null : true,
+  );
   const [startsAt, setStartsAt] = useState(toInputValue(activity?.startsAt));
   const [endsAt, setEndsAt] = useState(toInputValue(activity?.endsAt));
   const [room, setRoom] = useState(activity?.room ?? "");
@@ -392,7 +403,8 @@ const ActivityDialog = ({
   const isWinnable = type === "activity" && winnable;
 
   // datetime-local strings have one format, so string order is time order
-  const endBeforeStart = startsAt !== "" && endsAt !== "" && endsAt <= startsAt;
+  const endBeforeStart =
+    timed && startsAt !== "" && endsAt !== "" && endsAt <= startsAt;
   const isDuplicateName = activities.some(
     (a) =>
       a.id !== activity?.id &&
@@ -400,6 +412,7 @@ const ActivityDialog = ({
   );
   // Same rule as the server: a new or changed end time must be in the future
   const endInPast =
+    timed &&
     endsAt !== "" &&
     endsAt !== toInputValue(activity?.endsAt) &&
     endsAt <= toInputValue(new Date());
@@ -418,8 +431,7 @@ const ActivityDialog = ({
     !pointsInvalid &&
     !endInPast &&
     name.trim() !== "" &&
-    startsAt !== "" &&
-    endsAt !== "" &&
+    (!timed || (startsAt !== "" && endsAt !== "")) &&
     !endBeforeStart &&
     !isDuplicateName;
 
@@ -428,8 +440,8 @@ const ActivityDialog = ({
       id: activity?.id,
       type,
       name,
-      startsAt: new Date(startsAt),
-      endsAt: new Date(endsAt),
+      startsAt: timed ? new Date(startsAt) : null,
+      endsAt: timed ? new Date(endsAt) : null,
       room,
       points: Number(points),
       winPoints: newWinPoints,
@@ -501,8 +513,9 @@ const ActivityDialog = ({
               <span className={LABEL}>Start</span>
               <input
                 type="datetime-local"
-                required
-                className={FIELD}
+                required={timed}
+                disabled={!timed}
+                className={cn(FIELD, DISABLED)}
                 value={startsAt}
                 onChange={(e) => setStartsAt(e.target.value)}
               />
@@ -511,14 +524,22 @@ const ActivityDialog = ({
               <span className={LABEL}>End</span>
               <input
                 type="datetime-local"
-                required
-                className={FIELD}
+                required={timed}
+                disabled={!timed}
+                className={cn(FIELD, DISABLED)}
                 value={endsAt}
                 min={startsAt || undefined}
                 onChange={(e) => setEndsAt(e.target.value)}
               />
             </label>
           </div>
+          <label className="flex items-center gap-2">
+            <DashboardCheckbox
+              checked={!timed}
+              onCheckedChange={(c) => setTimed(c !== true)}
+            />
+            <span className={LABEL}>No set time</span>
+          </label>
           <label className="flex flex-col gap-1.5">
             <span className={LABEL}>Room</span>
             <input

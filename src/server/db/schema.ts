@@ -2043,8 +2043,8 @@ export const scavengerHuntItems = pgTable(
     name: text("name").notNull(),
     type: scavengerHuntItemType("type").notNull(),
     winPoints: smallint("win_points"),
-    startsAt: timestamp("starts_at", { mode: "date", precision: 3 }).notNull(),
-    endsAt: timestamp("ends_at", { mode: "date", precision: 3 }).notNull(),
+    startsAt: timestamp("starts_at", { mode: "date", precision: 3 }),
+    endsAt: timestamp("ends_at", { mode: "date", precision: 3 }),
     room: varchar("room", { length: 255 }),
     status: scavengerHuntItemStatus("status").default("active").notNull(),
     deletedAt: timestamp("deleted_at", { mode: "date", precision: 3 }),
@@ -2053,6 +2053,10 @@ export const scavengerHuntItems = pgTable(
     check(
       "scavenger_hunt_item_win_points_activity_only",
       sql`${t.winPoints} IS NULL OR ${t.type} = 'activity'`,
+    ),
+    check(
+      "scavenger_hunt_item_times_both_or_neither",
+      sql`(${t.startsAt} IS NULL) = (${t.endsAt} IS NULL)`,
     ),
     uniqueIndex("scavenger_hunt_item_name_unique")
       .on(sql`lower(${t.name})`)

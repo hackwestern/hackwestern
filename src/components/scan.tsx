@@ -24,8 +24,11 @@ const FILTERS: { value: Item["type"] | "all"; label: string }[] = [
 
 const TIME: Intl.DateTimeFormatOptions = { hour: "numeric", minute: "2-digit" };
 
-// Ex: "6:00 – 8:00 PM · Rm 1230"
+// Ex: "6:00 – 8:00 PM · Rm 1230", or "No set time · Rm 1230"
 const itemMeta = (item: Item) => {
+  if (!item.startsAt || !item.endsAt) {
+    return ["No set time", item.room].filter(Boolean).join(" · ");
+  }
   const start = formatEventTime(item.startsAt, TIME);
   const end = formatEventTime(item.endsAt, TIME);
   const sameHalf = start.slice(-2) === end.slice(-2);
@@ -53,10 +56,17 @@ const Scan = () => {
     (item) => item.deletedAt === null || item.deletedAt > now,
   );
   const byStart = (a: Item, b: Item) =>
-    a.startsAt.getTime() - b.startsAt.getTime();
+    (a.startsAt?.getTime() ?? 0) - (b.startsAt?.getTime() ?? 0);
 
+  // An item with no set time is never happening now
   const happeningNow = active
-    .filter((item) => item.startsAt <= now && item.endsAt > now)
+    .filter(
+      (item) =>
+        item.startsAt &&
+        item.endsAt &&
+        item.startsAt <= now &&
+        item.endsAt > now,
+    )
     .sort(byStart);
 
   const listed = active.filter((item) => {
@@ -64,12 +74,15 @@ const Scan = () => {
     return filter === "all" || item.type === filter;
   });
 
-  // Section order: later today, one group per upcoming day,  past items
+  // Section order: later today, one group per upcoming day, no set time, past items
   const today = formatEventTime(now, { dateStyle: "short" });
   const upcoming = new Map<string, Item[]>();
+  const untimed: Item[] = [];
   const earlier: Item[] = [];
   for (const item of [...listed].sort(byStart)) {
-    if (item.endsAt <= now) {
+    if (!item.startsAt || !item.endsAt) {
+      untimed.push(item);
+    } else if (item.endsAt <= now) {
       earlier.unshift(item);
     } else {
       const day = formatEventTime(item.startsAt, { dateStyle: "short" });
@@ -80,9 +93,11 @@ const Scan = () => {
       upcoming.set(label, [...(upcoming.get(label) ?? []), item]);
     }
   }
-  const groups = [...upcoming.entries(), ["Earlier", earlier] as const].filter(
-    ([, group]) => group.length > 0,
-  );
+  const groups = [
+    ...upcoming.entries(),
+    ["No set time", untimed] as const,
+    ["Earlier", earlier] as const,
+  ].filter(([, group]) => group.length > 0);
 
   const openScanner = (item: Item) => {
     void router.push(`/scan/${item.id}`);
