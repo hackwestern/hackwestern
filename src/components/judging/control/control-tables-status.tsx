@@ -434,8 +434,7 @@ export function ControlTablesStatus({
   const busy = setup.isPending || seat.isPending || assign.isPending;
   const locked = progress?.started === true;
 
-  // One click: make sure the room has its tables, seat any team that has no
-  // seat yet, then assign judges.
+  // Set up the room and reseat teams if any are missing a spot.
   const run = async () => {
     if (!progress) return;
     setStatus(null);
@@ -462,7 +461,6 @@ export function ControlTablesStatus({
     void utils.judging.admin.invalidate();
   };
 
-  // Shuffle teams onto new tables. Judges stay with their table numbers.
   const reseat = async () => {
     if (!progress) return;
     if (
@@ -472,15 +470,32 @@ export function ControlTablesStatus({
       return;
     setStatus(null);
     try {
-      await seat.mutateAsync({ random: true });
-      setStatus({ tone: "ok", text: "Teams moved to new tables." });
+      const { planCleared } = await seat.mutateAsync({ random: true });
+      if (planCleared) {
+        try {
+          await assign.mutateAsync();
+        } catch (e) {
+          setStatus({
+            tone: "error",
+            text: `Teams moved, but judge routes couldn't be rebuilt. ${errorText(e as { message: string })}`,
+          });
+          return;
+        }
+      }
+      setStatus({
+        tone: "ok",
+        text: planCleared
+          ? "Teams moved and judge routes rebuilt."
+          : "Teams moved to new tables.",
+      });
     } catch (e) {
       setStatus({
         tone: "error",
         text: `Couldn't reassign teams. ${errorText(e as { message: string })}`,
       });
+    } finally {
+      void utils.judging.admin.invalidate();
     }
-    void utils.judging.admin.invalidate();
   };
 
   const pill = !progress

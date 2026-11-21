@@ -15,7 +15,7 @@ import {
   teams,
 } from "~/server/db/schema";
 import { type SetupTablesInput } from "~/schemas/judging";
-import { tablesPerRow } from "~/server/judging/layout";
+import { snakePosition, tablesPerRow } from "~/server/judging/layout";
 import {
   ELIGIBLE_SUBMISSIONS,
   type Tx,
@@ -187,14 +187,14 @@ function shuffle<T>(items: T[]): T[] {
 }
 
 /**
- * Seat every submitted team at an active table, one per table, in table
- * order. Random by default; `random: false` seats in submission order.
- * Replaces any previous seating. Locked once judging starts.
+ * Fill one active spot per physical table before using the second spots.
+ * Replaces previous seating and clears the judge plan. Locked once judging starts.
  */
 export async function seatTeams({ random }: { random: boolean }) {
   return db.transaction(async (tx) => {
     await lockPlanExclusive(tx);
     await assertNotStarted("re-seat teams", tx);
+    const perRow = tablesPerRow(await getSettings(tx));
 
     const submitted = await tx
       .select({ id: teams.id, name: teams.name })
@@ -214,6 +214,23 @@ export async function seatTeams({ random }: { random: boolean }) {
       });
     }
 
+    // Pair columns from the left edge of each row. The coordinates come
+    // from the full layout, so switching a spot off cannot shift its pair.
+    const firstSpots: typeof tables = [];
+    const secondSpots: typeof tables = [];
+    const seenPairs = new Set<number>();
+    const pairsPerRow = Math.ceil(perRow / 2);
+    for (const table of tables) {
+      const { row, col } = snakePosition(table.number, perRow);
+      const pair = row * pairsPerRow + Math.floor(col / 2);
+      if (seenPairs.has(pair)) {
+        secondSpots.push(table);
+      } else {
+        seenPairs.add(pair);
+        firstSpots.push(table);
+      }
+    }
+    const spots = [...firstSpots, ...secondSpots];
     const order = random ? shuffle(submitted) : submitted;
 
     await tx
@@ -223,7 +240,7 @@ export async function seatTeams({ random }: { random: boolean }) {
     const seating: { teamId: string; teamName: string; tableNumber: number }[] =
       [];
     for (const [i, team] of order.entries()) {
-      const table = tables[i]!;
+      const table = spots[i]!;
       await tx
         .update(teams)
         .set({ judgingTableId: table.id })
@@ -235,10 +252,12 @@ export async function seatTeams({ random }: { random: boolean }) {
       });
     }
 
+    const planCleared = await clearPlan(tx);
     return {
       random,
       seated: seating.length,
       emptyTables: tables.length - seating.length,
+      planCleared,
       seating,
     };
   });
@@ -419,6 +438,29 @@ async function moveTeamTx(teamId: string, tableId: number) {
       .update(teams)
       .set({ judgingTableId: tableId })
       .where(eq(teams.id, teamId));
+    if (team.judgingTableId !== null) {
+      const pendingAtSource = and(
+        eq(judgingAssignments.judgingTableId, team.judgingTableId),
+        eq(judgingAssignments.status, "assigned"),
+      );
+      const pendingAtDestination = await tx.query.judgingAssignments.findFirst({
+        where: and(
+          eq(judgingAssignments.judgingTableId, tableId),
+          eq(judgingAssignments.status, "assigned"),
+        ),
+        columns: { id: true },
+      });
+      // Existing plans can already have stops at an empty destination.
+      // Otherwise carry the team's pending stops to its new spot.
+      if (pendingAtDestination) {
+        await tx.delete(judgingAssignments).where(pendingAtSource);
+      } else {
+        await tx
+          .update(judgingAssignments)
+          .set({ judgingTableId: tableId })
+          .where(pendingAtSource);
+      }
+    }
     return { teamId, tableNumber: table.number };
   });
 }
