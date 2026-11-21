@@ -56,8 +56,9 @@ swap teams between tables.
   spots. An unpaired spot or the active half of a pair fills in the first pass.
 - Teams are shuffled by default. The API can seat them in submission order.
 - More submitted teams than active spots is an error.
-- Seating can be re-run until judging starts. Re-seating clears the existing
-  judge plan, so run Auto-assign judges again afterward.
+- Seating can be re-run until judging starts. The seating API clears the existing
+  judge plan. The room map's **Reassign teams** button rebuilds any routes it
+  cleared.
 
 ## Auto-assign: judge sections
 

@@ -350,6 +350,22 @@ describe("seatTeams", () => {
 /* ---------- auto-assign ---------- */
 
 describe("autoAssign", () => {
+  test("the 140-spot room fills all 70 physical tables before sharing one", async () => {
+    const { judges: judgeList } = await setupRoom({
+      tableCount: 140,
+      rows: 5,
+      teamCount: 71,
+      judgeCount: 3,
+    });
+    const occupied = Array.from({ length: 70 }, (_, i) => i * 2 + 1);
+    occupied.splice(1, 0, 2);
+    for (const judge of judgeList) {
+      const stops = await stopsOf(judge.caller);
+      expect(stops.map((stop) => stop.table.number)).toEqual(occupied);
+      expect(stops.every((stop) => stop.team)).toBe(true);
+    }
+  });
+
   test("routes skip unoccupied and switched-off spots; reseating clears old stops", async () => {
     const org = await makeOrganizer();
     await org.caller.judging.admin.setupTables({ tableCount: 6, rows: 1 });
