@@ -384,6 +384,10 @@ export async function cancelStop(assignmentId: number) {
  * also pass the team their screen showed (`expectedTeamId`, null for an empty
  * table); if a different team is seated now, it's refused, so a stale screen
  * can't mark the wrong team absent.
+ *
+ * Absence is final: every other open stop at the table (other judges' assigned
+ * or in-progress stops) is marked `team_absent` too, and the team seated there
+ * is left out of the ranking and results (`absentTeamIds`).
  */
 export async function markAbsent(
   assignmentId: number,
@@ -392,6 +396,28 @@ export async function markAbsent(
 ) {
   return db.transaction(async (tx) => {
     await lockPlanShared(tx);
+    const target = await tx.query.judgingAssignments.findFirst({
+      where: eq(judgingAssignments.id, assignmentId),
+      columns: { judgingTableId: true },
+    });
+    if (!target) throw notFound("Stop");
+    // Lock every live stop at the table in id order (step 2), so two judges
+    // reporting the same table absent at once wait instead of deadlocking.
+    await tx
+      .select({ id: judgingAssignments.id })
+      .from(judgingAssignments)
+      .where(
+        and(
+          eq(judgingAssignments.judgingTableId, target.judgingTableId),
+          ne(judgingAssignments.status, "cancelled"),
+        ),
+      )
+      .orderBy(asc(judgingAssignments.id))
+      .for("update");
+    if (judgeId) {
+      await lockStop(tx, assignmentId, judgeId);
+      await assertCurrentStop(tx, judgeId, assignmentId);
+    }
     if (judgeId && expectedTeamId !== undefined) {
       const stop = await lockStop(tx, assignmentId, judgeId);
       const [seated] = await tx
@@ -408,14 +434,55 @@ export async function markAbsent(
         });
       }
     }
-    return transition(
+    const row = await transition(
       tx,
       assignmentId,
       OPEN_STATUSES,
       { status: "team_absent", completedAt: new Date() },
       judgeId,
     );
+    // The other judges' current and later stops at this table close too.
+    await tx
+      .update(judgingAssignments)
+      .set({ status: "team_absent", completedAt: new Date() })
+      .where(
+        and(
+          eq(judgingAssignments.judgingTableId, row.judgingTableId),
+          inArray(judgingAssignments.status, OPEN_STATUSES),
+        ),
+      );
+    return row;
   });
+}
+
+/**
+ * A judge only works on their current stop: the one in progress, else their
+ * first assigned stop in walking order. An open stop that isn't the current
+ * one is refused; a closed stop is left to `transition`, which says why.
+ */
+async function assertCurrentStop(
+  tx: Tx,
+  judgeId: string,
+  assignmentId: number,
+) {
+  const open = await tx
+    .select({ id: judgingAssignments.id, status: judgingAssignments.status })
+    .from(judgingAssignments)
+    .where(
+      and(
+        eq(judgingAssignments.judgeId, judgeId),
+        inArray(judgingAssignments.status, OPEN_STATUSES),
+      ),
+    )
+    .orderBy(asc(judgingAssignments.position));
+  if (!open.some((s) => s.id === assignmentId)) return;
+  const current = open.find((s) => s.status === "in_progress") ?? open[0];
+  if (current?.id !== assignmentId) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "That isn't your current table. Refresh your list.",
+    });
+  }
 }
 
 /** Lock one of a judge's stops for the rest of the transaction (step 2). */
@@ -491,6 +558,7 @@ export async function startStop(
         columns: { id: true },
       });
       if (busy) throw busyError();
+      await assertCurrentStop(tx, judgeId, assignmentId);
       await seatedTeamAt(tx, stop.judgingTableId, teamId);
       return transition(
         tx,
@@ -524,6 +592,7 @@ export async function submitStop(
   return db.transaction(async (tx) => {
     await lockPlanShared(tx);
     const stop = await lockStop(tx, assignmentId, judge.id);
+    await assertCurrentStop(tx, judge.id, assignmentId);
     const team = await seatedTeamAt(tx, stop.judgingTableId, teamId);
 
     await transition(

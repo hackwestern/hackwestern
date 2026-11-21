@@ -6,6 +6,7 @@ import {
   judgingAssignments,
   judgingSettings,
   judgingTables,
+  teams,
 } from "~/server/db/schema";
 import {
   DEFAULT_SETTINGS,
@@ -24,6 +25,22 @@ export const STARTED_STATUSES: StopStatus[] = [
   "done",
   "team_absent",
 ];
+/**
+ * Teams reported absent. Absence is final: a team seated at a table with a
+ * `team_absent` stop is out of judging, the ranking and the results page.
+ */
+export async function absentTeamIds(tx: Tx = db): Promise<Set<string>> {
+  const rows = await tx
+    .selectDistinct({ teamId: teams.id })
+    .from(teams)
+    .innerJoin(
+      judgingAssignments,
+      eq(judgingAssignments.judgingTableId, teams.judgingTableId),
+    )
+    .where(eq(judgingAssignments.status, "team_absent"));
+  return new Set(rows.map((r) => r.teamId));
+}
+
 export const ELIGIBLE_SUBMISSIONS = ["submitted", "late"] as const;
 
 /** What a judge sees of a team: never the join code. */
