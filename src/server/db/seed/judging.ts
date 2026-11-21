@@ -1,19 +1,26 @@
 /**
  * Judging end-to-end seed script.
  *
- * Brings a clean local database to a ready-to-judge room in one command:
+ * Brings a database to a ready-to-judge room in one command:
  *
  *   npm run seed:judging -- --tables 70 --rows 5 --teams 60 --judges 35
+ *
+ * A remote database (the shared dev branch) needs its host typed out, so a
+ * stray run can't wipe the wrong one:
+ *
+ *   npm run seed:judging -- --db-host <host from DATABASE_URL> --keep-teams
  *
  * What it does, in order:
  *   1. Applies the judging triggers (idempotent — triggers.sql source of truth).
  *   2. Wipes the judging tables (judging_assignment, team_mark, judge,
- *      judging_table, judging_settings), ALL teams, and any judge accounts
- *      from a previous run.
- *   3. Inserts `--teams` submitted teams, one minute apart.
- *   4. Creates `--judges` judge accounts. These are REAL credentials-provider
- *      accounts — humans can sign in at /login with them during a dress
- *      rehearsal:
+ *      judging_table, judging_settings) and ALL teams. With --keep-teams the
+ *      teams already there (e.g. from the Devpost import) are kept and seated.
+ *   3. Inserts `--teams` submitted teams, one minute apart (not with
+ *      --keep-teams).
+ *   4. Creates or updates `--judges` judge accounts. They're kept between runs
+ *      (sessions, scans and cheat checks from a rehearsal point at them).
+ *      These are REAL credentials-provider accounts — humans can sign in at
+ *      /login with them during a dress rehearsal:
  *        email    judge<n>@judging.hackwestern.dev
  *        password --password (default "hw13-judging")
  *      Also creates organizer@judging.hackwestern.dev (users.type=organizer),
@@ -31,7 +38,8 @@
  *      have data to chew on.
  *
  * Flags: --tables N  --rows N  --teams N  --judges N  --in-order  --marks
- *        --password STR  --emails a@x,b@y  --yes (skip confirm)
+ *        --password STR  --emails a@x,b@y  --keep-teams  --db-host HOST
+ *        --yes (skip confirm)
  */
 import * as p from "@clack/prompts";
 import bcrypt from "bcrypt";
@@ -65,6 +73,8 @@ type Args = {
   emails: string[];
   yes: boolean;
   marks: boolean;
+  keepTeams: boolean;
+  dbHost: string | null;
 };
 
 function parseArgs(argv: string[]): Args {
@@ -78,6 +88,8 @@ function parseArgs(argv: string[]): Args {
     emails: [],
     yes: false,
     marks: false,
+    keepTeams: false,
+    dbHost: null,
   };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
@@ -117,6 +129,12 @@ function parseArgs(argv: string[]): Args {
       case "--marks":
         args.marks = true;
         break;
+      case "--keep-teams":
+        args.keepTeams = true;
+        break;
+      case "--db-host":
+        args.dbHost = next();
+        break;
       default:
         throw new Error(`Unknown flag: ${flag}`);
     }
@@ -124,7 +142,7 @@ function parseArgs(argv: string[]): Args {
   if (args.tables < 1 || args.rows < 1 || args.teams < 1) {
     throw new Error("--tables, --rows and --teams must all be >= 1");
   }
-  if (args.teams > args.tables) {
+  if (!args.keepTeams && args.teams > args.tables) {
     throw new Error("--teams cannot exceed --tables (one team per table)");
   }
   // The organizer account judges too, so it counts toward the 3 per table.
@@ -138,61 +156,86 @@ async function seedJudging(args: Args) {
   // 1. Triggers (idempotent: CREATE OR REPLACE / DROP IF EXISTS).
   await applyTriggers(db);
 
-  const organizerId = faker.string.uuid();
+  let organizerId = "";
   await db.transaction(async (tx) => {
     // 2. Wipe judging state. Order respects FKs. users.team_id and
     // team.judging_table_id are ON DELETE SET NULL, so deleting is safe.
     await tx.delete(judgingAssignments).where(sql`true`);
     await tx.delete(teamMarks).where(sql`true`);
     await tx.delete(judges).where(sql`true`);
-    await tx.delete(teams).where(sql`true`);
+    if (!args.keepTeams) await tx.delete(teams).where(sql`true`);
     await tx.delete(judgingTables).where(sql`true`);
     await tx.delete(judgingSettings).where(sql`true`);
-    await tx
-      .delete(users)
-      .where(like(users.email, `%@${JUDGING_SEED_EMAIL_DOMAIN}`));
 
     // 3. Teams, all submitted, one minute apart so submission order is clear.
-    const teamIds = faker.helpers.uniqueArray(
-      () => faker.string.alphanumeric(6),
-      args.teams,
-    );
-    const joinCodes = faker.helpers.uniqueArray(
-      () => faker.string.fromCharacters("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 6),
-      args.teams,
-    );
-    const firstSubmission = Date.now() - args.teams * 60_000;
-    await tx.insert(teams).values(
-      teamIds.map((id, i) => ({
-        id,
-        joinCode: joinCodes[i]!,
-        name: `${faker.hacker.adjective()} ${faker.hacker.noun()}`,
-        devpostUrl: `https://devpost.com/software/seed-${id}`,
-        githubUrl: `https://github.com/hackwestern/seed-${id}`,
-        submissionStatus: "submitted" as const,
-        submittedAt: new Date(firstSubmission + i * 60_000),
-        tracks: ["General" as const],
-      })),
-    );
+    if (!args.keepTeams) {
+      const teamIds = faker.helpers.uniqueArray(
+        () => faker.string.alphanumeric(6),
+        args.teams,
+      );
+      const joinCodes = faker.helpers.uniqueArray(
+        () =>
+          faker.string.fromCharacters("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 6),
+        args.teams,
+      );
+      const firstSubmission = Date.now() - args.teams * 60_000;
+      await tx.insert(teams).values(
+        teamIds.map((id, i) => ({
+          id,
+          joinCode: joinCodes[i]!,
+          name: `${faker.hacker.adjective()} ${faker.hacker.noun()}`,
+          devpostUrl: `https://devpost.com/software/seed-${id}`,
+          githubUrl: `https://github.com/hackwestern/seed-${id}`,
+          submissionStatus: "submitted" as const,
+          submittedAt: new Date(firstSubmission + i * 60_000),
+          tracks: ["General" as const],
+        })),
+      );
+    }
 
     // 4. Judge + organizer accounts with real credentials-provider logins.
-    const passwordHash = await bcrypt.hash(args.password, 10);
-    const judgeUsers = Array.from({ length: args.judges }, (_, i) => ({
-      id: faker.string.uuid(),
-      name: `Judge ${i + 1}`,
-      email: `judge${i + 1}@${JUDGING_SEED_EMAIL_DOMAIN}`,
-      emailVerified: new Date(),
-      password: passwordHash,
-    }));
-    if (judgeUsers.length > 0) await tx.insert(users).values(judgeUsers);
-    await tx.insert(users).values({
-      id: organizerId,
-      name: "Judging Organizer",
-      email: JUDGING_SEED_ORGANIZER_EMAIL,
-      emailVerified: new Date(),
-      password: passwordHash,
-      type: "organizer",
+    // Accounts from a previous run are reused, not deleted: sessions, scans
+    // and cheat checks from a rehearsal point at them (foreign keys).
+    const existing = await tx.query.users.findMany({
+      where: like(users.email, `%@${JUDGING_SEED_EMAIL_DOMAIN}`),
+      columns: { id: true, email: true },
     });
+    const idFor = (email: string) =>
+      existing.find((u) => u.email === email)?.id ?? faker.string.uuid();
+    const passwordHash = await bcrypt.hash(args.password, 10);
+    const judgeUsers = Array.from({ length: args.judges }, (_, i) => {
+      const email = `judge${i + 1}@${JUDGING_SEED_EMAIL_DOMAIN}`;
+      return {
+        id: idFor(email),
+        name: `Judge ${i + 1}`,
+        email,
+        emailVerified: new Date(),
+        password: passwordHash,
+        type: "hacker" as const,
+      };
+    });
+    organizerId = idFor(JUDGING_SEED_ORGANIZER_EMAIL);
+    await tx
+      .insert(users)
+      .values([
+        ...judgeUsers,
+        {
+          id: organizerId,
+          name: "Judging Organizer",
+          email: JUDGING_SEED_ORGANIZER_EMAIL,
+          emailVerified: new Date(),
+          password: passwordHash,
+          type: "organizer" as const,
+        },
+      ])
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          name: sql`excluded.name`,
+          password: sql`excluded.password`,
+          type: sql`excluded.type`,
+        },
+      });
 
     // Judges get sections in the order they were added: judge1 first, the
     // organizer last.
@@ -304,12 +347,31 @@ async function seedMarks() {
 }
 
 console.log("Judging seed script");
-if (!process.env.DATABASE_URL?.includes("localhost")) {
-  console.error("Seed script must only be run on localhost.");
+const args = parseArgs(process.argv.slice(2));
+
+// Local databases run as before. Anything else (the shared dev branch) needs
+// its host typed out with --db-host, so a stray run can't wipe the wrong one.
+// Never point this at production: it deletes every team and all judging.
+const dbHost = (() => {
+  try {
+    return new URL(process.env.DATABASE_URL ?? "").hostname;
+  } catch {
+    return "";
+  }
+})();
+if (!dbHost) {
+  console.error("DATABASE_URL is missing or not a URL.");
   process.exit(1);
 }
-
-const args = parseArgs(process.argv.slice(2));
+const isLocal = ["localhost", "127.0.0.1", "::1"].includes(dbHost);
+if (!isLocal && args.dbHost !== dbHost) {
+  console.error(
+    `DATABASE_URL points at ${dbHost}, not localhost. To seed it anyway, ` +
+      `pass --db-host ${dbHost}. Never use this on production.`,
+  );
+  process.exit(1);
+}
+console.log(`Database: ${dbHost}`);
 
 try {
   if (!args.yes) {
@@ -320,8 +382,9 @@ try {
     // clack is TTY-only, so it's used solely for this interactive confirm.
     const ok = await p.confirm({
       message:
-        "This DELETES all rows in team, judge, team_mark, judging_table, " +
-        "judging_settings and judging_assignment. Continue?",
+        `This DELETES all rows in ${args.keepTeams ? "" : "team, "}judge, ` +
+        "team_mark, judging_table, judging_settings and judging_assignment " +
+        `on ${dbHost}. Continue?`,
     });
     if (ok !== true) {
       console.log("Stopped.");
