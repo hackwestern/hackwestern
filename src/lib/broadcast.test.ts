@@ -5,6 +5,7 @@ import {
   leaderName,
   nowAndNext,
   parseScheduleGrid,
+  pickNextMedia,
   rankLeaders,
   toEasternInput,
 } from "~/lib/broadcast";
@@ -185,5 +186,48 @@ describe("Eastern datetime inputs", () => {
     expect(fromEasternInput("2026-11-22T09:00")).toEqual(deadline);
     expect(toEasternInput(null)).toBe("");
     expect(fromEasternInput("")).toBeNull();
+  });
+});
+
+describe("pickNextMedia", () => {
+  const ids = ["a", "b", "c", "d", "e"];
+
+  test("plays every item once before any repeats", () => {
+    let current: string | undefined = "a";
+    let shown: string[] = [];
+    const played = [current];
+    for (let i = 0; i < ids.length - 1; i++) {
+      const pick = pickNextMedia(ids, current, shown, () => 0.99);
+      expect(pick).not.toBeNull();
+      current = pick!.nextId;
+      shown = pick!.shown;
+      played.push(current);
+    }
+    expect([...played].sort()).toEqual(ids);
+  });
+
+  test("starts a new round after everything played, never repeating the current item", () => {
+    const pick = pickNextMedia(ids, "e", ["a", "b", "c", "d"], () => 0);
+    expect(pick).toEqual({ nextId: "a", shown: ["e"] });
+    for (const r of [0, 0.5, 0.99]) {
+      expect(
+        pickNextMedia(ids, "e", ["a", "b", "c", "d"], () => r)?.nextId,
+      ).not.toBe("e");
+    }
+  });
+
+  test("new uploads join the current round", () => {
+    const pick = pickNextMedia(
+      [...ids, "new"],
+      "c",
+      ["a", "b", "d", "e"],
+      () => 0,
+    );
+    expect(pick?.nextId).toBe("new");
+  });
+
+  test("null when there is nothing else to show", () => {
+    expect(pickNextMedia(["a"], "a", [])).toBeNull();
+    expect(pickNextMedia([], undefined, [])).toBeNull();
   });
 });
