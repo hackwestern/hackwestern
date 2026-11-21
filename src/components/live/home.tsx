@@ -13,7 +13,7 @@ import { ExternalLink } from "lucide-react";
 import AllScans from "~/components/live/all-scans";
 import { HackerChecklist } from "~/components/live/hacker-checklist";
 import { cn } from "~/lib/utils";
-import { realmLabel, realmTint } from "~/constants/realms";
+import { realmCardColor, realmLabel } from "~/constants/realms";
 import { HW13_DEVPOST_URL } from "~/utils/urls";
 
 // Format text: replace underscores with spaces and capitalize each word
@@ -288,8 +288,8 @@ const HackerHome = () => {
                           className="rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide"
                           style={{
                             backgroundColor:
-                              realmTint[application.realm].tintColor,
-                            color: realmTint[application.realm].accent,
+                              realmCardColor[application.realm].background,
+                            color: realmCardColor[application.realm].text,
                           }}
                         >
                           {realmLabel[application.realm]} Realm
