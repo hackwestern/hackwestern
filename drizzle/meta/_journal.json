@@ -379,6 +379,13 @@
       "when": 1795249151359,
       "tag": "0053_judging_rounds",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1795252758444,
+      "tag": "0054_judging_rounds_visibility",
+      "breakpoints": true
     }
   ]
 }

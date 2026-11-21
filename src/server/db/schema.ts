@@ -1732,6 +1732,9 @@ export const judgingRound = pgTable(
   {
     id: integer("id").primaryKey().default(1),
     roundsEnabled: boolean("rounds_enabled").default(true).notNull(),
+    // Whether hackers see the rounds board (/rounds and its menu link).
+    // Organizers always do. Off until an organizer turns it on.
+    showToHackers: boolean("show_to_hackers").default(false).notNull(),
     currentRound: integer("current_round").default(0).notNull(),
     status: judgingRoundStatusEnum("status").default("idle").notNull(),
     roundSeconds: integer("round_seconds").default(600).notNull(),

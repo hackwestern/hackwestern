@@ -7,7 +7,6 @@ import {
   protectedJudgeProcedure,
   protectedOrganizerProcedure,
   protectedProcedure,
-  publicProcedure,
 } from "~/server/api/trpc";
 import { db, extractRows } from "~/server/db";
 import { judgingAssignments, judges, users } from "~/server/db/schema";
@@ -33,7 +32,9 @@ import {
 } from "~/schemas/judging";
 import {
   endRound,
+  getBoardVisibility,
   getRoundOverview,
+  setBoardVisibility,
   pauseRound,
   resetRounds,
   resumeRound,
@@ -314,10 +315,47 @@ export const judgingRouter = createTRPCRouter({
     }),
   }),
 
-  /** What hackers can see: the rounds, with judges as numbers. No login. */
+  /**
+   * What hackers can see: the rounds, with judges as numbers. Signed in only,
+   * and for hackers only while an organizer has it switched on.
+   */
   board: createTRPCRouter({
-    get: publicProcedure.query(() =>
-      withErrorHandling(() => getRoundBoard(), "Failed to load the rounds"),
+    /** Is the rounds link and page open to me? Organizers: always. */
+    getAccess: protectedProcedure.query(({ ctx }) =>
+      withErrorHandling(async () => {
+        const [{ shownToHackers }, user] = await Promise.all([
+          getBoardVisibility(),
+          db.query.users.findFirst({
+            where: eq(users.id, ctx.session.user.id),
+            columns: { type: true },
+          }),
+        ]);
+        const isOrganizer = user?.type === "organizer";
+        return {
+          isOrganizer,
+          shownToHackers,
+          visible: isOrganizer || shownToHackers,
+        };
+      }, "Failed to check access"),
+    ),
+
+    get: protectedProcedure.query(({ ctx }) =>
+      withErrorHandling(async () => {
+        const [{ shownToHackers }, user] = await Promise.all([
+          getBoardVisibility(),
+          db.query.users.findFirst({
+            where: eq(users.id, ctx.session.user.id),
+            columns: { type: true },
+          }),
+        ]);
+        if (!shownToHackers && user?.type !== "organizer") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "The rounds aren't open to hackers yet.",
+          });
+        }
+        return getRoundBoard();
+      }, "Failed to load the rounds"),
     ),
   }),
 
@@ -336,6 +374,16 @@ export const judgingRouter = createTRPCRouter({
     getProgress: protectedOrganizerProcedure.query(async () => {
       return withErrorHandling(() => getProgress(), "Failed to get progress");
     }),
+
+    /** Show or hide the rounds board and its menu link for hackers. */
+    setBoardVisible: protectedOrganizerProcedure
+      .input(z.object({ shownToHackers: z.boolean() }))
+      .mutation(({ input }) =>
+        withErrorHandling(
+          () => setBoardVisibility(input.shownToHackers),
+          "Failed to update the rounds visibility",
+        ),
+      ),
 
     /** Round state for the control room: timer, round number, who is done. */
     getRound: protectedOrganizerProcedure.query(() =>

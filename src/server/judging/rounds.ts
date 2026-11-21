@@ -389,3 +389,26 @@ export async function getRoundOverview() {
     },
   };
 }
+
+/* ------------------------- hackers' view of the rounds ------------------------- */
+
+/** Whether hackers can see the rounds board. Organizers always can. */
+export async function getBoardVisibility(): Promise<{
+  shownToHackers: boolean;
+}> {
+  const row = await readRow(db);
+  return { shownToHackers: row.showToHackers };
+}
+
+export async function setBoardVisibility(
+  shownToHackers: boolean,
+): Promise<{ shownToHackers: boolean }> {
+  return db.transaction(async (tx) => {
+    await readRow(tx, "update");
+    await tx
+      .update(judgingRound)
+      .set({ showToHackers: shownToHackers, updatedAt: new Date() })
+      .where(eq(judgingRound.id, 1));
+    return { shownToHackers };
+  });
+}

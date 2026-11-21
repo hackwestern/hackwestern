@@ -1938,15 +1938,51 @@ describe("timed rounds", () => {
     expect((await admin.getRound()).judgingStarted).toBe(true);
   });
 
-  test("the public board shows rounds without judge identities or scores", async () => {
+  test("hackers only see the rounds board while an organizer turns it on, without judge identities or scores", async () => {
     const room = await roundsRoom();
     const [judge] = room.judges;
     assertDefined(judge, "judge");
-    await room.org.caller.judging.admin.startRound();
+    const admin = room.org.caller.judging.admin;
+    await admin.startRound();
     await score(judge, await stopAt(judge, 1));
 
+    const hackerSession = await mockSession(db);
+    const hacker = createCaller(
+      createInnerTRPCContext({ session: hackerSession }),
+    );
     const anon = createCaller(createInnerTRPCContext({ session: null }));
-    const board = await anon.judging.board.get();
+
+    // Off by default: hidden from hackers and signed-out visitors,
+    // always open to organizers.
+    await expect(anon.judging.board.get()).rejects.toThrow();
+    await expect(hacker.judging.board.get()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(await hacker.judging.board.getAccess()).toMatchObject({
+      visible: false,
+      shownToHackers: false,
+    });
+    expect(await admin.getRound()).toBeDefined();
+    expect(await room.org.caller.judging.board.getAccess()).toMatchObject({
+      isOrganizer: true,
+      visible: true,
+    });
+    await expect(room.org.caller.judging.board.get()).resolves.toBeDefined();
+    // Hackers can't flip it themselves.
+    await expect(
+      (
+        hacker.judging.admin as unknown as {
+          setBoardVisible: (i: { shownToHackers: boolean }) => Promise<unknown>;
+        }
+      ).setBoardVisible({ shownToHackers: true }),
+    ).rejects.toThrow();
+
+    await admin.setBoardVisible({ shownToHackers: true });
+    expect(await hacker.judging.board.getAccess()).toMatchObject({
+      visible: true,
+      shownToHackers: true,
+    });
+    const board = await hacker.judging.board.get();
     expect(board.round).toMatchObject({ round: 1, status: "running" });
     expect(board.stops.length).toBeGreaterThan(0);
 
@@ -1966,13 +2002,18 @@ describe("timed rounds", () => {
       judge.session.user.email ?? "@",
     );
 
-    // The scored stop shows as done, the rest of round 1 as happening now,
-    // and later rounds as coming up.
-    const mine = board.stops.filter((s) => s.round === 1);
-    expect(mine.some((s) => s.status === "done")).toBe(true);
+    // The scored stop shows as done, later rounds as coming up.
+    expect(board.stops.some((s) => s.round === 1 && s.status === "done")).toBe(
+      true,
+    );
     expect(
       board.stops.some((s) => s.round > 1 && s.status === "upcoming"),
     ).toBe(true);
+
+    await admin.setBoardVisible({ shownToHackers: false });
+    await expect(hacker.judging.board.get()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
   });
 
   test("stops at empty tables aren't rounds", async () => {

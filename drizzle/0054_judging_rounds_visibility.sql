@@ -1,0 +1,1 @@
+ALTER TABLE "judging_round" ADD COLUMN IF NOT EXISTS "show_to_hackers" boolean DEFAULT false NOT NULL;

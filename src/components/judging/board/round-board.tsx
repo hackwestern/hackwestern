@@ -97,8 +97,13 @@ function buildRows(stops: Stop[], view: View): Row[] {
 }
 
 /** The public rounds board: who judges whom, round by round. */
-export function RoundBoard() {
+export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
+  const accessQ = api.judging.board.getAccess.useQuery(undefined, {
+    refetchInterval: POLL_MS,
+  });
+  const open = accessQ.data?.visible === true;
   const boardQ = api.judging.board.get.useQuery(undefined, {
+    enabled: open,
     refetchInterval: POLL_MS,
   });
   const [view, setView] = useState<View>("team");
@@ -118,21 +123,37 @@ export function RoundBoard() {
   const round = board?.round;
   const current = round?.enabled && round.round > 0 ? round.round : null;
 
-  return (
-    <div className="flex flex-col gap-4">
-      <header className="flex flex-col gap-1">
-        <h1 className="m-0 text-3xl font-bold text-dashboard-text-heavy">
-          Judging rounds
-        </h1>
+  if (accessQ.data && !open) {
+    return (
+      <div className="flex flex-col gap-4 font-figtree">
         <p className="m-0 text-base font-medium text-dashboard-text-light">
-          {!round
-            ? "Loading…"
-            : !round.enabled
-              ? "Judges are visiting tables in any order."
-              : round.status === "idle"
-                ? "Judging hasn't started yet. Check back soon."
-                : `Round ${round.round} of ${round.totalRounds}`}
+          The rounds aren&apos;t open yet. Check back soon.
         </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4 font-figtree">
+      <header className="flex flex-col gap-2">
+        <p className="m-0 text-base font-medium text-dashboard-text-light">
+          {accessQ.data && !open
+            ? "The rounds aren't open yet. Check back soon."
+            : !round
+              ? "Loading…"
+              : !round.enabled
+                ? "Judges are visiting tables in any order."
+                : round.status === "idle"
+                  ? "Judging hasn't started yet. Check back soon."
+                  : `Round ${round.round} of ${round.totalRounds}`}
+        </p>
+        {isOrganizer && accessQ.data && (
+          <p className="m-0 w-fit rounded-full bg-dashboard-bg-highlight px-3 py-1 text-sm font-semibold text-dashboard-text-active">
+            {accessQ.data.shownToHackers
+              ? "Hackers can see this page."
+              : "Hidden from hackers. Use the eye button in the menu to show it."}
+          </p>
+        )}
       </header>
 
       {round?.enabled && round.round > 0 && (
