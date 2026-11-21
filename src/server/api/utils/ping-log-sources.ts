@@ -1,4 +1,5 @@
 import { desc, eq, isNotNull } from "drizzle-orm";
+import { google } from "googleapis";
 import { db } from "~/server/db";
 import {
   applications,
@@ -11,7 +12,14 @@ import {
   teams,
   users,
 } from "~/server/db/schema";
-import type { PingEntry, PingKind, PingTone } from "~/lib/ping-log";
+import {
+  autoPingEntries,
+  type PingEntry,
+  type PingKind,
+  type PingTone,
+} from "~/lib/ping-log";
+import { sharedSheetRead } from "~/server/api/utils/sponsor-sheets";
+import { readQueue } from "~/server/slack/auto-ping-sync";
 
 /**
  * Every other kind of ping the site sends, read from the tables each feature
@@ -194,6 +202,42 @@ export async function marketingPings(): Promise<PingEntry[]> {
   }));
 }
 
+/** The Auto-Ping sheet (the same one auto-ping-run.ts syncs). */
+const AUTO_PING_SHEET = "12O1XRmQN3mT-bwTFGKQEGAQ2gEb6fQIjsB55K_gcHf0";
+/** The bot rewrites its Queue tab about once a minute. */
+const AUTO_PING_TTL_MS = 60_000;
+
+/**
+ * Mentor, volunteer and judge DMs, from the Queue tab the Auto-Ping bot
+ * keeps on its sheet. One read-only read a minute; the bot is not touched.
+ */
+export async function autoPingPings(): Promise<PingEntry[]> {
+  const email = process.env.RUN_OF_SHOW_SHEETS_CLIENT_EMAIL?.trim();
+  const key = process.env.RUN_OF_SHOW_SHEETS_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  if (!email || !key) throw new Error("Sheets credentials aren't set.");
+  const override = process.env.AUTO_PING_SHEET?.trim();
+  const sheetId = override ? override : AUTO_PING_SHEET;
+  const grid = await sharedSheetRead(
+    "ping-log-auto-ping",
+    AUTO_PING_TTL_MS,
+    async () => {
+      const auth = new google.auth.JWT({
+        email,
+        key,
+        scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
+      });
+      const res = await google
+        .sheets({ version: "v4", auth })
+        .spreadsheets.values.get({
+          spreadsheetId: sheetId,
+          range: "'Queue'!A1:K5000",
+        });
+      return (res.data.values ?? []).map((row) => row.map((c) => String(c)));
+    },
+  );
+  return autoPingEntries(readQueue(grid), Date.now());
+}
+
 function scheduledTone(status: string): PingTone {
   if (status === "scheduled") return "waiting";
   if (status === "failed") return "problem";
@@ -206,6 +250,7 @@ export async function otherPings(): Promise<{
   failed: PingKind[];
 }> {
   const sources: [PingKind, () => Promise<PingEntry[]>][] = [
+    ["autoPing", autoPingPings],
     ["coffee", coffeePings],
     ["presentation", presentationPings],
     ["help", helpPings],
