@@ -4,7 +4,6 @@ import SEO from "~/components/seo";
 import { InternalPage } from "~/components/internals/page-shell";
 import { ControlProgress } from "~/components/judging/control/control-progress";
 import { ControlRounds } from "~/components/judging/control/control-rounds";
-import { ControlQueue } from "~/components/judging/control/control-queue";
 import { ControlTablesStatus } from "~/components/judging/control/control-tables-status";
 import { ControlQueueTable } from "~/components/judging/control/control-queue-table";
 import {
@@ -74,10 +73,13 @@ export default function JudgingControlRoom() {
           </p>
         )}
 
-        <ControlQueue queue={queue} />
         <ControlProgress queue={queue} judges={judgesQ.data} now={now} />
 
-        <ControlTablesStatus progress={progressQ.data} now={now} />
+        <ControlTablesStatus
+          progress={progressQ.data}
+          queue={queue}
+          now={now}
+        />
         <ControlQueueTable queue={queue} now={now} />
         <ControlRounds queue={queue} />
       </InternalPage>

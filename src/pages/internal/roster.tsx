@@ -1,13 +1,8 @@
 import { type GetServerSidePropsContext } from "next";
 import { useRouter } from "next/router";
-import { useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { InternalPage } from "~/components/internals/page-shell";
 import { JudgeRoster } from "~/components/judging/control/control-judge-roster";
-import {
-  queueFromProgress,
-  useNow,
-} from "~/components/judging/control/control-shared";
 import { TeamResultsView } from "~/components/judging/control/team-results-view";
 import SEO from "~/components/seo";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
@@ -24,15 +19,10 @@ type Tab = (typeof TABS)[number];
 /** Individual judges and teams: who they are, what they've scored, who goes where. */
 export default function RosterPage({ results }: { results: TeamResult[] }) {
   const router = useRouter();
-  const now = useNow();
   const { data: session } = useSession();
   const progressQ = api.judging.admin.getProgress.useQuery(undefined, {
     refetchInterval: 5000,
   });
-  const queue = useMemo(
-    () => (progressQ.data ? queueFromProgress(progressQ.data) : undefined),
-    [progressQ.data],
-  );
 
   const tab: Tab = TABS.find((t) => t === router.query.tab) ?? "judges";
   const setTab = (next: string) =>
@@ -61,12 +51,7 @@ export default function RosterPage({ results }: { results: TeamResult[] }) {
             </TabsTrigger>
           </TabsList>
           <TabsContent value="judges" className="mt-0 flex flex-col gap-5">
-            <JudgeRoster
-              progress={progressQ.data}
-              queue={queue}
-              now={now}
-              myId={session?.user.id}
-            />
+            <JudgeRoster progress={progressQ.data} myId={session?.user.id} />
           </TabsContent>
           <TabsContent value="teams" className="mt-0">
             <TeamResultsView results={results} />
