@@ -260,6 +260,7 @@ const Activities = () => {
                             })}
                             –
                             {formatEventTime(a.endsAt, {
+                              weekday: "short",
                               hour: "numeric",
                               minute: "2-digit",
                             })}
