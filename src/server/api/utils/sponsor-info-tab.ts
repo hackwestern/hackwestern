@@ -1,8 +1,8 @@
 import { type SponsorStatus } from "~/lib/sponsor-status";
 import { sheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
 import {
-  clearSponsorDayOfCache,
   fetchSponsorDayOfTab,
+  rememberSponsorDayOfWrite,
   sponsorDayOfRows,
   type SheetsClient,
   type SponsorDayOfTab,
@@ -35,7 +35,7 @@ export function sponsorStatusCell(
   dayOf: SponsorDayOfTab,
   sponsorName: string,
   field: "status" | "ccWorkshop" = "status",
-): SponsorStatusWrite {
+): SponsorStatusCell {
   const col = dayOf.cols[field];
   if (col === -1) return { ok: false, reason: "no-column" };
   const target = sponsorName.trim().toLowerCase();
@@ -44,8 +44,13 @@ export function sponsorStatusCell(
   );
   if (!hit) return { ok: false, reason: "not-found" };
   const range = `'${dayOf.tab.replace(/'/g, "''")}'!${columnLetter(col + 1)}${hit.sheetRow}`;
-  return { ok: true, range };
+  return { ok: true, range, rowIndex: hit.sheetRow - 1, col };
 }
+
+/** sponsorStatusCell's result: the cell, also as 0-based dayOf.rows indexes. */
+export type SponsorStatusCell =
+  | { ok: true; range: string; rowIndex: number; col: number }
+  | { ok: false; reason: "no-column" | "not-found" };
 
 export type SponsorStatusWrite =
   | { ok: true; range: string }
@@ -78,7 +83,7 @@ export async function writeSponsorStatus(
   if (!dayOf) return { ok: false, reason: "no-tab" };
   const target = sponsorStatusCell(dayOf, sponsorName);
   if (!target.ok) return target;
-  const { range } = target;
+  const { range, rowIndex, col } = target;
   // Accepted risk: if someone inserts or sorts rows between the read above and this write, the status lands in the wrong row.
   await sheets.spreadsheets.values.update({
     spreadsheetId,
@@ -86,7 +91,8 @@ export async function writeSponsorStatus(
     valueInputOption: "RAW",
     requestBody: { majorDimension: "ROWS", values: [[status]] },
   });
-  clearSponsorDayOfCache();
+  // The next read here (the board's refetch) sees the new status.
+  rememberSponsorDayOfWrite(spreadsheetId, dayOf, rowIndex, col, status);
   return { ok: true, range };
 }
 
@@ -119,6 +125,13 @@ export async function writeSponsorCcWorkshop(
     valueInputOption: "RAW",
     requestBody: { majorDimension: "ROWS", values: [[attended]] },
   });
-  clearSponsorDayOfCache();
+  // A checkbox reads back as "TRUE" / "FALSE".
+  rememberSponsorDayOfWrite(
+    spreadsheetId,
+    dayOf,
+    target.rowIndex,
+    target.col,
+    attended ? "TRUE" : "FALSE",
+  );
   return { ok: true, range: target.range };
 }

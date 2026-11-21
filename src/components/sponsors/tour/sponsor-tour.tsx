@@ -53,13 +53,19 @@ const SKIP_GRACE_MS = 2500;
 export function SponsorTour({
   offerWelcome = false,
   hasPrizeTrack,
+  hasCoffeeChats = true,
 }: {
   offerWelcome?: boolean;
   /** False drops the Judging step (no Judging in the nav). */
   hasPrizeTrack?: boolean;
+  /** False drops the Chats and Scan steps (no coffee chats). */
+  hasCoffeeChats?: boolean;
 }) {
   const router = useRouter();
-  const tours = useMemo(() => toursFor(hasPrizeTrack), [hasPrizeTrack]);
+  const tours = useMemo(
+    () => toursFor(hasPrizeTrack, hasCoffeeChats),
+    [hasPrizeTrack, hasCoffeeChats],
+  );
   const sponsor =
     typeof router.query.uuid === "string" && uuidRegex.test(router.query.uuid)
       ? router.query.uuid

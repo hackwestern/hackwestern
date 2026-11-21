@@ -126,6 +126,13 @@ export const env = createEnv({
     // "off" (default), "dry-run" or "live"; checked in the route, so a typo
     // can't fail the site's build.
     PINGS_CRON: z.string().optional(),
+    // Slack DMs to each sponsor's HW lead (src/server/slack/sponsor-lead-*.ts).
+    // "1" sends, "dry" only logs what would be sent, unset (or anything
+    // else) sends nothing. SPONSOR_LEAD_FEED: one line per organizer change
+    // to the sponsor. SPONSOR_LEAD_PINGS: 15 minutes before each of the
+    // sponsor's action items (30 for an Ivey chat).
+    SPONSOR_LEAD_FEED: z.string().optional(),
+    SPONSOR_LEAD_PINGS: z.string().optional(),
     // The Hack Western Slack app (hackers and the sponsor team share one
     // workspace and one app). Unset = Slack features are skipped.
     SLACK_BOT_TOKEN: z.string().optional(),
@@ -248,6 +255,8 @@ export const env = createEnv({
     CHEAT_SWEEP_SECRET: process.env.CHEAT_SWEEP_SECRET,
     CRON_SECRET: process.env.CRON_SECRET,
     PINGS_CRON: process.env.PINGS_CRON,
+    SPONSOR_LEAD_FEED: process.env.SPONSOR_LEAD_FEED,
+    SPONSOR_LEAD_PINGS: process.env.SPONSOR_LEAD_PINGS,
     SLACK_BOT_TOKEN: process.env.SLACK_BOT_TOKEN,
     SLACK_SIGNING_SECRET: process.env.SLACK_SIGNING_SECRET,
     SPONSOR_HELP_SLACK_BOT_TOKEN: process.env.SPONSOR_HELP_SLACK_BOT_TOKEN,

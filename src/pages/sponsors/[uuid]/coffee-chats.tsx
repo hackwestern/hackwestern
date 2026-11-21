@@ -19,6 +19,8 @@ import {
 } from "~/components/sponsors/schedule-states";
 import { SponsorShell } from "~/components/sponsors/sponsor-shell";
 import { sponsorSetupCopy as copy } from "~/content/sponsor-coffee-setup";
+import { NoChats } from "~/components/sponsors/coffee-setup/no-chats";
+import { showChats } from "~/lib/sponsor-chats";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
 import { uuidRegex } from "~/utils/urls";
@@ -50,6 +52,10 @@ export default function SponsorCoffeeChatsPage() {
   const router = useRouter();
   const id = typeof router.query.uuid === "string" ? router.query.uuid : "";
   const validUuid = uuidRegex.test(id);
+  const portalInfo = api.sponsorPortal.getSponsorPortalInfo.useQuery(
+    { sponsor: id },
+    { enabled: validUuid, refetchOnWindowFocus: false, retry: false },
+  );
   const q = api.coffeeChatSetup.get.useQuery(
     { sponsor: id },
     {
@@ -97,6 +103,10 @@ export default function SponsorCoffeeChatsPage() {
     );
   if (!router.isReady || (validUuid && q.isLoading))
     return shell(<ScheduleSkeleton />);
+  // Not signed up for coffee chats (or opted out): a short note, no forms.
+  if (validUuid && !showChats(portalInfo.data)) {
+    return shell(<NoChats homeHref={`/sponsors/${id}`} />);
+  }
   if (!validUuid || q.error?.data?.code === "NOT_FOUND")
     return shell(<InvalidLink />);
   if (!q.data) return shell(<LoadError onRetry={() => void q.refetch()} />);

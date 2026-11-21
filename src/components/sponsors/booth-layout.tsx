@@ -5,7 +5,7 @@ import { cn } from "~/lib/utils";
 import { sponsorCard, tapRow } from "./sponsor-shell-styles";
 
 /**
- * The Sponsor Bay floor: booths around the projector screen, with the
+ * The Sponsor Bay floor: booths below the outside windows, with the
  * viewer's own booth highlighted (Jazz, 2026-11-18).
  */
 export function BoothLayout({
@@ -32,7 +32,7 @@ export function BoothLayout({
         }
         className="flex flex-col gap-1.5 sm:gap-2"
       >
-        {/* The projector screen spans the three top booths. */}
+        {/* The outside windows run along the top, above the three top booths. */}
         <div className="mx-[20%] flex min-h-11 items-center justify-center rounded-dashboard-lg border border-dashed border-dashboard-border-control bg-dashboard-bg-inset text-xs font-semibold text-dashboard-text-medium sm:text-sm">
           {copy.booths.screen}
         </div>

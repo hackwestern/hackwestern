@@ -24,6 +24,30 @@ import {
   type SponsorStatusWriteResult,
 } from "~/server/api/utils/sponsor-info-tab";
 import { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
+import { sponsorLeadSlackCopy } from "~/content/sponsor-lead-slack";
+import {
+  organizerActor,
+  reportSponsorChange,
+} from "~/server/slack/sponsor-lead-feed";
+import { feedMode } from "~/server/slack/sponsor-leads";
+
+/** Tell the sponsor's HW lead (when the cell was written, or a dry run). */
+function reportDayOf(
+  written: boolean,
+  user: { email?: string | null; name?: string | null },
+  sponsorName: string,
+  group: "status" | "ccWorkshop",
+  text: string,
+) {
+  if (!written && feedMode() !== "dry") return;
+  reportSponsorChange({
+    sponsorName,
+    group,
+    text,
+    latestOnly: true,
+    actor: organizerActor(user),
+  });
+}
 
 /**
  * A Sponsor Day-Of cell write's result: true when written, false when sheet
@@ -146,6 +170,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
           roomNumber: info?.roomNumber ?? "TBD",
           boothLocation: info?.boothLocation ?? "TBD",
           atCcWorkshop: info?.atCcWorkshop ?? null,
+          digital: info?.digital ?? false,
           onMasterSheet: true,
         };
       });
@@ -169,6 +194,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
           roomNumber: info?.roomNumber ?? "TBD",
           boothLocation: info?.boothLocation ?? "TBD",
           atCcWorkshop: info?.atCcWorkshop ?? null,
+          digital: info?.digital ?? false,
           onMasterSheet: false,
         });
       }
@@ -195,7 +221,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
         status: z.enum(SPONSOR_STATUS_VALUES),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       try {
         const sheets = await getSheetsClient();
         const result = await writeSponsorStatus(
@@ -208,6 +234,13 @@ export const sponsorDashboardRouter = createTRPCRouter({
           result,
           input.sponsorName,
           statusCopy.errors.noColumn,
+        );
+        reportDayOf(
+          sheetWritten,
+          ctx.session.user,
+          input.sponsorName,
+          "status",
+          sponsorLeadSlackCopy.feed.status(input.status),
         );
         return {
           sponsorName: input.sponsorName,
@@ -240,7 +273,7 @@ export const sponsorDashboardRouter = createTRPCRouter({
         attended: z.boolean(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       try {
         const sheets = await getSheetsClient();
         const result = await writeSponsorCcWorkshop(
@@ -253,6 +286,13 @@ export const sponsorDashboardRouter = createTRPCRouter({
           result,
           input.sponsorName,
           statusCopy.errors.noCcColumn,
+        );
+        reportDayOf(
+          sheetWritten,
+          ctx.session.user,
+          input.sponsorName,
+          "ccWorkshop",
+          sponsorLeadSlackCopy.feed.ccWorkshop(input.attended),
         );
         return {
           sponsorName: input.sponsorName,

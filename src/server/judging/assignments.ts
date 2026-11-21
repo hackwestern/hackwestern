@@ -37,7 +37,7 @@ import {
 const INSERT_BATCH = 500;
 
 /**
- * Give every organizer-type judge a section of the snake so each active table
+ * Give every organizer-type judge a section of the snake so each occupied active spot
  * gets `judgesPerTable` different judges (see `buildSections`). Judges are
  * taken in the order they were added. Sponsor judges are left out: they judge
  * in their sponsor rooms, and the ranking ignores their marks. Replaces the
@@ -52,8 +52,15 @@ export async function autoAssign(assignedBy: string) {
     const tables = await tx
       .select({ id: judgingTables.id, number: judgingTables.number })
       .from(judgingTables)
+      .innerJoin(teams, eq(teams.judgingTableId, judgingTables.id))
       .where(eq(judgingTables.isActive, true))
       .orderBy(asc(judgingTables.number));
+    if (tables.length === 0) {
+      throw new TRPCError({
+        code: "PRECONDITION_FAILED",
+        message: "Seat teams at active tables before assigning judges.",
+      });
+    }
     const judgeRows = await tx
       .select({ id: judges.id })
       .from(judges)

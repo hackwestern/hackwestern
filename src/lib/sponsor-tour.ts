@@ -387,3 +387,74 @@ export function clickTargetOf<T extends ClickableLike>(el: T): T {
   if (el.matches(CLICKABLE_SELECTOR)) return el;
   return (el.querySelector(CLICKABLE_SELECTOR) as T | null) ?? el;
 }
+
+// ------------------------------------------------------------
+// Phones: which edge the callout docks to, and where the target scrolls
+// ------------------------------------------------------------
+
+/** Space between the callout, the target and the screen edges on phones. */
+export const PHONE_GAP = 12;
+
+export type PhoneDock = "top" | "bottom";
+
+export interface PhoneChrome {
+  /** Height of the sticky top bar (0 when there's none). */
+  topBar: number;
+  /** Height of the fixed bottom tab bar (0 when there's none). */
+  bottomBar: number;
+}
+
+/**
+ * Which edge a phone callout docks to, given where the target is now (after
+ * scrolling): the edge that covers less of it. A target too tall to clear
+ * a callout either way gets the bottom, so its start (its heading) stays in
+ * view; a tie goes away from the target (lower half: top). A tab bar
+ * target always gets the top.
+ */
+export function phoneDock(
+  target: Rect,
+  calloutHeight: number,
+  viewportHeight: number,
+  inTabBar = false,
+): PhoneDock {
+  if (inTabBar) return "top";
+  const room = viewportHeight - calloutHeight - PHONE_GAP * 2;
+  if (target.height > room) return "bottom";
+  const bottom = target.top + target.height;
+  const underBottom = Math.max(
+    0,
+    bottom - (viewportHeight - calloutHeight - PHONE_GAP),
+  );
+  const underTop = Math.max(0, calloutHeight + PHONE_GAP - target.top);
+  if (underTop !== underBottom)
+    return underTop < underBottom ? "top" : "bottom";
+  return target.top + target.height / 2 > viewportHeight / 2 ? "top" : "bottom";
+}
+
+/**
+ * Where a target should scroll to on a phone so it sits in the part of the
+ * screen the callout leaves free: scroll-margin above and below it, and
+ * whether it fits (centre it) or not (show its start).
+ */
+export function phoneScrollPlan(
+  targetHeight: number,
+  calloutHeight: number,
+  viewportHeight: number,
+  chrome: PhoneChrome,
+  dock: PhoneDock = "bottom",
+): { marginTop: number; marginBottom: number; block: "center" | "start" } {
+  const marginTop =
+    dock === "bottom"
+      ? chrome.topBar + PHONE_GAP
+      : calloutHeight + PHONE_GAP * 2;
+  const marginBottom =
+    dock === "bottom"
+      ? calloutHeight + PHONE_GAP * 2
+      : chrome.bottomBar + PHONE_GAP;
+  const room = viewportHeight - marginTop - marginBottom;
+  return {
+    marginTop,
+    marginBottom,
+    block: targetHeight <= room ? "center" : "start",
+  };
+}

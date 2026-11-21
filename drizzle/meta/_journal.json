@@ -376,8 +376,15 @@
     {
       "idx": 53,
       "version": "7",
-      "when": 1795226331234,
-      "tag": "0053_redemption_cost_points",
+      "when": 1795244984321,
+      "tag": "0053_sponsor_lead_ping",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1795267111211,
+      "tag": "0054_redemption_cost_points",
       "breakpoints": true
     }
   ]

@@ -8,49 +8,49 @@ interface QuestionGroup {
   questions: string[];
 }
 
-// Placeholder questions until the real bank is written. Grouped to match the
+// Starter questions. Grouped to match the
 // rubric criteria, plus a general group to open with.
 const QUESTION_BANK: QuestionGroup[] = [
   {
     title: "Getting started",
     questions: [
-      "Placeholder: What problem are you solving, and for whom?",
-      "Placeholder: Walk me through a quick demo.",
+      "What problem are you solving, and for whom?",
+      "Walk me through a quick demo.",
     ],
   },
   {
     title: "Innovation + Impact",
     questions: [
-      "Placeholder: What makes this different from what already exists?",
-      "Placeholder: Who would use this, and how would it change things for them?",
+      "What makes this different from what already exists?",
+      "Who would use this, and how would it change things for them?",
     ],
   },
   {
     title: "Creativity",
     questions: [
-      "Placeholder: Where did the idea come from?",
-      "Placeholder: What's the most unexpected thing you did to make it work?",
+      "Where did the idea come from?",
+      "What's the most unexpected thing you did to make it work?",
     ],
   },
   {
     title: "Technical Complexity",
     questions: [
-      "Placeholder: What was the hardest part to build?",
-      "Placeholder: How does the data move through your system?",
+      "What was the hardest part to build?",
+      "How does the data move through your system?",
     ],
   },
   {
     title: "Design/Polish",
     questions: [
-      "Placeholder: Who did you design this for?",
-      "Placeholder: What would you polish with one more day?",
+      "Who did you design this for?",
+      "What would you polish with one more day?",
     ],
   },
   {
     title: "Adventurous",
     questions: [
-      "Placeholder: What did you try this weekend that you'd never done before?",
-      "Placeholder: What was the biggest risk you took, and did it pay off?",
+      "What did you try this weekend that you'd never done before?",
+      "What was the biggest risk you took, and did it pay off?",
     ],
   },
 ];

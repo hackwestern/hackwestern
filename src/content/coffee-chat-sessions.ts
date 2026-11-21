@@ -39,6 +39,10 @@ export const coffeeSessionsCopy = {
     "14": "2–3",
     "15": "3–4",
     "16": "4–5",
+    "17": "5–6",
+    "18": "6–7",
+    "19": "7–8",
+    "20": "8–9",
   } as Record<string, string>,
 
   sponsors: {
@@ -427,6 +431,16 @@ export const coffeeSessionsCopy = {
     hackerLine: (name: string, hackerId: string | null) =>
       hackerId ? `${name} · ${hackerId}` : name,
     /** Under the Book button. */
+    /** Add a rep the sponsor forgot, right here (0 chats: events only). */
+    addRep: "+ Add a rep",
+    addRepName: "Rep's name",
+    addRepPhone: "Rep's phone",
+    addRepSave: "Add rep",
+    addRepSaving: "Adding…",
+    addRepCancel: "Cancel",
+    addRepHint:
+      "Saved to the sponsor's team with no coffee chats, so their schedule doesn't change.",
+    addRepNeed: "Add the rep's name and phone.",
     inviteNote:
       "Each hacker gets the usual invite to accept or decline, until 20 minutes before the event. More than one hacker makes it a group chat.",
     book: "Book",
@@ -516,6 +530,8 @@ export const coffeeSessionsCopy = {
 
   /** Server error messages (shown as toasts). */
   errors: {
+    /** Book an event's Add a rep: the team is full. */
+    tooManyReps: (n: number) => `This sponsor already has ${n} reps.`,
     roomTaken: (room: string, s: string) => `${room} is taken at ${s}.`,
     repBusy: (rep: string, s: string) => `${rep} already has a chat at ${s}.`,
     repAtCap: (n: number) =>

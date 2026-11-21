@@ -1,3 +1,8 @@
+import {
+  chatsOptedOut,
+  sheetChatsOn,
+} from "~/server/api/utils/coffee-chats-on";
+import { isOrganizerCaller } from "~/server/api/utils/submit-lock";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -83,11 +88,26 @@ export const sponsorPortalRouter = createTRPCRouter({
    */
   getSponsorPortalInfo: publicProcedure
     .input(z.object({ sponsor: z.string().uuid() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       // The name comes from our database; only the rest needs the sheet. If
       // the sheet can't be read, still return the name (welcome + logo) with
       // the sheet fields blank, instead of failing the whole portal.
       const sponsorName = await resolveSponsorName(input.sponsor);
+      // Coffee chats on or off, read once here for every portal page
+      // (coffee-chats-on.ts): the Sponsor Day-Of checkbox (an unreadable
+      // sheet counts as on) and the sponsor's own "not doing chats".
+      const [chatsTicked, chatsOptedOutNow, viewerIsOrganizer] =
+        await Promise.all([
+          sheetChatsOn(sponsorName),
+          chatsOptedOut(input.sponsor.toLowerCase()),
+          isOrganizerCaller(ctx),
+        ]);
+      const chats = {
+        hasCoffeeChats: chatsTicked && !chatsOptedOutNow,
+        chatsOptedOut: chatsOptedOutNow,
+        /** A signed-in organizer on the portal link sees Chats regardless. */
+        viewerIsOrganizer,
+      };
       try {
         const sheets = await getSheetsClient();
         const spreadsheetId = getSpreadsheetId();
@@ -144,6 +164,7 @@ export const sponsorPortalRouter = createTRPCRouter({
           maxCoffeeChatMinutes,
           maxCoffeeChatBlocks: coffeeChatBlocksFor(maxCoffeeChatMinutes),
           coffeeChatBookedCount,
+          ...chats,
           sheetFailed: false,
         };
       } catch (error) {
@@ -162,6 +183,7 @@ export const sponsorPortalRouter = createTRPCRouter({
           maxCoffeeChatMinutes: 0,
           maxCoffeeChatBlocks: coffeeChatBlocksFor(0),
           coffeeChatBookedCount: 0,
+          ...chats,
           // The blanks above are unknowns, not real values: the page says
           // it couldn't load rather than "not assigned".
           sheetFailed: true,

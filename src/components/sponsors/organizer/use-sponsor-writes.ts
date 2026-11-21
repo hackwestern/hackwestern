@@ -1,27 +1,54 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 import {
   addInFlight,
   removeInFlight,
   sponsorKey,
-  sponsorStatusIn,
-  withSponsorStatus,
 } from "~/components/sponsors/organizer/status-writes";
+import {
+  applyPins,
+  sponsorWritePins,
+} from "~/components/sponsors/organizer/write-pins";
 import { sponsorOrganizerCopy } from "~/content/sponsor-organizer";
-import type { SPONSOR_STATUS_VALUES } from "~/lib/sponsor-status";
+import type { SponsorStatus } from "~/lib/sponsor-status";
 import { api, type RouterOutputs } from "~/utils/api";
 
 const copy = sponsorOrganizerCopy.board;
 
-type SponsorStatus = (typeof SPONSOR_STATUS_VALUES)[number];
 type Sponsor = RouterOutputs["sponsorDashboard"]["getSponsors"][number];
 
 export type WriteNote = { tone: "ok" | "error"; text: string };
 
+/** How often the sponsor board re-reads the sheet. */
+const SHEET_SPONSORS_REFRESH_MS = 30_000;
+
+/**
+ * The organizer board's sheet sponsors (getSponsors), with this page's own
+ * recent writes kept over what the server answers (write-pins.ts), so a
+ * poll served by a server instance with an older copy can't flip a pill
+ * back. Every getSponsors reader on the board uses this.
+ */
+export function useSheetSponsors() {
+  const pins = useSyncExternalStore(
+    sponsorWritePins.subscribe,
+    sponsorWritePins.get,
+    sponsorWritePins.get,
+  );
+  const select = useCallback(
+    (data: Sponsor[]) => applyPins(data, pins, Date.now()),
+    [pins],
+  );
+  return api.sponsorDashboard.getSponsors.useQuery(undefined, {
+    refetchInterval: SHEET_SPONSORS_REFRESH_MS,
+    select,
+  });
+}
+
 /**
  * Sponsor Day-Of writes shared by the Home and the old Sponsors board: the
- * Status column (arrival and booth pills) and "At CC workshop". Each saves
- * optimistically and locks only that sponsor's row until it settles; a
- * failure undoes just that sponsor and sets `note`.
+ * Status column (arrival and booth pills) and "At CC workshop". Each shows
+ * at once (a pin, see useSheetSponsors) and locks only that sponsor's row
+ * until it settles; a failure drops just that sponsor's pin and sets
+ * `note`.
  */
 export function useSponsorWrites() {
   const utils = api.useUtils();
@@ -35,76 +62,63 @@ export function useSponsorWrites() {
   };
   const settle = async (sponsorName: string) => {
     setInFlightBoth(removeInFlight(inFlightRef.current, sponsorName));
-    // Refetch once nothing else is saving, so a refetch can't briefly
-    // undo another sponsor's optimistic change.
+    // One refetch once nothing else is saving (a burst of taps reads the
+    // sheet once); the pins hold every new value meanwhile.
     if (inFlightRef.current.size === 0) {
       await utils.sponsorDashboard.getSponsors.invalidate();
+    }
+  };
+
+  // Not written (sheet writes off): the pill goes back on the refetch.
+  // Say why instead of snapping back silently.
+  const notWritten = (data: {
+    sponsorName: string;
+    sheetWritten: boolean;
+    note?: string;
+  }) => {
+    if (!data.sheetWritten && data.note) {
+      setNote({
+        tone: "ok",
+        text: copy.statusNote(data.sponsorName, data.note),
+      });
     }
   };
 
   const updateStatus = api.sponsorDashboard.setSponsorStatus.useMutation({
     onMutate: async ({ sponsorName, status }) => {
       await utils.sponsorDashboard.getSponsors.cancel();
-      const prevStatus = sponsorStatusIn(
-        utils.sponsorDashboard.getSponsors.getData(),
-        sponsorName,
-      );
-      utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
-        withSponsorStatus(old, sponsorName, status),
-      );
-      return { prevStatus };
+      sponsorWritePins.pin(sponsorName, "status", status);
     },
-    onError: (err, { sponsorName }, context) => {
-      const prevStatus = context?.prevStatus;
-      if (prevStatus) {
-        utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
-          withSponsorStatus(old, sponsorName, prevStatus),
-        );
-      }
+    onError: (err, { sponsorName }) => {
+      sponsorWritePins.unpin(sponsorName, "status");
       setNote({ tone: "error", text: copy.statusFailed(err.message) });
     },
-    // Sheet writes off: nothing was written, so the pill goes back on the
-    // refetch. Say why instead of snapping back silently.
-    onSuccess: (data) => {
-      if (!data.sheetWritten && data.note) {
-        setNote({
-          tone: "ok",
-          text: copy.statusNote(data.sponsorName, data.note),
-        });
-      }
+    onSuccess: (data, { sponsorName, status }) => {
+      // Pinned from now, not from the tap: a slow write still gets the
+      // full window over other instances' older copies.
+      if (data.sheetWritten)
+        sponsorWritePins.pin(sponsorName, "status", status);
+      else sponsorWritePins.unpin(sponsorName, "status");
+      notWritten(data);
     },
     onSettled: (_data, _err, { sponsorName }) => settle(sponsorName),
   });
 
-  const withCcWorkshop = (
-    old: Sponsor[] | undefined,
-    sponsorName: string,
-    attended: boolean,
-  ) =>
-    old?.map((s) =>
-      s.name === sponsorName ? { ...s, atCcWorkshop: attended } : s,
-    );
   const updateCcWorkshop =
     api.sponsorDashboard.setSponsorCcWorkshop.useMutation({
       onMutate: async ({ sponsorName, attended }) => {
         await utils.sponsorDashboard.getSponsors.cancel();
-        utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
-          withCcWorkshop(old, sponsorName, attended),
-        );
+        sponsorWritePins.pin(sponsorName, "atCcWorkshop", attended);
       },
-      onError: (err, { sponsorName, attended }) => {
-        utils.sponsorDashboard.getSponsors.setData(undefined, (old) =>
-          withCcWorkshop(old, sponsorName, !attended),
-        );
+      onError: (err, { sponsorName }) => {
+        sponsorWritePins.unpin(sponsorName, "atCcWorkshop");
         setNote({ tone: "error", text: copy.statusFailed(err.message) });
       },
-      onSuccess: (data) => {
-        if (!data.sheetWritten && data.note) {
-          setNote({
-            tone: "ok",
-            text: copy.statusNote(data.sponsorName, data.note),
-          });
-        }
+      onSuccess: (data, { sponsorName, attended }) => {
+        if (data.sheetWritten) {
+          sponsorWritePins.pin(sponsorName, "atCcWorkshop", attended);
+        } else sponsorWritePins.unpin(sponsorName, "atCcWorkshop");
+        notWritten(data);
       },
       onSettled: (_data, _err, { sponsorName }) => settle(sponsorName),
     });

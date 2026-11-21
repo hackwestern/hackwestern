@@ -266,9 +266,44 @@ export const SPONSOR_TOURS: SponsorTours = buildTours(
   judgingPageSteps,
 );
 
+/** Steps about coffee chats (gone for sponsors without chats): Chats,
+ * Scan (it invites to a chat) and Up next's Chats/Scan buttons. */
+const CHAT_STEP_IDS = new Set([
+  "up-next-buttons",
+  "chats-nav",
+  "chats-steps",
+  "chats-stage",
+  "scan",
+  "scan-manual",
+]);
+
+/** A sponsor without chats: their Key rooms step doesn't mention chats. */
+function withoutChats(steps: readonly TourStep[]): TourStep[] {
+  return steps
+    .filter((st) => !CHAT_STEP_IDS.has(st.id))
+    .map((st) =>
+      st.id === "key-rooms" ? { ...st, ...s.keyRoomsNoChats } : st,
+    );
+}
+
+const withoutJudging = (steps: readonly TourStep[]) =>
+  steps.filter((st) => !JUDGING_STEP_IDS.has(st.id));
+
 /** Without a prize track: no Judging step, no Judging page tour. */
 const NO_JUDGING_TOURS: SponsorTours = buildTours(
-  welcomeSteps.filter((st) => !JUDGING_STEP_IDS.has(st.id)),
+  withoutJudging(welcomeSteps),
+  [],
+);
+
+/** Without coffee chats: Home, Schedule, Map, Judging, Help. */
+const NO_CHATS_TOURS: SponsorTours = buildTours(
+  withoutChats(welcomeSteps),
+  judgingPageSteps,
+);
+
+/** Neither: booth, schedule and map. */
+const NO_CHATS_NO_JUDGING_TOURS: SponsorTours = buildTours(
+  withoutJudging(withoutChats(welcomeSteps)),
   [],
 );
 
@@ -276,9 +311,15 @@ const NO_JUDGING_TOURS: SponsorTours = buildTours(
  * The tours a sponsor gets. Without a prize track there's no Judging in
  * the nav, so the full tour drops its Judging step (it would be skipped
  * anyway; dropping it keeps "Step n of N" right) and there's no Judging
- * page tour. `undefined` (still loading) keeps everything; a missing
- * target skips itself.
+ * page tour. Without coffee chats there's no Chats or Scan, so their steps
+ * go too and the tour is Home, Schedule, Map, Judging, Help. `undefined`
+ * (still loading) keeps everything; a missing target skips itself.
  */
-export function toursFor(hasPrizeTrack: boolean | undefined): SponsorTours {
-  return hasPrizeTrack === false ? NO_JUDGING_TOURS : SPONSOR_TOURS;
+export function toursFor(
+  hasPrizeTrack: boolean | undefined,
+  hasCoffeeChats = true,
+): SponsorTours {
+  const judging = hasPrizeTrack !== false;
+  if (hasCoffeeChats) return judging ? SPONSOR_TOURS : NO_JUDGING_TOURS;
+  return judging ? NO_CHATS_TOURS : NO_CHATS_NO_JUDGING_TOURS;
 }

@@ -248,7 +248,10 @@ export function DayGrid({
   headerStart,
   headerEnd,
   availability = null,
+  hiddenColumns = [],
 }: {
+  /** Columns to leave out (Coffee chats for a sponsor without chats). */
+  hiddenColumns?: readonly GridColumn[];
   day: RunOfShowDay;
   entries: readonly TimelineEntry[];
   now: Date;
@@ -280,7 +283,7 @@ export function DayGrid({
   const wide = useIsWide();
   const date = Number(RUN_OF_SHOW_DATES[day].slice(8));
   const rows = buildAxis(entries);
-  const columns = layoutGrid(entries);
+  const columns = layoutGrid(entries, hiddenColumns);
   // A focused column that's gone (other day, hidden) means no focus.
   const focused = columns.some((c) => c.column === focusChoice)
     ? focusChoice

@@ -1,6 +1,6 @@
 /**
- * The Sponsor Bay booth layout around the projector screen (Jazz,
- * 2026-11-18; reference image context/refs-img/sponsor-bay-booth-layout.png).
+ * The Sponsor Bay booth layout below the outside windows (Jazz,
+ * 2026-11-18, updated 2026-11-20; reference image context/refs-img/sponsor-bay-booth-layout-v2.png).
  * Positions are grid cells: 5 columns (left wall, three across the top,
  * right wall) and rows below the screen. Edit here when booths move.
  */
@@ -16,8 +16,8 @@ export type Booth = {
 };
 
 export const SPONSOR_BAY_BOOTHS: readonly Booth[] = [
-  { sponsor: "Accenture", side: "top", col: 2, row: 1 },
-  { sponsor: "Canada Life", side: "top", col: 3, row: 1 },
+  { sponsor: "Canada Life", side: "top", col: 2, row: 1 },
+  { sponsor: "Accenture", side: "top", col: 3, row: 1 },
   { sponsor: "Manulife", side: "top", col: 4, row: 1 },
   { sponsor: "QNX", side: "left", col: 1, row: 2 },
   { sponsor: "TinyFish", side: "left", col: 1, row: 3 },

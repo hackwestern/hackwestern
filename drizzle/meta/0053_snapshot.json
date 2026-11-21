@@ -1,5 +1,5 @@
 {
-  "id": "19954292-51bc-4b9a-9a27-598bb5d54790",
+  "id": "1b3ad4c3-d65f-4d29-abae-8ac42464c51b",
   "prevId": "0830323b-98cd-498d-8b62-5820b7046a29",
   "version": "7",
   "dialect": "postgresql",
@@ -3208,12 +3208,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "cost_points": {
-          "name": "cost_points",
-          "type": "smallint",
-          "primaryKey": false,
-          "notNull": true
-        },
         "scanner_id": {
           "name": "scanner_id",
           "type": "varchar(255)",
@@ -4076,6 +4070,68 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sponsor_lead_ping": {
+      "name": "sponsor_lead_ping",
+      "schema": "",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "varchar(255)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "sponsor_id": {
+          "name": "sponsor_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slack_channel": {
+          "name": "slack_channel",
+          "type": "varchar(32)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message_id": {
+          "name": "message_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "varchar(16)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "post_at": {
+          "name": "post_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_key": {
+          "name": "content_key",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

@@ -25,6 +25,7 @@ import { sponsorPortalCopy } from "~/content/sponsor-portal";
 import { sponsorVenueCopy } from "~/content/sponsor-venue";
 import { judgingUnlocked } from "~/lib/sponsor-judging-unlock";
 import { pageOf } from "~/lib/sponsor-tour";
+import { showChats } from "~/lib/sponsor-chats";
 import { pageTourId, toursFor } from "~/lib/sponsor-tours";
 import { sponsorLogo } from "~/lib/sponsor-logos";
 import { cn } from "~/lib/utils";
@@ -173,14 +174,19 @@ export function SponsorShell({
   // Side nav (mock sponsor-chats-v2): Home · Schedule · Map, then "Your
   // tasks": Chats · Judging. Scan lives in the Chats header and on Home.
   const sideMain = id ? [home, schedule, map] : [];
-  const sideTasks = id ? [chats, ...(judgingItem ? [judgingItem] : [])] : [];
+  // Sponsors without coffee chats get no Chats or Scan (Scan invites to a
+  // chat); the portal is then Home, Schedule, Map and Judging.
+  const chatsOn = showChats(info.data);
+  const sideTasks = id
+    ? [...(chatsOn ? [chats] : []), ...(judgingItem ? [judgingItem] : [])]
+    : [];
   // Phone tab bar: Home · Chats · [Scan] · Schedule · Map (· Judge). Scan
-  // is the exact centre of five; with Judging it's third of six.
+  // is the exact centre of five; with Judging it's third of six. Without
+  // chats: Home · Schedule · Map (· Judge), equal widths.
   const tabs = id
     ? [
         home,
-        chats,
-        scanItem,
+        ...(chatsOn ? [chats, scanItem] : []),
         schedule,
         map,
         ...(judgingItem ? [judgingItem] : []),
@@ -195,7 +201,7 @@ export function SponsorShell({
   const pageTour =
     tourPage &&
     !router.query.flow &&
-    toursFor(info.data?.hasPrizeTrack)[pageTourId(tourPage)]
+    toursFor(info.data?.hasPrizeTrack, chatsOn)[pageTourId(tourPage)]
       ? tourPage
       : null;
   const pageName = active ? copy.titles[active] : sponsorPortalCopy.brand;
@@ -253,25 +259,29 @@ export function SponsorShell({
                     </li>
                   ))}
                 </ul>
-                <p
-                  id="sponsor-nav-tasks"
-                  className="m-0 mt-7 px-4 pb-2 text-xs font-bold uppercase tracking-wider text-dashboard-text-light"
-                >
-                  {copy.tasks}
-                </p>
-                <ul
-                  aria-labelledby="sponsor-nav-tasks"
-                  className="m-0 flex list-none flex-col gap-1.5 p-0"
-                >
-                  {sideTasks.map((item) => (
-                    <li key={item.id}>
-                      <SideNavItem
-                        item={{ ...item, href: withPreview(item.href) }}
-                        current={item.id === active}
-                      />
-                    </li>
-                  ))}
-                </ul>
+                {sideTasks.length > 0 && (
+                  <>
+                    <p
+                      id="sponsor-nav-tasks"
+                      className="m-0 mt-7 px-4 pb-2 text-xs font-bold uppercase tracking-wider text-dashboard-text-light"
+                    >
+                      {copy.tasks}
+                    </p>
+                    <ul
+                      aria-labelledby="sponsor-nav-tasks"
+                      className="m-0 flex list-none flex-col gap-1.5 p-0"
+                    >
+                      {sideTasks.map((item) => (
+                        <li key={item.id}>
+                          <SideNavItem
+                            item={{ ...item, href: withPreview(item.href) }}
+                            current={item.id === active}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
               </nav>
             </div>
             <div className="flex flex-col items-start gap-4 pt-6">
@@ -285,7 +295,10 @@ export function SponsorShell({
 
         <div className="flex min-w-0 flex-1 flex-col">
           {/* Phone top bar: logo, the section's title, Help. */}
-          <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-2 border-b border-dashboard-border-default bg-dashboard-bg-nav px-4 pt-[env(safe-area-inset-top)] md:hidden">
+          <header
+            data-sponsor-topbar=""
+            className="sticky top-0 z-30 flex min-h-16 items-center justify-between gap-2 border-b border-dashboard-border-default bg-dashboard-bg-nav px-4 pt-[env(safe-area-inset-top)] md:hidden"
+          >
             {id ? (
               <div className="flex shrink-0 items-center gap-1">
                 <Link
@@ -405,6 +418,7 @@ export function SponsorShell({
         <SponsorTour
           offerWelcome={active === "home"}
           hasPrizeTrack={info.data?.hasPrizeTrack}
+          hasCoffeeChats={chatsOn}
         />
       )}
     </>

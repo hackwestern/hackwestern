@@ -46,6 +46,10 @@ export const sponsorSetupCopy = {
     "14": "2–3 PM",
     "15": "3–4 PM",
     "16": "4–5 PM",
+    "17": "5–6 PM",
+    "18": "6–7 PM",
+    "19": "7–8 PM",
+    "20": "8–9 PM",
   } as Record<string, string>,
   day: "Saturday",
   daySubtitle: "Sat",
@@ -580,6 +584,10 @@ export const sponsorSetupCopy = {
       "14": "2–3",
       "15": "3–4",
       "16": "4–5",
+      "17": "5–6",
+      "18": "6–7",
+      "19": "7–8",
+      "20": "8–9",
     } as Record<string, string>,
     calendarLabel: "Your chats calendar, Saturday. Scrolls sideways",
     workshopTime: (when: string) => when,
@@ -612,6 +620,22 @@ export const sponsorSetupCopy = {
     error: "Couldn't add them. Try again.",
   },
 
+  /** Chats or Scan for a sponsor without coffee chats. */
+  noChatsPage: {
+    title: "No coffee chats",
+    body: "Coffee chats aren't part of your sponsorship. Questions? Ask your point of contact.",
+    home: "Back to Home",
+  },
+
+  /** "We're not doing coffee chats" on the Chats page's first card. */
+  optOut: {
+    button: "We're not doing coffee chats",
+    title: "Not doing coffee chats?",
+    body: "We'll take Chats out of your portal and won't book any chats for you. You can only do this once; to change it later, ask your point of contact.",
+    confirm: "We're not doing chats",
+    cancel: "Go back",
+  },
+
   /** Submitted once (decisions 2026-11-20): what a sponsor sees instead
    * of the forms after they submit. Organizers still get the forms. */
   submittedLock: {
@@ -627,6 +651,9 @@ export const sponsorSetupCopy = {
   },
 
   errors: {
+    /** Server: a sponsor not signed up for coffee chats (Sponsor Day-Of). */
+    notSignedUp:
+      "Coffee chats aren't part of your sponsorship. Questions? Ask your point of contact.",
     unknownSponsor: "This private link isn't valid.",
     unknownRep: "That rep isn't on your team anymore. Refresh and try again.",
     afterInvites: "Invites are already out. Confirm the change to save it.",

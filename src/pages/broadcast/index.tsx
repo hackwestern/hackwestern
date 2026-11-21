@@ -4,6 +4,7 @@ import { api } from "~/utils/api";
 import {
   hackingPhase,
   nowAndNext,
+  pickNextMedia,
   type BroadcastActivity,
 } from "~/lib/broadcast";
 import {
@@ -284,9 +285,9 @@ function Leaderboard({
   );
 }
 
-// Random rotation (never the same item twice in a row). Photos move on after
-// their time, videos when they end or hit their limit. Media that fails to
-// load is skipped.
+// Shuffled rotation (see pickNextMedia). Photos move on after their time,
+// videos when they end or hit their limit. Media that fails to load is skipped.
+// Kept mounted when the folder changes, so new uploads join the shuffle.
 function MediaRotation({
   media,
   photoSeconds,
@@ -299,12 +300,18 @@ function MediaRotation({
   const [failed, setFailed] = useState<string[]>([]);
   const playable = media.filter((m) => !failed.includes(m.id));
   const [currentId, setCurrentId] = useState(media[0]?.id);
+  const [shown, setShown] = useState<string[]>([]);
   const current = playable.find((m) => m.id === currentId) ?? playable[0];
 
   const advance = () => {
-    const others = playable.filter((m) => m.id !== current?.id);
-    const next = others[Math.floor(Math.random() * others.length)];
-    if (next) setCurrentId(next.id);
+    const pick = pickNextMedia(
+      playable.map((m) => m.id),
+      current?.id,
+      shown,
+    );
+    if (!pick) return;
+    setShown(pick.shown);
+    setCurrentId(pick.nextId);
   };
 
   useEffect(() => {
@@ -400,7 +407,6 @@ export default function BroadcastDashboard() {
         className="absolute left-[40px] top-[160.78px] h-[758px] w-[1356px] bg-[#ededed]"
       >
         <MediaRotation
-          key={media.map((m) => m.id).join()}
           media={media}
           photoSeconds={data?.photoSeconds ?? 8}
           videoSeconds={data?.videoSeconds ?? 20}

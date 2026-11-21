@@ -17,9 +17,17 @@ import {
 import { mirrorCoffeeInvitesLater } from "~/server/api/utils/coffee-chat-invites-sheet-mirror";
 import {
   NOTIFY_TIMEOUT_MS,
+  loadCoffeeChatNotice,
   notifyCoffeeChat,
 } from "~/server/api/utils/coffee-chat-notify";
 import { db } from "~/server/db";
+import { sponsorLeadSlackCopy } from "~/content/sponsor-lead-slack";
+import {
+  esc,
+  reportSponsorChange,
+  slotClock,
+} from "~/server/slack/sponsor-lead-feed";
+import { feedMode } from "~/server/slack/sponsor-leads";
 import { coffeeChats } from "~/server/db/schema";
 
 /**
@@ -64,6 +72,8 @@ export async function respondToCoffeeChat(
   // Coffee Chat Invites tab. Background, coalesced.
   if (session) mirrorCoffeeInvitesLater();
   const event = answer.status === "accepted" ? "accepted" : "declined";
+  // The sponsor's HW lead hears too (background; never holds the answer).
+  if (feedMode() !== "off") waitUntil(reportAnswer(answer.chatId, event));
   await Promise.all([
     notifyCoffeeChat(event, { id: answer.chatId }, notifyTimeoutMs),
     delivery && capped(delivery, notifyTimeoutMs),
@@ -213,6 +223,33 @@ async function onceMoreOnDeadlock<T>(work: () => Promise<T>): Promise<T> {
   } catch (error) {
     if (!hasPgCode(error, DEADLOCK_DETECTED)) throw error;
     return work();
+  }
+}
+
+/** Tell the sponsor's HW lead a hacker answered (sponsor-lead-feed.ts). Never throws. */
+async function reportAnswer(
+  chatId: string,
+  event: "accepted" | "declined",
+): Promise<void> {
+  try {
+    const n = await loadCoffeeChatNotice(chatId);
+    if (!n) return;
+    const words = sponsorLeadSlackCopy.feed[event];
+    reportSponsorChange({
+      sponsorName: n.sponsorName,
+      group: event,
+      text: words(
+        esc(n.hackerFirstName),
+        n.repName ? esc(n.repName) : null,
+        slotClock(n.slotTime),
+      ),
+      actor: { kind: "other" },
+    });
+  } catch (error) {
+    console.error(
+      "[sponsor lead feed] couldn't report an answer:",
+      error instanceof Error ? error.message : String(error),
+    );
   }
 }
 

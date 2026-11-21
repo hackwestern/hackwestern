@@ -34,6 +34,7 @@ import {
   assertNotLocked,
   isOrganizerCaller,
 } from "~/server/api/utils/submit-lock";
+import { assertChatsOn } from "~/server/api/utils/coffee-chats-on";
 import { db } from "~/server/db";
 import {
   applications,
@@ -456,8 +457,9 @@ export const sponsorShortlistRouter = createTRPCRouter({
    */
   add: publicProcedure
     .input(z.object({ sponsor: sponsorInput, userId: userIdInput }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const sponsor = await findSponsor(input.sponsor);
+      await assertChatsOn(sponsor.name, await isOrganizerCaller(ctx));
       const { hackers } = await sponsorCandidates(sponsor);
       // A candidate, or any admitted hacker found by search. One found by
       // search must share with sponsors: invites only go to hackers who do.
@@ -510,8 +512,9 @@ export const sponsorShortlistRouter = createTRPCRouter({
    */
   remove: publicProcedure
     .input(z.object({ sponsor: sponsorInput, userId: userIdInput }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const sponsor = await findSponsor(input.sponsor);
+      await assertChatsOn(sponsor.name, await isOrganizerCaller(ctx));
       await db.transaction(async (tx) => {
         await lockSponsor(tx, sponsor.id);
         await assertShortlistOpen(tx, sponsor.id, { needPrefs: false });
@@ -540,6 +543,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const sponsor = await findSponsor(input.sponsor);
       const organizer = await isOrganizerCaller(ctx);
+      await assertChatsOn(sponsor.name, organizer);
       const now = new Date();
       await db.transaction(async (tx) => {
         await lockSponsor(tx, sponsor.id);
@@ -573,6 +577,7 @@ export const sponsorShortlistRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const sponsor = await findSponsor(input.sponsor);
       const organizer = await isOrganizerCaller(ctx);
+      await assertChatsOn(sponsor.name, organizer);
       await db.transaction(async (tx) => {
         await lockSponsor(tx, sponsor.id);
         const [pref] = await tx

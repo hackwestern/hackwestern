@@ -532,6 +532,29 @@ export const coffeeChatReminders = pgTable("coffee_chat_reminder", {
     .notNull(),
 });
 
+// A Slack DM to a sponsor's HW lead before one of the sponsor's action
+// items (their workshop, a coffee chat, a due step), kept in sync by
+// src/server/slack/sponsor-lead-pings.ts. One row per sponsor + item +
+// lead. No foreign key on purpose: a row outlives its placement, so the
+// next sync can still delete the scheduled message in Slack.
+export const sponsorLeadPings = pgTable("sponsor_lead_ping", {
+  // "<sponsorId>:<item>:<lead email>"
+  key: varchar("key", { length: 255 }).notNull().primaryKey(),
+  sponsorId: uuid("sponsor_id").notNull(),
+  slackChannel: varchar("slack_channel", { length: 32 }).notNull(),
+  // chat.scheduleMessage's scheduled_message_id, or chat.postMessage's ts
+  // when it was sent at once. Empty while a send-now is in flight.
+  messageId: varchar("message_id", { length: 64 }).notNull(),
+  // "scheduled" (Slack posts it at post_at) or "sent" (posted at once).
+  kind: varchar("kind", { length: 16 }).notNull(),
+  postAt: timestamp("post_at", { mode: "date", precision: 3 }).notNull(),
+  // sha256 of what the ping says: a change reschedules it.
+  contentKey: varchar("content_key", { length: 64 }).notNull(),
+  createdAt: timestamp("created_at", { mode: "date", precision: 3 })
+    .defaultNow()
+    .notNull(),
+});
+
 // An organizer's room hold: a coffee chat room set aside for one sponsor at
 // one Saturday time, before any hacker is booked ("Needs a hacker"). A room
 // can be held by different sponsors at different times; the server refuses

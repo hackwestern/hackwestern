@@ -664,7 +664,7 @@ export function TableMap({
                       y={numberY}
                       textAnchor="middle"
                       dominantBaseline="central"
-                      fontSize={11}
+                      fontSize={8}
                       fontWeight={isFocus ? 700 : 500}
                       className={
                         isFocus
@@ -691,9 +691,11 @@ export function TableMap({
                     Array.from({ length: JUDGES_PER_TABLE }, (_, k) => (
                       <circle
                         key={k}
-                        cx={t.x + tw / 2 + (k - (JUDGES_PER_TABLE - 1) / 2) * 6}
+                        cx={
+                          t.x + tw / 2 + (k - (JUDGES_PER_TABLE - 1) / 2) * 4.5
+                        }
                         cy={t.y + th - 5}
-                        r={2}
+                        r={1.5}
                         strokeWidth={0.8}
                         className={
                           k < count

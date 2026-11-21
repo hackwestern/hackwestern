@@ -11,9 +11,9 @@ create and submit teams; organizers add judges on the roster), sponsor judging
 ## Model in one paragraph
 
 The room has a fixed number of physical tables (70 by default), numbered along
-a snake. Every submitted team is seated at one table. Every judge owns a fixed
-**section** of consecutive tables along the snake. Each table falls inside the
-sections of exactly **3 different judges**, so every team gets 3 scores. The
+a snake. Every submitted team is seated at one numbered spot. Every judge owns a
+**section** of consecutive occupied spots along the snake. Each occupied spot
+falls inside the sections of **3 different judges** by default, so every team gets 3 scores. The
 sections never move; to put a team in a different judge's lineup, organizers
 swap teams between tables.
 
@@ -51,23 +51,27 @@ swap teams between tables.
 
 - Every submitted team (`submission_status` = `submitted` or `late`) gets one
   active table. One team per table.
-- **Random by default**; a flag seats in **submission order** instead
-  (earliest `submitted_at` gets table 1).
-- More submitted teams than active tables is an error. Fewer leaves the last
-  tables empty.
-- Seating can be re-run until judging starts.
+- Pair neighboring spots from the left edge of each row. First fill one
+  active spot per physical table in snake order, then backfill the second
+  spots. An unpaired spot or the active half of a pair fills in the first pass.
+- Teams are shuffled by default. The API can seat them in submission order.
+- More submitted teams than active spots is an error.
+- Seating can be re-run until judging starts. The seating API clears the existing
+  judge plan. The room map's **Reassign teams** button rebuilds any routes it
+  cleared.
 
 ## Auto-assign: judge sections
 
-- Every active table needs **3 judges** (`judges_per_table`). Judges are taken
+- Every occupied, active spot needs **3 judges** by default (`judges_per_table`). Judges are taken
   in **the order they were added** (`judge.created_at`).
 - Only organizer-type judges get sections. Sponsor judges judge in their
   sponsor rooms (and the ranking ignores sponsored marks), so they're left out
   of auto-assign, hand-offs and top-ups.
-- Lay the snake out 3 times end to end (1..70, 1..70, 1..70 = 210 visits) and
+- Lay the occupied spots out in snake order 3 times end to end and
   cut it into one consecutive run per judge, as evenly as possible. Judge `k`
   (0-based, of `J`) gets slots `floor(k * S / J)` up to `floor((k + 1) * S / J)`,
-  where `S = tables * 3`; slot `s` is table `(s mod tables) + 1`.
+  where `S = occupied spots * 3`. Use `s mod occupied spots` as the zero-based
+  index into the occupied spot list.
 - Result: every table is covered by exactly 3 different judges, no judge sees a
   table twice, and each judge walks a short stretch of the snake.
 - Section size adapts to the judge count: 35 judges -> 6 tables each, 30 -> 7,
@@ -79,11 +83,11 @@ swap teams between tables.
   because the passes are offset, no two judges are at the same table in the
   same round if they keep pace. With 6 tables each, the room is done in 6
   rounds.
-- Sections cover every active table whether or not a team shows up. An empty
-  table is on the team; the judge reports it absent.
+- Empty and switched-off spots are skipped. If a seated team is missing
+  when a judge arrives, the judge reports it absent.
 - Auto-assign can be re-run (it replaces the plan) until judging starts.
 
-Example, 70 tables and 35 judges:
+Example, 70 occupied spots and 35 judges:
 
 ```
 J1 [1-6]   J2 [7-12]  ...  J11 [61-66]  J12 [67-70, 1-2]
@@ -133,7 +137,8 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
 
 - **Swap two teams' tables** (moves a team into other judges' sections).
   Locked once either table has a stop in progress or finished.
-- **Move a team** to an empty active table (same lock).
+- **Move a team** to an empty active spot (same lock). Pending stops follow
+  the team if the destination has no pending stops of its own.
 - **Hand off a judge:** a judge who leaves gives all their unfinished stops to
   another judge in one action. Refused if the receiving judge already has one
   of those tables or has already scored a team seated at one.

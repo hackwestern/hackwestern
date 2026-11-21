@@ -13,7 +13,16 @@ export const COFFEE_SESSIONS = [
   { id: "14", start: 840, end: 900 },
   { id: "15", start: 900, end: 960 },
   { id: "16", start: 960, end: 1020 },
+  // Evening, until 9 PM (Jazz, 2026-11-21). Nobody starts free here: a rep
+  // is free only once they (or an organizer) tick these on Availability.
+  { id: "17", start: 1020, end: 1080 },
+  { id: "18", start: 1080, end: 1140 },
+  { id: "19", start: 1140, end: 1200 },
+  { id: "20", start: 1200, end: 1260 },
 ] as const;
+
+/** 5 PM: sessions from here on start unticked for every rep. */
+export const EVENING_START = 1020;
 
 export type CoffeeSessionId = (typeof COFFEE_SESSIONS)[number]["id"];
 export const COFFEE_SESSION_IDS = COFFEE_SESSIONS.map(
