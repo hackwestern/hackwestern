@@ -27,7 +27,14 @@ import {
 } from "./control-shared";
 
 type Spot = Progress["tables"][number];
-type Kind = "judging" | "waiting" | "finished" | "free" | "empty" | "off";
+type Kind =
+  | "judging"
+  | "waiting"
+  | "finished"
+  | "absent"
+  | "free"
+  | "empty"
+  | "off";
 
 /** Physical tables drawn, even before the DB has rows for all of them. */
 const MIN_PHYSICAL_TABLES = 70;
@@ -53,6 +60,11 @@ const KINDS: Record<Kind, { label: string; box: string; dot: string }> = {
     label: "All judges done",
     box: "border-[#8cc99a] bg-[#e3f4e6]",
     dot: "bg-[#1f8a3a]",
+  },
+  absent: {
+    label: "Team absent",
+    box: "border-[#e7b4ad] bg-[#fdecea]",
+    dot: "bg-[#b42318]",
   },
   free: {
     label: "No judge this round",
@@ -91,6 +103,8 @@ function styleOf(kind: Kind, round: number | null) {
 function kindOf(s: Spot | undefined, round: number | null = null): Kind {
   if (!s?.isActive) return "off";
   if (!s.team) return "empty";
+  // Absence is table-wide and final, so it shows in every round.
+  if (s.judges.some((j) => j.status === "team_absent")) return "absent";
   if (round !== null) {
     const stop = s.judges.find(
       (j) => j.position === round && j.status !== "cancelled",
@@ -565,6 +579,7 @@ export function ControlTablesStatus({
     judging: 0,
     waiting: 0,
     finished: 0,
+    absent: 0,
     free: 0,
     empty: 0,
     off: 0,

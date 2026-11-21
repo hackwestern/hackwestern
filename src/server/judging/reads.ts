@@ -384,15 +384,18 @@ export async function getTeamJudging(userId: string) {
           )
           .limit(1);
   const roundOpen = round.status === "running" || round.status === "paused";
-  const thisRound: "now" | "done" | "none" | null =
+  // "now" whenever a judge is due at the table in an open round, whether or
+  // not they've pressed "Judge this team" yet.
+  const thisRound: "now" | "done" | "over" | "none" | null =
     current === null
       ? null
-      : roundStop?.status === "done"
-        ? "done"
-        : roundStop?.status === "in_progress" ||
-            (roundStop?.status === "assigned" && roundOpen)
-          ? "now"
-          : "none";
+      : !roundStop || roundStop.status === "team_absent"
+        ? "none"
+        : roundStop.status === "done"
+          ? "done"
+          : roundOpen || roundStop.status === "in_progress"
+            ? "now"
+            : "over";
 
   const counts = await db
     .select({ status: judgingAssignments.status, n: count() })
