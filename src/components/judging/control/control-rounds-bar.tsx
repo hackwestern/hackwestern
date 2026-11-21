@@ -226,7 +226,7 @@ export function ControlRoundsBar({ now }: { now: number }) {
         {!open && (
           <button
             type="button"
-            className={`${BTN_DARK} px-6`}
+            className={`${BTN_DARK} ml-auto px-6`}
             disabled={busy || !r.enabled || noMore || r.totalRounds === 0}
             onClick={() => start.mutate()}
           >
@@ -250,7 +250,7 @@ export function ControlRoundsBar({ now }: { now: number }) {
         {shownStatus === "paused" && (
           <button
             type="button"
-            className={`${BTN_DARK} px-6`}
+            className={`${BTN_DARK} ml-auto px-6`}
             disabled={busy}
             onClick={() => resume.mutate()}
           >
