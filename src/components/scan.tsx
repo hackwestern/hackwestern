@@ -24,8 +24,15 @@ const FILTERS: { value: Item["type"] | "all"; label: string }[] = [
 
 const TIME: Intl.DateTimeFormatOptions = { hour: "numeric", minute: "2-digit" };
 
+// Items open longer than this (check-in, bonus tasks) run all weekend: they
+// show no time and get their own section instead of "Happening now".
+const ALL_WEEKEND_MS = 24 * 60 * 60 * 1000;
+const isAllWeekend = (item: Item) =>
+  item.endsAt.getTime() - item.startsAt.getTime() > ALL_WEEKEND_MS;
+
 // Ex: "6:00 – 8:00 PM · Rm 1230"
 const itemMeta = (item: Item) => {
+  if (isAllWeekend(item)) return item.room ?? "";
   const start = formatEventTime(item.startsAt, TIME);
   const end = formatEventTime(item.endsAt, TIME);
   const sameHalf = start.slice(-2) === end.slice(-2);
@@ -56,7 +63,10 @@ const Scan = () => {
     a.startsAt.getTime() - b.startsAt.getTime();
 
   const happeningNow = active
-    .filter((item) => item.startsAt <= now && item.endsAt > now)
+    .filter(
+      (item) =>
+        item.startsAt <= now && item.endsAt > now && !isAllWeekend(item),
+    )
     .sort(byStart);
 
   const listed = active.filter((item) => {
@@ -64,13 +74,16 @@ const Scan = () => {
     return filter === "all" || item.type === filter;
   });
 
-  // Section order: later today, one group per upcoming day,  past items
+  // Section order: all weekend, later today, one group per upcoming day, past items
   const today = formatEventTime(now, { dateStyle: "short" });
+  const allWeekend: Item[] = [];
   const upcoming = new Map<string, Item[]>();
   const earlier: Item[] = [];
   for (const item of [...listed].sort(byStart)) {
     if (item.endsAt <= now) {
       earlier.unshift(item);
+    } else if (isAllWeekend(item)) {
+      allWeekend.push(item);
     } else {
       const day = formatEventTime(item.startsAt, { dateStyle: "short" });
       const label =
@@ -80,9 +93,11 @@ const Scan = () => {
       upcoming.set(label, [...(upcoming.get(label) ?? []), item]);
     }
   }
-  const groups = [...upcoming.entries(), ["Earlier", earlier] as const].filter(
-    ([, group]) => group.length > 0,
-  );
+  const groups = [
+    ["All weekend", allWeekend] as const,
+    ...upcoming.entries(),
+    ["Earlier", earlier] as const,
+  ].filter(([, group]) => group.length > 0);
 
   const openScanner = (item: Item) => {
     void router.push(`/scan/${item.id}`);
