@@ -7,20 +7,23 @@ import {
 } from "./control-shared";
 
 type StopStatus = Progress["judges"][number]["stops"][number]["status"];
+type CellKind = StopStatus | "missed";
 
-const CELL: Record<StopStatus, string> = {
+const CELL: Record<CellKind, string> = {
   done: "border-[#8cc99a] bg-[#e3f4e6] text-[#14532d]",
   in_progress: "border-[#7aa7e6] bg-[#e4effd] text-[#123d75]",
   assigned: "border-[#d6dbe5] bg-white text-[#0b2238]",
   team_absent: "border-[#e7b4ad] bg-[#fdeceb] text-[#7a1a0f]",
+  missed: "border-[#e5c36a] bg-[#fff3d6] text-[#7a5200]",
   cancelled: "border-dashed border-[#d6dbe5] bg-[#f3f5f9] text-[#4a5d73]",
 };
 
-const LEGEND: { status: StopStatus; label: string }[] = [
+const LEGEND: { status: CellKind; label: string }[] = [
   { status: "assigned", label: "To do" },
   { status: "in_progress", label: "Scoring now" },
   { status: "done", label: "Scored" },
   { status: "team_absent", label: "Team absent" },
+  { status: "missed", label: "Ran out of time" },
 ];
 
 /**
@@ -49,6 +52,14 @@ export function ControlRoundGrid({
     ...judges.flatMap((j) => j.stops.map((s) => s.position)),
   );
   const current = round?.enabled && round.round > 0 ? round.round : null;
+  // Not scored, and its round has ended (or closed on time): ran out of time.
+  const roundClosed = round?.status === "closed";
+  const kindOf = (stop: { status: StopStatus; position: number }): CellKind =>
+    stop.status === "assigned" &&
+    current !== null &&
+    (stop.position < current || (stop.position === current && roundClosed))
+      ? "missed"
+      : stop.status;
 
   return (
     <section className={CARD} aria-labelledby="round-grid-title">
@@ -125,7 +136,7 @@ export function ControlRoundGrid({
                           >
                             {stop ? (
                               <div
-                                className={`flex min-h-[44px] flex-col rounded-lg border px-2 py-1 ${CELL[stop.status]}`}
+                                className={`flex min-h-[44px] flex-col rounded-lg border px-2 py-1 ${CELL[kindOf(stop)]}`}
                                 title={`${j.name}, round ${n}: table ${stop.tableNumber}${team ? ` · ${team}` : ""}`}
                               >
                                 <span className="line-clamp-2 text-xs font-semibold leading-tight">

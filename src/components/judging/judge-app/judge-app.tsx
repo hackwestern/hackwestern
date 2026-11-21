@@ -221,7 +221,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   const reportAbsent = api.judging.me.reportAbsent.useMutation();
 
   // Stops still to do that have a team seated (an empty table can't be scored).
-  const pendingStops = (stopsQuery.data?.stops ?? []).filter(
+  const openStops = (stopsQuery.data?.stops ?? []).filter(
     (s) => (s.status === "assigned" || s.status === "in_progress") && s.team,
   );
   // Timed rounds: round N is every judge's Nth stop, and only the open
@@ -232,6 +232,15 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     : null;
   const gated = roundView?.state.enabled === true;
   const roundOpen = roundView ? roundIsOpen(roundView, Date.now()) : false;
+  // A stop whose round has passed without a score is missed: it can't be done
+  // any more, so it doesn't hold the judge back from the next round or re-scoring.
+  const pendingStops = !gated
+    ? openStops
+    : openStops.filter(
+        (s) =>
+          s.position > (roundView?.state.round ?? 0) ||
+          (s.position === roundView?.state.round && roundOpen),
+      );
   const activeStops = !gated
     ? pendingStops
     : roundOpen

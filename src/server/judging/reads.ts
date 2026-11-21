@@ -16,7 +16,7 @@ import {
   users,
 } from "~/server/db/schema";
 import { snakePosition } from "~/server/judging/layout";
-import { getRoundState } from "~/server/judging/rounds";
+import { getRoundState, settleRound } from "~/server/judging/rounds";
 import {
   ELIGIBLE_SUBMISSIONS,
   JUDGE_TEAM_COLUMNS,
@@ -191,6 +191,7 @@ export async function getAllJudges() {
  * progress, else the first one still assigned.
  */
 export async function getMyStops(judgeId: string) {
+  await settleRound();
   const [settings, stops] = await Promise.all([
     getSettings(),
     db.query.judgingAssignments.findMany({

@@ -42,6 +42,7 @@ import {
 import {
   addJudgeToTable,
   autoAssign,
+  clearAssignments,
   cancelStop,
   deleteMark,
   editMark,
@@ -394,6 +395,14 @@ export const judgingRouter = createTRPCRouter({
         "Failed to assign judges",
       );
     }),
+
+    /** Remove every judge's stops and reset the rounds. Before judging starts. */
+    clearAssignments: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(
+        () => clearAssignments(),
+        "Failed to clear the assignments",
+      ),
+    ),
 
     swapTeams: protectedOrganizerProcedure
       .input(swapTeamsSchema)

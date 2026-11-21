@@ -10,11 +10,15 @@
  * open.
  */
 import { TRPCError } from "@trpc/server";
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
 
 import { db } from "~/server/db";
 import { judgingAssignments, judgingRound, teams } from "~/server/db/schema";
-import { type Tx } from "~/server/judging/shared";
+import {
+  type Tx,
+  isJudgingStarted,
+  lockPlanShared,
+} from "~/server/judging/shared";
 
 export type RoundStatus = "idle" | "running" | "paused" | "closed";
 
@@ -104,6 +108,74 @@ export async function getRoundState(tx: Tx = db): Promise<RoundState> {
   return resolveRound(row, total);
 }
 
+/**
+ * A judge whose round closes mid-score is no longer "in progress": the stop
+ * goes back to `assigned` (never scored, and not doable again once the round
+ * has passed). Otherwise the blue "being judged" state and the hold timer
+ * would run forever, and the judge couldn't start next round's table (a judge
+ * has at most one stop in progress).
+ *
+ * Lock order matches judge actions (plan, then stops, then the round row), so
+ * these never deadlock with a judge scoring at the same moment.
+ */
+async function lockHeldStops(tx: Tx): Promise<number[]> {
+  await lockPlanShared(tx);
+  const held = await tx
+    .select({ id: judgingAssignments.id })
+    .from(judgingAssignments)
+    .where(eq(judgingAssignments.status, "in_progress"))
+    .orderBy(asc(judgingAssignments.id))
+    .for("update");
+  return held.map((h) => h.id);
+}
+
+async function releaseStops(tx: Tx, ids: number[]) {
+  if (ids.length === 0) return;
+  await tx
+    .update(judgingAssignments)
+    .set({ status: "assigned", startedAt: null })
+    .where(inArray(judgingAssignments.id, ids));
+}
+
+/**
+ * Make a closed round real: if the timer ran out, record it as closed, and
+ * release any stop still in progress. Called when screens read the round, so
+ * nothing has to tick on the server. Cheap when there is nothing to do.
+ */
+export async function settleRound(): Promise<void> {
+  const row = await readRow(db);
+  if (!row.roundsEnabled) return;
+  const expired =
+    row.status === "running" && !!row.endsAt && row.endsAt <= new Date();
+  if (!expired && row.status !== "closed") return;
+  if (!expired) {
+    const [stale] = await db
+      .select({ id: judgingAssignments.id })
+      .from(judgingAssignments)
+      .where(eq(judgingAssignments.status, "in_progress"))
+      .limit(1);
+    if (!stale) return;
+  }
+  await db.transaction(async (tx) => {
+    const held = await lockHeldStops(tx);
+    const locked = await readRow(tx, "update");
+    const state = resolveRound(locked, 0);
+    if (state.status !== "closed") return;
+    if (locked.status === "running") {
+      await tx
+        .update(judgingRound)
+        .set({
+          status: "closed",
+          endsAt: null,
+          remainingMs: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(judgingRound.id, 1));
+    }
+    await releaseStops(tx, held);
+  });
+}
+
 const precondition = (message: string) =>
   new TRPCError({ code: "PRECONDITION_FAILED", message });
 
@@ -143,6 +215,7 @@ export async function assertStopOpen(tx: Tx, position: number) {
 /** Open the next round and start its timer. */
 export async function startRound(): Promise<RoundState> {
   return db.transaction(async (tx) => {
+    const held = await lockHeldStops(tx);
     const row = await readRow(tx, "update");
     const total = await totalRounds(tx);
     const state = resolveRound(row, total);
@@ -158,6 +231,8 @@ export async function startRound(): Promise<RoundState> {
     if (next > total) {
       throw precondition(`That was the last round (${total}).`);
     }
+    // Anyone still mid-score from the round that just closed is released.
+    await releaseStops(tx, held);
     const now = new Date();
     await tx
       .update(judgingRound)
@@ -219,12 +294,14 @@ export async function resumeRound(): Promise<RoundState> {
 /** Close the round now: no more scores until the next one starts. */
 export async function endRound(): Promise<RoundState> {
   return db.transaction(async (tx) => {
+    const held = await lockHeldStops(tx);
     const row = await readRow(tx, "update");
     const total = await totalRounds(tx);
     const state = resolveRound(row, total);
     if (state.status !== "running" && state.status !== "paused") {
       throw precondition("No round is open.");
     }
+    await releaseStops(tx, held);
     await tx
       .update(judgingRound)
       .set({
@@ -281,6 +358,7 @@ export async function setRoundConfig(input: {
 
 /** The round state plus how far the room is through the current round. */
 export async function getRoundOverview() {
+  await settleRound();
   const state = await getRoundState();
   const stops =
     state.round === 0
@@ -300,6 +378,8 @@ export async function getRoundOverview() {
           );
   return {
     ...state,
+    /** Judging has started, so the assignments can't be cleared any more. */
+    judgingStarted: await isJudgingStarted(),
     stops: {
       total: stops.length,
       done: stops.filter(

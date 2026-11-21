@@ -63,11 +63,16 @@ export function ControlRoundsBar({ now }: { now: number }) {
     run("resume the round"),
   );
   const end = api.judging.admin.endRound.useMutation(run("end the round"));
-  const reset = api.judging.admin.resetRounds.useMutation(run("reset"));
+  const reset = api.judging.admin.resetRounds.useMutation(
+    run("reset the rounds"),
+  );
+  const clear = api.judging.admin.clearAssignments.useMutation(
+    run("clear the assignments"),
+  );
   const config = api.judging.admin.setRoundConfig.useMutation(
     run("save the settings"),
   );
-  const busy = [start, pause, resume, end, reset, config].some(
+  const busy = [start, pause, resume, end, reset, clear, config].some(
     (m) => m.isPending,
   );
 
@@ -271,6 +276,51 @@ export function ControlRoundsBar({ now }: { now: number }) {
         )}
       </div>
 
+      <div className="flex flex-wrap items-center gap-3 border-t border-[#e3e7ef] pt-3">
+        <span className={`text-sm font-semibold ${MUTED}`}>Reset</span>
+        <button
+          type="button"
+          className={BTN_OUTLINE}
+          disabled={busy || r.round === 0}
+          title="Back to before round 1. Scores already given are kept."
+          onClick={() => {
+            if (
+              window.confirm(
+                "Go back to before round 1? Scores already given are kept.",
+              )
+            )
+              reset.mutate();
+          }}
+        >
+          Rounds: back to round 1
+        </button>
+        <button
+          type="button"
+          className="min-h-11 rounded-[10px] border-[1.5px] border-[#e7b4ad] bg-white px-3.5 text-[15px] font-semibold text-[#b42318] disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={busy || r.judgingStarted || r.totalRounds === 0}
+          title={
+            r.judgingStarted
+              ? "Judging has started, so the assignments are locked."
+              : "Remove every judge's tables. Teams stay seated."
+          }
+          onClick={() => {
+            if (
+              window.confirm(
+                "Clear every judge's tables? Teams stay seated and the rounds go back to the start. You'll need to Auto-assign judges again.",
+              )
+            )
+              clear.mutate();
+          }}
+        >
+          {clear.isPending ? "Clearing…" : "Assignments: clear all"}
+        </button>
+        {r.judgingStarted && (
+          <span className={`text-xs ${MUTED}`}>
+            Assignments are locked once judging starts.
+          </span>
+        )}
+      </div>
+
       <details className="group rounded-xl border border-[#e3e7ef] px-4 py-2 text-sm">
         <summary
           className={`cursor-pointer select-none font-semibold ${MUTED}`}
@@ -318,21 +368,6 @@ export function ControlRoundsBar({ now }: { now: number }) {
             />
             Judges follow the rounds
           </label>
-          <button
-            type="button"
-            className="min-h-11 text-[#4a5d73] underline disabled:opacity-50"
-            disabled={busy || r.round === 0}
-            onClick={() => {
-              if (
-                window.confirm(
-                  "Go back to before round 1? Scores already given are kept.",
-                )
-              )
-                reset.mutate();
-            }}
-          >
-            Reset to before round 1
-          </button>
         </div>
       </details>
       <StatusLine status={status} />

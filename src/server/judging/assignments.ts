@@ -14,6 +14,7 @@ import { db } from "~/server/db";
 import {
   judges,
   judgingAssignments,
+  judgingRound,
   judgingTables,
   teamMarks,
   teams,
@@ -122,6 +123,34 @@ async function requireJudge(tx: Tx, judgeId: string) {
   });
   if (!judge) throw notFound("Judge");
   return judge;
+}
+
+/**
+ * Back to before assignment: remove every judge's stops and put the rounds
+ * back to before round 1. Teams stay seated and tables stay set up, so
+ * Auto-assign can be run again. Like auto-assign it's refused once judging has
+ * started, so no scored stop is ever lost.
+ */
+export async function clearAssignments() {
+  return db.transaction(async (tx) => {
+    await lockPlanExclusive(tx);
+    await assertNotStarted("clear the assignments", tx);
+    const removed = await tx
+      .delete(judgingAssignments)
+      .where(sql`true`)
+      .returning({ id: judgingAssignments.id });
+    await tx
+      .update(judgingRound)
+      .set({
+        currentRound: 0,
+        status: "idle",
+        endsAt: null,
+        remainingMs: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(judgingRound.id, 1));
+    return { removed: removed.length };
+  });
 }
 
 /**
