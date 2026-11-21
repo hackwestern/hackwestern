@@ -13055,6 +13055,51 @@
           "source": "input validation (data.zodError populated)"
         },
         {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/coffeeChatSetup.optOut",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "sponsor": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sponsor"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "submittedAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          }
+        },
+        "required": [
+          "submittedAt"
+        ],
+        "type": "object"
+      },
+      "path": "coffeeChatSetup.optOut",
+      "source": "src/server/api/routers/coffee-chat-setup.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "public",
+      "errors": [
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
           "code": "NOT_FOUND",
           "httpStatus": 404,
           "source": "handler"
@@ -20558,6 +20603,9 @@
             "companyContact": {
               "type": "string"
             },
+            "digital": {
+              "type": "boolean"
+            },
             "hwContact": {
               "type": "string"
             },
@@ -20615,6 +20663,7 @@
             "roomNumber",
             "boothLocation",
             "atCcWorkshop",
+            "digital",
             "onMasterSheet"
           ],
           "type": "object"
@@ -22134,57 +22183,64 @@
                   "type": "array"
                 },
                 "chats": {
-                  "properties": {
-                    "accepted": {
-                      "type": "number"
+                  "anyOf": [
+                    {
+                      "type": "undefined"
                     },
-                    "changedAfterSend": {
-                      "type": "boolean"
-                    },
-                    "invites": {
-                      "type": "number"
-                    },
-                    "prefsSubmittedAt": {
-                      "anyOf": [
-                        {
-                          "type": "null"
+                    {
+                      "properties": {
+                        "accepted": {
+                          "type": "number"
                         },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    "repsChatting": {
-                      "type": "number"
-                    },
-                    "repsPlaced": {
-                      "type": "number"
-                    },
-                    "scheduleSent": {
-                      "type": "boolean"
-                    },
-                    "shortlistSubmittedAt": {
-                      "anyOf": [
-                        {
-                          "type": "null"
+                        "changedAfterSend": {
+                          "type": "boolean"
                         },
-                        {
-                          "type": "string"
+                        "invites": {
+                          "type": "number"
+                        },
+                        "prefsSubmittedAt": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "repsChatting": {
+                          "type": "number"
+                        },
+                        "repsPlaced": {
+                          "type": "number"
+                        },
+                        "scheduleSent": {
+                          "type": "boolean"
+                        },
+                        "shortlistSubmittedAt": {
+                          "anyOf": [
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
                         }
-                      ]
+                      },
+                      "required": [
+                        "prefsSubmittedAt",
+                        "shortlistSubmittedAt",
+                        "repsChatting",
+                        "repsPlaced",
+                        "scheduleSent",
+                        "changedAfterSend",
+                        "invites",
+                        "accepted"
+                      ],
+                      "type": "object"
                     }
-                  },
-                  "required": [
-                    "prefsSubmittedAt",
-                    "shortlistSubmittedAt",
-                    "repsChatting",
-                    "repsPlaced",
-                    "scheduleSent",
-                    "changedAfterSend",
-                    "invites",
-                    "accepted"
-                  ],
-                  "type": "object"
+                  ]
                 },
                 "reps": {
                   "items": {
@@ -23179,8 +23235,14 @@
               "boothLocation": {
                 "type": "string"
               },
+              "chatsOptedOut": {
+                "type": "boolean"
+              },
               "coffeeChatBookedCount": {
                 "type": "number"
+              },
+              "hasCoffeeChats": {
+                "type": "boolean"
               },
               "hasPrizeTrack": {
                 "type": "boolean"
@@ -23226,6 +23288,9 @@
                   }
                 ]
               },
+              "viewerIsOrganizer": {
+                "type": "boolean"
+              },
               "workshopLocation": {
                 "anyOf": [
                   {
@@ -23248,6 +23313,10 @@
               }
             },
             "required": [
+              "sheetFailed",
+              "hasCoffeeChats",
+              "chatsOptedOut",
+              "viewerIsOrganizer",
               "sponsorName",
               "hwContact",
               "hwContactPhone",
@@ -23260,8 +23329,7 @@
               "hasPrizeTrack",
               "maxCoffeeChatMinutes",
               "maxCoffeeChatBlocks",
-              "coffeeChatBookedCount",
-              "sheetFailed"
+              "coffeeChatBookedCount"
             ],
             "type": "object"
           },
@@ -23270,8 +23338,14 @@
               "boothLocation": {
                 "type": "string"
               },
+              "chatsOptedOut": {
+                "type": "boolean"
+              },
               "coffeeChatBookedCount": {
                 "type": "number"
+              },
+              "hasCoffeeChats": {
+                "type": "boolean"
               },
               "hasPrizeTrack": {
                 "type": "boolean"
@@ -23303,6 +23377,9 @@
               "tier": {
                 "type": "null"
               },
+              "viewerIsOrganizer": {
+                "type": "boolean"
+              },
               "workshopLocation": {
                 "type": "null"
               },
@@ -23311,6 +23388,10 @@
               }
             },
             "required": [
+              "sheetFailed",
+              "hasCoffeeChats",
+              "chatsOptedOut",
+              "viewerIsOrganizer",
               "sponsorName",
               "hwContact",
               "hwContactPhone",
@@ -23323,8 +23404,7 @@
               "hasPrizeTrack",
               "maxCoffeeChatMinutes",
               "maxCoffeeChatBlocks",
-              "coffeeChatBookedCount",
-              "sheetFailed"
+              "coffeeChatBookedCount"
             ],
             "type": "object"
           }
