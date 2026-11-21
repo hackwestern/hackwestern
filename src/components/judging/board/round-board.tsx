@@ -16,7 +16,8 @@ const CELL: Record<Status, string> = {
   now: "border-[#7aa7e6] bg-[#e4effd] text-[#123d75]",
   upcoming:
     "border-dashboard-border-subtle bg-dashboard-bg-surface text-dashboard-text-heavy",
-  skipped: "border-[#e5c36a] bg-[#fff3d6] text-[#7a5200]",
+  skipped:
+    "border-dashboard-border-default bg-dashboard-bg-inset text-dashboard-text-light",
 };
 
 const LEGEND: { status: Status; label: string }[] = [
@@ -157,7 +158,7 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
       </header>
 
       {round?.enabled && round.round > 0 && (
-        <div className="max-w-sm">
+        <div>
           <RoundClock
             view={{ state: round, fetchedAt: boardQ.dataUpdatedAt }}
           />

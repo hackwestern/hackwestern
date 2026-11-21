@@ -35,7 +35,14 @@ export function roundIsOpen(view: RoundView, now: number): boolean {
 /** Under this the timer turns to a warning colour. */
 const URGENT_MS = 60_000;
 
-/** The round timer: big countdown with a draining bar, "Paused" when stopped. */
+/** Red for the last minute and when time is up. Calm purple otherwise. */
+const WARN = "#b42318";
+
+/**
+ * The round timer: the time big and centred, a wide bar that drains under it.
+ * Goes red for the last minute and when time is up, and dims while an
+ * organizer has it paused. Fills whatever width it is given.
+ */
 export function RoundClock({ view }: { view: RoundView }) {
   const now = useNow(500);
   const { state } = view;
@@ -43,18 +50,14 @@ export function RoundClock({ view }: { view: RoundView }) {
   const open = roundIsOpen(view, now);
   const paused = state.status === "paused";
   const over = !open && !paused;
-  const urgent = open && !paused && left <= URGENT_MS;
+  const warn = over || (open && !paused && left <= URGENT_MS);
   const total = Math.max(1, state.roundSeconds * 1000);
   const pct = over ? 0 : Math.min(100, (left / total) * 100);
-  const tone =
-    over || urgent
-      ? "text-dashboard-text-warning"
-      : "text-dashboard-text-heavy";
 
   return (
     <section
       aria-label="Round timer"
-      className={`${card} flex flex-col gap-3 p-4`}
+      className={`${card} flex flex-col gap-4 p-5 font-figtree sm:px-8 sm:py-6`}
     >
       <div className="flex items-center justify-between gap-3">
         <span className="rounded-full bg-dashboard-bg-highlight px-3 py-1 text-sm font-semibold text-dashboard-text-active">
@@ -66,21 +69,25 @@ export function RoundClock({ view }: { view: RoundView }) {
       </div>
       <span
         role="timer"
-        className={`text-center font-mono text-6xl font-bold tabular-nums leading-none ${tone}`}
+        style={warn ? { color: WARN } : undefined}
+        className={`text-center text-6xl font-bold tabular-nums leading-none sm:text-7xl ${
+          warn ? "" : "text-dashboard-text-heavy"
+        } ${paused ? "opacity-60" : ""}`}
       >
         {formatHold(left)}
       </span>
       <div
         aria-hidden="true"
-        className="h-2 w-full overflow-hidden rounded-full bg-dashboard-bg-inset"
+        className="h-3 w-full overflow-hidden rounded-full bg-dashboard-bg-inset"
       >
         <div
           className={`h-full rounded-full transition-[width] duration-500 ease-linear ${
-            over || urgent
-              ? "bg-dashboard-text-warning"
-              : "bg-dashboard-action-primary"
-          } ${paused ? "opacity-60" : ""}`}
-          style={{ width: `${pct}%` }}
+            warn ? "" : "bg-dashboard-action-primary"
+          } ${paused ? "opacity-50" : ""}`}
+          style={{
+            width: `${pct}%`,
+            ...(warn ? { backgroundColor: WARN } : {}),
+          }}
         />
       </div>
     </section>
