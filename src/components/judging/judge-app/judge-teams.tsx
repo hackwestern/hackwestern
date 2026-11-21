@@ -28,8 +28,21 @@ export interface JudgedTeam {
   superLike: boolean;
 }
 
+/** A team still on this judge's route, in walking order. */
+export interface UpcomingTeam {
+  stopId: number;
+  table: number | null;
+  teamName: string;
+  /** Member full names; empty when none are listed. */
+  members: string[];
+  /** The timed round it's in, or null when rounds are off. */
+  round: number | null;
+}
+
 interface JudgeTeamsProps {
   results: JudgedTeam[];
+  /** Teams this judge still has to judge, in order. */
+  upcoming: UpcomingTeam[];
   /** "first": first review. "rescore": the second pass. */
   stage: "first" | "rescore";
   /** Team ids already re-scored. */
@@ -50,6 +63,7 @@ interface JudgeTeamsProps {
  */
 export function JudgeTeams({
   results,
+  upcoming,
   stage,
   rescored,
   canSubmit,
@@ -57,11 +71,53 @@ export function JudgeTeams({
   onEdit,
   onSubmit,
 }: JudgeTeamsProps) {
+  const stillToJudge = upcoming.length > 0 && (
+    <>
+      <p className="m-0 px-1 text-sm text-dashboard-text-light">
+        Still to judge, in order.
+      </p>
+      <section
+        aria-label="Teams still to judge"
+        className={`${card} overflow-hidden`}
+      >
+        <ul className="m-0 list-none p-0">
+          {upcoming.map((u, i) => (
+            <li
+              key={u.stopId}
+              className={`flex items-start justify-between gap-3 px-4 py-3 ${
+                i > 0 ? "border-t border-dashboard-border-subtle" : ""
+              }`}
+            >
+              <span className="flex min-w-0 flex-col gap-0.5">
+                <span className="truncate text-base font-semibold text-dashboard-text-heavy">
+                  {u.table ?? "–"} · {u.teamName}
+                </span>
+                <span className="text-sm leading-snug text-dashboard-text-light">
+                  {u.members.length > 0
+                    ? u.members.join(", ")
+                    : "No members listed"}
+                </span>
+              </span>
+              {u.round !== null && (
+                <span className="shrink-0 text-xs font-semibold text-dashboard-text-light">
+                  Round {u.round}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      </section>
+    </>
+  );
+
   if (results.length === 0) {
     return (
-      <p className="px-1 text-base font-medium text-dashboard-text-light">
-        No teams yet. They show up here as you score them.
-      </p>
+      <>
+        <p className="px-1 text-base font-medium text-dashboard-text-light">
+          No scores yet. Teams show up here as you score them.
+        </p>
+        {stillToJudge}
+      </>
     );
   }
 
@@ -120,6 +176,8 @@ export function JudgeTeams({
           })}
         </ul>
       </section>
+
+      {stillToJudge}
 
       {error && (
         <p role="alert" className={warningBanner}>
