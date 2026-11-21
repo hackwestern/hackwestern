@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import SEO from "~/components/seo";
 import { InternalPage } from "~/components/internals/page-shell";
+import { ControlRoundGrid } from "~/components/judging/control/control-round-grid";
 import { ControlRoundsBar } from "~/components/judging/control/control-rounds-bar";
 import { ControlProgress } from "~/components/judging/control/control-progress";
 import { ControlRounds } from "~/components/judging/control/control-rounds";
@@ -91,6 +92,7 @@ export default function JudgingControlRoom() {
           now={now}
         />
         <ControlQueueTable queue={queue} now={now} />
+        <ControlRoundGrid progress={progressQ.data} round={roundQ.data} />
         <ControlRounds queue={queue} />
       </InternalPage>
     </>
