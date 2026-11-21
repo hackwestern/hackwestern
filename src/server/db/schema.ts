@@ -306,6 +306,7 @@ export const teams = pgTable(
     tracks: trackEnum("tracks").array(),
     memberGithubUsernames: text("member_github_usernames").array(),
     memberDevpostUsernames: text("member_devpost_usernames").array(),
+    techStack: text("tech_stack").array(),
 
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
