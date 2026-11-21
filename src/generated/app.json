@@ -18600,6 +18600,57 @@
           "source": "input validation (data.zodError populated)"
         },
         {
+          "code": "NOT_FOUND",
+          "httpStatus": 404,
+          "message": "This redemption was already deleted. Refresh the page.",
+          "source": "handler"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/scavengerHunt.deleteRedemption",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "type": "undefined"
+      },
+      "path": "scavengerHunt.deleteRedemption",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
           "code": "INTERNAL_SERVER_ERROR",
           "httpStatus": 500,
           "source": "unhandled"
@@ -18622,6 +18673,69 @@
         "type": "undefined"
       },
       "path": "scavengerHunt.deleteReward",
+      "source": "src/server/api/routers/scavenger-hunt.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "NOT_FOUND",
+          "httpStatus": 404,
+          "message": "This scan was already deleted. Refresh the page.",
+          "source": "handler"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/scavengerHunt.deleteScan",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "activityType": {
+            "enum": [
+              "attendance",
+              "win"
+            ],
+            "type": "string"
+          },
+          "itemId": {
+            "type": "number"
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "itemId",
+          "activityType"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "type": "undefined"
+      },
+      "path": "scavengerHunt.deleteScan",
       "source": "src/server/api/routers/scavenger-hunt.ts",
       "type": "mutation"
     },
@@ -18847,56 +18961,148 @@
           },
           "scans": {
             "items": {
-              "properties": {
-                "activityType": {
-                  "anyOf": [
-                    {
-                      "type": "null"
+              "anyOf": [
+                {
+                  "properties": {
+                    "activityType": {
+                      "anyOf": [
+                        {
+                          "type": "null"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
                     },
-                    {
+                    "createdAt": {
+                      "format": "date-time",
+                      "type": "string",
+                      "x-superjson": "Date"
+                    },
+                    "day": {
+                      "type": "string"
+                    },
+                    "event": {
+                      "type": "string"
+                    },
+                    "hackerName": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "scanner": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "properties": {
+                        "activityType": {
+                          "enum": [
+                            "attendance",
+                            "win"
+                          ]
+                        },
+                        "itemId": {
+                          "type": "number"
+                        },
+                        "kind": {
+                          "const": "scan"
+                        },
+                        "userId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "userId",
+                        "itemId",
+                        "activityType"
+                      ],
+                      "type": "object"
+                    },
+                    "time": {
+                      "type": "string"
+                    },
+                    "type": {
                       "type": "string"
                     }
-                  ]
+                  },
+                  "required": [
+                    "id",
+                    "target",
+                    "hackerName",
+                    "event",
+                    "type",
+                    "activityType",
+                    "scanner",
+                    "day",
+                    "time",
+                    "createdAt"
+                  ],
+                  "type": "object"
                 },
-                "createdAt": {
-                  "format": "date-time",
-                  "type": "string",
-                  "x-superjson": "Date"
-                },
-                "day": {
-                  "type": "string"
-                },
-                "event": {
-                  "type": "string"
-                },
-                "hackerName": {
-                  "type": "string"
-                },
-                "id": {
-                  "type": "string"
-                },
-                "scanner": {
-                  "type": "string"
-                },
-                "time": {
-                  "type": "string"
-                },
-                "type": {
-                  "type": "string"
+                {
+                  "properties": {
+                    "activityType": {
+                      "type": "null"
+                    },
+                    "createdAt": {
+                      "format": "date-time",
+                      "type": "string",
+                      "x-superjson": "Date"
+                    },
+                    "day": {
+                      "type": "string"
+                    },
+                    "event": {
+                      "type": "string"
+                    },
+                    "hackerName": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "scanner": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "properties": {
+                        "id": {
+                          "type": "number"
+                        },
+                        "kind": {
+                          "const": "redemption"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "id"
+                      ],
+                      "type": "object"
+                    },
+                    "time": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "target",
+                    "hackerName",
+                    "event",
+                    "type",
+                    "activityType",
+                    "scanner",
+                    "day",
+                    "time",
+                    "createdAt"
+                  ],
+                  "type": "object"
                 }
-              },
-              "required": [
-                "id",
-                "hackerName",
-                "event",
-                "type",
-                "activityType",
-                "scanner",
-                "day",
-                "time",
-                "createdAt"
-              ],
-              "type": "object"
+              ]
             },
             "type": "array"
           },
@@ -19323,6 +19529,9 @@
       "output": {
         "items": {
           "properties": {
+            "costPoints": {
+              "type": "number"
+            },
             "createdAt": {
               "format": "date-time",
               "type": "string",
@@ -19353,6 +19562,7 @@
             "createdAt",
             "id",
             "scannerId",
+            "costPoints",
             "rewardId"
           ],
           "type": "object"
@@ -19382,6 +19592,9 @@
       "output": {
         "items": {
           "properties": {
+            "costPoints": {
+              "type": "number"
+            },
             "createdAt": {
               "format": "date-time",
               "type": "string",
@@ -19412,6 +19625,7 @@
             "createdAt",
             "id",
             "scannerId",
+            "costPoints",
             "rewardId"
           ],
           "type": "object"
