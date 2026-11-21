@@ -187,9 +187,6 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
                       ? `Round ${mine.round} is over. Stay at your table.`
                       : `No judge at your table in round ${mine.round}.`}
             </span>
-            <span className="text-sm font-medium text-dashboard-text-light">
-              {mine.judges.done} of {mine.judges.total} judges done
-            </span>
           </section>
         )}
       </div>

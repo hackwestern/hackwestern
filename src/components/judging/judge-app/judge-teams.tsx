@@ -62,6 +62,8 @@ interface JudgeTeamsProps {
   onEdit: (markId: number) => void;
   /** Opens the score form for a team whose round ended first. */
   onScoreLate: (stopId: number) => void;
+  /** Set once the judge has seen every team: starts re-scoring. */
+  onStartRescore?: () => void;
   onSubmit: () => void;
 }
 
@@ -76,6 +78,7 @@ export function JudgeTeams({
   upcoming,
   stage,
   onScoreLate,
+  onStartRescore,
   rescored,
   canSubmit,
   error,
@@ -155,6 +158,24 @@ export function JudgeTeams({
 
   return (
     <>
+      {onStartRescore && (
+        <section className={`${card} flex flex-col gap-2 p-4`}>
+          <h2 className="m-0 text-xl font-bold text-dashboard-text-heavy">
+            You&apos;ve seen all your teams
+          </h2>
+          <p className="m-0 text-base font-medium text-dashboard-text-light">
+            Look over your scores below, then re-score each team with a fresh
+            eye.
+          </p>
+          <DashboardButton
+            type="button"
+            onClick={onStartRescore}
+            className={fullWidth}
+          >
+            Start re-scoring
+          </DashboardButton>
+        </section>
+      )}
       <p className="m-0 px-1 text-sm text-dashboard-text-light">
         {rescoring
           ? "Re-score every team, in the order you scored them."

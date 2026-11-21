@@ -388,6 +388,16 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     results.length > 0 &&
     stopsQuery.data !== undefined &&
     pendingStops.length === 0;
+  // Once a judge has seen every team, take them to My teams to look over
+  // their scores and start re-scoring from there.
+  const wasQueueDone = useRef(false);
+  useEffect(() => {
+    if (queueDone && !wasQueueDone.current) {
+      setTab("teams");
+      setEditingId(null);
+    }
+    wasQueueDone.current = queueDone;
+  }, [queueDone]);
   let phase: NextPhase;
   if (!hydrated || stopsQuery.isLoading || (findingNext && !held)) {
     phase = "loading";
@@ -843,6 +853,9 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
           error={finishError}
           onEdit={editTeam}
           onScoreLate={(stopId) => void scoreLate(stopId)}
+          onStartRescore={
+            queueDone && !finishing ? () => void startRescore() : undefined
+          }
           onSubmit={() => setConfirm("submit")}
         />
       );
