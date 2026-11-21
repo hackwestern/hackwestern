@@ -1,0 +1,86 @@
+name: Organizer Reminders
+
+# Slack DMs to organizers 15 minutes before each of their HW13 run-of-show
+# tasks (docs/organizer-notifications.md). Every 5 minutes Fri Nov 20 to
+# Sun Nov 22 2026 this reads the Run of Show sheet and makes Slack's queue of
+# scheduled DMs match it: new tasks queued, changed owners or times moved,
+# removed tasks cancelled. Slack holds and sends the DMs, so a late or
+# skipped run only delays picking up sheet edits. No database.
+#
+# ARMING:
+#   - Runs do nothing unless the repo variable ORGANIZER_REMINDERS_LIVE is 'true':
+#       gh variable set ORGANIZER_REMINDERS_LIVE --body true
+#   - Pause and cancel every queued organizer DM: set it to 'pause', then
+#     run the workflow once (Actions -> Organizer Reminders -> Run workflow).
+#   - Needs repo secrets SLACK_BOT_TOKEN, RUN_OF_SHOW_SHEETS_CLIENT_EMAIL and
+#     RUN_OF_SHOW_SHEETS_PRIVATE_KEY, and both sheets shared with that
+#     service account as Viewer.
+#   - Logs show counts only (ORGANIZER_QUIET): this repo's Actions logs are public.
+
+on:
+  schedule:
+    - cron: "*/5 * 20-22 11 *"
+  workflow_dispatch:
+
+concurrency:
+  group: organizer-reminders
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      RUN_OF_SHOW_SHEETS_CLIENT_EMAIL: ${{ secrets.RUN_OF_SHOW_SHEETS_CLIENT_EMAIL }}
+      RUN_OF_SHOW_SHEETS_PRIVATE_KEY: ${{ secrets.RUN_OF_SHOW_SHEETS_PRIVATE_KEY }}
+      SKIP_ENV_VALIDATION: "1"
+      ORGANIZER_QUIET: "1"
+      ORGANIZER_STATE_FILE: .organizer-state/sheet-check.txt
+      LIVE: ${{ vars.ORGANIZER_REMINDERS_LIVE }}
+      ORGANIZER_NOTIFICATIONS_ENABLED: ${{ vars.ORGANIZER_REMINDERS_LIVE == 'true' && '1' || '0' }}
+    steps:
+      - name: Only when armed, during the event
+        id: gate
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          today="$(date -u +%Y-%m-%d)"
+          if [ "$EVENT" = "schedule" ] && { [ "$today" \< "2026-11-20" ] || [ "$today" \> "2026-11-23" ]; }; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "Not event weekend; skipping."; exit 0
+          fi
+          # 'pause' runs a sync with an empty plan, which cancels queued DMs.
+          if [ "$LIVE" != "true" ] && [ "$LIVE" != "pause" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"; echo "Not armed; skipping."; exit 0
+          fi
+          echo "Mode: $LIVE"
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.skip != 'true'
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.skip != 'true'
+        with:
+          node-version: "24"
+          cache: "npm"
+      - run: npm ci
+        if: steps.gate.outputs.skip != 'true'
+
+      # The last sheet-check DM, so it's only re-sent when the problems change.
+      - uses: actions/cache/restore@v4
+        if: steps.gate.outputs.skip != 'true'
+        with:
+          path: .organizer-state
+          key: organizer-state-${{ github.run_id }}
+          restore-keys: organizer-state-
+
+      - name: Sync Slack with the run of show
+        if: steps.gate.outputs.skip != 'true'
+        run: |
+          mkdir -p .organizer-state
+          npm run -s organizer:notifications -- --sync
+
+      - uses: actions/cache/save@v4
+        if: always() && steps.gate.outputs.skip != 'true'
+        with:
+          path: .organizer-state
+          key: organizer-state-${{ github.run_id }}

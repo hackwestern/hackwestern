@@ -1,17 +1,12 @@
-import { MAP_COLS, TABLE_COUNT } from "~/components/judging/map/map-data";
+import { TABLE_COUNT, spotGrid } from "~/components/judging/map/map-data";
 
 /**
- * Row and column of a table on the map's snake grid, counted from the top
- * left as the map is drawn upright: row 1 runs left to right, row 2 right to
- * left, and so on (see snakePosition in map-data.ts).
+ * Row and column of a spot on the map's snake grid, counted from the top
+ * left as the map is drawn upright, with columns in spots (two per physical
+ * table). Row 1 runs left to right, row 2 right to left, and so on (see
+ * spotGrid in map-data.ts).
  */
-function gridOf(n: number) {
-  const i = n - 1;
-  const row = Math.floor(i / MAP_COLS);
-  const idx = i % MAP_COLS;
-  const col = row % 2 === 0 ? idx : MAP_COLS - 1 - idx;
-  return { row, col };
-}
+const gridOf = spotGrid;
 
 export type WalkHint = "Walk left" | "Walk right" | "Walk down" | "Walk up";
 

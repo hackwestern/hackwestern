@@ -166,3 +166,18 @@ export const horses: readonly Horse[] = [
 
 export const getHorse = (id: number | null | undefined) =>
   horses.find((h) => h.id === id) ?? null;
+
+/**
+ * Realm pill colours (hacker pass and check-in scan), from the HW13 ID card
+ * fronts in the "13 - Merch" Figma: a pale wash of each card's main colour
+ * with the card's dark colour as text.
+ */
+export const realmCardColor: Record<
+  Realm,
+  { background: string; text: string }
+> = {
+  safari: { background: "#F5DEC9", text: "#890C0C" },
+  desert: { background: "#F2E7CB", text: "#6A490D" },
+  mountain: { background: "#D7E5CC", text: "#284115" },
+  ocean: { background: "#CCE4F5", text: "#115B73" },
+};

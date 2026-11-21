@@ -38,6 +38,12 @@ type User = {
 };
 
 export const qrRouter = createTRPCRouter({
+  // Printed under the QR on the live site home, so hackers can read it out.
+  // Same gate as the pass itself.
+  hackerId: protectedProcedure.query(async ({ ctx }) => {
+    if (!(await isUserApprovedForEvent(ctx.session.user.id))) return null;
+    return getOrCreateHackerId(ctx.session.user.id);
+  }),
   generate: protectedProcedure
     .input(
       z.object({

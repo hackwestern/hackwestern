@@ -13,7 +13,9 @@ import {
   type CoffeeChatBooking,
   type CoffeeChatCellChange,
 } from "~/lib/coffee-chats";
+import { assertSheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
 import {
+  sharedSheetRead,
   findTabTitle,
   type SheetsClient,
 } from "~/server/api/utils/sponsor-sheets";
@@ -130,6 +132,16 @@ export async function fetchCoffeeChatGrid(
   sheets: SheetsClient,
   spreadsheetId: string,
 ): Promise<CoffeeChatBooking[]> {
+  // Shared a minute across requests (Google's per-minute read limit).
+  return sharedSheetRead(`coffee-grid:${spreadsheetId}`, 60_000, () =>
+    readCoffeeChatGrid(sheets, spreadsheetId),
+  );
+}
+
+async function readCoffeeChatGrid(
+  sheets: SheetsClient,
+  spreadsheetId: string,
+): Promise<CoffeeChatBooking[]> {
   try {
     const tabName = await findCoffeeChatTabTitle(sheets, spreadsheetId);
     if (!tabName) return [];
@@ -159,6 +171,7 @@ export async function writeCoffeeChatGridFull(
   sheetId: number,
   bookings: readonly CoffeeChatBooking[],
 ): Promise<void> {
+  assertSheetWritesEnabled("coffee chat grid");
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
     requestBody: {
@@ -187,6 +200,7 @@ export async function writeCoffeeChatGridDiff(
   changes: readonly CoffeeChatCellChange[],
 ): Promise<void> {
   if (changes.length === 0) return;
+  assertSheetWritesEnabled("coffee chat grid");
 
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
@@ -231,6 +245,7 @@ export async function ensureCoffeeChatTab(
   let created = false;
 
   if (sheetId === null) {
+    assertSheetWritesEnabled(`"${COFFEE_CHAT_TAB}" tab`);
     const addRes = await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
       requestBody: {
@@ -264,6 +279,7 @@ export async function ensureCoffeeChatTab(
   // (narrow time column, wider room columns so names fit). Only worth
   // running right after creation/seeding.
   if (created) {
+    assertSheetWritesEnabled(`"${COFFEE_CHAT_TAB}" tab`);
     try {
       await sheets.spreadsheets.batchUpdate({
         spreadsheetId,

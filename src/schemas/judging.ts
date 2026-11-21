@@ -1,21 +1,33 @@
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { CRITERION_IDS, type CriterionId } from "~/lib/judging-criteria";
 import { judgeTypeEnum, judges, trackEnum } from "~/server/db/schema";
 
 // Scores are 0-10, the judge app's rubric range.
 export const SCORE_MIN = 0;
 export const SCORE_MAX = 10;
 
-/** Matches `ScoreBreakdown` in schema.ts: 0-10 per criterion, in half steps. */
+const ratingSchema = z.number().min(SCORE_MIN).max(SCORE_MAX).multipleOf(0.5);
+
+/**
+ * The rubric a judge sends with a mark. Each criterion is stored in its own
+ * team_mark column, so only the criteria in CRITERION_IDS are accepted.
+ */
 export const scoreBreakdownSchema = z.object({
-  ratings: z.record(
-    z.string().max(64),
-    z.number().min(SCORE_MIN).max(SCORE_MAX).multipleOf(0.5),
-  ),
+  ratings: z
+    .object(
+      Object.fromEntries(
+        CRITERION_IDS.map((id) => [id, ratingSchema.optional()]),
+      ) as Record<CriterionId, z.ZodOptional<typeof ratingSchema>>,
+    )
+    .strict(),
   notes: z.string().max(2000).nullish(),
   superLike: z.boolean().optional(),
 });
+
+/** What a judge sends with a mark: ratings by criterion id, notes, super like. */
+export type ScoreBreakdown = z.infer<typeof scoreBreakdownSchema>;
 
 const score = z.number().min(SCORE_MIN).max(SCORE_MAX);
 const assignmentId = z.number().int().positive();
@@ -59,6 +71,18 @@ export const setupTablesSchema = z.object({
 });
 export type SetupTablesInput = z.infer<typeof setupTablesSchema>;
 
+export const setRoundConfigSchema = z
+  .object({
+    roundSeconds: z.number().int().min(30).max(3600).optional(),
+    roundsEnabled: z.boolean().optional(),
+  })
+  .refine(
+    (v) => v.roundSeconds !== undefined || v.roundsEnabled !== undefined,
+    {
+      message: "Nothing to change.",
+    },
+  );
+
 export const setTableActiveSchema = z.object({
   tableId,
   isActive: z.boolean(),
@@ -88,6 +112,11 @@ export const handOffJudgeSchema = z
   });
 
 export const addJudgeToTableSchema = z.object({ judgeId, tableId });
+
+export const setJudgeNoShowSchema = z.object({
+  judgeId,
+  noShow: z.boolean(),
+});
 
 // `id` is the user id being promoted to a judge. Stats columns are
 // server-derived, so they're omitted. `track` needs the array override

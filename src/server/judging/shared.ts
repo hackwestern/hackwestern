@@ -84,6 +84,28 @@ export async function tablesHaveStarted(
   return !!row;
 }
 
+/**
+ * Tables (of these) whose team was reported absent. Absence is final, so no
+ * endpoint may give such a table a live stop: no top-up, no hand-off, no
+ * reopened stop.
+ */
+export async function absentTableIds(
+  tableIds: number[],
+  tx: Tx = db,
+): Promise<Set<number>> {
+  if (tableIds.length === 0) return new Set();
+  const rows = await tx
+    .selectDistinct({ tableId: judgingAssignments.judgingTableId })
+    .from(judgingAssignments)
+    .where(
+      and(
+        inArray(judgingAssignments.judgingTableId, tableIds),
+        eq(judgingAssignments.status, "team_absent"),
+      ),
+    );
+  return new Set(rows.map((r) => r.tableId));
+}
+
 /*
  * Lock order, used by every judging write so concurrent requests wait for each
  * other instead of deadlocking:

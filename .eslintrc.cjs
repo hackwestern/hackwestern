@@ -4,6 +4,8 @@ const config = {
   parserOptions: {
     project: true,
   },
+  // Files parked for deletion are not part of the app (see tsconfig exclude).
+  ignorePatterns: ["**/_to_delete/**"],
   plugins: ["@typescript-eslint", "drizzle"],
   extends: [
     "next/core-web-vitals",

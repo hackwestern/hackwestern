@@ -250,6 +250,7 @@ export const dashboardColors = {
     link: "#0b6bc4",
     active: "#08559c", // selected nav item
     warning: "#8a4300", // checklist due dates
+    task: "#5c3d00", // team task blocks on the run of show (on bg.task: 8.6:1)
   },
   bg: {
     page: "#f3f7fc",
@@ -261,9 +262,15 @@ export const dashboardColors = {
     highlightMedium: "rgba(225,239,251,0.7)",
     highlightSubtle: "rgba(225,239,251,0.4)", // table rows
     checklistCurrent: "#e4eefb", // current checklist step
+    task: "#ffefb8", // team task blocks: amber, apart from every event colour
   },
   action: {
     primary: "#0b6bc4", // primary buttons, selected filters, tags, progress
+    destructive: "#c62828", // delete buttons
+    destructiveHover: "#a51f1f",
+    neutral: "#e6ebf0", // cancel buttons
+    neutralHover: "#d5dde5",
+    halo: "rgba(11,107,196,0.18)", // glow around the current step dot
   },
   border: {
     default: "#cdddeb", // navigation, secondary buttons
@@ -271,6 +278,7 @@ export const dashboardColors = {
     card: "#d6e3ef", // hacker checklist
     control: "#b9cbe0", // "Message on Slack" button
     outline: "#accae5", // outline button
+    task: "#c78a00", // team task block edge
     faint: "rgba(81,100,118,0.1)",
     muted: "rgba(81,100,118,0.2)",
     medium: "rgba(81,100,118,0.5)",
@@ -287,6 +295,40 @@ export const dashboardColors = {
     blue: "rgba(37,130,254,0.15)",
     green: "rgba(104,250,109,0.15)",
     orange: "rgba(254,145,37,0.15)",
+  },
+  // Sponsor portal (mock sponsor-chats-v3). The shortlist step's purple,
+  // the group colours of /live's day schedule.
+  group: {
+    bg: "#c4c0de", // shortlist flow header
+    border: "#a8a2cf", // shortlist card edge, selected hacker
+    text: "#3b2a85", // shortlist buttons, step rail (on white: 10.6:1)
+    strong: "#2c1f66", // shortlist button hover
+    subtle: "#f8f7fc", // a shortlisted hacker's card
+  },
+  // Coffee chat blocks on the sponsor Schedule: a colour nothing else on the
+  // grid uses.
+  chat: {
+    line: "#6b45c2",
+    tint: "rgba(107,69,194,0.13)",
+    tintHover: "rgba(107,69,194,0.2)",
+  },
+  // Profile link logos on hacker cards, in each brand's own colour.
+  brand: {
+    linkedin: "#0a66c2",
+    github: "#181717",
+    devpost: "#003e54",
+  },
+  notice: {
+    welcomeBg: "#fff8ec", // Home's welcome card
+    welcomeBorder: "#f3dfbd",
+    cautionBg: "#fff4e5", // warnings, "Met at your booth", primary contact
+    cautionBorder: "#f0c98a",
+    star: "#f6c453", // the primary contact's crown fill
+    okBg: "#e3f4e8", // "Everything checks out", Accepted
+    okText: "#106b31",
+    danger: "#b42318", // Remove, Change anyway, field errors
+    workshopBg: "#fff4f8", // your workshop row in Your chats
+    workshopLine: "#c2389e", // your workshop block's edge
   },
 } as const;
 

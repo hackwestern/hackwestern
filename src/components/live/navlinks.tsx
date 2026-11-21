@@ -1,6 +1,7 @@
+import { useId, useState, type ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Lock } from "lucide-react";
+import { ChevronDown, Lock } from "lucide-react";
 import { SidebarIcon } from "./icons";
 import { NotificationBadge } from "~/components/internals/notification-badge";
 import { cn } from "~/lib/utils";
@@ -13,7 +14,8 @@ import {
   logisticsSteps,
 } from "~/constants/event-logistics";
 
-const navLinkClass = (isActive: boolean) =>
+// Shared with the sponsor portal side nav (sponsor-shell.tsx).
+export const navLinkClass = (isActive: boolean) =>
   cn(
     "group flex items-center gap-2.5 rounded-dashboard-sm px-4 py-3 leading-default transition-colors",
     isActive
@@ -26,12 +28,15 @@ export const SectionLink = ({
   name,
   locked = false,
   badge: badgeProp,
+  badgeLabel,
   href,
 }: {
   tab: string;
   name: string;
   locked?: boolean; // Locked pages (before RSVP) show a lock and can't be opened
   badge?: number;
+  /** Screen reader text for the badge, e.g. "2 chats waiting". */
+  badgeLabel?: string;
   href?: string;
 }) => {
   const searchParams = useSearchParams();
@@ -94,10 +99,74 @@ export const SectionLink = ({
         )}
       />
       {name}
-      {badge !== undefined && badge > 0 && (
-        <NotificationBadge count={badge} className="ml-auto" />
-      )}
+      {badge !== undefined &&
+        badge > 0 &&
+        (badgeLabel ? (
+          <span className="ml-auto flex">
+            <span aria-hidden="true" className="flex">
+              <NotificationBadge count={badge} />
+            </span>
+            <span className="sr-only">{badgeLabel}</span>
+          </span>
+        ) : (
+          <NotificationBadge count={badge} className="ml-auto" />
+        ))}
     </Link>
+  );
+};
+
+// A section that opens to show its links. It starts open when one of them is
+// the current page.
+export const SectionGroup = ({
+  icon,
+  name,
+  tabs,
+  hrefs = [],
+  children,
+}: {
+  icon: string;
+  name: string;
+  tabs: string[]; // Live tabs inside the group
+  hrefs?: string[]; // Other pages inside the group
+  children: ReactNode;
+}) => {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const hasActive =
+    (pathname === "/live" && tabs.includes(searchParams.get("tab") ?? "")) ||
+    hrefs.some((h) => pathname?.startsWith(h));
+  const [open, setOpen] = useState(hasActive);
+  const id = useId();
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => setOpen((o) => !o)}
+        className={cn(navLinkClass(false), "w-full text-left")}
+        style={tokens.dashboardTypography.body}
+      >
+        <SidebarIcon
+          icon={icon}
+          className="size-5 shrink-0 text-dashboard-text-light transition-colors group-hover:text-dashboard-text-heavy"
+        />
+        {name}
+        <ChevronDown
+          aria-hidden="true"
+          className={cn(
+            "ml-auto size-4 shrink-0 transition-transform motion-reduce:transition-none",
+            open && "rotate-180",
+          )}
+        />
+      </button>
+      {open && (
+        <div id={id} className="flex flex-col gap-1.5 pl-4">
+          {children}
+        </div>
+      )}
+    </div>
   );
 };
 

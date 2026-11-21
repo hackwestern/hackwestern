@@ -2,7 +2,10 @@
 
 import { useRouter } from "next/router";
 import { useState, useEffect, useRef } from "react";
+import { ArrowLeft } from "lucide-react";
 import { api } from "~/utils/api";
+import { DashboardButton } from "~/components/internals/dashboard-button";
+import { cn } from "~/lib/utils";
 import jsQR from "jsqr";
 import type { GetServerSidePropsContext } from "next";
 import { getServerSession } from "next-auth";
@@ -57,7 +60,6 @@ const RedeemScanPage = () => {
   const [status, setStatus] = useState<"scanning" | "success" | "error">(
     "scanning",
   );
-  const [scannedName, setScannedName] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -376,11 +378,11 @@ const RedeemScanPage = () => {
         const result = await redeemMutation.mutateAsync({
           userId,
           rewardId: rewardData!.id,
+          expectedCost: rewardData!.costPoints,
         });
 
         // Success - use user info from mutation response (no extra API call needed!)
         const userName = result.user?.name ?? result.user?.email ?? userId;
-        setScannedName(userName);
         setStatus("success");
 
         // Invalidate rewards queries to update quantities in cache
@@ -395,6 +397,7 @@ const RedeemScanPage = () => {
           query: {
             reward: formatTitle(rewardData?.name ?? "Reward"),
             user: userName,
+            points: result.pointsUsed,
           },
         });
         return;
@@ -447,6 +450,11 @@ const RedeemScanPage = () => {
           // Fallback to userId if query fails - user info is nice-to-have for errors
         }
 
+        // The price or stock may have changed, so show the latest when back
+        void utils.scavengerHunt.getRewardById.invalidate({
+          id: rewardData!.id,
+        });
+
         // Navigate to error page with appropriate message
         void router.push({
           pathname: "/scavenger/redeem/error",
@@ -482,95 +490,88 @@ const RedeemScanPage = () => {
   };
 
   return (
-    <div
-      className="flex min-h-screen w-full flex-col"
-      style={{ backgroundColor: "#f5f2f6" }}
-    >
+    <div className="flex h-dvh w-full flex-col bg-dashboard-bg-nav font-figtree">
+      {rewardLoading && (
+        <p className="fixed inset-0 flex items-center justify-center text-base font-medium text-dashboard-text-medium">
+          Loading reward...
+        </p>
+      )}
       {/* Top Bar */}
-      <header className="w-full space-y-2 p-4">
-        <button
+      <header
+        className={cn(
+          "flex flex-col items-start gap-3 px-6 pb-6 pt-5",
+          rewardLoading && "invisible",
+        )}
+      >
+        <DashboardButton
+          variant="tertiary"
+          className="font-semibold text-dashboard-text-heavy md:text-[16px]"
           onClick={() => {
             void router.push("/scavenger/redeem");
           }}
-          className="font-secondary text-heavy transition-colors hover:text-emphasis"
         >
+          <ArrowLeft />
           Back
-        </button>
-        <div className="space-y-1">
-          <h1 className="font-dico text-left text-3xl font-medium capitalize text-heavy">
-            {rewardName}
-          </h1>
-          {rewardLoading && (
-            <p className="font-secondary text-sm text-medium">
-              Loading reward details...
+        </DashboardButton>
+        <h1 className="text-[32px] font-bold leading-[1.2] text-dashboard-text-heavy">
+          {rewardName}
+        </h1>
+        {rewardData && (
+          <div className="flex flex-col gap-1 text-sm font-medium text-dashboard-text-medium">
+            {rewardData.description && (
+              <p>{formatTitle(rewardData.description)}</p>
+            )}
+            <p className="text-dashboard-text-heavy">
+              Cost: {rewardData.costPoints} points
             </p>
-          )}
-          {rewardData && (
-            <div className="space-y-1">
-              {rewardData.description && (
-                <p className="font-secondary text-sm text-medium">
-                  {formatTitle(rewardData.description)}
-                </p>
-              )}
-              <p className="font-secondary text-sm font-medium text-heavy">
-                Cost: {rewardData.costPoints} points
-              </p>
-              <p className="font-secondary text-sm text-medium">
-                Quantity left: {rewardData.quantity ?? "∞"}
-              </p>
-            </div>
-          )}
-          {!rewardLoading && !rewardData && rewardId && (
-            <p className="font-secondary text-sm text-red-600">
-              Reward not found
-            </p>
-          )}
-        </div>
+            <p>Quantity left: {rewardData.quantity ?? "∞"}</p>
+          </div>
+        )}
+        {!rewardLoading && !rewardData && rewardId && (
+          <p className="text-sm font-medium text-dashboard-status-warning">
+            Reward not found
+          </p>
+        )}
       </header>
 
-      {/* Camera View */}
-      <div className="relative flex w-full flex-1 items-center justify-center bg-gray-300">
+      {/* Camera View - Takes up rest of screen */}
+      <div
+        className={cn(
+          "relative flex w-full flex-1 items-center justify-center overflow-hidden rounded-t-[10px] border border-dashboard-border-subtle bg-dashboard-bg-surface shadow-dashboard-card",
+          rewardLoading && "invisible",
+        )}
+      >
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          className={`h-full w-full object-cover ${cameraActive ? "opacity-100" : "opacity-0"}`}
+          className={`absolute inset-0 h-full w-full object-cover ${cameraActive ? "opacity-100" : "opacity-0"}`}
         />
 
         <canvas ref={canvasRef} className="hidden" />
 
         {/* Scanner frame overlay */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="aspect-square w-[88%] rounded-lg border-2 border-white md:w-[60%] lg:w-[50%]" />
+          <div className="aspect-square w-[87%] max-w-[340px] border-2 border-white" />
         </div>
 
         {/* Camera Error / Start Camera Button */}
         {!cameraActive && cameraError && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-300 p-6">
-            <p className="mb-4 text-center font-secondary text-heavy">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-dashboard-bg-inset p-6">
+            <p className="text-center text-base font-medium text-dashboard-text-medium">
               {cameraError}
             </p>
-            <button
-              onClick={startCamera}
-              className="rounded-lg bg-white px-6 py-3 font-secondary font-medium text-heavy shadow-md transition-colors hover:bg-violet-100 active:bg-violet-200"
-            >
+            <DashboardButton onClick={startCamera}>
               Start Camera
-            </button>
+            </DashboardButton>
           </div>
         )}
       </div>
 
-      {/* Success Overlay */}
-      {status === "success" && scannedName && (
-        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-white px-4 py-3 font-secondary text-heavy opacity-100 shadow-lg transition-opacity duration-300">
-          {scannedName} redeemed successfully
-        </div>
-      )}
-
       {/* Error Overlay */}
       {status === "error" && errorMessage && (
-        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-red-100 px-4 py-3 font-secondary text-red-700 opacity-100 shadow-lg transition-opacity duration-300">
+        <div className="absolute bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-[10px] border border-dashboard-border-subtle bg-dashboard-bg-surface px-4 py-3 text-sm font-medium text-dashboard-status-warning shadow-dashboard-card">
           {errorMessage}
         </div>
       )}

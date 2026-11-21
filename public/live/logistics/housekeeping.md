@@ -6,7 +6,7 @@
 - Lost and Found
 
 # 🪪 Identification & Security  
-Bring a photo ID and your check-in QR code to registration outside the Grand Hall (Rm **1110**). You will receive a Hacker badge card—keep it on you all weekend. The venue is open 24/7, so you can come and go, but security will ask to see your Hacker badge card **and** a photo ID when you come back in. If you lose your badge, please go to the help desk.
+Bring a government-issued photo ID (student cards don't count) and your check-in QR code to registration outside the Grand Hall (Rm **1110**). You will receive a Hacker badge card—keep it on you all weekend. The venue is open 24/7, so you can come and go, but security will ask to see your Hacker badge card **and** a photo ID when you come back in. The doors are locked **Friday and Saturday from 9pm to 8am**. If you lose your badge, please go to the help desk.
 
 # 🛏️ Sleeping  
 We will have dedicated sleeping rooms with a limited number of air mattresses on a first-come first-serve basis, so bring your own bedding. Please keep sleeping rooms quiet, keep doorways clear, and keep track of your belongings. There are no showers at the venue.

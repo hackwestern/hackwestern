@@ -5,6 +5,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, asc, count, desc, eq, inArray, ne } from "drizzle-orm";
 
+import { ratingsFromColumns } from "~/lib/judging-criteria";
 import { db } from "~/server/db";
 import {
   judges,
@@ -15,6 +16,7 @@ import {
   users,
 } from "~/server/db/schema";
 import { snakePosition } from "~/server/judging/layout";
+import { getRoundState, settleRound } from "~/server/judging/rounds";
 import {
   ELIGIBLE_SUBMISSIONS,
   JUDGE_TEAM_COLUMNS,
@@ -64,6 +66,7 @@ export async function getProgress() {
         .select({
           id: judges.id,
           type: judges.type,
+          noShow: judges.noShow,
           marksCount: judges.marksCount,
           createdAt: judges.createdAt,
           name: users.name,
@@ -124,6 +127,7 @@ export async function getProgress() {
         name: j.name ?? j.email,
         email: j.email,
         type: j.type,
+        noShow: j.noShow,
         marksCount: j.marksCount,
         isFloater: mine.length === 0,
         current: current
@@ -152,6 +156,7 @@ export async function getAllJudges() {
         id: judges.id,
         type: judges.type,
         track: judges.track,
+        noShow: judges.noShow,
         marksCount: judges.marksCount,
         marksSum: judges.marksSum,
         createdAt: judges.createdAt,
@@ -189,6 +194,7 @@ export async function getAllJudges() {
  * progress, else the first one still assigned.
  */
 export async function getMyStops(judgeId: string) {
+  await settleRound();
   const [settings, stops] = await Promise.all([
     getSettings(),
     db.query.judgingAssignments.findMany({
@@ -219,7 +225,13 @@ export async function getMyStops(judgeId: string) {
             id: teamMarks.id,
             teamId: teamMarks.teamId,
             score: teamMarks.score,
-            scoreBreakdown: teamMarks.scoreBreakdown,
+            impactRating: teamMarks.impactRating,
+            creativityRating: teamMarks.creativityRating,
+            technicalRating: teamMarks.technicalRating,
+            designRating: teamMarks.designRating,
+            adventurousRating: teamMarks.adventurousRating,
+            notes: teamMarks.notes,
+            superLike: teamMarks.superLike,
           })
           .from(teamMarks)
           .where(
@@ -228,7 +240,19 @@ export async function getMyStops(judgeId: string) {
               inArray(teamMarks.teamId, teamIds),
             ),
           );
-  const markByTeam = new Map(marks.map((m) => [m.teamId, m]));
+  const markByTeam = new Map(
+    marks.map((m) => [
+      m.teamId,
+      {
+        id: m.id,
+        teamId: m.teamId,
+        score: m.score,
+        ratings: ratingsFromColumns(m),
+        notes: m.notes,
+        superLike: m.superLike,
+      },
+    ]),
+  );
 
   const list = stops.map(({ table: { team: seated, ...table }, ...stop }) => {
     const team = orNull(seated);
@@ -250,6 +274,7 @@ export async function getMyStops(judgeId: string) {
       rows: settings.rows,
       perRow: settings.perRow,
     },
+    round: await getRoundState(),
     stops: list,
     nextStopId: next?.id ?? null,
     finished: list.filter((s) => closed.includes(s.status)).length,
@@ -257,13 +282,36 @@ export async function getMyStops(judgeId: string) {
   };
 }
 
-/** A judge's own submitted marks, most recent first. */
+/**
+ * A judge's own submitted marks, most recent first. The rating columns come
+ * back folded into `ratings` ({ [criterionId]: 0-10 }), empty for a mark with
+ * only an overall score.
+ */
 export async function getSubmittedMarks(judgeId: string) {
-  return db.query.teamMarks.findMany({
+  const marks = await db.query.teamMarks.findMany({
     where: eq(teamMarks.judgeId, judgeId),
     with: { team: { columns: JUDGE_TEAM_COLUMNS } },
     orderBy: [desc(teamMarks.createdAt)],
   });
+  return marks.map(
+    ({
+      impactRating,
+      creativityRating,
+      technicalRating,
+      designRating,
+      adventurousRating,
+      ...mark
+    }) => ({
+      ...mark,
+      ratings: ratingsFromColumns({
+        impactRating,
+        creativityRating,
+        technicalRating,
+        designRating,
+        adventurousRating,
+      }),
+    }),
+  );
 }
 
 /**
@@ -292,7 +340,8 @@ export async function getTeamJudging(userId: string) {
     }),
   ]);
   const table = team?.judgingTable ?? null;
-  if (!table) return { table: null, judges: { done: 0, total: 0 } };
+  if (!table)
+    return { table: null, absent: false, judges: { done: 0, total: 0 } };
 
   const counts = await db
     .select({ status: judgingAssignments.status, n: count() })
@@ -310,9 +359,73 @@ export async function getTeamJudging(userId: string) {
       zone: table.zone,
       ...snakePosition(table.number, settings.perRow),
     },
+    // Reported absent: disqualified, and every stop at the table is closed.
+    absent: counts.some((c) => c.status === "team_absent"),
     judges: {
       done: counts.find((c) => c.status === "done")?.n ?? 0,
       total: counts.reduce((sum, c) => sum + c.n, 0),
     },
+  };
+}
+
+export type BoardStopStatus = "done" | "now" | "upcoming" | "skipped";
+
+/**
+ * The public view of the rounds, for hackers. Who is judging which team in
+ * which round, and how far along it is, with judges as numbers ("Judge 7")
+ * because judge identities stay hidden. No scores, no absences (a team that
+ * wasn't at its table just shows as skipped). Stops at empty tables are left
+ * out, so rounds only list teams that were really seated.
+ */
+export async function getRoundBoard() {
+  await settleRound();
+  const round = await getRoundState();
+  const [stops, judgeOrder] = await Promise.all([
+    db
+      .select({
+        judgeId: judgingAssignments.judgeId,
+        position: judgingAssignments.position,
+        status: judgingAssignments.status,
+        table: judgingTables.number,
+        team: teams.name,
+      })
+      .from(judgingAssignments)
+      .innerJoin(
+        judgingTables,
+        eq(judgingTables.id, judgingAssignments.judgingTableId),
+      )
+      .innerJoin(teams, eq(teams.judgingTableId, judgingTables.id))
+      .where(ne(judgingAssignments.status, "cancelled")),
+    // Same order auto-assign uses, so "Judge 7" is the same on every refresh.
+    db
+      .select({ id: judges.id })
+      .from(judges)
+      .orderBy(asc(judges.createdAt), asc(judges.id)),
+  ]);
+
+  const number = new Map(judgeOrder.map((j, i) => [j.id, i + 1]));
+  const open = round.status === "running" || round.status === "paused";
+  const statusOf = (s: { status: StopStatus; position: number }) => {
+    if (s.status === "done") return "done" as const;
+    if (s.status === "team_absent") return "skipped" as const;
+    if (s.status === "in_progress") return "now" as const;
+    if (!round.enabled || s.position > round.round) return "upcoming" as const;
+    // An unscored stop in a round that has passed or closed was missed.
+    return s.position === round.round && open
+      ? ("now" as const)
+      : ("skipped" as const);
+  };
+
+  return {
+    round,
+    stops: stops
+      .map((s) => ({
+        round: s.position,
+        judge: number.get(s.judgeId) ?? 0,
+        table: s.table,
+        team: s.team,
+        status: statusOf(s),
+      }))
+      .sort((a, b) => a.round - b.round || a.table - b.table),
   };
 }

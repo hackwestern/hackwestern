@@ -2,9 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
-import { SearchAutocomplete } from "../internals/search-autocomplete";
 import { Button } from "../ui/button";
-import { SectionLink, IconlessLink } from "./navlinks";
+import { SectionLink, SectionGroup, IconlessLink } from "./navlinks";
+import { RoundsNavItem } from "./rounds-nav";
 import * as tokens from "~/lib/tokens";
 import { SCHEDULE_ENABLED } from "~/constants/live";
 
@@ -14,7 +14,6 @@ export const SidebarNav = ({
   isOrganizer?: boolean;
 }) => (
   <div className="flex flex-col gap-9">
-    <SearchAutocomplete options={[]} placeholder="Search" />
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1.5">
         <SectionLink tab="home" name="Home" />
@@ -27,11 +26,22 @@ export const SidebarNav = ({
         <SectionLink tab="menu" name="Food Menu" />
         <SectionLink tab="mentors" name="Mentors" />
         <SectionLink tab="sponsors" name="Sponsors" />
+        <RoundsNavItem isOrganizer={isOrganizer} />
+        {!isOrganizer && <SectionLink tab="coffee-chats" name="Coffee Chats" />}
+        {!isOrganizer && (
+          <SectionLink tab="scavenger-hunt" name="Scavenger Hunt" />
+        )}
         {isOrganizer && (
-          // Mobile-only scan page
-          <div className="md:hidden">
+          <SectionGroup
+            icon="scavenger"
+            name="Scavenger Hunt"
+            tabs={["activities", "rewards"]}
+            hrefs={["/scavenger"]}
+          >
             <SectionLink tab="scan" name="Scan" href="/scavenger" />
-          </div>
+            <SectionLink tab="activities" name="Activities" />
+            <SectionLink tab="rewards" name="Rewards" />
+          </SectionGroup>
         )}
         {isOrganizer && (
           <SectionLink tab="judge" name="Judging" href="/judge" />

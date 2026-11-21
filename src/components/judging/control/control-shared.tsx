@@ -3,6 +3,7 @@ import { trackEnum } from "~/server/db/schema";
 import { type RouterOutputs } from "~/utils/api";
 
 export type Progress = RouterOutputs["judging"]["admin"]["getProgress"];
+export type RoundOverview = RouterOutputs["judging"]["admin"]["getRound"];
 
 // The "still to judge" view the control room cards render, built from the
 // table-section engine's progress read (see queueFromProgress).
@@ -20,7 +21,23 @@ export type QueueTeam = {
   currentJudgeName: string | null;
   assignedAt: Date | string | null;
 };
+/**
+ * The engine has no stored "round". Each table is judged by `total` judges, so
+ * round N is the Nth judge to score every team. We're in the earliest round
+ * some seated team still hasn't finished.
+ */
+export type RoundState = {
+  /** The round in progress (1-based), capped at `total`. */
+  current: number;
+  total: number;
+  /** Seated teams that have finished the current round. */
+  teamsDone: number;
+  teamsSeated: number;
+  /** Every seated team has had all its judges. */
+  complete: boolean;
+};
 export type QueueState = {
+  round: RoundState;
   teams: QueueTeam[];
   submittedTeams: number;
   regularMarks: number;
@@ -52,7 +69,26 @@ export function queueFromProgress(p: Progress): QueueState {
       assignedAt: current?.startedAt ?? null,
     });
   }
+  // A table reported absent is out: its other stops were closed, so it would
+  // never reach the round's judge count.
+  const seated = p.tables.filter(
+    (t) =>
+      t.team && t.isActive && !t.judges.some((j) => j.status === "team_absent"),
+  );
+  const total = p.settings.judgesPerTable;
+  const finished = seated.length
+    ? Math.min(...seated.map((t) => t.judgesDone))
+    : 0;
+  const current = Math.min(total, finished + 1);
+  const round: RoundState = {
+    current,
+    total,
+    teamsDone: seated.filter((t) => t.judgesDone >= current).length,
+    teamsSeated: seated.length,
+    complete: seated.length > 0 && finished >= total,
+  };
   return {
+    round,
     teams,
     submittedTeams: p.teams.submitted,
     regularMarks: p.totals.done,
@@ -64,12 +100,6 @@ export type JudgeRow =
   RouterOutputs["judging"]["admin"]["getAllJudges"][number];
 export type RankingRow =
   RouterOutputs["judging"]["admin"]["getLatestRanking"][number];
-
-// "General" is every team's base track; the rest are sponsor prizes
-// (same split as the judging seed).
-export const SPONSOR_TRACKS = trackEnum.enumValues.filter(
-  (t) => t !== "General",
-);
 
 export const LONG_HOLD_MS = 5 * 60 * 1000;
 

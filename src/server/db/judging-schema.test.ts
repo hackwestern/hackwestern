@@ -8,7 +8,6 @@ import {
   judges,
   judgingAssignments,
   judgingTables,
-  type ScoreBreakdown,
   teamMarks,
   teamTracks,
   teams,
@@ -71,33 +70,50 @@ describe("team_track", () => {
   });
 });
 
-describe("team_mark.score_breakdown", () => {
-  test("stores the rubric, notes and super like, and is optional", async () => {
+describe("team_mark rubric columns", () => {
+  test("stores a rating per criterion, notes and super like; all optional", async () => {
     const session = await mockSession(db);
     await db.insert(judges).values({ id: session.user.id });
     const teamId = await makeTeam();
-    const breakdown: ScoreBreakdown = {
-      ratings: { idea: 7.5, technical: 9, design: 6, pitch: 8 },
-      notes: "Great live demo; auth was mocked.",
-      superLike: true,
-    };
 
     const [withRubric] = await db
       .insert(teamMarks)
       .values({
         teamId,
         judgeId: session.user.id,
-        score: 8,
-        scoreBreakdown: breakdown,
+        score: 7.5,
+        impactRating: 8.5,
+        creativityRating: 7,
+        technicalRating: 9,
+        designRating: 6,
+        adventurousRating: 8.5,
+        notes: "Great live demo; auth was mocked.",
+        superLike: true,
       })
       .returning();
-    expect(withRubric?.scoreBreakdown).toEqual(breakdown);
+    expect(withRubric).toMatchObject({
+      impactRating: 8.5,
+      creativityRating: 7,
+      technicalRating: 9,
+      designRating: 6,
+      adventurousRating: 8.5,
+      notes: "Great live demo; auth was mocked.",
+      superLike: true,
+    });
 
     const [sliderOnly] = await db
       .insert(teamMarks)
       .values({ teamId, judgeId: session.user.id, score: 6 })
       .returning();
-    expect(sliderOnly?.scoreBreakdown).toBeNull();
+    expect(sliderOnly).toMatchObject({
+      impactRating: null,
+      creativityRating: null,
+      technicalRating: null,
+      designRating: null,
+      adventurousRating: null,
+      notes: null,
+      superLike: false,
+    });
   });
 });
 

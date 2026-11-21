@@ -1,11 +1,13 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { z } from "zod";
+import { and, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 
 import {
   createTRPCRouter,
   protectedJudgeProcedure,
   protectedOrganizerProcedure,
   protectedProcedure,
+  publicProcedure,
 } from "~/server/api/trpc";
 import { db, extractRows } from "~/server/db";
 import { judgingAssignments, judges, users } from "~/server/db/schema";
@@ -22,30 +24,49 @@ import {
   moveTeamSchema,
   reportAbsentSchema,
   seatTeamsSchema,
+  setJudgeNoShowSchema,
   setTableActiveSchema,
   setupTablesSchema,
+  setRoundConfigSchema,
   startStopSchema,
   submitStopSchema,
   swapTeamsSchema,
 } from "~/schemas/judging";
 import {
+  endRound,
+  getBoardVisibility,
+  getRoundOverview,
+  getRoundState,
+  setBoardVisibility,
+  pauseRound,
+  resetRounds,
+  resumeRound,
+  setRoundConfig,
+  startRound,
+} from "~/server/judging/rounds";
+import {
   addJudgeToTable,
   autoAssign,
+  clearAssignments,
   cancelStop,
   deleteMark,
   editMark,
   handOffJudge,
   markAbsent,
+  setJudgeNoShow,
   startStop,
   submitStop,
 } from "~/server/judging/assignments";
 import {
   getAllJudges,
   getMyStops,
+  getRoundBoard,
   getProgress,
   getSubmittedMarks,
   getTeamJudging,
 } from "~/server/judging/reads";
+import { loadTeamResults } from "~/server/api/utils/team-results-data";
+import { getDevpostPreview } from "~/server/judging/devpost-preview";
 import {
   moveTeam,
   seatTeams,
@@ -90,7 +111,15 @@ async function getRanking() {
     normalized_score: number;
     num_marks: number;
   }>(sql`
-    WITH judge_stats AS (
+    WITH absent_teams AS (
+      -- Absence is final: a team whose table has a team_absent stop is out,
+      -- and its marks don't shift its judges' averages either.
+      SELECT t.id
+      FROM team t
+      JOIN judging_assignment a ON a.judging_table_id = t.judging_table_id
+      WHERE a.status = 'team_absent'
+    ),
+    judge_stats AS (
       SELECT
         m.judge_id,
         AVG(m.score) AS mu,
@@ -98,6 +127,7 @@ async function getRanking() {
       FROM team_mark m
       JOIN "judge" j ON j.id = m.judge_id
       WHERE m.round_type = 'regular' AND j.type = 'organizer'
+        AND m.team_id NOT IN (SELECT id FROM absent_teams)
       GROUP BY m.judge_id
     )
     SELECT
@@ -109,6 +139,7 @@ async function getRanking() {
     JOIN judge_stats js ON js.judge_id = m.judge_id
     JOIN team t ON t.id = m.team_id
     WHERE m.round_type = 'regular'
+      AND m.team_id NOT IN (SELECT id FROM absent_teams)
     GROUP BY m.team_id, t.name
     ORDER BY normalized_score DESC NULLS LAST
   `);
@@ -125,6 +156,8 @@ async function getRanking() {
  * Promote one or more existing users to judges (or update their type/tracks
  * if they already are). The PK is the user id, so this upserts on conflict.
  * Sponsored judges carry the tracks they cover; organizer judges have none.
+ * Plain accounts (`hacker`) also become `judge` users; organizers and sponsors
+ * keep their type.
  * All-or-nothing: if any user id is unknown, nothing is written.
  */
 async function addJudges(
@@ -189,6 +222,18 @@ async function addJudges(
         .returning();
       rows.push(row!);
     }
+
+    // Judges are their own account type. Only plain accounts are switched:
+    // an organizer or sponsor who judges keeps their type (and their pages).
+    await tx
+      .update(users)
+      .set({ type: "judge" })
+      .where(
+        and(
+          inArray(users.id, ids),
+          or(eq(users.type, "hacker"), isNull(users.type)),
+        ),
+      );
     return rows;
   });
 }
@@ -284,6 +329,58 @@ export const judgingRouter = createTRPCRouter({
     }),
   }),
 
+  /**
+   * What hackers can see: the rounds, with judges as numbers. Signed in only,
+   * and for hackers only while an organizer has it switched on.
+   */
+  board: createTRPCRouter({
+    /**
+     * The round timer, for the projector clock at /clock. Public: it's only
+     * the round number and the time left, read without changing anything.
+     */
+    getClock: publicProcedure.query(() =>
+      withErrorHandling(() => getRoundState(), "Failed to load the clock"),
+    ),
+
+    /** Is the rounds link and page open to me? Organizers: always. */
+    getAccess: protectedProcedure.query(({ ctx }) =>
+      withErrorHandling(async () => {
+        const [{ shownToHackers }, user] = await Promise.all([
+          getBoardVisibility(),
+          db.query.users.findFirst({
+            where: eq(users.id, ctx.session.user.id),
+            columns: { type: true },
+          }),
+        ]);
+        const isOrganizer = user?.type === "organizer";
+        return {
+          isOrganizer,
+          shownToHackers,
+          visible: isOrganizer || shownToHackers,
+        };
+      }, "Failed to check access"),
+    ),
+
+    get: protectedProcedure.query(({ ctx }) =>
+      withErrorHandling(async () => {
+        const [{ shownToHackers }, user] = await Promise.all([
+          getBoardVisibility(),
+          db.query.users.findFirst({
+            where: eq(users.id, ctx.session.user.id),
+            columns: { type: true },
+          }),
+        ]);
+        if (!shownToHackers && user?.type !== "organizer") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "The rounds aren't open to hackers yet.",
+          });
+        }
+        return getRoundBoard();
+      }, "Failed to load the rounds"),
+    ),
+  }),
+
   team: createTRPCRouter({
     /** My team's table and how many of its judges have scored us. */
     getMyJudging: protectedProcedure.query(async ({ ctx }) => {
@@ -300,12 +397,66 @@ export const judgingRouter = createTRPCRouter({
       return withErrorHandling(() => getProgress(), "Failed to get progress");
     }),
 
+    /** Show or hide the rounds board and its menu link for hackers. */
+    setBoardVisible: protectedOrganizerProcedure
+      .input(z.object({ shownToHackers: z.boolean() }))
+      .mutation(({ input }) =>
+        withErrorHandling(
+          () => setBoardVisibility(input.shownToHackers),
+          "Failed to update the rounds visibility",
+        ),
+      ),
+
+    /** Round state for the control room: timer, round number, who is done. */
+    getRound: protectedOrganizerProcedure.query(() =>
+      withErrorHandling(() => getRoundOverview(), "Failed to get the round"),
+    ),
+
+    startRound: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => startRound(), "Failed to start the round"),
+    ),
+
+    pauseRound: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => pauseRound(), "Failed to pause the round"),
+    ),
+
+    resumeRound: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => resumeRound(), "Failed to resume the round"),
+    ),
+
+    endRound: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => endRound(), "Failed to end the round"),
+    ),
+
+    resetRounds: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => resetRounds(), "Failed to reset the rounds"),
+    ),
+
+    setRoundConfig: protectedOrganizerProcedure
+      .input(setRoundConfigSchema)
+      .mutation(({ input }) =>
+        withErrorHandling(
+          () => setRoundConfig(input),
+          "Failed to update the round settings",
+        ),
+      ),
+
     setupTables: protectedOrganizerProcedure
       .input(setupTablesSchema)
       .mutation(async ({ input }) => {
         return withErrorHandling(
           () => setupTables(input),
           "Failed to set up tables",
+        );
+      }),
+
+    /** Mark a judge as a no-show, or undo it. */
+    setJudgeNoShow: protectedOrganizerProcedure
+      .input(setJudgeNoShowSchema)
+      .mutation(async ({ input }) => {
+        return withErrorHandling(
+          () => setJudgeNoShow(input.judgeId, input.noShow),
+          "Failed to update the judge",
         );
       }),
 
@@ -333,6 +484,14 @@ export const judgingRouter = createTRPCRouter({
         "Failed to assign judges",
       );
     }),
+
+    /** Remove every judge's stops and reset the rounds. Before judging starts. */
+    clearAssignments: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(
+        () => clearAssignments(),
+        "Failed to clear the assignments",
+      ),
+    ),
 
     swapTeams: protectedOrganizerProcedure
       .input(swapTeamsSchema)
@@ -394,6 +553,15 @@ export const judgingRouter = createTRPCRouter({
     getLatestRanking: protectedOrganizerProcedure.query(async () => {
       return withErrorHandling(() => getRanking(), "Failed to get ranking");
     }),
+
+    /** Every team with its marks, oldest first, for the per-round view. */
+    getTeamResults: protectedOrganizerProcedure.query(() =>
+      withErrorHandling(() => loadTeamResults(), "Failed to load results"),
+    ),
+
+    getDevpostPreview: protectedOrganizerProcedure
+      .input(z.object({ teamId: z.string() }))
+      .query(({ input }) => getDevpostPreview(input.teamId)),
 
     getAllJudges: protectedOrganizerProcedure.query(async () => {
       return withErrorHandling(() => getAllJudges(), "Failed to get judges");

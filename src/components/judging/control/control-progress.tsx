@@ -4,8 +4,16 @@ import {
   type JudgeRow,
   MUTED,
   type QueueState,
+  type RoundOverview,
   formatHold,
 } from "./control-shared";
+
+const ROUND_STATUS = {
+  idle: "Waiting to start",
+  running: "Running",
+  paused: "Paused",
+  closed: "Time's up",
+} as const;
 
 function Tile({
   label,
@@ -47,22 +55,26 @@ function Bar({ done, total }: { done: number; total: number }) {
 export function ControlProgress({
   queue,
   judges,
+  round: timed,
   now,
 }: {
   queue: QueueState | undefined;
   judges: JudgeRow[] | undefined;
+  /** The timed rounds. Rounds off or not loaded: the tile falls back to the old count. */
+  round: RoundOverview | undefined;
   now: number;
 }) {
   if (!queue || !judges) {
     return (
       <section
         aria-label="Progress"
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
       >
         {[
+          "Judging round",
           "Teams fully judged",
           "Marks submitted",
-          "Organizer judges",
+          "Judges",
           "Longest hold",
         ].map((label) => (
           <Tile key={label} label={label} value="…" />
@@ -84,9 +96,8 @@ export function ControlProgress({
   const holders = new Set(
     queue.teams.flatMap((t) => (t.currentJudgeId ? [t.currentJudgeId] : [])),
   );
-  const organizers = judges.filter((j) => j.type === "organizer");
+  const organizers = judges;
   const busy = organizers.filter((j) => holders.has(j.id)).length;
-  const sponsors = judges.length - organizers.length;
 
   let longest: { ms: number; judge: string; team: string } | null = null;
   for (const t of queue.teams) {
@@ -100,13 +111,77 @@ export function ControlProgress({
       };
     }
   }
-  const tooLong = !!longest && longest.ms > LONG_HOLD_MS;
+  // With timed rounds a hold is only long once it passes the round length.
+  const roundsOn = timed?.enabled === true;
+  const holdLimit = roundsOn ? timed.roundSeconds * 1000 : LONG_HOLD_MS;
+  const tooLong = !!longest && longest.ms > holdLimit;
+  const limitText = `${Math.round(holdLimit / 60_000)} minute${
+    holdLimit === 60_000 ? "" : "s"
+  }`;
+  const { round } = queue;
+  const notStarted = !queue.started && queue.regularMarks === 0;
+  const allRoundsDone =
+    roundsOn &&
+    timed.totalRounds > 0 &&
+    timed.round === timed.totalRounds &&
+    timed.status === "closed" &&
+    timed.stops.done === timed.stops.total;
 
   return (
     <section
       aria-label="Progress"
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5"
     >
+      {roundsOn ? (
+        <Tile
+          label="Judging round"
+          value={
+            timed.totalRounds === 0
+              ? "No plan yet"
+              : timed.round === 0
+                ? "Not started"
+                : allRoundsDone
+                  ? "All done"
+                  : `Round ${timed.round} of ${timed.totalRounds}`
+          }
+        >
+          {timed.round > 0 && !allRoundsDone && (
+            <>
+              <Bar done={timed.stops.done} total={timed.stops.total} />
+              <span className={`text-[13px] ${MUTED}`}>
+                {ROUND_STATUS[timed.status]} · {timed.stops.done} of{" "}
+                {timed.stops.total} judges done with this round
+              </span>
+            </>
+          )}
+          {timed.round === 0 && timed.totalRounds > 0 && (
+            <span className={`text-[13px] ${MUTED}`}>
+              {timed.totalRounds} rounds planned. Start round 1 below.
+            </span>
+          )}
+        </Tile>
+      ) : (
+        <Tile
+          label="Judging round"
+          value={
+            notStarted
+              ? "Not started"
+              : round.complete
+                ? "All done"
+                : `Round ${round.current} of ${round.total}`
+          }
+        >
+          {!notStarted && !round.complete && (
+            <>
+              <Bar done={round.teamsDone} total={round.teamsSeated} />
+              <span className={`text-[13px] ${MUTED}`}>
+                {round.teamsDone} of {round.teamsSeated} teams done with this
+                round
+              </span>
+            </>
+          )}
+        </Tile>
+      )}
       <Tile
         label="Teams fully judged"
         value={`${fullyJudged} / ${queue.submittedTeams}`}
@@ -120,15 +195,11 @@ export function ControlProgress({
         <Bar done={queue.regularMarks} total={marksTotal} />
       </Tile>
       <Tile
-        label="Organizer judges"
-        value={`${busy} judging · ${organizers.length - busy} free`}
-      >
-        <span className={`text-[13px] ${MUTED}`}>
-          {sponsors === 0
-            ? "No sponsor judges"
-            : `Plus ${sponsors} sponsor judge${sponsors === 1 ? "" : "s"}`}
-        </span>
-      </Tile>
+        label="Judges"
+        value={`${busy} ${roundsOn ? "scoring" : "judging"} · ${
+          organizers.length - busy
+        } ${roundsOn ? "waiting" : "free"}`}
+      />
       <Tile
         label="Longest hold"
         value={longest ? formatHold(longest.ms) : "—"}
@@ -136,7 +207,7 @@ export function ControlProgress({
       >
         <span className={`text-[13px] ${tooLong ? "text-[#6b3a10]" : MUTED}`}>
           {longest
-            ? `${longest.judge} on ${longest.team}.${tooLong ? " Over 5 minutes" : ""}`
+            ? `${longest.judge} on ${longest.team}.${tooLong ? ` Over ${limitText}` : ""}`
             : "No one is judging right now"}
         </span>
       </Tile>

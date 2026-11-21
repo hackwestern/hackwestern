@@ -26,16 +26,23 @@ export interface Rubric {
 
 export type Ratings = Record<string, number | undefined>;
 
-/** The default rubric: four criteria, equal weight. */
+/** The default rubric: five criteria, equal weight. */
 export const DEFAULT_RUBRIC: Rubric = {
   title: "General judging rubric",
   weighted: false,
   criteria: [
     {
-      id: "innovation",
-      name: "Innovation & Creativity",
+      id: "impact",
+      name: "Innovation + Impact",
       description:
-        "How unique or original is the project idea? Does it present a new solution to a problem or use technology in an unexpected way?",
+        "How new is the idea, and how much does it matter? Does it solve a real problem in a way that could make a difference beyond the hackathon?",
+      weight: 1,
+    },
+    {
+      id: "creativity",
+      name: "Creativity",
+      description:
+        "How original is the approach? Does the team use technology, design or ideas in an unexpected way?",
       weight: 1,
     },
     {
@@ -46,17 +53,17 @@ export const DEFAULT_RUBRIC: Rubric = {
       weight: 1,
     },
     {
-      id: "completeness",
-      name: "Completeness",
+      id: "design",
+      name: "Design/Polish",
       description:
-        "Does the project work as intended? Are there any major bugs or broken features?",
+        "How finished and easy to use does it feel? Is the interface clear, and does the demo run smoothly?",
       weight: 1,
     },
     {
-      id: "design",
-      name: "Design",
+      id: "adventurous",
+      name: "Adventurous",
       description:
-        "How user-friendly and visually appealing is the project? Is the interface intuitive and easy to navigate?",
+        "How bold was the team? Did they take a risk on something new to them, like an unfamiliar technology, domain or approach?",
       weight: 1,
     },
   ],
@@ -146,6 +153,10 @@ export function RubricScorer({
 }: RubricScorerProps) {
   return (
     <div id="rubric-guide" className="flex flex-col gap-3">
+      <p className="m-0 text-sm font-medium text-dashboard-text-light">
+        {(RUBRIC_MIN + RUBRIC_MAX) / 2} is average. Most teams should land near
+        it, with few at the extremes.
+      </p>
       {rubric.criteria.map((c) => {
         const current = ratingOf(c, ratings);
         const labelId = `rubric-${c.id}`;
