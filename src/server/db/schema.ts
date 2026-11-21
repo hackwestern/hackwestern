@@ -1789,6 +1789,11 @@ export const judgingAssignments = pgTable(
       .notNull(),
     startedAt: timestamp("started_at", { mode: "date", precision: 3 }),
     completedAt: timestamp("completed_at", { mode: "date", precision: 3 }),
+    /** The team said their judge hadn't come (hacker Judging page). */
+    missingReportedAt: timestamp("missing_reported_at", {
+      mode: "date",
+      precision: 3,
+    }),
   },
   (t) => [
     uniqueIndex("judging_assignment_judge_position_idx")

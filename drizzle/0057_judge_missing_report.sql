@@ -1,0 +1,1 @@
+ALTER TABLE "judging_assignment" ADD COLUMN "missing_reported_at" timestamp (3);

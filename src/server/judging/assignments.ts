@@ -6,7 +6,7 @@
  * id, then team rows, then table rows by id).
  */
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, gte, inArray, max, ne, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, max, ne, sql } from "drizzle-orm";
 
 import { markColumnsFromBreakdown } from "~/lib/judging-criteria";
 import { type ScoreBreakdown } from "~/schemas/judging";
@@ -18,9 +18,16 @@ import {
   judgingTables,
   teamMarks,
   teams,
+  users,
 } from "~/server/db/schema";
 import { LayoutError, buildSections } from "~/server/judging/layout";
-import { assertStopOpen, openPositionFloor } from "~/server/judging/rounds";
+import {
+  REPORT_MISSING_AFTER_MS,
+  assertStopOpen,
+  getRoundState,
+  openPositionFloor,
+  roundElapsedMs,
+} from "~/server/judging/rounds";
 import {
   OPEN_STATUSES,
   type StopStatus,
@@ -507,6 +514,79 @@ async function transition(
   throw new TRPCError({
     code: "CONFLICT",
     message: `This stop is already ${current.status.replace("_", " ")}.`,
+  });
+}
+
+/**
+ * A hacker says their team's judge hasn't come this round. Allowed once the
+ * round has run a minute (the judge may be walking over), and only while that
+ * judge hasn't started. It flags the table for organizers; a table whose judge
+ * never starts is picked up by the catch-up round anyway.
+ */
+export async function reportMyJudgeMissing(userId: string) {
+  const refuse = (message: string) =>
+    new TRPCError({ code: "PRECONDITION_FAILED", message });
+  return db.transaction(async (tx) => {
+    await lockPlanShared(tx);
+    const user = await tx.query.users.findFirst({
+      where: eq(users.id, userId),
+      columns: { teamId: true },
+    });
+    const team = user?.teamId
+      ? await tx.query.teams.findFirst({
+          where: eq(teams.id, user.teamId),
+          columns: { judgingTableId: true },
+        })
+      : undefined;
+    const tableId = team?.judgingTableId;
+    if (tableId == null) throw refuse("Your team doesn't have a table yet.");
+
+    const state = await getRoundState(tx);
+    const open =
+      state.enabled &&
+      state.round > 0 &&
+      (state.status === "running" || state.status === "paused");
+    if (!open) throw refuse("There's no round on right now.");
+
+    // Every judge due at the table this round (judges can share a round).
+    const due = (
+      await tx
+        .select({
+          id: judgingAssignments.id,
+          status: judgingAssignments.status,
+          startedAt: judgingAssignments.startedAt,
+        })
+        .from(judgingAssignments)
+        .where(
+          and(
+            eq(judgingAssignments.judgingTableId, tableId),
+            eq(judgingAssignments.position, state.round),
+            ne(judgingAssignments.status, "cancelled"),
+          ),
+        )
+    ).filter((s) => s.status === "assigned" || s.status === "in_progress");
+    if (due.length === 0)
+      throw refuse("No judge is due at your table this round.");
+    if (due.some((s) => s.status === "in_progress" || s.startedAt))
+      throw refuse("Your judge has already started.");
+    if (roundElapsedMs(state) < REPORT_MISSING_AFTER_MS)
+      throw refuse(
+        "Give your judge a minute. You can report them 1 minute after the round starts.",
+      );
+
+    await tx
+      .update(judgingAssignments)
+      .set({ missingReportedAt: new Date() })
+      .where(
+        and(
+          inArray(
+            judgingAssignments.id,
+            due.map((s) => s.id),
+          ),
+          isNull(judgingAssignments.missingReportedAt),
+        ),
+      );
+    return { reported: true };
   });
 }
 

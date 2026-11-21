@@ -16,7 +16,12 @@ import {
   users,
 } from "~/server/db/schema";
 import { snakePosition } from "~/server/judging/layout";
-import { getRoundState, settleRound } from "~/server/judging/rounds";
+import {
+  REPORT_MISSING_AFTER_MS,
+  getRoundState,
+  roundElapsedMs,
+  settleRound,
+} from "~/server/judging/rounds";
 import {
   ELIGIBLE_SUBMISSIONS,
   JUDGE_TEAM_COLUMNS,
@@ -54,6 +59,7 @@ export async function getProgress() {
           status: judgingAssignments.status,
           startedAt: judgingAssignments.startedAt,
           completedAt: judgingAssignments.completedAt,
+          missingReportedAt: judgingAssignments.missingReportedAt,
         })
         .from(judgingAssignments)
         .innerJoin(users, eq(users.id, judgingAssignments.judgeId))
@@ -117,6 +123,7 @@ export async function getProgress() {
           status: s.status,
           startedAt: s.startedAt,
           position: s.position,
+          missingReportedAt: s.missingReportedAt,
         })),
       };
     }),
@@ -364,16 +371,24 @@ export async function getTeamJudging(userId: string) {
       judges: { done: 0, total: 0 },
       round: null,
       thisRound: null,
+      judgeStarted: false,
+      reportedMissing: false,
+      reportOpensInMs: null,
     };
 
   // With timed rounds: is a judge at this team's table in the current round?
   const round = await getRoundState();
   const current = round.enabled && round.round > 0 ? round.round : null;
-  const [roundStop] =
+  // Every judge due at this table this round (judges can share a round).
+  const roundStops =
     current === null
       ? []
       : await db
-          .select({ status: judgingAssignments.status })
+          .select({
+            status: judgingAssignments.status,
+            startedAt: judgingAssignments.startedAt,
+            missingReportedAt: judgingAssignments.missingReportedAt,
+          })
           .from(judgingAssignments)
           .where(
             and(
@@ -381,21 +396,31 @@ export async function getTeamJudging(userId: string) {
               eq(judgingAssignments.position, current),
               ne(judgingAssignments.status, "cancelled"),
             ),
-          )
-          .limit(1);
+          );
   const roundOpen = round.status === "running" || round.status === "paused";
+  const live = roundStops.filter((s) => s.status !== "team_absent");
   // "now" whenever a judge is due at the table in an open round, whether or
   // not they've pressed "Judge this team" yet.
   const thisRound: "now" | "done" | "over" | "none" | null =
     current === null
       ? null
-      : !roundStop || roundStop.status === "team_absent"
+      : live.length === 0
         ? "none"
-        : roundStop.status === "done"
+        : live.every((s) => s.status === "done")
           ? "done"
-          : roundOpen || roundStop.status === "in_progress"
+          : roundOpen || live.some((s) => s.status === "in_progress")
             ? "now"
             : "over";
+  // A judge pressed "Judge this team" (so they came).
+  const judgeStarted = live.some(
+    (s) => s.status === "in_progress" || s.startedAt !== null,
+  );
+  // While the judge is due but hasn't started: when the hacker may report them
+  // missing (ms from now), after the round's first minute.
+  const reportOpensInMs =
+    thisRound === "now" && !judgeStarted
+      ? Math.max(0, REPORT_MISSING_AFTER_MS - roundElapsedMs(round))
+      : null;
 
   const counts = await db
     .select({ status: judgingAssignments.status, n: count() })
@@ -421,6 +446,9 @@ export async function getTeamJudging(userId: string) {
     },
     round: current,
     thisRound,
+    judgeStarted,
+    reportedMissing: live.some((s) => s.missingReportedAt !== null),
+    reportOpensInMs,
   };
 }
 

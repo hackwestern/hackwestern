@@ -138,17 +138,30 @@ function SpotBox({
   const held = current?.startedAt
     ? formatHold(now - new Date(current.startedAt).getTime())
     : null;
+  // The team says this round's judge hasn't come (hacker Judging page).
+  const judgeMissing =
+    round !== null &&
+    !!spot?.judges.some(
+      (j) =>
+        j.position === round &&
+        j.status === "assigned" &&
+        !j.startedAt &&
+        j.missingReportedAt,
+    );
   return (
     <button
       type="button"
       onClick={onOpen}
       disabled={!spot}
       aria-label={`Table ${number}${spot?.team ? `, ${spot.team.name}` : ""}: ${style.label}. Show details`}
-      className={`flex min-h-[72px] min-w-0 flex-1 flex-col gap-0.5 border-[1.5px] p-1 text-left first:rounded-l-lg last:rounded-r-lg enabled:cursor-pointer enabled:hover:brightness-95 enabled:focus-visible:outline enabled:focus-visible:outline-2 enabled:focus-visible:outline-[#5b3fa0] ${style.box}`}
+      className={`flex min-h-[72px] min-w-0 flex-1 flex-col gap-0.5 border-[1.5px] p-1 text-left first:rounded-l-lg last:rounded-r-lg enabled:cursor-pointer enabled:hover:brightness-95 enabled:focus-visible:outline enabled:focus-visible:outline-2 enabled:focus-visible:outline-[#5b3fa0] ${style.box} ${
+        judgeMissing ? "ring-2 ring-inset ring-[#b42318]" : ""
+      }`}
       title={[
         `Table ${number}`,
         spot?.team?.name,
         style.label,
+        judgeMissing ? "Team says their judge is missing" : null,
         current ? `${current.name} (${held})` : null,
       ]
         .filter(Boolean)
@@ -164,11 +177,19 @@ function SpotBox({
       <span className="hidden break-words text-[10px] font-semibold leading-tight md:line-clamp-2">
         {spot?.team?.name ?? ""}
       </span>
-      {spot?.team && (
-        <span className={`mt-auto truncate text-[10px] tabular-nums ${MUTED}`}>
-          {spot.judgesDone}/{spot.judges.length}
-          {current ? ` · ${held}` : ""}
+      {judgeMissing ? (
+        <span className="mt-auto truncate text-[10px] font-bold text-[#b42318]">
+          Judge missing
         </span>
+      ) : (
+        spot?.team && (
+          <span
+            className={`mt-auto truncate text-[10px] tabular-nums ${MUTED}`}
+          >
+            {spot.judgesDone}/{spot.judges.length}
+            {current ? ` · ${held}` : ""}
+          </span>
+        )
       )}
     </button>
   );
@@ -310,7 +331,9 @@ function SpotDialog({
                             ? ` · ${formatHold(now - new Date(j.startedAt).getTime())}`
                             : j.status === "assigned" && j.startedAt
                               ? " · started"
-                              : ""}
+                              : j.status === "assigned" && j.missingReportedAt
+                                ? " · team says judge missing"
+                                : ""}
                         </span>
                         {isOpenStop(j.status) && j.startedAt && (
                           <button

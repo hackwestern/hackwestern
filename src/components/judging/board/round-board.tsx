@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
 
+import { useNow } from "~/components/judging/control/control-shared";
 import { RoundClock } from "~/components/judging/judge-app/judge-round";
 import {
   card,
   field,
+  infoBanner,
+  secondaryButton,
   warningBanner,
 } from "~/components/judging/shared/judge-ui";
 import { api, type RouterOutputs } from "~/utils/api";
@@ -102,6 +105,50 @@ function buildRows(stops: Stop[], view: View): Row[] {
 }
 
 /**
+ * "Judge missing" for a hacker whose judge hasn't started. Greyed out for the
+ * round's first minute: the judge may still be walking over.
+ */
+function ReportJudgeMissing({
+  opensInMs,
+  fetchedAt,
+}: {
+  opensInMs: number | null;
+  fetchedAt: number;
+}) {
+  const utils = api.useUtils();
+  const report = api.judging.team.reportJudgeMissing.useMutation({
+    onSuccess: () => void utils.judging.team.getMyJudging.invalidate(),
+  });
+  const now = useNow(1000);
+  const opensAt = fetchedAt + (opensInMs ?? 0);
+  const waitSeconds = Math.max(0, Math.ceil((opensAt - now) / 1000));
+  const locked = waitSeconds > 0;
+
+  return (
+    <div className="mt-2 flex flex-col gap-2">
+      <button
+        type="button"
+        className={secondaryButton}
+        disabled={locked || report.isPending}
+        onClick={() => report.mutate()}
+      >
+        {report.isPending ? "Reporting…" : "Judge missing"}
+      </button>
+      <p className="m-0 text-sm text-dashboard-text-light">
+        {locked
+          ? `Please wait for your judge, they may be on the way. You can report them missing in ${waitSeconds}s.`
+          : "Still no judge? Let the organizers know."}
+      </p>
+      {report.error && (
+        <p role="alert" className={warningBanner}>
+          {report.error.message}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
  * The rounds board. Organizers see who judges whom, round by round. Hackers
  * only see their own team: its table and whether it's being judged now.
  */
@@ -187,6 +234,19 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
                       ? `Round ${mine.round} is over. Stay at your table.`
                       : `No judge at your table in round ${mine.round}.`}
             </span>
+            {mine.thisRound === "now" &&
+              !mine.judgeStarted &&
+              (mine.reportedMissing ? (
+                <p role="status" className={`${infoBanner} mt-2`}>
+                  Thanks, the organizers know. If your judge doesn&apos;t come,
+                  your team gets another judge in a catch-up round at the end.
+                </p>
+              ) : (
+                <ReportJudgeMissing
+                  opensInMs={mine.reportOpensInMs}
+                  fetchedAt={teamQ.dataUpdatedAt}
+                />
+              ))}
           </section>
         )}
       </div>

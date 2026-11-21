@@ -110,6 +110,19 @@ export function resolveRound(
   };
 }
 
+/** A hacker can report their judge missing once the round has run this long. */
+export const REPORT_MISSING_AFTER_MS = 60_000;
+
+/** How long the current round has run, paused time left out. */
+export function roundElapsedMs(state: RoundState, now = Date.now()): number {
+  const total = state.roundSeconds * 1000;
+  const left =
+    state.status === "running" && state.endsAt
+      ? Math.max(0, state.endsAt.getTime() - now)
+      : (state.remainingMs ?? 0);
+  return Math.max(0, total - left);
+}
+
 export async function getRoundState(tx: Tx = db): Promise<RoundState> {
   const [row, total] = await Promise.all([readRow(tx), totalRounds(tx)]);
   return resolveRound(row, total);

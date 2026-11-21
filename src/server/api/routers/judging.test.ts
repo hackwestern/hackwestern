@@ -1597,6 +1597,9 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
       // Rounds are off in this room.
       round: null,
       thisRound: null,
+      judgeStarted: false,
+      reportedMissing: false,
+      reportOpensInMs: null,
     });
   });
 });
@@ -2354,6 +2357,57 @@ describe("timed rounds", () => {
     expect(moved.table.number).toBe(missedTable);
     expect((await admin.startRound()).round).toBe(total + 1);
     await expect(score(first, moved)).resolves.toBeDefined();
+  });
+
+  test("a hacker can report their judge missing a minute into the round, until a judge starts", async () => {
+    const room = await roundsRoom();
+    const admin = room.org.caller.judging.admin;
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    const stop = await stopAt(judge, 1);
+    const session = await mockSession(db);
+    await db
+      .update(users)
+      .set({ teamId: stop.team?.id })
+      .where(eq(users.id, session.user.id));
+    const hacker = createCaller(createInnerTRPCContext({ session }));
+
+    await expect(hacker.judging.team.reportJudgeMissing()).rejects.toThrow(
+      /no round/i,
+    );
+    await admin.startRound();
+    // Too early: the judge may still be walking over.
+    await expect(hacker.judging.team.reportJudgeMissing()).rejects.toThrow(
+      /minute/i,
+    );
+    expect(
+      (await hacker.judging.team.getMyJudging()).reportOpensInMs,
+    ).toBeGreaterThan(0);
+
+    // A minute into the round.
+    const { roundSeconds } = await admin.getRound();
+    await db
+      .update(judgingRound)
+      .set({ endsAt: new Date(Date.now() + roundSeconds * 1000 - 61_000) })
+      .where(eq(judgingRound.id, 1));
+    await expect(hacker.judging.team.reportJudgeMissing()).resolves.toEqual({
+      reported: true,
+    });
+    expect(await hacker.judging.team.getMyJudging()).toMatchObject({
+      thisRound: "now",
+      judgeStarted: false,
+      reportedMissing: true,
+      reportOpensInMs: 0,
+    });
+
+    // Once a judge starts, there's nothing to report.
+    await judge.caller.judging.me.startStop({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? "none",
+    });
+    await expect(hacker.judging.team.reportJudgeMissing()).rejects.toThrow(
+      /already started/i,
+    );
   });
 
   test("restarting a rehearsal only works on the dev site, and wipes scores and stops", async () => {

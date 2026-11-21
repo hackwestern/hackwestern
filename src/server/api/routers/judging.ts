@@ -56,6 +56,7 @@ import {
   handOffJudge,
   markAbsent,
   reportJudgeMissing,
+  reportMyJudgeMissing,
   restartRehearsal,
   setJudgeNoShow,
   startStop,
@@ -394,6 +395,14 @@ export const judgingRouter = createTRPCRouter({
         "Failed to get judging status",
       );
     }),
+
+    /** Our judge hasn't come: flag it, a minute into the round. */
+    reportJudgeMissing: protectedProcedure.mutation(({ ctx }) =>
+      withErrorHandling(
+        () => reportMyJudgeMissing(ctx.session.user.id),
+        "Failed to report your judge missing",
+      ),
+    ),
   }),
 
   admin: createTRPCRouter({
