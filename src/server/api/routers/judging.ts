@@ -25,10 +25,20 @@ import {
   seatTeamsSchema,
   setTableActiveSchema,
   setupTablesSchema,
+  setRoundConfigSchema,
   startStopSchema,
   submitStopSchema,
   swapTeamsSchema,
 } from "~/schemas/judging";
+import {
+  endRound,
+  getRoundOverview,
+  pauseRound,
+  resetRounds,
+  resumeRound,
+  setRoundConfig,
+  startRound,
+} from "~/server/judging/rounds";
 import {
   addJudgeToTable,
   autoAssign,
@@ -316,6 +326,40 @@ export const judgingRouter = createTRPCRouter({
     getProgress: protectedOrganizerProcedure.query(async () => {
       return withErrorHandling(() => getProgress(), "Failed to get progress");
     }),
+
+    /** Round state for the control room: timer, round number, who is done. */
+    getRound: protectedOrganizerProcedure.query(() =>
+      withErrorHandling(() => getRoundOverview(), "Failed to get the round"),
+    ),
+
+    startRound: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => startRound(), "Failed to start the round"),
+    ),
+
+    pauseRound: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => pauseRound(), "Failed to pause the round"),
+    ),
+
+    resumeRound: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => resumeRound(), "Failed to resume the round"),
+    ),
+
+    endRound: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => endRound(), "Failed to end the round"),
+    ),
+
+    resetRounds: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(() => resetRounds(), "Failed to reset the rounds"),
+    ),
+
+    setRoundConfig: protectedOrganizerProcedure
+      .input(setRoundConfigSchema)
+      .mutation(({ input }) =>
+        withErrorHandling(
+          () => setRoundConfig(input),
+          "Failed to update the round settings",
+        ),
+      ),
 
     setupTables: protectedOrganizerProcedure
       .input(setupTablesSchema)

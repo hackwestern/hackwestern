@@ -34,6 +34,11 @@ import {
 } from "~/components/judging/judge-app/judge-queue-list";
 import { JudgeRescore } from "~/components/judging/judge-app/judge-rescore";
 import { VenueMap } from "~/components/judging/judge-app/judge-map";
+import {
+  type RoundView,
+  roundIsOpen,
+} from "~/components/judging/judge-app/judge-round";
+import { useNow } from "~/components/judging/control/control-shared";
 import { errorCode, friendlyError } from "~/components/judging/shared/judge-ui";
 import {
   DEFAULT_RUBRIC,
@@ -205,7 +210,10 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   // The judge's stops (tables) in walking order. The engine fixes the list up
   // front, so there is no "ask for the next team": the stop to do now is the
   // one in progress, else the first one still assigned.
-  const stopsQuery = api.judging.me.getMyStops.useQuery();
+  // Polled so a round starting, pausing or ending shows up within seconds.
+  const stopsQuery = api.judging.me.getMyStops.useQuery(undefined, {
+    refetchInterval: 4000,
+  });
   const marksQuery = api.judging.me.getSubmittedTeamMarks.useQuery();
   const startStop = api.judging.me.startStop.useMutation();
   const submit = api.judging.me.submitStop.useMutation();
@@ -216,10 +224,29 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   const pendingStops = (stopsQuery.data?.stops ?? []).filter(
     (s) => (s.status === "assigned" || s.status === "in_progress") && s.team,
   );
+  // Timed rounds: round N is every judge's Nth stop, and only the open
+  // round's stop can be done. Between rounds (or before round 1) there is none.
+  useNow(stopsQuery.data?.round.enabled ? 1000 : 3_600_000);
+  const roundView: RoundView | null = stopsQuery.data
+    ? { state: stopsQuery.data.round, fetchedAt: stopsQuery.dataUpdatedAt }
+    : null;
+  const gated = roundView?.state.enabled === true;
+  const roundOpen = roundView ? roundIsOpen(roundView, Date.now()) : false;
+  const activeStops = !gated
+    ? pendingStops
+    : roundOpen
+      ? pendingStops.filter((s) => s.position === roundView?.state.round)
+      : [];
   const heldStop =
-    pendingStops.find((s) => s.status === "in_progress") ??
-    pendingStops[0] ??
+    activeStops.find((s) => s.status === "in_progress") ??
+    activeStops[0] ??
     null;
+  const upcomingStop =
+    gated && roundView
+      ? pendingStops
+          .filter((s) => s.position > roundView.state.round)
+          .sort((a, b) => a.position - b.position)[0]
+      : undefined;
   const held = heldStop?.team ?? null;
   const heldTable = held ? (initial.tableByTeam[held.id] ?? null) : null;
 
@@ -279,6 +306,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     phase = "loading";
   } else if (finished) phase = "finished";
   else if (held) phase = "team";
+  else if (gated && pendingStops.length > 0) phase = "waitRound";
   else if (!started) phase = "welcome";
   else if (queueDone) phase = "rescoreReady";
   else phase = "none";
@@ -555,7 +583,9 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       />
     ) : (
       <p className="px-1 text-base font-medium text-dashboard-text-light">
-        Choose a team to judge on the Next tab first.
+        {gated && !held
+          ? "No round is open for you. Check the Next tab."
+          : "Choose a team to judge on the Next tab first."}
       </p>
     );
 
@@ -590,6 +620,12 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         onCheckAgain={() => void fetchNext()}
         onStartRescore={() => void startRescore()}
         starting={finishing}
+        round={gated ? roundView : null}
+        upcoming={
+          upcomingStop
+            ? { table: upcomingStop.table.number, round: upcomingStop.position }
+            : null
+        }
         queueList={
           <JudgeQueueList queue={queue} tableByTeam={initial.tableByTeam} />
         }

@@ -19,6 +19,7 @@ import {
   teams,
 } from "~/server/db/schema";
 import { LayoutError, buildSections } from "~/server/judging/layout";
+import { assertStopOpen } from "~/server/judging/rounds";
 import {
   OPEN_STATUSES,
   type StopStatus,
@@ -387,6 +388,7 @@ export async function markAbsent(
     await lockPlanShared(tx);
     if (judgeId && expectedTeamId !== undefined) {
       const stop = await lockStop(tx, assignmentId, judgeId);
+      await assertStopOpen(tx, stop.position);
       const [seated] = await tx
         .select({ id: teams.id, name: teams.name })
         .from(teams)
@@ -417,6 +419,7 @@ async function lockStop(tx: Tx, assignmentId: number, judgeId: string) {
     .select({
       id: judgingAssignments.id,
       judgingTableId: judgingAssignments.judgingTableId,
+      position: judgingAssignments.position,
     })
     .from(judgingAssignments)
     .where(
@@ -475,6 +478,7 @@ export async function startStop(
     return await db.transaction(async (tx) => {
       await lockPlanShared(tx);
       const stop = await lockStop(tx, assignmentId, judgeId);
+      await assertStopOpen(tx, stop.position);
       const busy = await tx.query.judgingAssignments.findFirst({
         where: and(
           eq(judgingAssignments.judgeId, judgeId),
@@ -517,6 +521,7 @@ export async function submitStop(
   return db.transaction(async (tx) => {
     await lockPlanShared(tx);
     const stop = await lockStop(tx, assignmentId, judge.id);
+    await assertStopOpen(tx, stop.position);
     const team = await seatedTeamAt(tx, stop.judgingTableId, teamId);
 
     await transition(

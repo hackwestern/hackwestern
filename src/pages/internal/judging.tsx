@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import SEO from "~/components/seo";
 import { InternalPage } from "~/components/internals/page-shell";
+import { ControlRoundsBar } from "~/components/judging/control/control-rounds-bar";
 import { ControlProgress } from "~/components/judging/control/control-progress";
 import { ControlRounds } from "~/components/judging/control/control-rounds";
 import { ControlTablesStatus } from "~/components/judging/control/control-tables-status";
@@ -75,6 +76,7 @@ export default function JudgingControlRoom() {
 
         <ControlProgress queue={queue} judges={judgesQ.data} now={now} />
 
+        <ControlRoundsBar now={now} />
         <ControlTablesStatus
           progress={progressQ.data}
           queue={queue}

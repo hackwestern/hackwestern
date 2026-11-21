@@ -16,6 +16,7 @@ import {
   users,
 } from "~/server/db/schema";
 import { snakePosition } from "~/server/judging/layout";
+import { getRoundState } from "~/server/judging/rounds";
 import {
   ELIGIBLE_SUBMISSIONS,
   JUDGE_TEAM_COLUMNS,
@@ -269,6 +270,7 @@ export async function getMyStops(judgeId: string) {
       rows: settings.rows,
       perRow: settings.perRow,
     },
+    round: await getRoundState(),
     stops: list,
     nextStopId: next?.id ?? null,
     finished: list.filter((s) => closed.includes(s.status)).length,

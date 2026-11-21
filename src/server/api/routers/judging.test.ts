@@ -28,6 +28,7 @@ import {
   cheatCheckSweeps,
   judges,
   judgingAssignments,
+  judgingRound,
   judgingSettings,
   judgingTables,
   type submissionStatusEnum,
@@ -115,6 +116,10 @@ async function resetAll() {
   await db.delete(teams).where(sql`true`);
   await db.delete(judgingTables).where(sql`true`);
   await db.delete(judgingSettings).where(sql`true`);
+  // Most tests score stops in any order, so rounds start switched off. The
+  // "rounds" tests switch them on.
+  await db.delete(judgingRound).where(sql`true`);
+  await db.insert(judgingRound).values({ id: 1, roundsEnabled: false });
 }
 
 /**
@@ -1732,5 +1737,133 @@ describe("team_mark stat maintenance", () => {
     expect(row?.marksCount).toBe(1);
     expect(row?.marksSum).toBe(9);
     expect(row?.marksSquaredSum).toBe(81);
+  });
+});
+
+/* ---------- rounds ---------- */
+
+describe("timed rounds", () => {
+  async function roundsRoom() {
+    const room = await setupRoom({ tableCount: 4, judgeCount: 3 });
+    await room.org.caller.judging.admin.setRoundConfig({ roundsEnabled: true });
+    return room;
+  }
+  const stopAt = async (judge: Judge, position: number) => {
+    const stop = (await stopsOf(judge.caller)).find(
+      (s) => s.position === position,
+    );
+    assertDefined(stop, `expected a stop at position ${position}`);
+    return stop;
+  };
+  const score = (judge: Judge, stop: Awaited<ReturnType<typeof stopAt>>) =>
+    judge.caller.judging.me.submitStop({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? "none",
+      score: 5,
+    });
+
+  test("nothing can be scored before round 1 starts", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    await expect(score(judge, await stopAt(judge, 1))).rejects.toThrow(
+      /start round 1/i,
+    );
+    await expect(
+      judge.caller.judging.me.startStop({
+        assignmentId: (await stopAt(judge, 1)).id,
+        teamId: (await stopAt(judge, 1)).team?.id ?? "none",
+      }),
+    ).rejects.toThrow(/start round 1/i);
+  });
+
+  test("only the current round's stop can be scored", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    const state = await room.org.caller.judging.admin.startRound();
+    expect(state).toMatchObject({ round: 1, status: "running" });
+
+    await expect(score(judge, await stopAt(judge, 2))).rejects.toThrow(
+      /round 2/i,
+    );
+    await expect(score(judge, await stopAt(judge, 1))).resolves.toBeDefined();
+  });
+
+  test("time running out closes the round, and the next needs an organizer", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    await room.org.caller.judging.admin.startRound();
+    // The timer hits 0.
+    await db
+      .update(judgingRound)
+      .set({ endsAt: new Date(Date.now() - 1000) })
+      .where(eq(judgingRound.id, 1));
+
+    const seen = await judge.caller.judging.me.getMyStops();
+    expect(seen.round).toMatchObject({ round: 1, status: "closed" });
+    await expect(score(judge, await stopAt(judge, 1))).rejects.toThrow(
+      /time's up/i,
+    );
+
+    const next = await room.org.caller.judging.admin.startRound();
+    expect(next).toMatchObject({ round: 2, status: "running" });
+    await expect(score(judge, await stopAt(judge, 2))).resolves.toBeDefined();
+  });
+
+  test("pausing stops the clock but scoring still works; resume continues", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    await room.org.caller.judging.admin.startRound();
+    const paused = await room.org.caller.judging.admin.pauseRound();
+    expect(paused.status).toBe("paused");
+    expect(paused.remainingMs).toBeGreaterThan(0);
+    expect(paused.endsAt).toBeNull();
+
+    await expect(score(judge, await stopAt(judge, 1))).resolves.toBeDefined();
+    const resumed = await room.org.caller.judging.admin.resumeRound();
+    expect(resumed.status).toBe("running");
+    expect(resumed.endsAt).not.toBeNull();
+  });
+
+  test("ending a round blocks scores; rounds can't overlap or pass the last", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    const admin = room.org.caller.judging.admin;
+    await admin.startRound();
+    await expect(admin.startRound()).rejects.toThrow(/still open/i);
+
+    await admin.endRound();
+    await expect(score(judge, await stopAt(judge, 1))).rejects.toThrow(
+      /time's up/i,
+    );
+
+    for (const n of [2, 3, 4]) {
+      expect((await admin.startRound()).round).toBe(n);
+      await admin.endRound();
+    }
+    await expect(admin.startRound()).rejects.toThrow(/last round/i);
+    expect(await admin.resetRounds()).toMatchObject({
+      round: 0,
+      status: "idle",
+    });
+  });
+
+  test("round length is validated", async () => {
+    const room = await roundsRoom();
+    const admin = room.org.caller.judging.admin;
+    await expect(admin.setRoundConfig({ roundSeconds: 5 })).rejects.toThrow();
+    const state = await admin.setRoundConfig({ roundSeconds: 120 });
+    expect(state.roundSeconds).toBe(120);
+  });
+
+  test("with rounds off, judges can go in any order", async () => {
+    const room = await setupRoom({ tableCount: 4, judgeCount: 3 });
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    await expect(score(judge, await stopAt(judge, 3))).resolves.toBeDefined();
   });
 });

@@ -1705,6 +1705,46 @@ export const judgingTablesRelations = relations(
 );
 
 /**
+ * Where the timed judging rounds are. Round N is every judge's Nth stop
+ * (`judging_assignment.position`). Judges can only start and score stops in the
+ * current round while its timer runs; when the timer hits 0 the round closes
+ * and an organizer starts the next one. See docs/judging-engine.md.
+ *   idle    - no round is open (before round 1, or after a reset)
+ *   running - the timer is counting down to `ends_at`
+ *   paused  - the timer is stopped with `remaining_ms` left; scoring still works
+ *   closed  - time ran out or an organizer ended it; no more scores
+ * A running round whose `ends_at` has passed is treated as closed when read,
+ * so nothing has to tick on the server.
+ */
+export const judgingRoundStatusEnum = pgEnum("judging_round_status", [
+  "idle",
+  "running",
+  "paused",
+  "closed",
+]);
+
+/**
+ * The one row (id = 1) of round state. `rounds_enabled = false` turns the
+ * rounds off so judges can go in any order (a safety valve for the day).
+ */
+export const judgingRound = pgTable(
+  "judging_round",
+  {
+    id: integer("id").primaryKey().default(1),
+    roundsEnabled: boolean("rounds_enabled").default(true).notNull(),
+    currentRound: integer("current_round").default(0).notNull(),
+    status: judgingRoundStatusEnum("status").default("idle").notNull(),
+    roundSeconds: integer("round_seconds").default(600).notNull(),
+    endsAt: timestamp("ends_at", { mode: "date", precision: 3 }),
+    remainingMs: integer("remaining_ms"),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [check("judging_round_singleton", sql`${t.id} = 1`)],
+);
+
+/**
  * The room layout and how many judges each table needs. One row (id = 1).
  * Tables per row = ceil(tableCount / rows); see docs/judging-engine.md.
  */
