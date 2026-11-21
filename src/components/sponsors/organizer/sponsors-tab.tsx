@@ -36,7 +36,10 @@ import {
   type MySponsor,
   type MySponsorData,
 } from "~/components/sponsors/organizer/my-sponsors";
-import { useSponsorWrites } from "~/components/sponsors/organizer/use-sponsor-writes";
+import {
+  useSheetSponsors,
+  useSponsorWrites,
+} from "~/components/sponsors/organizer/use-sponsor-writes";
 import { sponsorOrganizerCopy } from "~/content/sponsor-organizer";
 import {
   formatClock,
@@ -446,9 +449,7 @@ export function SponsorsTab({
   );
 
   const utils = api.useUtils();
-  const sponsorsQ = api.sponsorDashboard.getSponsors.useQuery(undefined, {
-    refetchInterval: 30000,
-  });
+  const sponsorsQ = useSheetSponsors();
 
   // Status and "At CC workshop" saves (shared with the Home).
   const { note, setNote, pending, changeStatus, changeCcWorkshop } =

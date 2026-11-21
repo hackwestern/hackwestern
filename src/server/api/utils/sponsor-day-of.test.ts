@@ -15,6 +15,7 @@ import {
   parseSponsorDayOfColumns,
   parseSponsorDayOfRows,
   sheetSponsorsFromDayOf,
+  sponsorDayOfCache,
   sponsorInfoFromDayOf,
   type SheetsClient,
 } from "~/server/api/utils/sponsor-sheets";
@@ -329,6 +330,8 @@ describe("sponsor status writes", () => {
     expect(sponsorStatusCell(dayOf, " globex ")).toEqual({
       ok: true,
       range: "'Sponsor Day-Of'!E3",
+      rowIndex: 2,
+      col: 4,
     });
     expect(sponsorStatusCell(dayOf, "Every on-site sponsor")).toEqual({
       ok: false,
@@ -357,6 +360,20 @@ describe("sponsor status writes", () => {
       writeSponsorStatus(sheets, "id", "Nobody", "Left"),
     ).resolves.toEqual({ ok: false, reason: "not-found" });
     expect(updates).toHaveLength(1);
+  });
+
+  test("the shared copy holds the new status straight after the write", async () => {
+    const { sheets } = fakeSheets({ "Sponsor Day-Of": ROWS });
+    await writeSponsorStatus(sheets, "id", "Globex", "Checked in");
+    const load = vi.fn(async () => dayOf);
+    const after = await sponsorDayOfCache.read("id", load);
+    // No extra read of the sheet, and the other rows are as read.
+    expect(load).not.toHaveBeenCalled();
+    const info = sponsorInfoFromDayOf(after!)!;
+    expect(info.get("globex")?.status).toBe("Checked in");
+    expect(info.get("acme")?.status).toBe("Checked in");
+    expect(info.get("initech")?.status).toBe("Not arrived");
+    sponsorDayOfCache.clear();
   });
 
   test("no Sponsor Day-Of tab is reported, not created", async () => {
@@ -437,6 +454,14 @@ describe("At CC workshop (coffee chat workshop attendance)", () => {
     expect(on.updates).toEqual([
       { range: "'Sponsor Day-Of'!K3", values: [[true]] },
     ]);
+    // The shared copy reads it back as the sheet will: ticked.
+    const after = await sponsorDayOfCache.read("id", () =>
+      Promise.reject(new Error("should not read")),
+    );
+    expect(sponsorInfoFromDayOf(after!)!.get("globex")?.atCcWorkshop).toBe(
+      true,
+    );
+    sponsorDayOfCache.clear();
     // No column yet: reported, nothing written.
     const old = fakeSheets({ "Sponsor Day-Of": ROWS });
     await expect(

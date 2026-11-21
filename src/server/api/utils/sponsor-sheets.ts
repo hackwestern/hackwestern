@@ -268,15 +268,98 @@ export function sponsorDayOfRows(
  * pages, which ran past Google's per-minute read limit (about 1 load in 3
  * failed, 2026-11-20). So one read is shared for DAY_OF_TTL_MS, and when
  * Google refuses, the last good copy is used instead of failing. Writes
- * read fresh (`fresh`) and clear this, so they see the current rows.
+ * read fresh (`fresh`), then put the written cell into this copy
+ * (`remember`), so this instance's next read already has it.
+ *
+ * Each write bumps `generation`: a read that started before the write
+ * neither refills the copy nor is joined by later requests. Before this, a
+ * poll in flight at the time of a write put the old rows back for a minute
+ * and the board's refetch got them (statuses "un-updating", 2026-11-20).
+ * Other server instances keep their own copy, up to a minute old; the
+ * organizer board covers that by keeping its own writes (write-pins.ts).
  */
 const DAY_OF_TTL_MS = 60_000;
-let dayOfCache: {
-  spreadsheetId: string;
-  at: number;
-  value: SponsorDayOfTab | null;
-} | null = null;
-let dayOfInFlight: Promise<SponsorDayOfTab | null> | null = null;
+
+export function createDayOfCache(ttlMs: number) {
+  let cached: {
+    spreadsheetId: string;
+    at: number;
+    value: SponsorDayOfTab | null;
+  } | null = null;
+  let inFlight: {
+    spreadsheetId: string;
+    promise: Promise<SponsorDayOfTab | null>;
+  } | null = null;
+  let generation = 0;
+  return {
+    read(
+      spreadsheetId: string,
+      load: () => Promise<SponsorDayOfTab | null>,
+    ): Promise<SponsorDayOfTab | null> {
+      const hit = cached;
+      if (hit?.spreadsheetId === spreadsheetId && Date.now() - hit.at < ttlMs) {
+        return Promise.resolve(hit.value);
+      }
+      if (inFlight?.spreadsheetId === spreadsheetId) return inFlight.promise;
+      const startedAt = generation;
+      const promise = load()
+        .then((value) => {
+          if (generation === startedAt) {
+            cached = { spreadsheetId, at: Date.now(), value };
+          }
+          return value;
+        })
+        .catch((error: unknown) => {
+          // Google refused (often the per-minute limit): keep the last good copy.
+          const last = cached ?? hit;
+          if (last?.spreadsheetId === spreadsheetId) {
+            console.warn(
+              "Sponsor Day-Of read failed; using the last good copy",
+              error,
+            );
+            return last.value;
+          }
+          throw error;
+        })
+        .finally(() => {
+          if (inFlight?.promise === promise) inFlight = null;
+        });
+      inFlight = { spreadsheetId, promise };
+      return promise;
+    },
+    /** A write we can't mirror: the next read goes to the sheet. */
+    clear() {
+      generation++;
+      cached = null;
+      inFlight = null;
+    },
+    /** A write landed: `value` (the rows with it) is the current copy. */
+    remember(spreadsheetId: string, value: SponsorDayOfTab) {
+      generation++;
+      cached = { spreadsheetId, at: Date.now(), value };
+      inFlight = null;
+    },
+  };
+}
+
+/** The rows with one cell replaced (0-based row and column), as a new tab. */
+export function withDayOfCell(
+  dayOf: SponsorDayOfTab,
+  rowIndex: number,
+  col: number,
+  value: string,
+): SponsorDayOfTab {
+  const rows = dayOf.rows.map((row, i) => {
+    if (i !== rowIndex) return row;
+    const next = [...row];
+    while (next.length <= col) next.push("");
+    next[col] = value;
+    return next;
+  });
+  return { ...dayOf, rows };
+}
+
+export const sponsorDayOfCache = createDayOfCache(DAY_OF_TTL_MS);
 
 /**
  * One sheet read shared by every request for `ttlMs`, keeping the last good
@@ -326,7 +409,25 @@ export async function sharedSheetRead<T>(
 
 /** After a write to Sponsor Day-Of: the next read goes to the sheet. */
 export function clearSponsorDayOfCache() {
-  dayOfCache = null;
+  sponsorDayOfCache.clear();
+}
+
+/**
+ * After writing one Sponsor Day-Of cell: this instance's shared copy becomes
+ * `dayOf` (the fresh read the write used) with that cell set to `value`, as
+ * the sheet now reads it. No extra Sheets read.
+ */
+export function rememberSponsorDayOfWrite(
+  spreadsheetId: string,
+  dayOf: SponsorDayOfTab,
+  rowIndex: number,
+  col: number,
+  value: string,
+) {
+  sponsorDayOfCache.remember(
+    spreadsheetId,
+    withDayOfCell(dayOf, rowIndex, col, value),
+  );
 }
 
 /** Read the Sponsor Day-Of tab (falls back to "Contract Breakdown"). */
@@ -339,33 +440,9 @@ export async function fetchSponsorDayOfTab(
   if (fresh || process.env.VITEST) {
     return readSponsorDayOfTab(sheets, spreadsheetId);
   }
-  const cached = dayOfCache;
-  if (
-    cached?.spreadsheetId === spreadsheetId &&
-    Date.now() - cached.at < DAY_OF_TTL_MS
-  ) {
-    return cached.value;
-  }
-  dayOfInFlight ??= readSponsorDayOfTab(sheets, spreadsheetId)
-    .then((value) => {
-      dayOfCache = { spreadsheetId, at: Date.now(), value };
-      return value;
-    })
-    .catch((error: unknown) => {
-      // Google refused (often the per-minute limit): keep the last good copy.
-      if (cached?.spreadsheetId === spreadsheetId) {
-        console.warn(
-          "Sponsor Day-Of read failed; using the last good copy",
-          error,
-        );
-        return cached.value;
-      }
-      throw error;
-    })
-    .finally(() => {
-      dayOfInFlight = null;
-    });
-  return dayOfInFlight;
+  return sponsorDayOfCache.read(spreadsheetId, () =>
+    readSponsorDayOfTab(sheets, spreadsheetId),
+  );
 }
 
 async function readSponsorDayOfTab(
