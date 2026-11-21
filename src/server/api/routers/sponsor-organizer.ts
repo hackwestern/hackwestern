@@ -29,6 +29,12 @@ import {
 } from "~/server/api/utils/sponsor-judging-board";
 import { round2OpenedAt } from "~/server/api/utils/sponsor-judging-settings";
 import type { SundayJudging } from "~/lib/sponsor-day-board";
+import { sponsorLeadSlackCopy } from "~/content/sponsor-lead-slack";
+import {
+  organizerActor,
+  reportSponsorChange,
+} from "~/server/slack/sponsor-lead-feed";
+import { previewSponsorLeadPings } from "~/server/slack/sponsor-lead-pings";
 import { db } from "~/server/db";
 import {
   applications,
@@ -400,7 +406,7 @@ export const sponsorOrganizerRouter = createTRPCRouter({
    */
   setPortalLinkGiven: protectedOrganizerProcedure
     .input(z.object({ sponsorId: z.string().uuid(), given: z.boolean() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const [row] = await db
         .update(sponsorJudgingSponsors)
         // A second "given" keeps the first time; undo clears it.
@@ -419,6 +425,21 @@ export const sponsorOrganizerRouter = createTRPCRouter({
           message: "Sponsor not found",
         });
       }
+      reportSponsorChange({
+        sponsorId: input.sponsorId,
+        group: "portalLink",
+        text: sponsorLeadSlackCopy.feed.portalLink(input.given),
+        latestOnly: true,
+        actor: organizerActor(ctx.session.user),
+      });
       return { sponsorId: input.sponsorId, linkGivenAt: row.portalLinkGivenAt };
     }),
+
+  /**
+   * Preview of the HW lead action-item pings (SPONSOR_LEAD_PINGS): every
+   * planned ping with its lead, time, text and state (scheduled in Slack,
+   * sent, still to schedule, past), and sponsors whose HW lead doesn't
+   * match HW Contacts. Reads only. Organizers only.
+   */
+  leadPings: protectedOrganizerProcedure.query(() => previewSponsorLeadPings()),
 });

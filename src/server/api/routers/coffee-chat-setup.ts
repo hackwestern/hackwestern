@@ -44,6 +44,12 @@ import {
 } from "~/server/api/utils/submit-lock";
 import { assertChatsOn } from "~/server/api/utils/coffee-chats-on";
 import { mirrorCoffeeChatSetupLater } from "~/server/api/utils/coffee-chat-setup-sheet-mirror";
+import { sponsorLeadSlackCopy } from "~/content/sponsor-lead-slack";
+import {
+  esc,
+  organizerActor,
+  reportSponsorChange,
+} from "~/server/slack/sponsor-lead-feed";
 import { db } from "~/server/db";
 import {
   applications,
@@ -451,6 +457,16 @@ export const coffeeChatSetupRouter = createTRPCRouter({
         return { id: rep!.id, isPrimary: rep!.isPrimary };
       });
       mirrorCoffeeChatSetupLater();
+      // The sponsor's HW lead hears (an organizer, or the sponsor on their link).
+      reportSponsorChange({
+        sponsorName: sponsor.name,
+        group: "repAdded",
+        text: sponsorLeadSlackCopy.feed.repAdded(esc(input.name)),
+        actor:
+          organizer && ctx.session?.user
+            ? organizerActor(ctx.session.user)
+            : { kind: "other" },
+      });
       return added;
     }),
 

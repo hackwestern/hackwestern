@@ -68,7 +68,17 @@ import {
   kickDueInviteRounds,
   lockBoard,
 } from "~/server/api/utils/coffee-chat-invites";
-import { notifyCoffeeChat } from "~/server/api/utils/coffee-chat-notify";
+import {
+  loadCoffeeChatNotice,
+  notifyCoffeeChat,
+} from "~/server/api/utils/coffee-chat-notify";
+import { sponsorLeadSlackCopy } from "~/content/sponsor-lead-slack";
+import {
+  esc,
+  organizerActor,
+  reportSponsorChange,
+  slotClock,
+} from "~/server/slack/sponsor-lead-feed";
 import { respondToCoffeeChat } from "~/server/api/utils/coffee-chat-respond";
 import { resolveScannedUserId } from "~/server/api/utils/hacker-id";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
@@ -912,6 +922,34 @@ function replacedInvite(placementId: string | null, status: string): boolean {
   return !!placementId && (status === "declined" || status === "expired");
 }
 
+/** After an organizer changed one of a sponsor's chats: tell the HW lead. */
+async function reportChatChange(
+  user: { email?: string | null; name?: string | null },
+  chatId: string,
+  text: (n: {
+    hackerFirstName: string;
+    slotTime: string;
+    room: string | null;
+  }) => string,
+  group: "cancelled" | "roomMoved",
+): Promise<void> {
+  try {
+    const notice = await loadCoffeeChatNotice(chatId);
+    if (!notice) return;
+    reportSponsorChange({
+      sponsorName: notice.sponsorName,
+      group,
+      text: text(notice),
+      actor: organizerActor(user),
+    });
+  } catch (error) {
+    console.error(
+      "[sponsor lead feed] couldn't read the chat:",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
 export const coffeeChatRequestsRouter = createTRPCRouter({
   /**
    * The sponsor's chat request: 1-on-1 with N reps, or one group of M
@@ -1218,7 +1256,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
    */
   cancel: protectedOrganizerProcedure
     .input(z.object({ chatId: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const now = new Date();
       const result = await db.transaction(async (tx) => {
         const chat = await lockActiveChat(tx, input.chatId, now);
@@ -1229,6 +1267,16 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         return { chatId: chat.id, status: "cancelled" as const };
       });
       await notifyCoffeeChat("cancelled", { id: result.chatId });
+      await reportChatChange(
+        ctx.session.user,
+        result.chatId,
+        (n) =>
+          sponsorLeadSlackCopy.feed.cancelled(
+            esc(n.hackerFirstName),
+            slotClock(n.slotTime),
+          ),
+        "cancelled",
+      );
       return result;
     }),
 
@@ -1246,7 +1294,7 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
         room: z.string().trim().min(1).max(64),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const now = new Date();
       const room = coffeeChatRoomOf(input.room);
       if (!room) {
@@ -1287,6 +1335,18 @@ export const coffeeChatRequestsRouter = createTRPCRouter({
       await Promise.all(
         result.chatIds.map((id) => notifyCoffeeChat("roomMoved", { id })),
       );
+      if (result.chatIds[0]) {
+        await reportChatChange(
+          ctx.session.user,
+          result.chatIds[0],
+          () =>
+            sponsorLeadSlackCopy.feed.roomMoved(
+              result.chatIds.length,
+              esc(result.room),
+            ),
+          "roomMoved",
+        );
+      }
       return result;
     }),
 
