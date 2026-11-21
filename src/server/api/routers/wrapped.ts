@@ -1,12 +1,12 @@
 /**
  * Organizer-facing data pulls for HackWestern Wrapped.
  *
- * Triggered by hand after the event: one pull covers both external sources,
- * and everything derived from them is computed on read.
+ * Triggered by hand after the event: one pull fetches each team's Github
+ * commits, and everything derived from them is computed on read.
  */
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { and, eq, isNotNull, ne, or } from "drizzle-orm";
+import { and, eq, isNotNull, ne } from "drizzle-orm";
 import { createTRPCRouter, protectedOrganizerProcedure } from "../trpc";
 import { requireHackWindow } from "../utils/hack-window";
 import { db } from "~/server/db";
@@ -18,7 +18,6 @@ import {
   parseGithubUrl,
 } from "~/utils/github";
 import { getGithubUsername } from "~/utils/urls";
-import { DevpostScrapeError, fetchDevpostTechStack } from "~/utils/devpost";
 
 const EVENT_TIME_ZONE = "America/Toronto";
 
@@ -45,38 +44,8 @@ async function withConcurrency<T>(
 }
 
 // ---------------------------------------------------------------------------
-// Team-level Devpost and Github data pulls
+// Team-level Github data pulls
 // ---------------------------------------------------------------------------
-
-/** Scrapes the team's DevPost page and stores the technologies on the team row. */
-export async function pullTeamTechStack(
-  teamId: string,
-  devpostUrl?: string | null,
-): Promise<string[]> {
-  let url = devpostUrl;
-
-  if (!url) {
-    const team = await db.query.teams.findFirst({
-      where: eq(teams.id, teamId),
-      columns: { devpostUrl: true },
-    });
-
-    if (!team) {
-      throw new DevpostScrapeError(`Team ${teamId} not found`);
-    }
-    url = team.devpostUrl;
-  }
-
-  if (!url) {
-    throw new DevpostScrapeError(`Team ${teamId} has no DevPost URL`);
-  }
-
-  const techStack = await fetchDevpostTechStack(url);
-
-  await db.update(teams).set({ techStack }).where(eq(teams.id, teamId));
-
-  return techStack;
-}
 
 async function pullTeamCommitLog(
   teamId: string,
@@ -115,8 +84,6 @@ async function pullTeamCommitLog(
 
 type TeamPullResult = {
   teamId: string;
-  techStack: string[] | null;
-  techStackError: string | null;
   commits: number | null;
   commitsError: string | null;
 };
@@ -125,18 +92,12 @@ async function pullTeamWrapped(
   teamId: string,
   opts: { force?: boolean } = {},
 ): Promise<TeamPullResult> {
-  const [tech, commits] = await Promise.allSettled([
-    pullTeamTechStack(teamId),
-    pullTeamCommitLog(teamId, opts),
-  ]);
-
-  return {
-    teamId,
-    techStack: tech.status === "fulfilled" ? tech.value : null,
-    techStackError: tech.status === "rejected" ? String(tech.reason) : null,
-    commits: commits.status === "fulfilled" ? commits.value : null,
-    commitsError: commits.status === "rejected" ? String(commits.reason) : null,
-  };
+  try {
+    const commits = await pullTeamCommitLog(teamId, opts);
+    return { teamId, commits, commitsError: null };
+  } catch (err) {
+    return { teamId, commits: null, commitsError: String(err) };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -273,25 +234,23 @@ function deriveHackerGithubStats(
 // ---------------------------------------------------------------------------
 
 export const wrappedRouter = createTRPCRouter({
-  /** Pulls one team's DevPost tags and Github commit log */
+  /** Pulls one team's Github commit log */
   pullTeam: protectedOrganizerProcedure
     .input(z.object({ teamId: z.string() }))
     .mutation(async ({ input }) => {
       const result = await pullTeamWrapped(input.teamId);
 
-      // Nothing landed at all — almost always a bad team id, which beats
-      // handing an organizer a row of nulls to interpret.
-      if (result.techStackError && result.commitsError) {
+      if (result.commitsError) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `${result.techStackError}; ${result.commitsError}`,
+          message: result.commitsError,
         });
       }
 
       return result;
     }),
 
-  /** Bulk pulls Devpost tags and Github commit log for all teams; failures come back per team rather than ending the run. */
+  /** Bulk pulls the Github commit log for all teams; failures come back per team rather than ending the run. */
   pullAll: protectedOrganizerProcedure
     .input(
       z
@@ -306,23 +265,18 @@ export const wrappedRouter = createTRPCRouter({
 
       const candidates = await db.query.teams.findMany({
         where: and(
-          or(isNotNull(teams.devpostUrl), isNotNull(teams.githubUrl)),
+          isNotNull(teams.githubUrl),
           submittedOnly ? ne(teams.submissionStatus, "draft") : undefined,
         ),
         columns: {
           id: true,
-          devpostUrl: true,
-          githubUrl: true,
-          techStack: true,
           commitLog: true,
         },
       });
 
       const skipped: string[] = [];
       const pending = candidates.filter((team) => {
-        const skipTechStack = team.techStack !== null || !team.devpostUrl;
-        const skipCommits = team.commitLog !== null || !team.githubUrl;
-        if (!force && skipTechStack && skipCommits) {
+        if (!force && team.commitLog !== null) {
           skipped.push(team.id);
           return false;
         }
@@ -337,7 +291,6 @@ export const wrappedRouter = createTRPCRouter({
       return {
         pulledCount: pulled.length,
         skippedCount: skipped.length,
-        techStackFailures: pulled.filter((p) => p.techStackError).length,
         commitFailures: pulled.filter((p) => p.commitsError).length,
         pulled,
         skipped,

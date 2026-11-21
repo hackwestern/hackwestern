@@ -1,5 +1,5 @@
 {
-  "id": "e9eb923a-b7a3-42ff-bb8b-7c3f380222fa",
+  "id": "ac757f42-cd52-4269-9a5d-3c5a1c9fa36f",
   "prevId": "1b3ad4c3-d65f-4d29-abae-8ac42464c51b",
   "version": "7",
   "dialect": "postgresql",
@@ -5695,12 +5695,6 @@
         },
         "member_devpost_usernames": {
           "name": "member_devpost_usernames",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "tech_stack": {
-          "name": "tech_stack",
           "type": "text[]",
           "primaryKey": false,
           "notNull": false
