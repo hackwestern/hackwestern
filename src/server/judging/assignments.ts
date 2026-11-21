@@ -149,7 +149,8 @@ function assertPresent(judge: { noShow: boolean }) {
  * Mark a judge as a no-show, or undo it. No-show judges are left out of
  * auto-assign and can't receive hand-offs or top-ups. Before judging starts,
  * marking a judge who already has stops clears the plan (re-run auto-assign).
- * After it starts, their unfinished stops must be handed off first.
+ * After it starts, their tables stay: the unscored ones are picked up by the
+ * catch-up round after the last round (or can be handed off).
  */
 export async function setJudgeNoShow(judgeId: string, noShow: boolean) {
   return db.transaction(async (tx) => {
@@ -168,23 +169,13 @@ export async function setJudgeNoShow(judgeId: string, noShow: boolean) {
             ne(judgingAssignments.status, "cancelled"),
           ),
         );
-      if (stops.length > 0) {
-        if (await isJudgingStarted(tx)) {
-          if (stops.some((s) => OPEN_STATUSES.includes(s.status))) {
-            throw new TRPCError({
-              code: "CONFLICT",
-              message:
-                "Judging has started and that judge still has stops. Hand them off first.",
-            });
-          }
-        } else {
-          planCleared = (
-            await tx
-              .delete(judgingAssignments)
-              .where(sql`true`)
-              .returning({ id: judgingAssignments.id })
-          ).length;
-        }
+      if (stops.length > 0 && !(await isJudgingStarted(tx))) {
+        planCleared = (
+          await tx
+            .delete(judgingAssignments)
+            .where(sql`true`)
+            .returning({ id: judgingAssignments.id })
+        ).length;
       }
     }
 

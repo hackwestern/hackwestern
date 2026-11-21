@@ -10,14 +10,20 @@
  * open.
  */
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, lt, lte, ne, sql } from "drizzle-orm";
 
 import { db } from "~/server/db";
-import { judgingAssignments, judgingRound, teams } from "~/server/db/schema";
+import {
+  judges,
+  judgingAssignments,
+  judgingRound,
+  teams,
+} from "~/server/db/schema";
 import {
   type Tx,
   isJudgingStarted,
   rehearsalRestartAllowed,
+  lockPlanExclusive,
   lockPlanShared,
 } from "~/server/judging/shared";
 
@@ -359,6 +365,135 @@ export async function setRoundConfig(input: {
   });
 }
 
+/**
+ * Tables still unscored from rounds that have ended ("missed"): positions up
+ * to the current round once it's closed, else before it. Only tables with a
+ * team; absent tables aren't open, so they don't count.
+ */
+async function missedStops(tx: Tx, state: RoundState) {
+  if (!state.enabled || state.round === 0) return [];
+  const ended =
+    state.status === "closed"
+      ? lte(judgingAssignments.position, state.round)
+      : lt(judgingAssignments.position, state.round);
+  return tx
+    .select({
+      id: judgingAssignments.id,
+      judgeId: judgingAssignments.judgeId,
+      tableId: judgingAssignments.judgingTableId,
+      position: judgingAssignments.position,
+    })
+    .from(judgingAssignments)
+    .innerJoin(
+      teams,
+      eq(teams.judgingTableId, judgingAssignments.judgingTableId),
+    )
+    .where(
+      and(
+        inArray(judgingAssignments.status, ["assigned", "in_progress"]),
+        ended,
+      ),
+    )
+    .orderBy(asc(judgingAssignments.position), asc(judgingAssignments.id));
+}
+
+/**
+ * After the last round has ended: move every missed table into catch-up
+ * rounds. The judge who had it keeps it if they're present; otherwise it goes
+ * to a present judge who hasn't seen that team, fewest catch-up tables first.
+ * One table per judge per round, so extra ones spill into the next catch-up
+ * round. The stop is moved (same table, new judge and round), never copied.
+ */
+export async function planCatchUp() {
+  return db.transaction(async (tx) => {
+    await lockPlanExclusive(tx);
+    const row = await readRow(tx, "update");
+    const total = await totalRounds(tx);
+    const state = resolveRound(row, total);
+    if (!state.enabled) throw precondition("Turn the timed rounds on first.");
+    if (state.status !== "closed" || state.round < total) {
+      throw precondition(
+        "The catch-up round comes after the last round has ended.",
+      );
+    }
+    const missed = await missedStops(tx, state);
+    if (missed.length === 0) throw precondition("No team missed a judge.");
+
+    const present = (
+      await tx
+        .select({ id: judges.id })
+        .from(judges)
+        .where(and(eq(judges.type, "organizer"), eq(judges.noShow, false)))
+        .orderBy(asc(judges.createdAt), asc(judges.id))
+    ).map((j) => j.id);
+    if (present.length === 0) throw precondition("No judges are present.");
+
+    // What every judge already holds, so no judge gets two tables in a round
+    // or the same table twice (the unique indexes would refuse it).
+    const live = await tx
+      .select({
+        judgeId: judgingAssignments.judgeId,
+        tableId: judgingAssignments.judgingTableId,
+        position: judgingAssignments.position,
+      })
+      .from(judgingAssignments)
+      .where(ne(judgingAssignments.status, "cancelled"));
+    const positions = new Map<string, Set<number>>();
+    const tables = new Map<string, Set<number>>();
+    const add = (map: Map<string, Set<number>>, id: string, value: number) =>
+      map.set(id, (map.get(id) ?? new Set()).add(value));
+    for (const s of live) {
+      add(positions, s.judgeId, s.position);
+      add(tables, s.judgeId, s.tableId);
+    }
+
+    const load = new Map<string, number>();
+    let moved = 0;
+    let skipped = 0;
+    for (const m of missed) {
+      positions.get(m.judgeId)?.delete(m.position);
+      tables.get(m.judgeId)?.delete(m.tableId);
+      const others = present
+        .filter((id) => id !== m.judgeId)
+        .sort((a, b) => (load.get(a) ?? 0) - (load.get(b) ?? 0));
+      const candidates = [
+        ...(present.includes(m.judgeId) ? [m.judgeId] : []),
+        ...others,
+      ].filter((id) => !tables.get(id)?.has(m.tableId));
+
+      // The candidate free soonest; ties go to the earlier one in the list.
+      let best: { judgeId: string; position: number } | null = null;
+      for (const judgeId of candidates) {
+        let position = state.round + 1;
+        while (positions.get(judgeId)?.has(position)) position++;
+        if (!best || position < best.position) best = { judgeId, position };
+      }
+      if (!best) {
+        // Every present judge has already seen this team: leave it missed.
+        add(positions, m.judgeId, m.position);
+        add(tables, m.judgeId, m.tableId);
+        skipped++;
+        continue;
+      }
+      await tx
+        .update(judgingAssignments)
+        .set({
+          judgeId: best.judgeId,
+          position: best.position,
+          status: "assigned",
+          startedAt: null,
+          completedAt: null,
+        })
+        .where(eq(judgingAssignments.id, m.id));
+      add(positions, best.judgeId, best.position);
+      add(tables, best.judgeId, m.tableId);
+      load.set(best.judgeId, (load.get(best.judgeId) ?? 0) + 1);
+      moved++;
+    }
+    return { moved, skipped, totalRounds: await totalRounds(tx) };
+  });
+}
+
 /** The round state plus how far the room is through the current round. */
 export async function getRoundOverview() {
   await settleRound();
@@ -385,6 +520,8 @@ export async function getRoundOverview() {
     judgingStarted: await isJudgingStarted(),
     /** This deploy may restart a rehearsal (dev site only). */
     canRestartRehearsal: rehearsalRestartAllowed(),
+    /** Tables still unscored from rounds that have ended. */
+    missed: (await missedStops(db, state)).length,
     stops: {
       total: stops.length,
       done: stops.filter(

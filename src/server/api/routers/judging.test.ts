@@ -1352,7 +1352,7 @@ describe("setJudgeNoShow", () => {
     expect(await db.query.judgingAssignments.findMany()).toHaveLength(0);
   });
 
-  test("after judging starts, a judge with open stops must hand them off first", async () => {
+  test("after judging starts, a no-show keeps their tables for the catch-up round", async () => {
     const { org, judges: js } = await setupRoom({
       tableCount: 3,
       judgeCount: 3,
@@ -1362,12 +1362,14 @@ describe("setJudgeNoShow", () => {
       assignmentId: stop.id,
       teamId: stop.team?.id ?? "none",
     });
+    const before = await stopsOf(js[0]!.caller);
     await expect(
       org.caller.judging.admin.setJudgeNoShow({
         judgeId: js[0]!.session.user.id,
         noShow: true,
       }),
-    ).rejects.toMatchObject({ code: "CONFLICT" });
+    ).resolves.toMatchObject({ noShow: true, planCleared: 0 });
+    expect(await stopsOf(js[0]!.caller)).toHaveLength(before.length);
   });
 
   test("a no-show judge can't take a hand-off or a top-up", async () => {
@@ -2296,6 +2298,41 @@ describe("timed rounds", () => {
     await score(judge, await stopAt(judge, 1));
     await expect(admin.clearAssignments()).rejects.toThrow(/started/i);
     expect((await admin.getRound()).judgingStarted).toBe(true);
+  });
+
+  test("after the last round, a missed table gets a catch-up round", async () => {
+    const room = await roundsRoom();
+    const admin = room.org.caller.judging.admin;
+    const [first] = room.judges;
+    assertDefined(first, "judge");
+    const total = (await admin.getRound()).totalRounds;
+    const missedTable = (await stopAt(first, 1)).table.number;
+
+    for (let n = 1; n <= total; n++) {
+      await admin.startRound();
+      for (const j of room.judges) {
+        const stop = (await stopsOf(j.caller)).find((s) => s.position === n);
+        // The first judge misses their round 1 table.
+        if (stop?.team && !(j === first && n === 1)) await score(j, stop);
+      }
+      await admin.endRound();
+      if (n < total) {
+        await expect(admin.planCatchUp()).rejects.toThrow(/last round/i);
+      }
+    }
+
+    expect((await admin.getRound()).missed).toBe(1);
+    expect(await admin.planCatchUp()).toMatchObject({
+      moved: 1,
+      skipped: 0,
+      totalRounds: total + 1,
+    });
+    expect((await admin.getRound()).missed).toBe(0);
+    // Same judge (still present), same table, now in the catch-up round.
+    const moved = await stopAt(first, total + 1);
+    expect(moved.table.number).toBe(missedTable);
+    expect((await admin.startRound()).round).toBe(total + 1);
+    await expect(score(first, moved)).resolves.toBeDefined();
   });
 
   test("restarting a rehearsal only works on the dev site, and wipes scores and stops", async () => {

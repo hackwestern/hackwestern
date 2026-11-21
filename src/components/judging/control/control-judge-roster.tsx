@@ -332,6 +332,16 @@ export function JudgeRoster({
                           )
                         )
                           return;
+                        // After it starts, their tables stay for the catch-up
+                        // round.
+                        if (
+                          !j.noShow &&
+                          progress?.started &&
+                          !window.confirm(
+                            `Mark ${name} as a no-show? Their unscored tables stay put and get another judge in the catch-up round after the last round.`,
+                          )
+                        )
+                          return;
                         setStatus(null);
                         noShow.mutate(
                           { judgeId: j.id, noShow: !j.noShow },

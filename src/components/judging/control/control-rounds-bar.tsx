@@ -75,9 +75,18 @@ export function ControlRoundsBar({ now }: { now: number }) {
   const restart = api.judging.admin.restartRehearsal.useMutation(
     run("restart the rehearsal"),
   );
-  const busy = [start, pause, resume, end, reset, clear, config, restart].some(
-    (m) => m.isPending,
-  );
+  const catchUp = api.judging.admin.planCatchUp.useMutation();
+  const busy = [
+    start,
+    pause,
+    resume,
+    end,
+    reset,
+    clear,
+    config,
+    restart,
+    catchUp,
+  ].some((m) => m.isPending);
 
   if (!r) {
     return (
@@ -223,6 +232,41 @@ export function ControlRoundsBar({ now }: { now: number }) {
               : `${r.totalRounds} rounds planned. Judges are waiting for round 1.`
             : "Judges can go to any table in any order."}
         </p>
+      )}
+
+      {r.enabled && !open && noMore && r.missed > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl bg-[#fff3d6] px-4 py-3">
+          <p className="m-0 text-[15px] font-semibold text-[#7a5200]">
+            {r.missed} {r.missed === 1 ? "team" : "teams"} missed a judge. They
+            get a catch-up round with whoever is present.
+          </p>
+          <button
+            type="button"
+            className={`${BTN_DARK} ml-auto px-6`}
+            disabled={busy}
+            onClick={() => {
+              if (
+                !window.confirm(
+                  `Give the ${r.missed} missed ${r.missed === 1 ? "team" : "teams"} a judge and start the catch-up round now?`,
+                )
+              )
+                return;
+              catchUp.mutate(undefined, {
+                onSuccess: () => {
+                  setStatus(null);
+                  start.mutate();
+                },
+                onError: (e) =>
+                  setStatus({
+                    tone: "error",
+                    text: `Couldn't plan the catch-up round. ${errorText(e)}`,
+                  }),
+              });
+            }}
+          >
+            {catchUp.isPending ? "Planning…" : "Start catch-up round"}
+          </button>
+        </div>
       )}
 
       <div className="flex flex-wrap items-center gap-3">

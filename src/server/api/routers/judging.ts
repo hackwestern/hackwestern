@@ -40,6 +40,7 @@ import {
   getRoundState,
   setBoardVisibility,
   pauseRound,
+  planCatchUp,
   resetRounds,
   resumeRound,
   setRoundConfig,
@@ -493,6 +494,14 @@ export const judgingRouter = createTRPCRouter({
       withErrorHandling(
         () => clearAssignments(),
         "Failed to clear the assignments",
+      ),
+    ),
+
+    /** After the last round: move every missed table into catch-up rounds. */
+    planCatchUp: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(
+        () => planCatchUp(),
+        "Failed to plan the catch-up round",
       ),
     ),
 
