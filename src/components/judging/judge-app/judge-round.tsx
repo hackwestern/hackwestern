@@ -1,3 +1,4 @@
+import { Hourglass } from "lucide-react";
 import { type RouterOutputs } from "~/utils/api";
 import { card } from "~/components/judging/shared/judge-ui";
 import {
@@ -31,36 +32,57 @@ export function roundIsOpen(view: RoundView, now: number): boolean {
   return state.status === "running" && roundLeftMs(view, now) > 0;
 }
 
-/** The round timer: big countdown, "Paused" when an organizer stops it. */
+/** Under this the timer turns to a warning colour. */
+const URGENT_MS = 60_000;
+
+/** The round timer: big countdown with a draining bar, "Paused" when stopped. */
 export function RoundClock({ view }: { view: RoundView }) {
   const now = useNow(500);
   const { state } = view;
   const left = roundLeftMs(view, now);
-  const label =
-    state.status === "paused"
-      ? "Paused"
-      : roundIsOpen(view, now)
-        ? "left"
-        : "Time's up";
+  const open = roundIsOpen(view, now);
+  const paused = state.status === "paused";
+  const over = !open && !paused;
+  const urgent = open && !paused && left <= URGENT_MS;
+  const total = Math.max(1, state.roundSeconds * 1000);
+  const pct = over ? 0 : Math.min(100, (left / total) * 100);
+  const tone =
+    over || urgent
+      ? "text-dashboard-text-warning"
+      : "text-dashboard-text-heavy";
+
   return (
     <section
       aria-label="Round timer"
-      className={`${card} flex items-center justify-between gap-3 px-4 py-3`}
+      className={`${card} flex flex-col gap-3 p-4`}
     >
-      <span className="text-base font-medium text-dashboard-text-heavy">
-        Round {state.round} of {state.totalRounds}
-      </span>
-      <span className="flex items-baseline gap-2">
-        <span
-          className="font-mono text-3xl font-bold tabular-nums text-dashboard-text-heavy"
-          role="timer"
-        >
-          {formatHold(left)}
+      <div className="flex items-center justify-between gap-3">
+        <span className="rounded-full bg-dashboard-bg-highlight px-3 py-1 text-sm font-semibold text-dashboard-text-active">
+          Round {state.round} of {state.totalRounds}
         </span>
         <span className="text-sm font-semibold text-dashboard-text-light">
-          {label}
+          {paused ? "Paused" : over ? "Time's up" : "Time left"}
         </span>
+      </div>
+      <span
+        role="timer"
+        className={`text-center font-mono text-6xl font-bold tabular-nums leading-none ${tone}`}
+      >
+        {formatHold(left)}
       </span>
+      <div
+        aria-hidden="true"
+        className="h-2 w-full overflow-hidden rounded-full bg-dashboard-bg-inset"
+      >
+        <div
+          className={`h-full rounded-full transition-[width] duration-500 ease-linear ${
+            over || urgent
+              ? "bg-dashboard-text-warning"
+              : "bg-dashboard-action-primary"
+          } ${paused ? "opacity-60" : ""}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
     </section>
   );
 }
@@ -84,8 +106,8 @@ export function RoundWait({
     title = "Waiting for round 1";
     body = "The organizers will start the first round. Stay close.";
   } else if (open) {
-    title = "No table for you this round";
-    body = `Round ${state.round} is on. Sit this one out and wait for the next.`;
+    title = "Sitting this one out";
+    body = `You have no table in round ${state.round}. Hang tight for the next.`;
   } else {
     title = `Round ${state.round} is over`;
     body = "Wait here. The organizers will start the next round.";
@@ -93,11 +115,19 @@ export function RoundWait({
 
   return (
     <>
-      <section className={`${card} flex flex-col gap-1.5 p-4`}>
+      <section
+        className={`${card} flex flex-col items-center gap-3 px-4 py-6 text-center`}
+      >
+        <span
+          aria-hidden="true"
+          className="flex size-14 items-center justify-center rounded-full bg-dashboard-bg-highlight text-dashboard-text-active"
+        >
+          <Hourglass className="size-7" />
+        </span>
         <h1 className="text-3xl font-bold leading-tight text-dashboard-text-heavy">
           {title}
         </h1>
-        <p className="text-base font-medium text-dashboard-text-light">
+        <p className="max-w-[28ch] text-base font-medium text-dashboard-text-light">
           {body}
         </p>
       </section>
@@ -105,13 +135,16 @@ export function RoundWait({
       {upcoming && (
         <section
           aria-label="Your next table"
-          className={`${card} flex flex-col gap-1 p-4`}
+          className={`${card} flex flex-col items-center gap-1 p-4 text-center`}
         >
-          <span className="text-base font-medium text-dashboard-text-light">
-            Your table in round {upcoming.round}
+          <span className="rounded-full bg-dashboard-bg-highlight px-3 py-1 text-sm font-semibold text-dashboard-text-active">
+            Up next · round {upcoming.round}
           </span>
-          <span className="text-6xl font-bold tabular-nums leading-none text-dashboard-text-heavy">
+          <span className="text-7xl font-bold tabular-nums leading-none text-dashboard-text-heavy">
             {upcoming.table}
+          </span>
+          <span className="text-base font-medium text-dashboard-text-light">
+            Table
           </span>
         </section>
       )}
