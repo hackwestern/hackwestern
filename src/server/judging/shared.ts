@@ -6,7 +6,6 @@ import {
   judgingAssignments,
   judgingSettings,
   judgingTables,
-  teams,
 } from "~/server/db/schema";
 import {
   DEFAULT_SETTINGS,
@@ -25,22 +24,6 @@ export const STARTED_STATUSES: StopStatus[] = [
   "done",
   "team_absent",
 ];
-/**
- * Teams reported absent. Absence is final: a team seated at a table with a
- * `team_absent` stop is out of judging, the ranking and the results page.
- */
-export async function absentTeamIds(tx: Tx = db): Promise<Set<string>> {
-  const rows = await tx
-    .selectDistinct({ teamId: teams.id })
-    .from(teams)
-    .innerJoin(
-      judgingAssignments,
-      eq(judgingAssignments.judgingTableId, teams.judgingTableId),
-    )
-    .where(eq(judgingAssignments.status, "team_absent"));
-  return new Set(rows.map((r) => r.teamId));
-}
-
 export const ELIGIBLE_SUBMISSIONS = ["submitted", "late"] as const;
 
 /** What a judge sees of a team: never the join code. */
@@ -99,6 +82,28 @@ export async function tablesHaveStarted(
     columns: { id: true },
   });
   return !!row;
+}
+
+/**
+ * Tables (of these) whose team was reported absent. Absence is final, so no
+ * endpoint may give such a table a live stop: no top-up, no hand-off, no
+ * reopened stop.
+ */
+export async function absentTableIds(
+  tableIds: number[],
+  tx: Tx = db,
+): Promise<Set<number>> {
+  if (tableIds.length === 0) return new Set();
+  const rows = await tx
+    .selectDistinct({ tableId: judgingAssignments.judgingTableId })
+    .from(judgingAssignments)
+    .where(
+      and(
+        inArray(judgingAssignments.judgingTableId, tableIds),
+        eq(judgingAssignments.status, "team_absent"),
+      ),
+    );
+  return new Set(rows.map((r) => r.tableId));
 }
 
 /*

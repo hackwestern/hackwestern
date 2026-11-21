@@ -23,6 +23,7 @@ import {
   moveTeamSchema,
   reportAbsentSchema,
   seatTeamsSchema,
+  setJudgeNoShowSchema,
   setTableActiveSchema,
   setupTablesSchema,
   startStopSchema,
@@ -37,6 +38,7 @@ import {
   editMark,
   handOffJudge,
   markAbsent,
+  setJudgeNoShow,
   startStop,
   submitStop,
 } from "~/server/judging/assignments";
@@ -94,7 +96,9 @@ async function getRanking() {
     num_marks: number;
   }>(sql`
     WITH absent_teams AS (
-      SELECT DISTINCT t.id
+      -- Absence is final: a team whose table has a team_absent stop is out,
+      -- and its marks don't shift its judges' averages either.
+      SELECT t.id
       FROM team t
       JOIN judging_assignment a ON a.judging_table_id = t.judging_table_id
       WHERE a.status = 'team_absent'
@@ -331,6 +335,16 @@ export const judgingRouter = createTRPCRouter({
         return withErrorHandling(
           () => setupTables(input),
           "Failed to set up tables",
+        );
+      }),
+
+    /** Mark a judge as a no-show, or undo it. */
+    setJudgeNoShow: protectedOrganizerProcedure
+      .input(setJudgeNoShowSchema)
+      .mutation(async ({ input }) => {
+        return withErrorHandling(
+          () => setJudgeNoShow(input.judgeId, input.noShow),
+          "Failed to update the judge",
         );
       }),
 

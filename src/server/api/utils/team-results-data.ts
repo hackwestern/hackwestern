@@ -1,5 +1,5 @@
 // src/server/api/utils/team-results-data.ts
-import { asc, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, ne, or, sql } from "drizzle-orm";
 
 import {
   type TeamResult,
@@ -8,7 +8,6 @@ import {
 import { ratingsFromColumns } from "~/lib/judging-criteria";
 import { db, extractRows } from "~/server/db";
 import { judges, teamMarks, teams, users } from "~/server/db/schema";
-import { absentTeamIds } from "~/server/judging/shared";
 
 /**
  * Read-only data for the organizer results page, loaded straight from the db in
@@ -39,9 +38,17 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
 
   const markedIds = [...new Set(marks.map((m) => m.teamId))];
   const teamRows = await db.query.teams.findMany({
-    where: or(
-      ne(teams.submissionStatus, "draft"),
-      markedIds.length > 0 ? inArray(teams.id, markedIds) : undefined,
+    where: and(
+      or(
+        ne(teams.submissionStatus, "draft"),
+        markedIds.length > 0 ? inArray(teams.id, markedIds) : undefined,
+      ),
+      // Absence is final: a team whose table has a team_absent stop is out.
+      sql`not exists (
+        select 1 from judging_assignment a
+        where a.judging_table_id = ${teams.judgingTableId}
+          and a.status = 'team_absent'
+      )`,
     ),
     columns: { id: true, name: true, githubUrl: true, devpostUrl: true },
     with: { judgingTable: { columns: { number: true } } },
@@ -58,35 +65,29 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
     ),
   );
   const num = (v: number | string | null) => (v === null ? null : Number(v));
-  // Teams reported absent are out of judging and off the results page.
-  const absent = await absentTeamIds();
   const scores = new Map(scoreRows.map((r) => [r.team_id, r]));
 
   return buildTeamResults(
-    teamRows
-      .filter((t) => !absent.has(t.id))
-      .map((t) => ({
-        id: t.id,
-        name: t.name,
-        table: t.judgingTable?.number ?? null,
-        github: safeHttpUrl(t.githubUrl),
-        devpost: safeHttpUrl(t.devpostUrl),
-        superLikes: Number(scores.get(t.id)?.super_likes ?? 0),
-        normalized: num(scores.get(t.id)?.normalized_score ?? null),
-        adventure: num(scores.get(t.id)?.adventure_score ?? null),
-      })),
-    marks
-      .filter((m) => !absent.has(m.teamId))
-      .map((m) => ({
-        teamId: m.teamId,
-        judgeId: m.judgeId,
-        judgeName: m.judgeName ?? m.judgeEmail,
-        judgeType: m.judgeType,
-        roundType: m.roundType,
-        score: m.score,
-        ratings: ratingsFromColumns(m),
-        notes: m.notes ?? "",
-      })),
+    teamRows.map((t) => ({
+      id: t.id,
+      name: t.name,
+      table: t.judgingTable?.number ?? null,
+      github: safeHttpUrl(t.githubUrl),
+      devpost: safeHttpUrl(t.devpostUrl),
+      superLikes: Number(scores.get(t.id)?.super_likes ?? 0),
+      normalized: num(scores.get(t.id)?.normalized_score ?? null),
+      adventure: num(scores.get(t.id)?.adventure_score ?? null),
+    })),
+    marks.map((m) => ({
+      teamId: m.teamId,
+      judgeId: m.judgeId,
+      judgeName: m.judgeName ?? m.judgeEmail,
+      judgeType: m.judgeType,
+      roundType: m.roundType,
+      score: m.score,
+      ratings: ratingsFromColumns(m),
+      notes: m.notes ?? "",
+    })),
   );
 }
 
