@@ -41,6 +41,10 @@ From the teams that presented, each sponsor ranks their top 5 and sends it to us
 
 A sponsor with no presentation slot can't rank in round 2 (Jazz). Nobody presented to them, so the page says round 2 is locked and to ask us to schedule again, and the server refuses their top 5.
 
+If fewer than 5 teams presented to a sponsor, they rank all of them: the page shows one place per presenting team and the server takes exactly that many (min(5, teams that presented)).
+
+A sponsor can submit their top 5 only once. To fix a mis-rank, an organizer opens the sponsor's row on the Judging board and enters the top 5 by Devpost link or team ID (the same form as digital sponsors, `submitDigital`). It replaces the sponsor's submission and takes only teams that presented to them.
+
 ## Cheat check
 
 The web team runs the cheat check on every team in any sponsor's top 5 before winners are announced.

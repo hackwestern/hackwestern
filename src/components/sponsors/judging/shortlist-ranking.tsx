@@ -57,7 +57,6 @@ export function ShortlistRanking({
   onBrowse: () => void;
   presented?: ReadonlyMap<string, string>;
 }) {
-  const top = data.finalTop;
   const shortlist = useMemo(
     () =>
       data.teams
@@ -67,6 +66,8 @@ export function ShortlistRanking({
         .map((t) => ({ ...t, score: reviews.get(t.id)?.score ?? null })),
     [data.teams, reviews, presented],
   );
+  // Fewer than five teams presented: rank all of them.
+  const top = Math.min(data.finalTop, shortlist.length);
   const byId = useMemo(
     () => new Map(shortlist.map((t) => [t.id, t])),
     [shortlist],
@@ -134,11 +135,15 @@ export function ShortlistRanking({
     const timer = window.setTimeout(() => {
       saveDraft.mutate({
         sponsor,
-        teamIds: topIds,
+        // The draft always has five places.
+        teamIds: Array.from(
+          { length: data.finalTop },
+          (_, i) => topIds[i] ?? null,
+        ),
       });
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [draftKey, sponsor, saveDraft.mutate, topIds, canEdit]);
+  }, [draftKey, sponsor, saveDraft.mutate, topIds, canEdit, data.finalTop]);
 
   const picks = topIds.filter((id): id is string => id !== null);
   const canSubmit = picks.length === top && data.open;
@@ -282,7 +287,7 @@ export function ShortlistRanking({
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-2">
           <h3 className="m-0 text-base font-semibold text-dashboard-text-heavy">
-            {copy.shortlist.slotsHeading}
+            {copy.shortlist.slotsHeading(top)}
           </h3>
           <span
             aria-live="polite"
