@@ -180,9 +180,8 @@ export const sponsorJudgingCopy = {
     progress: (scored: number, total: number) =>
       `${scored} of ${total} scored by you`,
     previous: "Previous project",
-    next: "Next project",
-    /** Saving a score moves on by itself (Jazz, 2026-11-20). */
-    autoNext: "Score a project and the next unscored one opens.",
+    next: "Next team",
+    nextUnscored: "Next unscored",
     done: (total: number) =>
       `You've scored all ${plural(total, "project", "projects")} here.`,
   },
