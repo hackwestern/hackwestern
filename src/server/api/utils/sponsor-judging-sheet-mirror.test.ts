@@ -103,7 +103,7 @@ const fixture: JudgingSheetInput = {
   ],
   rooms: new Map([
     ["s-scotia", "Rm 2110"],
-    ["s-qnx", "Rm 2235"],
+    ["s-qnx", "Rm 2110"],
     // In person since 2026-11-20: its room comes from the sheets.
     ["s-tiny", "Rm 2230"],
   ]),
@@ -127,7 +127,7 @@ const fixture: JudgingSheetInput = {
     // Couldn't fit: no time, so no room either.
     { sponsorId: "s-scotia", teamId: "t3", room: "Rm 2110", startMinute: null },
     // Another sponsor's slot (QNX sent nothing yet but has a slot).
-    { sponsorId: "s-qnx", teamId: "t1", room: "Rm 2235", startMinute: 620 },
+    { sponsorId: "s-qnx", teamId: "t1", room: "Rm 2110", startMinute: 620 },
   ],
   teamNames: new Map([
     ["t1", "Alpha"],
@@ -204,7 +204,7 @@ describe("judgingSheetRows", () => {
         [
           "QNX",
           "In person",
-          "Rm 2235",
+          "Rm 2110",
           "Not started",
           "",
           "",
@@ -302,7 +302,7 @@ describe("judgingSheetRows", () => {
           "Alpha",
           "Ada Lovelace, Alan Turing",
           "10:20 AM",
-          "Rm 2235",
+          "Rm 2110",
           "Slack, Email",
         ],
       ].map(pad),
