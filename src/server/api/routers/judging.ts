@@ -12,6 +12,7 @@ import {
 import { db, extractRows } from "~/server/db";
 import { judgingAssignments, judges, users } from "~/server/db/schema";
 import { maybeTriggerSweepOnJudgingComplete } from "~/server/api/utils/cheat-check-sweep";
+import { finalizeResultsSheet } from "~/server/api/utils/results-sheet";
 import {
   type AddJudgeInput,
   addJudgeByEmailSchema,
@@ -657,5 +658,17 @@ export const judgingRouter = createTRPCRouter({
           "Failed to delete team mark",
         );
       }),
+
+    /**
+     * Once judging is over: write the results spreadsheet in one go
+     * (Results, Marks), top 20 teams by judge average only. Safe to re-run;
+     * typed completeness scores are kept.
+     */
+    finalizeResultsSheet: protectedOrganizerProcedure.mutation(async () => {
+      return withErrorHandling(
+        () => finalizeResultsSheet(),
+        "Failed to write the results sheet",
+      );
+    }),
   }),
 });

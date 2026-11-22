@@ -6,6 +6,7 @@ import { ControlRoundGrid } from "~/components/judging/control/control-round-gri
 import { ControlRoundsBar } from "~/components/judging/control/control-rounds-bar";
 import { ControlProgress } from "~/components/judging/control/control-progress";
 import { ControlBoardToggle } from "~/components/judging/control/control-board-toggle";
+import { ControlResultsSheet } from "~/components/judging/control/control-results-sheet";
 import { ControlRounds } from "~/components/judging/control/control-rounds";
 import { ControlTablesStatus } from "~/components/judging/control/control-tables-status";
 import {
@@ -94,6 +95,7 @@ export default function JudgingControlRoom() {
           progress={progressQ.data}
           timed={roundQ.data}
         />
+        <ControlResultsSheet />
       </InternalPage>
     </>
   );

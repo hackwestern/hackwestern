@@ -21,6 +21,19 @@ export interface TeamInfo {
   normalizedQ?: number | null;
   /** Adventure score (0-10), null until normalized. */
   adventure?: number | null;
+  /** Sum of the five per-criterion averages / 5 (0-10), every round. */
+  rawTotal?: number | null;
+  /**
+   * The adventurous rating (0-10): normalized (judging_normalized_team,
+   * "adventurous" series) once normalization has run, the raw average of
+   * adventurous_rating (every round) before. Null without one.
+   */
+  adventurous?: number | null;
+  /**
+   * The other four ratings as one 0-10 score: normalized ("other" series)
+   * once normalization has run, the raw mean of their averages before.
+   */
+  otherFour?: number | null;
 }
 
 /** One judge's mark on one team, as read from team_mark. */
@@ -35,6 +48,8 @@ export interface MarkRow {
   /** The mark's rating columns as { [criterionId]: 0-10 }; empty for a slider-only mark. */
   ratings: Record<string, number>;
   notes: string;
+  /** team_mark.super_like. */
+  superLike: boolean;
 }
 
 export interface ResultMark {
@@ -44,11 +59,15 @@ export interface ResultMark {
   score: number;
   ratings: Record<string, number>;
   notes: string;
+  /** The judge gave this team a super like (team_mark.super_like). */
+  superLike: boolean;
 }
 
 export interface RoundSummary {
   /** How many judges marked the team in this round. */
   count: number;
+  /** How many of those judges super liked the team. */
+  superLikes: number;
   /** Average overall score, or null with no marks. */
   average: number | null;
   /** Average per criterion, over the marks that rated it. */
@@ -81,6 +100,7 @@ function summarize(marks: ResultMark[]): RoundSummary {
 
   return {
     count: marks.length,
+    superLikes: marks.filter((m) => m.superLike).length,
     average: marks.length > 0 ? mean(marks.map((m) => m.score)) : null,
     criteria,
     marks,
@@ -109,6 +129,7 @@ export function buildTeamResults(
     score: r.score,
     ratings: r.ratings,
     notes: r.notes,
+    superLike: r.superLike,
   });
 
   return [...teams]
