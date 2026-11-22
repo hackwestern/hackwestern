@@ -242,7 +242,7 @@ export async function rebuildPresentationSchedule({
         startMinute: null,
         scheduledAt,
       })),
-      // Past SHORTLIST_MAX on an old send: kept, flagged, never placed.
+      // Past the presentation slot count on an old send: kept, flagged, never placed.
       ...result.overCap.flatMap((o) =>
         o.teamIds.map((teamId) => ({
           sponsorId: o.sponsorId,

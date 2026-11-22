@@ -19,6 +19,7 @@ import {
   HALVES_MIN,
   JUDGE_NAME_MAX,
   NOTE_MAX,
+  SPONSOR_FINAL_MIN,
   SPONSOR_FINAL_TOP,
   aggregateScores,
   cleanJudgeName,
@@ -605,7 +606,7 @@ export const sponsorScoringRouter = createTRPCRouter({
 
   /**
    * End round 1: one-time snapshot of the sponsor's current shortlist
-   * (eligible teams only, at most SHORTLIST_MAX: one per presentation slot)
+   * (eligible teams only, at most SHORTLIST_MAX)
    * as the one organizers schedule from. Once sent, it cannot be replaced.
    */
   sendShortlist: publicProcedure
@@ -750,8 +751,8 @@ export const sponsorScoringRouter = createTRPCRouter({
     }),
 
   /**
-   * Submit the ranked top SPONSOR_FINAL_TOP (1st to 5th): exactly that
-   * many, no repeats, all teams that presented to this sponsor and still
+   * Submit three to five ranked teams, with no repeats. All must have
+   * presented to this sponsor and still be
    * eligible. Only once organizers have opened round 2, and only for a
    * sponsor with a placed presentation slot (no slot: FORBIDDEN, Jazz
    * 2026-11-18). One-time submission: cannot be replaced while judging is open.
@@ -763,9 +764,10 @@ export const sponsorScoringRouter = createTRPCRouter({
     .input(
       z.object({
         sponsor: sponsorInput,
-        teamIds: z.array(teamIdInput).length(SPONSOR_FINAL_TOP, {
-          message: errors.ranking.wrongCount(SPONSOR_FINAL_TOP),
-        }),
+        teamIds: z
+          .array(teamIdInput)
+          .min(SPONSOR_FINAL_MIN, errors.ranking.wrongCount(SPONSOR_FINAL_TOP))
+          .max(SPONSOR_FINAL_TOP, errors.ranking.wrongCount(SPONSOR_FINAL_TOP)),
       }),
     )
     .mutation(async ({ input }) => {
@@ -863,9 +865,8 @@ export const sponsorScoringRouter = createTRPCRouter({
         name: z.string().trim().min(1).max(255),
         links: z
           .array(z.string().trim().min(1).max(2048))
-          .length(SPONSOR_FINAL_TOP, {
-            message: errors.ranking.wrongCount(SPONSOR_FINAL_TOP),
-          }),
+          .min(SPONSOR_FINAL_MIN, errors.ranking.wrongCount(SPONSOR_FINAL_TOP))
+          .max(SPONSOR_FINAL_TOP, errors.ranking.wrongCount(SPONSOR_FINAL_TOP)),
       }),
     )
     .mutation(async ({ input }) => {

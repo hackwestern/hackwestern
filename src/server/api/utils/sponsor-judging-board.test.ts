@@ -5,7 +5,7 @@ import {
   buildJudgingBoard,
   MIN_SPONSOR_PICKS,
 } from "~/lib/sponsor-judging-rooms";
-import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
+import { SPONSOR_FINAL_MIN } from "~/lib/sponsor-scoring";
 import {
   clearJudgingSheetCache,
   judgingSheet,
@@ -47,8 +47,8 @@ async function sponsor(name: string) {
 
 describe("Run-of-show Sponsor track judging panel picks", () => {
   test("the top 3 is the minimum", () => {
-    expect(MIN_SPONSOR_PICKS).toBe(SPONSOR_FINAL_TOP);
-    expect(MIN_SPONSOR_PICKS).toBe(5);
+    expect(MIN_SPONSOR_PICKS).toBe(SPONSOR_FINAL_MIN);
+    expect(MIN_SPONSOR_PICKS).toBe(3);
   });
 
   test("counts saved picks from the database, not the Judging tab", async () => {

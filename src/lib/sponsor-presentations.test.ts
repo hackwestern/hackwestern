@@ -59,8 +59,8 @@ describe("schedulePresentations", () => {
     expect(PRESENTATION_MIN_GAP_MINUTES).toBe(10);
   });
 
-  it("caps the round 1 shortlist at one team per slot", () => {
-    expect(SHORTLIST_MAX).toBe(PRESENTATION_SLOTS_PER_ROOM);
+  it("caps new round 1 shortlist submissions at 10", () => {
+    expect(SHORTLIST_MAX).toBe(10);
     expect(MAX_SPONSOR_PICKS).toBe(SHORTLIST_MAX);
   });
 
@@ -150,18 +150,20 @@ describe("schedulePresentations", () => {
     expectValid(requests, result);
   });
 
-  it("never schedules more than SHORTLIST_MAX per sponsor: the first ones in shortlist order", () => {
+  it("never schedules more than the room slot count per sponsor: the first ones in shortlist order", () => {
     // An old send of 21, in an order that isn't sorted.
     const teamIds = ids("t", 21).reverse();
     const requests = [{ sponsorId: "scotia", room: "Rm 2110", teamIds }];
     const result = schedulePresentations(requests);
-    expect(SHORTLIST_MAX).toBe(18);
-    expect(result.slots).toHaveLength(SHORTLIST_MAX);
+    expect(result.slots).toHaveLength(PRESENTATION_SLOTS_PER_ROOM);
     expect(new Set(result.slots.map((s) => s.teamId))).toEqual(
-      new Set(teamIds.slice(0, SHORTLIST_MAX)),
+      new Set(teamIds.slice(0, PRESENTATION_SLOTS_PER_ROOM)),
     );
     expect(result.overCap).toEqual([
-      { sponsorId: "scotia", teamIds: teamIds.slice(SHORTLIST_MAX) },
+      {
+        sponsorId: "scotia",
+        teamIds: teamIds.slice(PRESENTATION_SLOTS_PER_ROOM),
+      },
     ]);
     expect(result.unplaced).toEqual([]);
     expectValid(requests, result);
