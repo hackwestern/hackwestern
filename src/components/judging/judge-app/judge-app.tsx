@@ -150,7 +150,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   const [scoring, setScoring] = useState(false);
   // The stop the score form was opened for. It stays the one being scored even
   // if its round ends, so a score never lands on another team. When the next
-  // round starts the judge is moved on to that round's team.
+  // round starts, a judge with a team in it is moved on to that team.
   const [scoringStopId, setScoringStopId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -248,8 +248,9 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     : null;
   const gated = roundView?.state.enabled === true;
   const roundOpen = roundView ? roundIsOpen(roundView, Date.now()) : false;
-  // A stop whose round has passed without a score is missed. The judge moves on
-  // to the next round and can score it late from My teams.
+  // A stop whose round has passed without a score. If the judge started it,
+  // they move on to the next round and finish it late from My teams ("Not sent
+  // yet"). If they never started it, it goes to the catch-up round instead.
   const pendingStops = !gated
     ? openStops
     : openStops.filter(
@@ -257,11 +258,12 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
           s.position > (roundView?.state.round ?? 0) ||
           (s.position === roundView?.state.round && roundOpen),
       );
-  const missedStops = gated
-    ? openStops
-        .filter((s) => !pendingStops.includes(s))
-        .sort((a, b) => a.position - b.position)
+  const endedStops = gated
+    ? openStops.filter((s) => !pendingStops.includes(s))
     : [];
+  const missedStops = endedStops
+    .filter((s) => s.startedAt !== null)
+    .sort((a, b) => a.position - b.position);
   // New tables to judge (a hand-off, a top-up, or a step left on this phone
   // from a test run) send the judge back to the first pass.
   useEffect(() => {
@@ -302,6 +304,7 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       round: gated ? s.position : null,
       absent: s.status === "team_absent",
       late: missedStops.includes(s),
+      missed: endedStops.includes(s) && s.startedAt === null,
       done: s.status === "done",
       current: s.id === currentStopId,
     }));
@@ -410,12 +413,13 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   // their scores and start re-scoring from there.
   const wasQueueDone = useRef(false);
   useEffect(() => {
-    if (queueDone && !wasQueueDone.current) {
+    // Not while a late form is open: sending it lands on My teams anyway.
+    if (queueDone && !wasQueueDone.current && !scoring) {
       setTab("teams");
       setEditingId(null);
     }
     wasQueueDone.current = queueDone;
-  }, [queueDone]);
+  }, [queueDone, scoring]);
   let phase: NextPhase;
   if (!hydrated || stopsQuery.isLoading || (findingNext && !held)) {
     phase = "loading";
@@ -728,16 +732,17 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     if (justClosed) autoSubmit.current();
   }, [roundOpen]);
 
-  // A new round moves the judge on to that round's team, even from a form left
-  // open for an earlier one. That team stays under "Not sent yet" on My teams,
-  // with its draft kept on this phone.
+  // A new round (catch-up rounds too) moves a judge with a team in it to Next,
+  // from any tab, closing a form left open for another team. An unfinished
+  // team stays under "Not sent yet" on My teams, with its draft kept.
   const moveToRound = useRef<() => void>(() => undefined);
   moveToRound.current = () => {
-    if (!scoring || scoringStopId === null) return;
     const roundTeam = activeStops[0];
-    if (!roundTeam || roundTeam.id === scoringStopId) return;
+    if (!roundTeam) return;
+    if (scoring && scoringStopId === roundTeam.id) return;
     setScoring(false);
     setScoringStopId(null);
+    setEditingId(null);
     setTab("next");
   };
   const openRound = roundOpen ? (roundView?.state.round ?? null) : null;

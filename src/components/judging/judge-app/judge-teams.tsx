@@ -41,6 +41,8 @@ export interface UpcomingTeam {
   absent: boolean;
   /** Its round ended before it was scored: it can still be scored late. */
   late: boolean;
+  /** Its round ended and the judge never started it: it goes to catch-up. */
+  missed: boolean;
   /** Already scored. */
   done: boolean;
   /** The team to judge right now. */
@@ -134,7 +136,7 @@ export function JudgeTeams({
               className={`flex items-start justify-between gap-3 px-4 py-3 ${
                 i > 0 ? "border-t border-dashboard-border-subtle" : ""
               } ${u.current ? "bg-dashboard-bg-highlight" : ""} ${
-                u.done || u.absent ? "opacity-60" : ""
+                u.done || u.absent || u.missed ? "opacity-60" : ""
               }`}
             >
               <span className="flex min-w-0 flex-col gap-0.5">
@@ -167,7 +169,9 @@ export function JudgeTeams({
                       ? "Absent"
                       : u.done
                         ? "Scored"
-                        : `Round ${u.round}`}
+                        : u.missed
+                          ? "Missed"
+                          : `Round ${u.round}`}
                   </span>
                 )
               )}

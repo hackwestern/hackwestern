@@ -116,8 +116,12 @@ finish that team late.
   passed is treated as closed when read, so nothing has to tick.
 - **Late scoring.** An unscored stop from a round that has ended is "missed".
   The judge moves on: the Next screen shows the current round's table (or "Up
-  next" between rounds), and My teams lists the missed team with a **Score
-  late** button, during the first pass and while re-scoring. A late score made
+  next" between rounds). If they started it, My teams lists it under "Not sent
+  yet" with a **Score late** button, during the first pass and while
+  re-scoring. If they never started it, My teams just marks it "Missed" (it
+  goes to the catch-up round), which is also what a judge marked no-show sees.
+  A new round, catch-up rounds included, moves a judge with a team in it to
+  the Next tab from any tab. A late score made
   while re-scoring counts as re-scored. The score form stays on the team it was
   opened for after its round ends, so a score never lands on another team.
   When the next round starts, the judge is moved to that round's team and the
