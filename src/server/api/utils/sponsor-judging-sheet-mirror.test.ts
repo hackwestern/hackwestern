@@ -24,6 +24,7 @@ import {
   users,
 } from "~/server/db/schema";
 import { slotsKey } from "~/lib/sponsor-presentations";
+import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
 
 // Keep a digital sponsor fixture independent of the event configuration.
 vi.mock(import("~/content/sponsor-prize-tracks"), async (importOriginal) => ({
@@ -117,7 +118,7 @@ const fixture: JudgingSheetInput = {
   finals: [
     {
       sponsorId: "s-scotia",
-      teamIds: ["t1", "t3", "t5", "t2", "t4"],
+      teamIds: ["t1", "t2", "t5"].slice(0, SPONSOR_FINAL_TOP),
       submittedAt: new Date("2026-11-22T12:05:00-05:00"),
     },
   ],
@@ -158,9 +159,15 @@ const fixture: JudgingSheetInput = {
 };
 
 describe("judgingSheetRows", () => {
-  test("one wide row per sponsor with 1st-5th place, then presentations", () => {
+  test("one wide row per sponsor with a column per place, then presentations", () => {
     const rows = judgingSheetRows(fixture);
-    const pad = (row: string[]) => [...row, ...blank(14 - row.length)];
+    // 8 fixed columns, one per place, then Notes.
+    const width = 9 + SPONSOR_FINAL_TOP;
+    const pad = (row: string[]) => [...row, ...blank(width - row.length)];
+    const top = SPONSOR_FINAL_TOP;
+    const placeLabels = ["1st", "2nd", "3rd", "4th", "5th"]
+      .slice(0, top)
+      .map((p) => `${p} place`);
     expect(rows).toEqual(
       [
         [
@@ -176,12 +183,8 @@ describe("judgingSheetRows", () => {
           "Shortlist sent",
           "Shortlist (team IDs)",
           "Round 2 status",
-          "Top 5 sent",
-          "1st place",
-          "2nd place",
-          "3rd place",
-          "4th place",
-          "5th place",
+          `Top ${top} sent`,
+          ...placeLabels,
           "Notes",
         ],
         [
@@ -191,14 +194,14 @@ describe("judgingSheetRows", () => {
           "Shortlist sent",
           ts("2026-11-22T09:50:00-05:00"),
           "t2, t1, t3",
-          "Top 5 sent",
+          `Top ${top} sent`,
           ts("2026-11-22T12:05:00-05:00"),
           // Team ID + Devpost link; no link = ID only; never invented.
-          "t1 · devpost.com/software/alpha",
-          "t3",
-          "t5",
-          "t2 · devpost.com/software/bravo",
-          "t4",
+          ...[
+            "t1 · devpost.com/software/alpha",
+            "t2 · devpost.com/software/bravo",
+            "t5",
+          ].slice(0, top),
           "",
         ],
         [
@@ -210,11 +213,7 @@ describe("judgingSheetRows", () => {
           "",
           "Ranking",
           "",
-          "",
-          "",
-          "",
-          "",
-          "",
+          ...placeLabels.map(() => ""),
           "",
         ],
         [
@@ -226,11 +225,7 @@ describe("judgingSheetRows", () => {
           "",
           "Locked: no presentations",
           "",
-          "",
-          "",
-          "",
-          "",
-          "",
+          ...placeLabels.map(() => ""),
           "",
         ],
         [
@@ -242,17 +237,13 @@ describe("judgingSheetRows", () => {
           "",
           "Waiting for the spon team",
           "",
-          "",
-          "",
-          "",
-          "",
-          "",
-          "Digital sponsor: top 5 entered by the spon team from Devpost links.",
+          ...placeLabels.map(() => ""),
+          `Digital sponsor: top ${top} entered by the spon team from Devpost links.`,
         ],
         [],
-        // Top 5 by sponsor: one row per place, full links in their own
+        // Top N by sponsor: one row per place, full links in their own
         // columns; a missing or blank link stays empty.
-        ["Top 5 by sponsor"],
+        [`Top ${top} by sponsor`],
         ["Sponsor", "Place", "Team ID", "Team", "Devpost", "GitHub"],
         [
           "Scotiabank",
@@ -262,17 +253,15 @@ describe("judgingSheetRows", () => {
           "https://devpost.com/software/alpha",
           "https://github.com/hw/alpha/",
         ],
-        ["Scotiabank", "2nd place", "t3", "Charlie", "", ""],
-        ["Scotiabank", "3rd place", "t5", "t5", "", ""],
         [
           "Scotiabank",
-          "4th place",
+          "2nd place",
           "t2",
           "Bravo",
           "https://devpost.com/software/bravo/",
           "",
         ],
-        ["Scotiabank", "5th place", "t4", "Delta", "", ""],
+        ["Scotiabank", "3rd place", "t5", "t5", "", ""],
         [],
         ["Presentations"],
         ["Sponsor", "Team ID", "Team", "Members", "Time", "Room", "Notified"],
@@ -325,9 +314,9 @@ describe("judgingSheetRows", () => {
       ["TinyFish", "Not started", "Not open"],
       ["PCBWay", "No round 1 (digital)", "Waiting for the spon team"],
     ]);
-    // No top 5 yet: one line says so.
+    // No top N yet: one line says so.
     expect(rows.find((r) => r[0]?.startsWith("No sponsor"))?.[0]).toBe(
-      "No sponsor has sent their top 5 yet.",
+      `No sponsor has sent their top ${SPONSOR_FINAL_TOP} yet.`,
     );
     // Ends on the presentations header: no rows under it.
     expect(rows.at(-1)!.slice(0, 2)).toEqual(["Sponsor", "Team ID"]);
@@ -572,7 +561,7 @@ describe("loadJudgingSheetInput", () => {
       "10:00 AM",
       "Rm 2110",
       "Slack",
-      ...blank(7),
+      ...blank(2 + SPONSOR_FINAL_TOP),
     ]);
     const row = rows.find((r) => r[0] === scotia!.name)!;
     expect(row.slice(8, 10)).toEqual([teamIds[1], teamIds[0]]);

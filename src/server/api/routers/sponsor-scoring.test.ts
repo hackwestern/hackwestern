@@ -180,7 +180,7 @@ describe("sponsorScoring.get", () => {
     expect(ids).toContain(inTrack);
     expect(ids).not.toContain(otherTrack);
     expect(ids).not.toContain(draft);
-    expect(res.finalTop).toBe(5);
+    expect(res.finalTop).toBe(TOP);
     expect(res.final).toBeNull();
   });
 
@@ -377,7 +377,8 @@ describe("sponsorScoring.submit", () => {
     expect(after.final).toMatchObject({ teamIds: ranked, sheetSynced: true });
   });
 
-  test.each([3, 4])(
+  // The only valid count is the sponsor's top N (minimum picks = TOP).
+  test.each([TOP])(
     "saves an ordered final ranking of %i teams",
     async (count) => {
       const s = await sponsor();
@@ -769,8 +770,7 @@ describe("sponsorScoring round 2", () => {
   }
   const noSlot = {
     code: "FORBIDDEN",
-    message:
-      "Round 2 is locked: no teams presented to you, so you can't rank a top 5.",
+    message: `Round 2 is locked: no teams presented to you, so you can't rank a top ${TOP}.`,
   };
 
   test("a sponsor with no slot (sent late, none fit) can't rank in round 2", async () => {
@@ -981,8 +981,7 @@ describe("sponsorScoring prize track gate", () => {
     });
     const digital = {
       code: "FORBIDDEN",
-      message:
-        "Digital sponsors don't judge in the portal. Send your top 5 to your Hack Western contact.",
+      message: `Digital sponsors don't judge in the portal. Send your top ${TOP} to your Hack Western contact.`,
     };
     await expect(
       anon.sponsorJudging.listAllTeams({ sponsor: row!.id }),

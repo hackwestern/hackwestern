@@ -7,7 +7,13 @@ const afterRsvp = RSVP_DEADLINE.getTime() + 1;
 describe("liveAccessRedirect", () => {
   it("sends signed-out visitors to log in and come back", () => {
     expect(liveAccessRedirect(null, afterRsvp)).toBe(
-      "/login?callbackUrl=/live",
+      "/login?callbackUrl=%2Flive",
+    );
+  });
+
+  it("brings signed-out visitors back to the page they opened", () => {
+    expect(liveAccessRedirect(null, afterRsvp, "/rounds")).toBe(
+      "/login?callbackUrl=%2Frounds",
     );
   });
 
