@@ -28,6 +28,8 @@ export async function liveServerSideProps(context: GetServerSidePropsContext) {
 
   const destination = liveAccessRedirect(
     session ? { type: user?.type ?? null, status: application?.status } : null,
+    Date.now(),
+    context.resolvedUrl,
   );
   if (destination) return { redirect: { destination, permanent: false } };
 
