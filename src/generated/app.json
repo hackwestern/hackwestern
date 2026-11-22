@@ -25463,6 +25463,9 @@
               }
             ]
           },
+          "round2Open": {
+            "type": "boolean"
+          },
           "slots": {
             "items": {
               "properties": {
@@ -25661,6 +25664,7 @@
           }
         },
         "required": [
+          "round2Open",
           "finalTop",
           "sponsors",
           "slots",
