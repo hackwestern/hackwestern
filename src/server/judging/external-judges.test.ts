@@ -15,7 +15,9 @@ async function account(opts: {
   type?: "hacker" | "organizer";
 }) {
   const id = faker.string.uuid();
-  const email = `judge-${faker.string.alphanumeric(10)}@example.com`;
+  // Stored emails are canonical (lowercase), as auth writes them.
+  const email =
+    `judge-${faker.string.alphanumeric(10)}@example.com`.toLowerCase();
   await db.insert(users).values({
     id,
     name: faker.person.fullName(),
@@ -50,7 +52,8 @@ describe("addListedJudges", () => {
     const google = await account({ verified: false, oauth: true });
     const unproven = await account({ verified: false });
     const organizer = await account({ verified: true, type: "organizer" });
-    const missing = `nobody-${faker.string.alphanumeric(8)}@example.com`;
+    const missing =
+      `nobody-${faker.string.alphanumeric(8)}@example.com`.toLowerCase();
     const emails = [verified, google, unproven, organizer]
       .map((a) => a.email.toUpperCase())
       .concat(missing);
