@@ -42,7 +42,7 @@ export function ControlRoundsBar({ now }: { now: number }) {
 
   const r = roundQ.data;
   useEffect(() => {
-    if (r) setMinutes(String(Math.round(r.roundSeconds / 60)));
+    if (r) setMinutes(String(r.roundSeconds / 60));
   }, [r?.roundSeconds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const run = (what: string) => ({
@@ -416,6 +416,7 @@ export function ControlRoundsBar({ now }: { now: number }) {
                 type="number"
                 min={1}
                 max={60}
+                step={0.5}
                 className={`${FIELD} w-20`}
                 value={minutes}
                 onChange={(e) => setMinutes(e.target.value)}
