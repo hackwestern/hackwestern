@@ -587,6 +587,27 @@
       "errorStatuses": [
         401
       ],
+      "file": "src/pages/api/cron/external-judges.ts",
+      "input": null,
+      "methods": [
+        "unknown"
+      ],
+      "output": null,
+      "route": "/api/cron/external-judges",
+      "successStatuses": [
+        200
+      ]
+    },
+    {
+      "auth": [
+        "bearer"
+      ],
+      "errorBodyKeys": [
+        "error"
+      ],
+      "errorStatuses": [
+        401
+      ],
       "file": "src/pages/api/cron/pings.ts",
       "input": null,
       "methods": [
