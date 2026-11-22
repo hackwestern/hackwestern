@@ -287,6 +287,7 @@ export function SponsorTour() {
                 <List items={items} />
                 {screens && (
                   <Device
+                    key={id}
                     kind="browser"
                     title={copy.screen}
                     url={copy.url}

@@ -212,8 +212,9 @@ export function Device({
   screens: Screen[];
 }) {
   const [index, setIndex] = useState(0);
-  // A new stop starts on its first screen.
-  useEffect(() => setIndex(0), [screens]);
+  // Callers key this by stop, so a new stop starts on its first screen. The
+  // screens themselves are rebuilt every second (live sample timers), so
+  // resetting on `screens` would throw the viewer back to the first tab.
   const shown = screens[Math.min(index, screens.length - 1)];
 
   return (
@@ -961,6 +962,7 @@ export function JudgingTour() {
                     <RoleBlock role={copy.views.judge} items={stop.judge} />
                     {screens && (
                       <Device
+                        key={id}
                         kind="phone"
                         title={copy.judgeScreen}
                         url={copy.qr.judge.route}
@@ -974,6 +976,7 @@ export function JudgingTour() {
                     <RoleBlock role={copy.views.hacker} items={stop.hacker} />
                     {screens && (
                       <Device
+                        key={id}
                         kind="browser"
                         title={copy.hackerScreen}
                         url={copy.qr.hacker.route}
