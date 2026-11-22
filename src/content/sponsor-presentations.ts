@@ -3,7 +3,7 @@
 // panel on /live, and the Slack DM to each team member. Keep wording here,
 // not in components.
 
-import { SHORTLIST_MAX } from "~/lib/sponsor-presentations";
+import { PRESENTATION_SLOTS_PER_ROOM } from "~/lib/sponsor-presentations";
 
 const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
@@ -135,9 +135,9 @@ export const sponsorPresentationsCopy = {
     reasons: {
       full: (sponsor: string) =>
         `No slot left in ${sponsor}'s room that keeps this team's gaps`,
-      /** An old send with more teams than the cap: only the first SHORTLIST_MAX go. */
+      /** An old send with more teams than the cap: only the first PRESENTATION_SLOTS_PER_ROOM go. */
       "over-cap": (sponsor: string) =>
-        `Not scheduled: over ${SHORTLIST_MAX} on ${sponsor}'s shortlist (only the first ${SHORTLIST_MAX} present)`,
+        `Not scheduled: over ${PRESENTATION_SLOTS_PER_ROOM} on ${sponsor}'s shortlist (only the first ${PRESENTATION_SLOTS_PER_ROOM} present)`,
     },
     roomOf: (sponsor: string, room: string) => `${sponsor} · ${room}`,
     slotCount: (n: number, max: number) => `${n}/${max}`,

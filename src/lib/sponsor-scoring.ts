@@ -5,18 +5,19 @@
  *
  * Flow: a sponsor's reps each score teams 1-10 in half points (one login,
  * "Who's judging?"), the sponsor saves some to their shortlist, then ranks
- * the teams that presented and submits exactly SPONSOR_FINAL_TOP
- * (1st to 5th; Jazz 2026-11-19, replacing the earlier top 3).
+ * the teams that presented and submits three to five ranked picks.
  */
 
 /**
- * How many ranked teams a sponsor submits: 1st to 5th place. Exactly
- * this many, no more, no fewer. Jazz can raise it to at most
- * SPONSOR_FINAL_TOP_LIMIT (the Sponsor Judging sheet tab has one column per
- * place, so the sheet headers follow it).
+ * Minimum and maximum final picks. The Sponsor Judging sheet reserves a
+ * column for each possible place.
  */
+export const SPONSOR_FINAL_MIN = 3;
 export const SPONSOR_FINAL_TOP = 5;
 export const SPONSOR_FINAL_TOP_LIMIT = 10;
+
+/** Fewest picks a sponsor submits: SPONSOR_FINAL_MIN, or all of them when fewer can be ranked. */
+export const minPicks = (top: number) => Math.min(SPONSOR_FINAL_MIN, top);
 
 export const SCORE_MIN = 1;
 export const SCORE_MAX = 10;
@@ -123,7 +124,7 @@ export type RankingError =
   | "closed";
 
 /**
- * Why a submitted ranking is refused, or null when it's fine: exactly
+ * Why a submitted ranking is refused, or null when it's fine: between the minimum and
  * `top` ids, no repeats, and every id on the sponsor's shortlist.
  */
 export function rankingError(
@@ -131,7 +132,9 @@ export function rankingError(
   shortlisted: ReadonlySet<string>,
   top = SPONSOR_FINAL_TOP,
 ): RankingError | null {
-  if (teamIds.length !== top) return "wrongCount";
+  if (teamIds.length < minPicks(top) || teamIds.length > top) {
+    return "wrongCount";
+  }
   if (new Set(teamIds).size !== teamIds.length) return "duplicate";
   if (teamIds.some((id) => !shortlisted.has(id))) return "notShortlisted";
   return null;

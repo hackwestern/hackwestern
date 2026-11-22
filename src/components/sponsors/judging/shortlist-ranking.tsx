@@ -18,6 +18,7 @@ import {
 import {
   formatAverage,
   formatSubmittedTime,
+  minPicks,
   type TeamReview,
 } from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
@@ -146,7 +147,9 @@ export function ShortlistRanking({
   }, [draftKey, sponsor, saveDraft.mutate, topIds, canEdit, data.finalTop]);
 
   const picks = topIds.filter((id): id is string => id !== null);
-  const canSubmit = picks.length === top && data.open;
+  const enoughPicks = picks.length >= minPicks(top);
+  const hasGaps = picks.some((id, index) => topIds[index] !== id);
+  const canSubmit = canEdit && enoughPicks && !hasGaps && data.open;
   const matchesSubmitted =
     data.final !== null &&
     picks.length === submitted.length &&
@@ -191,7 +194,7 @@ export function ShortlistRanking({
     const next = [...topIds];
     const [id] = next.splice(from, 1);
     next.splice(to, 0, id ?? null);
-    // Keep exactly five slots.
+    // Keep the full set of draft slots.
     setTopIds(Array.from({ length: top }, (_, i) => next[i] ?? null));
     setConfirming(false);
     if (id) {
@@ -267,7 +270,7 @@ export function ShortlistRanking({
         </h2>
         <p className="m-0 text-base text-dashboard-text-medium">
           {presented
-            ? copy.round.presentedIntro(top)
+            ? copy.round.presentedIntro(minPicks(top), top)
             : copy.shortlist.intro(top)}
         </p>
         {presented && (
@@ -287,7 +290,7 @@ export function ShortlistRanking({
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-2">
           <h3 className="m-0 text-base font-semibold text-dashboard-text-heavy">
-            {copy.shortlist.slotsHeading(top)}
+            {copy.shortlist.slotsHeading}
           </h3>
           <span
             aria-live="polite"
@@ -311,7 +314,7 @@ export function ShortlistRanking({
       </div>
 
       <ol className="m-0 flex list-none flex-col gap-2 p-0">
-        {topIds.map((id, index) => {
+        {(canEdit ? topIds : submitted).map((id, index) => {
           const team = id ? byId.get(id) : null;
           return (
             <li
@@ -579,9 +582,14 @@ export function ShortlistRanking({
                   </span>
                 )
               )}
-              {picks.length < top && (
+              {canEdit && !enoughPicks && (
                 <span className="text-sm font-medium text-dashboard-text-medium">
-                  {copy.shortlist.needMore(top, picks.length)}
+                  {copy.shortlist.needMore(minPicks(top), picks.length)}
+                </span>
+              )}
+              {canEdit && enoughPicks && hasGaps && (
+                <span className="text-sm font-medium text-dashboard-text-medium">
+                  {copy.shortlist.fillGaps}
                 </span>
               )}
               {submit.isError && (
@@ -597,7 +605,9 @@ export function ShortlistRanking({
               onClick={() => setConfirming(true)}
               className="shrink-0 disabled:cursor-not-allowed disabled:opacity-dashboard-disabled"
             >
-              {copy.submit.button(top)}
+              {canEdit && enoughPicks
+                ? copy.submit.button(picks.length)
+                : copy.submit.finalPicks}
             </DashboardButton>
           </div>
         )}
@@ -608,7 +618,7 @@ export function ShortlistRanking({
           <Dialog.Overlay className="fixed inset-0 z-50 bg-dashboard-text-heavy/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
           <Dialog.Content className="fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col gap-4 overflow-y-auto rounded-t-dashboard-2xl bg-dashboard-bg-surface p-5 shadow-dashboard-card focus:outline-none sm:inset-0 sm:m-auto sm:h-fit sm:max-w-[560px] sm:rounded-dashboard-2xl sm:p-6">
             <Dialog.Title className="m-0 text-xl font-semibold text-dashboard-text-heavy">
-              {copy.submit.confirmTitle(top)}
+              {copy.submit.confirmTitle(picks.length)}
             </Dialog.Title>
             <Dialog.Description className="m-0 text-sm leading-relaxed text-dashboard-text-medium">
               {copy.submit.confirmBody}
@@ -628,7 +638,7 @@ export function ShortlistRanking({
               </Dialog.Close>
               <DashboardButton
                 onClick={() => submit.mutate({ sponsor, teamIds: picks })}
-                disabled={submit.isPending}
+                disabled={!canSubmit || submit.isPending}
               >
                 {submit.isPending
                   ? copy.submit.submitting
