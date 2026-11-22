@@ -313,7 +313,7 @@ describe("seatTeams", () => {
     expect(result).toMatchObject({ random: false, seated: 2, emptyTables: 3 });
     expect(result.seating.map((s) => [s.teamId, s.tableNumber])).toEqual([
       [early, 1],
-      [late, 2],
+      [late, 3],
     ]);
     const d = await db.query.teams.findFirst({ where: eq(teams.id, draft) });
     expect(d?.judgingTableId).toBeNull();
@@ -327,8 +327,8 @@ describe("seatTeams", () => {
     expect(result.random).toBe(true);
     expect(result.seated).toBe(8);
     const numbers = result.seating.map((s) => s.tableNumber);
-    // One team per table, in table order.
-    expect(numbers).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    // The reversed row has pairs (7, 8) and (9, 10), with 6 on its own.
+    expect(numbers).toEqual([1, 3, 5, 6, 7, 9, 2, 4]);
   });
 
   test("seated tables flip from empty to waiting", async () => {
@@ -366,14 +366,15 @@ describe("seatTeams", () => {
 /* ---------- auto-assign ---------- */
 
 describe("autoAssign", () => {
-  test("the 70-table room seats one team per table, in table order", async () => {
+  test("the 140-spot room fills all 70 physical tables before sharing one", async () => {
     const { judges: judgeList } = await setupRoom({
-      tableCount: 70,
+      tableCount: 140,
       rows: 5,
-      teamCount: 50,
+      teamCount: 71,
       judgeCount: 3,
     });
-    const occupied = Array.from({ length: 50 }, (_, i) => i + 1);
+    const occupied = Array.from({ length: 70 }, (_, i) => i * 2 + 1);
+    occupied.splice(1, 0, 2);
     for (const judge of judgeList) {
       const stops = await stopsOf(judge.caller);
       expect(stops.map((stop) => stop.table.number)).toEqual(occupied);
@@ -408,7 +409,7 @@ describe("autoAssign", () => {
     await org.caller.judging.admin.autoAssign();
     expect(
       (await stopsOf(judgeList[0]!.caller)).map((s) => s.table.number),
-    ).toEqual([2, 3, 4]);
+    ).toEqual([2, 3, 5]);
   });
 
   test("every table gets 3 different judges; sections follow the order judges were added", async () => {
@@ -865,14 +866,14 @@ describe("judge flow", () => {
       teamCount: 2,
       judgeCount: 3,
     });
-    const table = await tableByNumber(3);
+    const table = await tableByNumber(2);
     await org.caller.judging.admin.addJudgeToTable({
       judgeId: js[0]!.session.user.id,
       tableId: table.id,
     });
     const stops = await stopsOf(js[0]!.caller);
-    const empty = stops.find((s) => s.table.number === 3);
-    assertDefined(empty, "expected table 3 in the section");
+    const empty = stops.find((s) => s.table.number === 2);
+    assertDefined(empty, "expected table 2 in the section");
     // A judge only acts on their current stop: cancel the ones before it.
     for (const s of stops.slice(0, stops.indexOf(empty))) {
       await org.caller.judging.admin.cancelStop({ assignmentId: s.id });
@@ -1799,25 +1800,25 @@ describe("judging_table.status trigger", () => {
     expect((await tableByNumber(3)).status).toBe("waiting");
     expect((await tableByNumber(4)).status).toBe("empty");
 
-    // Team 2 moves to table 4: table 2 empties, table 4 fills.
+    // Team 2 moves to table 4: table 3 empties, table 4 fills.
     const t4 = await tableByNumber(4);
     await org.caller.judging.admin.moveTeam({
       teamId: teamIds[1]!,
       tableId: t4.id,
     });
-    expect((await tableByNumber(2)).status).toBe("empty");
+    expect((await tableByNumber(3)).status).toBe("empty");
     expect((await tableByNumber(4)).status).toBe("waiting");
 
     // A cancelled stop doesn't count; a table whose stops are all cancelled waits.
-    const atTable3 = await db.query.judgingAssignments.findMany({
+    const atTable2 = await db.query.judgingAssignments.findMany({
       where: and(
-        eq(judgingAssignments.judgingTableId, (await tableByNumber(3)).id),
+        eq(judgingAssignments.judgingTableId, (await tableByNumber(2)).id),
       ),
     });
-    for (const a of atTable3) {
+    for (const a of atTable2) {
       await org.caller.judging.admin.cancelStop({ assignmentId: a.id });
     }
-    expect((await tableByNumber(3)).status).toBe("waiting");
+    expect((await tableByNumber(2)).status).toBe("waiting");
 
     // Every stop at table 1 finishes: finished.
     for (const j of js) {
