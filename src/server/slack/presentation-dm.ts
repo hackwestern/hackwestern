@@ -1,5 +1,6 @@
 import {
   isPCBWay,
+  pcbWayAfterScheduledJudging,
   pcbWayJudgingCopy,
   pcbWayJudgingLines,
   sponsorPresentationsCopy,
@@ -51,6 +52,7 @@ export function presentationDmMessage(
   slots: readonly TeamPresentation[],
   { confirm, result }: { confirm?: ConfirmButtonValue; result?: string } = {},
 ) {
+  const pcbWayAfterSlots = pcbWayAfterScheduledJudging(slots);
   const lines = [...slots]
     .sort((a, b) => a.start - b.start)
     .flatMap((s) =>
@@ -59,6 +61,7 @@ export function presentationDmMessage(
             "",
             ...pcbWayJudgingLines(
               escapeSlackText(fixedSponsorJudgingRoom(s.sponsorName) ?? s.room),
+              pcbWayAfterSlots,
             ),
             "",
           ]
@@ -79,6 +82,9 @@ export function presentationDmMessage(
           type: "mrkdwn",
           text: [
             ...(pcbWayOnly ? [] : [copy.heading(escapeSlackText(teamName))]),
+            ...(pcbWayAfterSlots
+              ? ["", pcbWayJudgingCopy.afterScheduledJudging, ""]
+              : []),
             ...lines,
           ]
             .join("\n")

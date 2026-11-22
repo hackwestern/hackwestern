@@ -1,16 +1,8 @@
-import { TRPCError } from "@trpc/server";
-import { and, arrayOverlaps, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
-import { sponsorJudgingCopy } from "~/content/sponsor-judging";
-import { type TrackValue } from "~/lib/sponsor-track";
+import { prizeTrackOf, sponsorNameKey } from "~/lib/sponsor-prize-tracks";
 import { db } from "~/server/db";
-import { assertSheetWritesEnabled } from "~/server/api/utils/run-of-show-sheet";
 import { applications, teams, users } from "~/server/db/schema";
-import {
-  fetchAllSponsorInfo,
-  getSheetsClient,
-  getSpreadsheetId,
-} from "~/server/api/utils/sponsor-sheets";
 
 // Which teams a sponsor may judge. Shared by Lucas's sponsorJudging router
 // (listAllTeams) and the sponsorScoring router, so both apply the same
@@ -33,84 +25,25 @@ function normalizeSubmissionUrl(url: string | null): string | null {
   return trimmed ? trimmed : null;
 }
 
-const TRACK_TTL_MS = 60_000;
-const trackCache = new Map<
-  string,
-  { track: TrackValue | null; expires: number }
->();
-
-/**
- * The sponsor's prize track from the "Sponsor Track" column on the sponsor
- * info tab, or null (no track: every submitted team). Cached for a minute
- * per sponsor, since scoring autosaves check it on every write. A sheet
- * failure is an error, never "no filter", so a sponsor never sees teams
- * outside their track.
- */
-export async function fetchSponsorTrack(
-  sponsorName: string,
-): Promise<TrackValue | null> {
-  const key = sponsorName.toLowerCase();
-  const hit = trackCache.get(key);
-  if (hit && hit.expires > Date.now()) return hit.track;
-  const track = (await fetchSponsorTracks()).get(key) ?? null;
-  // Cache a sponsor missing from the sheet too (no track), so their
-  // autosaves don't re-read the sheet every time.
-  trackCache.set(key, { track, expires: Date.now() + TRACK_TTL_MS });
-  return track;
-}
-
-/**
- * Every sponsor's prize track in one sheet read, keyed by lowercased
- * sponsor name (a sponsor missing from the map has no track). Refreshes the
- * per-sponsor cache too. Same error rule as fetchSponsorTrack.
- */
-export async function fetchSponsorTracks(): Promise<
-  Map<string, TrackValue | null>
-> {
-  try {
-    const sheets = await getSheetsClient();
-    const info = await fetchAllSponsorInfo(sheets, getSpreadsheetId());
-    const expires = Date.now() + TRACK_TTL_MS;
-    const tracks = new Map<string, TrackValue | null>();
-    for (const [key, record] of info) {
-      tracks.set(key, record.track ?? null);
-      trackCache.set(key, { track: record.track ?? null, expires });
-    }
-    return tracks;
-  } catch (error) {
-    console.error("Could not resolve sponsor track:", error);
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: sponsorJudgingCopy.errors.trackUnavailable,
-    });
-  }
-}
-
-/** Test hook: forget cached tracks. */
-export function clearSponsorTrackCache() {
-  trackCache.clear();
+/** The sponsor name is the track tag. Use the canonical name for known aliases. */
+export function sponsorTrackName(sponsorName: string): string {
+  return prizeTrackOf(sponsorName) ?? sponsorName;
 }
 
 const JUDGEABLE_STATUSES = ["submitted", "late"] as const;
 
-/** Submitted (or late) teams, narrowed to the track when there is one. */
-function eligibleWhere(track: TrackValue | null) {
-  return and(
-    inArray(teams.submissionStatus, [...JUDGEABLE_STATUSES]),
-    ...(track ? [arrayOverlaps(teams.tracks, [track])] : []),
-  );
-}
-
-/** eligibleWhere for a team row already in memory (organizer overview). */
+/** Shared by the organizer overview and the sponsor's judging actions. */
 export function isEligibleTeam(
   team: { submissionStatus: string | null; tracks: string[] | null },
-  track: TrackValue | null,
+  track: string,
 ) {
+  const key = sponsorNameKey(track);
   return (
+    key.length > 0 &&
     (JUDGEABLE_STATUSES as readonly (string | null)[]).includes(
       team.submissionStatus,
     ) &&
-    (track === null || (team.tracks ?? []).includes(track))
+    (team.tracks ?? []).some((tag) => sponsorNameKey(tag) === key)
   );
 }
 
@@ -167,22 +100,25 @@ export async function membersByTeam(
 /**
  * Every team the sponsor can judge, by name, with member names. Only
  * submitted teams ("submitted" or "late"; drafts have nothing to judge),
- * and only the sponsor's track when they have one.
+ * and only the sponsor's track.
  */
 export async function listEligibleTeams(
-  track: TrackValue | null,
+  track: string,
 ): Promise<EligibleTeam[]> {
-  const submittedTeams = await db
-    .select({
-      id: teams.id,
-      name: teams.name,
-      devpostUrl: teams.devpostUrl,
-      githubUrl: teams.githubUrl,
-      tracks: teams.tracks,
-    })
-    .from(teams)
-    .where(eligibleWhere(track))
-    .orderBy(teams.name);
+  const submittedTeams = (
+    await db
+      .select({
+        id: teams.id,
+        name: teams.name,
+        devpostUrl: teams.devpostUrl,
+        githubUrl: teams.githubUrl,
+        tracks: teams.tracks,
+        submissionStatus: teams.submissionStatus,
+      })
+      .from(teams)
+      .where(inArray(teams.submissionStatus, [...JUDGEABLE_STATUSES]))
+      .orderBy(teams.name)
+  ).filter((team) => isEligibleTeam(team, track));
 
   if (submittedTeams.length === 0) return [];
 
@@ -201,13 +137,24 @@ export async function listEligibleTeams(
 
 /** Which of `ids` the sponsor can judge (same rule as listEligibleTeams). */
 export async function eligibleTeamIds(
-  track: TrackValue | null,
+  track: string,
   ids: readonly string[],
 ): Promise<Set<string>> {
   if (ids.length === 0) return new Set();
   const rows = await db
-    .select({ id: teams.id })
+    .select({
+      id: teams.id,
+      tracks: teams.tracks,
+      submissionStatus: teams.submissionStatus,
+    })
     .from(teams)
-    .where(and(eligibleWhere(track), inArray(teams.id, [...ids])));
-  return new Set(rows.map((r) => r.id));
+    .where(
+      and(
+        inArray(teams.submissionStatus, [...JUDGEABLE_STATUSES]),
+        inArray(teams.id, [...ids]),
+      ),
+    );
+  return new Set(
+    rows.filter((team) => isEligibleTeam(team, track)).map((team) => team.id),
+  );
 }

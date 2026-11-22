@@ -10,6 +10,7 @@
 import { randomBytes } from "crypto";
 import { and, eq, inArray, isNotNull, notInArray } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
+import { prizeTrackOf } from "~/lib/sponsor-prize-tracks";
 
 import { type Transaction, db } from "~/server/db";
 import {
@@ -22,7 +23,7 @@ import {
 import { ADJECTIVES, ANIMALS, THINGS } from "~/server/api/utils/hacker-id";
 import { isJudgingStarted, lockPlanExclusive } from "~/server/judging/shared";
 
-export type Track = (typeof trackEnum.enumValues)[number];
+export type Track = string;
 
 /** Same cap as the in-app team flow (`teams.joinTeam`). */
 export const MAX_TEAM_SIZE = 4;
@@ -223,10 +224,15 @@ export function mapPrizes(raw: string): {
       rest = rest.split(name).join(",");
     }
   }
-  const unknown = rest
+  const unknown: string[] = [];
+  for (const prize of rest
     .split(",")
-    .map((p) => p.trim())
-    .filter(Boolean);
+    .map((part) => part.trim())
+    .filter(Boolean)) {
+    const sponsor = prizeTrackOf(prize);
+    if (sponsor) tracks.add(sponsor);
+    else unknown.push(prize);
+  }
   return { tracks: [...tracks], unknown };
 }
 

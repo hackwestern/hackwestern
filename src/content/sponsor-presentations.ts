@@ -4,7 +4,10 @@
 // not in components.
 
 import { PRESENTATION_SLOTS_PER_ROOM } from "~/lib/sponsor-presentations";
-import { sponsorNameKey } from "~/lib/sponsor-prize-tracks";
+import {
+  PCBWAY_JUDGING_ROOM,
+  sponsorNameKey,
+} from "~/lib/sponsor-prize-tracks";
 
 const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
@@ -27,15 +30,28 @@ export const pcbWayJudgingCopy = {
   setup: (room: string) =>
     `Have your hardware set up, powered, and ready for judging in ${room}.`,
   stay: "No time slots. Judges will come to you, so please stay at your station the entire time.",
+  afterScheduledJudging: `You’ve been selected for more than one sponsor track! Go to each of your scheduled sponsor presentations first, at the listed times and rooms. When you’re done, head to PCBWay in ${PCBWAY_JUDGING_ROOM} and present to the PCBWay judge. The PCBWay judges have been notified that you’ll arrive after your other judging.`,
 };
 
-export function pcbWayJudgingLines(room: string) {
+export function pcbWayAfterScheduledJudging(
+  slots: readonly { sponsorName: string }[],
+): boolean {
+  return (
+    slots.some((slot) => isPCBWay(slot.sponsorName)) &&
+    slots.some((slot) => !isPCBWay(slot.sponsorName))
+  );
+}
+
+export function pcbWayJudgingLines(
+  room: string,
+  afterScheduledJudging = false,
+) {
   return [
     pcbWayJudgingCopy.heading,
     `Location: ${room}`,
     `Judging: ${pcbWayJudgingCopy.window}`,
     `• ${pcbWayJudgingCopy.setup(room)}`,
-    `• ${pcbWayJudgingCopy.stay}`,
+    ...(afterScheduledJudging ? [] : [`• ${pcbWayJudgingCopy.stay}`]),
   ];
 }
 

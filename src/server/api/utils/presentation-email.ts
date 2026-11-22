@@ -1,5 +1,6 @@
 import {
   isPCBWay,
+  pcbWayAfterScheduledJudging,
   pcbWayJudgingCopy,
   pcbWayJudgingLines,
   sponsorPresentationsCopy,
@@ -43,15 +44,18 @@ export function presentationEmail(
       ),
     );
   const greeting = copy.greeting(firstName(member.name));
+  const pcbWayAfterSlots = pcbWayAfterScheduledJudging(slots);
   const pcbWay = slots
     .filter((slot) => isPCBWay(slot.sponsorName))
     .map((slot) =>
       pcbWayJudgingLines(
         fixedSponsorJudgingRoom(slot.sponsorName) ?? slot.room,
+        pcbWayAfterSlots,
       ),
     );
   const paragraphs = [
     [greeting],
+    ...(pcbWayAfterSlots ? [[pcbWayJudgingCopy.afterScheduledJudging]] : []),
     ...(standard.length || !pcbWay.length
       ? [
           [copy.intro(teamName)],

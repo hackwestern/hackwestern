@@ -869,6 +869,11 @@ describe("presentationDmMessage", () => {
       expect(message).toContain("10:00am – 11:00am");
       expect(message).toContain("10:30 AM – 10:36 AM: QNX, Rm 2235");
       expect(message).toContain("1 minute to set up and 5 minutes to present");
+      expect(message).toContain(
+        "Go to each of your scheduled sponsor presentations first",
+      );
+      expect(message).toContain("head to PCBWay in Rm 2242");
+      expect(message).not.toContain("stay at your station the entire time");
     }
   });
 

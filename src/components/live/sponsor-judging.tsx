@@ -4,6 +4,7 @@ import { DashboardButton } from "~/components/internals/dashboard-button";
 import { DashboardPanel } from "~/components/internals/dashboard-panel";
 import {
   isPCBWay,
+  pcbWayAfterScheduledJudging,
   pcbWayJudgingCopy,
   sponsorSlotInstructions,
 } from "~/content/sponsor-presentations";
@@ -18,6 +19,9 @@ export default function SponsorJudging() {
     enabled: signedIn,
     refetchInterval: 30_000,
   });
+  const pcbWayAfterSlots = pcbWayAfterScheduledJudging(
+    presentations.data ?? [],
+  );
 
   return (
     <section
@@ -86,6 +90,13 @@ export default function SponsorJudging() {
           <p className="m-0 text-dashboard-text-medium">
             Your team was selected to present to these sponsors.
           </p>
+          {pcbWayAfterSlots && (
+            <DashboardPanel className="items-start">
+              <p className="m-0 text-dashboard-text-medium">
+                {pcbWayJudgingCopy.afterScheduledJudging}
+              </p>
+            </DashboardPanel>
+          )}
           <ul className="m-0 flex list-none flex-col gap-3 p-0">
             {presentations.data.map(({ sponsorName, room, start }) => {
               const pcbWay = isPCBWay(sponsorName);
@@ -112,7 +123,9 @@ export default function SponsorJudging() {
                       {(pcbWay
                         ? [
                             pcbWayJudgingCopy.setup(room),
-                            pcbWayJudgingCopy.stay,
+                            ...(pcbWayAfterSlots
+                              ? []
+                              : [pcbWayJudgingCopy.stay]),
                           ]
                         : sponsorSlotInstructions
                       ).map((line) => (

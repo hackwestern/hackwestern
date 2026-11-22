@@ -16,10 +16,7 @@ import {
   teams,
   users,
 } from "~/server/db/schema";
-import {
-  fetchSponsorTrack,
-  fetchSponsorTracks,
-} from "~/server/api/utils/sponsor-judging-teams";
+import { sponsorTrackName } from "~/server/api/utils/sponsor-judging-teams";
 import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
 import { setRound2Open } from "~/server/api/utils/sponsor-judging-settings";
 import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
@@ -56,18 +53,16 @@ vi.mock("~/server/api/utils/sponsor-judging-sheet-mirror", () => ({
   mirrorSponsorJudgingSoon: vi.fn(async () => ({ ok: true, rows: 0 })),
 }));
 
-// The sheet is the only outside call: the sponsor's track. Team eligibility
-// itself runs against the test database. Picks are stored in the DB and
+// Most tests use General as their common fixture track. Eligibility itself
+// runs against the test database. Picks are stored in the DB and
 // mirrored to the Sponsor Judging tab (mirrorSponsorJudgingSoon, mocked).
 vi.mock("~/server/api/utils/sponsor-judging-teams", async (importOriginal) => ({
   ...(await importOriginal<
     typeof import("~/server/api/utils/sponsor-judging-teams")
   >()),
-  fetchSponsorTrack: vi.fn(),
-  fetchSponsorTracks: vi.fn(),
+  sponsorTrackName: vi.fn(),
 }));
-const track = vi.mocked(fetchSponsorTrack);
-const allTracks = vi.mocked(fetchSponsorTracks);
+const track = vi.mocked(sponsorTrackName);
 const mirrorSoon = vi.mocked(mirrorSponsorJudgingSoon);
 const SYNCED = { ok: true as const, rows: 0 };
 const DOWN = { ok: false as const, error: "sheets down" };
@@ -86,8 +81,7 @@ beforeEach(async () => {
       target: sponsorJudgingSettings.id,
       set: { round2OpenedAt: new Date() },
     });
-  track.mockReset().mockResolvedValue(null);
-  allTracks.mockReset().mockResolvedValue(new Map());
+  track.mockReset().mockReturnValue("General");
   mirrorSoon.mockReset().mockResolvedValue(SYNCED);
   resetSheetRetries();
 });
@@ -106,7 +100,7 @@ async function sponsor(prizeTrack = true) {
 
 async function team(
   status: "draft" | "submitted" | "late" = "submitted",
-  tracks: ("General" | "Best Domain")[] = ["General"],
+  tracks: string[] = ["General"],
 ) {
   const id = faker.string.alphanumeric(12);
   await db.insert(teams).values({
@@ -179,7 +173,7 @@ describe("sponsorScoring.get", () => {
     const inTrack = await team("late", ["Best Domain"]);
     const otherTrack = await team("submitted", ["General"]);
     const draft = await team("draft", ["Best Domain"]);
-    track.mockResolvedValue("Best Domain");
+    track.mockReturnValue("Best Domain");
 
     const res = await anon.sponsorScoring.get({ sponsor: s.id });
     const ids = res.teams.map((t) => t.id);
@@ -328,7 +322,7 @@ describe("sponsorScoring.review", () => {
       }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     const general = await team("submitted", ["General"]);
-    track.mockResolvedValue("Best Domain");
+    track.mockReturnValue("Best Domain");
     await expect(
       anon.sponsorScoring.review({
         sponsor: s.id,
@@ -455,7 +449,7 @@ describe("sponsorScoring.submit", () => {
   test("a team that stopped being eligible can't be submitted", async () => {
     const s = await sponsor();
     const ids = await shortlistTeams(s.id);
-    track.mockResolvedValue("Best Domain");
+    track.mockReturnValue("Best Domain");
     await expect(
       anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, TOP) }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
@@ -899,6 +893,36 @@ describe("sponsorScoring round 2", () => {
 });
 
 describe("sponsorScoring prize track gate", () => {
+  test("TinyFish can only shortlist teams tagged for TinyFish without a sheet mapping", async () => {
+    const actual = await vi.importActual<
+      typeof import("~/server/api/utils/sponsor-judging-teams")
+    >("~/server/api/utils/sponsor-judging-teams");
+    track.mockImplementation(actual.sponsorTrackName);
+    const [tinyFish] = await db
+      .insert(sponsorJudgingSponsors)
+      .values({ name: `TinyFish ${faker.string.alphanumeric(8)}` })
+      .returning();
+    const matching = await team("submitted", ["Tiny Fish", "General"]);
+    const other = await team("submitted", ["PCBWay"]);
+    const general = await team();
+    const ids = { sponsor: tinyFish!.id };
+
+    const roster = await anon.sponsorJudging.listAllTeams(ids);
+    expect(roster.teams.map((entry) => entry.id)).toEqual([matching]);
+    for (const teamId of [other, general]) {
+      await expect(
+        anon.sponsorScoring.review({ ...ids, teamId, shortlisted: true }),
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    }
+    await expect(
+      anon.sponsorScoring.review({
+        ...ids,
+        teamId: matching,
+        shortlisted: true,
+      }),
+    ).resolves.toMatchObject({ shortlisted: true });
+  });
+
   const noTrack = {
     code: "FORBIDDEN",
     message: "Judging is only for sponsors with a prize track.",
@@ -1219,7 +1243,7 @@ describe("sponsorScoring digital sponsors (top 5 by Devpost link)", () => {
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     // Outside the sponsor's track.
-    track.mockResolvedValue("Best Domain");
+    track.mockReturnValue("Best Domain");
     const inTrack = await team("submitted", ["Best Domain"]);
     await expect(
       org.sponsorScoring.submitDigital({
