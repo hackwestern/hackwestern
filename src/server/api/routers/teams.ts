@@ -2,18 +2,20 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import z from "zod";
 import { db } from "~/server/db";
-import { teams, trackEnum, users } from "~/server/db/schema";
+import { teams, users } from "~/server/db/schema";
 import { count, eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { env } from "~/env";
 import { customAlphabet } from "nanoid";
 
+const teamTrack = z.string().trim().min(1).max(255);
+
 const teamsSaveSchema = createInsertSchema(teams, {
   name: z.string().optional(),
   memberDevpostUsernames: z.array(z.string()),
   memberGithubUsernames: z.array(z.string()),
-  tracks: z.array(z.enum(trackEnum.enumValues)),
+  tracks: z.array(teamTrack),
 }).omit({
   joinCode: true,
   id: true,
@@ -27,7 +29,9 @@ const teamsSaveSchema = createInsertSchema(teams, {
   techStack: true,
 });
 
-const teamsSelectSchema = createSelectSchema(teams).omit({
+const teamsSelectSchema = createSelectSchema(teams, {
+  tracks: z.array(z.string()).nullable(),
+}).omit({
   id: true,
   submissionStatus: true,
   submittedAt: true,
@@ -43,7 +47,7 @@ const teamsSubmitSchema = z.object({
   name: z.string(),
   devpostUrl: z.string(),
   githubUrl: z.string(),
-  tracks: z.array(z.enum(trackEnum.enumValues)).nullable(),
+  tracks: z.array(teamTrack).nullable(),
   memberGithubUsernames: z.array(z.string()),
   memberDevpostUsernames: z.array(z.string()),
 });
@@ -88,6 +92,15 @@ export const teamsRouter = createTRPCRouter({
 
     const team = await db.query.teams.findFirst({
       where: eq(teams.id, teamId.teamId),
+      columns: {
+        id: false,
+        submissionStatus: false,
+        submittedAt: false,
+        createdAt: false,
+        judgingTableId: false,
+        importFlags: false,
+        techStack: false,
+      },
     });
     if (!team) {
       throw new TRPCError({

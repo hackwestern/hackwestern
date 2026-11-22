@@ -1,9 +1,13 @@
-import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
 import {
-  formatPresentationTime,
-  PRESENTATION_PITCH_MINUTES,
-  PRESENTATION_QA_MINUTES,
-} from "~/lib/sponsor-presentations";
+  isPCBWay,
+  pcbWayAfterScheduledJudging,
+  pcbWayJudgingCopy,
+  pcbWayJudgingLines,
+  sponsorPresentationsCopy,
+  sponsorSlotInstructions,
+} from "~/content/sponsor-presentations";
+import { formatPresentationRange } from "~/lib/sponsor-presentations";
+import { fixedSponsorJudgingRoom } from "~/lib/sponsor-prize-tracks";
 import { escapeSlackText } from "~/server/slack/client";
 import { dmHacker } from "~/server/slack/dm";
 
@@ -48,37 +52,60 @@ export function presentationDmMessage(
   slots: readonly TeamPresentation[],
   { confirm, result }: { confirm?: ConfirmButtonValue; result?: string } = {},
 ) {
+  const pcbWayAfterSlots = pcbWayAfterScheduledJudging(slots);
   const lines = [...slots]
     .sort((a, b) => a.start - b.start)
-    .map((s) =>
-      copy.line(
-        formatPresentationTime(s.start),
-        escapeSlackText(s.sponsorName),
-        escapeSlackText(s.room),
-      ),
+    .flatMap((s) =>
+      isPCBWay(s.sponsorName)
+        ? [
+            "",
+            ...pcbWayJudgingLines(
+              escapeSlackText(fixedSponsorJudgingRoom(s.sponsorName) ?? s.room),
+              pcbWayAfterSlots,
+            ),
+            "",
+          ]
+        : copy.line(
+            formatPresentationRange(s.start),
+            escapeSlackText(s.sponsorName),
+            escapeSlackText(fixedSponsorJudgingRoom(s.sponsorName) ?? s.room),
+          ),
     );
+  const hasStandardSlots = slots.some((slot) => !isPCBWay(slot.sponsorName));
+  const pcbWayOnly = slots.length > 0 && !hasStandardSlots;
   return {
-    text: copy.text(teamName),
+    text: pcbWayOnly ? pcbWayJudgingCopy.heading : copy.text(teamName),
     blocks: [
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: [copy.heading(escapeSlackText(teamName)), ...lines].join("\n"),
+          text: [
+            ...(pcbWayOnly ? [] : [copy.heading(escapeSlackText(teamName))]),
+            ...(pcbWayAfterSlots
+              ? ["", pcbWayJudgingCopy.afterScheduledJudging, ""]
+              : []),
+            ...lines,
+          ]
+            .join("\n")
+            .trim(),
         },
       },
-      {
-        type: "context",
-        elements: [
-          {
-            type: "mrkdwn",
-            text: copy.footer(
-              PRESENTATION_PITCH_MINUTES,
-              PRESENTATION_QA_MINUTES,
-            ),
-          },
-        ],
-      },
+      ...(!pcbWayOnly
+        ? [
+            {
+              type: "context",
+              elements: [
+                {
+                  type: "mrkdwn",
+                  text: sponsorSlotInstructions
+                    .map((line) => `• ${line}`)
+                    .join("\n"),
+                },
+              ],
+            },
+          ]
+        : []),
       ...(confirm && !result
         ? [
             {

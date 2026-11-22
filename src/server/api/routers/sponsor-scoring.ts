@@ -11,6 +11,7 @@ import {
   hasPrizeTrack,
   isDigitalJudging,
   prizeTrackOf,
+  fixedSponsorJudgingRoom,
   remoteJudgingRoom,
 } from "~/lib/sponsor-prize-tracks";
 import { SHORTLIST_MAX } from "~/lib/sponsor-presentations";
@@ -41,8 +42,7 @@ import {
 } from "~/server/api/trpc";
 import {
   eligibleTeamIds,
-  fetchSponsorTrack,
-  fetchSponsorTracks,
+  sponsorTrackName,
   isEligibleTeam,
   listEligibleTeams,
   membersByTeam,
@@ -228,7 +228,11 @@ async function roundFor(sponsorId: string, sponsorName: string) {
     /** When the current schedule was made; null = not scheduled yet. */
     scheduledAt: anySlot?.scheduledAt ?? null,
     slots: slots
-      .map((r) => ({ teamId: r.teamId, room: r.room ?? "", start: r.start! }))
+      .map((r) => ({
+        teamId: r.teamId,
+        room: fixedSponsorJudgingRoom(sponsorName) ?? r.room ?? "",
+        start: r.start!,
+      }))
       .sort((a, b) => a.start - b.start),
     /** Organizers opened round 2 (after presentations). */
     round2Open: openedAt !== null,
@@ -400,7 +404,7 @@ async function organizerTopFor(name: string) {
   ) {
     throw new TRPCError({ code: "NOT_FOUND", message: errors.noPrizeTrack });
   }
-  const track = await fetchSponsorTrack(sponsor.name);
+  const track = sponsorTrackName(sponsor.name);
   let rankable = await listEligibleTeams(track);
   if (!digital) {
     const round = await roundFor(sponsor.id, sponsor.name);
@@ -438,7 +442,7 @@ export const sponsorScoringRouter = createTRPCRouter({
     .input(z.object({ sponsor: sponsorInput }))
     .query(async ({ input }) => {
       const sponsor = await findTrackSponsor(input.sponsor);
-      const track = await fetchSponsorTrack(sponsor.name);
+      const track = sponsorTrackName(sponsor.name);
       const [eligible, scores, final, draft, round, reps] = await Promise.all([
         listEligibleTeams(track),
         scoresFor(sponsor.id),
@@ -518,7 +522,7 @@ export const sponsorScoringRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       assertOpen();
       const sponsor = await findTrackSponsor(input.sponsor);
-      const track = await fetchSponsorTrack(sponsor.name);
+      const track = sponsorTrackName(sponsor.name);
       const ok = await eligibleTeamIds(track, [input.teamId]);
       if (!ok.has(input.teamId)) {
         throw new TRPCError({ code: "NOT_FOUND", message: errors.notEligible });
@@ -611,7 +615,7 @@ export const sponsorScoringRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       assertOpen();
       const sponsor = await findTrackSponsor(input.sponsor);
-      const track = await fetchSponsorTrack(sponsor.name);
+      const track = sponsorTrackName(sponsor.name);
       const ok = await eligibleTeamIds(track, [input.teamId]);
       if (!ok.has(input.teamId)) {
         throw new TRPCError({ code: "NOT_FOUND", message: errors.notEligible });
@@ -660,7 +664,7 @@ export const sponsorScoringRouter = createTRPCRouter({
           message: errors.shortlistAlreadySent,
         });
       }
-      const track = await fetchSponsorTrack(sponsor.name);
+      const track = sponsorTrackName(sponsor.name);
       const rows = await db
         .select({ teamId: sponsorTeamReviews.teamId })
         .from(sponsorTeamReviews)
@@ -736,7 +740,7 @@ export const sponsorScoringRouter = createTRPCRouter({
           message: errors.topAlreadySubmitted(SPONSOR_FINAL_TOP),
         });
       }
-      const track = await fetchSponsorTrack(sponsor.name);
+      const track = sponsorTrackName(sponsor.name);
       const round = await roundFor(sponsor.id, sponsor.name);
       if (!round.round2Open) {
         throw new TRPCError({
@@ -822,7 +826,7 @@ export const sponsorScoringRouter = createTRPCRouter({
           message: errors.topAlreadySubmitted(SPONSOR_FINAL_TOP),
         });
       }
-      const track = await fetchSponsorTrack(sponsor.name);
+      const track = sponsorTrackName(sponsor.name);
       const round = await roundFor(sponsor.id, sponsor.name);
       if (!round.round2Open) {
         throw new TRPCError({
@@ -954,34 +958,32 @@ export const sponsorScoringRouter = createTRPCRouter({
    * `digital: true` (their top 5 is entered on this tab).
    */
   overview: protectedOrganizerProcedure.query(async () => {
-    const [registered, reviewRows, scoreRows, finals, tracks] =
-      await Promise.all([
-        db
-          .select({
-            id: sponsorJudgingSponsors.id,
-            name: sponsorJudgingSponsors.name,
-          })
-          .from(sponsorJudgingSponsors)
-          .orderBy(sponsorJudgingSponsors.name),
-        db
-          .select({
-            sponsorId: sponsorTeamReviews.sponsorId,
-            teamId: sponsorTeamReviews.teamId,
-            shortlisted: sponsorTeamReviews.shortlisted,
-            note: sponsorTeamReviews.note,
-          })
-          .from(sponsorTeamReviews),
-        db
-          .select({
-            sponsorId: sponsorTeamScores.sponsorId,
-            teamId: sponsorTeamScores.teamId,
-            judge: sponsorTeamScores.judgeName,
-            halves: sponsorTeamScores.scoreHalves,
-          })
-          .from(sponsorTeamScores),
-        db.select().from(sponsorFinalPicks),
-        fetchSponsorTracks(),
-      ]);
+    const [registered, reviewRows, scoreRows, finals] = await Promise.all([
+      db
+        .select({
+          id: sponsorJudgingSponsors.id,
+          name: sponsorJudgingSponsors.name,
+        })
+        .from(sponsorJudgingSponsors)
+        .orderBy(sponsorJudgingSponsors.name),
+      db
+        .select({
+          sponsorId: sponsorTeamReviews.sponsorId,
+          teamId: sponsorTeamReviews.teamId,
+          shortlisted: sponsorTeamReviews.shortlisted,
+          note: sponsorTeamReviews.note,
+        })
+        .from(sponsorTeamReviews),
+      db
+        .select({
+          sponsorId: sponsorTeamScores.sponsorId,
+          teamId: sponsorTeamScores.teamId,
+          judge: sponsorTeamScores.judgeName,
+          halves: sponsorTeamScores.scoreHalves,
+        })
+        .from(sponsorTeamScores),
+      db.select().from(sponsorFinalPicks),
+    ]);
     // Only prize track sponsors take part in judging.
     const prizeTracks = await prizeTrackSponsors();
     const sponsors = registered.filter((s) =>
@@ -1039,7 +1041,7 @@ export const sponsorScoringRouter = createTRPCRouter({
     const finalBySponsor = new Map(finals.map((f) => [f.sponsorId, f]));
 
     const perSponsor = sponsors.map((s) => {
-      const track = tracks.get(s.name.toLowerCase()) ?? null;
+      const track = sponsorTrackName(s.name);
       const canJudge = (teamId: string) => {
         const t = teamById.get(teamId);
         return t !== undefined && isEligibleTeam(t, track);

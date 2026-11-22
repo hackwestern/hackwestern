@@ -4,6 +4,10 @@
 // not in components.
 
 import { PRESENTATION_SLOTS_PER_ROOM } from "~/lib/sponsor-presentations";
+import {
+  PCBWAY_JUDGING_ROOM,
+  sponsorNameKey,
+} from "~/lib/sponsor-prize-tracks";
 
 const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
@@ -11,6 +15,45 @@ const plural = (n: number, one: string, many: string) =>
 /** "3 min pitch · 2 min Q&A": what one presentation slot holds. */
 export const presentationFormat = (pitch: number, qa: number) =>
   `${pitch} min pitch · ${qa} min Q&A`;
+
+export const sponsorSlotInstructions = [
+  "Be outside the room at least 5 minutes early with your demo ready.",
+  "Wait to be called in. You’ll have 1 minute to set up and 5 minutes to present. Please head out when you’re done.",
+] as const;
+
+export const isPCBWay = (sponsor: string) =>
+  sponsorNameKey(sponsor) === "pcbway";
+
+export const pcbWayJudgingCopy = {
+  heading: "You're selected for PCBWay!",
+  window: "10:00am – 11:00am",
+  setup: (room: string) =>
+    `Have your hardware set up, powered, and ready for judging in ${room}.`,
+  stay: "No time slots. Judges will come to you, so please stay at your station the entire time.",
+  afterScheduledJudging: `You’ve been selected for more than one sponsor track! Go to each of your scheduled sponsor presentations first, at the listed times and rooms. When you’re done, head to PCBWay in ${PCBWAY_JUDGING_ROOM} and present to the PCBWay judge. The PCBWay judges have been notified that you’ll arrive after your other judging.`,
+};
+
+export function pcbWayAfterScheduledJudging(
+  slots: readonly { sponsorName: string }[],
+): boolean {
+  return (
+    slots.some((slot) => isPCBWay(slot.sponsorName)) &&
+    slots.some((slot) => !isPCBWay(slot.sponsorName))
+  );
+}
+
+export function pcbWayJudgingLines(
+  room: string,
+  afterScheduledJudging = false,
+) {
+  return [
+    pcbWayJudgingCopy.heading,
+    `Location: ${room}`,
+    `Judging: ${pcbWayJudgingCopy.window}`,
+    `• ${pcbWayJudgingCopy.setup(room)}`,
+    ...(afterScheduledJudging ? [] : [`• ${pcbWayJudgingCopy.stay}`]),
+  ];
+}
 
 export const sponsorPresentationsCopy = {
   /** Organizer, ?tab=judging. */
@@ -187,8 +230,6 @@ export const sponsorPresentationsCopy = {
       `*Your sponsor presentations on Sunday* (${team})`,
     line: (time: string, sponsor: string, room: string) =>
       `• ${time}: ${sponsor}, ${room}`,
-    footer: (pitch: number, qa: number) =>
-      `Each presentation is a ${pitch} min pitch and ${qa} min of Q&A. Be at the room a few minutes early.`,
     /** The button: one member's tap confirms for the whole team. */
     confirmButton: "Confirm our times",
     confirmHint: "One person confirming is enough for your team.",
@@ -208,8 +249,8 @@ export const sponsorPresentationsCopy = {
     subject: (team: string) => `Your sponsor presentation times for ${team}`,
     greeting: (firstName: string) =>
       firstName ? `Hi ${firstName},` : "Hi there,",
-    intro: (team: string, pitch: number, qa: number) =>
-      `Here are ${team}'s sponsor presentations on Sunday. Each one is a ${pitch} min pitch and ${qa} min of Q&A, so be at the room a few minutes early.`,
+    intro: (team: string) =>
+      `Here are ${team}'s sponsor presentations on Sunday.`,
     line: (time: string, sponsor: string, room: string) =>
       `${time}: ${sponsor}, ${room}`,
     signoff: "The Hack Western 13 Team",

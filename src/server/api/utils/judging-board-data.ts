@@ -12,6 +12,7 @@ import { normalizeRoom } from "~/lib/sponsor-presentations";
 import {
   judgesOnBoard,
   prizeTrackOf,
+  fixedSponsorJudgingRoom,
   remoteJudgingRoom,
 } from "~/lib/sponsor-prize-tracks";
 import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
@@ -169,6 +170,9 @@ export async function loadJudgingBoard() {
   const sendOf = new Map(sends.map((s) => [s.sponsorId, s]));
   const finalOf = new Map(finals.map((f) => [f.sponsorId, f]));
   const placed = rows.filter((r) => r.startMinute !== null);
+  const fixedRooms = new Map(
+    sponsors.map((s) => [s.id, fixedSponsorJudgingRoom(s.name)]),
+  );
   const lastSent = notices
     .map((n) => n.sentAt?.getTime() ?? 0)
     .reduce((a, b) => Math.max(a, b), 0);
@@ -214,7 +218,7 @@ export async function loadJudgingBoard() {
         sponsorId: r.sponsorId,
         teamId: r.teamId,
         teamName: names.get(r.teamId) ?? r.teamId,
-        room: r.room ?? "",
+        room: fixedRooms.get(r.sponsorId) ?? r.room ?? "",
         start: r.startMinute!,
         status: status.get(r.teamId) ?? ("not-sent" as const),
       }))
@@ -338,7 +342,7 @@ export async function loadBoardTeam(teamId: string) {
     presentsTo: placed.map((r) => ({
       sponsorId: r.sponsorId,
       sponsorName: r.sponsorName,
-      room: r.room ?? "",
+      room: fixedSponsorJudgingRoom(r.sponsorName) ?? r.room ?? "",
       start: r.startMinute!,
     })),
   };
@@ -374,6 +378,13 @@ export async function setJudgingRoom(input: {
   if (!me || remoteJudgingRoom(me.name) !== null) {
     throw new TRPCError({ code: "NOT_FOUND" });
   }
+  const fixedRoom = fixedSponsorJudgingRoom(me.name);
+  if (fixedRoom) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: `${me.name} judging is in ${fixedRoom}.`,
+    });
+  }
   // The sheets are slow: read them before the lock. The board's own rooms
   // are read again under it, so two organizers can't both take a room.
   const fromSheets = await judgingRoomsWithSource(sponsors);
@@ -388,6 +399,10 @@ export async function setJudgingRoom(input: {
       [...fromSheets].map(([id, r]) => [id, r.room] as const),
     );
     for (const p of picked) roomOf.set(p.sponsorId, p.room);
+    for (const sponsor of sponsors) {
+      const fixed = fixedSponsorJudgingRoom(sponsor.name);
+      if (fixed) roomOf.set(sponsor.id, fixed);
+    }
     // One spelling per room: "rm 2110" is Rm 2110, "foo" is a held "Foo".
     const room =
       JUDGING_ROOMS.find((r) => same(r, typed)) ??
@@ -397,7 +412,10 @@ export async function setJudgingRoom(input: {
       (s) => s.id !== me.id && same(roomOf.get(s.id), room),
     );
     const mine = roomOf.get(me.id) ?? null;
-    if (holder && (!input.swap || !mine)) {
+    if (
+      holder &&
+      (!input.swap || !mine || fixedSponsorJudgingRoom(holder.name))
+    ) {
       throw new TRPCError({
         code: "CONFLICT",
         message: copy.room.takenError(

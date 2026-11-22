@@ -194,6 +194,10 @@ describe("field helpers", () => {
       tracks: ["Best Use of Cohere", "Best Domain"],
       unknown: ["Best Developer Tool by Warp"],
     });
+    expect(mapPrizes("Best Use of Tiny Fish, PCBWay Hardware Prize")).toEqual({
+      tracks: ["TinyFish", "PCBWay"],
+      unknown: [],
+    });
   });
 
   test("parseBuiltWith splits on commas and drops repeats", () => {

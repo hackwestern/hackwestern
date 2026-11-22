@@ -4,6 +4,7 @@ import {
   JUDGING_ROOMS,
   sponsorJudgingBoardCopy,
 } from "~/content/sponsor-judging-board";
+import { fixedSponsorJudgingRoom } from "~/lib/sponsor-prize-tracks";
 import { cn } from "~/lib/utils";
 
 const copy = sponsorJudgingBoardCopy.room;
@@ -29,6 +30,9 @@ export function RoomInput({
 }) {
   const id = useId();
   const [typed, setTyped] = useState(sponsor.room ?? "");
+  const fixed = fixedSponsorJudgingRoom(sponsor.name);
+  if (fixed) return <p className="m-0 text-sm font-semibold">{fixed}</p>;
+
   const save = () => {
     const room = typed.trim();
     if (room && room.toLowerCase() !== sponsor.room?.toLowerCase()) {

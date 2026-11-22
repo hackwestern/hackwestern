@@ -29,15 +29,15 @@ import { asc, like } from "drizzle-orm";
 
 import { conn, db } from "..";
 import { applications, sponsorJudgingSponsors, teams, users } from "../schema";
-import { TRACK_VALUES, type TrackValue } from "~/lib/sponsor-track";
-import { fetchSponsorTrack } from "~/server/api/utils/sponsor-judging-teams";
+import { TRACK_VALUES } from "~/lib/sponsor-track";
+import { sponsorTrackName } from "~/server/api/utils/sponsor-judging-teams";
 
 const SEED_TEAM_ID_PREFIX = "sp";
 const SEED_EMAIL_DOMAIN = "sponsorseed.hackwestern.dev";
 
 type Args = {
   teams: number;
-  canadaLifeTrack: TrackValue | null;
+  canadaLifeTrack: string | null;
   yes: boolean;
 };
 
@@ -53,12 +53,8 @@ function parseArgs(): Args {
       case "--canada-life-track": {
         const value = argv[i + 1];
         i += 1;
-        if (!value || !TRACK_VALUES.includes(value as TrackValue)) {
-          throw new Error(
-            `--canada-life-track must be one of: ${TRACK_VALUES.join(", ")}`,
-          );
-        }
-        args.canadaLifeTrack = value as TrackValue;
+        if (!value?.trim()) throw new Error("--canada-life-track needs a tag.");
+        args.canadaLifeTrack = value.trim();
         break;
       }
       case "--yes":
@@ -75,10 +71,7 @@ function parseArgs(): Args {
 // 70% of the teams use Canada Life's actual track. The remaining teams
 // round-robin across the other sponsor tracks, with General still included
 // so there is a small cross-track/multi-track mix.
-function tracksForTeam(
-  index: number,
-  canadaLifeTrack: TrackValue,
-): TrackValue[] {
+function tracksForTeam(index: number, canadaLifeTrack: string): string[] {
   if (index % 10 < 7) {
     return canadaLifeTrack === "General"
       ? ["General"]
@@ -120,18 +113,9 @@ async function seedSponsorPicks(args: Args): Promise<void> {
     const canadaLife = sponsors.find((sponsor) =>
       sponsor.name.toLowerCase().includes("canada life"),
     );
-    if (canadaLife) {
-      try {
-        canadaLifeTrack = await fetchSponsorTrack(canadaLife.name);
-      } catch (error) {
-        console.warn(
-          "Could not read Canada Life's track from the sponsor sheet.",
-          error instanceof Error ? error.message : error,
-        );
-      }
-    }
+    if (canadaLife) canadaLifeTrack = sponsorTrackName(canadaLife.name);
   }
-  canadaLifeTrack ??= "General";
+  canadaLifeTrack ??= "Canada Life";
   console.log(`Canada Life track: ${canadaLifeTrack}`);
 
   await db.transaction(async (tx) => {

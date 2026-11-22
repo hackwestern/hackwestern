@@ -421,6 +421,13 @@
       "when": 1795320570159,
       "tag": "0059_judging_normalize_small_k",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1795338167400,
+      "tag": "0060_team_track_text",
+      "breakpoints": true
     }
   ]
 }

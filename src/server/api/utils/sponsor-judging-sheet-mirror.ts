@@ -4,6 +4,7 @@ import { eq, inArray } from "drizzle-orm";
 import { sponsorJudgingCopy } from "~/content/sponsor-judging";
 import { formatPresentationTime, slotsKey } from "~/lib/sponsor-presentations";
 import {
+  fixedSponsorJudgingRoom,
   isDigitalJudging,
   prizeTrackOf,
   remoteJudgingRoom,
@@ -154,7 +155,10 @@ export function judgingSheetRows(input: JudgingSheetInput): string[][] {
     const sent = id ? sendOf.get(id) : undefined;
     const final = id ? finalOf.get(id) : undefined;
     const remote = remoteJudgingRoom(t.name);
-    const room = remote ?? (id ? (input.rooms.get(id) ?? "") : "");
+    const room =
+      fixedSponsorJudgingRoom(t.name) ??
+      remote ??
+      (id ? (input.rooms.get(id) ?? "") : "");
     const round1 = digital
       ? status.digitalRound1
       : !id
@@ -253,7 +257,7 @@ export function judgingSheetRows(input: JudgingSheetInput): string[][] {
         teamName(id),
         membersOf(id),
         placed ? formatPresentationTime(slot.startMinute!) : "",
-        placed ? (slot.room ?? "") : "",
+        placed ? (fixedSponsorJudgingRoom(t.name) ?? slot.room ?? "") : "",
         placed ? (input.notified.get(id) ?? "") : "",
       ]);
     }

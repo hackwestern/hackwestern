@@ -19,7 +19,10 @@ import {
   mergeCoffeeChatBookings,
   sortCoffeeChatSlots,
 } from "~/lib/coffee-chats";
-import { hasPrizeTrack } from "~/lib/sponsor-prize-tracks";
+import {
+  fixedSponsorJudgingRoom,
+  hasPrizeTrack,
+} from "~/lib/sponsor-prize-tracks";
 import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
@@ -150,7 +153,8 @@ export const sponsorPortalRouter = createTRPCRouter({
           // Sponsor Day-Of's "Tier" column, for the welcome line; null when
           // the sheet has no tier for them.
           tier: info?.tier ? info.tier : null,
-          roomNumber: info?.roomNumber ?? "TBD",
+          roomNumber:
+            fixedSponsorJudgingRoom(sponsorName) ?? info?.roomNumber ?? "TBD",
           boothLocation: info?.boothLocation ?? "TBD",
           // Empty string when blank so the portal can omit the workshop card.
           workshopLocation: info?.workshopLocation ?? null,
@@ -174,7 +178,7 @@ export const sponsorPortalRouter = createTRPCRouter({
           hwContact: null,
           hwContactPhone: null,
           tier: null,
-          roomNumber: "TBD",
+          roomNumber: fixedSponsorJudgingRoom(sponsorName) ?? "TBD",
           boothLocation: "TBD",
           workshopLocation: null,
           workshopTime: null,

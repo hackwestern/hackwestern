@@ -17,6 +17,7 @@ import {
   type RunOfShowItem,
 } from "~/lib/run-of-show";
 import { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS } from "~/lib/sponsor-picks";
+import { fixedSponsorJudgingRoom } from "~/lib/sponsor-prize-tracks";
 import { isJudgingTitle } from "~/lib/sponsor-timeline";
 
 export { MAX_SPONSOR_PICKS, MIN_SPONSOR_PICKS };
@@ -210,7 +211,8 @@ export function buildJudgingBoard({
     .map((s) => {
       const fromSheet = sheetRoomOrNull(sheetRooms?.get(norm(s.name)));
       const fromList = listedRoom(s.name);
-      const fromBoard = boardRooms?.get(s.id) ?? null;
+      const fromBoard =
+        fixedSponsorJudgingRoom(s.name) ?? boardRooms?.get(s.id) ?? null;
       const room = fromBoard ?? fromSheet ?? fromList;
       const picks = pickCount
         ? pickCount(s.name)

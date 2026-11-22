@@ -5,7 +5,7 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { assertPortalJudge } from "~/server/api/utils/sponsor-judging-guard";
 import { resolveSponsorName } from "~/server/api/utils/sponsor-sheets";
 import {
-  fetchSponsorTrack,
+  sponsorTrackName,
   listEligibleTeams,
 } from "~/server/api/utils/sponsor-judging-teams";
 import { db } from "~/server/db";
@@ -14,8 +14,7 @@ import { sponsorFinalPicks } from "~/server/db/schema";
 // Picks live in the database (sponsor_final_pick), written only by
 // sponsorScoring.submit / submitDigital, which validate them first and then
 // mirror them to the Sponsor Judging tab (behind sheetWritesEnabled). The
-// old "Judging" tab was deleted on 2026-11-19; nothing here touches a sheet
-// except the track read in listAllTeams.
+// old "Judging" tab was deleted on 2026-11-19.
 export const sponsorJudgingRouter = createTRPCRouter({
   /**
    * The team ids a sponsor has submitted (their ranked top 5, best first),
@@ -47,12 +46,7 @@ export const sponsorJudgingRouter = createTRPCRouter({
    * Sponsors without a prize track, and digital sponsors, are refused
    * (FORBIDDEN; assertPortalJudge).
    *
-   * Track filtering: the sponsor's track comes from the "Sponsor Track"
-   * column on the sponsor info tab. A sponsor with a track set only sees
-   * teams in that track (overlap on the teams.tracks array, same filter the
-   * judging engine uses); no track set falls back to every submitted team.
-   * Sheets being unconfigured also falls back to no filter, matching the
-   * pre-track behavior, with a console warning.
+   * Submitted teams must carry a track tag that matches the sponsor name.
    */
   listAllTeams: publicProcedure
     .input(z.object({ sponsor: z.string().uuid() }))
@@ -61,8 +55,7 @@ export const sponsorJudgingRouter = createTRPCRouter({
       // Prize track, in-person sponsors only (same gate as sponsorScoring).
       await assertPortalJudge(sponsorName);
 
-      // A sheet failure is an error, never "no filter" (see fetchSponsorTrack).
-      const sponsorTrack = await fetchSponsorTrack(sponsorName);
+      const sponsorTrack = sponsorTrackName(sponsorName);
       const teams = await listEligibleTeams(sponsorTrack);
       return { sponsorName, sponsorTrack, teams };
     }),

@@ -1,10 +1,14 @@
-import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
-import { env } from "~/env";
 import {
-  formatPresentationTime,
-  PRESENTATION_PITCH_MINUTES,
-  PRESENTATION_QA_MINUTES,
-} from "~/lib/sponsor-presentations";
+  isPCBWay,
+  pcbWayAfterScheduledJudging,
+  pcbWayJudgingCopy,
+  pcbWayJudgingLines,
+  sponsorPresentationsCopy,
+  sponsorSlotInstructions,
+} from "~/content/sponsor-presentations";
+import { env } from "~/env";
+import { formatPresentationRange } from "~/lib/sponsor-presentations";
+import { fixedSponsorJudgingRoom } from "~/lib/sponsor-prize-tracks";
 import {
   emailParagraph,
   emailShell,
@@ -29,27 +33,53 @@ export function presentationEmail(
   teamName: string,
   slots: readonly TeamPresentation[],
 ) {
-  const lines = [...slots]
+  const standard = [...slots]
+    .filter((slot) => !isPCBWay(slot.sponsorName))
     .sort((a, b) => a.start - b.start)
     .map((s) =>
-      copy.line(formatPresentationTime(s.start), s.sponsorName, s.room),
+      copy.line(
+        formatPresentationRange(s.start),
+        s.sponsorName,
+        fixedSponsorJudgingRoom(s.sponsorName) ?? s.room,
+      ),
     );
   const greeting = copy.greeting(firstName(member.name));
-  const intro = copy.intro(
-    teamName,
-    PRESENTATION_PITCH_MINUTES,
-    PRESENTATION_QA_MINUTES,
+  const pcbWayAfterSlots = pcbWayAfterScheduledJudging(slots);
+  const pcbWay = slots
+    .filter((slot) => isPCBWay(slot.sponsorName))
+    .map((slot) =>
+      pcbWayJudgingLines(
+        fixedSponsorJudgingRoom(slot.sponsorName) ?? slot.room,
+        pcbWayAfterSlots,
+      ),
+    );
+  const paragraphs = [
+    [greeting],
+    ...(pcbWayAfterSlots ? [[pcbWayJudgingCopy.afterScheduledJudging]] : []),
+    ...(standard.length || !pcbWay.length
+      ? [
+          [copy.intro(teamName)],
+          standard,
+          sponsorSlotInstructions.map((line) => `• ${line}`),
+        ]
+      : []),
+    ...pcbWay,
+    [copy.signoff],
+  ];
+  const text = paragraphs.map((lines) => lines.join("\n")).join("\n\n") + "\n";
+  const html = emailShell(
+    paragraphs.map((lines) =>
+      emailParagraph(lines.map(escapeHtml).join("<br>")),
+    ),
   );
-  const text = [greeting, "", intro, "", ...lines, "", copy.signoff, ""].join(
-    "\n",
-  );
-  const html = emailShell([
-    emailParagraph(escapeHtml(greeting)),
-    emailParagraph(escapeHtml(intro)),
-    emailParagraph(lines.map(escapeHtml).join("<br>")),
-    emailParagraph(escapeHtml(copy.signoff)),
-  ]);
-  return { subject: copy.subject(teamName), html, text };
+  return {
+    subject:
+      pcbWay.length > 0 && standard.length === 0
+        ? pcbWayJudgingCopy.heading
+        : copy.subject(teamName),
+    html,
+    text,
+  };
 }
 
 export type PresentationEmailResult = "emailed" | "not-found" | "failed";

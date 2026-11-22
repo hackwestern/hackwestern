@@ -21,6 +21,10 @@ export const PRESENTATION_WINDOW_END = 11 * 60 + 48;
  * 2026-11-19); 18 slots fill 10:00-11:48.
  */
 export const PRESENTATION_SLOT_MINUTES = 6;
+
+export function formatPresentationRange(start: number) {
+  return `${formatPresentationTime(start)} – ${formatPresentationTime(start + PRESENTATION_SLOT_MINUTES)}`;
+}
 export const PRESENTATION_PITCH_MINUTES = 3;
 export const PRESENTATION_QA_MINUTES = 2;
 /**

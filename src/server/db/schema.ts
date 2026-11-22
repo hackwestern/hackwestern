@@ -303,7 +303,7 @@ export const teams = pgTable(
       .default("draft")
       .notNull(),
     submittedAt: timestamp("submitted_at", { mode: "date", precision: 3 }),
-    tracks: trackEnum("tracks").array(),
+    tracks: text("tracks").array(),
     memberGithubUsernames: text("member_github_usernames").array(),
     memberDevpostUsernames: text("member_devpost_usernames").array(),
     techStack: text("tech_stack").array(),
@@ -1651,7 +1651,7 @@ export const teamTracks = pgTable(
     teamId: varchar("team_id", { length: 255 })
       .notNull()
       .references(() => teams.id, { onDelete: "cascade" }),
-    track: trackEnum("track").notNull(),
+    track: text("track").notNull(),
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
       .notNull(),
