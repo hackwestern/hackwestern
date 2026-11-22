@@ -1,7 +1,7 @@
 import { focusRing } from "~/components/judging/shared/judge-ui";
 
-/** Every criterion is scored on the same slider, from 0 to 10 in half steps. */
-export const RUBRIC_MIN = 0;
+/** Every criterion is scored on the same slider, from 1 to 10 in half steps. */
+export const RUBRIC_MIN = 1;
 export const RUBRIC_MAX = 10;
 export const RUBRIC_STEP = 0.5;
 
@@ -76,14 +76,14 @@ export const hasGuide = (rubric: Rubric) =>
 export const effectiveWeight = (rubric: Rubric, c: RubricCriterion) =>
   rubric.weighted && c.weight > 0 ? c.weight : 1;
 
-/** A rating only counts while it is on the 0–10 slider. */
+/** A rating only counts while it is on the 1–10 slider. */
 export const ratingOf = (c: RubricCriterion, ratings: Ratings) => {
   const r = ratings[c.id];
   return r !== undefined && r >= RUBRIC_MIN && r <= RUBRIC_MAX ? r : undefined;
 };
 
 /**
- * Turns ratings into the 0-10 score the backend stores: the weighted average
+ * Turns ratings into the 1-10 score the backend stores: the weighted average
  * of the criterion ratings (a plain average when the rubric isn't weighted).
  * It only means something once every criterion has been rated.
  */
@@ -154,8 +154,7 @@ export function RubricScorer({
   return (
     <div id="rubric-guide" className="flex flex-col gap-3">
       <p className="m-0 text-sm font-medium text-dashboard-text-light">
-        {(RUBRIC_MIN + RUBRIC_MAX) / 2} is average. Most teams should land near
-        it, with few at the extremes.
+        5 is average. Most teams should land near it, with few at the extremes.
       </p>
       {rubric.criteria.map((c) => {
         const current = ratingOf(c, ratings);
