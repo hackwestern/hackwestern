@@ -20,7 +20,10 @@ import {
   type NextPhase,
 } from "~/components/judging/judge-app/judge-next";
 import { JudgeQueueList } from "~/components/judging/judge-app/judge-queue-list";
-import { JudgeRubric } from "~/components/judging/judge-app/judge-rubric";
+import {
+  JudgeRubric,
+  clearTeamDraft,
+} from "~/components/judging/judge-app/judge-rubric";
 import {
   RoundClock,
   type RoundView,
@@ -47,6 +50,8 @@ type View = "both" | "judge" | "hacker";
 type StopId = keyof typeof copy.stops;
 
 const STOP_IDS = Object.keys(copy.stops) as StopId[];
+/** Keeps the tour's sample drafts apart from any real judge on this device. */
+const TOUR_JUDGE_KEY = "judging-tour";
 const noop = () => undefined;
 const yes = async () => true;
 
@@ -161,7 +166,7 @@ function ScoreTab() {
     <JudgePhone tab="score" header={null}>
       <div className="pt-1" />
       <JudgeRubric
-        judgeKey="judging-tour"
+        judgeKey={TOUR_JUDGE_KEY}
         teamId={TOUR_TEAM.id}
         teamName={TOUR_TEAM.name}
         table={TOUR_TEAM.table}
@@ -474,10 +479,15 @@ export function JudgingTour() {
     return () => window.removeEventListener("keydown", onKey);
   }, [at, go]);
 
+  // The sample Score screen starts empty on every visit.
+  useEffect(() => clearTeamDraft(TOUR_JUDGE_KEY, TOUR_TEAM.id), []);
+
   // On phones the stop list is a sideways strip: keep the current stop in it.
   useEffect(() => {
     document
-      .querySelector('nav[aria-label="Tour stops"] [aria-current="step"]')
+      .querySelector(
+        `nav[aria-label="${copy.stopsLabel}"] [aria-current="step"]`,
+      )
       ?.scrollIntoView({ block: "nearest", inline: "center" });
   }, [at]);
 
@@ -490,7 +500,10 @@ export function JudgingTour() {
     const queue = (
       <JudgeQueueList queue={tourQueue} tableByTeam={TABLE_BY_TEAM} />
     );
-    const hacker = (node: ReactNode, label = "Judging Rounds"): Screen => ({
+    const hacker = (
+      node: ReactNode,
+      label: string = copy.screens.rounds,
+    ): Screen => ({
       label,
       node: <RoundsPage>{node}</RoundsPage>,
     });
@@ -524,7 +537,7 @@ export function JudgingTour() {
         return {
           judge: [
             {
-              label: "Map",
+              label: copy.screens.map,
               node: (
                 <div className="flex h-full min-h-[560px] flex-col">
                   <VenueMap
@@ -539,10 +552,13 @@ export function JudgingTour() {
           hacker: [
             hacker(<HackerTableCard mine={tourHacker()} missing={null} />),
             {
-              label: "Room map",
+              label: copy.screens.roomMap,
               node: (
                 <div className="flex h-full min-h-[460px] flex-col">
-                  <TableMap focus={TOUR_TEAM.table} focusLabel="Your table" />
+                  <TableMap
+                    focus={TOUR_TEAM.table}
+                    focusLabel={copy.screens.yourTable}
+                  />
                 </div>
               ),
             },
@@ -552,7 +568,7 @@ export function JudgingTour() {
         return {
           judge: [
             {
-              label: "Next",
+              label: copy.screens.next,
               node: (
                 <NextTab
                   phase="team"
@@ -584,7 +600,7 @@ export function JudgingTour() {
         return {
           judge: [
             {
-              label: "Round over",
+              label: copy.screens.roundOver,
               node: (
                 <NextTab
                   phase="waitRound"
@@ -603,7 +619,7 @@ export function JudgingTour() {
               />,
             ),
             {
-              label: "Big screen",
+              label: copy.screens.bigScreen,
               node: <BigScreen view={tourRound("closed", 1)} />,
             },
           ],
@@ -611,7 +627,7 @@ export function JudgingTour() {
       case "demo":
       case "criteria":
         return {
-          judge: [{ label: "Score", node: <ScoreTab /> }],
+          judge: [{ label: copy.screens.score, node: <ScoreTab /> }],
           hacker: [
             hacker(
               <HackerTableCard
@@ -630,7 +646,7 @@ export function JudgingTour() {
         return {
           judge: [
             {
-              label: "Buffer",
+              label: copy.screens.buffer,
               node: (
                 <NextTab
                   phase="waitRound"
@@ -653,7 +669,10 @@ export function JudgingTour() {
                 missing={null}
               />,
             ),
-            { label: "Big screen", node: <BigScreen view={buffer} /> },
+            {
+              label: copy.screens.bigScreen,
+              node: <BigScreen view={buffer} />,
+            },
           ],
         };
       }
@@ -661,7 +680,7 @@ export function JudgingTour() {
         return {
           judge: [
             {
-              label: "Team not here",
+              label: copy.screens.teamNotHere,
               node: (
                 <NextTab
                   phase="waitRound"
@@ -703,7 +722,7 @@ export function JudgingTour() {
         return {
           judge: [
             {
-              label: "Catch-up",
+              label: copy.screens.catchUp,
               node: (
                 <NextTab
                   phase="waitRound"
@@ -718,7 +737,7 @@ export function JudgingTour() {
               ),
             },
             {
-              label: "My teams",
+              label: copy.screens.myTeams,
               node: (
                 <JudgePhone tab="teams" header={<JudgeHeader left="Review" />}>
                   <JudgeTeams
@@ -754,11 +773,11 @@ export function JudgingTour() {
         return {
           judge: [
             {
-              label: "Re-score",
+              label: copy.screens.rescore,
               node: <NextTab phase="rescoreReady" judged={TOUR_TEAMS.length} />,
             },
             {
-              label: "Submit",
+              label: copy.screens.submit,
               node: (
                 <JudgePhone tab="teams" header={<JudgeHeader left="Submit" />}>
                   <JudgeFinal
@@ -789,7 +808,7 @@ export function JudgingTour() {
         return {
           judge: [
             {
-              label: "Done",
+              label: copy.screens.done,
               node: <NextTab phase="finished" judged={TOUR_TEAMS.length} />,
             },
           ],
@@ -849,7 +868,7 @@ export function JudgingTour() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
           {/* Stops: a row that scrolls on phones, a list on wide screens. */}
           <nav
-            aria-label="Tour stops"
+            aria-label={copy.stopsLabel}
             className="min-w-0 lg:sticky lg:top-6 lg:self-start"
           >
             <ol className="m-0 flex list-none gap-1.5 overflow-x-auto p-0 pb-1 lg:flex-col lg:overflow-visible">

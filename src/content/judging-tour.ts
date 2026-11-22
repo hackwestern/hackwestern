@@ -11,7 +11,7 @@ export const judgingTourCopy = {
   intro:
     "Hackers stay at their table and demo. Judges walk the room and score them. Here is what both screens show at each step, using sample teams.",
   facts: [
-    { label: "When", value: "11:45 AM to 1:00 PM, Sunday" },
+    { label: "When", value: "11:30 AM to 1:00 PM, Sunday" },
     { label: "Where", value: "Grand Hall, SEI 1110" },
     { label: "Each round", value: "3 min demo, 2 min Q&A, 1:30 to move" },
     { label: "Each team", value: "Scored by 3 judges" },
@@ -30,6 +30,25 @@ export const judgingTourCopy = {
   restart: "Start over",
   sample: "Sample data. Your table and teams will be different.",
   keys: "Arrow keys move between stops.",
+  stopsLabel: "Tour stops",
+  /** Labels for the small screen tabs above each device. */
+  screens: {
+    rounds: "Judging Rounds",
+    map: "Map",
+    roomMap: "Room map",
+    yourTable: "Your table",
+    next: "Next",
+    roundOver: "Round over",
+    bigScreen: "Big screen",
+    score: "Score",
+    buffer: "Buffer",
+    teamNotHere: "Team not here",
+    catchUp: "Catch-up",
+    myTeams: "My teams",
+    rescore: "Re-score",
+    submit: "Submit",
+    done: "Done",
+  },
 
   qr: {
     judge: {
@@ -249,7 +268,7 @@ export const judgingTourCopy = {
   /** /judging-tour/hackers: one screen for the projector, for hackers. */
   hackerBriefing: {
     title: "Judging for hackers",
-    eyebrow: "Hack Western 13 · judging · 11:45 AM to 1:00 PM",
+    eyebrow: "Hack Western 13 · judging · 11:30 AM to 1:00 PM",
     heading: "Stay at your table. Judges come to you.",
     timing: {
       label: "Every round",
@@ -295,7 +314,7 @@ export const judgingTourCopy = {
   /** /judging-tour/judges: the judges' briefing, for the projector. */
   judgeBriefing: {
     title: "Judging for judges",
-    eyebrow: "Hack Western 13 · judge briefing",
+    eyebrow: "Hack Western 13 · judge briefing · 11:30 AM to 1:00 PM",
     teams: {
       step: "First",
       heading: "These are your teams",
