@@ -218,12 +218,17 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
         ) : (
           <section
             aria-label="Your team"
-            className={`${card} flex flex-col gap-1 p-4`}
+            className={`${card} flex flex-col gap-3 p-5`}
           >
-            <span className="text-sm font-semibold text-dashboard-text-light">
-              Your team · Table {mine.table.number}
+            <span className="flex flex-col">
+              <span className="text-base font-semibold text-dashboard-text-light">
+                Your table
+              </span>
+              <span className="text-6xl font-bold tabular-nums leading-tight text-dashboard-text-heavy">
+                {mine.table.number}
+              </span>
             </span>
-            <span className="text-2xl font-bold text-dashboard-text-heavy">
+            <span className="border-t border-dashboard-border-subtle pt-3 text-xl font-bold text-dashboard-text-heavy sm:text-2xl">
               {mine.judgedAll
                 ? "Your team has been judged."
                 : mine.thisRound === null
