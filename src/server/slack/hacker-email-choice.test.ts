@@ -8,6 +8,7 @@ import { createCaller } from "~/server/api/root";
 import { createInnerTRPCContext } from "~/server/api/trpc";
 import { notifyCoffeeChat } from "~/server/api/utils/coffee-chat-notify";
 import { judgingRoomsById } from "~/server/api/utils/sponsor-judging-board";
+import { setRound2Open } from "~/server/api/utils/sponsor-judging-settings";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
 import { db } from "~/server/db";
 import {
@@ -264,6 +265,8 @@ describe("coffee chat offer", () => {
 describe("presentation notify", () => {
   /** One scheduled team with one hacker; their organizer caller. */
   async function scheduledHacker(slackEmail: string | null) {
+    // Notices only go out once round 2 is open.
+    await setRound2Open(true);
     // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table
     await db.delete(sponsorPresentationNotices);
     // eslint-disable-next-line drizzle/enforce-delete-with-where -- test reset: empty the table

@@ -4,13 +4,13 @@ How sponsor track judging should run, and what the site does at each step.
 
 ## The day
 
-| Time | What happens |
-|---|---|
-| 8:30 to 9:00 | Sponsor judging workshop. We show sponsors the portal. |
-| 9:00 to 10:00 | Round 1. Sponsors go through the Devposts in their track on the portal and shortlist teams. |
-| 10:00 to 11:48 | Presentations. Each sponsor track has a room and shortlisted teams come in to present. |
-| After 11:48 | Round 2. Each sponsor picks their top 5 from the teams that presented and sends it to us. |
-| Then | The web team runs the cheat check on every top 5 team. |
+| Time           | What happens                                                                                |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| 8:30 to 9:00   | Sponsor judging workshop. We show sponsors the portal.                                      |
+| 9:00 to 10:00  | Round 1. Sponsors go through the Devposts in their track on the portal and shortlist teams. |
+| 10:00 to 11:48 | Presentations. Each sponsor track has a room and shortlisted teams come in to present.      |
+| After 11:48    | Round 2. Each sponsor ranks 3–5 teams that presented.                                       |
+| Then           | The web team runs the cheat check on every ranked team.                                     |
 
 Sponsor rooms so far: Scotiabank in Rm 2110, Canada Life in Rm 2230, QNX in Rm 2235.
 
@@ -20,7 +20,7 @@ Only sponsors with a prize track judge: Scotiabank, Sunlife, Canada Life, QNX, T
 
 ## Round 1: shortlist
 
-Sponsors shortlist up to 18 teams (Jazz, 2026-11-20; it was 15). Each presentation slot is 6 minutes: a 3 minute pitch, 2 minutes of Q&A and 1 minute to switch teams, so 18 per room run from 10:00 to 11:48 (the last one starts at 11:42). The cap comes from the slot count (`SHORTLIST_MAX` in `src/lib/sponsor-presentations.ts`): sponsors can save more while browsing, but Send shortlist stays off until they're down to 18, and the server refuses more.
+Sponsors can submit up to 10 finalists. Each presentation slot is 6 minutes: a 3 minute pitch, 2 minutes of Q&A and 1 minute to switch teams. Sponsors can save more while browsing and must trim the list to 10 before submitting. Previously submitted shortlists retain their eligibility for presentation slots.
 
 When they're done, the sponsor sends us the shortlist. That's all they do. We take it from there.
 
@@ -35,24 +35,28 @@ Sponsors don't book times. We run the automation:
 5. Hackers get a Slack message with their room and time for each sponsor, and can look up the current schedule in the hacker Live Judging tab. A hacker who isn't on Slack gets the same times by email.
 6. Once scheduled, sponsors see each team's presentation time on their shortlist, with "Each presentation: 3 min pitch · 2 min Q&A".
 
-## Round 2: top 5
+## Round 2: final rankings
 
-From the teams that presented, each sponsor ranks their top 5 and sends it to us. A team that didn't present isn't in the round 2 list. Round 2 opens when an organizer presses "Open round 2" after presentations; until then sponsors see their sent shortlist and can't submit a top 5. The confirmation lists missing rooms, incomplete schedules and conflicts. Organizers can continue after reviewing the warnings.
+From the teams that presented, each sponsor ranks 3–5 teams (all of them when fewer presented) and sends it to us. A team that didn't present isn't in the round 2 list. Round 2 opens when an organizer presses "Open round 2" after presentations; until then sponsors see their sent shortlist and can't submit a final ranking. The confirmation lists missing rooms, incomplete schedules and conflicts. Organizers can continue after reviewing the warnings.
 
-A sponsor with no presentation slot can't rank in round 2 (Jazz). Nobody presented to them, so the page says round 2 is locked and to ask us to schedule again, and the server refuses their top 5.
+A sponsor with no presentation slot can't rank in round 2 (Jazz). Nobody presented to them, so the page says round 2 is locked and to ask us to schedule again, and the server refuses their final ranking.
+
+If fewer than 5 teams presented to a sponsor, they rank all of them: the page shows one place per presenting team and the server takes exactly that many (min(5, teams that presented)).
+
+A sponsor can submit their top 5 only once. To fix a mis-rank, an organizer opens the sponsor's row on the Judging board and enters the top 5 by Devpost link or team ID (the same form as digital sponsors, `submitDigital`). It replaces the sponsor's submission and takes only teams that presented to them.
 
 ## Cheat check
 
-The web team runs the cheat check on every team in any sponsor's top 5 before winners are announced.
+The web team runs the cheat check on every team in any sponsor's final ranking before winners are announced.
 
 ## What the site does
 
-- **Portal (`/sponsors/<id>/picks`, prize track sponsors only):** browse the track's Devposts, score out of 10, shortlist. A "Send shortlist" step ends round 1. Once organizers open round 2, the same page switches to it: rank and submit the top 5, picked only from the teams that presented. Before that it shows the sent shortlist and says round 2 opens after presentations.
-- **Organizer, Sponsor judging tab (`?tab=judging`):** who has sent a shortlist, a "Schedule presentations" button, the schedule by room and by team (with any team that couldn't fit), "Notify hackers", "Open round 2" (with a confirm; "Close round 2" undoes it), a By hacker view (every scheduled hacker by team with their slots and how they heard: Slack sent or emailed with the time, not on Slack, failed, not sent yet; filter by room or to Not reached), and Final results (each sponsor's submitted top 5 in rank order with Devpost link, the team's hackers and the submit time, or "Not submitted yet").
+- **Portal (`/sponsors/<id>/picks`, prize track sponsors only):** browse the track's Devposts, score out of 10, shortlist. A "Send shortlist" step ends round 1. Once organizers open round 2, the same page switches to it: rank and submit 3–5 teams, picked only from the teams that presented. Before that it shows the sent shortlist and says round 2 opens after presentations.
+- **Organizer, Sponsor judging tab (`?tab=judging`):** who has sent a shortlist, a "Schedule presentations" button, the schedule by room and by team (with any team that couldn't fit), "Notify hackers", "Open round 2" (with a confirm; "Close round 2" undoes it), a By hacker view (every scheduled hacker by team with their slots and how they heard: Slack sent or emailed with the time, not on Slack, failed, not sent yet; filter by room or to Not reached), and Final results (each sponsor's submitted teams in rank order with Devpost link, the team's hackers and the submit time, or "Not submitted yet").
 - **Scheduler rule:** slots are 6 minutes from 10:00 (18 per room to 11:48), one room per sponsor. A team's presentations never overlap, and each starts at least 10 minutes after its previous one. A sponsor without a room still gets its times (its own column on the board); typing the room fills it in and keeps every time. When gaps don't let everyone fit by 11:48, slots carry on past it and the board marks them "Runs past 11:48 AM" with how far over the last one ends; no team is hidden.
 - **Hackers:** each team member gets a Slack DM with their rooms and times when the schedule is sent (or an email if Slack can't find them). Once organizers open Round 2, the Live Judging tab shows saved presentations that have both a time and room. Organizers can send Slack or email notices after opening Round 2. Slack looks them up by the email they use on Slack (set in the notification center on /live) first, then the email they applied with; the email always goes to the email they applied with. The times also show in the /live notification center with how they were sent (Slack DM or Email).
 - **Notify, per member:** "Notify hackers" only messages members who don't have their current times yet (never sent, failed, or their times changed; someone emailed because they're not on Slack counts as reached), so pressing it twice or retrying never messages anyone twice. "Notify again" resends to everyone after a confirm. The tab lists members neither Slack nor email reached, and why. Scheduling again keeps members notified when their team's times don't change, and the confirm step says how many hackers who already have their times would get new ones.
-- **Cheat check:** the top 5 teams go to the existing cheat check.
+- **Cheat check:** all ranked teams go to the existing cheat check.
 - **Sponsor Judging tab:** the app writes a "Sponsor Judging" tab in the Spon Team RUN OF SHOW sheet, one way from the database. It's rewritten whenever a shortlist is sent, presentations are scheduled, hackers are notified, a room changes, round 2 opens or closes, a rep scores (calls in a burst share one write) or a top 5 is submitted. There's no manual "Sync to sheet" button (Jazz, 2026-11-20). Edits in the tab are overwritten. It has a note row with the update time, then two tables:
   - **Sponsors:** Sponsor | In person / Digital | Judging room | Round 1 status | Shortlist sent | Shortlist (team IDs) | Round 2 status | Top 5 sent | 1st place … 5th place | Notes (one row per prize track sponsor, including ones not registered yet; places read "team ID · Devpost link").
   - **Presentations:** Sponsor | Team ID | Team | Members | Time | Room | Notified (one row per shortlisted or scheduled team per sponsor; time and room only for a placed slot; Notified is Slack, Email, failed, or a mix).

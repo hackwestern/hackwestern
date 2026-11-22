@@ -7,7 +7,6 @@ import { env } from "~/env";
 import {
   PRESENTATION_ROOM_MAX,
   PRESENTATION_SLOTS_PER_ROOM,
-  SHORTLIST_MAX,
 } from "~/lib/sponsor-presentations";
 import { hasPrizeTrack, isDigitalJudging } from "~/lib/sponsor-prize-tracks";
 import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
@@ -429,7 +428,7 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         ? new Date(Math.max(...rows.map((r) => r.scheduledAt.getTime())))
         : null;
     const placed = rows.filter((r) => r.startMinute !== null);
-    // Teams past the first SHORTLIST_MAX of their sponsor's send, counting
+    // Teams past the first PRESENTATION_SLOTS_PER_ROOM of their sponsor's send, counting
     // only teams in the schedule (as schedule does): never placed.
     const overCap = new Set<string>();
     for (const send of sends) {
@@ -438,7 +437,7 @@ export const sponsorPresentationsRouter = createTRPCRouter({
       );
       [...new Set(send.teamIds)]
         .filter((id) => inSchedule.has(id))
-        .slice(SHORTLIST_MAX)
+        .slice(PRESENTATION_SLOTS_PER_ROOM)
         .forEach((id) => overCap.add(`${send.sponsorId}:${id}`));
     }
     const named = (r: (typeof rows)[number]) => ({

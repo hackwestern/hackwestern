@@ -4,6 +4,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/router";
 import { Button } from "../ui/button";
 import { SectionLink, SectionGroup, IconlessLink } from "./navlinks";
+import { RoundsNavItem } from "./rounds-nav";
 import * as tokens from "~/lib/tokens";
 import { SCHEDULE_ENABLED } from "~/constants/live";
 
@@ -25,6 +26,7 @@ export const SidebarNav = ({
         <SectionLink tab="menu" name="Food Menu" />
         <SectionLink tab="mentors" name="Mentors" />
         <SectionLink tab="sponsors" name="Sponsors" />
+        <RoundsNavItem isOrganizer={isOrganizer} />
         {!isOrganizer && <SectionLink tab="coffee-chats" name="Coffee Chats" />}
         {!isOrganizer && <SectionLink tab="judging" name="Judging" />}
         {!isOrganizer && (

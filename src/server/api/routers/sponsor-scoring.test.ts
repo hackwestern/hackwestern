@@ -383,12 +383,27 @@ describe("sponsorScoring.submit", () => {
     expect(after.final).toMatchObject({ teamIds: ranked, sheetSynced: true });
   });
 
+  test.each([3, 4])(
+    "saves an ordered final ranking of %i teams",
+    async (count) => {
+      const s = await sponsor();
+      const ids = await shortlistTeams(s.id);
+      const ranked = ids.slice(0, count).reverse();
+      await expect(
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ranked }),
+      ).resolves.toMatchObject({ teamIds: ranked });
+      expect(
+        (await anon.sponsorScoring.get({ sponsor: s.id })).final?.teamIds,
+      ).toEqual(ranked);
+    },
+  );
+
   test("refuses the wrong count, duplicates and unshortlisted teams", async () => {
     const s = await sponsor();
     const ids = await shortlistTeams(s.id);
     const extra = await team();
     const cases = [
-      ids.slice(0, TOP - 1),
+      ids.slice(0, 2),
       [...ids.slice(0, TOP), extra],
       [ids[0]!, ...ids.slice(0, TOP - 1)],
       [...ids.slice(0, TOP - 1), extra],
@@ -399,6 +414,28 @@ describe("sponsorScoring.submit", () => {
       ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     }
     expect(mirrorSoon).not.toHaveBeenCalled();
+  });
+
+  test("fewer than five presented: submit all of them", async () => {
+    const s = await sponsor();
+    const ids = await someTeams(3);
+    await db.insert(sponsorPresentations).values(
+      ids.map((teamId, i) => ({
+        sponsorId: s.id,
+        teamId,
+        room: "Rm 2235",
+        startMinute: 600 + i * 6,
+      })),
+    );
+    await expect(
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids.slice(0, 2) }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "Submit exactly 3 teams.",
+    });
+    await expect(
+      anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ids }),
+    ).resolves.toMatchObject({ teamIds: ids });
   });
 
   test("another sponsor's shortlist doesn't count, and isn't touched", async () => {
@@ -589,6 +626,35 @@ describe("sponsorScoring.sendShortlist", () => {
     await expect(
       anon.sponsorScoring.sendShortlist({ sponsor: s.id }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  test("accepts 10 finalists and rejects 11", async () => {
+    const s = await sponsor();
+    const ids = await someTeams(11);
+    for (const teamId of ids) {
+      await anon.sponsorScoring.review({
+        sponsor: s.id,
+        teamId,
+        shortlisted: true,
+      });
+    }
+    await expect(
+      anon.sponsorScoring.sendShortlist({ sponsor: s.id }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "Send at most 10 teams.",
+    });
+
+    await anon.sponsorScoring.review({
+      sponsor: s.id,
+      teamId: ids[10]!,
+      shortlisted: false,
+    });
+    await expect(
+      anon.sponsorScoring.sendShortlist({ sponsor: s.id }),
+    ).resolves.toMatchObject({
+      teamIds: ids.slice(0, 10).sort(),
+    });
   });
 
   test("refuses an empty shortlist and a closed round", async () => {
@@ -1163,9 +1229,9 @@ describe("sponsorScoring digital sponsors (top 5 by Devpost link)", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
-  test("still works after judging closes (organizers enter it late)", async () => {
+  test("still accepts three ranked teams after judging closes", async () => {
     const org = await organizer();
-    const all = await someTeams(TOP);
+    const all = await someTeams(3);
     closesAt = PAST;
     await expect(
       org.sponsorScoring.submitDigital({ name: "PCBWay", links: all }),
@@ -1193,7 +1259,7 @@ describe("sponsorScoring digital sponsors (top 5 by Devpost link)", () => {
     ).resolves.toMatchObject({ teamIds: all });
   });
 
-  test("refuses the same team twice and a non-digital sponsor", async () => {
+  test("refuses the same team twice and a sponsor without a prize track", async () => {
     const org = await organizer();
     const [a, ...rest] = await someTeams(TOP - 1);
     await expect(
@@ -1202,12 +1268,55 @@ describe("sponsorScoring digital sponsors (top 5 by Devpost link)", () => {
         links: [a!, `devpost.com/software/${a}`, ...rest],
       }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    const noTrack = await sponsor(false);
     await expect(
       org.sponsorScoring.submitDigital({
-        name: "Scotiabank",
+        name: noTrack.name,
         links: [a!, ...rest, a!],
       }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  test("organizers can replace an in-person sponsor's top 5 from its presenters", async () => {
+    const org = await organizer();
+    const s = await sponsor();
+    const ids = await shortlistTeams(s.id);
+    await anon.sponsorScoring.submit({
+      sponsor: s.id,
+      teamIds: ids.slice(0, TOP),
+    });
+    const stranger = await team();
+    await expect(
+      org.sponsorScoring.submitDigital({
+        name: s.name,
+        links: [stranger, ...ids.slice(0, TOP - 1)],
+      }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    const fixed = ids.slice(0, TOP).reverse();
+    await expect(
+      org.sponsorScoring.submitDigital({ name: s.name, links: fixed }),
+    ).resolves.toMatchObject({ teamIds: fixed });
+    expect(
+      (await anon.sponsorScoring.get({ sponsor: s.id })).final,
+    ).toMatchObject({ teamIds: fixed });
+
+    // Two presenters: the top is those two.
+    const few = await sponsor();
+    const two = await someTeams(2);
+    await db.insert(sponsorPresentations).values(
+      two.map((teamId, i) => ({
+        sponsorId: few.id,
+        teamId,
+        room: "Rm 2110",
+        startMinute: 600 + i * 6,
+      })),
+    );
+    expect(
+      (await org.sponsorScoring.digitalTeams({ name: few.name })).top,
+    ).toBe(2);
+    await expect(
+      org.sponsorScoring.submitDigital({ name: few.name, links: two }),
+    ).resolves.toMatchObject({ teamIds: two });
   });
 
   test("organizers only; a digital sponsor's link can't judge in the portal", async () => {

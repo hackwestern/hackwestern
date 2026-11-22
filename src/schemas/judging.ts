@@ -4,8 +4,8 @@ import { z } from "zod";
 import { CRITERION_IDS, type CriterionId } from "~/lib/judging-criteria";
 import { judgeTypeEnum, judges, trackEnum } from "~/server/db/schema";
 
-// Scores are 0-10, the judge app's rubric range.
-export const SCORE_MIN = 0;
+// Scores are 1-10, the judge app's rubric range.
+export const SCORE_MIN = 1;
 export const SCORE_MAX = 10;
 
 const ratingSchema = z.number().min(SCORE_MIN).max(SCORE_MAX).multipleOf(0.5);
@@ -71,6 +71,18 @@ export const setupTablesSchema = z.object({
 });
 export type SetupTablesInput = z.infer<typeof setupTablesSchema>;
 
+export const setRoundConfigSchema = z
+  .object({
+    roundSeconds: z.number().int().min(30).max(3600).optional(),
+    roundsEnabled: z.boolean().optional(),
+  })
+  .refine(
+    (v) => v.roundSeconds !== undefined || v.roundsEnabled !== undefined,
+    {
+      message: "Nothing to change.",
+    },
+  );
+
 export const setTableActiveSchema = z.object({
   tableId,
   isActive: z.boolean(),
@@ -100,6 +112,8 @@ export const handOffJudgeSchema = z
   });
 
 export const addJudgeToTableSchema = z.object({ judgeId, tableId });
+
+export const undoAbsentSchema = z.object({ tableId });
 
 export const setJudgeNoShowSchema = z.object({
   judgeId,

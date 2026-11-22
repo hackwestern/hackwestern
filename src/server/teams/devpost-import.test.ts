@@ -22,6 +22,7 @@ import {
   parseCsv,
   parseDevpostDate,
   parseDevpostExport,
+  parseBuiltWith,
   pickGithubUrl,
   planImport,
 } from "~/server/teams/devpost-import";
@@ -63,6 +64,7 @@ interface Row {
   about?: string;
   links?: string;
   prizes?: string;
+  builtWith?: string;
   ids?: string;
   /** Devpost names, submitter first. */
   people?: string[];
@@ -86,7 +88,7 @@ function csvOf(rows: Row[]): string {
       r.links ?? "",
       "",
       r.prizes ?? "",
-      "",
+      r.builtWith ?? "",
       ...split(submitter),
       "sub@example.com",
       r.ids ?? "",
@@ -193,6 +195,15 @@ describe("field helpers", () => {
       unknown: ["Best Developer Tool by Warp"],
     });
   });
+
+  test("parseBuiltWith splits on commas and drops repeats", () => {
+    expect(parseBuiltWith("React, node.js,, react ,C#")).toEqual([
+      "React",
+      "node.js",
+      "C#",
+    ]);
+    expect(parseBuiltWith("")).toEqual([]);
+  });
 });
 
 describe("parseDevpostExport", () => {
@@ -206,6 +217,7 @@ describe("parseDevpostExport", () => {
           about: "Line one,\nline two",
           links: "https://github.com/x/rover",
           prizes: "General",
+          builtWith: "react, python",
           ids: `${hid(0)} ${hid(1)}`,
           people: ["Ada Lovelace", "Alan Turing"],
         },
@@ -222,6 +234,7 @@ describe("parseDevpostExport", () => {
       devpostUrl: u,
       githubUrl: "https://github.com/x/rover",
       tracks: ["General"],
+      techStack: ["react", "python"],
       ids: [hid(0), hid(1)],
       members: ["Ada Lovelace", "Alan Turing"],
     });
@@ -247,6 +260,7 @@ describe("planImport", () => {
     githubUrl: null,
     tracks: [],
     unknownPrizes: [],
+    techStack: [],
     ids,
     typos: [],
     members: ["Ada Lovelace"],
@@ -323,6 +337,7 @@ describe("applyImport", () => {
         title: "Rover",
         url: u,
         prizes: "Best Domain",
+        builtWith: "react, python",
         links: "https://github.com/x/rover",
         ids: `${hid(0)}, ${hid(1)}, ${hid(60)}`,
       },
@@ -340,6 +355,7 @@ describe("applyImport", () => {
       submissionStatus: "submitted",
       githubUrl: "https://github.com/x/rover",
       tracks: ["Best Domain"],
+      techStack: ["react", "python"],
       importFlags: [{ reason: "not_hacker", members: [hid(60)] }],
       judgingTableId: null,
     });

@@ -1,3 +1,4 @@
+import { minPicks } from "~/lib/sponsor-scoring";
 import { useEffect, useId, useState } from "react";
 import { CheckCircle2, CircleAlert } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -105,11 +106,18 @@ export function DigitalSponsor({ name, top }: { name: string; top: number }) {
     );
   }
 
-  const matches = links.map((link) => matchTeamByLink(link, data.teams));
+  // One place per team the sponsor can rank, up to `top` (data.top).
+  const shown = links.slice(0, data.top);
+  const matches = shown.map((link) => matchTeamByLink(link, data.teams));
   const dupes = matches.map(
     (m, i) => m !== null && matches.findIndex((o) => o?.id === m.id) !== i,
   );
-  const ready = matches.every((m) => m !== null) && !dupes.some(Boolean);
+  // Places are filled in order; blank ones at the end are left off.
+  const filled = shown.filter((link) => link.trim() !== "");
+  const ready =
+    filled.length >= minPicks(data.top) &&
+    filled.every((_, i) => matches[i] !== null) &&
+    !dupes.some(Boolean);
 
   return (
     <section
@@ -142,10 +150,10 @@ export function DigitalSponsor({ name, top }: { name: string; top: number }) {
         className="flex flex-col gap-3"
         onSubmit={(e) => {
           e.preventDefault();
-          if (ready) save.mutate({ name, links });
+          if (ready) save.mutate({ name, links: filled });
         }}
       >
-        {links.map((link, i) => {
+        {shown.map((link, i) => {
           const match = matches[i];
           const inputId = `${id}-place-${i}`;
           const status = `${inputId}-status`;
@@ -220,7 +228,11 @@ export function DigitalSponsor({ name, top }: { name: string; top: number }) {
           disabled={!ready || save.isPending}
           className="self-start disabled:cursor-not-allowed disabled:opacity-dashboard-disabled"
         >
-          {save.isPending ? copy.saving : copy.save(top)}
+          {save.isPending
+            ? copy.saving
+            : copy.save(
+                filled.length >= minPicks(data.top) ? filled.length : data.top,
+              )}
         </DashboardButton>
       </form>
     </section>

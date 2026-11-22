@@ -121,13 +121,13 @@
       ]
     },
     {
-      "auth": "session",
+      "auth": "organizer",
       "dynamic": false,
       "file": "src/pages/internal/cheat-check.tsx",
       "hasGetServerSideProps": true,
       "route": "/internal/cheat-check",
       "serverGuards": [
-        "disabledRedirect"
+        "authRedirectOrganizer"
       ]
     },
     {
@@ -323,6 +323,14 @@
       "serverGuards": [
         "hackerLoginRedirect"
       ]
+    },
+    {
+      "auth": "none-detected",
+      "dynamic": false,
+      "file": "src/pages/rounds.tsx",
+      "hasGetServerSideProps": true,
+      "route": "/rounds",
+      "serverGuards": []
     },
     {
       "auth": "none-detected",
@@ -5732,134 +5740,146 @@
       "http": "GET /api/trpc/cheatCheck.getSweepStatus?input=<superjson>",
       "input": null,
       "output": {
-        "anyOf": [
-          {
-            "type": "null"
+        "properties": {
+          "configured": {
+            "type": "boolean"
           },
-          {
-            "properties": {
-              "items": {
-                "properties": {
-                  "done": {
-                    "type": "number"
-                  },
-                  "failed": {
-                    "type": "number"
-                  },
-                  "pending": {
-                    "type": "number"
-                  },
-                  "running": {
-                    "type": "number"
-                  }
-                },
-                "required": [
-                  "done",
-                  "running",
-                  "failed",
-                  "pending"
-                ],
-                "type": "object"
+          "latest": {
+            "anyOf": [
+              {
+                "type": "null"
               },
-              "stalled": {
-                "type": "boolean"
-              },
-              "sweep": {
+              {
                 "properties": {
-                  "error": {
-                    "anyOf": [
-                      {
-                        "type": "null"
+                  "items": {
+                    "properties": {
+                      "done": {
+                        "type": "number"
                       },
-                      {
-                        "type": "string"
-                      }
-                    ]
-                  },
-                  "finishedAt": {
-                    "anyOf": [
-                      {
-                        "type": "null"
+                      "failed": {
+                        "type": "number"
                       },
-                      {
-                        "format": "date-time",
-                        "type": "string",
-                        "x-superjson": "Date"
-                      }
-                    ]
-                  },
-                  "forceRerun": {
-                    "type": "boolean"
-                  },
-                  "hackerChecksDone": {
-                    "type": "boolean"
-                  },
-                  "id": {
-                    "type": "number"
-                  },
-                  "lastHeartbeatAt": {
-                    "format": "date-time",
-                    "type": "string",
-                    "x-superjson": "Date"
-                  },
-                  "rateLimitedUntil": {
-                    "anyOf": [
-                      {
-                        "type": "null"
+                      "pending": {
+                        "type": "number"
                       },
-                      {
-                        "format": "date-time",
-                        "type": "string",
-                        "x-superjson": "Date"
+                      "running": {
+                        "type": "number"
                       }
-                    ]
-                  },
-                  "startedAt": {
-                    "format": "date-time",
-                    "type": "string",
-                    "x-superjson": "Date"
-                  },
-                  "status": {
-                    "enum": [
+                    },
+                    "required": [
+                      "done",
                       "running",
-                      "completed",
-                      "failed"
-                    ]
+                      "failed",
+                      "pending"
+                    ],
+                    "type": "object"
                   },
-                  "totalTeams": {
-                    "type": "number"
+                  "stalled": {
+                    "type": "boolean"
                   },
-                  "triggeredBy": {
-                    "enum": [
-                      "judging_complete",
-                      "manual"
-                    ]
+                  "sweep": {
+                    "properties": {
+                      "error": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "finishedAt": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "format": "date-time",
+                            "type": "string",
+                            "x-superjson": "Date"
+                          }
+                        ]
+                      },
+                      "forceRerun": {
+                        "type": "boolean"
+                      },
+                      "hackerChecksDone": {
+                        "type": "boolean"
+                      },
+                      "id": {
+                        "type": "number"
+                      },
+                      "lastHeartbeatAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "x-superjson": "Date"
+                      },
+                      "rateLimitedUntil": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "format": "date-time",
+                            "type": "string",
+                            "x-superjson": "Date"
+                          }
+                        ]
+                      },
+                      "startedAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "x-superjson": "Date"
+                      },
+                      "status": {
+                        "enum": [
+                          "running",
+                          "completed",
+                          "failed"
+                        ]
+                      },
+                      "totalTeams": {
+                        "type": "number"
+                      },
+                      "triggeredBy": {
+                        "enum": [
+                          "judging_complete",
+                          "manual"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "error",
+                      "status",
+                      "id",
+                      "startedAt",
+                      "triggeredBy",
+                      "lastHeartbeatAt",
+                      "finishedAt",
+                      "totalTeams",
+                      "hackerChecksDone",
+                      "forceRerun",
+                      "rateLimitedUntil"
+                    ],
+                    "type": "object"
                   }
                 },
                 "required": [
-                  "error",
-                  "status",
-                  "id",
-                  "startedAt",
-                  "triggeredBy",
-                  "lastHeartbeatAt",
-                  "finishedAt",
-                  "totalTeams",
-                  "hackerChecksDone",
-                  "forceRerun",
-                  "rateLimitedUntil"
+                  "sweep",
+                  "items",
+                  "stalled"
                 ],
                 "type": "object"
               }
-            },
-            "required": [
-              "sweep",
-              "items",
-              "stalled"
-            ],
-            "type": "object"
+            ]
           }
-        ]
+        },
+        "required": [
+          "configured",
+          "latest"
+        ],
+        "type": "object"
       },
       "path": "cheatCheck.getSweepStatus",
       "source": "src/server/api/routers/cheat-check.ts",
@@ -7365,350 +7385,6 @@
       "type": "mutation"
     },
     {
-      "auth": "public",
-      "errors": [
-        {
-          "code": "INTERNAL_SERVER_ERROR",
-          "httpStatus": 500,
-          "source": "unhandled"
-        }
-      ],
-      "http": "GET /api/trpc/clock.get?input=<superjson>",
-      "input": null,
-      "output": {
-        "properties": {
-          "durationMs": {
-            "type": "number"
-          },
-          "endsAtMs": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "number"
-              }
-            ]
-          },
-          "pausedRemainingMs": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "number"
-              }
-            ]
-          },
-          "serverNowMs": {
-            "type": "number"
-          },
-          "status": {
-            "enum": [
-              "running",
-              "idle",
-              "paused"
-            ]
-          }
-        },
-        "required": [
-          "status",
-          "endsAtMs",
-          "pausedRemainingMs",
-          "durationMs",
-          "serverNowMs"
-        ],
-        "type": "object"
-      },
-      "path": "clock.get",
-      "source": "src/server/api/routers/clock.ts",
-      "type": "query"
-    },
-    {
-      "auth": "organizer",
-      "errors": [
-        {
-          "code": "UNAUTHORIZED",
-          "httpStatus": 401,
-          "source": "auth middleware"
-        },
-        {
-          "code": "FORBIDDEN",
-          "httpStatus": 403,
-          "message": "User is not an organizer",
-          "source": "auth middleware"
-        },
-        {
-          "code": "INTERNAL_SERVER_ERROR",
-          "httpStatus": 500,
-          "source": "unhandled"
-        }
-      ],
-      "http": "POST /api/trpc/clock.pause",
-      "input": null,
-      "output": {
-        "properties": {
-          "durationMs": {
-            "type": "number"
-          },
-          "endsAtMs": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "number"
-              }
-            ]
-          },
-          "pausedRemainingMs": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "number"
-              }
-            ]
-          },
-          "serverNowMs": {
-            "type": "number"
-          },
-          "status": {
-            "enum": [
-              "running",
-              "idle",
-              "paused"
-            ]
-          }
-        },
-        "required": [
-          "status",
-          "endsAtMs",
-          "pausedRemainingMs",
-          "durationMs",
-          "serverNowMs"
-        ],
-        "type": "object"
-      },
-      "path": "clock.pause",
-      "source": "src/server/api/routers/clock.ts",
-      "type": "mutation"
-    },
-    {
-      "auth": "organizer",
-      "errors": [
-        {
-          "code": "UNAUTHORIZED",
-          "httpStatus": 401,
-          "source": "auth middleware"
-        },
-        {
-          "code": "FORBIDDEN",
-          "httpStatus": 403,
-          "message": "User is not an organizer",
-          "source": "auth middleware"
-        },
-        {
-          "code": "INTERNAL_SERVER_ERROR",
-          "httpStatus": 500,
-          "source": "unhandled"
-        }
-      ],
-      "http": "POST /api/trpc/clock.reset",
-      "input": null,
-      "output": {
-        "properties": {
-          "durationMs": {
-            "type": "number"
-          },
-          "endsAtMs": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "number"
-              }
-            ]
-          },
-          "pausedRemainingMs": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "number"
-              }
-            ]
-          },
-          "serverNowMs": {
-            "type": "number"
-          },
-          "status": {
-            "enum": [
-              "running",
-              "idle",
-              "paused"
-            ]
-          }
-        },
-        "required": [
-          "status",
-          "endsAtMs",
-          "pausedRemainingMs",
-          "durationMs",
-          "serverNowMs"
-        ],
-        "type": "object"
-      },
-      "path": "clock.reset",
-      "source": "src/server/api/routers/clock.ts",
-      "type": "mutation"
-    },
-    {
-      "auth": "organizer",
-      "errors": [
-        {
-          "code": "UNAUTHORIZED",
-          "httpStatus": 401,
-          "source": "auth middleware"
-        },
-        {
-          "code": "FORBIDDEN",
-          "httpStatus": 403,
-          "message": "User is not an organizer",
-          "source": "auth middleware"
-        },
-        {
-          "code": "INTERNAL_SERVER_ERROR",
-          "httpStatus": 500,
-          "source": "unhandled"
-        }
-      ],
-      "http": "POST /api/trpc/clock.resume",
-      "input": null,
-      "output": {
-        "properties": {
-          "durationMs": {
-            "type": "number"
-          },
-          "endsAtMs": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "number"
-              }
-            ]
-          },
-          "pausedRemainingMs": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "number"
-              }
-            ]
-          },
-          "serverNowMs": {
-            "type": "number"
-          },
-          "status": {
-            "enum": [
-              "running",
-              "idle",
-              "paused"
-            ]
-          }
-        },
-        "required": [
-          "status",
-          "endsAtMs",
-          "pausedRemainingMs",
-          "durationMs",
-          "serverNowMs"
-        ],
-        "type": "object"
-      },
-      "path": "clock.resume",
-      "source": "src/server/api/routers/clock.ts",
-      "type": "mutation"
-    },
-    {
-      "auth": "organizer",
-      "errors": [
-        {
-          "code": "UNAUTHORIZED",
-          "httpStatus": 401,
-          "source": "auth middleware"
-        },
-        {
-          "code": "FORBIDDEN",
-          "httpStatus": 403,
-          "message": "User is not an organizer",
-          "source": "auth middleware"
-        },
-        {
-          "code": "INTERNAL_SERVER_ERROR",
-          "httpStatus": 500,
-          "source": "unhandled"
-        }
-      ],
-      "http": "POST /api/trpc/clock.start",
-      "input": null,
-      "output": {
-        "properties": {
-          "durationMs": {
-            "type": "number"
-          },
-          "endsAtMs": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "number"
-              }
-            ]
-          },
-          "pausedRemainingMs": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "type": "number"
-              }
-            ]
-          },
-          "serverNowMs": {
-            "type": "number"
-          },
-          "status": {
-            "enum": [
-              "running",
-              "idle",
-              "paused"
-            ]
-          }
-        },
-        "required": [
-          "status",
-          "endsAtMs",
-          "pausedRemainingMs",
-          "durationMs",
-          "serverNowMs"
-        ],
-        "type": "object"
-      },
-      "path": "clock.start",
-      "source": "src/server/api/routers/clock.ts",
-      "type": "mutation"
-    },
-    {
       "auth": "organizer",
       "errors": [
         {
@@ -8684,8 +8360,8 @@
               "source": {
                 "enum": [
                   "sponsor",
-                  "sheet",
-                  "none"
+                  "none",
+                  "sheet"
                 ]
               },
               "style": {
@@ -9634,8 +9310,8 @@
                     "source": {
                       "enum": [
                         "sponsor",
-                        "sheet",
-                        "none"
+                        "none",
+                        "sheet"
                       ]
                     },
                     "style": {
@@ -10632,8 +10308,8 @@
               "source": {
                 "enum": [
                   "sponsor",
-                  "sheet",
-                  "none"
+                  "none",
+                  "sheet"
                 ]
               },
               "style": {
@@ -13882,6 +13558,18 @@
           "judgingTableId": {
             "type": "number"
           },
+          "missingReportedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
           "position": {
             "type": "number"
           },
@@ -13920,7 +13608,8 @@
           "assignedBy",
           "assignedAt",
           "startedAt",
-          "completedAt"
+          "completedAt",
+          "missingReportedAt"
         ],
         "type": "object"
       },
@@ -14237,6 +13926,18 @@
           "judgingTableId": {
             "type": "number"
           },
+          "missingReportedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
           "position": {
             "type": "number"
           },
@@ -14271,11 +13972,49 @@
           "assignedBy",
           "assignedAt",
           "startedAt",
-          "completedAt"
+          "completedAt",
+          "missingReportedAt"
         ],
         "type": "object"
       },
       "path": "judging.admin.cancelStop",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.clearAssignments",
+      "input": null,
+      "output": {
+        "properties": {
+          "removed": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "removed"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.clearAssignments",
       "source": "src/server/api/routers/judging.ts",
       "type": "mutation"
     },
@@ -14330,6 +14069,147 @@
         "type": "object"
       },
       "path": "judging.admin.deleteTeamMark",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.endRound",
+      "input": null,
+      "output": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "remainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "round": {
+            "type": "number"
+          },
+          "roundSeconds": {
+            "type": "number"
+          },
+          "serverNow": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused",
+              "closed"
+            ]
+          },
+          "totalRounds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "enabled",
+          "round",
+          "totalRounds",
+          "status",
+          "roundSeconds",
+          "endsAt",
+          "remainingMs",
+          "serverNow"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.endRound",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.finalizeResultsSheet",
+      "input": null,
+      "output": {
+        "properties": {
+          "marks": {
+            "type": "number"
+          },
+          "scoresKept": {
+            "type": "number"
+          },
+          "teams": {
+            "type": "number"
+          },
+          "totalTeams": {
+            "type": "number"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "teams",
+          "totalTeams",
+          "marks",
+          "scoresKept",
+          "url"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.finalizeResultsSheet",
       "source": "src/server/api/routers/judging.ts",
       "type": "mutation"
     },
@@ -14791,8 +14671,23 @@
                       "judgeId": {
                         "type": "string"
                       },
+                      "missingReportedAt": {
+                        "anyOf": [
+                          {
+                            "type": "null"
+                          },
+                          {
+                            "format": "date-time",
+                            "type": "string",
+                            "x-superjson": "Date"
+                          }
+                        ]
+                      },
                       "name": {
                         "type": "string"
+                      },
+                      "position": {
+                        "type": "number"
                       },
                       "startedAt": {
                         "anyOf": [
@@ -14821,7 +14716,9 @@
                       "judgeId",
                       "name",
                       "status",
-                      "startedAt"
+                      "startedAt",
+                      "position",
+                      "missingReportedAt"
                     ],
                     "type": "object"
                   },
@@ -14959,6 +14856,130 @@
           "source": "unhandled"
         }
       ],
+      "http": "GET /api/trpc/judging.admin.getRound?input=<superjson>",
+      "input": null,
+      "output": {
+        "properties": {
+          "canRestartRehearsal": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "judgingStarted": {
+            "type": "boolean"
+          },
+          "missed": {
+            "type": "number"
+          },
+          "remainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "round": {
+            "type": "number"
+          },
+          "roundSeconds": {
+            "type": "number"
+          },
+          "serverNow": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused",
+              "closed"
+            ]
+          },
+          "stops": {
+            "properties": {
+              "done": {
+                "type": "number"
+              },
+              "inProgress": {
+                "type": "number"
+              },
+              "total": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "total",
+              "done",
+              "inProgress"
+            ],
+            "type": "object"
+          },
+          "totalRounds": {
+            "type": "number"
+          },
+          "unfinished": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "judgingStarted",
+          "canRestartRehearsal",
+          "missed",
+          "unfinished",
+          "stops",
+          "enabled",
+          "round",
+          "totalRounds",
+          "status",
+          "roundSeconds",
+          "endsAt",
+          "remainingMs",
+          "serverNow"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.getRound",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "query"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
       "http": "GET /api/trpc/judging.admin.getTeamResults?input=<superjson>",
       "input": null,
       "output": {
@@ -15013,6 +15034,9 @@
                       },
                       "score": {
                         "type": "number"
+                      },
+                      "superLike": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -15021,15 +15045,20 @@
                       "judgeType",
                       "score",
                       "ratings",
-                      "notes"
+                      "notes",
+                      "superLike"
                     ],
                     "type": "object"
                   },
                   "type": "array"
+                },
+                "superLikes": {
+                  "type": "number"
                 }
               },
               "required": [
                 "count",
+                "superLikes",
                 "average",
                 "criteria",
                 "marks"
@@ -15085,6 +15114,9 @@
                       },
                       "score": {
                         "type": "number"
+                      },
+                      "superLike": {
+                        "type": "boolean"
                       }
                     },
                     "required": [
@@ -15093,15 +15125,20 @@
                       "judgeType",
                       "score",
                       "ratings",
-                      "notes"
+                      "notes",
+                      "superLike"
                     ],
                     "type": "object"
                   },
                   "type": "array"
+                },
+                "superLikes": {
+                  "type": "number"
                 }
               },
               "required": [
                 "count",
+                "superLikes",
                 "average",
                 "criteria",
                 "marks"
@@ -15111,6 +15148,19 @@
             "team": {
               "properties": {
                 "adventure": {
+                  "anyOf": [
+                    {
+                      "type": "undefined"
+                    },
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "adventurous": {
                   "anyOf": [
                     {
                       "type": "undefined"
@@ -15150,6 +15200,45 @@
                   "type": "string"
                 },
                 "normalized": {
+                  "anyOf": [
+                    {
+                      "type": "undefined"
+                    },
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "normalizedQ": {
+                  "anyOf": [
+                    {
+                      "type": "undefined"
+                    },
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "otherFour": {
+                  "anyOf": [
+                    {
+                      "type": "undefined"
+                    },
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                },
+                "rawTotal": {
                   "anyOf": [
                     {
                       "type": "undefined"
@@ -15349,6 +15438,18 @@
           "judgingTableId": {
             "type": "number"
           },
+          "missingReportedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
           "position": {
             "type": "number"
           },
@@ -15383,7 +15484,8 @@
           "assignedBy",
           "assignedAt",
           "startedAt",
-          "completedAt"
+          "completedAt",
+          "missingReportedAt"
         ],
         "type": "object"
       },
@@ -15451,6 +15553,488 @@
         "type": "object"
       },
       "path": "judging.admin.moveTeam",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.pauseRound",
+      "input": null,
+      "output": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "remainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "round": {
+            "type": "number"
+          },
+          "roundSeconds": {
+            "type": "number"
+          },
+          "serverNow": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused",
+              "closed"
+            ]
+          },
+          "totalRounds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "enabled",
+          "round",
+          "totalRounds",
+          "status",
+          "roundSeconds",
+          "endsAt",
+          "remainingMs",
+          "serverNow"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.pauseRound",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.planCatchUp",
+      "input": null,
+      "output": {
+        "properties": {
+          "moved": {
+            "type": "number"
+          },
+          "skipped": {
+            "type": "number"
+          },
+          "totalRounds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "moved",
+          "skipped",
+          "totalRounds"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.planCatchUp",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.reportJudgeMissing",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "assignmentId": {
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assignmentId"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "assignedAt": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "assignedBy": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "completedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "id": {
+            "type": "number"
+          },
+          "judgeId": {
+            "type": "string"
+          },
+          "judgingTableId": {
+            "type": "number"
+          },
+          "missingReportedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "position": {
+            "type": "number"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "assigned",
+              "in_progress",
+              "done",
+              "team_absent",
+              "cancelled"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "judgeId",
+          "judgingTableId",
+          "position",
+          "status",
+          "assignedBy",
+          "assignedAt",
+          "startedAt",
+          "completedAt",
+          "missingReportedAt"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.reportJudgeMissing",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.resetRounds",
+      "input": null,
+      "output": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "remainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "round": {
+            "type": "number"
+          },
+          "roundSeconds": {
+            "type": "number"
+          },
+          "serverNow": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused",
+              "closed"
+            ]
+          },
+          "totalRounds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "enabled",
+          "round",
+          "totalRounds",
+          "status",
+          "roundSeconds",
+          "endsAt",
+          "remainingMs",
+          "serverNow"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.resetRounds",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.restartRehearsal",
+      "input": null,
+      "output": {
+        "properties": {
+          "marks": {
+            "type": "number"
+          },
+          "stops": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "marks",
+          "stops"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.restartRehearsal",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.resumeRound",
+      "input": null,
+      "output": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "remainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "round": {
+            "type": "number"
+          },
+          "roundSeconds": {
+            "type": "number"
+          },
+          "serverNow": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused",
+              "closed"
+            ]
+          },
+          "totalRounds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "enabled",
+          "round",
+          "totalRounds",
+          "status",
+          "roundSeconds",
+          "endsAt",
+          "remainingMs",
+          "serverNow"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.resumeRound",
       "source": "src/server/api/routers/judging.ts",
       "type": "mutation"
     },
@@ -15568,6 +16152,59 @@
           "source": "unhandled"
         }
       ],
+      "http": "POST /api/trpc/judging.admin.setBoardVisible",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "shownToHackers": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "shownToHackers"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "shownToHackers": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "shownToHackers"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.setBoardVisible",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
       "http": "POST /api/trpc/judging.admin.setJudgeNoShow",
       "input": {
         "additionalProperties": false,
@@ -15606,6 +16243,112 @@
         "type": "object"
       },
       "path": "judging.admin.setJudgeNoShow",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.setRoundConfig",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "roundSeconds": {
+            "maximum": 3600,
+            "minimum": 30,
+            "type": "integer"
+          },
+          "roundsEnabled": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "remainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "round": {
+            "type": "number"
+          },
+          "roundSeconds": {
+            "type": "number"
+          },
+          "serverNow": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused",
+              "closed"
+            ]
+          },
+          "totalRounds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "enabled",
+          "round",
+          "totalRounds",
+          "status",
+          "roundSeconds",
+          "endsAt",
+          "remainingMs",
+          "serverNow"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.setRoundConfig",
       "source": "src/server/api/routers/judging.ts",
       "type": "mutation"
     },
@@ -15808,6 +16551,94 @@
           "source": "auth middleware"
         },
         {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.startRound",
+      "input": null,
+      "output": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "remainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "round": {
+            "type": "number"
+          },
+          "roundSeconds": {
+            "type": "number"
+          },
+          "serverNow": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused",
+              "closed"
+            ]
+          },
+          "totalRounds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "enabled",
+          "round",
+          "totalRounds",
+          "status",
+          "roundSeconds",
+          "endsAt",
+          "remainingMs",
+          "serverNow"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.startRound",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
           "code": "BAD_REQUEST",
           "httpStatus": 400,
           "source": "input validation (data.zodError populated)"
@@ -15889,6 +16720,308 @@
       "type": "mutation"
     },
     {
+      "auth": "organizer",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "User is not an organizer",
+          "source": "auth middleware"
+        },
+        {
+          "code": "BAD_REQUEST",
+          "httpStatus": 400,
+          "source": "input validation (data.zodError populated)"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.admin.undoAbsent",
+      "input": {
+        "additionalProperties": false,
+        "properties": {
+          "tableId": {
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tableId"
+        ],
+        "type": "object"
+      },
+      "output": {
+        "properties": {
+          "reopened": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "reopened"
+        ],
+        "type": "object"
+      },
+      "path": "judging.admin.undoAbsent",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
+    },
+    {
+      "auth": "protected",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "FORBIDDEN",
+          "httpStatus": 403,
+          "message": "The rounds aren't open to hackers yet.",
+          "source": "handler"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/judging.board.get?input=<superjson>",
+      "input": null,
+      "output": {
+        "properties": {
+          "round": {
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "endsAt": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "format": "date-time",
+                    "type": "string",
+                    "x-superjson": "Date"
+                  }
+                ]
+              },
+              "remainingMs": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "round": {
+                "type": "number"
+              },
+              "roundSeconds": {
+                "type": "number"
+              },
+              "serverNow": {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              },
+              "status": {
+                "enum": [
+                  "running",
+                  "idle",
+                  "paused",
+                  "closed"
+                ]
+              },
+              "totalRounds": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "enabled",
+              "round",
+              "totalRounds",
+              "status",
+              "roundSeconds",
+              "endsAt",
+              "remainingMs",
+              "serverNow"
+            ],
+            "type": "object"
+          },
+          "stops": {
+            "items": {
+              "properties": {
+                "judge": {
+                  "type": "number"
+                },
+                "round": {
+                  "type": "number"
+                },
+                "status": {
+                  "enum": [
+                    "done",
+                    "skipped",
+                    "now",
+                    "upcoming"
+                  ]
+                },
+                "table": {
+                  "type": "number"
+                },
+                "team": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "round",
+                "judge",
+                "table",
+                "team",
+                "status"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "round",
+          "stops"
+        ],
+        "type": "object"
+      },
+      "path": "judging.board.get",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "query"
+    },
+    {
+      "auth": "protected",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/judging.board.getAccess?input=<superjson>",
+      "input": null,
+      "output": {
+        "properties": {
+          "isOrganizer": {
+            "type": "boolean"
+          },
+          "shownToHackers": {
+            "type": "boolean"
+          },
+          "visible": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "isOrganizer",
+          "shownToHackers",
+          "visible"
+        ],
+        "type": "object"
+      },
+      "path": "judging.board.getAccess",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "query"
+    },
+    {
+      "auth": "public",
+      "errors": [
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/judging.board.getClock?input=<superjson>",
+      "input": null,
+      "output": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
+          "remainingMs": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "round": {
+            "type": "number"
+          },
+          "roundSeconds": {
+            "type": "number"
+          },
+          "serverNow": {
+            "format": "date-time",
+            "type": "string",
+            "x-superjson": "Date"
+          },
+          "status": {
+            "enum": [
+              "running",
+              "idle",
+              "paused",
+              "closed"
+            ]
+          },
+          "totalRounds": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "enabled",
+          "round",
+          "totalRounds",
+          "status",
+          "roundSeconds",
+          "endsAt",
+          "remainingMs",
+          "serverNow"
+        ],
+        "type": "object"
+      },
+      "path": "judging.board.getClock",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "query"
+    },
+    {
       "auth": "judge",
       "errors": [
         {
@@ -15936,31 +17069,31 @@
                 "properties": {
                   "adventurous": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "creativity": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "design": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "impact": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "technical": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   }
@@ -15978,7 +17111,7 @@
           },
           "score": {
             "maximum": 10,
-            "minimum": 0,
+            "minimum": 1,
             "type": "number"
           },
           "teamMarkId": {
@@ -16091,6 +17224,68 @@
               }
             ]
           },
+          "round": {
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "endsAt": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "format": "date-time",
+                    "type": "string",
+                    "x-superjson": "Date"
+                  }
+                ]
+              },
+              "remainingMs": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "round": {
+                "type": "number"
+              },
+              "roundSeconds": {
+                "type": "number"
+              },
+              "serverNow": {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              },
+              "status": {
+                "enum": [
+                  "running",
+                  "idle",
+                  "paused",
+                  "closed"
+                ]
+              },
+              "totalRounds": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "enabled",
+              "round",
+              "totalRounds",
+              "status",
+              "roundSeconds",
+              "endsAt",
+              "remainingMs",
+              "serverNow"
+            ],
+            "type": "object"
+          },
           "stops": {
             "items": {
               "properties": {
@@ -16160,6 +17355,18 @@
                         "superLike"
                       ],
                       "type": "object"
+                    }
+                  ]
+                },
+                "missingReportedAt": {
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "format": "date-time",
+                      "type": "string",
+                      "x-superjson": "Date"
                     }
                   ]
                 },
@@ -16244,6 +17451,12 @@
                         "id": {
                           "type": "string"
                         },
+                        "members": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
                         "name": {
                           "type": "string"
                         },
@@ -16262,6 +17475,7 @@
                         }
                       },
                       "required": [
+                        "members",
                         "id",
                         "name",
                         "devpostUrl",
@@ -16282,7 +17496,8 @@
                 "position",
                 "assignedAt",
                 "startedAt",
-                "completedAt"
+                "completedAt",
+                "missingReportedAt"
               ],
               "type": "object"
             },
@@ -16296,6 +17511,7 @@
           "judge",
           "canManage",
           "layout",
+          "round",
           "stops",
           "nextStopId",
           "finished",
@@ -16540,6 +17756,18 @@
           "judgingTableId": {
             "type": "number"
           },
+          "missingReportedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
           "position": {
             "type": "number"
           },
@@ -16574,7 +17802,8 @@
           "assignedBy",
           "assignedAt",
           "startedAt",
-          "completedAt"
+          "completedAt",
+          "missingReportedAt"
         ],
         "type": "object"
       },
@@ -16664,6 +17893,18 @@
           "judgingTableId": {
             "type": "number"
           },
+          "missingReportedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "format": "date-time",
+                "type": "string",
+                "x-superjson": "Date"
+              }
+            ]
+          },
           "position": {
             "type": "number"
           },
@@ -16698,7 +17939,8 @@
           "assignedBy",
           "assignedAt",
           "startedAt",
-          "completedAt"
+          "completedAt",
+          "missingReportedAt"
         ],
         "type": "object"
       },
@@ -16758,31 +18000,31 @@
                 "properties": {
                   "adventurous": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "creativity": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "design": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "impact": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "technical": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   }
@@ -16800,7 +18042,7 @@
           },
           "score": {
             "maximum": 10,
-            "minimum": 0,
+            "minimum": 1,
             "type": "number"
           },
           "teamId": {
@@ -16861,35 +18103,7 @@
               "absent": {
                 "type": "boolean"
               },
-              "judges": {
-                "properties": {
-                  "done": {
-                    "type": "number"
-                  },
-                  "total": {
-                    "type": "number"
-                  }
-                },
-                "required": [
-                  "done",
-                  "total"
-                ],
-                "type": "object"
-              },
-              "table": {
-                "type": "null"
-              }
-            },
-            "required": [
-              "table",
-              "absent",
-              "judges"
-            ],
-            "type": "object"
-          },
-          {
-            "properties": {
-              "absent": {
+              "judgedAll": {
                 "type": "boolean"
               },
               "judges": {
@@ -16906,6 +18120,87 @@
                   "total"
                 ],
                 "type": "object"
+              },
+              "judgeStarted": {
+                "type": "boolean"
+              },
+              "reportedMissing": {
+                "type": "boolean"
+              },
+              "reportOpensInMs": {
+                "type": "null"
+              },
+              "round": {
+                "type": "null"
+              },
+              "table": {
+                "type": "null"
+              },
+              "thisRound": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "table",
+              "absent",
+              "judges",
+              "round",
+              "thisRound",
+              "judgeStarted",
+              "reportedMissing",
+              "reportOpensInMs",
+              "judgedAll"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "absent": {
+                "type": "boolean"
+              },
+              "judgedAll": {
+                "type": "boolean"
+              },
+              "judges": {
+                "properties": {
+                  "done": {
+                    "type": "number"
+                  },
+                  "total": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "done",
+                  "total"
+                ],
+                "type": "object"
+              },
+              "judgeStarted": {
+                "type": "boolean"
+              },
+              "reportedMissing": {
+                "type": "boolean"
+              },
+              "reportOpensInMs": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "round": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ]
               },
               "table": {
                 "properties": {
@@ -16929,12 +18224,37 @@
                   "zone"
                 ],
                 "type": "object"
+              },
+              "thisRound": {
+                "anyOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "const": "done"
+                  },
+                  {
+                    "const": "now"
+                  },
+                  {
+                    "const": "over"
+                  },
+                  {
+                    "const": "none"
+                  }
+                ]
               }
             },
             "required": [
               "table",
               "absent",
-              "judges"
+              "judges",
+              "round",
+              "thisRound",
+              "judgeStarted",
+              "reportedMissing",
+              "reportOpensInMs",
+              "judgedAll"
             ],
             "type": "object"
           }
@@ -16943,6 +18263,37 @@
       "path": "judging.team.getMyJudging",
       "source": "src/server/api/routers/judging.ts",
       "type": "query"
+    },
+    {
+      "auth": "protected",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "POST /api/trpc/judging.team.reportJudgeMissing",
+      "input": null,
+      "output": {
+        "properties": {
+          "reported": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "reported"
+        ],
+        "type": "object"
+      },
+      "path": "judging.team.reportJudgeMissing",
+      "source": "src/server/api/routers/judging.ts",
+      "type": "mutation"
     },
     {
       "auth": "protected",
@@ -19308,8 +20659,8 @@
             "status",
             "id",
             "name",
-            "endsAt",
             "room",
+            "endsAt",
             "points",
             "winPoints",
             "startsAt",
@@ -20075,8 +21426,8 @@
           "status",
           "id",
           "name",
-          "endsAt",
           "room",
+          "endsAt",
           "points",
           "winPoints",
           "startsAt",
@@ -23441,8 +24792,8 @@
                     "source": {
                       "enum": [
                         "sponsor",
-                        "sheet",
-                        "none"
+                        "none",
+                        "sheet"
                       ]
                     },
                     "style": {
@@ -24217,10 +25568,10 @@
                       "type": "null"
                     },
                     {
-                      "const": "sheet"
+                      "const": "board"
                     },
                     {
-                      "const": "board"
+                      "const": "sheet"
                     },
                     {
                       "const": "remote"
@@ -27000,6 +28351,9 @@
             },
             "type": "array"
           },
+          "top": {
+            "type": "number"
+          },
           "track": {
             "anyOf": [
               {
@@ -27023,6 +28377,7 @@
         "required": [
           "name",
           "track",
+          "top",
           "teams",
           "final"
         ],
@@ -27965,7 +29320,7 @@
               "type": "string"
             },
             "maxItems": 5,
-            "minItems": 5,
+            "minItems": 1,
             "type": "array"
           }
         },
@@ -28048,7 +29403,7 @@
               "type": "string"
             },
             "maxItems": 5,
-            "minItems": 5,
+            "minItems": 1,
             "type": "array"
           },
           "name": {

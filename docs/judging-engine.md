@@ -11,8 +11,8 @@ create and submit teams; organizers add judges on the roster), sponsor judging
 ## Model in one paragraph
 
 The room has a fixed number of physical tables (70 by default), numbered along
-a snake. Every submitted team is seated at one numbered spot. Every judge owns a
-**section** of consecutive occupied spots along the snake. Each occupied spot
+a snake, one team per table. Every judge owns a
+**section** of consecutive occupied tables along the snake. Each occupied table
 falls inside the sections of **3 different judges** by default, so every team gets 3 scores. The
 sections never move; to put a team in a different judge's lineup, organizers
 swap teams between tables.
@@ -51,9 +51,7 @@ swap teams between tables.
 
 - Every submitted team (`submission_status` = `submitted` or `late`) gets one
   active table. One team per table.
-- Pair neighboring spots from the left edge of each row. First fill one
-  active spot per physical table in snake order, then backfill the second
-  spots. An unpaired spot or the active half of a pair fills in the first pass.
+- Teams fill active tables in table order along the snake (1, 2, 3...).
 - Teams are shuffled by default. The API can seat them in submission order.
 - More submitted teams than active spots is an error.
 - Seating can be re-run until judging starts. The seating API clears the existing
@@ -97,9 +95,75 @@ J25 [5-10] J26 [11-16] ... J35 [65-70]
 Table 1 is judged by J1, J12 and J24.
 ```
 
+## Timed rounds
+
+Judges don't wander. **Round N is every judge's Nth stop** (`position` N).
+Stops in future rounds are refused; any stop whose round has started can be
+started, scored or reported absent, so a judge who runs out of time can still
+finish that team late.
+
+- One row of state, `judging_round`: current round, status, round length
+  (default 10 minutes) and the timer.
+- Organizers press **Start round N** in the control room. Status goes
+  `idle -> running`. Judges see "Waiting for round 1" until then, and a judge
+  with no stop in the round sits it out.
+- **Pause** stops the clock (`running -> paused`, `remaining_ms` kept). Scoring
+  still works while paused. **Resume** carries on from the time left.
+- At 0, or when an organizer ends the round, it is `closed`. Stops still in
+  progress are released back to `assigned`. A running round whose `ends_at` has
+  passed is treated as closed when read, so nothing has to tick.
+- **Late scoring.** An unscored stop from a round that has ended is "missed".
+  The judge moves on: the Next screen shows the current round's table (or "Up
+  next" between rounds). If they started it, My teams lists it under "Not sent
+  yet" with a **Score late** button, during the first pass and while
+  re-scoring. If they never started it, My teams just marks it "Missed" (it
+  goes to the catch-up round), which is also what a judge marked no-show sees.
+  A new round, catch-up rounds included, moves a judge with a team in it to
+  the Next tab from any tab. A late score made
+  while re-scoring counts as re-scored. The score form stays on the team it was
+  opened for after its round ends, so a score never lands on another team.
+  When the next round starts, the judge is moved to that round's team and the
+  unsent one waits under "Not sent yet" with its draft kept.
+- An organizer then starts the next round. Starting is refused while a round is
+  open and after the last round (the most stops any judge has).
+- **Catch-up round.** A table is "missed" when its judge never came: unscored
+  and never started (nobody pressed "Judge this team") in a round that has
+  ended, or a team told an organizer their judge never came ("Didn't come" in
+  the table dialog). A started but unrated table isn't missed: the judge saw
+  the team and scores it late from My teams. After the last round ends, the
+  control room shows the missed count and a **Start catch-up round** button.
+  Each missed table moves (same table, new judge and round) into a round after
+  the last, to a present judge who hasn't seen that team, fewest catch-up
+  tables first; the judge who never came gets it back only if nobody else can.
+  One table per judge per round, so extras spill into a second catch-up round.
+  A table every present judge has already seen stays missed.
+- A judge marked no-show after judging starts keeps their tables; the unscored
+  ones are picked up by the catch-up round (or can be handed off).
+- **Unfinished vs missed.** A table the judge started but didn't send is
+  "unfinished": it stays theirs. They finish it from My teams (listed first as
+  "Not sent yet"), during re-scoring too, and Final lists any still unsent
+  before Submit. A late form has Back instead of "Team not here". Starting
+  the current round's team releases a late team left open (startedAt kept), so
+  it never blocks the judge. Undo absent and deleting a mark also keep the
+  stop with its judge.
+- **Hackers** can press "Judge missing" on their Judging page once the round
+  has run a minute and no judge has started at their table. It flags the table
+  in the control room; the catch-up round handles it if the judge never
+  starts.
+- **Reset** goes back to before round 1; marks are kept. Turning "Judges follow
+  the rounds" off (`rounds_enabled = false`) lets judges go in any order, a
+  safety valve for the day. Organizer fixes (absent by an organizer, hand-offs,
+  edits to marks) are not tied to the round.
+- Screens get the round from `judging.me.getMyStops` (polled every 4s, with the
+  server clock so a wrong device clock doesn't skew the countdown) and
+  `judging.admin.getRound`.
+
 ## Judging starts
 
-Judging has started once any stop is `in_progress`, `done` or `team_absent`.
+Judging has started once a round has been started (timed rounds), or any stop
+is `in_progress`, `done` or `team_absent`. The round counts on its own, so a
+no-show or Auto-assign can't wipe the plan while round 1 runs before anyone
+has pressed "Judge this team".
 After that, table setup, seating and auto-assign are locked; only the day-of
 fixes below are allowed.
 
@@ -114,7 +178,8 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
 - A judge has at most one stop `in_progress` at a time.
 - A judge can only act on their **current stop**: the one in progress, else
   their first `assigned` stop in walking order. Start, submit and report absent
-  are refused for any other stop.
+  are refused for any other stop, except stops from rounds that have already
+  ended (late scoring, see Timed rounds).
 - Submitting writes the `team_mark` (score + breakdown) for the team seated at
   the table and marks the stop `done` in one transaction.
 - Start and submit also send the `teamId` the judge's screen showed. If a
@@ -133,6 +198,7 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
   progress) becomes `team_absent` at once, which counts as closed.
 - No endpoint gives an absent table a live stop again: top-ups are refused,
   hand-offs leave its stops behind, and deleting a mark doesn't reopen one.
+  The one exception is an organizer's **Undo absent** (see Day-of fixes).
 - Disqualified teams are left out of the team results page and the ranking.
   Their marks also don't count toward judge averages in the ranking.
 - The control room's round count leaves out absent tables, so a round can
@@ -162,7 +228,16 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
   another judge in one action. Refused if the receiving judge already has one
   of those tables or has already scored a team seated at one.
 - **Add a judge to a table:** top-up when a table needs another score.
+- Hand-offs and top-ups go **after the receiving judge's last stop** (the next
+  free `position`). With timed rounds a stop at position N opens once round N
+  starts, which can add a round at the end. With late scoring (stops at or
+  below the current round can be scored), a stop that lands at or below the
+  current round opens at once, e.g. a floater's first stops.
 - **Cancel a stop**, or **mark a team absent**.
+- **Undo absent:** every `team_absent` stop at the table goes back to
+  `assigned` (start and finish times cleared), with the judges who had them, so
+  the team is judged and ranked again. Stops that were `done` stay done. If a
+  judge who had one of those stops has left, cancel it and add someone else.
 - **Mark a judge as a no-show** (Judges and Teams page): auto-assign skips
   them, and hand-offs and top-ups to them are refused. Before judging starts,
   marking a judge who already has stops clears the plan (run auto-assign

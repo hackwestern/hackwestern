@@ -19,6 +19,7 @@ import {
   HALVES_MIN,
   JUDGE_NAME_MAX,
   NOTE_MAX,
+  minPicks,
   SPONSOR_FINAL_TOP,
   aggregateScores,
   cleanJudgeName,
@@ -379,6 +380,42 @@ function digitalEntry(name: string) {
 }
 
 /**
+ * The sponsor and the teams an organizer can rank for it (digitalTeams,
+ * submitDigital). A digital sponsor ranks its track's submitted teams; any
+ * other prize track sponsor ranks the teams that presented to it, so
+ * organizers can enter or fix its top 5. `top` is SPONSOR_FINAL_TOP, or
+ * fewer when fewer teams can be ranked.
+ */
+async function organizerTopFor(name: string) {
+  const digital = isDigitalJudging(name);
+  const sponsor = digital
+    ? await digitalSponsorRow(digitalEntry(name))
+    : await db.query.sponsorJudgingSponsors.findFirst({
+        where: eq(sponsorJudgingSponsors.name, name),
+        columns: { id: true, name: true },
+      });
+  if (
+    !sponsor ||
+    (!digital && !hasPrizeTrack(sponsor.name, await prizeTrackSponsors()))
+  ) {
+    throw new TRPCError({ code: "NOT_FOUND", message: errors.noPrizeTrack });
+  }
+  const track = await fetchSponsorTrack(sponsor.name);
+  let rankable = await listEligibleTeams(track);
+  if (!digital) {
+    const round = await roundFor(sponsor.id, sponsor.name);
+    const presented = new Set(
+      round.remote
+        ? (round.shortlistSent?.teamIds ?? [])
+        : round.slots.map((s) => s.teamId),
+    );
+    rankable = rankable.filter((t) => presented.has(t.id));
+  }
+  const top = Math.min(SPONSOR_FINAL_TOP, rankable.length);
+  return { sponsor, track, rankable, top };
+}
+
+/**
  * Sponsor judging on /sponsors/[uuid]/picks: each rep scores submitted
  * teams 1-10 in half points (several reps share one login: "Who's
  * judging?"), the sponsor saves some to a shortlist, then submits a ranked
@@ -605,7 +642,7 @@ export const sponsorScoringRouter = createTRPCRouter({
 
   /**
    * End round 1: one-time snapshot of the sponsor's current shortlist
-   * (eligible teams only, at most SHORTLIST_MAX: one per presentation slot)
+   * (eligible teams only, at most SHORTLIST_MAX)
    * as the one organizers schedule from. Once sent, it cannot be replaced.
    */
   sendShortlist: publicProcedure
@@ -750,11 +787,12 @@ export const sponsorScoringRouter = createTRPCRouter({
     }),
 
   /**
-   * Submit the ranked top SPONSOR_FINAL_TOP (1st to 5th): exactly that
-   * many, no repeats, all teams that presented to this sponsor and still
-   * eligible. Only once organizers have opened round 2, and only for a
-   * sponsor with a placed presentation slot (no slot: FORBIDDEN, Jazz
-   * 2026-11-18). One-time submission: cannot be replaced while judging is open.
+   * Submit three to five ranked teams (all of them when fewer presented),
+   * no repeats, all teams that presented to this sponsor and still eligible.
+   * Only once organizers have opened round 2, and only for a sponsor with a
+   * placed presentation slot (no slot: FORBIDDEN, Jazz 2026-11-18).
+   * One-time submission: the sponsor can't replace it; organizers can
+   * (submitDigital).
    * Saved here first, then mirrored to the Sponsor Judging tab; if that
    * fails (or sheet writes are off) the submission still counts and
    * `sheetSynced` is false (the next `get` retries it).
@@ -763,9 +801,12 @@ export const sponsorScoringRouter = createTRPCRouter({
     .input(
       z.object({
         sponsor: sponsorInput,
-        teamIds: z.array(teamIdInput).length(SPONSOR_FINAL_TOP, {
-          message: errors.ranking.wrongCount(SPONSOR_FINAL_TOP),
-        }),
+        teamIds: z
+          .array(teamIdInput)
+          .min(1)
+          .max(SPONSOR_FINAL_TOP, {
+            message: errors.ranking.wrongCount(SPONSOR_FINAL_TOP),
+          }),
       }),
     )
     .mutation(async ({ input }) => {
@@ -782,10 +823,7 @@ export const sponsorScoringRouter = createTRPCRouter({
         });
       }
       const track = await fetchSponsorTrack(sponsor.name);
-      const [eligible, round] = await Promise.all([
-        eligibleTeamIds(track, input.teamIds),
-        roundFor(sponsor.id, sponsor.name),
-      ]);
+      const round = await roundFor(sponsor.id, sponsor.name);
       if (!round.round2Open) {
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -804,41 +842,45 @@ export const sponsorScoringRouter = createTRPCRouter({
           message: errors.noSlot(SPONSOR_FINAL_TOP),
         });
       }
-      const allowed = new Set(ranked.filter((id) => eligible.has(id)));
-      const problem = rankingError(input.teamIds, allowed);
+      const allowed = await eligibleTeamIds(track, ranked);
+      // Fewer than five presented: rank all of them. (None still eligible:
+      // keep five, so the error says only presenters count.)
+      const top =
+        allowed.size > 0
+          ? Math.min(SPONSOR_FINAL_TOP, allowed.size)
+          : SPONSOR_FINAL_TOP;
+      const problem = rankingError(input.teamIds, allowed, top);
       if (problem) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message:
             problem === "notShortlisted"
               ? errors.ranking.notPresented()
-              : errors.ranking[problem](SPONSOR_FINAL_TOP),
+              : errors.ranking[problem](top),
         });
       }
       return saveFinal(sponsor.id, input.teamIds);
     }),
 
   /**
-   * Organizers: a digital sponsor's track teams (submitted, in its track)
-   * for matching pasted Devpost links on the organizer tab, with the top 5
-   * entered so far.
+   * Organizers: the teams a prize track sponsor can rank (organizerTopFor)
+   * for matching pasted Devpost links on the organizer tab, how many places
+   * to fill (`top`), and the top 5 entered or submitted so far.
    */
   digitalTeams: protectedOrganizerProcedure
     .input(z.object({ name: z.string().trim().min(1).max(255) }))
     .query(async ({ input }) => {
-      const entry = digitalEntry(input.name);
-      const sponsor = await digitalSponsorRow(entry);
-      const track = await fetchSponsorTrack(sponsor.name);
-      const [eligible, final] = await Promise.all([
-        listEligibleTeams(track),
-        db.query.sponsorFinalPicks.findFirst({
-          where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
-        }),
-      ]);
+      const { sponsor, track, rankable, top } = await organizerTopFor(
+        input.name,
+      );
+      const final = await db.query.sponsorFinalPicks.findFirst({
+        where: eq(sponsorFinalPicks.sponsorId, sponsor.id),
+      });
       return {
         name: sponsor.name,
         track,
-        teams: eligible.map((t) => ({
+        top,
+        teams: rankable.map((t) => ({
           id: t.id,
           name: t.name,
           devpostUrl: t.devpostUrl,
@@ -850,12 +892,15 @@ export const sponsorScoringRouter = createTRPCRouter({
     }),
 
   /**
-   * Organizers enter a digital sponsor's 1st-5th place by pasting Devpost
-   * links (a team ID works too). Each link must match a different
-   * submitted team in that sponsor's track, or nothing is saved. Stored
-   * like a portal submission and mirrored to the Sponsor Judging tab.
-   * Works after judging closes: it's organizer-only, and the spon team may
-   * get a digital sponsor's top 5 late.
+   * Organizers enter a prize track sponsor's 1st-5th place by pasting
+   * Devpost links (a team ID works too): a digital sponsor's, or any other
+   * sponsor's to fix a mis-ranked top 5 (it replaces their submission).
+   * Each link must match a different team the sponsor can rank
+   * (organizerTopFor: its submitted track teams if digital, else the ones
+   * that presented to it), one per place (`top`), or nothing is saved.
+   * Stored like a portal submission and mirrored to the Sponsor Judging
+   * tab. Works after judging closes: it's organizer-only, and the spon
+   * team may get a top 5 late.
    */
   submitDigital: protectedOrganizerProcedure
     .input(
@@ -863,22 +908,26 @@ export const sponsorScoringRouter = createTRPCRouter({
         name: z.string().trim().min(1).max(255),
         links: z
           .array(z.string().trim().min(1).max(2048))
-          .length(SPONSOR_FINAL_TOP, {
+          .min(1)
+          .max(SPONSOR_FINAL_TOP, {
             message: errors.ranking.wrongCount(SPONSOR_FINAL_TOP),
           }),
       }),
     )
     .mutation(async ({ input }) => {
-      const entry = digitalEntry(input.name);
-      const sponsor = await digitalSponsorRow(entry);
-      const track = await fetchSponsorTrack(sponsor.name);
-      const eligible = await listEligibleTeams(track);
+      const { sponsor, rankable, top } = await organizerTopFor(input.name);
+      if (input.links.length < minPicks(top) || input.links.length > top) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: errors.ranking.wrongCount(top),
+        });
+      }
       const teamIds = input.links.map((link, i) => {
-        const team = matchTeamByLink(link, eligible);
+        const team = matchTeamByLink(link, rankable);
         if (!team) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: linkIsAmbiguous(link, eligible)
+            message: linkIsAmbiguous(link, rankable)
               ? errors.digitalAmbiguous(i + 1, link)
               : errors.digitalNoMatch(i + 1, link),
           });
