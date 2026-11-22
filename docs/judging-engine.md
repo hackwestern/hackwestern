@@ -11,8 +11,8 @@ create and submit teams; organizers add judges on the roster), sponsor judging
 ## Model in one paragraph
 
 The room has a fixed number of physical tables (70 by default), numbered along
-a snake. Every submitted team is seated at one numbered spot. Every judge owns a
-**section** of consecutive occupied spots along the snake. Each occupied spot
+a snake, one team per table. Every judge owns a
+**section** of consecutive occupied tables along the snake. Each occupied table
 falls inside the sections of **3 different judges** by default, so every team gets 3 scores. The
 sections never move; to put a team in a different judge's lineup, organizers
 swap teams between tables.
@@ -51,9 +51,7 @@ swap teams between tables.
 
 - Every submitted team (`submission_status` = `submitted` or `late`) gets one
   active table. One team per table.
-- Pair neighboring spots from the left edge of each row. First fill one
-  active spot per physical table in snake order, then backfill the second
-  spots. An unpaired spot or the active half of a pair fills in the first pass.
+- Teams fill active tables in table order along the snake (1, 2, 3...).
 - Teams are shuffled by default. The API can seat them in submission order.
 - More submitted teams than active spots is an error.
 - Seating can be re-run until judging starts. The seating API clears the existing
@@ -206,7 +204,8 @@ assigned --start--> in_progress --submit--> done        (team_mark written)
 - The control room's round count leaves out absent tables, so a round can
   complete.
 - Known limit: the in-database normalization (`judging_team_scores`) still
-  uses an absent team's earlier marks for judge averages.
+  uses an absent team's earlier marks for judge biases, and an absent team
+  still counts toward the 10% top-team rule (see Normalization).
 
 ## Table live status
 
@@ -264,9 +263,23 @@ Organizers can still start a sweep by hand.
 
 ## Normalization
 
-Unchanged. `judging.admin.getLatestRanking` computes each team's normalized
-score from `team_mark` at read time (regular-round marks from organizer-type
-judges).
+`judging.admin.getLatestRanking` computes each team's normalized score from
+`team_mark` at read time (regular-round marks from organizer-type judges).
+
+The team results page reads `judging_team_scores`, filled by the database
+function `judging_normalize()` after every change to `team_mark` (migrations
+0046 and 0059). It fits judge bias out of the ratings for three series
+(total, adventurous, the other four) and rescales each to 0-10:
+
+- The average team is 5. The k-th best team is 10, where k is 10% of the
+  marked teams rounded up (at least 1), but never past the last above-average
+  team. Teams above it clip to 10. 10 teams -> k = 1, 20 -> 2, 50 -> 5.
+- If every team is tied in a series, everyone gets 5.
+- Each series runs on its own. If one fails (judges form disconnected groups,
+  which is common early on), it keeps its previous scores and logs a
+  WARNING; the other series still update.
+- Adventure score = 0.65 x normalized adventurous + 0.35 x normalized other.
+- `SELECT judging_normalize(0.15)` re-runs it with a different top fraction.
 
 ## Trying it locally
 

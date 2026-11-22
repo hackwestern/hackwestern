@@ -226,12 +226,12 @@ describe("judgingOpen", () => {
 describe("rankingError", () => {
   const shortlist = new Set(["a", "b", "c", "d", "e", "f"]);
 
-  it("accepts exactly five shortlisted, distinct teams", () => {
-    expect(rankingError(["a", "b", "c", "d", "e"], shortlist)).toBeNull();
+  it.each([3, 4, 5])("accepts %i shortlisted, distinct teams", (count) => {
+    expect(rankingError([...shortlist].slice(0, count), shortlist)).toBeNull();
   });
 
   it("refuses the wrong count", () => {
-    expect(rankingError(["a", "b", "c", "d"], shortlist)).toBe("wrongCount");
+    expect(rankingError(["a", "b"], shortlist)).toBe("wrongCount");
     expect(rankingError(["a", "b", "c", "d", "e", "f"], shortlist)).toBe(
       "wrongCount",
     );

@@ -414,6 +414,13 @@
       "when": 1795310738886,
       "tag": "0058_team_tech_stack",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1795320570159,
+      "tag": "0059_judging_normalize_small_k",
+      "breakpoints": true
     }
   ]
 }

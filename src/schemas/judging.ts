@@ -4,8 +4,8 @@ import { z } from "zod";
 import { CRITERION_IDS, type CriterionId } from "~/lib/judging-criteria";
 import { judgeTypeEnum, judges, trackEnum } from "~/server/db/schema";
 
-// Scores are 0-10, the judge app's rubric range.
-export const SCORE_MIN = 0;
+// Scores are 1-10, the judge app's rubric range.
+export const SCORE_MIN = 1;
 export const SCORE_MAX = 10;
 
 const ratingSchema = z.number().min(SCORE_MIN).max(SCORE_MAX).multipleOf(0.5);

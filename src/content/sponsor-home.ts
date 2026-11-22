@@ -228,7 +228,7 @@ export const AGENDA: AgendaStep[] = [
     start: PRESENTATION_WINDOW_END,
     end: 720,
     by: true,
-    title: "Submit your top 5",
+    title: "Submit your final picks",
     action: "judging",
     prizeOnly: true,
     doneWhen: "top5",

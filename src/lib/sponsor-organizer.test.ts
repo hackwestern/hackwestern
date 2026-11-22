@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { buildJudgingBoard } from "~/lib/sponsor-judging-rooms";
 import { coffeeChatExpiresAt } from "./coffee-chat-requests";
 import {
@@ -19,6 +19,12 @@ import {
   sponsorNameForParam,
   summaryTotals,
 } from "./sponsor-organizer";
+
+// Keep a digital sponsor fixture independent of the event configuration.
+vi.mock(import("~/content/sponsor-prize-tracks"), async (importOriginal) => ({
+  ...(await importOriginal()),
+  DIGITAL_JUDGING_SPONSORS: ["PCBWay"],
+}));
 
 const A = "aaaaaaaa-0000-4000-8000-000000000001";
 const B = "bbbbbbbb-0000-4000-8000-000000000002";

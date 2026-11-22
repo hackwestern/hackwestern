@@ -28,6 +28,12 @@ import {
   resetSheetRetries,
 } from "~/server/api/routers/sponsor-scoring";
 
+// Keep a digital sponsor fixture independent of the event configuration.
+vi.mock(import("~/content/sponsor-prize-tracks"), async (importOriginal) => ({
+  ...(await importOriginal()),
+  DIGITAL_JUDGING_SPONSORS: ["PCBWay"],
+}));
+
 // SPONSOR_JUDGING_CLOSES_AT, per test (unset = judging never closes).
 let closesAt: string | undefined;
 vi.mock("~/env", async (importOriginal) => {
@@ -377,12 +383,27 @@ describe("sponsorScoring.submit", () => {
     expect(after.final).toMatchObject({ teamIds: ranked, sheetSynced: true });
   });
 
+  test.each([3, 4])(
+    "saves an ordered final ranking of %i teams",
+    async (count) => {
+      const s = await sponsor();
+      const ids = await shortlistTeams(s.id);
+      const ranked = ids.slice(0, count).reverse();
+      await expect(
+        anon.sponsorScoring.submit({ sponsor: s.id, teamIds: ranked }),
+      ).resolves.toMatchObject({ teamIds: ranked });
+      expect(
+        (await anon.sponsorScoring.get({ sponsor: s.id })).final?.teamIds,
+      ).toEqual(ranked);
+    },
+  );
+
   test("refuses the wrong count, duplicates and unshortlisted teams", async () => {
     const s = await sponsor();
     const ids = await shortlistTeams(s.id);
     const extra = await team();
     const cases = [
-      ids.slice(0, TOP - 1),
+      ids.slice(0, 2),
       [...ids.slice(0, TOP), extra],
       [ids[0]!, ...ids.slice(0, TOP - 1)],
       [...ids.slice(0, TOP - 1), extra],
@@ -605,6 +626,35 @@ describe("sponsorScoring.sendShortlist", () => {
     await expect(
       anon.sponsorScoring.sendShortlist({ sponsor: s.id }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  test("accepts 10 finalists and rejects 11", async () => {
+    const s = await sponsor();
+    const ids = await someTeams(11);
+    for (const teamId of ids) {
+      await anon.sponsorScoring.review({
+        sponsor: s.id,
+        teamId,
+        shortlisted: true,
+      });
+    }
+    await expect(
+      anon.sponsorScoring.sendShortlist({ sponsor: s.id }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: "Send at most 10 teams.",
+    });
+
+    await anon.sponsorScoring.review({
+      sponsor: s.id,
+      teamId: ids[10]!,
+      shortlisted: false,
+    });
+    await expect(
+      anon.sponsorScoring.sendShortlist({ sponsor: s.id }),
+    ).resolves.toMatchObject({
+      teamIds: ids.slice(0, 10).sort(),
+    });
   });
 
   test("refuses an empty shortlist and a closed round", async () => {
@@ -1179,9 +1229,9 @@ describe("sponsorScoring digital sponsors (top 5 by Devpost link)", () => {
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
-  test("still works after judging closes (organizers enter it late)", async () => {
+  test("still accepts three ranked teams after judging closes", async () => {
     const org = await organizer();
-    const all = await someTeams(TOP);
+    const all = await someTeams(3);
     closesAt = PAST;
     await expect(
       org.sponsorScoring.submitDigital({ name: "PCBWay", links: all }),

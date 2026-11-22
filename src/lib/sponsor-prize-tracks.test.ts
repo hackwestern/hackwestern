@@ -3,11 +3,17 @@ import { describe, expect, test } from "vitest";
 import { SPONSOR_PRIZE_TRACKS } from "~/content/sponsor-prize-tracks";
 import {
   hasPrizeTrack,
+  isDigitalJudging,
   prizeTrackOf,
   sponsorNameKey,
 } from "./sponsor-prize-tracks";
 
 describe("prize tracks", () => {
+  test("PCBWay judges in person and keeps its prize track", () => {
+    expect(hasPrizeTrack("PCBWay")).toBe(true);
+    expect(isDigitalJudging("PCBWay")).toBe(false);
+  });
+
   test("the list Jazz gave", () => {
     expect([...SPONSOR_PRIZE_TRACKS]).toEqual([
       "Scotiabank",

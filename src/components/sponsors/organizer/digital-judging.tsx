@@ -1,3 +1,4 @@
+import { minPicks } from "~/lib/sponsor-scoring";
 import { useEffect, useId, useState } from "react";
 import { CheckCircle2, CircleAlert } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -111,9 +112,11 @@ export function DigitalSponsor({ name, top }: { name: string; top: number }) {
   const dupes = matches.map(
     (m, i) => m !== null && matches.findIndex((o) => o?.id === m.id) !== i,
   );
+  // Places are filled in order; blank ones at the end are left off.
+  const filled = shown.filter((link) => link.trim() !== "");
   const ready =
-    shown.length > 0 &&
-    matches.every((m) => m !== null) &&
+    filled.length >= minPicks(data.top) &&
+    filled.every((_, i) => matches[i] !== null) &&
     !dupes.some(Boolean);
 
   return (
@@ -147,7 +150,7 @@ export function DigitalSponsor({ name, top }: { name: string; top: number }) {
         className="flex flex-col gap-3"
         onSubmit={(e) => {
           e.preventDefault();
-          if (ready) save.mutate({ name, links: shown });
+          if (ready) save.mutate({ name, links: filled });
         }}
       >
         {shown.map((link, i) => {
@@ -225,7 +228,11 @@ export function DigitalSponsor({ name, top }: { name: string; top: number }) {
           disabled={!ready || save.isPending}
           className="self-start disabled:cursor-not-allowed disabled:opacity-dashboard-disabled"
         >
-          {save.isPending ? copy.saving : copy.save(data.top)}
+          {save.isPending
+            ? copy.saving
+            : copy.save(
+                filled.length >= minPicks(data.top) ? filled.length : data.top,
+              )}
         </DashboardButton>
       </form>
     </section>

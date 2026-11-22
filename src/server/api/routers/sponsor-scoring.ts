@@ -19,6 +19,7 @@ import {
   HALVES_MIN,
   JUDGE_NAME_MAX,
   NOTE_MAX,
+  minPicks,
   SPONSOR_FINAL_TOP,
   aggregateScores,
   cleanJudgeName,
@@ -641,7 +642,7 @@ export const sponsorScoringRouter = createTRPCRouter({
 
   /**
    * End round 1: one-time snapshot of the sponsor's current shortlist
-   * (eligible teams only, at most SHORTLIST_MAX: one per presentation slot)
+   * (eligible teams only, at most SHORTLIST_MAX)
    * as the one organizers schedule from. Once sent, it cannot be replaced.
    */
   sendShortlist: publicProcedure
@@ -786,12 +787,12 @@ export const sponsorScoringRouter = createTRPCRouter({
     }),
 
   /**
-   * Submit the ranked top SPONSOR_FINAL_TOP (1st to 5th): exactly that
-   * many, or every team when fewer presented, no repeats, all teams that
-   * presented to this sponsor and still eligible. Only once organizers
-   * have opened round 2, and only for a sponsor with a placed presentation
-   * slot (no slot: FORBIDDEN, Jazz 2026-11-18). One-time submission: the
-   * sponsor can't replace it; organizers can (submitDigital).
+   * Submit three to five ranked teams (all of them when fewer presented),
+   * no repeats, all teams that presented to this sponsor and still eligible.
+   * Only once organizers have opened round 2, and only for a sponsor with a
+   * placed presentation slot (no slot: FORBIDDEN, Jazz 2026-11-18).
+   * One-time submission: the sponsor can't replace it; organizers can
+   * (submitDigital).
    * Saved here first, then mirrored to the Sponsor Judging tab; if that
    * fails (or sheet writes are off) the submission still counts and
    * `sheetSynced` is false (the next `get` retries it).
@@ -915,7 +916,7 @@ export const sponsorScoringRouter = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       const { sponsor, rankable, top } = await organizerTopFor(input.name);
-      if (input.links.length !== top) {
+      if (input.links.length < minPicks(top) || input.links.length > top) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: errors.ranking.wrongCount(top),

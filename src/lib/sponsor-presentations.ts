@@ -54,10 +54,9 @@ export function slotsPerRoom(window: PresentationWindow = PRESENTATION_WINDOW) {
 export const PRESENTATION_SLOTS_PER_ROOM = slotsPerRoom();
 
 /**
- * Most teams a sponsor can send for round 1: one per slot in their room
- * (18). sponsorScoring.sendShortlist refuses more.
+ * Most teams a sponsor can send for round 1.
  */
-export const SHORTLIST_MAX = PRESENTATION_SLOTS_PER_ROOM;
+export const SHORTLIST_MAX = 10;
 
 /**
  * Slots a room may run past the window's end, so every shortlisted team
@@ -65,7 +64,7 @@ export const SHORTLIST_MAX = PRESENTATION_SLOTS_PER_ROOM;
  * "I want to be able to see everything"). In-window slots always fill
  * first; the board marks the rest as running past the end.
  */
-export const PRESENTATION_OVERFLOW_SLOTS = SHORTLIST_MAX;
+export const PRESENTATION_OVERFLOW_SLOTS = PRESENTATION_SLOTS_PER_ROOM;
 
 /** A slot that ends after the window: shown as running past the end. */
 export const runsPastEnd = (
@@ -99,7 +98,7 @@ export type PresentationSchedule = {
   /** Shortlisted teams that couldn't get a slot with that sponsor. */
   unplaced: { sponsorId: string; teamId: string }[];
   /**
-   * Teams past the first SHORTLIST_MAX of a sponsor's shortlist (in
+   * Teams past the first PRESENTATION_SLOTS_PER_ROOM of a sponsor's shortlist (in
    * shortlist order): never scheduled. Only an old send can have them.
    */
   overCap: { sponsorId: string; teamIds: string[] }[];
@@ -127,7 +126,7 @@ const byText = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
  * backtracking over the free slots, and a team that's still stuck is
  * fitted by moving already placed teams to other slots in the same room
  * (augmenting paths). A sponsor gets at most `maxPerSponsor`
- * (SHORTLIST_MAX) teams: the first ones in shortlist order; the rest are
+ * (PRESENTATION_SLOTS_PER_ROOM) teams: the first ones in shortlist order; the rest are
  * returned in `overCap`. Anything that can't fit is returned in
  * `unplaced`; nothing is dropped. A sponsor without a room still gets its
  * times (room null): each sponsor has one room, so its slots are a column
@@ -146,7 +145,8 @@ export function schedulePresentations(
   window: PresentationWindow = PRESENTATION_WINDOW,
   {
     searchLimit = SEARCH_LIMIT,
-    maxPerSponsor = SHORTLIST_MAX,
+    // Existing sends were accepted up to the room capacity.
+    maxPerSponsor = PRESENTATION_SLOTS_PER_ROOM,
     overflowSlots = PRESENTATION_OVERFLOW_SLOTS,
     keep = [],
     notBefore = -Infinity,
