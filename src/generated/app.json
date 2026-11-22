@@ -17488,7 +17488,7 @@
                             },
                             {
                               "items": {
-                                "description": "max depth reached"
+                                "type": "string"
                               },
                               "type": "array"
                             }
@@ -17644,12 +17644,7 @@
                     },
                     {
                       "items": {
-                        "enum": [
-                          "Best Use of Cohere",
-                          "Best Use of AntiGravity",
-                          "Best Domain",
-                          "General"
-                        ]
+                        "type": "string"
                       },
                       "type": "array"
                     }
@@ -23779,23 +23774,7 @@
             "type": "string"
           },
           "sponsorTrack": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "const": "Best Use of Cohere"
-              },
-              {
-                "const": "Best Use of AntiGravity"
-              },
-              {
-                "const": "Best Domain"
-              },
-              {
-                "const": "General"
-              }
-            ]
+            "type": "string"
           },
           "teams": {
             "items": {
@@ -25592,6 +25571,9 @@
                       "type": "null"
                     },
                     {
+                      "const": "fixed"
+                    },
+                    {
                       "const": "board"
                     },
                     {
@@ -26138,6 +26120,60 @@
         "type": "object"
       },
       "path": "sponsorPresentations.myConfirmation",
+      "source": "src/server/api/routers/sponsor-presentations.ts",
+      "type": "query"
+    },
+    {
+      "auth": "protected",
+      "errors": [
+        {
+          "code": "UNAUTHORIZED",
+          "httpStatus": 401,
+          "source": "auth middleware"
+        },
+        {
+          "code": "INTERNAL_SERVER_ERROR",
+          "httpStatus": 500,
+          "source": "unhandled"
+        }
+      ],
+      "http": "GET /api/trpc/sponsorPresentations.mySchedule?input=<superjson>",
+      "input": null,
+      "output": {
+        "properties": {
+          "hasQnxTrack": {
+            "type": "boolean"
+          },
+          "slots": {
+            "items": {
+              "properties": {
+                "room": {
+                  "type": "string"
+                },
+                "sponsorName": {
+                  "type": "string"
+                },
+                "start": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "sponsorName",
+                "room",
+                "start"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "slots",
+          "hasQnxTrack"
+        ],
+        "type": "object"
+      },
+      "path": "sponsorPresentations.mySchedule",
       "source": "src/server/api/routers/sponsor-presentations.ts",
       "type": "query"
     },
@@ -28380,23 +28416,7 @@
             "type": "number"
           },
           "track": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "const": "Best Use of Cohere"
-              },
-              {
-                "const": "Best Use of AntiGravity"
-              },
-              {
-                "const": "Best Domain"
-              },
-              {
-                "const": "General"
-              }
-            ]
+            "type": "string"
           }
         },
         "required": [
@@ -28634,23 +28654,7 @@
             "type": "string"
           },
           "sponsorTrack": {
-            "anyOf": [
-              {
-                "type": "null"
-              },
-              {
-                "const": "Best Use of Cohere"
-              },
-              {
-                "const": "Best Use of AntiGravity"
-              },
-              {
-                "const": "Best Domain"
-              },
-              {
-                "const": "General"
-              }
-            ]
+            "type": "string"
           },
           "teams": {
             "items": {
@@ -32791,16 +32795,10 @@
                 "type": "null"
               },
               {
-                "const": "Best Use of Cohere"
-              },
-              {
-                "const": "Best Use of AntiGravity"
-              },
-              {
-                "const": "Best Domain"
-              },
-              {
-                "const": "General"
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
               }
             ]
           }
@@ -33020,12 +33018,8 @@
             "anyOf": [
               {
                 "items": {
-                  "enum": [
-                    "Best Use of Cohere",
-                    "Best Use of AntiGravity",
-                    "Best Domain",
-                    "General"
-                  ],
+                  "maxLength": 255,
+                  "minLength": 1,
                   "type": "string"
                 },
                 "type": "array"
