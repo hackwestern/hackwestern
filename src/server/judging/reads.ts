@@ -498,7 +498,10 @@ export async function getRoundBoard() {
   const number = new Map(judgeOrder.map((j, i) => [j.id, i + 1]));
   // Judges show by name; "Judge 7" only when the account has no name.
   const nameOf = new Map(
-    judgeOrder.map((j, i) => [j.id, j.name?.trim() || `Judge ${i + 1}`]),
+    judgeOrder.map((j, i) => {
+      const name = j.name?.trim();
+      return [j.id, name ? name : `Judge ${i + 1}`];
+    }),
   );
   const open = round.status === "running" || round.status === "paused";
   const statusOf = (s: { status: StopStatus; position: number }) => {
