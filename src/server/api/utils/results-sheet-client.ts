@@ -5,8 +5,9 @@
 // results sheet can be written without opening up writes to those sheets.
 //
 // Credentials: JUDGING_RESULTS_CLIENT_EMAIL + _PRIVATE_KEY, or, when
-// those aren't set, the SPONSOR_SHEETS_* service account. Whichever is used
-// must be an Editor on JUDGING_RESULTS_SHEET.
+// those aren't set, the SPONSOR_SHEETS_* service account, then the
+// RUN_OF_SHOW_SHEETS_* one (prod has only that one, HW13 judging day). Whichever
+// is used must be an Editor on JUDGING_RESULTS_SHEET; it only writes that sheet.
 import { google, type sheets_v4 } from "googleapis";
 
 import { env } from "~/env";
@@ -35,6 +36,10 @@ export function resultsSheetCredentials(): { email: string; key: string } {
   const email = normalizeEmail(env.SPONSOR_SHEETS_CLIENT_EMAIL);
   const key = normalizePrivateKey(env.SPONSOR_SHEETS_PRIVATE_KEY);
   if (email && key) return { email, key };
+
+  const rosEmail = normalizeEmail(env.RUN_OF_SHOW_SHEETS_CLIENT_EMAIL);
+  const rosKey = normalizePrivateKey(env.RUN_OF_SHOW_SHEETS_PRIVATE_KEY);
+  if (rosEmail && rosKey) return { email: rosEmail, key: rosKey };
 
   throw new Error(
     "Results sheet login is not configured: set JUDGING_RESULTS_CLIENT_EMAIL and JUDGING_RESULTS_PRIVATE_KEY",

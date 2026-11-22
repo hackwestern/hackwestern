@@ -167,7 +167,7 @@ async function getRanking() {
  * keep their type.
  * All-or-nothing: if any user id is unknown, nothing is written.
  */
-async function addJudges(
+export async function addJudges(
   inputs: AddJudgeInput[],
 ): Promise<(typeof judges.$inferSelect)[]> {
   return db.transaction(async (tx) => {

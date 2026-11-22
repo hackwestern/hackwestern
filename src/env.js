@@ -134,6 +134,9 @@ export const env = createEnv({
     CHEAT_SWEEP_SECRET: z.string().optional(),
     // Vercel cron for the Slack ping bots (src/pages/api/cron/pings.ts).
     CRON_SECRET: z.string().optional(),
+    // External judges to add as general judges once they have an account
+    // (src/pages/api/cron/external-judges.ts). Comma separated emails.
+    EXTERNAL_JUDGE_EMAILS: z.string().optional(),
     // "off" (default), "dry-run" or "live"; checked in the route, so a typo
     // can't fail the site's build.
     PINGS_CRON: z.string().optional(),
@@ -269,6 +272,7 @@ export const env = createEnv({
     SPONSOR_JUDGING_CLOSES_AT: process.env.SPONSOR_JUDGING_CLOSES_AT,
     CHEAT_SWEEP_SECRET: process.env.CHEAT_SWEEP_SECRET,
     CRON_SECRET: process.env.CRON_SECRET,
+    EXTERNAL_JUDGE_EMAILS: process.env.EXTERNAL_JUDGE_EMAILS,
     PINGS_CRON: process.env.PINGS_CRON,
     SPONSOR_LEAD_FEED: process.env.SPONSOR_LEAD_FEED,
     SPONSOR_LEAD_PINGS: process.env.SPONSOR_LEAD_PINGS,

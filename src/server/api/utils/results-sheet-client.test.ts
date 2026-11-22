@@ -26,7 +26,7 @@ describe("resultsSheetCredentials", () => {
     });
   });
 
-  test("falls back to the sponsor account, never run-of-show", () => {
+  test("falls back to the sponsor account before run-of-show", () => {
     Object.assign(env, {
       RUN_OF_SHOW_SHEETS_CLIENT_EMAIL: "ros@x.iam",
       RUN_OF_SHOW_SHEETS_PRIVATE_KEY: "ros-key",
@@ -34,6 +34,17 @@ describe("resultsSheetCredentials", () => {
       SPONSOR_SHEETS_PRIVATE_KEY: "sponsor-key",
     });
     expect(resultsSheetCredentials().email).toBe("sponsor@x.iam");
+  });
+
+  test("uses the run-of-show account when it's the only one", () => {
+    Object.assign(env, {
+      RUN_OF_SHOW_SHEETS_CLIENT_EMAIL: "ros@x.iam",
+      RUN_OF_SHOW_SHEETS_PRIVATE_KEY: "ros-key",
+    });
+    expect(resultsSheetCredentials()).toEqual({
+      email: "ros@x.iam",
+      key: "ros-key",
+    });
   });
 
   test("throws when nothing is configured", () => {
