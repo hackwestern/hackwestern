@@ -119,8 +119,9 @@ finish that team late.
   next" between rounds), and My teams lists the missed team with a **Score
   late** button, during the first pass and while re-scoring. A late score made
   while re-scoring counts as re-scored. The score form stays on the team it was
-  opened for even if the next round starts, so a score never lands on another
-  team.
+  opened for after its round ends, so a score never lands on another team.
+  When the next round starts, the judge is moved to that round's team and the
+  unsent one waits under "Not sent yet" with its draft kept.
 - An organizer then starts the next round. Starting is refused while a round is
   open and after the last round (the most stops any judge has).
 - **Catch-up round.** A table is "missed" when its judge never came: unscored

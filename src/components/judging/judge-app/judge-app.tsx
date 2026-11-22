@@ -149,7 +149,8 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   // The judge pressed "Judge this team" for the team they hold.
   const [scoring, setScoring] = useState(false);
   // The stop the score form was opened for. It stays the one being scored even
-  // if its round ends or the next starts, so a score never lands on another team.
+  // if its round ends, so a score never lands on another team. When the next
+  // round starts the judge is moved on to that round's team.
   const [scoringStopId, setScoringStopId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
 
@@ -726,6 +727,26 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     roundWasOpen.current = roundOpen;
     if (justClosed) autoSubmit.current();
   }, [roundOpen]);
+
+  // A new round moves the judge on to that round's team, even from a form left
+  // open for an earlier one. That team stays under "Not sent yet" on My teams,
+  // with its draft kept on this phone.
+  const moveToRound = useRef<() => void>(() => undefined);
+  moveToRound.current = () => {
+    if (!scoring || scoringStopId === null) return;
+    const roundTeam = activeStops[0];
+    if (!roundTeam || roundTeam.id === scoringStopId) return;
+    setScoring(false);
+    setScoringStopId(null);
+    setTab("next");
+  };
+  const openRound = roundOpen ? (roundView?.state.round ?? null) : null;
+  const lastOpenRound = useRef<number | null>(null);
+  useEffect(() => {
+    const opened = openRound !== null && openRound !== lastOpenRound.current;
+    lastOpenRound.current = openRound;
+    if (opened) moveToRound.current();
+  }, [openRound]);
 
   // What the Score tab has open, whichever tab is showing.
   const editOpen = editingTeam !== undefined && canEdit;
