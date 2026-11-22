@@ -1229,3 +1229,10 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 - **Filter:** Show All / Judging / Coffee chats / Workshop / To fix above the table.
 - **Add a rep:** Book an event can add a rep the sponsor forgot. Organizer-only `addEventRep`: 0 chats, free all day, no "changed after Send", so schedules and invites stay put. Alternative (reuse the sponsor addRep) rejected: it gives default chats and flags the sponsor as changed.
 - **9 PM:** sessions 17-20 (5-9 PM) added. Existing reps are not free then (nothing saved); new sponsor-added reps start free in the daytime only. Jazz: assume reps have not said they are free in the evening.
+
+## 2026-11-22: Judging tour and briefings run the real judging screens on sample data
+- **Decision:** `/judging-tour` (stop by stop, judge's phone next to the hacker's screen), `/judging-tour/judges` and `/judging-tour/hackers` (one-screen briefings for the projector) render the real judge app and hacker card components with typed sample data from `tour-mocks.ts`. The hacker card was pulled out of `RoundBoard` as `HackerTableCard` so `/rounds` and the tour share it. Public pages, noindex.
+- **Why:** Jazz needs to show judges and hackers exactly what their screens will say on the day. Reusing the components means the tour can't drift from the app; a type change in the API breaks the build instead of the walkthrough.
+- **Timing on the day:** 3 min demo, 2 min Q&A, 1:30 to move (6:30 rounds, matching the judge app's built-in 1:30 buffer), about 7 rounds. Set the round length to 390 seconds in the control room.
+- **Also:** live pages (`/rounds`, `/live`, ...) now send signed-out visitors back to the page they opened after login, not always `/live`.
+- **Alternatives:** a standalone HTML mock (faster, but copies the UI by hand and goes stale); a spotlight tour over the live `/judge` page like the sponsor tour (needs a real judge account and live data, not usable for a briefing).

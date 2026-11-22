@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 
 import { useNow } from "~/components/judging/control/control-shared";
 import { RoundClock } from "~/components/judging/judge-app/judge-round";
@@ -104,10 +104,50 @@ function buildRows(stops: Stop[], view: View): Row[] {
   return list.sort((a, b) => n(a) - n(b));
 }
 
+/** What a hacker's team sees about its judging (`judging.team.getMyJudging`). */
+export type TeamJudging = RouterOutputs["judging"]["team"]["getMyJudging"];
+
 /**
- * "Judge missing" for a hacker whose judge hasn't started. Greyed out for the
- * round's first minute: the judge may still be walking over.
+ * The "Judge missing" button and its hint. Greyed out for the round's first
+ * minute (`waitSeconds` > 0): the judge may still be walking over.
  */
+export function JudgeMissingButton({
+  waitSeconds,
+  pending = false,
+  error = null,
+  onReport,
+}: {
+  waitSeconds: number;
+  pending?: boolean;
+  error?: string | null;
+  onReport: () => void;
+}) {
+  const locked = waitSeconds > 0;
+  return (
+    <div className="mt-2 flex flex-col gap-2">
+      <button
+        type="button"
+        className={secondaryButton}
+        disabled={locked || pending}
+        onClick={onReport}
+      >
+        {pending ? "Reporting…" : "Judge missing"}
+      </button>
+      <p className="m-0 text-sm text-dashboard-text-light">
+        {locked
+          ? `Please wait for your judge, they may be on the way. You can report them missing in ${waitSeconds}s.`
+          : "Still no judge? Let the organizers know."}
+      </p>
+      {error && (
+        <p role="alert" className={warningBanner}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** "Judge missing", wired to the server. */
 function ReportJudgeMissing({
   opensInMs,
   fetchedAt,
@@ -121,30 +161,90 @@ function ReportJudgeMissing({
   });
   const now = useNow(1000);
   const opensAt = fetchedAt + (opensInMs ?? 0);
-  const waitSeconds = Math.max(0, Math.ceil((opensAt - now) / 1000));
-  const locked = waitSeconds > 0;
-
   return (
-    <div className="mt-2 flex flex-col gap-2">
-      <button
-        type="button"
-        className={secondaryButton}
-        disabled={locked || report.isPending}
-        onClick={() => report.mutate()}
-      >
-        {report.isPending ? "Reporting…" : "Judge missing"}
-      </button>
-      <p className="m-0 text-sm text-dashboard-text-light">
-        {locked
-          ? `Please wait for your judge, they may be on the way. You can report them missing in ${waitSeconds}s.`
-          : "Still no judge? Let the organizers know."}
+    <JudgeMissingButton
+      waitSeconds={Math.max(0, Math.ceil((opensAt - now) / 1000))}
+      pending={report.isPending}
+      error={report.error?.message ?? null}
+      onReport={() => report.mutate()}
+    />
+  );
+}
+
+/**
+ * A hacker's own team on the rounds page: its table and where judging is at.
+ * `missing` is the "Judge missing" control, shown while a judge is due but
+ * hasn't started.
+ */
+export function HackerTableCard({
+  mine,
+  missing,
+}: {
+  mine: TeamJudging | null | undefined;
+  missing: ReactNode;
+}) {
+  if (!mine) {
+    return (
+      <p className="m-0 text-base font-medium text-dashboard-text-light">
+        Join a team to see when it&apos;s being judged.
       </p>
-      {report.error && (
-        <p role="alert" className={warningBanner}>
-          {report.error.message}
-        </p>
-      )}
-    </div>
+    );
+  }
+  if (mine.absent) {
+    return (
+      <p role="status" className={warningBanner}>
+        Your team was marked absent, so it&apos;s out of judging. If that&apos;s
+        a mistake, find an organizer now.
+      </p>
+    );
+  }
+  if (!mine.table) {
+    return (
+      <p className="m-0 text-base font-medium text-dashboard-text-light">
+        Your team doesn&apos;t have a table yet. Check back soon.
+      </p>
+    );
+  }
+  return (
+    <section
+      aria-label="Your team"
+      className={`${card} flex flex-col gap-3 p-5`}
+    >
+      <span className="flex flex-col">
+        <span className="text-base font-semibold text-dashboard-text-light">
+          Your table
+        </span>
+        <span className="text-6xl font-bold tabular-nums leading-tight text-dashboard-text-heavy">
+          {mine.table.number}
+        </span>
+      </span>
+      <span className="border-t border-dashboard-border-subtle pt-3 text-xl font-bold text-dashboard-text-heavy sm:text-2xl">
+        {mine.judgedAll
+          ? "Your team has been judged."
+          : mine.thisRound === null
+            ? "Judging hasn't started yet. Stay at your table."
+            : mine.thisRound === "now"
+              ? mine.judgeStarted
+                ? "Your judge is here."
+                : "A judge is coming to your table now."
+              : mine.thisRound === "done"
+                ? `You've been judged in round ${mine.round}.`
+                : mine.thisRound === "over"
+                  ? `Round ${mine.round} is over. Stay at your table.`
+                  : `No judge at your table in round ${mine.round}.`}
+      </span>
+      {!mine.judgedAll &&
+        mine.thisRound === "now" &&
+        !mine.judgeStarted &&
+        (mine.reportedMissing ? (
+          <p role="status" className={`${infoBanner} mt-2`}>
+            Thanks, the organizers know. If your judge doesn&apos;t come, your
+            team gets another judge in a catch-up round at the end.
+          </p>
+        ) : (
+          missing
+        ))}
+    </section>
   );
 }
 
@@ -202,62 +302,16 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
           <p className="m-0 text-base font-medium text-dashboard-text-light">
             Loading…
           </p>
-        ) : !mine ? (
-          <p className="m-0 text-base font-medium text-dashboard-text-light">
-            Join a team to see when it&apos;s being judged.
-          </p>
-        ) : mine.absent ? (
-          <p role="status" className={warningBanner}>
-            Your team was marked absent, so it&apos;s out of judging. If
-            that&apos;s a mistake, find an organizer now.
-          </p>
-        ) : !mine.table ? (
-          <p className="m-0 text-base font-medium text-dashboard-text-light">
-            Your team doesn&apos;t have a table yet. Check back soon.
-          </p>
         ) : (
-          <section
-            aria-label="Your team"
-            className={`${card} flex flex-col gap-3 p-5`}
-          >
-            <span className="flex flex-col">
-              <span className="text-base font-semibold text-dashboard-text-light">
-                Your table
-              </span>
-              <span className="text-6xl font-bold tabular-nums leading-tight text-dashboard-text-heavy">
-                {mine.table.number}
-              </span>
-            </span>
-            <span className="border-t border-dashboard-border-subtle pt-3 text-xl font-bold text-dashboard-text-heavy sm:text-2xl">
-              {mine.judgedAll
-                ? "Your team has been judged."
-                : mine.thisRound === null
-                  ? "Judging hasn't started yet. Stay at your table."
-                  : mine.thisRound === "now"
-                    ? mine.judgeStarted
-                      ? "Your judge is here."
-                      : "A judge is coming to your table now."
-                    : mine.thisRound === "done"
-                      ? `You've been judged in round ${mine.round}.`
-                      : mine.thisRound === "over"
-                        ? `Round ${mine.round} is over. Stay at your table.`
-                        : `No judge at your table in round ${mine.round}.`}
-            </span>
-            {!mine.judgedAll &&
-              mine.thisRound === "now" &&
-              !mine.judgeStarted &&
-              (mine.reportedMissing ? (
-                <p role="status" className={`${infoBanner} mt-2`}>
-                  Thanks, the organizers know. If your judge doesn&apos;t come,
-                  your team gets another judge in a catch-up round at the end.
-                </p>
-              ) : (
-                <ReportJudgeMissing
-                  opensInMs={mine.reportOpensInMs}
-                  fetchedAt={teamQ.dataUpdatedAt}
-                />
-              ))}
-          </section>
+          <HackerTableCard
+            mine={mine}
+            missing={
+              <ReportJudgeMissing
+                opensInMs={mine?.reportOpensInMs ?? null}
+                fetchedAt={teamQ.dataUpdatedAt}
+              />
+            }
+          />
         )}
       </div>
     );
