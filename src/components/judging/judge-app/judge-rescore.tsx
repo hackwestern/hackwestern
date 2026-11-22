@@ -59,9 +59,8 @@ export function JudgeRescore({
       <p className="m-0 text-base font-medium text-dashboard-text-light">
         Go back through all {results.length}{" "}
         {results.length === 1 ? "team" : "teams"} you scored, in the order you
-        scored them. This time you can open each team&apos;s GitHub and Devpost.
-        Rethink every score, then save, even if nothing changes. Each team
-        follows the last, and you can&apos;t skip one.
+        scored them. Rethink every score, then save, even if nothing changes.
+        Each team follows the last, and you can&apos;t skip one.
       </p>
       <p className="m-0 text-sm font-semibold tabular-nums text-dashboard-text-light">
         {done} of {results.length} re-scored
