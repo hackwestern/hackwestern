@@ -1,9 +1,8 @@
 import { TABLE_COUNT, spotGrid } from "~/components/judging/map/map-data";
 
 /**
- * Row and column of a spot on the map's snake grid, counted from the top
- * left as the map is drawn upright, with columns in spots (two per physical
- * table). Row 1 runs left to right, row 2 right to left, and so on (see
+ * Row and column of a table on the map's snake grid, counted from the top
+ * left as the map is drawn upright. Row 1 runs left to right, row 2 right to left, and so on (see
  * spotGrid in map-data.ts).
  */
 const gridOf = spotGrid;

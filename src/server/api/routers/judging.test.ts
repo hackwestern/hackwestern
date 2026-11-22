@@ -327,8 +327,8 @@ describe("seatTeams", () => {
     expect(result.random).toBe(true);
     expect(result.seated).toBe(8);
     const numbers = result.seating.map((s) => s.tableNumber);
-    // The reversed row has pairs (7, 8) and (9, 10), with 6 on its own.
-    expect(numbers).toEqual([1, 3, 5, 6, 7, 9, 2, 4]);
+    // One team per table, in table order.
+    expect(numbers).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
   test("seated tables flip from empty to waiting", async () => {
@@ -366,15 +366,14 @@ describe("seatTeams", () => {
 /* ---------- auto-assign ---------- */
 
 describe("autoAssign", () => {
-  test("the 140-spot room fills all 70 physical tables before sharing one", async () => {
+  test("the 70-table room seats one team per table, in table order", async () => {
     const { judges: judgeList } = await setupRoom({
-      tableCount: 140,
+      tableCount: 70,
       rows: 5,
-      teamCount: 71,
+      teamCount: 50,
       judgeCount: 3,
     });
-    const occupied = Array.from({ length: 70 }, (_, i) => i * 2 + 1);
-    occupied.splice(1, 0, 2);
+    const occupied = Array.from({ length: 50 }, (_, i) => i + 1);
     for (const judge of judgeList) {
       const stops = await stopsOf(judge.caller);
       expect(stops.map((stop) => stop.table.number)).toEqual(occupied);
@@ -409,7 +408,7 @@ describe("autoAssign", () => {
     await org.caller.judging.admin.autoAssign();
     expect(
       (await stopsOf(judgeList[0]!.caller)).map((s) => s.table.number),
-    ).toEqual([2, 3, 5]);
+    ).toEqual([2, 3, 4]);
   });
 
   test("every table gets 3 different judges; sections follow the order judges were added", async () => {

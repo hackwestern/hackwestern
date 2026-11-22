@@ -38,9 +38,9 @@ type Kind =
 
 /** Physical tables drawn, even before the DB has rows for all of them. */
 const MIN_PHYSICAL_TABLES = 70;
-/** In the DB a "table" is one team's spot; a physical table holds two. */
-const SPOTS_PER_TABLE = 2;
-/** DB tables the room needs: one per team spot. */
+/** One team per physical table, so a DB table is a physical table. */
+const SPOTS_PER_TABLE = 1;
+/** DB tables the room needs: one per physical table. */
 const SPOT_COUNT = MIN_PHYSICAL_TABLES * SPOTS_PER_TABLE;
 /** Tables per row, in snake order: the room's 5 rows of 14, as on the map. */
 const COLS = MAP_COLS;
@@ -665,8 +665,8 @@ function SwapDialog({
 }
 
 /**
- * Live room map. Each box is a physical table holding two spots, numbered
- * sequentially (1, 2 | 3, 4 | ...; flipped on right-to-left rows), and fills with its team and judging
+ * Live room map. Each box is a physical table with one team, numbered
+ * sequentially along the snake, and fills with its team and judging
  * progress. Tables run in a snake like the judges' map: row one left to
  * right, row two right to left.
  */

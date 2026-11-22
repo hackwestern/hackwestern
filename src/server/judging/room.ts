@@ -15,7 +15,7 @@ import {
   teams,
 } from "~/server/db/schema";
 import { type SetupTablesInput } from "~/schemas/judging";
-import { snakePosition, tablesPerRow } from "~/server/judging/layout";
+import { tablesPerRow } from "~/server/judging/layout";
 import {
   ELIGIBLE_SUBMISSIONS,
   type Tx,
@@ -187,14 +187,13 @@ function shuffle<T>(items: T[]): T[] {
 }
 
 /**
- * Fill one active spot per physical table before using the second spots.
+ * Seat one team per active table, in table order.
  * Replaces previous seating and clears the judge plan. Locked once judging starts.
  */
 export async function seatTeams({ random }: { random: boolean }) {
   return db.transaction(async (tx) => {
     await lockPlanExclusive(tx);
     await assertNotStarted("re-seat teams", tx);
-    const perRow = tablesPerRow(await getSettings(tx));
 
     const submitted = await tx
       .select({ id: teams.id, name: teams.name })
@@ -214,23 +213,8 @@ export async function seatTeams({ random }: { random: boolean }) {
       });
     }
 
-    // Pair columns from the left edge of each row. The coordinates come
-    // from the full layout, so switching a spot off cannot shift its pair.
-    const firstSpots: typeof tables = [];
-    const secondSpots: typeof tables = [];
-    const seenPairs = new Set<number>();
-    const pairsPerRow = Math.ceil(perRow / 2);
-    for (const table of tables) {
-      const { row, col } = snakePosition(table.number, perRow);
-      const pair = row * pairsPerRow + Math.floor(col / 2);
-      if (seenPairs.has(pair)) {
-        secondSpots.push(table);
-      } else {
-        seenPairs.add(pair);
-        firstSpots.push(table);
-      }
-    }
-    const spots = [...firstSpots, ...secondSpots];
+    // One team per table, in table order along the snake.
+    const spots = tables;
     const order = random ? shuffle(submitted) : submitted;
 
     await tx
