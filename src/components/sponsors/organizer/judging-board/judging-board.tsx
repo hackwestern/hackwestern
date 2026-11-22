@@ -260,6 +260,7 @@ function TodoCard({
                 notify={{
                   run: () => notify.mutate(),
                   pending: notify.isPending,
+                  round2Open: board.round2Open,
                   roomsLeft,
                   error: notify.error
                     ? notify.error.data?.code === "PRECONDITION_FAILED" ||
@@ -310,6 +311,7 @@ function Todo({
   notify: {
     run: () => void;
     pending: boolean;
+    round2Open: boolean;
     /** Sponsors still without a room: Notify teams waits for them. */
     roomsLeft: number;
     error: string | null;
@@ -320,31 +322,34 @@ function Todo({
   const [confirming, setConfirming] = useState(false);
   const t = copy.todo;
   if (todo.kind === "notify") {
+    const blockedBy = !notify.round2Open
+      ? t.round2First
+      : notify.roomsLeft > 0
+        ? t.roomsFirst(notify.roomsLeft)
+        : null;
     return (
       <div className={TODO_INFO}>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <DashboardButton
             onClick={() => setConfirming(true)}
-            disabled={notify.pending || notify.roomsLeft > 0}
-            aria-describedby={
-              notify.roomsLeft > 0 ? "judging-notify-rooms" : undefined
-            }
+            disabled={notify.pending || blockedBy !== null}
+            aria-describedby={blockedBy ? "judging-notify-blocked" : undefined}
             className="md:w-fit"
           >
             {notify.pending ? t.notifying : t.notifyButton}
           </DashboardButton>
-          {notify.roomsLeft > 0 && (
+          {blockedBy && (
             <span
-              id="judging-notify-rooms"
+              id="judging-notify-blocked"
               className="text-sm font-medium text-dashboard-text-medium"
             >
-              {t.roomsFirst(notify.roomsLeft)}
+              {blockedBy}
             </span>
           )}
         </div>
         {/* Messages can't be unsent (Jazz, 2026-11-20). */}
         <ConfirmDialog
-          open={confirming}
+          open={confirming && blockedBy === null}
           heading={t.notifyConfirm.heading}
           body={t.notifyConfirm.body}
           ok={t.notifyConfirm.ok}

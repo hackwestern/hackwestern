@@ -41,6 +41,7 @@ export function AfterPresentations() {
     onSuccess: () => {
       setConfirming(null);
       void utils.sponsorPresentations.overview.invalidate();
+      void utils.sponsorPresentations.board.invalidate();
     },
   });
   const data = overview.data;

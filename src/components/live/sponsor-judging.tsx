@@ -43,7 +43,8 @@ export default function SponsorJudging() {
         <DashboardPanel className="items-start">
           <p role="status" className="m-0 text-dashboard-text-medium">
             Your team has no scheduled sponsor presentations to show yet.
-            Presentations appear here once they have a time and room.
+            Presentations with a time and room appear when organizers open Round
+            2.
           </p>
         </DashboardPanel>
       ) : (

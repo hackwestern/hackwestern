@@ -219,6 +219,7 @@ export const sponsorPresentationsCopy = {
     slackOff:
       "Slack isn't set up on this server (SLACK_BOT_TOKEN is missing), so no messages were sent.",
     noSchedule: "Schedule presentations first.",
+    openRound2BeforeNotify: "Open round 2 before notifying teams.",
     /** Notify teams waits until every sponsor has a room. */
     roomsFirst: (sponsors: readonly string[]) =>
       `Give every sponsor a room before notifying teams. No room yet: ${sponsors.join(", ")}.`,

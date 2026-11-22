@@ -124,6 +124,7 @@ export async function teamPresentationsFor(userId: string): Promise<{
   confirmedAt: Date | null;
 }> {
   const none = { slots: [], sentAt: null, channel: null, confirmedAt: null };
+  if (!(await round2OpenedAt())) return none;
   const me = await db.query.users.findFirst({
     where: eq(users.id, userId),
     columns: { teamId: true },
@@ -213,6 +214,12 @@ export async function notifyPresentationTimes({
   resend = false,
   teamIds,
 }: { resend?: boolean; teamIds?: readonly string[] } = {}) {
+  if (!(await round2OpenedAt())) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: errors.openRound2BeforeNotify,
+    });
+  }
   const token = env.SLACK_BOT_TOKEN;
   if (!token) {
     throw new TRPCError({
@@ -689,9 +696,10 @@ export const sponsorPresentationsRouter = createTRPCRouter({
 
   /**
    * The signed-in hacker's assigned presentation times and rooms from the
-   * current saved schedule.
+   * current saved schedule while round 2 is open.
    */
   mine: protectedProcedure.query(async ({ ctx }) => {
+    if (!(await round2OpenedAt())) return [];
     const rows = await db
       .select({
         sponsorName: sponsorJudgingSponsors.name,

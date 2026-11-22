@@ -127,6 +127,7 @@ const anon = createCaller(createInnerTRPCContext({ session: null }));
 let organizer: ReturnType<typeof createCaller>;
 
 beforeEach(async () => {
+  await setRound2Open(false);
   slackToken = undefined;
   mailjet.configured = true;
   mail.mockReset().mockResolvedValue(mailOk);
@@ -329,6 +330,7 @@ describe("the Sponsor Judging tab", () => {
     expect(soon).toHaveBeenCalledTimes(1);
     await organizer.sponsorPresentations.schedule({ dryRun: true });
     expect(soon).toHaveBeenCalledTimes(1);
+    await setRound2Open(true);
     await member(t);
     slackToken = "xoxb-test";
     await organizer.sponsorPresentations.notify();
@@ -347,6 +349,9 @@ describe("the Sponsor Judging tab", () => {
 });
 
 describe("sponsorPresentations.notify", () => {
+  beforeEach(async () => {
+    await setRound2Open(true);
+  });
   test("is refused until every sponsor has a room", async () => {
     slackToken = "xoxb-test";
     await scheduledTeam();
@@ -396,6 +401,17 @@ describe("sponsorPresentations.notify", () => {
     const hacker = createCaller(
       createInnerTRPCContext({ session: hackerSession }),
     );
+    await setRound2Open(false);
+    expect(await hacker.sponsorPresentations.mine()).toEqual([]);
+    await expect(organizer.sponsorPresentations.notify()).rejects.toMatchObject(
+      {
+        code: "PRECONDITION_FAILED",
+        message: "Open round 2 before notifying teams.",
+      },
+    );
+    expect(dm).not.toHaveBeenCalled();
+
+    await setRound2Open(true);
     // The saved schedule is visible before anyone is notified.
     expect(await hacker.sponsorPresentations.mine()).toEqual([
       { sponsorName: s.name, room: "Rm 2235", start: 600 },
@@ -654,6 +670,7 @@ describe("sponsorPresentations.schedule and notices", () => {
     const t = await team();
     const hacker = await member(t);
     const other = await member(await team());
+    await setRound2Open(true);
     await send(s.id, [t]);
     await organizer.sponsorPresentations.schedule();
     expect(await hacker.caller.sponsorPresentations.mine()).toEqual([]);
@@ -669,6 +686,7 @@ describe("sponsorPresentations.schedule and notices", () => {
   });
 
   test("rescheduling keeps members notified when their times don't change", async () => {
+    await setRound2Open(true);
     slackToken = "xoxb-test";
     const { s, t } = await scheduledTeam("Rm 2110");
     const hacker = await member(t);
@@ -811,6 +829,7 @@ describe("sponsorPresentations judging board", () => {
   });
 
   test("sets a room, keeps the team's time and asks to tell them again", async () => {
+    await setRound2Open(true);
     slackToken = "xoxb-test";
     const { s, t } = await scheduledTeam("Rm 2110");
     await member(t);

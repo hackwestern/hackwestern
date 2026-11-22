@@ -22,6 +22,7 @@ import {
   scheduleLock,
 } from "~/server/api/utils/presentation-schedule";
 import { judgingRoomsWithSource } from "~/server/api/utils/sponsor-judging-board";
+import { round2OpenedAt } from "~/server/api/utils/sponsor-judging-settings";
 import { safeProfileUrl } from "~/server/api/utils/sponsor-shortlist";
 import { mirrorSponsorJudgingSoon } from "~/server/api/utils/sponsor-judging-sheet-mirror";
 import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
@@ -115,8 +116,8 @@ async function statusByTeam(
 export async function loadJudgingBoard() {
   const { registered, sponsors } = await boardSponsors();
   const ids = sponsors.map((s) => s.id);
-  const [rooms, sends, rows, scores, finals, reps, notices] = await Promise.all(
-    [
+  const [rooms, sends, rows, scores, finals, reps, notices, openedAt] =
+    await Promise.all([
       judgingRoomsWithSource(sponsors),
       db.select().from(sponsorShortlistSends),
       // Only board sponsors' slots: one that lost its prize track since the
@@ -151,8 +152,8 @@ export async function loadJudgingBoard() {
       db
         .select({ sentAt: sponsorPresentationNotices.sentAt })
         .from(sponsorPresentationNotices),
-    ],
-  );
+      round2OpenedAt(),
+    ]);
   const status = await statusByTeam(rows);
   const teamIds = [...new Set(rows.map((r) => r.teamId))];
   const names = new Map(
@@ -173,6 +174,7 @@ export async function loadJudgingBoard() {
     .reduce((a, b) => Math.max(a, b), 0);
 
   return {
+    round2Open: openedAt !== null,
     finalTop: SPONSOR_FINAL_TOP,
     sponsors: sponsors.map((s) => {
       const send = sendOf.get(s.id);
