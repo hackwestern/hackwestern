@@ -5,8 +5,7 @@
 // Edit this list to add or remove a track. Names match registered sponsor
 // names loosely (case, spaces and punctuation are ignored, and a registered
 // name that contains one of these counts), so "Sun Life" or "Sun Life
-// Financial" still match "Sunlife". A name here with no registered sponsor
-// yet (PCBWay, for now) is fine: it still shows on the Sponsor Judging tab.
+// Financial" still match "Sunlife".
 
 export const SPONSOR_PRIZE_TRACKS = [
   "Scotiabank",
@@ -21,7 +20,7 @@ export const SPONSOR_PRIZE_TRACKS = [
 // Digital; Jazz, 2026-11-19). They have no portal link: the spon team enters
 // their 1st-5th place by Devpost link on the organizer Sponsor judging tab.
 // Matched loosely, like the list above.
-export const DIGITAL_JUDGING_SPONSORS = ["PCBWay"] as const;
+export const DIGITAL_JUDGING_SPONSORS: readonly string[] = [];
 
 // In-person sponsors that judge remotely through the portal. Their judging
 // room, on the presentation schedule, the Sponsor Judging tab and hackers'
