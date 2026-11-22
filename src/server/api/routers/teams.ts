@@ -29,7 +29,9 @@ const teamsSaveSchema = createInsertSchema(teams, {
   techStack: true,
 });
 
-const teamsSelectSchema = createSelectSchema(teams).omit({
+const teamsSelectSchema = createSelectSchema(teams, {
+  tracks: z.array(z.string()).nullable(),
+}).omit({
   id: true,
   submissionStatus: true,
   submittedAt: true,
@@ -90,6 +92,15 @@ export const teamsRouter = createTRPCRouter({
 
     const team = await db.query.teams.findFirst({
       where: eq(teams.id, teamId.teamId),
+      columns: {
+        id: false,
+        submissionStatus: false,
+        submittedAt: false,
+        createdAt: false,
+        judgingTableId: false,
+        importFlags: false,
+        techStack: false,
+      },
     });
     if (!team) {
       throw new TRPCError({

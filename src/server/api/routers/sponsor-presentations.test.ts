@@ -669,6 +669,28 @@ describe("sponsorPresentations.notify", () => {
 });
 
 describe("sponsorPresentations.schedule and notices", () => {
+  test("the hacker schedule includes the same team's QNX tag alongside assigned slots", async () => {
+    const { t } = await scheduledTeam();
+    const hacker = await member(t);
+    await setRound2Open(true);
+    expect(await hacker.caller.sponsorPresentations.mySchedule()).toMatchObject(
+      {
+        hasQnxTrack: false,
+        slots: [expect.objectContaining({ room: "Rm 2110" })],
+      },
+    );
+    await db
+      .update(teams)
+      .set({ tracks: ["QNX (BlackBerry)"] })
+      .where(eq(teams.id, t));
+    expect(await hacker.caller.sponsorPresentations.mySchedule()).toMatchObject(
+      {
+        hasQnxTrack: true,
+        slots: [expect.objectContaining({ room: "Rm 2110" })],
+      },
+    );
+  });
+
   test("QNX scheduling and hacker views use the fixed room over a saved assignment", async () => {
     const [qnx] = await db
       .insert(sponsorJudgingSponsors)

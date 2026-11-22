@@ -12,6 +12,7 @@ import {
   fixedSponsorJudgingRoom,
   hasPrizeTrack,
   isDigitalJudging,
+  sponsorNameKey,
 } from "~/lib/sponsor-prize-tracks";
 import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
@@ -388,6 +389,35 @@ export async function notifyPresentationTimes({
   };
 }
 
+async function hackerPresentationSchedule(userId: string) {
+  if (!(await round2OpenedAt())) return { slots: [], hasQnxTrack: false };
+  const rows = await db
+    .select({
+      sponsorName: sponsorJudgingSponsors.name,
+      room: sponsorPresentations.room,
+      start: sponsorPresentations.startMinute,
+      tracks: teams.tracks,
+    })
+    .from(sponsorPresentations)
+    .innerJoin(users, eq(users.teamId, sponsorPresentations.teamId))
+    .innerJoin(teams, eq(teams.id, sponsorPresentations.teamId))
+    .innerJoin(
+      sponsorJudgingSponsors,
+      eq(sponsorJudgingSponsors.id, sponsorPresentations.sponsorId),
+    )
+    .where(eq(users.id, userId))
+    .orderBy(sponsorPresentations.startMinute, sponsorJudgingSponsors.name);
+  const slots = rows.flatMap(({ sponsorName, room, start }) => {
+    const assignedRoom = fixedSponsorJudgingRoom(sponsorName) ?? room?.trim();
+    return start !== null && assignedRoom
+      ? [{ sponsorName, room: assignedRoom, start }]
+      : [];
+  });
+  const hasQnxTrack =
+    rows[0]?.tracks?.some((tag) => sponsorNameKey(tag) === "qnx") ?? false;
+  return { slots, hasQnxTrack };
+}
+
 /**
  * Sunday sponsor presentations (docs/flows/sponsor-judging.md): organizers
  * schedule every sent shortlist into sponsor rooms, notify hackers on
@@ -702,26 +732,12 @@ export const sponsorPresentationsRouter = createTRPCRouter({
    * current saved schedule while round 2 is open.
    */
   mine: protectedProcedure.query(async ({ ctx }) => {
-    if (!(await round2OpenedAt())) return [];
-    const rows = await db
-      .select({
-        sponsorName: sponsorJudgingSponsors.name,
-        room: sponsorPresentations.room,
-        start: sponsorPresentations.startMinute,
-      })
-      .from(sponsorPresentations)
-      .innerJoin(users, eq(users.teamId, sponsorPresentations.teamId))
-      .innerJoin(
-        sponsorJudgingSponsors,
-        eq(sponsorJudgingSponsors.id, sponsorPresentations.sponsorId),
-      )
-      .where(eq(users.id, ctx.session.user.id))
-      .orderBy(sponsorPresentations.startMinute, sponsorJudgingSponsors.name);
-    return rows.flatMap(({ sponsorName, room, start }) => {
-      const assignedRoom = fixedSponsorJudgingRoom(sponsorName) ?? room?.trim();
-      return start !== null && assignedRoom
-        ? [{ sponsorName, room: assignedRoom, start }]
-        : [];
-    });
+    const { slots } = await hackerPresentationSchedule(ctx.session.user.id);
+    return slots;
   }),
+
+  /** Saved slots and the same team's QNX eligibility for the hacker tab. */
+  mySchedule: protectedProcedure.query(({ ctx }) =>
+    hackerPresentationSchedule(ctx.session.user.id),
+  ),
 });
