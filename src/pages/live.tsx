@@ -35,7 +35,11 @@ const Live = ({ isOrganizer }: { isOrganizer: boolean }) => {
   const firstName = session?.user?.name?.split(" ")[0];
   const isGreeting = tab === "home" && !isOrganizer && firstName !== undefined;
   const pageTitle =
-    tab === "home" && isOrganizer ? "All Scans" : formatTitle(tab);
+    tab === "home" && isOrganizer
+      ? "All Scans"
+      : tab === "judging" && !isOrganizer
+        ? "Sponsor Judging"
+        : formatTitle(tab);
 
   return (
     <>

@@ -3,13 +3,11 @@ import {
   pcbWayJudgingCopy,
   pcbWayJudgingLines,
   sponsorPresentationsCopy,
+  sponsorSlotInstructions,
 } from "~/content/sponsor-presentations";
 import { env } from "~/env";
-import {
-  formatPresentationTime,
-  PRESENTATION_PITCH_MINUTES,
-  PRESENTATION_QA_MINUTES,
-} from "~/lib/sponsor-presentations";
+import { formatPresentationRange } from "~/lib/sponsor-presentations";
+import { fixedSponsorJudgingRoom } from "~/lib/sponsor-prize-tracks";
 import {
   emailParagraph,
   emailShell,
@@ -38,24 +36,27 @@ export function presentationEmail(
     .filter((slot) => !isPCBWay(slot.sponsorName))
     .sort((a, b) => a.start - b.start)
     .map((s) =>
-      copy.line(formatPresentationTime(s.start), s.sponsorName, s.room),
+      copy.line(
+        formatPresentationRange(s.start),
+        s.sponsorName,
+        fixedSponsorJudgingRoom(s.sponsorName) ?? s.room,
+      ),
     );
   const greeting = copy.greeting(firstName(member.name));
   const pcbWay = slots
     .filter((slot) => isPCBWay(slot.sponsorName))
-    .map((slot) => pcbWayJudgingLines(slot.room));
+    .map((slot) =>
+      pcbWayJudgingLines(
+        fixedSponsorJudgingRoom(slot.sponsorName) ?? slot.room,
+      ),
+    );
   const paragraphs = [
     [greeting],
     ...(standard.length || !pcbWay.length
       ? [
-          [
-            copy.intro(
-              teamName,
-              PRESENTATION_PITCH_MINUTES,
-              PRESENTATION_QA_MINUTES,
-            ),
-          ],
+          [copy.intro(teamName)],
           standard,
+          sponsorSlotInstructions.map((line) => `• ${line}`),
         ]
       : []),
     ...pcbWay,

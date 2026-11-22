@@ -11,6 +11,7 @@ import {
   hasPrizeTrack,
   isDigitalJudging,
   prizeTrackOf,
+  fixedSponsorJudgingRoom,
   remoteJudgingRoom,
 } from "~/lib/sponsor-prize-tracks";
 import { SHORTLIST_MAX } from "~/lib/sponsor-presentations";
@@ -228,7 +229,11 @@ async function roundFor(sponsorId: string, sponsorName: string) {
     /** When the current schedule was made; null = not scheduled yet. */
     scheduledAt: anySlot?.scheduledAt ?? null,
     slots: slots
-      .map((r) => ({ teamId: r.teamId, room: r.room ?? "", start: r.start! }))
+      .map((r) => ({
+        teamId: r.teamId,
+        room: fixedSponsorJudgingRoom(sponsorName) ?? r.room ?? "",
+        start: r.start!,
+      }))
       .sort((a, b) => a.start - b.start),
     /** Organizers opened round 2 (after presentations). */
     round2Open: openedAt !== null,

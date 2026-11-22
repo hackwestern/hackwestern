@@ -13,11 +13,16 @@ const plural = (n: number, one: string, many: string) =>
 export const presentationFormat = (pitch: number, qa: number) =>
   `${pitch} min pitch · ${qa} min Q&A`;
 
+export const sponsorSlotInstructions = [
+  "Be outside the room at least 5 minutes early with your demo ready.",
+  "Wait to be called in. You’ll have 1 minute to set up and 5 minutes to present. Please head out when you’re done.",
+] as const;
+
 export const isPCBWay = (sponsor: string) =>
   sponsorNameKey(sponsor) === "pcbway";
 
 export const pcbWayJudgingCopy = {
-  heading: "🏆 You're selected for PCBWay!",
+  heading: "You're selected for PCBWay!",
   window: "10:00am – 11:00am",
   setup: (room: string) =>
     `Have your hardware set up, powered, and ready for judging in ${room}.`,
@@ -27,8 +32,8 @@ export const pcbWayJudgingCopy = {
 export function pcbWayJudgingLines(room: string) {
   return [
     pcbWayJudgingCopy.heading,
-    `📍 Location: ${room}`,
-    `⏳ Judging: ${pcbWayJudgingCopy.window}`,
+    `Location: ${room}`,
+    `Judging: ${pcbWayJudgingCopy.window}`,
     `• ${pcbWayJudgingCopy.setup(room)}`,
     `• ${pcbWayJudgingCopy.stay}`,
   ];
@@ -209,8 +214,6 @@ export const sponsorPresentationsCopy = {
       `*Your sponsor presentations on Sunday* (${team})`,
     line: (time: string, sponsor: string, room: string) =>
       `• ${time}: ${sponsor}, ${room}`,
-    footer: (pitch: number, qa: number) =>
-      `Each presentation is a ${pitch} min pitch and ${qa} min of Q&A. Be at the room a few minutes early.`,
     /** The button: one member's tap confirms for the whole team. */
     confirmButton: "Confirm our times",
     confirmHint: "One person confirming is enough for your team.",
@@ -230,8 +233,8 @@ export const sponsorPresentationsCopy = {
     subject: (team: string) => `Your sponsor presentation times for ${team}`,
     greeting: (firstName: string) =>
       firstName ? `Hi ${firstName},` : "Hi there,",
-    intro: (team: string, pitch: number, qa: number) =>
-      `Here are ${team}'s sponsor presentations on Sunday. Each one is a ${pitch} min pitch and ${qa} min of Q&A, so be at the room a few minutes early.`,
+    intro: (team: string) =>
+      `Here are ${team}'s sponsor presentations on Sunday.`,
     line: (time: string, sponsor: string, room: string) =>
       `${time}: ${sponsor}, ${room}`,
     signoff: "The Hack Western 13 Team",

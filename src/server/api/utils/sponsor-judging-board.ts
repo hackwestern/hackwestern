@@ -4,7 +4,10 @@ import {
   buildJudgingBoard,
   pickCountFromChosenTeams,
 } from "~/lib/sponsor-judging-rooms";
-import { remoteJudgingRoom } from "~/lib/sponsor-prize-tracks";
+import {
+  fixedSponsorJudgingRoom,
+  remoteJudgingRoom,
+} from "~/lib/sponsor-prize-tracks";
 import { applySponsorNames } from "~/server/api/utils/run-of-show-parse";
 import {
   createCachedLoader,
@@ -90,7 +93,7 @@ export async function judgingSheet() {
 }
 
 /** Where a sponsor's judging room came from. */
-export type JudgingRoomSource = "board" | "sheet" | "remote";
+export type JudgingRoomSource = "board" | "sheet" | "remote" | "fixed";
 
 /**
  * Each registered sponsor's Sunday judging room and where it came from, by
@@ -125,6 +128,8 @@ export async function judgingRoomsWithSource(
   for (const s of sponsors) {
     const remote = remoteJudgingRoom(s.name);
     if (remote) rooms.set(s.id, { room: remote, source: "remote" });
+    const fixed = fixedSponsorJudgingRoom(s.name);
+    if (fixed) rooms.set(s.id, { room: fixed, source: "fixed" });
   }
   return rooms;
 }

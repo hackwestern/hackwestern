@@ -34,6 +34,20 @@ export function sponsorNameKey(name: string): string {
   return nameKey(withoutAsides(name));
 }
 
+export const QNX_JUDGING_ROOM = "Rm 2235";
+export const PCBWAY_JUDGING_ROOM = "Rm 2242";
+
+export function fixedSponsorJudgingRoom(name: string): string | null {
+  switch (sponsorNameKey(name)) {
+    case "qnx":
+      return QNX_JUDGING_ROOM;
+    case "pcbway":
+      return PCBWAY_JUDGING_ROOM;
+    default:
+      return null;
+  }
+}
+
 /**
  * The prize track entry a registered sponsor name matches, or null when the
  * sponsor has no prize track (and so takes no part in judging). A name

@@ -11,6 +11,7 @@ import {
 import {
   hasPrizeTrack,
   isDigitalJudging,
+  fixedSponsorJudgingRoom,
   remoteJudgingRoom,
 } from "~/lib/sponsor-prize-tracks";
 import { judgingDayMinutes } from "~/lib/judging-board";
@@ -210,6 +211,10 @@ export async function rebuildPresentationSchedule({
     // committed since wins (re-read here, under the lock).
     for (const p of await tx.select().from(sponsorJudgingRooms)) {
       if (trackIds.has(p.sponsorId)) rooms.set(p.sponsorId, p.room);
+    }
+    for (const sponsor of trackSponsors) {
+      const fixed = fixedSponsorJudgingRoom(sponsor.name);
+      if (fixed) rooms.set(sponsor.id, fixed);
     }
     const requests = sends.map((s) => ({
       sponsorId: s.sponsorId,

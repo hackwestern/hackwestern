@@ -3,12 +3,10 @@ import {
   pcbWayJudgingCopy,
   pcbWayJudgingLines,
   sponsorPresentationsCopy,
+  sponsorSlotInstructions,
 } from "~/content/sponsor-presentations";
-import {
-  formatPresentationTime,
-  PRESENTATION_PITCH_MINUTES,
-  PRESENTATION_QA_MINUTES,
-} from "~/lib/sponsor-presentations";
+import { formatPresentationRange } from "~/lib/sponsor-presentations";
+import { fixedSponsorJudgingRoom } from "~/lib/sponsor-prize-tracks";
 import { escapeSlackText } from "~/server/slack/client";
 import { dmHacker } from "~/server/slack/dm";
 
@@ -57,11 +55,17 @@ export function presentationDmMessage(
     .sort((a, b) => a.start - b.start)
     .flatMap((s) =>
       isPCBWay(s.sponsorName)
-        ? ["", ...pcbWayJudgingLines(escapeSlackText(s.room)), ""]
+        ? [
+            "",
+            ...pcbWayJudgingLines(
+              escapeSlackText(fixedSponsorJudgingRoom(s.sponsorName) ?? s.room),
+            ),
+            "",
+          ]
         : copy.line(
-            formatPresentationTime(s.start),
+            formatPresentationRange(s.start),
             escapeSlackText(s.sponsorName),
-            escapeSlackText(s.room),
+            escapeSlackText(fixedSponsorJudgingRoom(s.sponsorName) ?? s.room),
           ),
     );
   const hasStandardSlots = slots.some((slot) => !isPCBWay(slot.sponsorName));
@@ -88,10 +92,9 @@ export function presentationDmMessage(
               elements: [
                 {
                   type: "mrkdwn",
-                  text: copy.footer(
-                    PRESENTATION_PITCH_MINUTES,
-                    PRESENTATION_QA_MINUTES,
-                  ),
+                  text: sponsorSlotInstructions
+                    .map((line) => `• ${line}`)
+                    .join("\n"),
                 },
               ],
             },

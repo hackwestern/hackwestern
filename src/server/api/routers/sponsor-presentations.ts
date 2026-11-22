@@ -8,7 +8,11 @@ import {
   PRESENTATION_ROOM_MAX,
   PRESENTATION_SLOTS_PER_ROOM,
 } from "~/lib/sponsor-presentations";
-import { hasPrizeTrack, isDigitalJudging } from "~/lib/sponsor-prize-tracks";
+import {
+  fixedSponsorJudgingRoom,
+  hasPrizeTrack,
+  isDigitalJudging,
+} from "~/lib/sponsor-prize-tracks";
 import { prizeTrackSponsors } from "~/server/api/utils/sponsor-prize-track-sheet";
 import { SPONSOR_FINAL_TOP } from "~/lib/sponsor-scoring";
 import {
@@ -186,7 +190,7 @@ export async function teamPresentationsFor(userId: string): Promise<{
       .map((r) => ({
         sponsorId: r.sponsorId,
         sponsorName: r.sponsorName,
-        room: r.room ?? "",
+        room: fixedSponsorJudgingRoom(r.sponsorName) ?? r.room ?? "",
         start: r.startMinute!,
       }))
       .sort((a, b) => a.start - b.start),
@@ -267,7 +271,7 @@ export async function notifyPresentationTimes({
     const t = byTeam.get(r.teamId) ?? { name: r.teamName, slots: [] };
     t.slots.push({
       sponsorName: r.sponsorName,
-      room: r.room ?? "",
+      room: fixedSponsorJudgingRoom(r.sponsorName) ?? r.room ?? "",
       start: r.startMinute!,
     });
     byTeam.set(r.teamId, t);
@@ -445,7 +449,8 @@ export const sponsorPresentationsRouter = createTRPCRouter({
       sponsorName: sponsorName.get(r.sponsorId) ?? "",
       teamId: r.teamId,
       teamName: names.get(r.teamId) ?? r.teamId,
-      room: r.room,
+      room:
+        fixedSponsorJudgingRoom(sponsorName.get(r.sponsorId) ?? "") ?? r.room,
     });
 
     // Per member: reached (has the current times, by Slack or email) or
@@ -556,11 +561,10 @@ export const sponsorPresentationsRouter = createTRPCRouter({
         hackers,
       },
       slots: placed
-        .map((r) => ({
-          ...named(r),
-          room: r.room ?? "",
-          start: r.startMinute!,
-        }))
+        .map((r) => {
+          const slot = named(r);
+          return { ...slot, room: slot.room ?? "", start: r.startMinute! };
+        })
         .sort(
           (a, b) =>
             a.start - b.start || a.sponsorName.localeCompare(b.sponsorName),
@@ -714,7 +718,7 @@ export const sponsorPresentationsRouter = createTRPCRouter({
       .where(eq(users.id, ctx.session.user.id))
       .orderBy(sponsorPresentations.startMinute, sponsorJudgingSponsors.name);
     return rows.flatMap(({ sponsorName, room, start }) => {
-      const assignedRoom = room?.trim();
+      const assignedRoom = fixedSponsorJudgingRoom(sponsorName) ?? room?.trim();
       return start !== null && assignedRoom
         ? [{ sponsorName, room: assignedRoom, start }]
         : [];
