@@ -489,12 +489,17 @@ export async function getRoundBoard() {
       .where(ne(judgingAssignments.status, "cancelled")),
     // Same order auto-assign uses, so "Judge 7" is the same on every refresh.
     db
-      .select({ id: judges.id })
+      .select({ id: judges.id, name: users.name })
       .from(judges)
+      .leftJoin(users, eq(users.id, judges.id))
       .orderBy(asc(judges.createdAt), asc(judges.id)),
   ]);
 
   const number = new Map(judgeOrder.map((j, i) => [j.id, i + 1]));
+  // Judges show by name; "Judge 7" only when the account has no name.
+  const nameOf = new Map(
+    judgeOrder.map((j, i) => [j.id, j.name?.trim() || `Judge ${i + 1}`]),
+  );
   const open = round.status === "running" || round.status === "paused";
   const statusOf = (s: { status: StopStatus; position: number }) => {
     if (s.status === "done") return "done" as const;
@@ -513,6 +518,7 @@ export async function getRoundBoard() {
       .map((s) => ({
         round: s.position,
         judge: number.get(s.judgeId) ?? 0,
+        judgeName: nameOf.get(s.judgeId) ?? "Judge",
         table: s.table,
         team: s.team,
         status: statusOf(s),

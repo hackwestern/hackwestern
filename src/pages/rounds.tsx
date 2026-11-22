@@ -4,7 +4,7 @@ import Topbar from "~/components/live/topbar";
 import SEO from "~/components/seo";
 import { liveServerSideProps } from "~/lib/live-page";
 
-// Which judge sees which team in which round, for hackers. Judges are numbers
+// Which judge sees which team in which round, for hackers. Judges show by name
 // and there are no scores. Organizers run the rounds at /internal/judging and
 // switch this on for hackers with the eye button in the menu.
 export default function RoundsPage({ isOrganizer }: { isOrganizer: boolean }) {

@@ -2539,10 +2539,11 @@ describe("timed rounds", () => {
     expect(board.round).toMatchObject({ round: 1, status: "running" });
     expect(board.stops.length).toBeGreaterThan(0);
 
-    // Judges are numbers, never ids, names or emails.
+    // Judges show by name (or a number), never ids or emails.
     for (const stop of board.stops) {
       expect(Object.keys(stop).sort()).toEqual([
         "judge",
+        "judgeName",
         "round",
         "status",
         "table",

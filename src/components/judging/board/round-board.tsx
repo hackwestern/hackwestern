@@ -83,17 +83,17 @@ function buildRows(stops: Stop[], view: View): Row[] {
             }
           : {
               key,
-              label: `Judge ${s.judge}`,
+              label: s.judgeName,
               sub: "",
               cells: new Map(),
-              search: `judge ${s.judge}`,
+              search: s.judgeName.toLowerCase(),
             };
       rows.set(key, row);
     }
     row.cells.set(
       s.round,
       view === "team"
-        ? { title: `Judge ${s.judge}`, status: s.status }
+        ? { title: s.judgeName, status: s.status }
         : { title: s.team, sub: `Table ${s.table}`, status: s.status },
     );
     if (view === "judge") row.search += ` ${s.team} ${s.table}`.toLowerCase();
