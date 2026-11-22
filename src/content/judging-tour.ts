@@ -367,6 +367,109 @@ export const judgingTourCopy = {
     },
     tourLink: "See the full walkthrough at hackwestern.com/judging-tour",
   },
+  /** /judging-tour/sponsors: walkthrough for sponsor prize track judges. */
+  sponsorTour: {
+    title: "Sponsor judging tour",
+    eyebrow: "Hack Western 13 · sponsor track judging",
+    heading: "How sponsor judging works",
+    intro:
+      "You pick the teams you want to hear from, they present to you in your room, and you rank your favourites. A Hack Western sponsor rep is with you the whole way.",
+    facts: [
+      { label: "Now to 9:45 AM", value: "Shortlist up to 10 teams" },
+      { label: "10:00 to 11:30 AM", value: "About 10 teams present" },
+      { label: "Each team", value: "3 min presentation, 2 min Q&A" },
+      { label: "After", value: "Rank your top teams" },
+    ],
+    screen: "Your sponsor portal",
+    url: "Your sponsor portal · Judging",
+    sample: "Sample teams and scores. Your track's teams will be different.",
+    stops: {
+      day: {
+        nav: "Your morning",
+        title: "Three steps, and we help with each one",
+        steps: [
+          {
+            time: "Now to 9:45",
+            title: "Shortlist",
+            body: "Go through the projects in your track and shortlist up to 10 you want to hear from. Your shortlist is due at 9:45, 45 minutes from now.",
+          },
+          {
+            time: "10:00 to 11:30",
+            title: "Presentations",
+            body: "About 10 teams come to your room, one at a time: a 3 minute presentation, then 2 minutes of Q&A.",
+          },
+          {
+            time: "Right after",
+            title: "Rank",
+            body: "Rank the teams that presented, best first, and submit.",
+          },
+        ],
+        rep: "A Hack Western sponsor rep sits with you to help you shortlist, walks you to your room right after this meeting, keeps time, and lets each team in and out.",
+      },
+      open: {
+        nav: "Open the portal",
+        title: "Open Judging in your sponsor portal",
+        items: [
+          "Use the sponsor portal link we sent your team, and open Judging.",
+          "Several reps can share one portal. Pick your name under Who's judging, so your scores are yours.",
+          "Everything saves as you go. There's no save button.",
+        ],
+      },
+      score: {
+        nav: "Score with your rep",
+        title: "Score projects and save the ones you like",
+        items: [
+          "Each project shows the team, their Devpost and their links. Give it a score from 1 to 10.",
+          "Press Save as finalist for any team you want to hear present. Add a note if it helps you remember.",
+          "Your Hack Western sponsor rep is right there to help. Ask them anything about the teams or the portal.",
+        ],
+      },
+      shortlist: {
+        nav: "Shortlist by 9:45",
+        title: "Submit your shortlist by 9:45",
+        items: [
+          "Trim your saved teams to 10 or fewer, then press Submit final shortlist. You can only submit it once.",
+          "That's all. We build the presentation schedule and tell every team when and where to come.",
+        ],
+      },
+      room: {
+        nav: "To your room",
+        title: "Your rep walks you to your room",
+        items: [
+          "Right after this meeting, your Hack Western sponsor rep takes you to your judging room.",
+          "They keep time and let each team in and out, so you can focus on listening.",
+        ],
+      },
+      present: {
+        nav: "Presentations",
+        title: "About 10 teams, 10:00 to 11:30",
+        items: [
+          "Each team gets a 3 minute presentation, then 2 minutes of Q&A.",
+          "Your portal lists the teams in the order they present. Score each one as they finish.",
+          "Your rep handles the clock and the door between teams.",
+        ],
+      },
+      rank: {
+        nav: "Rank your top teams",
+        title: (top: number) => `Give us your top ${top}, ranked`,
+        items: (top: number) => [
+          `After the last team, rank your top ${top} from the teams that presented, best first.`,
+          "Submit once you're happy. It's final, and Hack Western uses it for your prize.",
+        ],
+        place: (n: number) => `${n}`,
+        heading: "Rank the teams that presented",
+      },
+      after: {
+        nav: "What happens next",
+        title: "What happens next",
+        items: [
+          "The web team runs a cheat check on every team you ranked.",
+          "Winners are announced at the closing ceremony at 2:00 PM.",
+          "Questions at any point? Ask your Hack Western sponsor rep.",
+        ],
+      },
+    },
+  },
 } as const;
 
 export type JudgingTourCopy = typeof judgingTourCopy;

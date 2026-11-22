@@ -56,7 +56,7 @@ const noop = () => undefined;
 const yes = async () => true;
 
 /** One screen on a device. A stop can show a few, picked with small tabs. */
-interface Screen {
+export interface Screen {
   label: string;
   node: ReactNode;
 }
@@ -200,7 +200,7 @@ function BigScreen({ view }: { view: RoundView }) {
 }
 
 /** A device with a URL bar and, when a stop has several screens, small tabs. */
-function Device({
+export function Device({
   kind,
   title,
   url,
@@ -250,7 +250,7 @@ function Device({
         className={`flex flex-col overflow-hidden border border-dashboard-border-default bg-dashboard-bg-surface shadow-[0_18px_40px_-24px_rgba(11,43,74,0.45)] ${
           kind === "phone"
             ? "mx-auto h-[720px] w-full max-w-[380px] rounded-[34px] border-[6px] border-dashboard-text-heavy"
-            : "min-h-[340px] w-full rounded-2xl"
+            : "max-h-[680px] min-h-[340px] w-full rounded-2xl"
         }`}
       >
         <div
@@ -308,7 +308,7 @@ function useCycle(periodMs: number) {
   return n;
 }
 
-function List({ items }: { items: readonly string[] }) {
+export function List({ items }: { items: readonly string[] }) {
   return (
     <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
       {items.map((item) => (
