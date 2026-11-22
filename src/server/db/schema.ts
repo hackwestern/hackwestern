@@ -306,6 +306,7 @@ export const teams = pgTable(
     tracks: trackEnum("tracks").array(),
     memberGithubUsernames: text("member_github_usernames").array(),
     memberDevpostUsernames: text("member_devpost_usernames").array(),
+    techStack: text("tech_stack").array(),
 
     createdAt: timestamp("created_at", { mode: "date", precision: 3 })
       .defaultNow()
@@ -345,34 +346,6 @@ export const preregistrations = pgTable("preregistration", {
   unsubscribeToken: varchar("unsubscribe_token", { length: 64 }).unique(),
   unsubscribedAt: timestamp("unsubscribed_at", { mode: "date", precision: 3 }),
   bouncedAt: timestamp("bounced_at", { mode: "date", precision: 3 }),
-});
-
-/**
- * The single shared event clock (always exactly one row, id = 1). Organizers
- * start/pause/resume/reset it; every client polls it and renders the countdown
- * locally from `endsAt`.
- *
- * State, derived from the two nullable columns:
- *   idle    = endsAt null, pausedRemainingMs null
- *   running = endsAt set
- *   paused  = pausedRemainingMs set
- */
-export const clock = pgTable("clock", {
-  id: integer("id").primaryKey().default(1),
-  endsAt: timestamp("ends_at", {
-    mode: "date",
-    precision: 3,
-    withTimezone: true,
-  }),
-  pausedRemainingMs: integer("paused_remaining_ms"),
-  durationMs: integer("duration_ms").notNull().default(300000),
-  updatedAt: timestamp("updated_at", {
-    mode: "date",
-    precision: 3,
-    withTimezone: true,
-  })
-    .defaultNow()
-    .notNull(),
 });
 
 export const emailSubscribers = pgTable("email_subscriber", {
@@ -1597,6 +1570,7 @@ export const judges = pgTable("judge", {
     .references(() => users.id),
   type: judgeTypeEnum("type").default("organizer").notNull(),
   track: trackEnum("track").array(), // array of tracks for sponsored judges
+  noShow: boolean("no_show").default(false).notNull(),
 
   // Derived stats used for score normalization
   // markCount = n, markSum = S, markSquaredSum = S2
@@ -1728,6 +1702,49 @@ export const judgingTablesRelations = relations(
 );
 
 /**
+ * Where the timed judging rounds are. Round N is every judge's Nth stop
+ * (`judging_assignment.position`). Judges can only start and score stops in the
+ * current round while its timer runs; when the timer hits 0 the round closes
+ * and an organizer starts the next one. See docs/judging-engine.md.
+ *   idle    - no round is open (before round 1, or after a reset)
+ *   running - the timer is counting down to `ends_at`
+ *   paused  - the timer is stopped with `remaining_ms` left; scoring still works
+ *   closed  - time ran out or an organizer ended it; no more scores
+ * A running round whose `ends_at` has passed is treated as closed when read,
+ * so nothing has to tick on the server.
+ */
+export const judgingRoundStatusEnum = pgEnum("judging_round_status", [
+  "idle",
+  "running",
+  "paused",
+  "closed",
+]);
+
+/**
+ * The one row (id = 1) of round state. `rounds_enabled = false` turns the
+ * rounds off so judges can go in any order (a safety valve for the day).
+ */
+export const judgingRound = pgTable(
+  "judging_round",
+  {
+    id: integer("id").primaryKey().default(1),
+    roundsEnabled: boolean("rounds_enabled").default(true).notNull(),
+    // Whether hackers see the rounds board (/rounds and its menu link).
+    // Organizers always do. Off until an organizer turns it on.
+    showToHackers: boolean("show_to_hackers").default(false).notNull(),
+    currentRound: integer("current_round").default(0).notNull(),
+    status: judgingRoundStatusEnum("status").default("idle").notNull(),
+    roundSeconds: integer("round_seconds").default(600).notNull(),
+    endsAt: timestamp("ends_at", { mode: "date", precision: 3 }),
+    remainingMs: integer("remaining_ms"),
+    updatedAt: timestamp("updated_at", { mode: "date", precision: 3 })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [check("judging_round_singleton", sql`${t.id} = 1`)],
+);
+
+/**
  * The room layout and how many judges each table needs. One row (id = 1).
  * Tables per row = ceil(tableCount / rows); see docs/judging-engine.md.
  */
@@ -1773,6 +1790,11 @@ export const judgingAssignments = pgTable(
       .notNull(),
     startedAt: timestamp("started_at", { mode: "date", precision: 3 }),
     completedAt: timestamp("completed_at", { mode: "date", precision: 3 }),
+    /** The team said their judge hadn't come (hacker Judging page). */
+    missingReportedAt: timestamp("missing_reported_at", {
+      mode: "date",
+      precision: 3,
+    }),
   },
   (t) => [
     uniqueIndex("judging_assignment_judge_position_idx")
@@ -2114,6 +2136,7 @@ export const scavengerHuntRedemptions = pgTable(
     rewardId: integer("reward_id")
       .notNull()
       .references(() => scavengerHuntRewards.id),
+    costPoints: smallint("cost_points").notNull(),
     scannerId: varchar("scanner_id", { length: 255 }).references(
       () => users.id,
       { onDelete: "set null" },

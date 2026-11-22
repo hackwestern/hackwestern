@@ -71,6 +71,18 @@ export const setupTablesSchema = z.object({
 });
 export type SetupTablesInput = z.infer<typeof setupTablesSchema>;
 
+export const setRoundConfigSchema = z
+  .object({
+    roundSeconds: z.number().int().min(30).max(3600).optional(),
+    roundsEnabled: z.boolean().optional(),
+  })
+  .refine(
+    (v) => v.roundSeconds !== undefined || v.roundsEnabled !== undefined,
+    {
+      message: "Nothing to change.",
+    },
+  );
+
 export const setTableActiveSchema = z.object({
   tableId,
   isActive: z.boolean(),
@@ -100,6 +112,13 @@ export const handOffJudgeSchema = z
   });
 
 export const addJudgeToTableSchema = z.object({ judgeId, tableId });
+
+export const undoAbsentSchema = z.object({ tableId });
+
+export const setJudgeNoShowSchema = z.object({
+  judgeId,
+  noShow: z.boolean(),
+});
 
 // `id` is the user id being promoted to a judge. Stats columns are
 // server-derived, so they're omitted. `track` needs the array override

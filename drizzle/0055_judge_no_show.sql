@@ -1,0 +1,1 @@
+ALTER TABLE "judge" ADD COLUMN "no_show" boolean DEFAULT false NOT NULL;

@@ -239,7 +239,7 @@ export const sponsorJudgingCopy = {
     moved: (team: string, rank: number) => `${team} moved to number ${rank}.`,
     selected: (team: string, rank: number) =>
       `${team} selected for place ${rank}.`,
-    slotsHeading: "Your top 5",
+    slotsHeading: (top: number) => `Your top ${top}`,
     slotsIntro: "Choose a team for each place, then drag the cards to reorder.",
     choose: (place: number) => `Choose ${ordinal(place)} place`,
     chooseTitle: "Choose a team",

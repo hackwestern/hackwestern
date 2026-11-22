@@ -6,15 +6,22 @@ import {
   infoBanner,
   warningBanner,
 } from "~/components/judging/shared/judge-ui";
-import { type JudgedTeam } from "~/components/judging/judge-app/judge-teams";
+import {
+  type JudgedTeam,
+  type UpcomingTeam,
+} from "~/components/judging/judge-app/judge-teams";
 import { formatScore } from "~/components/judging/shared/rubric-scorer";
 import { SuperLikeMark } from "~/components/judging/shared/super-like";
 
 interface JudgeFinalProps {
   results: JudgedTeam[];
+  /** Teams whose round ended before the judge sent a score. */
+  unsent: UpcomingTeam[];
   error: string | null;
   /** Opens this mark for one more change; saving comes back here. */
   onEdit: (markId: number) => void;
+  /** Opens the score form for an unsent team. */
+  onScoreLate: (stopId: number) => void;
   onSubmit: () => void;
 }
 
@@ -25,14 +32,49 @@ interface JudgeFinalProps {
  */
 export function JudgeFinal({
   results,
+  unsent,
   error,
   onEdit,
+  onScoreLate,
   onSubmit,
 }: JudgeFinalProps) {
   const ranked = [...results].sort((a, b) => b.score - a.score);
 
   return (
     <>
+      {unsent.length > 0 && (
+        <section
+          aria-label="Not sent yet"
+          className={`${card} flex flex-col gap-2 p-4`}
+        >
+          <p className={warningBanner}>
+            {unsent.length === 1
+              ? "1 team hasn't got your score yet."
+              : `${unsent.length} teams haven't got your score yet.`}{" "}
+            Score them before you submit, or they won&apos;t count from you.
+          </p>
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            {unsent.map((u) => (
+              <li
+                key={u.stopId}
+                className="flex items-center justify-between gap-3"
+              >
+                <span className="min-w-0 truncate text-base font-semibold text-dashboard-text-heavy">
+                  {u.table ?? "–"} · {u.teamName}
+                </span>
+                <DashboardButton
+                  type="button"
+                  variant="outline"
+                  onClick={() => onScoreLate(u.stopId)}
+                  className="shrink-0"
+                >
+                  Score now
+                </DashboardButton>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <p className={infoBanner}>
         Your final scores, best first. Tap a team to change its score, and
         submit when you&apos;re happy. After you submit, you&apos;ll see how

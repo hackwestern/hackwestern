@@ -17,6 +17,12 @@ import {
 } from "~/server/db/schema";
 import { snakePosition } from "~/server/judging/layout";
 import {
+  REPORT_MISSING_AFTER_MS,
+  getRoundState,
+  roundElapsedMs,
+  settleRound,
+} from "~/server/judging/rounds";
+import {
   ELIGIBLE_SUBMISSIONS,
   JUDGE_TEAM_COLUMNS,
   type StopStatus,
@@ -53,6 +59,7 @@ export async function getProgress() {
           status: judgingAssignments.status,
           startedAt: judgingAssignments.startedAt,
           completedAt: judgingAssignments.completedAt,
+          missingReportedAt: judgingAssignments.missingReportedAt,
         })
         .from(judgingAssignments)
         .innerJoin(users, eq(users.id, judgingAssignments.judgeId))
@@ -65,6 +72,7 @@ export async function getProgress() {
         .select({
           id: judges.id,
           type: judges.type,
+          noShow: judges.noShow,
           marksCount: judges.marksCount,
           createdAt: judges.createdAt,
           name: users.name,
@@ -114,6 +122,8 @@ export async function getProgress() {
           name: s.judgeName ?? s.judgeEmail,
           status: s.status,
           startedAt: s.startedAt,
+          position: s.position,
+          missingReportedAt: s.missingReportedAt,
         })),
       };
     }),
@@ -125,6 +135,7 @@ export async function getProgress() {
         name: j.name ?? j.email,
         email: j.email,
         type: j.type,
+        noShow: j.noShow,
         marksCount: j.marksCount,
         isFloater: mine.length === 0,
         current: current
@@ -153,6 +164,7 @@ export async function getAllJudges() {
         id: judges.id,
         type: judges.type,
         track: judges.track,
+        noShow: judges.noShow,
         marksCount: judges.marksCount,
         marksSum: judges.marksSum,
         createdAt: judges.createdAt,
@@ -190,6 +202,7 @@ export async function getAllJudges() {
  * progress, else the first one still assigned.
  */
 export async function getMyStops(judgeId: string) {
+  await settleRound();
   const [settings, stops] = await Promise.all([
     getSettings(),
     db.query.judgingAssignments.findMany({
@@ -235,6 +248,20 @@ export async function getMyStops(judgeId: string) {
               inArray(teamMarks.teamId, teamIds),
             ),
           );
+  // Who is on each team, so judges can see the people at the table.
+  const memberRows =
+    teamIds.length === 0
+      ? []
+      : await db
+          .select({ teamId: users.teamId, name: users.name })
+          .from(users)
+          .where(inArray(users.teamId, teamIds));
+  const membersByTeam = new Map<string, string[]>();
+  for (const m of memberRows) {
+    const name = m.name?.trim();
+    if (!m.teamId || !name) continue;
+    membersByTeam.set(m.teamId, [...(membersByTeam.get(m.teamId) ?? []), name]);
+  }
   const markByTeam = new Map(
     marks.map((m) => [
       m.teamId,
@@ -254,7 +281,9 @@ export async function getMyStops(judgeId: string) {
     return {
       ...stop,
       table: { ...table, ...snakePosition(table.number, settings.perRow) },
-      team,
+      team: team
+        ? { ...team, members: membersByTeam.get(team.id) ?? [] }
+        : null,
       mark: team ? (markByTeam.get(team.id) ?? null) : null,
     };
   });
@@ -269,6 +298,7 @@ export async function getMyStops(judgeId: string) {
       rows: settings.rows,
       perRow: settings.perRow,
     },
+    round: await getRoundState(),
     stops: list,
     nextStopId: next?.id ?? null,
     finished: list.filter((s) => closed.includes(s.status)).length,
@@ -334,7 +364,64 @@ export async function getTeamJudging(userId: string) {
     }),
   ]);
   const table = team?.judgingTable ?? null;
-  if (!table) return { table: null, judges: { done: 0, total: 0 } };
+  if (!table)
+    return {
+      table: null,
+      absent: false,
+      judges: { done: 0, total: 0 },
+      round: null,
+      thisRound: null,
+      judgeStarted: false,
+      reportedMissing: false,
+      reportOpensInMs: null,
+      judgedAll: false,
+    };
+
+  // With timed rounds: is a judge at this team's table in the current round?
+  const round = await getRoundState();
+  const current = round.enabled && round.round > 0 ? round.round : null;
+  // Every judge due at this table this round (judges can share a round).
+  const roundStops =
+    current === null
+      ? []
+      : await db
+          .select({
+            status: judgingAssignments.status,
+            startedAt: judgingAssignments.startedAt,
+            missingReportedAt: judgingAssignments.missingReportedAt,
+          })
+          .from(judgingAssignments)
+          .where(
+            and(
+              eq(judgingAssignments.judgingTableId, table.id),
+              eq(judgingAssignments.position, current),
+              ne(judgingAssignments.status, "cancelled"),
+            ),
+          );
+  const roundOpen = round.status === "running" || round.status === "paused";
+  const live = roundStops.filter((s) => s.status !== "team_absent");
+  // "now" whenever a judge is due at the table in an open round, whether or
+  // not they've pressed "Judge this team" yet.
+  const thisRound: "now" | "done" | "over" | "none" | null =
+    current === null
+      ? null
+      : live.length === 0
+        ? "none"
+        : live.every((s) => s.status === "done")
+          ? "done"
+          : roundOpen || live.some((s) => s.status === "in_progress")
+            ? "now"
+            : "over";
+  // A judge pressed "Judge this team" (so they came).
+  const judgeStarted = live.some(
+    (s) => s.status === "in_progress" || s.startedAt !== null,
+  );
+  // While the judge is due but hasn't started: when the hacker may report them
+  // missing (ms from now), after the round's first minute.
+  const reportOpensInMs =
+    thisRound === "now" && !judgeStarted
+      ? Math.max(0, REPORT_MISSING_AFTER_MS - roundElapsedMs(round))
+      : null;
 
   const counts = await db
     .select({ status: judgingAssignments.status, n: count() })
@@ -352,9 +439,84 @@ export async function getTeamJudging(userId: string) {
       zone: table.zone,
       ...snakePosition(table.number, settings.perRow),
     },
+    // Reported absent: disqualified, and every stop at the table is closed.
+    absent: counts.some((c) => c.status === "team_absent"),
     judges: {
       done: counts.find((c) => c.status === "done")?.n ?? 0,
       total: counts.reduce((sum, c) => sum + c.n, 0),
     },
+    round: current,
+    thisRound,
+    judgeStarted,
+    reportedMissing: live.some((s) => s.missingReportedAt !== null),
+    reportOpensInMs,
+    // Every judge given to this team has scored it (no open stops left).
+    judgedAll:
+      counts.some((c) => c.status === "done") &&
+      !counts.some(
+        (c) => c.status === "assigned" || c.status === "in_progress",
+      ),
+  };
+}
+
+export type BoardStopStatus = "done" | "now" | "upcoming" | "skipped";
+
+/**
+ * The public view of the rounds, for hackers. Who is judging which team in
+ * which round, and how far along it is, with judges as numbers ("Judge 7")
+ * because judge identities stay hidden. No scores, no absences (a team that
+ * wasn't at its table just shows as skipped). Stops at empty tables are left
+ * out, so rounds only list teams that were really seated.
+ */
+export async function getRoundBoard() {
+  await settleRound();
+  const round = await getRoundState();
+  const [stops, judgeOrder] = await Promise.all([
+    db
+      .select({
+        judgeId: judgingAssignments.judgeId,
+        position: judgingAssignments.position,
+        status: judgingAssignments.status,
+        table: judgingTables.number,
+        team: teams.name,
+      })
+      .from(judgingAssignments)
+      .innerJoin(
+        judgingTables,
+        eq(judgingTables.id, judgingAssignments.judgingTableId),
+      )
+      .innerJoin(teams, eq(teams.judgingTableId, judgingTables.id))
+      .where(ne(judgingAssignments.status, "cancelled")),
+    // Same order auto-assign uses, so "Judge 7" is the same on every refresh.
+    db
+      .select({ id: judges.id })
+      .from(judges)
+      .orderBy(asc(judges.createdAt), asc(judges.id)),
+  ]);
+
+  const number = new Map(judgeOrder.map((j, i) => [j.id, i + 1]));
+  const open = round.status === "running" || round.status === "paused";
+  const statusOf = (s: { status: StopStatus; position: number }) => {
+    if (s.status === "done") return "done" as const;
+    if (s.status === "team_absent") return "skipped" as const;
+    if (s.status === "in_progress") return "now" as const;
+    if (!round.enabled || s.position > round.round) return "upcoming" as const;
+    // An unscored stop in a round that has passed or closed was missed.
+    return s.position === round.round && open
+      ? ("now" as const)
+      : ("skipped" as const);
+  };
+
+  return {
+    round,
+    stops: stops
+      .map((s) => ({
+        round: s.position,
+        judge: number.get(s.judgeId) ?? 0,
+        table: s.table,
+        team: s.team,
+        status: statusOf(s),
+      }))
+      .sort((a, b) => a.round - b.round || a.table - b.table),
   };
 }

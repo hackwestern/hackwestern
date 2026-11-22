@@ -1,18 +1,29 @@
-import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest";
 import { faker } from "@faker-js/faker";
 import { and, eq, sql } from "drizzle-orm";
 
-// Same guard as cheat-check-sweep.test.ts: with a real CHEAT_SWEEP_SECRET in
-// .env, the sweep tests below would otherwise POST the real bearer token at
-// NEXTAUTH_URL and could start a real worker. Unset, `kickWorker` no-ops while
-// the sweep rows are still written and assertable.
+// Never the real CHEAT_SWEEP_SECRET from .env, or the sweep tests below would
+// POST the real bearer token at NEXTAUTH_URL and could start a real worker.
+// Unset by default (no sweep is created); the sweep trigger tests set a fake
+// one and stub the worker request.
+const sweepEnv = vi.hoisted(() => ({
+  secret: undefined as string | undefined,
+}));
 vi.mock("~/env", async (importOriginal) => {
   const original = await importOriginal<typeof import("~/env")>();
   const env = original.env as Record<string | symbol, unknown>;
   return {
     env: new Proxy(env, {
       get(target, prop) {
-        if (prop === "CHEAT_SWEEP_SECRET") return undefined;
+        if (prop === "CHEAT_SWEEP_SECRET") return sweepEnv.secret;
         return target[prop];
       },
     }),
@@ -28,6 +39,7 @@ import {
   cheatCheckSweeps,
   judges,
   judgingAssignments,
+  judgingRound,
   judgingSettings,
   judgingTables,
   type submissionStatusEnum,
@@ -115,6 +127,10 @@ async function resetAll() {
   await db.delete(teams).where(sql`true`);
   await db.delete(judgingTables).where(sql`true`);
   await db.delete(judgingSettings).where(sql`true`);
+  // Most tests score stops in any order, so rounds start switched off. The
+  // "rounds" tests switch them on.
+  await db.delete(judgingRound).where(sql`true`);
+  await db.insert(judgingRound).values({ id: 1, roundsEnabled: false });
 }
 
 /**
@@ -664,27 +680,31 @@ describe("judge flow", () => {
       judgeCount: 6,
     });
     const j = js[0]!;
-    const [first, second] = await stopsOf(j.caller);
+    const first = await firstStop(j.caller);
     await org.caller.judging.admin.swapTeams({
       teamAId: teamIds[0]!,
       teamBId: teamIds[11]!,
     });
     await expect(
       j.caller.judging.me.reportAbsent({
-        assignmentId: first!.id,
-        teamId: first!.team!.id,
+        assignmentId: first.id,
+        teamId: first.team!.id,
       }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
     await expect(
       j.caller.judging.me.reportAbsent({
-        assignmentId: first!.id,
+        assignmentId: first.id,
         teamId: null,
       }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
+    // A judge can only act on their current stop, so retry it with the team
+    // seated there now.
+    const fresh = await firstStop(j.caller);
+    expect(fresh.id).toBe(first.id);
     await expect(
       j.caller.judging.me.reportAbsent({
-        assignmentId: second!.id,
-        teamId: second!.team!.id,
+        assignmentId: fresh.id,
+        teamId: fresh.team!.id,
       }),
     ).resolves.toMatchObject({ status: "team_absent" });
   });
@@ -851,10 +871,13 @@ describe("judge flow", () => {
       judgeId: js[0]!.session.user.id,
       tableId: table.id,
     });
-    const empty = (await stopsOf(js[0]!.caller)).find(
-      (s) => s.table.number === 2,
-    );
+    const stops = await stopsOf(js[0]!.caller);
+    const empty = stops.find((s) => s.table.number === 2);
     assertDefined(empty, "expected table 2 in the section");
+    // A judge only acts on their current stop: cancel the ones before it.
+    for (const s of stops.slice(0, stops.indexOf(empty))) {
+      await org.caller.judging.admin.cancelStop({ assignmentId: s.id });
+    }
     expect(empty.team).toBeNull();
     await expect(
       js[0]!.caller.judging.me.submitStop({
@@ -1103,6 +1126,277 @@ describe("handOffJudge / addJudgeToTable / cancel / absent", () => {
       "done",
     ]);
   });
+
+  test("undoAbsent reopens every absent stop at the table", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const stop = await firstStop(js[0]!.caller);
+    await js[0]!.caller.judging.me.startStop({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? "none",
+    });
+    await org.caller.judging.admin.markAbsent({ assignmentId: stop.id });
+
+    const result = await org.caller.judging.admin.undoAbsent({
+      tableId: stop.table.id,
+    });
+    const here = await db.query.judgingAssignments.findMany({
+      where: eq(judgingAssignments.judgingTableId, stop.table.id),
+    });
+    expect(here.length).toBeGreaterThan(1);
+    expect(result.reopened).toBe(here.length);
+    for (const a of here) {
+      expect(a).toMatchObject({ status: "assigned", completedAt: null });
+      // startedAt is set so the catch-up round leaves them with their judge.
+      expect(a.startedAt).toBeInstanceOf(Date);
+    }
+
+    // The team can be scored again, and there's nothing left to undo.
+    await js[0]!.caller.judging.me.submitStop({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? "none",
+      score: 6,
+    });
+    await expect(
+      org.caller.judging.admin.undoAbsent({ tableId: stop.table.id }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  });
+});
+
+/* ---------- current stop, final absence, no-show ---------- */
+
+describe("current stop", () => {
+  test("a judge can't start, submit or report absent a stop that isn't current", async () => {
+    const { judges: js } = await setupRoom({ tableCount: 3, judgeCount: 3 });
+    const [, second] = await stopsOf(js[0]!.caller);
+    assertDefined(second, "expected a second stop");
+    const conflict = { code: "CONFLICT" };
+    await expect(
+      js[0]!.caller.judging.me.startStop({
+        assignmentId: second.id,
+        teamId: second.team?.id ?? "none",
+      }),
+    ).rejects.toMatchObject(conflict);
+    await expect(
+      js[0]!.caller.judging.me.submitStop({
+        assignmentId: second.id,
+        teamId: second.team?.id ?? "none",
+        score: 5,
+      }),
+    ).rejects.toMatchObject(conflict);
+    await expect(
+      js[0]!.caller.judging.me.reportAbsent({
+        assignmentId: second.id,
+        teamId: second.team?.id ?? null,
+      }),
+    ).rejects.toMatchObject(conflict);
+  });
+});
+
+describe("absence is final", () => {
+  test("one absent report closes every open stop at that table", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const stop = await firstStop(js[0]!.caller);
+    await js[0]!.caller.judging.me.reportAbsent({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? null,
+    });
+    const here = await db.query.judgingAssignments.findMany({
+      where: eq(judgingAssignments.judgingTableId, stop.table.id),
+    });
+    expect(here.length).toBeGreaterThan(1);
+    expect(here.every((a) => a.status === "team_absent")).toBe(true);
+
+    // The table is closed to top-ups too.
+    const extra = await makeJudge();
+    await expect(
+      org.caller.judging.admin.addJudgeToTable({
+        judgeId: extra.session.user.id,
+        tableId: stop.table.id,
+      }),
+    ).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  test("deleting a mark doesn't reopen a stop at an absent table", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const stop = await firstStop(js[0]!.caller);
+    await js[0]!.caller.judging.me.submitStop({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? "none",
+      score: 6,
+    });
+    const otherStop = (await stopsOf(js[1]!.caller)).find(
+      (s) => s.table.id === stop.table.id,
+    );
+    assertDefined(otherStop, "expected another judge at the table");
+    await org.caller.judging.admin.markAbsent({ assignmentId: otherStop.id });
+
+    const mark = await db.query.teamMarks.findFirst({
+      where: eq(teamMarks.judgeId, js[0]!.session.user.id),
+    });
+    assertDefined(mark, "expected a mark");
+    const result = await org.caller.judging.admin.deleteTeamMark({
+      teamMarkId: mark.id,
+    });
+    expect(result).toMatchObject({ reopened: false });
+  });
+
+  test("hand-off leaves stops at an absent table behind", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const leaving = js[0]!;
+    const stops = await stopsOf(leaving.caller);
+    await org.caller.judging.admin.markAbsent({
+      assignmentId: stops[1]!.id,
+    });
+    const floater = await makeJudge();
+    const result = await org.caller.judging.admin.handOffJudge({
+      fromJudgeId: leaving.session.user.id,
+      toJudgeId: floater.session.user.id,
+    });
+    expect(result.moved).toBe(stops.length - 1);
+    expect(
+      (await stopsOf(floater.caller)).map((s) => s.table.id),
+    ).not.toContain(stops[1]!.table.id);
+  });
+
+  test("an absent team is left out of the ranking and of judge averages", async () => {
+    const {
+      org,
+      judges: js,
+      teamIds,
+    } = await setupRoom({ tableCount: 2, judgeCount: 3 });
+    const [t1, t2] = teamIds as [string, string];
+    const atT2 = (await stopsOf(js[0]!.caller)).find((s) => s.team?.id === t2);
+    assertDefined(atT2, "expected a stop at team 2");
+    await org.caller.judging.admin.markAbsent({ assignmentId: atT2.id });
+    for (const judge of js) {
+      for (const stop of await stopsOf(judge.caller)) {
+        if (stop.status !== "assigned") continue;
+        await judge.caller.judging.me.submitStop({
+          assignmentId: stop.id,
+          teamId: stop.team?.id ?? "none",
+          score: 6,
+        });
+      }
+    }
+    const ranking = await org.caller.judging.admin.getLatestRanking();
+    expect(ranking.map((r) => r.team_id)).toEqual([t1]);
+  });
+
+  test("getMyJudging tells a team it was reported absent", async () => {
+    const {
+      org,
+      judges: js,
+      teamIds,
+    } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const session = await mockSession(db);
+    await db
+      .update(users)
+      .set({ teamId: teamIds[0] })
+      .where(eq(users.id, session.user.id));
+    const hacker = createCaller(createInnerTRPCContext({ session }));
+    const stop = await firstStop(js[0]!.caller);
+    expect(stop.team?.id).toBe(teamIds[0]);
+    await org.caller.judging.admin.markAbsent({ assignmentId: stop.id });
+    expect(await hacker.judging.team.getMyJudging()).toMatchObject({
+      absent: true,
+    });
+  });
+});
+
+describe("setJudgeNoShow", () => {
+  test("auto-assign skips a no-show judge", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 4,
+    });
+    const gone = js[3]!;
+    await org.caller.judging.admin.setJudgeNoShow({
+      judgeId: gone.session.user.id,
+      noShow: true,
+    });
+    await org.caller.judging.admin.autoAssign();
+    expect(await stopsOf(gone.caller)).toHaveLength(0);
+    const judgesQ = await org.caller.judging.admin.getAllJudges();
+    expect(judgesQ.find((j) => j.id === gone.session.user.id)?.noShow).toBe(
+      true,
+    );
+  });
+
+  test("before judging starts, marking a judge with stops clears the plan", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const result = await org.caller.judging.admin.setJudgeNoShow({
+      judgeId: js[0]!.session.user.id,
+      noShow: true,
+    });
+    expect(result.planCleared).toBeGreaterThan(0);
+    expect(await db.query.judgingAssignments.findMany()).toHaveLength(0);
+  });
+
+  test("after judging starts, a no-show keeps their tables for the catch-up round", async () => {
+    const { org, judges: js } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const stop = await firstStop(js[1]!.caller);
+    await js[1]!.caller.judging.me.startStop({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? "none",
+    });
+    const before = await stopsOf(js[0]!.caller);
+    await expect(
+      org.caller.judging.admin.setJudgeNoShow({
+        judgeId: js[0]!.session.user.id,
+        noShow: true,
+      }),
+    ).resolves.toMatchObject({ noShow: true, planCleared: 0 });
+    expect(await stopsOf(js[0]!.caller)).toHaveLength(before.length);
+  });
+
+  test("a no-show judge can't take a hand-off or a top-up", async () => {
+    const {
+      org,
+      judges: js,
+      tables,
+    } = await setupRoom({
+      tableCount: 3,
+      judgeCount: 3,
+    });
+    const gone = await makeJudge();
+    await org.caller.judging.admin.setJudgeNoShow({
+      judgeId: gone.session.user.id,
+      noShow: true,
+    });
+    await expect(
+      org.caller.judging.admin.handOffJudge({
+        fromJudgeId: js[0]!.session.user.id,
+        toJudgeId: gone.session.user.id,
+      }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+    await expect(
+      org.caller.judging.admin.addJudgeToTable({
+        judgeId: gone.session.user.id,
+        tableId: tables[0]!.id,
+      }),
+    ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+  });
 });
 
 /* ---------- marks ---------- */
@@ -1223,10 +1517,10 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
       teamId: stop.team?.id ?? "none",
       score: 6,
     });
-    const [, second] = await stopsOf(js[1]!.caller);
+    const next = await firstStop(js[1]!.caller);
     await js[1]!.caller.judging.me.startStop({
-      assignmentId: second!.id,
-      teamId: second!.team?.id ?? "none",
+      assignmentId: next.id,
+      teamId: next.team?.id ?? "none",
     });
 
     const p = await org.caller.judging.admin.getProgress();
@@ -1248,7 +1542,7 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
       col: 2,
     });
     const busy = p.judges.find((j) => j.id === js[1]!.session.user.id);
-    expect(busy?.current?.tableNumber).toBe(second!.table.number);
+    expect(busy?.current?.tableNumber).toBe(next.table.number);
   });
 
   test("getAllJudges shows the team each judge is at right now", async () => {
@@ -1296,7 +1590,16 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
     });
     expect(await hacker.judging.team.getMyJudging()).toEqual({
       table: { number: 1, zone: "Main room", row: 0, col: 0 },
+      absent: false,
       judges: { done: 1, total: 3 },
+      // Rounds are off in this room.
+      round: null,
+      thisRound: null,
+      judgeStarted: false,
+      reportedMissing: false,
+      reportOpensInMs: null,
+      // 1 of 3 judges has scored.
+      judgedAll: false,
     });
   });
 });
@@ -1304,6 +1607,28 @@ describe("getProgress / getAllJudges / getMyJudging", () => {
 /* ---------- cheat check ---------- */
 
 describe("cheat check sweep trigger", () => {
+  beforeEach(() => {
+    sweepEnv.secret = "test-sweep-secret";
+    const realFetch = globalThis.fetch;
+    vi.stubGlobal("fetch", (input: RequestInfo | URL, init?: RequestInit) =>
+      String(input).endsWith("/api/cheat-check/sweep")
+        ? Promise.resolve(new Response(null, { status: 202 }))
+        : realFetch(input, init),
+    );
+  });
+
+  afterEach(() => {
+    sweepEnv.secret = undefined;
+    vi.unstubAllGlobals();
+  });
+
+  test("without CHEAT_SWEEP_SECRET, finishing every stop starts no sweep", async () => {
+    sweepEnv.secret = undefined;
+    const { judges: js } = await setupRoom({ tableCount: 3, judgeCount: 3 });
+    for (const j of js) await scoreAll(j, 6);
+    expect(await db.query.cheatCheckSweeps.findMany({})).toHaveLength(0);
+  });
+
   test("finishing every stop starts exactly one sweep with an item per eligible team", async () => {
     const { judges: js, teamIds } = await setupRoom({
       tableCount: 3,
@@ -1776,5 +2101,522 @@ describe("team_mark stat maintenance", () => {
     expect(row?.marksCount).toBe(1);
     expect(row?.marksSum).toBe(9);
     expect(row?.marksSquaredSum).toBe(81);
+  });
+});
+
+/* ---------- rounds ---------- */
+
+describe("timed rounds", () => {
+  async function roundsRoom() {
+    const room = await setupRoom({ tableCount: 4, judgeCount: 3 });
+    await room.org.caller.judging.admin.setRoundConfig({ roundsEnabled: true });
+    return room;
+  }
+  const stopAt = async (judge: Judge, position: number) => {
+    const stop = (await stopsOf(judge.caller)).find(
+      (s) => s.position === position,
+    );
+    assertDefined(stop, `expected a stop at position ${position}`);
+    return stop;
+  };
+  const score = (judge: Judge, stop: Awaited<ReturnType<typeof stopAt>>) =>
+    judge.caller.judging.me.submitStop({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? "none",
+      score: 5,
+    });
+
+  test("nothing can be scored before round 1 starts", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    await expect(score(judge, await stopAt(judge, 1))).rejects.toThrow(
+      /start round 1/i,
+    );
+    await expect(
+      judge.caller.judging.me.startStop({
+        assignmentId: (await stopAt(judge, 1)).id,
+        teamId: (await stopAt(judge, 1)).team?.id ?? "none",
+      }),
+    ).rejects.toThrow(/start round 1/i);
+  });
+
+  test("only the current round's stop can be scored", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    const state = await room.org.caller.judging.admin.startRound();
+    expect(state).toMatchObject({ round: 1, status: "running" });
+
+    await expect(score(judge, await stopAt(judge, 2))).rejects.toThrow(
+      /round 2/i,
+    );
+    await expect(score(judge, await stopAt(judge, 1))).resolves.toBeDefined();
+  });
+
+  test("time running out closes the round, and the next needs an organizer", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    await room.org.caller.judging.admin.startRound();
+    // The timer hits 0.
+    await db
+      .update(judgingRound)
+      .set({ endsAt: new Date(Date.now() - 1000) })
+      .where(eq(judgingRound.id, 1));
+
+    const seen = await judge.caller.judging.me.getMyStops();
+    expect(seen.round).toMatchObject({ round: 1, status: "closed" });
+    // The judge can still finish the team late.
+    await expect(score(judge, await stopAt(judge, 1))).resolves.toBeDefined();
+
+    const next = await room.org.caller.judging.admin.startRound();
+    expect(next).toMatchObject({ round: 2, status: "running" });
+    await expect(score(judge, await stopAt(judge, 2))).resolves.toBeDefined();
+  });
+
+  test("pausing stops the clock but scoring still works; resume continues", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    await room.org.caller.judging.admin.startRound();
+    const paused = await room.org.caller.judging.admin.pauseRound();
+    expect(paused.status).toBe("paused");
+    expect(paused.remainingMs).toBeGreaterThan(0);
+    expect(paused.endsAt).toBeNull();
+
+    await expect(score(judge, await stopAt(judge, 1))).resolves.toBeDefined();
+    const resumed = await room.org.caller.judging.admin.resumeRound();
+    expect(resumed.status).toBe("running");
+    expect(resumed.endsAt).not.toBeNull();
+  });
+
+  test("ending a round still allows late scores; rounds can't overlap or pass the last", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    const admin = room.org.caller.judging.admin;
+    await admin.startRound();
+    await expect(admin.startRound()).rejects.toThrow(/still open/i);
+
+    await admin.endRound();
+    await expect(score(judge, await stopAt(judge, 1))).resolves.toBeDefined();
+
+    for (const n of [2, 3, 4]) {
+      expect((await admin.startRound()).round).toBe(n);
+      await admin.endRound();
+    }
+    await expect(admin.startRound()).rejects.toThrow(/last round/i);
+    expect(await admin.resetRounds()).toMatchObject({
+      round: 0,
+      status: "idle",
+    });
+  });
+
+  test("round length is validated", async () => {
+    const room = await roundsRoom();
+    const admin = room.org.caller.judging.admin;
+    await expect(admin.setRoundConfig({ roundSeconds: 5 })).rejects.toThrow();
+    const state = await admin.setRoundConfig({ roundSeconds: 120 });
+    expect(state.roundSeconds).toBe(120);
+  });
+
+  test("a judge who runs out of time is released, and can start next round", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    const admin = room.org.caller.judging.admin;
+    await admin.startRound();
+    const first = await stopAt(judge, 1);
+    await judge.caller.judging.me.startStop({
+      assignmentId: first.id,
+      teamId: first.team?.id ?? "none",
+    });
+    expect((await stopAt(judge, 1)).status).toBe("in_progress");
+
+    // Time runs out with the judge still mid-score.
+    await db
+      .update(judgingRound)
+      .set({ endsAt: new Date(Date.now() - 1000) })
+      .where(eq(judgingRound.id, 1));
+    const overview = await admin.getRound();
+    expect(overview.status).toBe("closed");
+    expect(overview.stops.inProgress).toBe(0);
+    expect((await stopAt(judge, 1)).status).toBe("assigned");
+    expect((await tableByNumber(first.table.number)).status).not.toBe(
+      "being_judged",
+    );
+
+    // The next round isn't blocked by the unfinished stop.
+    await admin.startRound();
+    const second = await stopAt(judge, 2);
+    await expect(
+      judge.caller.judging.me.startStop({
+        assignmentId: second.id,
+        teamId: second.team?.id ?? "none",
+      }),
+    ).resolves.toBeDefined();
+
+    // The missed team can still be scored late, during a later round.
+    await expect(score(judge, await stopAt(judge, 1))).resolves.toBeDefined();
+    expect((await stopAt(judge, 1)).status).toBe("done");
+  });
+
+  test("ending a round releases judges still mid-score", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    const admin = room.org.caller.judging.admin;
+    await admin.startRound();
+    const first = await stopAt(judge, 1);
+    await judge.caller.judging.me.startStop({
+      assignmentId: first.id,
+      teamId: first.team?.id ?? "none",
+    });
+    await admin.endRound();
+    expect((await stopAt(judge, 1)).status).toBe("assigned");
+  });
+
+  test("clearing assignments goes back to before assignment, but not once judging has started", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    const admin = room.org.caller.judging.admin;
+
+    const result = await admin.clearAssignments();
+    expect(result.removed).toBeGreaterThan(0);
+    expect(await stopsOf(judge.caller)).toHaveLength(0);
+    expect(await admin.getRound()).toMatchObject({
+      round: 0,
+      status: "idle",
+      totalRounds: 0,
+    });
+    // Teams stay seated and the plan can be made again.
+    await admin.autoAssign();
+    expect((await stopsOf(judge.caller)).length).toBeGreaterThan(0);
+
+    // Once a stop is scored the plan is locked.
+    await admin.startRound();
+    await score(judge, await stopAt(judge, 1));
+    await expect(admin.clearAssignments()).rejects.toThrow(/started/i);
+    expect((await admin.getRound()).judgingStarted).toBe(true);
+  });
+
+  test("after the last round, tables whose judge never came get a catch-up round", async () => {
+    const room = await roundsRoom();
+    const admin = room.org.caller.judging.admin;
+    const [first, second] = room.judges;
+    assertDefined(first, "judge");
+    assertDefined(second, "judge");
+    const total = (await admin.getRound()).totalRounds;
+    const missedTable = (await stopAt(first, 1)).table.number;
+
+    for (let n = 1; n <= total; n++) {
+      await admin.startRound();
+      for (const j of room.judges) {
+        const stop = (await stopsOf(j.caller)).find((s) => s.position === n);
+        if (!stop?.team) continue;
+        // The first judge never comes to their round 1 table.
+        if (j === first && n === 1) continue;
+        // The second judge starts their round 2 table but doesn't rate it.
+        if (j === second && n === 2) {
+          await j.caller.judging.me.startStop({
+            assignmentId: stop.id,
+            teamId: stop.team.id,
+          });
+          continue;
+        }
+        await score(j, stop);
+      }
+      await admin.endRound();
+      if (n < total) {
+        await expect(admin.planCatchUp()).rejects.toThrow(/last round/i);
+      }
+    }
+
+    // Only the never-started table is missed; the started one stays the
+    // second judge's to score late.
+    expect((await admin.getRound()).missed).toBe(1);
+    const started = await stopAt(second, 2);
+    expect(started.status).toBe("assigned");
+
+    // A team saying their judge never came makes it missed too.
+    await admin.reportJudgeMissing({ assignmentId: started.id });
+    expect((await admin.getRound()).missed).toBe(2);
+
+    expect(await admin.planCatchUp()).toMatchObject({
+      moved: 2,
+      skipped: 0,
+      totalRounds: total + 1,
+    });
+    expect((await admin.getRound()).missed).toBe(0);
+    // Every other judge has seen that team here, so it goes back to the same
+    // judge, same table, in the catch-up round.
+    const moved = await stopAt(first, total + 1);
+    expect(moved.table.number).toBe(missedTable);
+    expect((await admin.startRound()).round).toBe(total + 1);
+    await expect(score(first, moved)).resolves.toBeDefined();
+  });
+
+  test("a hacker can report their judge missing a minute into the round, until a judge starts", async () => {
+    const room = await roundsRoom();
+    const admin = room.org.caller.judging.admin;
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    const stop = await stopAt(judge, 1);
+    const session = await mockSession(db);
+    await db
+      .update(users)
+      .set({ teamId: stop.team?.id })
+      .where(eq(users.id, session.user.id));
+    const hacker = createCaller(createInnerTRPCContext({ session }));
+
+    await expect(hacker.judging.team.reportJudgeMissing()).rejects.toThrow(
+      /no round/i,
+    );
+    await admin.startRound();
+    // Too early: the judge may still be walking over.
+    await expect(hacker.judging.team.reportJudgeMissing()).rejects.toThrow(
+      /minute/i,
+    );
+    expect(
+      (await hacker.judging.team.getMyJudging()).reportOpensInMs,
+    ).toBeGreaterThan(0);
+
+    // A minute into the round.
+    const { roundSeconds } = await admin.getRound();
+    await db
+      .update(judgingRound)
+      .set({ endsAt: new Date(Date.now() + roundSeconds * 1000 - 61_000) })
+      .where(eq(judgingRound.id, 1));
+    await expect(hacker.judging.team.reportJudgeMissing()).resolves.toEqual({
+      reported: true,
+    });
+    expect(await hacker.judging.team.getMyJudging()).toMatchObject({
+      thisRound: "now",
+      judgeStarted: false,
+      reportedMissing: true,
+      reportOpensInMs: 0,
+    });
+
+    // Once a judge starts, there's nothing to report.
+    await judge.caller.judging.me.startStop({
+      assignmentId: stop.id,
+      teamId: stop.team?.id ?? "none",
+    });
+    await expect(hacker.judging.team.reportJudgeMissing()).rejects.toThrow(
+      /already started/i,
+    );
+  });
+
+  test("judging counts as started once round 1 starts, before any judge does", async () => {
+    const room = await roundsRoom();
+    const admin = room.org.caller.judging.admin;
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    await admin.startRound();
+    expect((await admin.getRound()).judgingStarted).toBe(true);
+    await expect(admin.clearAssignments()).rejects.toThrow(/started/i);
+    await expect(admin.autoAssign()).rejects.toThrow(/started/i);
+    // A no-show now keeps the plan instead of clearing everyone's tables.
+    await expect(
+      admin.setJudgeNoShow({ judgeId: judge.session.user.id, noShow: true }),
+    ).resolves.toMatchObject({ planCleared: 0 });
+    expect((await stopsOf(judge.caller)).length).toBeGreaterThan(0);
+  });
+
+  test("starting this round's team releases a late team left open, and it stays the judge's", async () => {
+    const room = await roundsRoom();
+    const admin = room.org.caller.judging.admin;
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    await admin.startRound();
+    await admin.endRound();
+    await admin.startRound();
+
+    // The judge opens their missed round 1 team late, then leaves it.
+    const late = await stopAt(judge, 1);
+    await judge.caller.judging.me.startStop({
+      assignmentId: late.id,
+      teamId: late.team?.id ?? "none",
+    });
+    // Starting this round's team isn't blocked by it.
+    const current = await stopAt(judge, 2);
+    await expect(
+      judge.caller.judging.me.startStop({
+        assignmentId: current.id,
+        teamId: current.team?.id ?? "none",
+      }),
+    ).resolves.toBeDefined();
+    const released = await stopAt(judge, 1);
+    expect(released.status).toBe("assigned");
+    expect(released.startedAt).not.toBeNull();
+    // Started, so it's unfinished (theirs to score late), not missed.
+    expect((await admin.getRound()).unfinished).toBe(1);
+    await expect(score(judge, released)).resolves.toBeDefined();
+  });
+
+  test("restarting a rehearsal only works on the dev site, and wipes scores and stops", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    const admin = room.org.caller.judging.admin;
+    await admin.startRound();
+    await score(judge, await stopAt(judge, 1));
+
+    // Not a Vercel preview deploy (production, or a local server): refused.
+    vi.stubEnv("VERCEL_ENV", "production");
+    expect((await admin.getRound()).canRestartRehearsal).toBe(false);
+    await expect(admin.restartRehearsal()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect((await admin.getRound()).judgingStarted).toBe(true);
+
+    vi.stubEnv("VERCEL_ENV", "preview");
+    try {
+      expect((await admin.getRound()).canRestartRehearsal).toBe(true);
+      const result = await admin.restartRehearsal();
+      expect(result.marks).toBeGreaterThan(0);
+      expect(await stopsOf(judge.caller)).toHaveLength(0);
+      expect(await admin.getRound()).toMatchObject({
+        round: 0,
+        status: "idle",
+        judgingStarted: false,
+      });
+      // Ready for a new plan.
+      await admin.autoAssign();
+      expect((await stopsOf(judge.caller)).length).toBeGreaterThan(0);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  test("hackers only see the rounds board while an organizer turns it on, without judge identities or scores", async () => {
+    const room = await roundsRoom();
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    const admin = room.org.caller.judging.admin;
+    await admin.startRound();
+    await score(judge, await stopAt(judge, 1));
+
+    const hackerSession = await mockSession(db);
+    const hacker = createCaller(
+      createInnerTRPCContext({ session: hackerSession }),
+    );
+    const anon = createCaller(createInnerTRPCContext({ session: null }));
+
+    // Off by default: hidden from hackers and signed-out visitors,
+    // always open to organizers.
+    await expect(anon.judging.board.get()).rejects.toThrow();
+    await expect(hacker.judging.board.get()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(await hacker.judging.board.getAccess()).toMatchObject({
+      visible: false,
+      shownToHackers: false,
+    });
+    expect(await admin.getRound()).toBeDefined();
+    expect(await room.org.caller.judging.board.getAccess()).toMatchObject({
+      isOrganizer: true,
+      visible: true,
+    });
+    await expect(room.org.caller.judging.board.get()).resolves.toBeDefined();
+    // Hackers can't flip it themselves.
+    await expect(
+      (
+        hacker.judging.admin as unknown as {
+          setBoardVisible: (i: { shownToHackers: boolean }) => Promise<unknown>;
+        }
+      ).setBoardVisible({ shownToHackers: true }),
+    ).rejects.toThrow();
+
+    await admin.setBoardVisible({ shownToHackers: true });
+    expect(await hacker.judging.board.getAccess()).toMatchObject({
+      visible: true,
+      shownToHackers: true,
+    });
+    const board = await hacker.judging.board.get();
+    expect(board.round).toMatchObject({ round: 1, status: "running" });
+    expect(board.stops.length).toBeGreaterThan(0);
+
+    // Judges are numbers, never ids, names or emails.
+    for (const stop of board.stops) {
+      expect(Object.keys(stop).sort()).toEqual([
+        "judge",
+        "round",
+        "status",
+        "table",
+        "team",
+      ]);
+      expect(stop.judge).toBeGreaterThan(0);
+    }
+    expect(JSON.stringify(board)).not.toContain(judge.session.user.id);
+    expect(JSON.stringify(board)).not.toContain(
+      judge.session.user.email ?? "@",
+    );
+
+    // The scored stop shows as done, later rounds as coming up.
+    expect(board.stops.some((s) => s.round === 1 && s.status === "done")).toBe(
+      true,
+    );
+    expect(
+      board.stops.some((s) => s.round > 1 && s.status === "upcoming"),
+    ).toBe(true);
+
+    await admin.setBoardVisible({ shownToHackers: false });
+    await expect(hacker.judging.board.get()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+  });
+
+  test("the projector clock reads the round timer without logging in", async () => {
+    const room = await roundsRoom();
+    const admin = room.org.caller.judging.admin;
+    const anon = createCaller(createInnerTRPCContext({ session: null }));
+
+    expect(await anon.judging.board.getClock()).toMatchObject({
+      round: 0,
+      status: "idle",
+    });
+    await admin.startRound();
+    const running = await anon.judging.board.getClock();
+    expect(running).toMatchObject({ round: 1, status: "running" });
+    expect(running.remainingMs).toBeGreaterThan(0);
+    // Reading it never changes anything.
+    expect((await admin.getRound()).status).toBe("running");
+    await admin.pauseRound();
+    expect((await anon.judging.board.getClock()).status).toBe("paused");
+  });
+
+  test("stops at empty tables aren't rounds", async () => {
+    // 4 tables but 2 teams: tables 3 and 4 are empty.
+    const room = await setupRoom({
+      tableCount: 4,
+      teamCount: 2,
+      judgeCount: 3,
+    });
+    const admin = room.org.caller.judging.admin;
+    await admin.setRoundConfig({ roundsEnabled: true });
+
+    const overview = await admin.getRound();
+    expect(overview.totalRounds).toBe(2);
+
+    await admin.startRound();
+    // Only stops with a team count towards "judges done".
+    expect((await admin.getRound()).stops.total).toBe(3);
+    await admin.endRound();
+    await admin.startRound();
+    await admin.endRound();
+    await expect(admin.startRound()).rejects.toThrow(/last round/i);
+  });
+
+  test("with rounds off, judges still follow their walking order", async () => {
+    const room = await setupRoom({ tableCount: 4, judgeCount: 3 });
+    const [judge] = room.judges;
+    assertDefined(judge, "judge");
+    await expect(score(judge, await stopAt(judge, 3))).rejects.toThrow(
+      /current team/i,
+    );
+    await expect(score(judge, await stopAt(judge, 1))).resolves.toBeDefined();
   });
 });

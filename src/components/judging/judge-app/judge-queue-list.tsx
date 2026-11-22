@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { DashboardButton } from "~/components/internals/dashboard-button";
-import { JudgeConfirm } from "~/components/judging/shared/judge-confirm";
-import {
-  card,
-  fullWidth,
-  infoBanner,
-} from "~/components/judging/shared/judge-ui";
+import { card, infoBanner } from "~/components/judging/shared/judge-ui";
 import { type QueueTeam } from "~/server/api/utils/judge-data";
 
 /** How many teams a judge sees lined up. The rest wait as replacements. */
@@ -120,12 +114,9 @@ interface JudgeQueueListProps {
 
 /**
  * The teams lined up for this judge, with their members, shown before Start
- * judging. A judge who knows someone in the queue (a friend, a conflict of
- * interest) can ask for a whole new queue.
+ * judging so a judge can flag anyone they know to an organizer.
  */
 export function JudgeQueueList({ queue, tableByTeam }: JudgeQueueListProps) {
-  const [asking, setAsking] = useState(false);
-
   if (!queue.hydrated) return null;
 
   return (
@@ -172,32 +163,12 @@ export function JudgeQueueList({ queue, tableByTeam }: JudgeQueueListProps) {
               })}
             </ul>
             <p className="m-0 px-1 text-sm text-dashboard-text-light">
-              Know someone on any of these teams? Request a switch to get a
-              whole new queue.
+              Know someone on any of these teams? Tell an organizer before you
+              start.
             </p>
-            <DashboardButton
-              type="button"
-              variant="outline"
-              onClick={() => setAsking(true)}
-              className={fullWidth}
-            >
-              Request a switch
-            </DashboardButton>
           </>
         )}
       </section>
-      <JudgeConfirm
-        open={asking}
-        title="Request a new queue?"
-        description="Use this if you know someone on one of these teams or can't judge them fairly. Every team in your queue is replaced."
-        confirmLabel="Request a switch"
-        cancelLabel="Keep my queue"
-        onConfirm={() => {
-          queue.requestNewQueue();
-          setAsking(false);
-        }}
-        onCancel={() => setAsking(false)}
-      />
     </>
   );
 }

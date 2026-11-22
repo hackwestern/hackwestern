@@ -1,12 +1,100 @@
-import { disabledRedirect } from "~/utils/redirect";
+import { authRedirectOrganizer } from "~/utils/redirect";
 import { api } from "~/utils/api";
 import CheatTable from "~/components/internals/Table/cheatTable";
 import { Button } from "~/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
+import { SWEEP_NOT_CONFIGURED } from "~/lib/cheat-checks/constants";
 
 const filterCopy = sponsorPresentationsCopy.cheatCheckFilter;
+
+const formatTime = (date: Date) =>
+  date.toLocaleString("en-CA", { dateStyle: "medium", timeStyle: "short" });
+
+/**
+ * Sweep progress and a manual start. The automatic sweep only starts once
+ * every judging stop is done, team_absent or cancelled, so one missed stop
+ * nobody scores keeps it from firing; "Run sweep" covers that.
+ */
+const SweepStatus = () => {
+  const utils = api.useUtils();
+  const status = api.cheatCheck.getSweepStatus.useQuery(undefined, {
+    refetchInterval: (query) =>
+      query.state.data?.latest?.sweep.status === "running" ? 10_000 : false,
+  });
+  const refresh = () => void utils.cheatCheck.getSweepStatus.invalidate();
+  const start = api.cheatCheck.startSweep.useMutation({ onSettled: refresh });
+  const resume = api.cheatCheck.resumeSweep.useMutation({
+    onSettled: refresh,
+  });
+
+  const configured = status.data?.configured !== false;
+  const data = status.data?.latest;
+  const sweep = data?.sweep;
+  const running = sweep?.status === "running";
+  const pausedUntil =
+    sweep?.rateLimitedUntil && sweep.rateLimitedUntil > new Date()
+      ? sweep.rateLimitedUntil
+      : null;
+
+  let line: string;
+  if (status.error) {
+    line = `Failed to load sweep status: ${status.error.message}`;
+  } else if (!status.data) {
+    line = "Loading sweep status...";
+  } else if (!data || !sweep) {
+    line = "No sweep has run yet.";
+  } else {
+    const failed = data.items.failed > 0 ? `, ${data.items.failed} failed` : "";
+    const progress = `${data.items.done}/${sweep.totalTeams} teams done${failed}`;
+    if (running) {
+      line = `Sweep running since ${formatTime(sweep.startedAt)}: ${progress}.`;
+      if (pausedUntil)
+        line += ` Paused for the GitHub rate limit until ${formatTime(pausedUntil)}.`;
+      if (data.stalled) line += " Stalled: no progress for a few minutes.";
+    } else if (sweep.status === "failed") {
+      line = `Last sweep failed${sweep.finishedAt ? ` ${formatTime(sweep.finishedAt)}` : ""}: ${sweep.error ?? "unknown error"}`;
+    } else {
+      line = `Last sweep finished${sweep.finishedAt ? ` ${formatTime(sweep.finishedAt)}` : ""}: ${progress}.`;
+    }
+  }
+
+  const note = !configured
+    ? SWEEP_NOT_CONFIGURED
+    : (start.error?.message ??
+      resume.error?.message ??
+      (resume.data && !resume.data.resumed ? resume.data.reason : undefined));
+
+  return (
+    <div className="z-10 mb-4 flex w-full max-w-6xl flex-col gap-2 px-4 font-secondary text-sm sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="m-0">{line}</p>
+        {note && <p className="m-0">{note}</p>}
+      </div>
+      <div className="flex shrink-0 gap-2">
+        {data?.stalled && (
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => resume.mutate()}
+            disabled={!configured || resume.isPending}
+          >
+            {resume.isPending ? "Resuming..." : "Resume sweep"}
+          </Button>
+        )}
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => start.mutate()}
+          disabled={!configured || running || start.isPending}
+        >
+          {start.isPending ? "Starting..." : "Run sweep"}
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 const CheatCheck = () => {
   const { data: teams, error } = api.cheatCheck.getDisplayTeams.useQuery();
@@ -26,6 +114,7 @@ const CheatCheck = () => {
           <Link href="/internal/dashboard">Back to Dashboard</Link>
         </Button>
       </div>
+      <SweepStatus />
       {only && shown && (
         <p className="z-10 m-0 mb-2 w-full max-w-6xl px-4 font-secondary text-sm">
           {filterCopy.showing(shown.length)}{" "}
@@ -51,4 +140,4 @@ const CheatCheck = () => {
 
 export default CheatCheck;
 
-export const getServerSideProps = disabledRedirect;
+export const getServerSideProps = authRedirectOrganizer;

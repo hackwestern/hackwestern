@@ -23,6 +23,7 @@ import {
   StatusLine,
   TD,
   TH,
+  errorText,
 } from "./control-shared";
 
 const STOP_STYLE: Record<string, string> = {
@@ -58,7 +59,7 @@ function JudgeHistory({
   teamAtTable: Map<number, string | null>;
 }) {
   const resultsQ = api.judging.admin.getTeamResults.useQuery(undefined, {
-    refetchInterval: 15_000,
+    refetchInterval: 3000,
   });
   const marks = (resultsQ.data ?? []).flatMap((r) =>
     (["regular", "sponsored"] as const).flatMap((round) =>
@@ -153,19 +154,27 @@ export function JudgeRoster({
   const utils = api.useUtils();
   const judgesQuery = api.judging.admin.getAllJudges.useQuery(undefined, {
     // Keeps "judging a team" roughly live without a manual refresh.
-    refetchInterval: 15_000,
+    refetchInterval: 3000,
   });
   const addJudge = api.judging.admin.addJudgeByEmail.useMutation();
+  const noShow = api.judging.admin.setJudgeNoShow.useMutation();
+  const handOff = api.judging.admin.handOffJudge.useMutation();
   const teamAtTable = new Map(
     (progress?.tables ?? []).map((t) => [t.number, t.team?.name ?? null]),
   );
+  // A stop at an empty table isn't shown: the judge has nothing to do there.
   const stopsByJudge = new Map(
-    (progress?.judges ?? []).map((j) => [j.id, j.stops]),
+    (progress?.judges ?? []).map((j) => [
+      j.id,
+      j.stops.filter((st) => teamAtTable.get(st.tableNumber) != null),
+    ]),
   );
 
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<Status>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [handOffTo, setHandOffTo] = useState("");
+  const [handOffStatus, setHandOffStatus] = useState<Status>(null);
 
   // Add-judge dialog.
   const [addOpen, setAddOpen] = useState(false);
@@ -257,6 +266,7 @@ export function JudgeRoster({
           <thead>
             <tr className={`text-left ${MUTED}`}>
               <th className={TH}>Name</th>
+              <th className={TH}>No-show</th>
               <th className={TH}>Marks</th>
               <th className={TH}>Avg score</th>
               <th className={TH}>Assigned teams</th>
@@ -286,7 +296,11 @@ export function JudgeRoster({
                   <td className={TD}>
                     <button
                       type="button"
-                      onClick={() => setSelectedId(j.id)}
+                      onClick={() => {
+                        setSelectedId(j.id);
+                        setHandOffTo("");
+                        setHandOffStatus(null);
+                      }}
                       aria-label={`Details for ${j.name ?? j.email}`}
                       className="flex flex-col text-left hover:underline"
                     >
@@ -297,6 +311,62 @@ export function JudgeRoster({
                       {j.name && (
                         <span className={`text-xs ${MUTED}`}>{j.email}</span>
                       )}
+                    </button>
+                  </td>
+                  <td className={TD}>
+                    <button
+                      type="button"
+                      className={`${BTN_OUTLINE} text-sm`}
+                      disabled={noShow.isPending}
+                      onClick={() => {
+                        const name = j.name ?? j.email;
+                        // Before judging starts, marking a judge who has
+                        // tables clears every judge's plan.
+                        if (
+                          !j.noShow &&
+                          !progress?.started &&
+                          progress?.judges.find((p) => p.id === j.id)
+                            ?.isFloater !== true &&
+                          !window.confirm(
+                            `Mark ${name} as a no-show? Judging hasn't started, so this clears every judge's tables. Run Auto-assign judges again afterwards.`,
+                          )
+                        )
+                          return;
+                        // After it starts, their tables stay for the catch-up
+                        // round.
+                        if (
+                          !j.noShow &&
+                          progress?.started &&
+                          !window.confirm(
+                            `Mark ${name} as a no-show? Their unscored tables stay put and get another judge in the catch-up round after the last round.`,
+                          )
+                        )
+                          return;
+                        setStatus(null);
+                        noShow.mutate(
+                          { judgeId: j.id, noShow: !j.noShow },
+                          {
+                            onSuccess: (r) => {
+                              setStatus({
+                                tone: "ok",
+                                text: `${name} is ${r.noShow ? "marked as a no-show" : "back on the roster"}.${
+                                  r.planCleared > 0
+                                    ? " The judge plan was cleared: run auto-assign again."
+                                    : ""
+                                }`,
+                              });
+                              void utils.judging.admin.invalidate();
+                            },
+                            onError: (e) =>
+                              setStatus({
+                                tone: "error",
+                                text: `Couldn't update ${name}. ${errorText(e)}`,
+                              }),
+                          },
+                        );
+                      }}
+                    >
+                      {j.noShow ? "Undo no-show" : "Mark no-show"}
                     </button>
                   </td>
                   <td className={`${TD} tabular-nums`}>{j.marksCount}</td>
@@ -372,6 +442,75 @@ export function JudgeRoster({
                 stops={stopsByJudge.get(selected.id) ?? []}
                 teamAtTable={teamAtTable}
               />
+
+              <section
+                aria-label="Hand off"
+                className="flex flex-col gap-1.5 text-sm"
+              >
+                <label htmlFor="hand-off-to" className="text-base font-bold">
+                  Hand off unfinished tables to
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <select
+                    id="hand-off-to"
+                    className={`${FIELD} min-w-0 flex-1`}
+                    value={handOffTo}
+                    onChange={(e) => setHandOffTo(e.target.value)}
+                  >
+                    <option value="">Choose a judge…</option>
+                    {judges
+                      .filter(
+                        (j) =>
+                          j.type === "organizer" &&
+                          !j.noShow &&
+                          j.id !== selected.id,
+                      )
+                      .map((j) => (
+                        <option key={j.id} value={j.id}>
+                          {j.name ?? j.email}
+                        </option>
+                      ))}
+                  </select>
+                  <button
+                    type="button"
+                    className={BTN_DARK}
+                    disabled={!handOffTo || handOff.isPending}
+                    onClick={() => {
+                      const from = selected.name ?? selected.email;
+                      const to = judges.find((j) => j.id === handOffTo);
+                      const toName = to?.name ?? to?.email ?? "that judge";
+                      if (
+                        !window.confirm(
+                          `Hand ${from}'s unfinished tables to ${toName}? They go after ${toName}'s last table, and a table ${from} is judging now starts over.`,
+                        )
+                      )
+                        return;
+                      setHandOffStatus(null);
+                      handOff.mutate(
+                        { fromJudgeId: selected.id, toJudgeId: handOffTo },
+                        {
+                          onSuccess: (r) => {
+                            setHandOffTo("");
+                            setHandOffStatus({
+                              tone: "ok",
+                              text: `Handed ${r.moved} table${r.moved === 1 ? "" : "s"} (${r.tables.join(", ")}) to ${toName}.`,
+                            });
+                            void utils.judging.admin.invalidate();
+                          },
+                          onError: (e) =>
+                            setHandOffStatus({
+                              tone: "error",
+                              text: errorText(e),
+                            }),
+                        },
+                      );
+                    }}
+                  >
+                    {handOff.isPending ? "Handing off…" : "Hand off"}
+                  </button>
+                </div>
+                <StatusLine status={handOffStatus} />
+              </section>
 
               <DialogFooter className="gap-2">
                 <button

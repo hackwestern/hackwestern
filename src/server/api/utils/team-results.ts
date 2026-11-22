@@ -14,13 +14,13 @@ export interface TeamInfo {
   superLikes?: number;
   /** Normalized score (0-10), null until the normalization has run. */
   normalized?: number | null;
-  /** Adventure score (0-10), null until normalized. */
-  adventure?: number | null;
   /**
-   * The normalization's unclipped team estimate (judging_normalized_team.q,
-   * "total" series). Orders teams that all clip to a normalized 10.
+   * The normalized value before the 0-10 cap (total series). The top teams can
+   * all cap at 10, so this breaks those ties.
    */
   normalizedQ?: number | null;
+  /** Adventure score (0-10), null until normalized. */
+  adventure?: number | null;
   /** Sum of the five per-criterion averages / 5 (0-10), every round. */
   rawTotal?: number | null;
   /**
