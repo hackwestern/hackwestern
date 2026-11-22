@@ -871,7 +871,7 @@ describe("presentationDmMessage", () => {
     const email = presentationEmail({ name: "Avery" }, "Team", slots);
     for (const message of [JSON.stringify(slack), email.text, email.html]) {
       expect(message).toContain("10:00am – 11:00am");
-      expect(message).toContain("Location: Rm 2140");
+      expect(message).toContain("Location: Rm 2235");
       expect(message).toContain("No time slots. Judges will come to you");
       expect(message).not.toContain("10:24 AM");
       expect(message).not.toContain("1 minute to set up");
@@ -894,7 +894,7 @@ describe("presentationDmMessage", () => {
       expect(message).toContain(
         "Go to each of your scheduled sponsor presentations first",
       );
-      expect(message).toContain("head to PCBWay in Rm 2140");
+      expect(message).toContain("head to PCBWay in Rm 2235");
       expect(message).not.toContain("stay at your station the entire time");
     }
   });
