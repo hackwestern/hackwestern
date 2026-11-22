@@ -25,6 +25,12 @@ import {
 } from "~/server/db/schema";
 import { slotsKey } from "~/lib/sponsor-presentations";
 
+// Keep a digital sponsor fixture independent of the event configuration.
+vi.mock(import("~/content/sponsor-prize-tracks"), async (importOriginal) => ({
+  ...(await importOriginal()),
+  DIGITAL_JUDGING_SPONSORS: ["PCBWay"],
+}));
+
 // Never the real Google Sheet: the mirror only ever gets a fake sheet here,
 // and the Google client fails loudly if anything reaches for it.
 vi.mock("googleapis", () => ({

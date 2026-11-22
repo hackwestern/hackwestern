@@ -28,6 +28,12 @@ import {
   resetSheetRetries,
 } from "~/server/api/routers/sponsor-scoring";
 
+// Keep a digital sponsor fixture independent of the event configuration.
+vi.mock(import("~/content/sponsor-prize-tracks"), async (importOriginal) => ({
+  ...(await importOriginal()),
+  DIGITAL_JUDGING_SPONSORS: ["PCBWay"],
+}));
+
 // SPONSOR_JUDGING_CLOSES_AT, per test (unset = judging never closes).
 let closesAt: string | undefined;
 vi.mock("~/env", async (importOriginal) => {
