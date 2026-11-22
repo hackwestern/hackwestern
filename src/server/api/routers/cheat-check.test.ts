@@ -14,6 +14,7 @@ import {
   users,
 } from "~/server/db/schema";
 import { mockOrganizerSession, mockSession } from "~/server/auth";
+import { SWEEP_NOT_CONFIGURED } from "~/lib/cheat-checks/constants";
 
 // Allow per-test override of the hack window without re-importing the env module
 let _testHackStart: string | undefined;
@@ -27,6 +28,9 @@ vi.mock("~/env", async (importOriginal) => {
       get(target, prop) {
         if (prop === "HACK_START") return _testHackStart ?? target[prop];
         if (prop === "HACK_END") return _testHackEnd ?? target[prop];
+        // Always unset here: covers the not-configured path and keeps any
+        // sweep from POSTing the real secret.
+        if (prop === "CHEAT_SWEEP_SECRET") return undefined;
         return target[prop];
       },
     }),
@@ -492,6 +496,27 @@ describe.skipIf(!process.env.GITHUB_TOKEN)(
     });
   },
 );
+
+// ---------------------------------------------------------------------------
+// Sweeps without CHEAT_SWEEP_SECRET
+// ---------------------------------------------------------------------------
+
+describe("cheatCheck sweeps without CHEAT_SWEEP_SECRET", () => {
+  test("startSweep and resumeSweep refuse; getSweepStatus says not configured", async () => {
+    const refused = {
+      code: "PRECONDITION_FAILED",
+      message: SWEEP_NOT_CONFIGURED,
+    };
+    await expect(organizerCaller.cheatCheck.startSweep()).rejects.toMatchObject(
+      refused,
+    );
+    await expect(
+      organizerCaller.cheatCheck.resumeSweep(),
+    ).rejects.toMatchObject(refused);
+    const status = await organizerCaller.cheatCheck.getSweepStatus();
+    expect(status.configured).toBe(false);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Helpers

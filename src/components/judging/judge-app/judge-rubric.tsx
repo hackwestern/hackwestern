@@ -67,6 +67,32 @@ function clearDraft(key: string) {
   }
 }
 
+/**
+ * A judge's saved draft for a team, as a submission, when every criterion is
+ * rated (for the end-of-round autosave). Null when it isn't complete.
+ */
+export function completeDraft(
+  rubric: Rubric,
+  judgeKey: string,
+  teamId: string,
+): ScoreSubmission | null {
+  const draft = readDraft(`${judgeKey}-${teamId}`);
+  const count = rubric.criteria.length;
+  const result = scoreRubric(rubric, draft.ratings);
+  if (count === 0 || result.rated !== count) return null;
+  return {
+    ratings: draft.ratings,
+    score: result.score,
+    notes: draft.notes.trim(),
+    superLike: draft.superLike,
+  };
+}
+
+/** Drops a team's draft once its score reached the server. */
+export function clearTeamDraft(judgeKey: string, teamId: string) {
+  clearDraft(`${judgeKey}-${teamId}`);
+}
+
 type SaveState = "saved" | "saving" | "error";
 
 const SAVE_LABEL: Record<SaveState, string> = {
@@ -101,6 +127,12 @@ interface JudgeRubricProps {
   onAbsent: () => Promise<boolean>;
   /** Opens the Questions tab. The score stays as it is. */
   onOpenQuestions?: () => void;
+  /**
+   * A team whose round already ended. Shows Back (the draft stays on the
+   * phone) instead of "Team not here", which would disqualify the team.
+   */
+  late?: boolean;
+  onBack?: () => void;
 }
 
 /** The Score page: rubric, notes and the two ways to finish a team. Key it by team. */
@@ -115,6 +147,8 @@ export function JudgeRubric({
   onSubmit,
   onAbsent,
   onOpenQuestions,
+  late = false,
+  onBack,
 }: JudgeRubricProps) {
   const key = `${judgeKey}-${teamId}`;
   const [initial] = useState(() => readDraft(key));
@@ -245,15 +279,27 @@ export function JudgeRubric({
       />
 
       <div className="flex gap-2">
-        <DashboardButton
-          type="button"
-          variant="outline"
-          disabled={busy}
-          onClick={() => setConfirmAbsent(true)}
-          className={`${touch} px-4`}
-        >
-          Team not here
-        </DashboardButton>
+        {late ? (
+          <DashboardButton
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={onBack}
+            className={`${touch} px-4`}
+          >
+            Back
+          </DashboardButton>
+        ) : (
+          <DashboardButton
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={() => setConfirmAbsent(true)}
+            className={`${touch} px-4`}
+          >
+            Team not here
+          </DashboardButton>
+        )}
         <DashboardButton
           type="button"
           disabled={!complete || busy}
@@ -280,7 +326,7 @@ export function JudgeRubric({
             ? `Mark table ${table} as not here?`
             : "Mark this team as not here?"
         }
-        description="No score will be saved. You won't be given this team again."
+        description="This takes the team out of judging for every judge. Only an organizer can undo it."
         confirmLabel="Team not here"
         cancelLabel="Keep scoring"
         onConfirm={() => void absent()}

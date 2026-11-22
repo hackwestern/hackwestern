@@ -7,7 +7,9 @@ import {
   CARD_TITLE,
   FIELD,
   MUTED,
+  type Progress,
   type QueueState,
+  type RoundOverview,
   TD,
   TH,
 } from "./control-shared";
@@ -16,19 +18,42 @@ const one = (n: number) => n.toFixed(1);
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
 /**
- * Look back at a finished (or running) round. The engine stores no round, so
- * round N is each team's Nth mark in the order they were submitted, the same
- * rule the progress tiles use.
+ * Look back at a finished (or running) round. With timed rounds, round N is
+ * each judge's Nth table, the same rounds as the timer and the grid above.
+ * Without them, round N is each team's Nth mark in the order they were
+ * submitted, the rule the progress tiles use.
  */
-export function ControlRounds({ queue }: { queue: QueueState | undefined }) {
-  const total = queue?.round.total ?? 3;
-  const currentRound = queue?.round.current ?? 1;
+export function ControlRounds({
+  queue,
+  progress,
+  timed,
+}: {
+  queue: QueueState | undefined;
+  progress: Progress | undefined;
+  timed: RoundOverview | undefined;
+}) {
+  const timedOn = timed?.enabled === true;
+  const total = timedOn ? timed.totalRounds : (queue?.round.total ?? 3);
+  const currentRound = timedOn
+    ? Math.max(1, timed.round)
+    : (queue?.round.current ?? 1);
   const [query, setQuery] = useState("");
-  const [picked, setPicked] = useState<number | "all">(currentRound);
-  const round = picked === "all" ? "all" : Math.min(picked, total);
+  // null follows the live round.
+  const [picked, setPicked] = useState<number | "all" | null>(null);
+  const chosen = picked ?? currentRound;
+  const round = chosen === "all" ? "all" : Math.max(1, Math.min(chosen, total));
+
+  // Timed rounds: which stop (round) a judge had at each table.
+  const stopRound = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const j of progress?.judges ?? []) {
+      for (const s of j.stops) map.set(`${j.id}:${s.tableNumber}`, s.position);
+    }
+    return map;
+  }, [progress]);
 
   const resultsQ = api.judging.admin.getTeamResults.useQuery(undefined, {
-    refetchInterval: 15_000,
+    refetchInterval: 3000,
   });
 
   const rows = useMemo(() => {
@@ -47,7 +72,9 @@ export function ControlRounds({ queue }: { queue: QueueState | undefined }) {
           teamId: r.team.id,
           team: r.team.name,
           table: r.team.table,
-          round: i + 1,
+          round: timedOn
+            ? (stopRound.get(`${m.judgeId}:${r.team.table}`) ?? 0)
+            : i + 1,
           judge: m.judgeName,
           score: m.score,
           ratings: m.ratings,
@@ -55,7 +82,7 @@ export function ControlRounds({ queue }: { queue: QueueState | undefined }) {
       });
     }
     return out;
-  }, [resultsQ.data]);
+  }, [resultsQ.data, timedOn, stopRound]);
 
   const q = query.trim().toLowerCase();
   const inRound = rows.filter((r) => round === "all" || r.round === round);
@@ -82,7 +109,9 @@ export function ControlRounds({ queue }: { queue: QueueState | undefined }) {
             Round history
           </h2>
           <p className={`m-0 text-sm ${MUTED}`}>
-            Round N is each team&apos;s Nth judge to score it.
+            {timedOn
+              ? "Scores by round. Round N is each judge's Nth table, same as the timer above."
+              : "Round N is each team's Nth judge to score it."}
           </p>
         </div>
         <div role="group" aria-label="Round" className="flex flex-wrap gap-1">
@@ -99,7 +128,9 @@ export function ControlRounds({ queue }: { queue: QueueState | undefined }) {
               }`}
             >
               Round {n}
-              {n === currentRound ? " (now)" : ""}
+              {n === currentRound && (!timedOn || timed.round > 0)
+                ? " (now)"
+                : ""}
             </button>
           ))}
           <button
@@ -183,7 +214,7 @@ export function ControlRounds({ queue }: { queue: QueueState | undefined }) {
                 <tbody>
                   {shown.map((r) => (
                     <tr
-                      key={`${r.teamId}-${r.round}`}
+                      key={`${r.teamId}-${r.round}-${r.judge}`}
                       className="border-t border-[#e3e7ef]"
                     >
                       <td className={`${TD} font-semibold`}>{r.team}</td>

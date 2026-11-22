@@ -8,7 +8,7 @@
  * - Fire and forget: failures are swallowed and never affect the request.
  * - Disabled unless HW_NETWORK_REQUESTS_INGEST_URL and HW_NETWORK_REQUESTS_INGEST_TOKEN
  *   are both set, and (outside Vercel) HW_NETWORK_REQUESTS_TRACK_LOCAL=true.
- * - High-frequency polling procedures (HOT_PROCEDURES, e.g. `clock.get` every
+ * - High-frequency polling procedures (HOT_PROCEDURES, e.g. `judging.board.getClock` every
  *   2s per client) are not stored row-by-row. They are counted in memory per
  *   minute and flushed as one aggregate row, which keeps D1 writes tiny.
  */
@@ -16,7 +16,7 @@ import { createHmac } from "node:crypto";
 import { waitUntil } from "@vercel/functions";
 import { env } from "~/env";
 
-export const HOT_PROCEDURES = new Set(["clock.get"]);
+export const HOT_PROCEDURES = new Set(["judging.board.getClock"]);
 
 export interface RequestEvent {
   ts: number;

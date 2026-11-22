@@ -3,8 +3,14 @@ import { VenueMap } from "~/components/judging/judge-app/judge-map";
 import { walkHint } from "~/components/judging/judge-app/judge-directions";
 import { type ReactNode } from "react";
 import {
+  RoundClock,
+  RoundWait,
+  type RoundView,
+} from "~/components/judging/judge-app/judge-round";
+import {
   card,
   fullWidth,
+  infoBanner,
   warningBanner,
 } from "~/components/judging/shared/judge-ui";
 
@@ -13,6 +19,7 @@ export type NextPhase =
   | "welcome"
   | "team"
   | "none"
+  | "waitRound"
   | "rescoreReady"
   | "finished";
 
@@ -22,6 +29,10 @@ interface JudgeNextProps {
   teamName: string | null;
   /** Its table, or null when the team isn't seated yet. */
   table: number | null;
+  /** Who is on the team, so the judge knows who to look for. */
+  members?: string[];
+  /** Its round already ended: the judge is finishing it late. */
+  late?: boolean;
   /** The other tables in this judge's queue, marked on the map. */
   tables: number[];
   /** The table the judge just finished, where the walk hint starts. Null for their first team. */
@@ -44,6 +55,14 @@ interface JudgeNextProps {
   starting: boolean;
   /** Shown on the welcome screen above Start judging: the teams lined up. */
   queueList?: ReactNode;
+  /** The timed round, when rounds are on. */
+  round?: RoundView | null;
+  /** This judge's next table and its round, for the waiting screen. */
+  upcoming?: { table: number; round: number } | null;
+  /** This judge already scored their table in the open round. */
+  scoredRound?: boolean;
+  /** This round's table, when its team was marked absent. */
+  absentTable?: number | null;
 }
 
 /** The "Next" tab: a welcome first, then the team the server picked. */
@@ -51,6 +70,8 @@ export function JudgeNext({
   phase,
   teamName,
   table,
+  members = [],
+  late = false,
   tables,
   fromTable,
   seen,
@@ -65,6 +86,10 @@ export function JudgeNext({
   onStartRescore,
   starting,
   queueList,
+  round,
+  upcoming = null,
+  scoredRound = false,
+  absentTable = null,
 }: JudgeNextProps) {
   const errorBanner = error ? (
     <p role="alert" className={warningBanner}>
@@ -80,6 +105,17 @@ export function JudgeNext({
       >
         Finding your next team…
       </p>
+    );
+  }
+
+  if (phase === "waitRound" && round) {
+    return (
+      <RoundWait
+        view={round}
+        upcoming={upcoming}
+        scored={scoredRound}
+        absentTable={absentTable}
+      />
     );
   }
 
@@ -144,9 +180,8 @@ export function JudgeNext({
           </h1>
           <p className="text-base font-medium text-dashboard-text-light">
             You&apos;ve judged all {judged} {judged === 1 ? "team" : "teams"} in
-            your queue. Now go back through each one, this time with their
-            GitHub and Devpost, and settle on your final scores. Once every team
-            is re-scored, you can submit.
+            your queue. Now go back through each one and settle on your final
+            scores. Once every team is re-scored, you can submit.
           </p>
         </section>
         {errorBanner}
@@ -202,7 +237,7 @@ export function JudgeNext({
             id="next-table-label"
             className="text-base font-medium text-dashboard-text-light"
           >
-            Next table
+            {round ? "Your table" : "Next table"}
           </span>
           {hint && (
             <span className="rounded-full bg-dashboard-bg-highlight px-3 py-1 text-sm font-semibold text-dashboard-text-active">
@@ -218,7 +253,25 @@ export function JudgeNext({
             ? `${teamName ?? "This team"} has no table yet. Ask an organizer.`
             : teamName}
         </span>
+        <span className="text-sm leading-snug text-dashboard-text-light">
+          {members.length > 0 ? members.join(", ") : "No members listed"}
+        </span>
       </section>
+
+      {/* Table, time, then the action: on a phone these stay above the fold. */}
+      {late ? (
+        <p role="status" className={infoBanner}>
+          Time ran out for this team. You can still score it now.
+        </p>
+      ) : (
+        round && <RoundClock view={round} nextTable={upcoming?.table ?? null} />
+      )}
+
+      {errorBanner}
+
+      <DashboardButton type="button" onClick={onJudge} className={fullWidth}>
+        Judge this team
+      </DashboardButton>
 
       {table !== null && (
         <section aria-label="Floor map" className={`${card} p-3.5`}>
@@ -230,23 +283,6 @@ export function JudgeNext({
           />
         </section>
       )}
-
-      {/* Placeholder clock: static until the pitch timer is wired up. */}
-      <section
-        aria-label="Presentation time"
-        className={`${card} flex items-center justify-between gap-3 px-4 py-3`}
-      >
-        <span className="text-base font-medium text-dashboard-text-heavy">
-          Presentation
-        </span>
-        <span className="font-mono text-3xl font-bold tabular-nums text-dashboard-text-heavy">
-          02:41
-        </span>
-      </section>
-
-      <DashboardButton type="button" onClick={onJudge} className={fullWidth}>
-        Judge this team
-      </DashboardButton>
     </>
   );
 }

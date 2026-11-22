@@ -1,9 +1,11 @@
 import { TRPCError } from "@trpc/server";
 import { and, asc, eq, inArray } from "drizzle-orm";
 
+import { env } from "~/env";
 import { type Transaction, db } from "~/server/db";
 import {
   judgingAssignments,
+  judgingRound,
   judgingSettings,
   judgingTables,
 } from "~/server/db/schema";
@@ -14,6 +16,15 @@ import {
 } from "~/server/judging/layout";
 
 export type Tx = Transaction | typeof db;
+
+/**
+ * Restarting a rehearsal wipes judging scores, so it only works on Vercel
+ * preview deploys (the dev branch and PR previews, which use the dev
+ * database). Never on the production deploy, and not on a local server.
+ */
+export function rehearsalRestartAllowed(): boolean {
+  return (process.env.VERCEL_ENV ?? env.VERCEL_ENV) === "preview";
+}
 export type StopStatus = (typeof judgingAssignments.$inferSelect)["status"];
 
 /** Statuses a stop can still move out of. */
@@ -50,8 +61,17 @@ export async function getSettings(
   return { ...settings, perRow: tablesPerRow(settings) };
 }
 
-/** Judging has started once any stop is in progress or finished. */
+/**
+ * Judging has started once a round has been started, or any stop is in
+ * progress or finished. The round counts on its own: round 1 can be running
+ * before any judge has pressed "Judge this team".
+ */
 export async function isJudgingStarted(tx: Tx = db): Promise<boolean> {
+  const [round] = await tx
+    .select({ current: judgingRound.currentRound })
+    .from(judgingRound)
+    .where(eq(judgingRound.id, 1));
+  if ((round?.current ?? 0) > 0) return true;
   const started = await tx.query.judgingAssignments.findFirst({
     where: inArray(judgingAssignments.status, STARTED_STATUSES),
     columns: { id: true },
