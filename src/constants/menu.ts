@@ -250,8 +250,8 @@ export const menu: Record<MenuDay, Meal[]> = {
           tags: ["Halal", "Vegan", "Nut-free"],
         },
         {
-          name: "Pandan Coconut Muffin",
-          tags: ["Halal", "Vegan", "Gluten-free", "Nut-free", "Sesame-free"],
+          // Dietary tags left off until Daniel confirms them.
+          name: "Chocolate Chip Muffin",
         },
         {
           name: "Coffee",
