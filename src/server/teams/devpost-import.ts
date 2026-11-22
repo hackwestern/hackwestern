@@ -140,6 +140,7 @@ export interface ParsedProject {
   githubUrl: string | null;
   tracks: Track[];
   unknownPrizes: string[];
+  techStack: string[];
   ids: string[];
   typos: string[];
   /** Names Devpost lists for the team (submitter first). Never emails. */
@@ -159,6 +160,7 @@ const COL = {
   submittedAt: "Project Submitted At",
   links: '"Try it out" Links',
   prizes: "Opt-In Prizes",
+  builtWith: "Built With",
   submitterFirst: "Submitter First Name",
   submitterLast: "Submitter Last Name",
   member1First: "Team Member 1 First Name",
@@ -226,6 +228,20 @@ export function mapPrizes(raw: string): {
     .map((p) => p.trim())
     .filter(Boolean);
   return { tracks: [...tracks], unknown };
+}
+
+/** "Built With" tags, comma-separated; repeats dropped ignoring case. */
+export function parseBuiltWith(raw: string): string[] {
+  const seen = new Set<string>();
+  return raw
+    .split(",")
+    .map((t) => t.trim())
+    .filter((t) => {
+      const key = t.toLowerCase();
+      if (!t || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
 
 export function parseDevpostExport(text: string): ParseResult {
@@ -310,6 +326,7 @@ export function parseDevpostExport(text: string): ParseResult {
       githubUrl: pickGithubUrl(clean(row[at.links])),
       tracks,
       unknownPrizes: unknown,
+      techStack: parseBuiltWith(clean(row[at.builtWith])),
       ids,
       typos,
       members,
@@ -480,6 +497,7 @@ export async function applyImport(plan: PlannedTeam[]): Promise<ApplySummary> {
         submissionStatus: "submitted" as const,
         submittedAt: project.submittedAt,
         tracks: project.tracks,
+        techStack: project.techStack,
         importFlags: flags.length > 0 ? flags : null,
       };
       if (flags.length > 0) summary.flaggedTeams += 1;
