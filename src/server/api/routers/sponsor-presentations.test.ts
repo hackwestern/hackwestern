@@ -805,6 +805,34 @@ describe("presentationEmail", () => {
 });
 
 describe("presentationDmMessage", () => {
+  test("PCBWay gets station judging instructions in Slack and email", () => {
+    const slots = [{ sponsorName: "PCB Way", room: "Rm 2235", start: 624 }];
+    const slack = presentationDmMessage("Team", slots);
+    const email = presentationEmail({ name: "Avery" }, "Team", slots);
+    for (const message of [JSON.stringify(slack), email.text, email.html]) {
+      expect(message).toContain("10:00am – 11:00am");
+      expect(message).toContain("Location: Rm 2235");
+      expect(message).toContain("No time slots. Judges will come to you");
+      expect(message).not.toContain("10:24 AM");
+      expect(message).not.toContain("min pitch");
+    }
+    expect(slack.text).toBe("🏆 You're selected for PCBWay!");
+  });
+
+  test("a team selected by PCBWay and another sponsor still sees the other slot", () => {
+    const slots = [
+      { sponsorName: "PCBWay", room: "Rm 2235", start: 624 },
+      { sponsorName: "QNX", room: "Rm 2110", start: 630 },
+    ];
+    for (const message of [
+      JSON.stringify(presentationDmMessage("Team", slots)),
+      presentationEmail({ name: "Avery" }, "Team", slots).text,
+    ]) {
+      expect(message).toContain("10:00am – 11:00am");
+      expect(message).toContain("10:30 AM: QNX, Rm 2110");
+    }
+  });
+
   test("lists times in order and escapes names", () => {
     const msg = presentationDmMessage("A<b>", [
       { sponsorName: "QNX", room: "Rm 2235", start: 620 },

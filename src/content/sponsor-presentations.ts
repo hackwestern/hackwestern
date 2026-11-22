@@ -4,6 +4,7 @@
 // not in components.
 
 import { PRESENTATION_SLOTS_PER_ROOM } from "~/lib/sponsor-presentations";
+import { sponsorNameKey } from "~/lib/sponsor-prize-tracks";
 
 const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
@@ -11,6 +12,27 @@ const plural = (n: number, one: string, many: string) =>
 /** "3 min pitch · 2 min Q&A": what one presentation slot holds. */
 export const presentationFormat = (pitch: number, qa: number) =>
   `${pitch} min pitch · ${qa} min Q&A`;
+
+export const isPCBWay = (sponsor: string) =>
+  sponsorNameKey(sponsor) === "pcbway";
+
+export const pcbWayJudgingCopy = {
+  heading: "🏆 You're selected for PCBWay!",
+  window: "10:00am – 11:00am",
+  setup: (room: string) =>
+    `Have your hardware set up, powered, and ready for judging in ${room}.`,
+  stay: "No time slots. Judges will come to you, so please stay at your station the entire time.",
+};
+
+export function pcbWayJudgingLines(room: string) {
+  return [
+    pcbWayJudgingCopy.heading,
+    `📍 Location: ${room}`,
+    `⏳ Judging: ${pcbWayJudgingCopy.window}`,
+    `• ${pcbWayJudgingCopy.setup(room)}`,
+    `• ${pcbWayJudgingCopy.stay}`,
+  ];
+}
 
 export const sponsorPresentationsCopy = {
   /** Organizer, ?tab=judging. */

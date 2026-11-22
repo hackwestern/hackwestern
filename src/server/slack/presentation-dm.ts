@@ -1,4 +1,9 @@
-import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
+import {
+  isPCBWay,
+  pcbWayJudgingCopy,
+  pcbWayJudgingLines,
+  sponsorPresentationsCopy,
+} from "~/content/sponsor-presentations";
 import {
   formatPresentationTime,
   PRESENTATION_PITCH_MINUTES,
@@ -50,35 +55,48 @@ export function presentationDmMessage(
 ) {
   const lines = [...slots]
     .sort((a, b) => a.start - b.start)
-    .map((s) =>
-      copy.line(
-        formatPresentationTime(s.start),
-        escapeSlackText(s.sponsorName),
-        escapeSlackText(s.room),
-      ),
+    .flatMap((s) =>
+      isPCBWay(s.sponsorName)
+        ? ["", ...pcbWayJudgingLines(escapeSlackText(s.room)), ""]
+        : copy.line(
+            formatPresentationTime(s.start),
+            escapeSlackText(s.sponsorName),
+            escapeSlackText(s.room),
+          ),
     );
+  const hasStandardSlots = slots.some((slot) => !isPCBWay(slot.sponsorName));
+  const pcbWayOnly = slots.length > 0 && !hasStandardSlots;
   return {
-    text: copy.text(teamName),
+    text: pcbWayOnly ? pcbWayJudgingCopy.heading : copy.text(teamName),
     blocks: [
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: [copy.heading(escapeSlackText(teamName)), ...lines].join("\n"),
+          text: [
+            ...(pcbWayOnly ? [] : [copy.heading(escapeSlackText(teamName))]),
+            ...lines,
+          ]
+            .join("\n")
+            .trim(),
         },
       },
-      {
-        type: "context",
-        elements: [
-          {
-            type: "mrkdwn",
-            text: copy.footer(
-              PRESENTATION_PITCH_MINUTES,
-              PRESENTATION_QA_MINUTES,
-            ),
-          },
-        ],
-      },
+      ...(!pcbWayOnly
+        ? [
+            {
+              type: "context",
+              elements: [
+                {
+                  type: "mrkdwn",
+                  text: copy.footer(
+                    PRESENTATION_PITCH_MINUTES,
+                    PRESENTATION_QA_MINUTES,
+                  ),
+                },
+              ],
+            },
+          ]
+        : []),
       ...(confirm && !result
         ? [
             {
