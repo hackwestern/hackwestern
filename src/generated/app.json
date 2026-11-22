@@ -17069,31 +17069,31 @@
                 "properties": {
                   "adventurous": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "creativity": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "design": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "impact": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "technical": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   }
@@ -17111,7 +17111,7 @@
           },
           "score": {
             "maximum": 10,
-            "minimum": 0,
+            "minimum": 1,
             "type": "number"
           },
           "teamMarkId": {
@@ -18000,31 +18000,31 @@
                 "properties": {
                   "adventurous": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "creativity": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "design": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "impact": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   },
                   "technical": {
                     "maximum": 10,
-                    "minimum": 0,
+                    "minimum": 1,
                     "multipleOf": 0.5,
                     "type": "number"
                   }
@@ -18042,7 +18042,7 @@
           },
           "score": {
             "maximum": 10,
-            "minimum": 0,
+            "minimum": 1,
             "type": "number"
           },
           "teamId": {
