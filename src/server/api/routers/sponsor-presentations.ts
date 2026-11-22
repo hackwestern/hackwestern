@@ -645,12 +645,10 @@ export const sponsorPresentationsRouter = createTRPCRouter({
    * Open or close round 2 for every sponsor. While open, a sponsor with a
    * placed slot ranks the teams that presented and submits a top
    * SPONSOR_FINAL_TOP (sponsorScoring.submit refuses while closed).
-   * Opening needs a schedule with at least one placed slot.
    */
   setRound2: protectedOrganizerProcedure
     .input(z.object({ open: z.boolean() }))
     .mutation(async ({ input }) => {
-      // Opening with nothing scheduled is refused inside setRound2Open.
       const openedAt = await setRound2Open(input.open);
       // The tab's round 2 column says whether ranking is open. (The
       // manual "Sync to sheet" button is gone: every judging change
@@ -690,16 +688,29 @@ export const sponsorPresentationsRouter = createTRPCRouter({
   }),
 
   /**
-   * The signed-in hacker's team's presentations, once any member of the
-   * team was sent these exact times (Slack or email) (so /live and Slack agree; a
-   * reschedule that changes them hides them until notified again).
+   * The signed-in hacker's assigned presentation times and rooms from the
+   * current saved schedule.
    */
   mine: protectedProcedure.query(async ({ ctx }) => {
-    const { slots } = await teamPresentationsFor(ctx.session.user.id);
-    return slots.map(({ sponsorName, room, start }) => ({
-      sponsorName,
-      room,
-      start,
-    }));
+    const rows = await db
+      .select({
+        sponsorName: sponsorJudgingSponsors.name,
+        room: sponsorPresentations.room,
+        start: sponsorPresentations.startMinute,
+      })
+      .from(sponsorPresentations)
+      .innerJoin(users, eq(users.teamId, sponsorPresentations.teamId))
+      .innerJoin(
+        sponsorJudgingSponsors,
+        eq(sponsorJudgingSponsors.id, sponsorPresentations.sponsorId),
+      )
+      .where(eq(users.id, ctx.session.user.id))
+      .orderBy(sponsorPresentations.startMinute, sponsorJudgingSponsors.name);
+    return rows.flatMap(({ sponsorName, room, start }) => {
+      const assignedRoom = room?.trim();
+      return start !== null && assignedRoom
+        ? [{ sponsorName, room: assignedRoom, start }]
+        : [];
+    });
   }),
 });

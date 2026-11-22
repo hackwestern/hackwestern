@@ -167,12 +167,7 @@ export const sponsorJudgingCopy = {
   },
 
   scope: {
-    label: "Which projects",
-    mine: (n: number) => `Your ${n}`,
-    all: (n: number) => `Everyone's ${n}`,
     owner: (name: string) => `${firstName(name)}'s list`,
-    split: (n: number) =>
-      `The projects are split evenly between ${plural(n, "rep", "reps")}. Anyone can still score any project.`,
   },
 
   one: {

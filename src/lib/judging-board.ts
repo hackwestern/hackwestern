@@ -9,9 +9,83 @@
  */
 import { runOfShowInstant } from "~/lib/run-of-show-time";
 import {
+  gapViolations,
   PRESENTATION_SLOT_MINUTES,
   PRESENTATION_WINDOW_END,
 } from "~/lib/sponsor-presentations";
+
+export function round2ScheduleWarnings(board: {
+  sponsors: readonly {
+    sponsorId: string;
+    name: string;
+    mode: "room" | "remote";
+    room: string | null;
+    shortlistSentAt: Date | null;
+    teams: number;
+  }[];
+  slots: readonly {
+    sponsorId: string;
+    teamId: string;
+    teamName: string;
+    room: string;
+    start: number;
+  }[];
+}): string[] {
+  const warnings: string[] = [];
+  const sponsorsByRoom = new Map<string, string[]>();
+  const inPerson = board.sponsors.filter((sponsor) => sponsor.mode === "room");
+  if (inPerson.length > 0 && board.slots.length === 0) {
+    warnings.push("No presentation times have been scheduled.");
+  }
+  for (const sponsor of board.sponsors) {
+    if (!sponsor.shortlistSentAt) {
+      warnings.push(`${sponsor.name}: no submitted shortlist.`);
+    }
+    if (sponsor.mode !== "room") continue;
+    const slots = board.slots.filter(
+      (slot) => slot.sponsorId === sponsor.sponsorId,
+    );
+    const room = sponsor.room?.trim();
+    if (!room || slots.some((slot) => !slot.room.trim())) {
+      warnings.push(`${sponsor.name}: missing a judging room.`);
+    }
+    if (room) {
+      const key = room.toLowerCase();
+      const names = sponsorsByRoom.get(key) ?? [];
+      names.push(sponsor.name);
+      sponsorsByRoom.set(key, names);
+      if (
+        slots.some(
+          (slot) => slot.room.trim() && slot.room.trim().toLowerCase() !== key,
+        )
+      ) {
+        warnings.push(
+          `${sponsor.name}: the room on the schedule differs from its assigned room.`,
+        );
+      }
+    }
+    const unscheduled = sponsor.teams - slots.length;
+    if (unscheduled > 0) {
+      warnings.push(
+        `${sponsor.name}: ${unscheduled} shortlisted ${unscheduled === 1 ? "team has" : "teams have"} no presentation time.`,
+      );
+    }
+  }
+  for (const [room, names] of sponsorsByRoom) {
+    if (names.length > 1) warnings.push(`${names.join(", ")} share ${room}.`);
+  }
+  const byTeam = new Map(
+    board.slots.map((slot) => [slot.teamId, slot.teamName]),
+  );
+  for (const id of new Set(
+    gapViolations(board.slots).map(({ teamId }) => teamId),
+  )) {
+    warnings.push(
+      `${byTeam.get(id)}: presentation times are too close together.`,
+    );
+  }
+  return warnings;
+}
 
 /** Round 1 shortlists are due 9:45 AM Sunday (Jazz, 2026-11-20). */
 export const SHORTLIST_DUE = 9 * 60 + 45;

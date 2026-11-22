@@ -396,8 +396,10 @@ describe("sponsorPresentations.notify", () => {
     const hacker = createCaller(
       createInnerTRPCContext({ session: hackerSession }),
     );
-    // Not notified yet: nothing on /live.
-    expect(await hacker.sponsorPresentations.mine()).toEqual([]);
+    // The saved schedule is visible before anyone is notified.
+    expect(await hacker.sponsorPresentations.mine()).toEqual([
+      { sponsorName: s.name, room: "Rm 2235", start: 600 },
+    ]);
 
     const res = await organizer.sponsorPresentations.notify();
     expect(res).toMatchObject({ sent: 1, failed: 0, notOnSlack: [] });
@@ -647,6 +649,25 @@ describe("sponsorPresentations.notify", () => {
 });
 
 describe("sponsorPresentations.schedule and notices", () => {
+  test("a presentation appears only for its team and once it has a room", async () => {
+    const s = await sponsor();
+    const t = await team();
+    const hacker = await member(t);
+    const other = await member(await team());
+    await send(s.id, [t]);
+    await organizer.sponsorPresentations.schedule();
+    expect(await hacker.caller.sponsorPresentations.mine()).toEqual([]);
+
+    await organizer.sponsorPresentations.setRoom({
+      sponsorId: s.id,
+      room: "Rm 2235",
+    });
+    expect(await hacker.caller.sponsorPresentations.mine()).toEqual([
+      { sponsorName: s.name, room: "Rm 2235", start: 600 },
+    ]);
+    expect(await other.caller.sponsorPresentations.mine()).toEqual([]);
+  });
+
   test("rescheduling keeps members notified when their times don't change", async () => {
     slackToken = "xoxb-test";
     const { s, t } = await scheduledTeam("Rm 2110");
@@ -673,9 +694,11 @@ describe("sponsorPresentations.schedule and notices", () => {
       expect.objectContaining({ room: "Rm 2110" }),
     ]);
 
-    // Stored: /live hides the new times until they're sent.
+    // The tab shows the new room immediately. Notices still need resending.
     await organizer.sponsorPresentations.schedule();
-    expect(await hacker.caller.sponsorPresentations.mine()).toEqual([]);
+    expect(await hacker.caller.sponsorPresentations.mine()).toEqual([
+      expect.objectContaining({ room: "Rm 3000" }),
+    ]);
     const { notices } = await organizer.sponsorPresentations.overview();
     expect(notices.notReached).toEqual([
       expect.objectContaining({ reason: "not-sent" }),
@@ -703,23 +726,11 @@ describe("sponsorPresentations.schedule and notices", () => {
 });
 
 describe("sponsorPresentations.setRound2", () => {
-  test("organizers open and close round 2; opening needs a schedule", async () => {
+  test("only organizers can open or close round 2", async () => {
     await expect(
       anon.sponsorPresentations.setRound2({ open: true }),
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     await organizer.sponsorPresentations.setRound2({ open: false });
-    await expect(
-      organizer.sponsorPresentations.setRound2({ open: true }),
-    ).rejects.toMatchObject({
-      code: "BAD_REQUEST",
-      message:
-        "Schedule presentations before opening round 2. No team has a presentation slot yet.",
-    });
-    expect(
-      (await organizer.sponsorPresentations.overview()).round2OpenedAt,
-    ).toBeNull();
-
-    await scheduledTeam();
     const opened = await organizer.sponsorPresentations.setRound2({
       open: true,
     });
@@ -740,15 +751,8 @@ describe("sponsorPresentations.setRound2", () => {
   });
 });
 
-describe("setRound2Open (the shared guard)", () => {
-  test("refuses to open with nothing scheduled, or only unplaced teams", async () => {
-    const message =
-      "Schedule presentations before opening round 2. No team has a presentation slot yet.";
-    await expect(setRound2Open(true)).rejects.toMatchObject({
-      code: "BAD_REQUEST",
-      message,
-    });
-    // A schedule where nothing fit (no room) still has no slot.
+describe("setRound2Open", () => {
+  test("allows organizers to proceed with only unplaced teams", async () => {
     const s = await sponsor();
     await db.insert(sponsorPresentations).values({
       sponsorId: s.id,
@@ -756,9 +760,8 @@ describe("setRound2Open (the shared guard)", () => {
       room: null,
       startMinute: null,
     });
-    await expect(setRound2Open(true)).rejects.toMatchObject({ message });
-    expect(await round2OpenedAt()).toBeNull();
-    // Closing always works.
+    expect(await setRound2Open(true)).toBeInstanceOf(Date);
+    expect(await round2OpenedAt()).toBeInstanceOf(Date);
     await expect(setRound2Open(false)).resolves.toBeNull();
   });
 });

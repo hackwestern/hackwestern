@@ -15,6 +15,7 @@ import ContactUs from "~/components/live/contact-us";
 import Activities from "~/components/live/activities";
 import Rewards from "~/components/live/rewards";
 import CoffeeChats from "~/components/live/coffee-chats";
+import SponsorJudging from "~/components/live/sponsor-judging";
 import Sidebar from "~/components/live/sidebar";
 import Topbar from "~/components/live/topbar";
 import { authOptions } from "~/server/auth";
@@ -97,6 +98,8 @@ const TabComponent = ({
     // need one place to look up their chats. Organizers use the coffee board.
     case "coffee-chats":
       return isOrganizer ? <Home isOrganizer /> : <CoffeeChats />;
+    case "judging":
+      return isOrganizer ? <Home isOrganizer /> : <SponsorJudging />;
     default:
       return <Home isOrganizer={isOrganizer} />;
   }

@@ -395,6 +395,7 @@ const SIDEBAR_ICONS: Record<string, LucideIcon> = {
   mentors: GraduationCap,
   sponsors: Handshake,
   "coffee-chats": Coffee,
+  judging: Gavel,
   scan: ScanLine,
   judge: Gavel,
   activities: ClipboardList,

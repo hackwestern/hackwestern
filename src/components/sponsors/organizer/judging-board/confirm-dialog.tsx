@@ -17,7 +17,9 @@ export function ConfirmDialog({
   open,
   heading,
   body,
+  warnings,
   ok,
+  okDisabled = false,
   cancel,
   onOk,
   onClose,
@@ -25,7 +27,9 @@ export function ConfirmDialog({
   open: boolean;
   heading: string;
   body: string;
+  warnings?: readonly string[];
   ok: string;
+  okDisabled?: boolean;
   cancel: string;
   onOk: () => void;
   onClose: () => void;
@@ -48,10 +52,21 @@ export function ConfirmDialog({
           <AlertDialog.Description className="m-0 text-base text-dashboard-text-medium">
             {body}
           </AlertDialog.Description>
+          {!!warnings?.length && (
+            <div className="rounded-dashboard-md border-l-4 border-dashboard-text-warning bg-dashboard-status-iconBadge p-3 text-sm text-dashboard-text-heavy">
+              <p className="m-0 font-semibold">Schedule warnings</p>
+              <ul className="mb-0 mt-2 list-disc space-y-1 pl-5">
+                {warnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="flex flex-col gap-2 sm:flex-row-reverse">
             <AlertDialog.Action asChild>
               <DashboardButton
                 variant="primary"
+                disabled={okDisabled}
                 className={cn("min-h-11 sm:w-auto sm:px-5", dangerButton)}
                 onClick={onOk}
               >

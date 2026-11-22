@@ -27,7 +27,6 @@ import {
 const copy = sponsorJudgingCopy;
 const VIEWS = ["one", "list"] as const;
 type View = (typeof VIEWS)[number];
-type Scope = "mine" | "all";
 const VIEW_KEY = "hw13-sponsor-judging-view";
 /**
  * How long after a rep's last score change One at a time moves on. The
@@ -59,8 +58,8 @@ function saveView(view: View) {
  * the score slider and the step tabs already use those keys. No other
  * modes (Jazz, 2026-11-19). Several reps share the login: "Who's judging?"
  * first, then each score is that rep's. With two or more reps the list is
- * split evenly between them ("Your 6" / "Everyone's 18"); anyone can still
- * score any project.
+ * labelled with suggested owners when multiple reps are scoring. Everyone
+ * can browse and score any project.
  */
 export function BrowseProjects({
   me,
@@ -81,7 +80,6 @@ export function BrowseProjects({
 }) {
   const [view, setView] = useState<View>("one");
   useEffect(() => setView(readView()), []);
-  const [scope, setScope] = useState<Scope>("mine");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<BrowseFilter>("all");
   const [sort, setSort] = useState<BrowseSort>("name");
@@ -108,16 +106,7 @@ export function BrowseProjects({
     }
     return out;
   }, [data.teams, judges, split]);
-  const mine = useMemo(
-    () =>
-      me
-        ? data.teams.filter(
-            (t) => judgeKey(owners.get(t.id) ?? "") === judgeKey(me),
-          )
-        : [],
-    [data.teams, owners, me],
-  );
-  const scoped = split && scope === "mine" ? mine : data.teams;
+  const scoped = data.teams;
 
   const myScore = (teamId: string) =>
     me
@@ -211,45 +200,12 @@ export function BrowseProjects({
             </button>
           ))}
         </div>
-        {split && (
-          <div className="flex flex-col gap-1.5">
-            <div
-              role="group"
-              aria-label={copy.scope.label}
-              className="flex flex-wrap gap-1.5"
-            >
-              <DashboardChip
-                selected={scope === "mine"}
-                onClick={() => {
-                  setScope("mine");
-                  go(0);
-                }}
-                className="min-h-11 md:min-h-9"
-              >
-                {copy.scope.mine(mine.length)}
-              </DashboardChip>
-              <DashboardChip
-                selected={scope === "all"}
-                onClick={() => {
-                  setScope("all");
-                  go(0);
-                }}
-                className="min-h-11 md:min-h-9"
-              >
-                {copy.scope.all(data.teams.length)}
-              </DashboardChip>
-            </div>
-            <p className="m-0 text-sm text-dashboard-text-light">
-              {copy.scope.split(judges.length)}
-            </p>
-          </div>
-        )}
       </div>
 
       {data.teams.length === 0 ? (
         <Empty>{copy.browse.noTeams(data.sponsorTrack)}</Empty>
       ) : view === "one" ? (
-        scoped.length === 0 || !current ? (
+        !current ? (
           <Empty>{copy.browse.noFilterMatch}</Empty>
         ) : (
           <div className="flex flex-col gap-3">
