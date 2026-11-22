@@ -3,12 +3,67 @@ import {
   boardTodos,
   judgingDayMinutes,
   leadOf,
+  round2ScheduleWarnings,
   smsHref,
   sponsorCountByTeam,
   sponsorLine,
   teamStatus,
   type BoardSponsor,
 } from "./judging-board";
+
+it("warns about missing rooms, missing shortlists and conflicting times", () => {
+  expect(
+    round2ScheduleWarnings({
+      sponsors: [
+        {
+          sponsorId: "a",
+          name: "Alpha",
+          mode: "room",
+          room: null,
+          shortlistSentAt: new Date(),
+          teams: 2,
+        },
+        {
+          sponsorId: "b",
+          name: "Beta",
+          mode: "room",
+          room: "Rm 2235",
+          shortlistSentAt: new Date(),
+          teams: 1,
+        },
+        {
+          sponsorId: "c",
+          name: "Gamma",
+          mode: "remote",
+          room: null,
+          shortlistSentAt: null,
+          teams: 0,
+        },
+      ],
+      slots: [
+        {
+          sponsorId: "a",
+          teamId: "t",
+          teamName: "Team T",
+          room: "",
+          start: 600,
+        },
+        {
+          sponsorId: "b",
+          teamId: "t",
+          teamName: "Team T",
+          room: "Rm 2235",
+          start: 606,
+        },
+      ],
+    }),
+  ).toEqual([
+    "Alpha: missing a judging room.",
+    "Alpha: 1 shortlisted team has no presentation time.",
+    "Gamma: no submitted shortlist.",
+    "Team T: presentation times are too close together.",
+  ]);
+});
 
 const at = (h: number, m = 0) => h * 60 + m;
 

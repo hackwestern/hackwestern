@@ -29,6 +29,7 @@ export const sponsorJudgingBoardCopy = {
     noLead: "No lead's phone on file",
     needsRoom: (sponsor: string) => `${sponsor} needs a room`,
     notifyButton: "Notify teams",
+    round2First: "Open round 2 before notifying teams.",
     /** Next to the disabled button until every sponsor has a room. */
     roomsFirst: (n: number) => `Give every sponsor a room first (${n} to go).`,
     notifying: "Notifying…",

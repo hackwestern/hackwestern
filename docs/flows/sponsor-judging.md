@@ -4,13 +4,13 @@ How sponsor track judging should run, and what the site does at each step.
 
 ## The day
 
-| Time | What happens |
-|---|---|
-| 8:30 to 9:00 | Sponsor judging workshop. We show sponsors the portal. |
-| 9:00 to 10:00 | Round 1. Sponsors go through the Devposts in their track on the portal and shortlist teams. |
-| 10:00 to 11:48 | Presentations. Each sponsor track has a room and shortlisted teams come in to present. |
-| After 11:48 | Round 2. Each sponsor ranks 3–5 teams that presented. |
-| Then | The web team runs the cheat check on every ranked team. |
+| Time           | What happens                                                                                |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| 8:30 to 9:00   | Sponsor judging workshop. We show sponsors the portal.                                      |
+| 9:00 to 10:00  | Round 1. Sponsors go through the Devposts in their track on the portal and shortlist teams. |
+| 10:00 to 11:48 | Presentations. Each sponsor track has a room and shortlisted teams come in to present.      |
+| After 11:48    | Round 2. Each sponsor ranks 3–5 teams that presented.                                       |
+| Then           | The web team runs the cheat check on every ranked team.                                     |
 
 Sponsor rooms so far: Scotiabank in Rm 2110, Canada Life in Rm 2230, QNX in Rm 2235.
 
@@ -32,12 +32,12 @@ Sponsors don't book times. We run the automation:
 2. A team is never double booked. If a team is on 3 sponsors' shortlists, its 3 slots never overlap: each one starts at least 10 minutes after the last one started, so there are at least 4 minutes to walk to the next room.
 3. The schedule is rearranged automatically to make that work. Organizers don't move slots by hand.
 4. If a team can't fit (too many teams, not enough slots), it's flagged for organizers instead of silently dropped.
-5. Hackers get a Slack message with their room and time for each sponsor, and see the same on their dashboard. A hacker who isn't on Slack gets the same times by email.
+5. Hackers get a Slack message with their room and time for each sponsor, and can look up the current schedule in the hacker Live Judging tab. A hacker who isn't on Slack gets the same times by email.
 6. Once scheduled, sponsors see each team's presentation time on their shortlist, with "Each presentation: 3 min pitch · 2 min Q&A".
 
 ## Round 2: final rankings
 
-From the teams that presented, each sponsor ranks 3–5 teams and sends it to us. A team that didn't present isn't in the round 2 list. Round 2 opens when an organizer presses "Open round 2" after presentations (it can't open until at least one team has a presentation slot); until then sponsors see their sent shortlist and can't submit a final ranking.
+From the teams that presented, each sponsor ranks 3–5 teams (all of them when fewer presented) and sends it to us. A team that didn't present isn't in the round 2 list. Round 2 opens when an organizer presses "Open round 2" after presentations; until then sponsors see their sent shortlist and can't submit a final ranking. The confirmation lists missing rooms, incomplete schedules and conflicts. Organizers can continue after reviewing the warnings.
 
 A sponsor with no presentation slot can't rank in round 2 (Jazz). Nobody presented to them, so the page says round 2 is locked and to ask us to schedule again, and the server refuses their final ranking.
 
@@ -54,7 +54,7 @@ The web team runs the cheat check on every team in any sponsor's final ranking b
 - **Portal (`/sponsors/<id>/picks`, prize track sponsors only):** browse the track's Devposts, score out of 10, shortlist. A "Send shortlist" step ends round 1. Once organizers open round 2, the same page switches to it: rank and submit 3–5 teams, picked only from the teams that presented. Before that it shows the sent shortlist and says round 2 opens after presentations.
 - **Organizer, Sponsor judging tab (`?tab=judging`):** who has sent a shortlist, a "Schedule presentations" button, the schedule by room and by team (with any team that couldn't fit), "Notify hackers", "Open round 2" (with a confirm; "Close round 2" undoes it), a By hacker view (every scheduled hacker by team with their slots and how they heard: Slack sent or emailed with the time, not on Slack, failed, not sent yet; filter by room or to Not reached), and Final results (each sponsor's submitted teams in rank order with Devpost link, the team's hackers and the submit time, or "Not submitted yet").
 - **Scheduler rule:** slots are 6 minutes from 10:00 (18 per room to 11:48), one room per sponsor. A team's presentations never overlap, and each starts at least 10 minutes after its previous one. A sponsor without a room still gets its times (its own column on the board); typing the room fills it in and keeps every time. When gaps don't let everyone fit by 11:48, slots carry on past it and the board marks them "Runs past 11:48 AM" with how far over the last one ends; no team is hidden.
-- **Hackers:** each team member gets a Slack DM with their rooms and times when the schedule is sent (or an email if Slack can't find them), and sees them on their dashboard once anyone on their team has been sent those times. Slack looks them up by the email they use on Slack (set in the notification center on /live) first, then the email they applied with; the email always goes to the email they applied with. The times also show in the /live notification center with how they were sent (Slack DM or Email).
+- **Hackers:** each team member gets a Slack DM with their rooms and times when the schedule is sent (or an email if Slack can't find them). Once organizers open Round 2, the Live Judging tab shows saved presentations that have both a time and room. Organizers can send Slack or email notices after opening Round 2. Slack looks them up by the email they use on Slack (set in the notification center on /live) first, then the email they applied with; the email always goes to the email they applied with. The times also show in the /live notification center with how they were sent (Slack DM or Email).
 - **Notify, per member:** "Notify hackers" only messages members who don't have their current times yet (never sent, failed, or their times changed; someone emailed because they're not on Slack counts as reached), so pressing it twice or retrying never messages anyone twice. "Notify again" resends to everyone after a confirm. The tab lists members neither Slack nor email reached, and why. Scheduling again keeps members notified when their team's times don't change, and the confirm step says how many hackers who already have their times would get new ones.
 - **Cheat check:** all ranked teams go to the existing cheat check.
 - **Sponsor Judging tab:** the app writes a "Sponsor Judging" tab in the Spon Team RUN OF SHOW sheet, one way from the database. It's rewritten whenever a shortlist is sent, presentations are scheduled, hackers are notified, a room changes, round 2 opens or closes, a rep scores (calls in a burst share one write) or a top 5 is submitted. There's no manual "Sync to sheet" button (Jazz, 2026-11-20). Edits in the tab are overwritten. It has a note row with the update time, then two tables:

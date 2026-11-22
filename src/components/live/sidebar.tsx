@@ -28,6 +28,7 @@ export const SidebarNav = ({
         <SectionLink tab="sponsors" name="Sponsors" />
         <RoundsNavItem isOrganizer={isOrganizer} />
         {!isOrganizer && <SectionLink tab="coffee-chats" name="Coffee Chats" />}
+        {!isOrganizer && <SectionLink tab="judging" name="Judging" />}
         {!isOrganizer && (
           <SectionLink tab="scavenger-hunt" name="Scavenger Hunt" />
         )}

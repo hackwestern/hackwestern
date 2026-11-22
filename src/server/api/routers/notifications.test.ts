@@ -1,3 +1,4 @@
+import { setRound2Open } from "~/server/api/utils/sponsor-judging-settings";
 import { faker } from "@faker-js/faker";
 import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -190,6 +191,10 @@ describe("notifications router", () => {
       sentAt: new Date(),
     });
 
+    await setRound2Open(false);
+    const closed = await caller.notifications.center();
+    expect(closed.notices.map((notice) => notice.kind)).toEqual(["coffeeChat"]);
+    await setRound2Open(true);
     const before = await caller.notifications.center();
     expect(before.unread).toBe(2);
     expect(before.notices).toEqual(

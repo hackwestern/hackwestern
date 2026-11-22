@@ -9,6 +9,8 @@ import { sponsorPresentationsCopy } from "~/content/sponsor-presentations";
 import { formatSubmittedTime } from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
 import { api } from "~/utils/api";
+import { ConfirmDialog } from "./confirm-dialog";
+import { round2ScheduleWarnings } from "~/lib/judging-board";
 
 const copy = sponsorPresentationsCopy.organizer;
 const NOTE = "m-0 text-sm font-medium text-dashboard-text-medium";
@@ -30,10 +32,16 @@ export function AfterPresentations() {
     retry: 1,
   });
   const [confirming, setConfirming] = useState<boolean | null>(null);
+  const board = api.sponsorPresentations.board.useQuery(undefined, {
+    enabled: confirming === true,
+    staleTime: 0,
+    retry: false,
+  });
   const round2 = api.sponsorPresentations.setRound2.useMutation({
     onSuccess: () => {
       setConfirming(null);
       void utils.sponsorPresentations.overview.invalidate();
+      void utils.sponsorPresentations.board.invalidate();
     },
   });
   const data = overview.data;
@@ -58,52 +66,48 @@ export function AfterPresentations() {
         >
           {round2Open
             ? copy.round2.openSince(formatSubmittedTime(data.round2OpenedAt!))
-            : data.slots.length > 0
-              ? copy.round2.closed
-              : sponsorPresentationsCopy.errors.round2NoSchedule}
+            : copy.round2.closed}
         </p>
-        {confirming !== null ? (
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <p className={NOTE}>
-              {confirming
-                ? copy.round2.openConfirm(data.finalTop)
-                : copy.round2.closeConfirm(data.finalTop)}
-            </p>
-            <div className="flex shrink-0 gap-2">
-              <DashboardButton
-                variant="small"
-                onClick={() => setConfirming(null)}
-                disabled={round2.isPending}
-              >
-                {copy.cancel}
-              </DashboardButton>
-              <DashboardButton
-                variant="small"
-                onClick={() => round2.mutate({ open: confirming })}
-                disabled={round2.isPending}
-              >
-                {round2.isPending
-                  ? confirming
-                    ? copy.round2.opening
-                    : copy.round2.closing
-                  : confirming
-                    ? copy.round2.open
-                    : copy.round2.close}
-              </DashboardButton>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            <DashboardButton
-              variant="small"
-              data-tour="judging-round2"
-              disabled={!round2Open && data.slots.length === 0}
-              onClick={() => setConfirming(!round2Open)}
-            >
-              {round2Open ? copy.round2.close : copy.round2.open}
-            </DashboardButton>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <DashboardButton
+            variant="small"
+            data-tour="judging-round2"
+            disabled={round2.isPending}
+            onClick={() => setConfirming(!round2Open)}
+          >
+            {round2Open ? copy.round2.close : copy.round2.open}
+          </DashboardButton>
+        </div>
+        <ConfirmDialog
+          open={confirming !== null}
+          heading={
+            confirming ? "Close round 1 and open round 2?" : "Close round 2?"
+          }
+          body={
+            confirming
+              ? copy.round2.openConfirm(data.finalTop)
+              : copy.round2.closeConfirm(data.finalTop)
+          }
+          warnings={
+            confirming
+              ? [
+                  ...(board.data ? round2ScheduleWarnings(board.data) : []),
+                  ...(board.isFetching
+                    ? ["Checking the current schedule…"]
+                    : board.isError || !board.data
+                      ? ["Couldn’t verify the current schedule."]
+                      : []),
+                ]
+              : undefined
+          }
+          ok={confirming ? copy.round2.open : copy.round2.close}
+          okDisabled={confirming === true && board.isFetching}
+          cancel={copy.cancel}
+          onOk={() => {
+            if (confirming !== null) round2.mutate({ open: confirming });
+          }}
+          onClose={() => setConfirming(null)}
+        />
         {round2.isError && (
           <p role="alert" className={WARN}>
             {round2.error.data?.code === "BAD_REQUEST"

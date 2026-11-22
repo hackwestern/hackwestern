@@ -96,9 +96,9 @@ export const sponsorPresentationsCopy = {
       opening: "Opening…",
       closing: "Closing…",
       openConfirm: (top: number) =>
-        `Open round 2 for every sponsor? Sponsors with presentations rank the teams that presented and submit their top ${top}.`,
+        `Sponsors with presentations rank the teams that presented and submit their top ${top}.`,
       closeConfirm: (top: number) =>
-        `Close round 2? Sponsors can't submit a top ${top} until you open it again. Rankings already submitted are kept.`,
+        `Sponsors can't submit a top ${top} until you open it again. Rankings already submitted are kept.`,
       openSince: (time: string) => `Round 2 open since ${time}`,
       closed: "Round 2 closed. Open it after presentations.",
     },
@@ -219,11 +219,10 @@ export const sponsorPresentationsCopy = {
     slackOff:
       "Slack isn't set up on this server (SLACK_BOT_TOKEN is missing), so no messages were sent.",
     noSchedule: "Schedule presentations first.",
+    openRound2BeforeNotify: "Open round 2 before notifying teams.",
     /** Notify teams waits until every sponsor has a room. */
     roomsFirst: (sponsors: readonly string[]) =>
       `Give every sponsor a room before notifying teams. No room yet: ${sponsors.join(", ")}.`,
-    round2NoSchedule:
-      "Schedule presentations before opening round 2. No team has a presentation slot yet.",
     nothingToConfirm:
       "Your team has no presentation times to confirm right now.",
   },
