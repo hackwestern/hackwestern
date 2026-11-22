@@ -291,6 +291,7 @@ describe("presentation notify", () => {
       .values({ sponsorId: sponsor!.id, teamIds: [teamId] });
     rooms.mockResolvedValue(new Map([[sponsor!.id, "Rm 2110"]]));
     await organizer.sponsorPresentations.schedule();
+    await organizer.sponsorPresentations.setRound2({ open: true });
     const session = await mockSession(db);
     await db
       .update(users)
