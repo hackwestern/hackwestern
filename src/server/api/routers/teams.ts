@@ -27,6 +27,7 @@ const teamsSaveSchema = createInsertSchema(teams, {
   // Written by the Devpost import only.
   importFlags: true,
   techStack: true,
+  commitLog: true,
 });
 
 const teamsSelectSchema = createSelectSchema(teams, {
@@ -41,6 +42,7 @@ const teamsSelectSchema = createSelectSchema(teams, {
   // Organizer-only notes from the Devpost import.
   importFlags: true,
   techStack: true,
+  commitLog: true,
 });
 
 const teamsSubmitSchema = z.object({
@@ -100,6 +102,7 @@ export const teamsRouter = createTRPCRouter({
         judgingTableId: false,
         importFlags: false,
         techStack: false,
+        commitLog: false,
       },
     });
     if (!team) {
