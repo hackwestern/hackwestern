@@ -11,8 +11,8 @@ create and submit teams; organizers add judges on the roster), sponsor judging
 ## Model in one paragraph
 
 The room has a fixed number of physical tables (70 by default), numbered along
-a snake, one team per table. Every judge owns a
-**section** of consecutive occupied tables along the snake. Each occupied table
+a snake. Every submitted team is seated at one numbered spot. Every judge owns a
+**section** of consecutive occupied spots along the snake. Each occupied spot
 falls inside the sections of **3 different judges** by default, so every team gets 3 scores. The
 sections never move; to put a team in a different judge's lineup, organizers
 swap teams between tables.
@@ -51,7 +51,9 @@ swap teams between tables.
 
 - Every submitted team (`submission_status` = `submitted` or `late`) gets one
   active table. One team per table.
-- Teams fill active tables in table order along the snake (1, 2, 3...).
+- Pair neighboring spots from the left edge of each row. First fill one
+  active spot per physical table in snake order, then backfill the second
+  spots. An unpaired spot or the active half of a pair fills in the first pass.
 - Teams are shuffled by default. The API can seat them in submission order.
 - More submitted teams than active spots is an error.
 - Seating can be re-run until judging starts. The seating API clears the existing
