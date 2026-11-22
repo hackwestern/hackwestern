@@ -594,6 +594,13 @@ function SponsorRow({
               ))}
             </ul>
           )}
+          {/* Once teams have slots, organizers can enter or fix this
+              sponsor's top 5 (it replaces their submission). */}
+          {sponsor.firstStart !== null && (
+            <div className="mt-3">
+              <DigitalSponsor name={sponsor.name} top={top} />
+            </div>
+          )}
         </div>
       )}
     </li>

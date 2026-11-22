@@ -1,19 +1,16 @@
 /**
  * Table layout, tracks and placeholder data for the room map.
  *
- * Each physical table is split into two spots, one team each. A "table" in
- * this file (and in the database) is one spot, so there are 140 of them,
- * numbered 1, 2, 3, 4... with spots 1 and 2 side by side on the first table.
+ * One team per physical table. A "table" in this file (and in the database)
+ * is a physical table, so there are 70 of them, numbered 1 to 70.
  *
- * PLACEHOLDER: 70 physical tables in a 5 x 14 grid, snaked (row 1 left to
- * right, row 2 right to left, and so on; the numbering follows the snake, so
- * on a right-to-left row the lower spot is on the right), split into five
- * tracks by spot range.
+ * PLACEHOLDER: 70 tables in a 5 x 14 grid, snaked (row 1 left to right,
+ * row 2 right to left, and so on), split into five tracks by table range.
  * Replace MAP_TABLES, TRACKS and the team names with Kevin's table setup when
  * it is final. The map draws whatever is listed here, so nothing else changes.
  */
-/** Width of one spot: half a physical table. */
-export const TABLE_W = 15;
+/** Width of one table on the map. */
+export const TABLE_W = 30;
 export const TABLE_H = 20;
 export const GAP_X = 10;
 export const GAP_Y = 22;
@@ -21,10 +18,10 @@ export const MARGIN = 12;
 
 export const MAP_COLS = 14;
 export const MAP_ROWS = 5;
-export const SPOTS_PER_TABLE = 2;
+export const SPOTS_PER_TABLE = 1;
 /** Physical tables in the room. */
 export const PHYSICAL_TABLE_COUNT = MAP_COLS * MAP_ROWS;
-/** Spots (team seats) in the room, numbered 1 to this. */
+/** Team seats in the room (one per table), numbered 1 to this. */
 export const TABLE_COUNT = PHYSICAL_TABLE_COUNT * SPOTS_PER_TABLE;
 
 /** Judges every table needs. Organizers see "n of 3" per table. */
@@ -59,7 +56,7 @@ export const TRACKS: MapTrack[] = [
     name: "General",
     code: "A",
     from: 1,
-    to: 56,
+    to: 28,
     fill: "fill-blue-1",
     stroke: "stroke-blue-4",
   },
@@ -67,8 +64,8 @@ export const TRACKS: MapTrack[] = [
     id: "b",
     name: "Track B",
     code: "B",
-    from: 57,
-    to: 84,
+    from: 29,
+    to: 42,
     fill: "fill-blue-3",
     stroke: "stroke-blue-6",
   },
@@ -76,8 +73,8 @@ export const TRACKS: MapTrack[] = [
     id: "c",
     name: "Track C",
     code: "C",
-    from: 85,
-    to: 108,
+    from: 43,
+    to: 54,
     fill: "fill-gray-1",
     stroke: "stroke-gray-4",
   },
@@ -85,8 +82,8 @@ export const TRACKS: MapTrack[] = [
     id: "d",
     name: "Track D",
     code: "D",
-    from: 109,
-    to: 124,
+    from: 55,
+    to: 62,
     fill: "fill-gray-2",
     stroke: "stroke-gray-5",
   },
@@ -94,8 +91,8 @@ export const TRACKS: MapTrack[] = [
     id: "e",
     name: "Track E",
     code: "E",
-    from: 125,
-    to: 140,
+    from: 63,
+    to: 70,
     fill: "fill-dashboard-bg-highlight",
     stroke: "stroke-dashboard-action-primary",
   },
@@ -105,8 +102,8 @@ export const trackOf = (tracks: MapTrack[], n: number) =>
   tracks.find((t) => n >= t.from && n <= t.to);
 
 /**
- * Where spot n sits on the snake grid: which physical table, and which side
- * of it, as a column counted in spots from the left (0 to 2 * MAP_COLS - 1).
+ * Where table n sits on the snake grid: its row, and its column counted from
+ * the left (0 to MAP_COLS - 1).
  */
 export function spotGrid(n: number) {
   const i = n - 1;
@@ -120,7 +117,7 @@ export function spotGrid(n: number) {
   return { row, col: col * SPOTS_PER_TABLE + side };
 }
 
-/** Top-left corner of spot n on the snake grid. */
+/** Top-left corner of table n on the snake grid. */
 export function snakePosition(n: number) {
   const { row, col } = spotGrid(n);
   const pair = Math.floor(col / SPOTS_PER_TABLE);

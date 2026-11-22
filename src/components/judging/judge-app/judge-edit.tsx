@@ -106,7 +106,7 @@ export function JudgeEdit({
 
       {mode === "rescore" && (
         <p className="m-0 px-1 text-sm text-dashboard-text-light">
-          Open the links, then rethink each score. Save even if nothing changes.
+          Rethink each score. Save even if nothing changes.
         </p>
       )}
       {links && <JudgeTeamLinks links={links} />}

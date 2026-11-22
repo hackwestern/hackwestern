@@ -1,4 +1,4 @@
-import { SPONSOR_FINAL_MIN } from "~/lib/sponsor-scoring";
+import { minPicks } from "~/lib/sponsor-scoring";
 import { useEffect, useId, useState } from "react";
 import { CheckCircle2, CircleAlert } from "lucide-react";
 import { DashboardButton } from "~/components/internals/dashboard-button";
@@ -106,13 +106,16 @@ export function DigitalSponsor({ name, top }: { name: string; top: number }) {
     );
   }
 
-  const matches = links.map((link) => matchTeamByLink(link, data.teams));
+  // One place per team the sponsor can rank, up to `top` (data.top).
+  const shown = links.slice(0, data.top);
+  const matches = shown.map((link) => matchTeamByLink(link, data.teams));
   const dupes = matches.map(
     (m, i) => m !== null && matches.findIndex((o) => o?.id === m.id) !== i,
   );
-  const filled = links.filter((link) => link.trim() !== "");
+  // Places are filled in order; blank ones at the end are left off.
+  const filled = shown.filter((link) => link.trim() !== "");
   const ready =
-    filled.length >= SPONSOR_FINAL_MIN &&
+    filled.length >= minPicks(data.top) &&
     filled.every((_, i) => matches[i] !== null) &&
     !dupes.some(Boolean);
 
@@ -150,7 +153,7 @@ export function DigitalSponsor({ name, top }: { name: string; top: number }) {
           if (ready) save.mutate({ name, links: filled });
         }}
       >
-        {links.map((link, i) => {
+        {shown.map((link, i) => {
           const match = matches[i];
           const inputId = `${id}-place-${i}`;
           const status = `${inputId}-status`;
@@ -228,7 +231,7 @@ export function DigitalSponsor({ name, top }: { name: string; top: number }) {
           {save.isPending
             ? copy.saving
             : copy.save(
-                filled.length >= SPONSOR_FINAL_MIN ? filled.length : top,
+                filled.length >= minPicks(data.top) ? filled.length : data.top,
               )}
         </DashboardButton>
       </form>

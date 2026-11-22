@@ -5,7 +5,7 @@
 // the teams they pick are "finalists", the list they submit once is the
 // "final shortlist".
 
-import { SPONSOR_FINAL_MIN } from "~/lib/sponsor-scoring";
+import { minPicks } from "~/lib/sponsor-scoring";
 
 const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
@@ -312,7 +312,9 @@ export const sponsorJudgingCopy = {
       "Round 2 is locked for you: no teams presented to you, so there's nobody to rank. Submit your final shortlist if you haven't, then ask your Hack Western contact to schedule presentations again.",
     presentedHeading: "Rank the teams that presented",
     presentedIntro: (min: number, max: number) =>
-      `Rank ${min}–${max} teams, with your favourite first.`,
+      min === max
+        ? `Rank all ${max} teams, with your favourite first.`
+        : `Rank ${min}–${max} teams, with your favourite first.`,
     noPresenters:
       "No teams are scheduled to present to you. Ask your Hack Western contact.",
     presentsAt: (time: string) => `Presents ${time}`,
@@ -343,7 +345,9 @@ export const sponsorJudgingCopy = {
       `Your top ${top} has already been submitted.`,
     ranking: {
       wrongCount: (top: number) =>
-        `Submit between ${SPONSOR_FINAL_MIN} and ${top} teams.`,
+        minPicks(top) === top
+          ? `Submit exactly ${top} teams.`
+          : `Submit between ${minPicks(top)} and ${top} teams.`,
       duplicate: () => "Each team can appear only once.",
       notShortlisted: () => "Only your finalists can be submitted.",
       notPresented: () => "Only teams that presented to you can be submitted.",
@@ -484,7 +488,7 @@ export const sponsorJudgingCopy = {
     digital: {
       heading: "Digital sponsors",
       intro: (top: number) =>
-        `Digital sponsors don't use the portal. Enter ${SPONSOR_FINAL_MIN}–${top} ranked teams by Devpost link or team ID, starting at first place. Each must be a submitted team in their track.`,
+        `Digital sponsors don't use the portal. Enter ${minPicks(top)}–${top} ranked teams by Devpost link or team ID, starting at first place. Each must be a submitted team in their track.`,
       place: (n: number) => `${ordinal(n)} place`,
       placeholder: "devpost.com/software/…",
       match: (name: string) => `Matches ${name}`,

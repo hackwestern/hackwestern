@@ -16,6 +16,9 @@ export const SPONSOR_FINAL_MIN = 3;
 export const SPONSOR_FINAL_TOP = 5;
 export const SPONSOR_FINAL_TOP_LIMIT = 10;
 
+/** Fewest picks a sponsor submits: SPONSOR_FINAL_MIN, or all of them when fewer can be ranked. */
+export const minPicks = (top: number) => Math.min(SPONSOR_FINAL_MIN, top);
+
 export const SCORE_MIN = 1;
 export const SCORE_MAX = 10;
 /** Scores go in half points (Holia's judging UX): 1, 1.5 ... 10. */
@@ -129,7 +132,7 @@ export function rankingError(
   shortlisted: ReadonlySet<string>,
   top = SPONSOR_FINAL_TOP,
 ): RankingError | null {
-  if (teamIds.length < SPONSOR_FINAL_MIN || teamIds.length > top) {
+  if (teamIds.length < minPicks(top) || teamIds.length > top) {
     return "wrongCount";
   }
   if (new Set(teamIds).size !== teamIds.length) return "duplicate";

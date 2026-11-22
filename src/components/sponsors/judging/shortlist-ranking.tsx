@@ -18,7 +18,7 @@ import {
 import {
   formatAverage,
   formatSubmittedTime,
-  SPONSOR_FINAL_MIN,
+  minPicks,
   type TeamReview,
 } from "~/lib/sponsor-scoring";
 import { cn } from "~/lib/utils";
@@ -58,7 +58,6 @@ export function ShortlistRanking({
   onBrowse: () => void;
   presented?: ReadonlyMap<string, string>;
 }) {
-  const top = data.finalTop;
   const shortlist = useMemo(
     () =>
       data.teams
@@ -68,6 +67,8 @@ export function ShortlistRanking({
         .map((t) => ({ ...t, score: reviews.get(t.id)?.score ?? null })),
     [data.teams, reviews, presented],
   );
+  // Fewer than five teams presented: rank all of them.
+  const top = Math.min(data.finalTop, shortlist.length);
   const byId = useMemo(
     () => new Map(shortlist.map((t) => [t.id, t])),
     [shortlist],
@@ -135,14 +136,18 @@ export function ShortlistRanking({
     const timer = window.setTimeout(() => {
       saveDraft.mutate({
         sponsor,
-        teamIds: topIds,
+        // The draft always has five places.
+        teamIds: Array.from(
+          { length: data.finalTop },
+          (_, i) => topIds[i] ?? null,
+        ),
       });
     }, 300);
     return () => window.clearTimeout(timer);
-  }, [draftKey, sponsor, saveDraft.mutate, topIds, canEdit]);
+  }, [draftKey, sponsor, saveDraft.mutate, topIds, canEdit, data.finalTop]);
 
   const picks = topIds.filter((id): id is string => id !== null);
-  const enoughPicks = picks.length >= SPONSOR_FINAL_MIN;
+  const enoughPicks = picks.length >= minPicks(top);
   const hasGaps = picks.some((id, index) => topIds[index] !== id);
   const canSubmit = canEdit && enoughPicks && !hasGaps && data.open;
   const matchesSubmitted =
@@ -265,7 +270,7 @@ export function ShortlistRanking({
         </h2>
         <p className="m-0 text-base text-dashboard-text-medium">
           {presented
-            ? copy.round.presentedIntro(SPONSOR_FINAL_MIN, top)
+            ? copy.round.presentedIntro(minPicks(top), top)
             : copy.shortlist.intro(top)}
         </p>
         {presented && (
@@ -579,7 +584,7 @@ export function ShortlistRanking({
               )}
               {canEdit && !enoughPicks && (
                 <span className="text-sm font-medium text-dashboard-text-medium">
-                  {copy.shortlist.needMore(SPONSOR_FINAL_MIN, picks.length)}
+                  {copy.shortlist.needMore(minPicks(top), picks.length)}
                 </span>
               )}
               {canEdit && enoughPicks && hasGaps && (
