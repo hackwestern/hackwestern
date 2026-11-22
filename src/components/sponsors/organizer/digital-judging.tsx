@@ -105,11 +105,16 @@ export function DigitalSponsor({ name, top }: { name: string; top: number }) {
     );
   }
 
-  const matches = links.map((link) => matchTeamByLink(link, data.teams));
+  // One place per team the sponsor can rank, up to `top` (data.top).
+  const shown = links.slice(0, data.top);
+  const matches = shown.map((link) => matchTeamByLink(link, data.teams));
   const dupes = matches.map(
     (m, i) => m !== null && matches.findIndex((o) => o?.id === m.id) !== i,
   );
-  const ready = matches.every((m) => m !== null) && !dupes.some(Boolean);
+  const ready =
+    shown.length > 0 &&
+    matches.every((m) => m !== null) &&
+    !dupes.some(Boolean);
 
   return (
     <section
@@ -142,10 +147,10 @@ export function DigitalSponsor({ name, top }: { name: string; top: number }) {
         className="flex flex-col gap-3"
         onSubmit={(e) => {
           e.preventDefault();
-          if (ready) save.mutate({ name, links });
+          if (ready) save.mutate({ name, links: shown });
         }}
       >
-        {links.map((link, i) => {
+        {shown.map((link, i) => {
           const match = matches[i];
           const inputId = `${id}-place-${i}`;
           const status = `${inputId}-status`;
@@ -220,7 +225,7 @@ export function DigitalSponsor({ name, top }: { name: string; top: number }) {
           disabled={!ready || save.isPending}
           className="self-start disabled:cursor-not-allowed disabled:opacity-dashboard-disabled"
         >
-          {save.isPending ? copy.saving : copy.save(top)}
+          {save.isPending ? copy.saving : copy.save(data.top)}
         </DashboardButton>
       </form>
     </section>

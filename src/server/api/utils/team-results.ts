@@ -14,6 +14,11 @@ export interface TeamInfo {
   superLikes?: number;
   /** Normalized score (0-10), null until the normalization has run. */
   normalized?: number | null;
+  /**
+   * The normalized value before the 0-10 cap (total series). The top teams can
+   * all cap at 10, so this breaks those ties.
+   */
+  normalizedQ?: number | null;
   /** Adventure score (0-10), null until normalized. */
   adventure?: number | null;
 }

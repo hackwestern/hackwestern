@@ -10,14 +10,31 @@
  * open.
  */
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  lte,
+  ne,
+  sql,
+} from "drizzle-orm";
 
 import { db } from "~/server/db";
-import { judgingAssignments, judgingRound, teams } from "~/server/db/schema";
+import {
+  judges,
+  judgingAssignments,
+  judgingRound,
+  teams,
+} from "~/server/db/schema";
 import {
   type Tx,
   isJudgingStarted,
   rehearsalRestartAllowed,
+  lockPlanExclusive,
   lockPlanShared,
 } from "~/server/judging/shared";
 
@@ -104,6 +121,19 @@ export function resolveRound(
   };
 }
 
+/** A hacker can report their judge missing once the round has run this long. */
+export const REPORT_MISSING_AFTER_MS = 60_000;
+
+/** How long the current round has run, paused time left out. */
+export function roundElapsedMs(state: RoundState, now = Date.now()): number {
+  const total = state.roundSeconds * 1000;
+  const left =
+    state.status === "running" && state.endsAt
+      ? Math.max(0, state.endsAt.getTime() - now)
+      : (state.remainingMs ?? 0);
+  return Math.max(0, total - left);
+}
+
 export async function getRoundState(tx: Tx = db): Promise<RoundState> {
   const [row, total] = await Promise.all([readRow(tx), totalRounds(tx)]);
   return resolveRound(row, total);
@@ -130,11 +160,13 @@ async function lockHeldStops(tx: Tx): Promise<number[]> {
   return held.map((h) => h.id);
 }
 
+// startedAt is kept: a judge who started a team has seen it, so that table
+// isn't "missed" (see missedStops) and stays theirs to score late.
 async function releaseStops(tx: Tx, ids: number[]) {
   if (ids.length === 0) return;
   await tx
     .update(judgingAssignments)
-    .set({ status: "assigned", startedAt: null })
+    .set({ status: "assigned" })
     .where(inArray(judgingAssignments.id, ids));
 }
 
@@ -359,6 +391,164 @@ export async function setRoundConfig(input: {
   });
 }
 
+/**
+ * Tables whose judge never came ("missed"): unscored, never started (the judge
+ * didn't press "Judge this team", or an organizer reported the judge missing),
+ * in a round that has ended. A started but unscored table isn't missed: the
+ * judge saw the team and scores it late. Only tables with a team; absent
+ * tables aren't open, so they don't count.
+ */
+async function missedStops(tx: Tx, state: RoundState) {
+  if (!state.enabled || state.round === 0) return [];
+  const ended =
+    state.status === "closed"
+      ? lte(judgingAssignments.position, state.round)
+      : lt(judgingAssignments.position, state.round);
+  return tx
+    .select({
+      id: judgingAssignments.id,
+      judgeId: judgingAssignments.judgeId,
+      tableId: judgingAssignments.judgingTableId,
+      position: judgingAssignments.position,
+    })
+    .from(judgingAssignments)
+    .innerJoin(
+      teams,
+      eq(teams.judgingTableId, judgingAssignments.judgingTableId),
+    )
+    .where(
+      and(
+        eq(judgingAssignments.status, "assigned"),
+        isNull(judgingAssignments.startedAt),
+        ended,
+      ),
+    )
+    .orderBy(asc(judgingAssignments.position), asc(judgingAssignments.id));
+}
+
+/** Stops started but not scored, from rounds that have ended. */
+async function unfinishedCount(state: RoundState) {
+  if (!state.enabled || state.round === 0) return 0;
+  const ended =
+    state.status === "closed"
+      ? lte(judgingAssignments.position, state.round)
+      : lt(judgingAssignments.position, state.round);
+  const rows = await db
+    .select({ id: judgingAssignments.id })
+    .from(judgingAssignments)
+    .innerJoin(
+      teams,
+      eq(teams.judgingTableId, judgingAssignments.judgingTableId),
+    )
+    .where(
+      and(
+        inArray(judgingAssignments.status, ["assigned", "in_progress"]),
+        isNotNull(judgingAssignments.startedAt),
+        ended,
+      ),
+    );
+  return rows.length;
+}
+
+/**
+ * After the last round has ended: move every missed table into catch-up
+ * rounds. It goes to a present judge who hasn't seen that team, fewest
+ * catch-up tables first; the judge who never came gets it back only when
+ * nobody else can take it.
+ * One table per judge per round, so extra ones spill into the next catch-up
+ * round. The stop is moved (same table, new judge and round), never copied.
+ */
+export async function planCatchUp() {
+  return db.transaction(async (tx) => {
+    await lockPlanExclusive(tx);
+    const row = await readRow(tx, "update");
+    const total = await totalRounds(tx);
+    const state = resolveRound(row, total);
+    if (!state.enabled) throw precondition("Turn the timed rounds on first.");
+    if (state.status !== "closed" || state.round < total) {
+      throw precondition(
+        "The catch-up round comes after the last round has ended.",
+      );
+    }
+    const missed = await missedStops(tx, state);
+    if (missed.length === 0) throw precondition("No team missed a judge.");
+
+    const present = (
+      await tx
+        .select({ id: judges.id })
+        .from(judges)
+        .where(and(eq(judges.type, "organizer"), eq(judges.noShow, false)))
+        .orderBy(asc(judges.createdAt), asc(judges.id))
+    ).map((j) => j.id);
+    if (present.length === 0) throw precondition("No judges are present.");
+
+    // What every judge already holds, so no judge gets two tables in a round
+    // or the same table twice (the unique indexes would refuse it).
+    const live = await tx
+      .select({
+        judgeId: judgingAssignments.judgeId,
+        tableId: judgingAssignments.judgingTableId,
+        position: judgingAssignments.position,
+      })
+      .from(judgingAssignments)
+      .where(ne(judgingAssignments.status, "cancelled"));
+    const positions = new Map<string, Set<number>>();
+    const tables = new Map<string, Set<number>>();
+    const add = (map: Map<string, Set<number>>, id: string, value: number) =>
+      map.set(id, (map.get(id) ?? new Set()).add(value));
+    for (const s of live) {
+      add(positions, s.judgeId, s.position);
+      add(tables, s.judgeId, s.tableId);
+    }
+
+    const load = new Map<string, number>();
+    let moved = 0;
+    let skipped = 0;
+    for (const m of missed) {
+      positions.get(m.judgeId)?.delete(m.position);
+      tables.get(m.judgeId)?.delete(m.tableId);
+      const others = present
+        .filter((id) => id !== m.judgeId)
+        .sort((a, b) => (load.get(a) ?? 0) - (load.get(b) ?? 0));
+      const candidates = [
+        ...others,
+        ...(present.includes(m.judgeId) ? [m.judgeId] : []),
+      ].filter((id) => !tables.get(id)?.has(m.tableId));
+
+      // The candidate free soonest; ties go to the earlier one in the list.
+      let best: { judgeId: string; position: number } | null = null;
+      for (const judgeId of candidates) {
+        let position = state.round + 1;
+        while (positions.get(judgeId)?.has(position)) position++;
+        if (!best || position < best.position) best = { judgeId, position };
+      }
+      if (!best) {
+        // Every present judge has already seen this team: leave it missed.
+        add(positions, m.judgeId, m.position);
+        add(tables, m.judgeId, m.tableId);
+        skipped++;
+        continue;
+      }
+      await tx
+        .update(judgingAssignments)
+        .set({
+          judgeId: best.judgeId,
+          position: best.position,
+          status: "assigned",
+          startedAt: null,
+          completedAt: null,
+          missingReportedAt: null,
+        })
+        .where(eq(judgingAssignments.id, m.id));
+      add(positions, best.judgeId, best.position);
+      add(tables, best.judgeId, m.tableId);
+      load.set(best.judgeId, (load.get(best.judgeId) ?? 0) + 1);
+      moved++;
+    }
+    return { moved, skipped, totalRounds: await totalRounds(tx) };
+  });
+}
+
 /** The round state plus how far the room is through the current round. */
 export async function getRoundOverview() {
   await settleRound();
@@ -385,6 +575,10 @@ export async function getRoundOverview() {
     judgingStarted: await isJudgingStarted(),
     /** This deploy may restart a rehearsal (dev site only). */
     canRestartRehearsal: rehearsalRestartAllowed(),
+    /** Tables whose judge never came, from rounds that have ended. */
+    missed: (await missedStops(db, state)).length,
+    /** Started but not sent, from rounds that have ended: the judge finishes them late. */
+    unfinished: await unfinishedCount(state),
     stops: {
       total: stops.length,
       done: stops.filter(

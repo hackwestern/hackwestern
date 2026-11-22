@@ -27,7 +27,14 @@ import {
 } from "./control-shared";
 
 type Spot = Progress["tables"][number];
-type Kind = "judging" | "waiting" | "finished" | "free" | "empty" | "off";
+type Kind =
+  | "judging"
+  | "waiting"
+  | "finished"
+  | "absent"
+  | "free"
+  | "empty"
+  | "off";
 
 /** Physical tables drawn, even before the DB has rows for all of them. */
 const MIN_PHYSICAL_TABLES = 70;
@@ -53,6 +60,11 @@ const KINDS: Record<Kind, { label: string; box: string; dot: string }> = {
     label: "All judges done",
     box: "border-[#8cc99a] bg-[#e3f4e6]",
     dot: "bg-[#1f8a3a]",
+  },
+  absent: {
+    label: "Team absent",
+    box: "border-[#e7b4ad] bg-[#fdecea]",
+    dot: "bg-[#b42318]",
   },
   free: {
     label: "No judge this round",
@@ -91,6 +103,8 @@ function styleOf(kind: Kind, round: number | null) {
 function kindOf(s: Spot | undefined, round: number | null = null): Kind {
   if (!s?.isActive) return "off";
   if (!s.team) return "empty";
+  // Absence is table-wide and final, so it shows in every round.
+  if (s.judges.some((j) => j.status === "team_absent")) return "absent";
   if (round !== null) {
     const stop = s.judges.find(
       (j) => j.position === round && j.status !== "cancelled",
@@ -124,17 +138,30 @@ function SpotBox({
   const held = current?.startedAt
     ? formatHold(now - new Date(current.startedAt).getTime())
     : null;
+  // The team says this round's judge hasn't come (hacker Judging page).
+  const judgeMissing =
+    round !== null &&
+    !!spot?.judges.some(
+      (j) =>
+        j.position === round &&
+        j.status === "assigned" &&
+        !j.startedAt &&
+        j.missingReportedAt,
+    );
   return (
     <button
       type="button"
       onClick={onOpen}
       disabled={!spot}
       aria-label={`Table ${number}${spot?.team ? `, ${spot.team.name}` : ""}: ${style.label}. Show details`}
-      className={`flex min-h-[72px] min-w-0 flex-1 flex-col gap-0.5 border-[1.5px] p-1 text-left first:rounded-l-lg last:rounded-r-lg enabled:cursor-pointer enabled:hover:brightness-95 enabled:focus-visible:outline enabled:focus-visible:outline-2 enabled:focus-visible:outline-[#5b3fa0] ${style.box}`}
+      className={`flex min-h-[72px] min-w-0 flex-1 flex-col gap-0.5 border-[1.5px] p-1 text-left first:rounded-l-lg last:rounded-r-lg enabled:cursor-pointer enabled:hover:brightness-95 enabled:focus-visible:outline enabled:focus-visible:outline-2 enabled:focus-visible:outline-[#5b3fa0] ${style.box} ${
+        judgeMissing ? "ring-2 ring-inset ring-[#b42318]" : ""
+      }`}
       title={[
         `Table ${number}`,
         spot?.team?.name,
         style.label,
+        judgeMissing ? "Team says their judge is missing" : null,
         current ? `${current.name} (${held})` : null,
       ]
         .filter(Boolean)
@@ -150,11 +177,19 @@ function SpotBox({
       <span className="hidden break-words text-[10px] font-semibold leading-tight md:line-clamp-2">
         {spot?.team?.name ?? ""}
       </span>
-      {spot?.team && (
-        <span className={`mt-auto truncate text-[10px] tabular-nums ${MUTED}`}>
-          {spot.judgesDone}/{spot.judges.length}
-          {current ? ` · ${held}` : ""}
+      {judgeMissing ? (
+        <span className="mt-auto truncate text-[10px] font-bold text-[#b42318]">
+          Judge missing
         </span>
+      ) : (
+        spot?.team && (
+          <span
+            className={`mt-auto truncate text-[10px] tabular-nums ${MUTED}`}
+          >
+            {spot.judgesDone}/{spot.judges.length}
+            {current ? ` · ${held}` : ""}
+          </span>
+        )
       )}
     </button>
   );
@@ -167,16 +202,22 @@ const JUDGE_STATUS: Record<string, string> = {
   team_absent: "Team absent",
 };
 
+const isOpenStop = (status: string) =>
+  status === "assigned" || status === "in_progress";
+
 /** One spot's team, its judges, and every mark it has received. */
 function SpotDialog({
   number,
   spot,
+  roster,
   now,
   round,
   onClose,
 }: {
   number: number | null;
   spot: Spot | undefined;
+  /** Every judge, for the "Add judge" picker. */
+  roster: Progress["judges"];
   now: number;
   round: number | null;
   onClose: () => void;
@@ -190,8 +231,47 @@ function SpotDialog({
   const result = resultsQ.data?.find((r) => r.team.id === teamId);
   const kind = styleOf(kindOf(spot, round), round);
 
+  const utils = api.useUtils();
+  const [status, setStatus] = useState<Status>(null);
+  const [addId, setAddId] = useState("");
+  const addJudge = api.judging.admin.addJudgeToTable.useMutation();
+  const cancel = api.judging.admin.cancelStop.useMutation();
+  const missing = api.judging.admin.reportJudgeMissing.useMutation();
+  const absent = api.judging.admin.markAbsent.useMutation();
+  const undo = api.judging.admin.undoAbsent.useMutation();
+  const busy =
+    addJudge.isPending ||
+    cancel.isPending ||
+    absent.isPending ||
+    undo.isPending;
+
+  const teamName = spot?.team?.name ?? "The team";
+  const isAbsent = !!spot?.judges.some((j) => j.status === "team_absent");
+  const openStop = spot?.judges.find((j) => isOpenStop(j.status));
+  const atTable = new Set(spot?.judges.map((j) => j.judgeId));
+  const addable = roster.filter(
+    (j) => j.type === "organizer" && !j.noShow && !atTable.has(j.id),
+  );
+
+  const close = () => {
+    setStatus(null);
+    setAddId("");
+    onClose();
+  };
+
+  /** Run one fix, show the server's answer, and refresh the room. */
+  const act = async (fix: () => Promise<string>) => {
+    setStatus(null);
+    try {
+      setStatus({ tone: "ok", text: await fix() });
+    } catch (e) {
+      setStatus({ tone: "error", text: errorText(e as { message: string }) });
+    }
+    void utils.judging.admin.invalidate();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(o) => !o && close()}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>
@@ -241,19 +321,158 @@ function SpotDialog({
                   {spot.judges.map((j) => (
                     <li
                       key={j.assignmentId}
-                      className="flex items-baseline justify-between gap-3"
+                      className="flex items-center justify-between gap-3"
                     >
                       <span className="font-semibold">{j.name}</span>
-                      <span className={`tabular-nums ${MUTED}`}>
-                        {JUDGE_STATUS[j.status] ?? j.status}
-                        {j.status === "in_progress" && j.startedAt
-                          ? ` · ${formatHold(now - new Date(j.startedAt).getTime())}`
-                          : ""}
+                      <span className="flex items-center gap-2">
+                        <span className={`tabular-nums ${MUTED}`}>
+                          {JUDGE_STATUS[j.status] ?? j.status}
+                          {j.status === "in_progress" && j.startedAt
+                            ? ` · ${formatHold(now - new Date(j.startedAt).getTime())}`
+                            : j.status === "assigned" && j.startedAt
+                              ? " · started"
+                              : j.status === "assigned" && j.missingReportedAt
+                                ? " · team says judge missing"
+                                : ""}
+                        </span>
+                        {isOpenStop(j.status) && j.startedAt && (
+                          <button
+                            type="button"
+                            className={`${BTN_OUTLINE} text-sm`}
+                            disabled={busy}
+                            aria-label={`Report that ${j.name} never came to table ${number}`}
+                            onClick={() => {
+                              if (
+                                !window.confirm(
+                                  `Table ${number} says ${j.name} never came? This table then gets another judge in the catch-up round.`,
+                                )
+                              )
+                                return;
+                              void act(async () => {
+                                await missing.mutateAsync({
+                                  assignmentId: j.assignmentId,
+                                });
+                                return `Table ${number} will get another judge in the catch-up round.`;
+                              });
+                            }}
+                          >
+                            Didn&apos;t come
+                          </button>
+                        )}
+                        {isOpenStop(j.status) && (
+                          <button
+                            type="button"
+                            className={`${BTN_OUTLINE} text-sm`}
+                            disabled={busy}
+                            aria-label={`Cancel ${j.name}'s stop at table ${number}`}
+                            onClick={() => {
+                              if (
+                                !window.confirm(
+                                  `Take ${j.name} off table ${number}? Their stop here is cancelled.`,
+                                )
+                              )
+                                return;
+                              void act(async () => {
+                                await cancel.mutateAsync({
+                                  assignmentId: j.assignmentId,
+                                });
+                                return `${j.name} is off table ${number}.`;
+                              });
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        )}
                       </span>
                     </li>
                   ))}
                 </ul>
               )}
+              <div className="mt-3 flex flex-col gap-3">
+                {!isAbsent && (
+                  <div className="flex flex-wrap gap-2">
+                    <select
+                      aria-label="Judge to add to this table"
+                      className={`${FIELD} min-w-0 flex-1`}
+                      value={addId}
+                      onChange={(e) => setAddId(e.target.value)}
+                    >
+                      <option value="">Choose a judge…</option>
+                      {addable.map((j) => (
+                        <option key={j.id} value={j.id}>
+                          {j.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className={BTN_DARK}
+                      disabled={!addId || busy}
+                      onClick={() =>
+                        void act(async () => {
+                          const row = await addJudge.mutateAsync({
+                            judgeId: addId,
+                            tableId: spot.id,
+                          });
+                          setAddId("");
+                          const name =
+                            roster.find((j) => j.id === row.judgeId)?.name ??
+                            "The judge";
+                          return `${name} added as stop ${row.position} on their list.`;
+                        })
+                      }
+                    >
+                      {addJudge.isPending ? "Adding…" : "Add judge"}
+                    </button>
+                  </div>
+                )}
+                {(isAbsent || openStop) && (
+                  <div className="flex flex-wrap gap-2">
+                    {isAbsent ? (
+                      <button
+                        type="button"
+                        className={BTN_OUTLINE}
+                        disabled={busy}
+                        onClick={() =>
+                          void act(async () => {
+                            const r = await undo.mutateAsync({
+                              tableId: spot.id,
+                            });
+                            return `${teamName} is back in judging. ${r.reopened} stop${r.reopened === 1 ? "" : "s"} reopened.`;
+                          })
+                        }
+                      >
+                        {undo.isPending ? "Undoing…" : "Undo absent"}
+                      </button>
+                    ) : (
+                      openStop && (
+                        <button
+                          type="button"
+                          className={BTN_OUTLINE}
+                          disabled={busy}
+                          onClick={() => {
+                            if (
+                              !window.confirm(
+                                `Mark ${teamName} absent? Every unfinished stop at table ${number} closes and the team is left out of the ranking. You can undo it here.`,
+                              )
+                            )
+                              return;
+                            void act(async () => {
+                              await absent.mutateAsync({
+                                assignmentId: openStop.assignmentId,
+                              });
+                              return `${teamName} marked absent.`;
+                            });
+                          }}
+                        >
+                          {absent.isPending ? "Marking…" : "Mark team absent"}
+                        </button>
+                      )
+                    )}
+                  </div>
+                )}
+                <StatusLine status={status} />
+              </div>
             </section>
 
             <section aria-label="Round history">
@@ -477,18 +696,28 @@ export function ControlTablesStatus({
   // Set up the room and reseat teams if any are missing a spot.
   const run = async () => {
     if (!progress) return;
+    const { settings } = progress;
+    const needsSetup = settings.tableCount !== SPOT_COUNT;
+    const unseated =
+      needsSetup || progress.teams.seated < progress.teams.submitted;
+    // Seating is random and moves every team, even ones already seated.
+    const missing = progress.teams.submitted - progress.teams.seated;
+    if (
+      unseated &&
+      progress.teams.seated > 0 &&
+      !window.confirm(
+        `${missing > 0 ? `${missing} submitted team${missing === 1 ? " has" : "s have"} no table yet. ` : ""}Auto-assign will move every team to a new random table, so table numbers already given out will change. Continue?`,
+      )
+    )
+      return;
     setStatus(null);
     try {
-      const { settings } = progress;
-      const needsSetup = settings.tableCount !== SPOT_COUNT;
       if (needsSetup)
         await setup.mutateAsync({
           tableCount: SPOT_COUNT,
           rows: settings.rows,
           judgesPerTable: settings.judgesPerTable,
         });
-      const unseated =
-        needsSetup || progress.teams.seated < progress.teams.submitted;
       if (unseated) await seat.mutateAsync({ random: true });
       await assign.mutateAsync();
       setStatus({ tone: "ok", text: "Judges assigned to tables." });
@@ -565,6 +794,7 @@ export function ControlTablesStatus({
     judging: 0,
     waiting: 0,
     finished: 0,
+    absent: 0,
     free: 0,
     empty: 0,
     off: 0,
@@ -666,6 +896,7 @@ export function ControlTablesStatus({
       <SpotDialog
         number={openSpot}
         spot={openSpot === null ? undefined : byNumber.get(openSpot)}
+        roster={progress?.judges ?? []}
         now={now}
         round={round}
         onClose={() => setOpenSpot(null)}

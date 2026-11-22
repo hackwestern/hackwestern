@@ -22,6 +22,7 @@ import {
   users,
 } from "~/server/db/schema";
 import { env } from "~/env";
+import { SWEEP_NOT_CONFIGURED } from "~/lib/cheat-checks/constants";
 import { ensureSystemUser } from "~/server/api/utils/cheat-check-runners";
 
 /**
@@ -53,6 +54,9 @@ export const MAX_ATTEMPTS = 3;
 export const STALLED_HEARTBEAT_MINUTES = 2;
 
 export type SweepRow = typeof cheatCheckSweeps.$inferSelect;
+
+/** So the missing-secret warning is logged once per server, not per mark. */
+let warnedNoSecret = false;
 
 // ---------------------------------------------------------------------------
 // Starting a sweep
@@ -148,8 +152,19 @@ export async function createSweep(
  * Called after a judge submits or reports a team absent and after an organizer
  * cancels or marks a stop absent. It must never throw: a cheat-check problem is
  * not a reason to fail a judge's mark.
+ *
+ * Skipped without CHEAT_SWEEP_SECRET: the worker could never start, so the
+ * sweep would sit in `running` and block every later one.
  */
 export async function maybeTriggerSweepOnJudgingComplete(): Promise<void> {
+  if (!env.CHEAT_SWEEP_SECRET) {
+    if (!warnedNoSecret) {
+      warnedNoSecret = true;
+      console.warn(`[cheat-check-sweep] ${SWEEP_NOT_CONFIGURED} Not starting.`);
+    }
+    return;
+  }
+
   try {
     const [stops] = await db
       .select({

@@ -31,6 +31,7 @@ import {
   startStopSchema,
   submitStopSchema,
   swapTeamsSchema,
+  undoAbsentSchema,
 } from "~/schemas/judging";
 import {
   endRound,
@@ -39,6 +40,7 @@ import {
   getRoundState,
   setBoardVisibility,
   pauseRound,
+  planCatchUp,
   resetRounds,
   resumeRound,
   setRoundConfig,
@@ -53,10 +55,13 @@ import {
   editMark,
   handOffJudge,
   markAbsent,
+  reportJudgeMissing,
+  reportMyJudgeMissing,
   restartRehearsal,
   setJudgeNoShow,
   startStop,
   submitStop,
+  undoAbsent,
 } from "~/server/judging/assignments";
 import {
   getAllJudges,
@@ -390,6 +395,14 @@ export const judgingRouter = createTRPCRouter({
         "Failed to get judging status",
       );
     }),
+
+    /** Our judge hasn't come: flag it, a minute into the round. */
+    reportJudgeMissing: protectedProcedure.mutation(({ ctx }) =>
+      withErrorHandling(
+        () => reportMyJudgeMissing(ctx.session.user.id),
+        "Failed to report your judge missing",
+      ),
+    ),
   }),
 
   admin: createTRPCRouter({
@@ -494,6 +507,14 @@ export const judgingRouter = createTRPCRouter({
       ),
     ),
 
+    /** After the last round: move every missed table into catch-up rounds. */
+    planCatchUp: protectedOrganizerProcedure.mutation(() =>
+      withErrorHandling(
+        () => planCatchUp(),
+        "Failed to plan the catch-up round",
+      ),
+    ),
+
     /** Dev site only: wipe judging scores and assignments for a new rehearsal. */
     restartRehearsal: protectedOrganizerProcedure.mutation(() =>
       withErrorHandling(
@@ -549,6 +570,16 @@ export const judgingRouter = createTRPCRouter({
         }, "Failed to cancel stop");
       }),
 
+    /** A team says their judge never came: the table joins the catch-up round. */
+    reportJudgeMissing: protectedOrganizerProcedure
+      .input(assignmentIdSchema)
+      .mutation(({ input }) =>
+        withErrorHandling(
+          () => reportJudgeMissing(input.assignmentId),
+          "Failed to report the judge missing",
+        ),
+      ),
+
     markAbsent: protectedOrganizerProcedure
       .input(assignmentIdSchema)
       .mutation(async ({ input }) => {
@@ -557,6 +588,16 @@ export const judgingRouter = createTRPCRouter({
           await maybeTriggerSweepOnJudgingComplete();
           return row;
         }, "Failed to mark team absent");
+      }),
+
+    /** Undo an absent report: the table's absent stops reopen. */
+    undoAbsent: protectedOrganizerProcedure
+      .input(undoAbsentSchema)
+      .mutation(async ({ input }) => {
+        return withErrorHandling(
+          () => undoAbsent(input.tableId),
+          "Failed to undo the absent report",
+        );
       }),
 
     getLatestRanking: protectedOrganizerProcedure.query(async () => {

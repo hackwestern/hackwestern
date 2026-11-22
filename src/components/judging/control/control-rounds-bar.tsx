@@ -75,9 +75,18 @@ export function ControlRoundsBar({ now }: { now: number }) {
   const restart = api.judging.admin.restartRehearsal.useMutation(
     run("restart the rehearsal"),
   );
-  const busy = [start, pause, resume, end, reset, clear, config, restart].some(
-    (m) => m.isPending,
-  );
+  const catchUp = api.judging.admin.planCatchUp.useMutation();
+  const busy = [
+    start,
+    pause,
+    resume,
+    end,
+    reset,
+    clear,
+    config,
+    restart,
+    catchUp,
+  ].some((m) => m.isPending);
 
   if (!r) {
     return (
@@ -225,6 +234,57 @@ export function ControlRoundsBar({ now }: { now: number }) {
         </p>
       )}
 
+      {r.enabled && !open && noMore && r.missed > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl bg-[#fff3d6] px-4 py-3">
+          <p className="m-0 text-[15px] font-semibold text-[#7a5200]">
+            {r.missed} {r.missed === 1 ? "team" : "teams"} missed a judge. They
+            get a catch-up round with whoever is present.
+          </p>
+          <button
+            type="button"
+            className={`${BTN_DARK} ml-auto px-6`}
+            disabled={busy}
+            onClick={() => {
+              if (
+                !window.confirm(
+                  `Give the ${r.missed} missed ${r.missed === 1 ? "team" : "teams"} a judge and start the catch-up round now?`,
+                )
+              )
+                return;
+              catchUp.mutate(undefined, {
+                onSuccess: (res) => {
+                  if (res.moved === 0) {
+                    setStatus({
+                      tone: "error",
+                      text: "No tables to catch up: every present judge has already scored those teams. Add a judge to those tables by hand.",
+                    });
+                    void utils.judging.admin.invalidate();
+                    return;
+                  }
+                  setStatus(null);
+                  start.mutate();
+                },
+                onError: (e) =>
+                  setStatus({
+                    tone: "error",
+                    text: `Couldn't plan the catch-up round. ${errorText(e)}`,
+                  }),
+              });
+            }}
+          >
+            {catchUp.isPending ? "Planning…" : "Start catch-up round"}
+          </button>
+        </div>
+      )}
+
+      {r.enabled && r.unfinished > 0 && (
+        <p className={`m-0 text-sm ${MUTED}`}>
+          {r.unfinished} {r.unfinished === 1 ? "table was" : "tables were"}{" "}
+          started but not sent yet. Their judges finish them from My teams; the
+          catch-up round leaves them alone.
+        </p>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
         {!open && (
           <button
@@ -268,7 +328,7 @@ export function ControlRoundsBar({ now }: { now: number }) {
             onClick={() => {
               if (
                 window.confirm(
-                  `End round ${r.round} now? Judges can't submit any more scores in it.`,
+                  `End round ${r.round} now? Judges move on to the next round. Anyone who hasn't scored can still finish that team late from My teams.`,
                 )
               )
                 end.mutate();

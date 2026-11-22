@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
 
+import { useNow } from "~/components/judging/control/control-shared";
 import { RoundClock } from "~/components/judging/judge-app/judge-round";
 import {
   card,
   field,
+  infoBanner,
+  secondaryButton,
   warningBanner,
 } from "~/components/judging/shared/judge-ui";
 import { api, type RouterOutputs } from "~/utils/api";
@@ -101,17 +104,64 @@ function buildRows(stops: Stop[], view: View): Row[] {
   return list.sort((a, b) => n(a) - n(b));
 }
 
-/** The public rounds board: who judges whom, round by round. */
+/**
+ * "Judge missing" for a hacker whose judge hasn't started. Greyed out for the
+ * round's first minute: the judge may still be walking over.
+ */
+function ReportJudgeMissing({
+  opensInMs,
+  fetchedAt,
+}: {
+  opensInMs: number | null;
+  fetchedAt: number;
+}) {
+  const utils = api.useUtils();
+  const report = api.judging.team.reportJudgeMissing.useMutation({
+    onSuccess: () => void utils.judging.team.getMyJudging.invalidate(),
+  });
+  const now = useNow(1000);
+  const opensAt = fetchedAt + (opensInMs ?? 0);
+  const waitSeconds = Math.max(0, Math.ceil((opensAt - now) / 1000));
+  const locked = waitSeconds > 0;
+
+  return (
+    <div className="mt-2 flex flex-col gap-2">
+      <button
+        type="button"
+        className={secondaryButton}
+        disabled={locked || report.isPending}
+        onClick={() => report.mutate()}
+      >
+        {report.isPending ? "Reporting…" : "Judge missing"}
+      </button>
+      <p className="m-0 text-sm text-dashboard-text-light">
+        {locked
+          ? `Please wait for your judge, they may be on the way. You can report them missing in ${waitSeconds}s.`
+          : "Still no judge? Let the organizers know."}
+      </p>
+      {report.error && (
+        <p role="alert" className={warningBanner}>
+          {report.error.message}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The rounds board. Organizers see who judges whom, round by round. Hackers
+ * only see their own team: its table and whether it's being judged now.
+ */
 export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
   const accessQ = api.judging.board.getAccess.useQuery(undefined, {
     refetchInterval: POLL_MS,
   });
   const open = accessQ.data?.visible === true;
   const boardQ = api.judging.board.get.useQuery(undefined, {
-    enabled: open,
+    enabled: open && isOrganizer,
     refetchInterval: POLL_MS,
   });
-  // A hacker's own team, to tell them if it was marked absent.
+  // A hacker's own team: its table, this round, and whether it was absent.
   const teamQ = api.judging.team.getMyJudging.useQuery(undefined, {
     enabled: open && !isOrganizer,
     refetchInterval: POLL_MS,
@@ -131,23 +181,8 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
   );
   const round = board?.round;
   const current = round?.enabled && round.round > 0 ? round.round : null;
-  // A hacker's own team: its row goes first, and a card says where judging is.
-  const mine = teamQ.data;
-  const myKey = mine?.table ? `t${mine.table.number}` : null;
-  const myStop =
-    mine?.table && current !== null
-      ? board?.stops.find(
-          (s) => s.table === mine.table?.number && s.round === current,
-        )
-      : undefined;
   const q = query.trim().toLowerCase();
-  const matching = q ? rows.filter((r) => r.search.includes(q)) : rows;
-  const shown = myKey
-    ? [
-        ...matching.filter((r) => r.key === myKey),
-        ...matching.filter((r) => r.key !== myKey),
-      ]
-    : matching;
+  const shown = q ? rows.filter((r) => r.search.includes(q)) : rows;
 
   if (accessQ.data && !open) {
     return (
@@ -155,6 +190,70 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
         <p className="m-0 text-base font-medium text-dashboard-text-light">
           The rounds aren&apos;t open yet. Check back soon.
         </p>
+      </div>
+    );
+  }
+
+  if (!isOrganizer) {
+    const mine = teamQ.data;
+    return (
+      <div className="flex flex-col gap-4 font-figtree">
+        {teamQ.isLoading || !accessQ.data ? (
+          <p className="m-0 text-base font-medium text-dashboard-text-light">
+            Loading…
+          </p>
+        ) : !mine ? (
+          <p className="m-0 text-base font-medium text-dashboard-text-light">
+            Join a team to see when it&apos;s being judged.
+          </p>
+        ) : mine.absent ? (
+          <p role="status" className={warningBanner}>
+            Your team was marked absent, so it&apos;s out of judging. If
+            that&apos;s a mistake, find an organizer now.
+          </p>
+        ) : !mine.table ? (
+          <p className="m-0 text-base font-medium text-dashboard-text-light">
+            Your team doesn&apos;t have a table yet. Check back soon.
+          </p>
+        ) : (
+          <section
+            aria-label="Your team"
+            className={`${card} flex flex-col gap-1 p-4`}
+          >
+            <span className="text-sm font-semibold text-dashboard-text-light">
+              Your team · Table {mine.table.number}
+            </span>
+            <span className="text-2xl font-bold text-dashboard-text-heavy">
+              {mine.judgedAll
+                ? "Your team has been judged."
+                : mine.thisRound === null
+                  ? "Judging hasn't started yet. Stay at your table."
+                  : mine.thisRound === "now"
+                    ? mine.judgeStarted
+                      ? "Your judge is here."
+                      : "A judge is coming to your table now."
+                    : mine.thisRound === "done"
+                      ? `You've been judged in round ${mine.round}.`
+                      : mine.thisRound === "over"
+                        ? `Round ${mine.round} is over. Stay at your table.`
+                        : `No judge at your table in round ${mine.round}.`}
+            </span>
+            {!mine.judgedAll &&
+              mine.thisRound === "now" &&
+              !mine.judgeStarted &&
+              (mine.reportedMissing ? (
+                <p role="status" className={`${infoBanner} mt-2`}>
+                  Thanks, the organizers know. If your judge doesn&apos;t come,
+                  your team gets another judge in a catch-up round at the end.
+                </p>
+              ) : (
+                <ReportJudgeMissing
+                  opensInMs={mine.reportOpensInMs}
+                  fetchedAt={teamQ.dataUpdatedAt}
+                />
+              ))}
+          </section>
+        )}
       </div>
     );
   }
@@ -181,38 +280,6 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
           </p>
         )}
       </header>
-
-      {mine?.table && !mine.absent && (
-        <section
-          aria-label="Your team"
-          className={`${card} flex flex-col gap-1 p-4`}
-        >
-          <span className="text-sm font-semibold text-dashboard-text-light">
-            Your team · Table {mine.table.number}
-          </span>
-          <span className="text-xl font-bold text-dashboard-text-heavy">
-            {current === null
-              ? "Judging hasn't started yet."
-              : myStop?.status === "now"
-                ? `A judge is at your table for round ${current}.`
-                : myStop?.status === "done"
-                  ? `Your round ${current} judge is done.`
-                  : myStop?.status === "upcoming"
-                    ? `A judge comes to your table in round ${current}.`
-                    : `No judge at your table in round ${current}.`}
-          </span>
-          <span className="text-sm font-medium text-dashboard-text-light">
-            {mine.judges.done} of {mine.judges.total} judges done
-          </span>
-        </section>
-      )}
-
-      {teamQ.data?.absent && (
-        <p role="status" className={warningBanner}>
-          Your team was marked absent, so it&apos;s out of judging. If
-          that&apos;s a mistake, find an organizer now.
-        </p>
-      )}
 
       {round?.enabled && round.round > 0 && (
         <div>
@@ -324,7 +391,7 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
                       </span>
                       {r.sub && (
                         <span className="text-xs font-medium text-dashboard-text-light">
-                          {r.key === myKey ? `${r.sub} · Your team` : r.sub}
+                          {r.sub}
                         </span>
                       )}
                     </th>

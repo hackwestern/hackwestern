@@ -66,6 +66,12 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
   );
   const num = (v: number | string | null) => (v === null ? null : Number(v));
   const scores = new Map(scoreRows.map((r) => [r.team_id, r]));
+  const qRows = extractRows<{ team_id: string; q: number | string }>(
+    await db.execute(
+      sql`SELECT team_id, q FROM judging_normalized_team WHERE series = 'total'`,
+    ),
+  );
+  const qByTeam = new Map(qRows.map((r) => [r.team_id, Number(r.q)]));
 
   return buildTeamResults(
     teamRows.map((t) => ({
@@ -76,6 +82,7 @@ export async function loadTeamResults(): Promise<TeamResult[]> {
       devpost: safeHttpUrl(t.devpostUrl),
       superLikes: Number(scores.get(t.id)?.super_likes ?? 0),
       normalized: num(scores.get(t.id)?.normalized_score ?? null),
+      normalizedQ: qByTeam.get(t.id) ?? null,
       adventure: num(scores.get(t.id)?.adventure_score ?? null),
     })),
     marks.map((m) => ({
