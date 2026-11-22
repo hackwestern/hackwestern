@@ -40,6 +40,8 @@ export type QueueState = {
   round: RoundState;
   teams: QueueTeam[];
   submittedTeams: number;
+  /** Seated teams marked absent: out of judging, so not "fully judged". */
+  absentTeams: number;
   regularMarks: number;
   settings: Progress["settings"];
   started: boolean;
@@ -91,6 +93,9 @@ export function queueFromProgress(p: Progress): QueueState {
     round,
     teams,
     submittedTeams: p.teams.submitted,
+    absentTeams: p.tables.filter(
+      (t) => t.team && t.judges.some((j) => j.status === "team_absent"),
+    ).length,
     regularMarks: p.totals.done,
     settings: p.settings,
     started: p.started,

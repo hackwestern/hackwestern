@@ -267,6 +267,8 @@ export function JudgeNext({
         round && <RoundClock view={round} nextTable={upcoming?.table ?? null} />
       )}
 
+      {errorBanner}
+
       <DashboardButton type="button" onClick={onJudge} className={fullWidth}>
         Judge this team
       </DashboardButton>

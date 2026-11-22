@@ -224,17 +224,22 @@ export function RoundBoard({ isOrganizer = false }: { isOrganizer?: boolean }) {
               Your team · Table {mine.table.number}
             </span>
             <span className="text-2xl font-bold text-dashboard-text-heavy">
-              {mine.thisRound === null
-                ? "Judging hasn't started yet. Stay at your table."
-                : mine.thisRound === "now"
-                  ? "A judge is coming to your table now."
-                  : mine.thisRound === "done"
-                    ? `You've been judged in round ${mine.round}.`
-                    : mine.thisRound === "over"
-                      ? `Round ${mine.round} is over. Stay at your table.`
-                      : `No judge at your table in round ${mine.round}.`}
+              {mine.judgedAll
+                ? "Your team has been judged."
+                : mine.thisRound === null
+                  ? "Judging hasn't started yet. Stay at your table."
+                  : mine.thisRound === "now"
+                    ? mine.judgeStarted
+                      ? "Your judge is here."
+                      : "A judge is coming to your table now."
+                    : mine.thisRound === "done"
+                      ? `You've been judged in round ${mine.round}.`
+                      : mine.thisRound === "over"
+                        ? `Round ${mine.round} is over. Stay at your table.`
+                        : `No judge at your table in round ${mine.round}.`}
             </span>
-            {mine.thisRound === "now" &&
+            {!mine.judgedAll &&
+              mine.thisRound === "now" &&
               !mine.judgeStarted &&
               (mine.reportedMissing ? (
                 <p role="status" className={`${infoBanner} mt-2`}>

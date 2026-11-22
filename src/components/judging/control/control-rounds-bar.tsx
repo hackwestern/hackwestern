@@ -252,7 +252,15 @@ export function ControlRoundsBar({ now }: { now: number }) {
               )
                 return;
               catchUp.mutate(undefined, {
-                onSuccess: () => {
+                onSuccess: (res) => {
+                  if (res.moved === 0) {
+                    setStatus({
+                      tone: "error",
+                      text: "No tables to catch up: every present judge has already scored those teams. Add a judge to those tables by hand.",
+                    });
+                    void utils.judging.admin.invalidate();
+                    return;
+                  }
                   setStatus(null);
                   start.mutate();
                 },
@@ -267,6 +275,14 @@ export function ControlRoundsBar({ now }: { now: number }) {
             {catchUp.isPending ? "Planning…" : "Start catch-up round"}
           </button>
         </div>
+      )}
+
+      {r.enabled && r.unfinished > 0 && (
+        <p className={`m-0 text-sm ${MUTED}`}>
+          {r.unfinished} {r.unfinished === 1 ? "table was" : "tables were"}{" "}
+          started but not sent yet. Their judges finish them from My teams; the
+          catch-up round leaves them alone.
+        </p>
       )}
 
       <div className="flex flex-wrap items-center gap-3">

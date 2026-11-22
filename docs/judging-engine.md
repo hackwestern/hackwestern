@@ -136,6 +136,17 @@ finish that team late.
   A table every present judge has already seen stays missed.
 - A judge marked no-show after judging starts keeps their tables; the unscored
   ones are picked up by the catch-up round (or can be handed off).
+- **Unfinished vs missed.** A table the judge started but didn't send is
+  "unfinished": it stays theirs. They finish it from My teams (listed first as
+  "Not sent yet"), during re-scoring too, and Final lists any still unsent
+  before Submit. A late form has Back instead of "Team not here". Starting
+  the current round's team releases a late team left open (startedAt kept), so
+  it never blocks the judge. Undo absent and deleting a mark also keep the
+  stop with its judge.
+- **Hackers** can press "Judge missing" on their Judging page once the round
+  has run a minute and no judge has started at their table. It flags the table
+  in the control room; the catch-up round handles it if the judge never
+  starts.
 - **Reset** goes back to before round 1; marks are kept. Turning "Judges follow
   the rounds" off (`rounds_enabled = false`) lets judges go in any order, a
   safety valve for the day. Organizer fixes (absent by an organizer, hand-offs,
@@ -146,7 +157,10 @@ finish that team late.
 
 ## Judging starts
 
-Judging has started once any stop is `in_progress`, `done` or `team_absent`.
+Judging has started once a round has been started (timed rounds), or any stop
+is `in_progress`, `done` or `team_absent`. The round counts on its own, so a
+no-show or Auto-assign can't wipe the plan while round 1 runs before anyone
+has pressed "Judge this team".
 After that, table setup, seating and auto-assign are locked; only the day-of
 fixes below are allowed.
 

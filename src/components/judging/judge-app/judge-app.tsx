@@ -304,6 +304,8 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       done: s.status === "done",
       current: s.id === currentStopId,
     }));
+  // Teams whose round ended before this judge sent a score.
+  const unsentTeams = upcomingTeams.filter((u) => u.late && !u.absent);
   // This judge's stop in the open round, once it's closed: scored or absent.
   const roundStop = gated
     ? (stopsQuery.data?.stops ?? []).find(
@@ -381,7 +383,22 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     ),
   ];
 
-  const started = startedLocal || held !== null || results.length > 0;
+  const started =
+    startedLocal ||
+    held !== null ||
+    results.length > 0 ||
+    (stopsQuery.data?.stops ?? []).some(
+      (s) =>
+        s.status === "done" ||
+        s.status === "team_absent" ||
+        s.startedAt !== null,
+    );
+  // No team to judge now and none coming: the Next tab offers the first
+  // unfinished one (its round ended before it was sent).
+  const nextLate =
+    !heldStop && pendingStops.length === 0 && stage === "first"
+      ? missedStops[0]
+      : undefined;
   // Nothing is left in this judge's queue: time to re-score.
   const queueDone =
     stage === "first" &&
@@ -404,8 +421,9 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
   } else if (finished) phase = "finished";
   else if (held) phase = "team";
   // Before their first team, judges see who's in their queue (conflicts).
-  else if (!started) phase = "welcome";
+  else if (!started && pendingStops.length > 0) phase = "welcome";
   else if (gated && pendingStops.length > 0) phase = "waitRound";
+  else if (nextLate) phase = "team";
   else if (queueDone) phase = "rescoreReady";
   else phase = "none";
 
@@ -525,7 +543,12 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       writeRescored(judgeKey, next);
       const nextTeam = results.find((r) => !next.includes(r.teamId));
       if (nextTeam) setEditingId(nextTeam.markId);
-      else goFinal();
+      else if (missedStops.length === 0) goFinal();
+      else {
+        // Teams not sent yet come before Final: they're listed in My teams.
+        setEditingId(null);
+        setTab("teams");
+      }
     }
     return true;
   };
@@ -575,6 +598,12 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       return;
     }
     changeStage("rescore");
+    // Teams not sent yet come first, then the re-scores.
+    const unsent = missedStops[0];
+    if (unsent) {
+      await scoreLate(unsent.id);
+      return;
+    }
     // Straight into the first team still to re-score: the "Time for
     // re-scoring" card already explained what happens next.
     const first = results.find((r) => !rescored.includes(r.teamId));
@@ -605,8 +634,9 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         });
       } catch (error) {
         if (errorCode(error) === "CONFLICT") {
-          // A different team was seated here meanwhile (e.g. after a swap).
-          setNextError("That table changed. Reloading your list.");
+          // The server says why (a different team seated here, or another
+          // table still open).
+          setNextError(friendlyError(error));
           await utils.judging.me.getMyStops.invalidate();
           return;
         }
@@ -768,6 +798,13 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         onSubmit={submitScore}
         onAbsent={teamNotHere}
         onOpenQuestions={() => changeTab("questions")}
+        late={heldLate}
+        onBack={() => {
+          // The draft stays on the phone; the team stays in My teams.
+          setScoring(false);
+          setScoringStopId(null);
+          setTab("teams");
+        }}
       />
     ) : (
       <p className="px-1 text-base font-medium text-dashboard-text-light">
@@ -793,10 +830,10 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
     body = (
       <JudgeNext
         phase={phase}
-        teamName={held?.name ?? null}
-        members={held?.members ?? []}
-        table={heldTable}
-        late={heldLate}
+        teamName={held?.name ?? nextLate?.team?.name ?? null}
+        members={held?.members ?? nextLate?.team?.members ?? []}
+        table={held ? heldTable : (nextLate?.table.number ?? null)}
+        late={heldLate || (!held && !!nextLate)}
         judged={results.length}
         busy={findingNext}
         error={nextError ?? finishError}
@@ -804,7 +841,13 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
         fromTable={results.at(-1)?.table ?? null}
         seen={seenTables}
         onStart={() => void start()}
-        onJudge={() => void judgeThisTeam()}
+        onJudge={() =>
+          void (held
+            ? judgeThisTeam()
+            : nextLate
+              ? scoreLate(nextLate.id)
+              : undefined)
+        }
         onOpenMap={() => changeTab("map")}
         onReview={reviewAll}
         onCheckAgain={() => void fetchNext()}
@@ -839,8 +882,10 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
       ) : stage === "final" ? (
         <JudgeFinal
           results={results}
+          unsent={unsentTeams}
           error={finishError}
           onEdit={editTeam}
+          onScoreLate={(stopId) => void scoreLate(stopId)}
           onSubmit={() => setConfirm("submit")}
         />
       ) : (
@@ -934,7 +979,13 @@ export function JudgeApp({ judgeKey, initial }: JudgeAppProps) {
           }
           description={
             confirm === "submit"
-              ? "You won't be able to change your scores after. You'll then see how they compare with the other judges."
+              ? `${
+                  unsentTeams.length > 0
+                    ? `${unsentTeams.length} ${unsentTeams.length === 1 ? "team hasn't" : "teams haven't"} got your score yet (${unsentTeams
+                        .map((u) => u.teamName)
+                        .join(", ")}). `
+                    : ""
+                }You won't be able to change your scores after. You'll then see how they compare with the other judges.`
               : "You won't be given any more teams. Next you'll go back through every team you scored."
           }
           confirmLabel={confirm === "submit" ? "Submit" : "Start re-scoring"}

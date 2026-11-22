@@ -214,7 +214,17 @@ export function TeamResultsView({ results }: { results: TeamResult[] }) {
       const v = metric.of(r);
       return v === null || r.regular.count === 0 ? [] : [{ r, v }];
     })
-    .sort((a, b) => b.v - a.v || a.r.team.name.localeCompare(b.r.team.name))
+    // Ties (the top teams can all cap at 10.0) break on the value before the
+    // cap, then by name.
+    .sort(
+      (a, b) =>
+        b.v - a.v ||
+        (metric.id === "normalized"
+          ? (b.r.team.normalizedQ ?? -Infinity) -
+              (a.r.team.normalizedQ ?? -Infinity) || 0
+          : 0) ||
+        a.r.team.name.localeCompare(b.r.team.name),
+    )
     .slice(0, TOP_N);
 
   const current =
@@ -292,6 +302,10 @@ export function TeamResultsView({ results }: { results: TeamResult[] }) {
                           {" · "}
                           {r.regular.count}{" "}
                           {r.regular.count === 1 ? "judge" : "judges"}
+                          {metric.id === "normalized" &&
+                          r.team.normalizedQ != null
+                            ? ` · before cap ${r.team.normalizedQ.toFixed(2)}`
+                            : ""}
                         </span>
                       </span>
                       <span

@@ -374,6 +374,7 @@ export async function getTeamJudging(userId: string) {
       judgeStarted: false,
       reportedMissing: false,
       reportOpensInMs: null,
+      judgedAll: false,
     };
 
   // With timed rounds: is a judge at this team's table in the current round?
@@ -449,6 +450,12 @@ export async function getTeamJudging(userId: string) {
     judgeStarted,
     reportedMissing: live.some((s) => s.missingReportedAt !== null),
     reportOpensInMs,
+    // Every judge given to this team has scored it (no open stops left).
+    judgedAll:
+      counts.some((c) => c.status === "done") &&
+      !counts.some(
+        (c) => c.status === "assigned" || c.status === "in_progress",
+      ),
   };
 }
 

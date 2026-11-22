@@ -85,6 +85,41 @@ export function JudgeTeams({
   onEdit,
   onSubmit,
 }: JudgeTeamsProps) {
+  // Teams whose round ended before the judge sent a score: shown first.
+  const notSent = upcoming.filter((u) => u.late && !u.absent);
+  const notSentCard = notSent.length > 0 && (
+    <section
+      aria-label="Not sent yet"
+      className={`${card} flex flex-col gap-2 p-4`}
+    >
+      <h2 className="m-0 text-lg font-bold text-dashboard-text-heavy">
+        Not sent yet
+      </h2>
+      <p className="m-0 text-sm text-dashboard-text-light">
+        Time ran out before your score went in. Your notes are still here.
+      </p>
+      <ul className="m-0 flex list-none flex-col gap-2 p-0">
+        {notSent.map((u) => (
+          <li
+            key={u.stopId}
+            className="flex items-center justify-between gap-3"
+          >
+            <span className="min-w-0 truncate text-base font-semibold text-dashboard-text-heavy">
+              {u.table ?? "–"} · {u.teamName}
+            </span>
+            <DashboardButton
+              type="button"
+              onClick={() => onScoreLate(u.stopId)}
+              className="shrink-0"
+            >
+              Score now
+            </DashboardButton>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+
   const stillToJudge = upcoming.length > 0 && (
     <>
       <p className="m-0 px-1 text-sm text-dashboard-text-light">
@@ -146,6 +181,7 @@ export function JudgeTeams({
   if (results.length === 0) {
     return (
       <>
+        {notSentCard}
         <p className="px-1 text-base font-medium text-dashboard-text-light">
           No scores yet. Teams show up here as you score them.
         </p>
@@ -158,6 +194,7 @@ export function JudgeTeams({
 
   return (
     <>
+      {notSentCard}
       {onStartRescore && (
         <section className={`${card} flex flex-col gap-2 p-4`}>
           <h2 className="m-0 text-xl font-bold text-dashboard-text-heavy">

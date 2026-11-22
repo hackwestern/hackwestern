@@ -86,10 +86,12 @@ export function ControlProgress({
   const queued = queue.teams.length;
   // An empty queue with no marks means judging hasn't started, not that
   // every team is done.
+  // Absent teams are out of judging: neither judged nor still to judge.
+  const inJudging = Math.max(0, queue.submittedTeams - queue.absentTeams);
   const fullyJudged =
     queued === 0 && queue.regularMarks === 0
       ? 0
-      : Math.max(0, queue.submittedTeams - queued);
+      : Math.max(0, inJudging - queued);
   const remaining = queue.teams.reduce((n, t) => n + t.roundsRemaining, 0);
   const marksTotal = queue.regularMarks + remaining;
 
@@ -185,11 +187,8 @@ export function ControlProgress({
           )}
         </Tile>
       )}
-      <Tile
-        label="Teams fully judged"
-        value={`${fullyJudged} / ${queue.submittedTeams}`}
-      >
-        <Bar done={fullyJudged} total={queue.submittedTeams} />
+      <Tile label="Teams fully judged" value={`${fullyJudged} / ${inJudging}`}>
+        <Bar done={fullyJudged} total={inJudging} />
       </Tile>
       <Tile
         label="Marks submitted"

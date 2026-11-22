@@ -10,7 +10,18 @@
  * open.
  */
 import { TRPCError } from "@trpc/server";
-import { and, asc, eq, inArray, isNull, lt, lte, ne, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  lte,
+  ne,
+  sql,
+} from "drizzle-orm";
 
 import { db } from "~/server/db";
 import {
@@ -415,6 +426,30 @@ async function missedStops(tx: Tx, state: RoundState) {
     .orderBy(asc(judgingAssignments.position), asc(judgingAssignments.id));
 }
 
+/** Stops started but not scored, from rounds that have ended. */
+async function unfinishedCount(state: RoundState) {
+  if (!state.enabled || state.round === 0) return 0;
+  const ended =
+    state.status === "closed"
+      ? lte(judgingAssignments.position, state.round)
+      : lt(judgingAssignments.position, state.round);
+  const rows = await db
+    .select({ id: judgingAssignments.id })
+    .from(judgingAssignments)
+    .innerJoin(
+      teams,
+      eq(teams.judgingTableId, judgingAssignments.judgingTableId),
+    )
+    .where(
+      and(
+        inArray(judgingAssignments.status, ["assigned", "in_progress"]),
+        isNotNull(judgingAssignments.startedAt),
+        ended,
+      ),
+    );
+  return rows.length;
+}
+
 /**
  * After the last round has ended: move every missed table into catch-up
  * rounds. It goes to a present judge who hasn't seen that team, fewest
@@ -502,6 +537,7 @@ export async function planCatchUp() {
           status: "assigned",
           startedAt: null,
           completedAt: null,
+          missingReportedAt: null,
         })
         .where(eq(judgingAssignments.id, m.id));
       add(positions, best.judgeId, best.position);
@@ -541,6 +577,8 @@ export async function getRoundOverview() {
     canRestartRehearsal: rehearsalRestartAllowed(),
     /** Tables whose judge never came, from rounds that have ended. */
     missed: (await missedStops(db, state)).length,
+    /** Started but not sent, from rounds that have ended: the judge finishes them late. */
+    unfinished: await unfinishedCount(state),
     stops: {
       total: stops.length,
       done: stops.filter(

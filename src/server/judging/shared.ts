@@ -5,6 +5,7 @@ import { env } from "~/env";
 import { type Transaction, db } from "~/server/db";
 import {
   judgingAssignments,
+  judgingRound,
   judgingSettings,
   judgingTables,
 } from "~/server/db/schema";
@@ -60,8 +61,17 @@ export async function getSettings(
   return { ...settings, perRow: tablesPerRow(settings) };
 }
 
-/** Judging has started once any stop is in progress or finished. */
+/**
+ * Judging has started once a round has been started, or any stop is in
+ * progress or finished. The round counts on its own: round 1 can be running
+ * before any judge has pressed "Judge this team".
+ */
 export async function isJudgingStarted(tx: Tx = db): Promise<boolean> {
+  const [round] = await tx
+    .select({ current: judgingRound.currentRound })
+    .from(judgingRound)
+    .where(eq(judgingRound.id, 1));
+  if ((round?.current ?? 0) > 0) return true;
   const started = await tx.query.judgingAssignments.findFirst({
     where: inArray(judgingAssignments.status, STARTED_STATUSES),
     columns: { id: true },

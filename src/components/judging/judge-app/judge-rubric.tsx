@@ -127,6 +127,12 @@ interface JudgeRubricProps {
   onAbsent: () => Promise<boolean>;
   /** Opens the Questions tab. The score stays as it is. */
   onOpenQuestions?: () => void;
+  /**
+   * A team whose round already ended. Shows Back (the draft stays on the
+   * phone) instead of "Team not here", which would disqualify the team.
+   */
+  late?: boolean;
+  onBack?: () => void;
 }
 
 /** The Score page: rubric, notes and the two ways to finish a team. Key it by team. */
@@ -141,6 +147,8 @@ export function JudgeRubric({
   onSubmit,
   onAbsent,
   onOpenQuestions,
+  late = false,
+  onBack,
 }: JudgeRubricProps) {
   const key = `${judgeKey}-${teamId}`;
   const [initial] = useState(() => readDraft(key));
@@ -271,15 +279,27 @@ export function JudgeRubric({
       />
 
       <div className="flex gap-2">
-        <DashboardButton
-          type="button"
-          variant="outline"
-          disabled={busy}
-          onClick={() => setConfirmAbsent(true)}
-          className={`${touch} px-4`}
-        >
-          Team not here
-        </DashboardButton>
+        {late ? (
+          <DashboardButton
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={onBack}
+            className={`${touch} px-4`}
+          >
+            Back
+          </DashboardButton>
+        ) : (
+          <DashboardButton
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={() => setConfirmAbsent(true)}
+            className={`${touch} px-4`}
+          >
+            Team not here
+          </DashboardButton>
+        )}
         <DashboardButton
           type="button"
           disabled={!complete || busy}

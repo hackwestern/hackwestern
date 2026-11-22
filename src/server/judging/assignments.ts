@@ -381,6 +381,7 @@ export async function handOffJudge(fromJudgeId: string, toJudgeId: string) {
               position,
               status: "assigned",
               startedAt: null,
+              missingReportedAt: null,
             })
             .where(
               and(
@@ -711,9 +712,14 @@ export async function undoAbsent(tableId: number) {
       )
       .orderBy(asc(judgingAssignments.id))
       .for("update");
+    // startedAt is set so the catch-up round leaves these with their judge.
     const reopened = await tx
       .update(judgingAssignments)
-      .set({ status: "assigned", startedAt: null, completedAt: null })
+      .set({
+        status: "assigned",
+        startedAt: sql`coalesce(${judgingAssignments.startedAt}, now())`,
+        completedAt: null,
+      })
       .where(
         and(
           eq(judgingAssignments.judgingTableId, tableId),
@@ -839,9 +845,23 @@ export async function startStop(
           eq(judgingAssignments.status, "in_progress"),
           ne(judgingAssignments.id, assignmentId),
         ),
-        columns: { id: true },
+        columns: { id: true, position: true },
       });
-      if (busy) throw busyError();
+      if (busy) {
+        // A team from a round that has ended (a late score the judge left)
+        // doesn't block the next one. It goes back to assigned with its
+        // startedAt kept: the judge was there, so it stays theirs.
+        const state = await getRoundState(tx);
+        const ended =
+          state.enabled &&
+          (busy.position < state.round ||
+            (busy.position === state.round && state.status === "closed"));
+        if (!ended) throw busyError();
+        await tx
+          .update(judgingAssignments)
+          .set({ status: "assigned" })
+          .where(eq(judgingAssignments.id, busy.id));
+      }
       await seatedTeamAt(tx, stop.judgingTableId, teamId);
       return transition(
         tx,
@@ -965,9 +985,14 @@ export async function deleteMark(teamMarkId: number) {
       return { reopened: false };
     }
 
+    // startedAt is set so the catch-up round leaves it with its judge.
     const reopened = await tx
       .update(judgingAssignments)
-      .set({ status: "assigned", startedAt: null, completedAt: null })
+      .set({
+        status: "assigned",
+        startedAt: sql`coalesce(${judgingAssignments.startedAt}, now())`,
+        completedAt: null,
+      })
       .where(
         and(
           eq(judgingAssignments.judgeId, deleted.judgeId),
