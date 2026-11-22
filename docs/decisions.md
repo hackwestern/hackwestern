@@ -1236,3 +1236,8 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 - **Timing on the day:** 3 min demo, 2 min Q&A, 1:30 to move (6:30 rounds, matching the judge app's built-in 1:30 buffer), about 7 rounds. Set the round length to 390 seconds in the control room.
 - **Also:** live pages (`/rounds`, `/live`, ...) now send signed-out visitors back to the page they opened after login, not always `/live`.
 - **Alternatives:** a standalone HTML mock (faster, but copies the UI by hand and goes stale); a spotlight tour over the live `/judge` page like the sponsor tour (needs a real judge account and live data, not usable for a briefing).
+
+## 2026-11-22: Sponsors rank a top 3, not a top 5
+- **Decision:** `SPONSOR_FINAL_TOP` is 3 (was 5). With `SPONSOR_FINAL_MIN` at 3, each sponsor ranks and submits exactly 3 teams that presented (or all of them when fewer presented). The portal, the round 2 draft, the Sponsor Judging sheet (1st to 3rd place), the organizer labels ("Top 3", "Top 3 not in") and the sponsor tour all follow the constant.
+- **Why:** Jazz is telling sponsors "please give us your top 3 teams ranked" at the sponsor judging workshop.
+- **Alternatives:** keep 5 and change the briefing (Jazz chose 3); keep 5 places and say only the first 3 count (sponsors would still have to fill 5 to submit).

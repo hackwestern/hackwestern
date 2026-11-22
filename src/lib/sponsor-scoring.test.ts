@@ -41,7 +41,7 @@ const review = (teamId: string, patch: Partial<TeamReview> = {}) => ({
 
 describe("SPONSOR_FINAL_TOP", () => {
   it("is a ranked top 5 (1st to 5th; Jazz 2026-11-19)", () => {
-    expect(SPONSOR_FINAL_TOP).toBe(5);
+    expect(SPONSOR_FINAL_TOP).toBe(3);
     expect(finalTopIsValid(SPONSOR_FINAL_TOP)).toBe(true);
   });
 
@@ -226,33 +226,32 @@ describe("judgingOpen", () => {
 describe("rankingError", () => {
   const shortlist = new Set(["a", "b", "c", "d", "e", "f"]);
 
-  it.each([3, 4, 5])("accepts %i shortlisted, distinct teams", (count) => {
-    expect(rankingError([...shortlist].slice(0, count), shortlist)).toBeNull();
+  it("accepts exactly the top 3, shortlisted and distinct", () => {
+    expect(rankingError(["a", "b", "c"], shortlist)).toBeNull();
   });
 
   it("refuses the wrong count", () => {
     expect(rankingError(["a", "b"], shortlist)).toBe("wrongCount");
-    expect(rankingError(["a", "b", "c", "d", "e", "f"], shortlist)).toBe(
-      "wrongCount",
-    );
+    expect(rankingError(["a", "b", "c", "d"], shortlist)).toBe("wrongCount");
     expect(rankingError([], shortlist)).toBe("wrongCount");
   });
 
   it("refuses duplicates", () => {
-    expect(rankingError(["a", "a", "b", "c", "d"], shortlist)).toBe(
-      "duplicate",
-    );
+    expect(rankingError(["a", "a", "b"], shortlist)).toBe("duplicate");
   });
 
   it("refuses teams not on the shortlist", () => {
-    expect(rankingError(["a", "b", "c", "d", "z"], shortlist)).toBe(
-      "notShortlisted",
-    );
+    expect(rankingError(["a", "b", "z"], shortlist)).toBe("notShortlisted");
   });
 
-  it("follows a configured size", () => {
-    expect(rankingError(["a", "b", "c"], shortlist, 3)).toBeNull();
-  });
+  it.each([3, 4, 5])(
+    "with a configured size of 5, accepts %i teams",
+    (count) => {
+      expect(
+        rankingError([...shortlist].slice(0, count), shortlist, 5),
+      ).toBeNull();
+    },
+  );
 });
 
 describe("moveItem", () => {

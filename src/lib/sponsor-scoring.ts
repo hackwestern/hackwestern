@@ -13,7 +13,7 @@
  * column for each possible place.
  */
 export const SPONSOR_FINAL_MIN = 3;
-export const SPONSOR_FINAL_TOP = 5;
+export const SPONSOR_FINAL_TOP = 3;
 export const SPONSOR_FINAL_TOP_LIMIT = 10;
 
 /** Fewest picks a sponsor submits: SPONSOR_FINAL_MIN, or all of them when fewer can be ranked. */

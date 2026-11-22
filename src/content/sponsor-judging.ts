@@ -391,9 +391,9 @@ export const sponsorJudgingCopy = {
           `Digital sponsor: top ${top} entered by the spon team from Devpost links.`,
       },
     },
-    /** Each sponsor's top 5, one row per place, links in their own columns. */
+    /** Each sponsor's top 3, one row per place, links in their own columns. */
     winners: {
-      title: "Top 5 by sponsor",
+      title: "Top 3 by sponsor",
       headers: ["Sponsor", "Place", "Team ID", "Team", "Devpost", "GitHub"],
       place: (n: number) => `${ordinal(n)} place`,
       empty: (top: number) => `No sponsor has sent their top ${top} yet.`,

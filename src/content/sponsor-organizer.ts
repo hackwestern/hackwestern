@@ -568,7 +568,7 @@ export const sponsorOrganizerCopy = {
       boothOpen: "Booth",
       judgingShortlist: "Judging shortlist",
       judgingRoom: "Judging room",
-      top5: "Top 5",
+      top5: "Top 3",
     },
     columnSub: {
       briefing: "5:00 PM · Rm 2110",
@@ -628,7 +628,7 @@ export const sponsorOrganizerCopy = {
           : `${count} chats have no hackers yet, first ${rep}'s at ${time}`,
       shortlistLate: "Shortlist not in",
       noRoom: "No judging room",
-      topLate: "Top 5 not in",
+      topLate: "Top 3 not in",
     },
     details: {
       heading: "Contacts and package",
