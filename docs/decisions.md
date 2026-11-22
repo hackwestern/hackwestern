@@ -1233,7 +1233,7 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 ## 2026-11-22: Judging tour and briefings run the real judging screens on sample data
 - **Decision:** `/judging-tour` (stop by stop, judge's phone next to the hacker's screen), `/judging-tour/judges` and `/judging-tour/hackers` (one-screen briefings for the projector) render the real judge app and hacker card components with typed sample data from `tour-mocks.ts`. The hacker card was pulled out of `RoundBoard` as `HackerTableCard` so `/rounds` and the tour share it. Public pages, noindex.
 - **Why:** Jazz needs to show judges and hackers exactly what their screens will say on the day. Reusing the components means the tour can't drift from the app; a type change in the API breaks the build instead of the walkthrough.
-- **Timing on the day:** 3 min demo, 2 min Q&A, 1:30 to move (6:30 rounds, matching the judge app's built-in 1:30 buffer), about 7 rounds. Set the round length to 390 seconds in the control room.
+- **Timing on the day:** a round is 5 minutes (3 min demo, 2 min Q&A), then about 1:30 for judges to move before organizers start the next round. 9 rounds. Set the round length to 300 seconds in the control room. (Was 6:30 with the move inside the round; Jazz, 2026-11-22.)
 - **Also:** live pages (`/rounds`, `/live`, ...) now send signed-out visitors back to the page they opened after login, not always `/live`.
 - **Alternatives:** a standalone HTML mock (faster, but copies the UI by hand and goes stale); a spotlight tour over the live `/judge` page like the sponsor tour (needs a real judge account and live data, not usable for a briefing).
 
@@ -1241,3 +1241,8 @@ Reconciled with Jazz's earlier explicit choices (hers win where they conflict):
 - **Decision:** `SPONSOR_FINAL_TOP` is 3 (was 5). With `SPONSOR_FINAL_MIN` at 3, each sponsor ranks and submits exactly 3 teams that presented (or all of them when fewer presented). The portal, the round 2 draft, the Sponsor Judging sheet (1st to 3rd place), the organizer labels ("Top 3", "Top 3 not in") and the sponsor tour all follow the constant.
 - **Why:** Jazz is telling sponsors "please give us your top 3 teams ranked" at the sponsor judging workshop.
 - **Alternatives:** keep 5 and change the briefing (Jazz chose 3); keep 5 places and say only the first 3 count (sponsors would still have to fill 5 to submit).
+
+## 2026-11-22: Judging tour is a spotlight over the real screens
+- **Decision:** /judging-tour shows the real judge app and the real hacker Judging Rounds page (with the real portal sidebar) at full size on sample data, side by side or one at a time, and walks through them with the sponsor portal's tour overlay: everything dimmed except one spot, a callout with the instruction. Minimize keeps the step so the presenter can talk over the bare screen. The side-by-side mock frames and the sponsor tour were dropped.
+- **Why:** Jazz: "IT IS JUST THE ACTUAL UX and the instructions and greyed out everything around that", like the sponsor portal tour, with both screens open.
+- **Alternatives:** the earlier stop-by-stop page with both screens in device frames (read like a mock, not the app).

@@ -15,7 +15,7 @@ How to get the judging rules to hackers and judges with the least new work. Judg
 >
 > Main judging runs 11:30 AM to 1:00 PM in the Grand Hall. Find your table number at hackwestern.com/rounds (log in first). Set up there and stay there.
 >
-> How it works: about 7 rounds. Each round a judge either comes to your table or you're idle that round. You get 3 minutes to demo and 2 minutes of Q&A, then judges have 1:30 to move. One big clock times everything.
+> How it works: 9 rounds. Each round a judge either comes to your table or you're idle that round. You get 3 minutes to demo and 2 minutes of Q&A, then judges have 1:30 to move. One big clock times everything.
 >
 > No slides. Show the project working.
 >
@@ -58,5 +58,5 @@ How to get the judging rules to hackers and judges with the least new work. Judg
 ## Check before sending
 
 - These links only work once PR #1266 is merged and deployed: `/judging-tour`, `/judging-tour/judges`, `/judging-tour/hackers`, and the login redirect back to `/rounds`.
-- Round length in the control room: 390 seconds (6:30).
+- Round length in the control room: 300 seconds (5:00). Start the next round about 1:30 after each one ends, so judges can walk.
 - Old drafts said judging starts at 11:45. Now it's 11:30 everywhere.

@@ -13,7 +13,7 @@ export const judgingTourCopy = {
   facts: [
     { label: "When", value: "11:30 AM to 1:00 PM, Sunday" },
     { label: "Where", value: "Grand Hall, SEI 1110" },
-    { label: "Each round", value: "3 min demo, 2 min Q&A, 1:30 to move" },
+    { label: "Each round", value: "5 min: 3 demo, 2 Q&A, then 1:30 to move" },
     { label: "Each team", value: "Scored by 3 judges" },
   ],
   views: {
@@ -289,7 +289,7 @@ export const judgingTourCopy = {
         body: "One central clock times every round for the whole room. Everyone demos at the same time.",
       },
       {
-        title: "About 7 rounds",
+        title: "9 rounds",
         body: "Some rounds a judge comes to you, some rounds you wait. Three different judges score your team.",
       },
       {
@@ -467,6 +467,166 @@ export const judgingTourCopy = {
           "Winners are announced at the closing ceremony at 2:00 PM.",
           "Questions at any point? Ask your Hack Western sponsor rep.",
         ],
+      },
+    },
+  },
+  /** The spotlight tours at /judging-tour: the real screens, dimmed around one spot. */
+  walkthrough: {
+    title: "Judging tour",
+    chooser: {
+      eyebrow: "Hack Western 13 · judging tour",
+      heading: "See judging the way you'll see it",
+      body: "The real screens on sample teams. Everything is dimmed except the part being explained. Use Next or the arrow keys.",
+      options: {
+        both: {
+          title: "Judges and hackers",
+          body: "Both screens side by side, round by round.",
+        },
+        judge: { title: "Judges only", body: "The judge app on your phone." },
+        hacker: { title: "Hackers only", body: "Your Judging Rounds page." },
+        sponsor: {
+          title: "Sponsors",
+          body: "Shortlist, presentations, your top 3.",
+        },
+      },
+    },
+    judgeLabel: "Judge's phone · hackwestern.com/judge",
+    hackerLabel: "Hacker's screen · hackwestern.com/rounds",
+    sponsorHeading: "Judging",
+    restart: "Restart tour",
+    change: "Change tour",
+    minimize: "Minimize tour",
+    resume: "Resume tour",
+    minimized: (n: number, total: number) =>
+      `Tour paused at step ${n} of ${total}`,
+    showJudge: "Judge",
+    showHacker: "Hacker",
+    steps: {
+      queue: {
+        title: "These are your teams",
+        body: "Before anything else, check this list. If you know anyone on one of these teams, send that team's table number to Luca on Slack. We'll swap it before judging starts.",
+      },
+      start: {
+        title: "Start judging",
+        body: "Make your account at hackwestern.com/register with the email you gave us, open hackwestern.com/judge, then press Start judging.",
+      },
+      roundsLink: {
+        title: "Hackers: open Judging Rounds",
+        body: "Go to hackwestern.com/rounds, or Judging Rounds in the portal menu. Not logged in? You log in first and come straight back here.",
+      },
+      yourTable: {
+        title: "Your table. Don't move.",
+        body: "Set up your demo here and stay for every round. If a judge comes and nobody is at your table, your team is disqualified.",
+      },
+      waiting: {
+        title: "Waiting for round 1",
+        body: "Judging runs 11:30 AM to 1:00 PM in the Grand Hall. Judges wait here until we start the clock.",
+      },
+      table: {
+        title: "Walk to your table",
+        body: "70 tables are numbered in a snake: row 1 left to right, row 2 right to left. Your phone shows your table, the team, and which way to walk.",
+      },
+      clock: {
+        title: "One round is 5 minutes",
+        body: "3 minute demo, then 2 minutes of Q&A. This timer and the big clock at the front count it down for everyone. After each round, judges get about 1:30 to walk to their next table. 9 rounds in total.",
+      },
+      coming: {
+        title: "A judge is coming",
+        body: "Each round your page says either a judge is coming to you, or you're idle this round.",
+      },
+      missing: {
+        title: "Judge missing?",
+        body: "If nobody has come a minute into the round, press this. We'll send you a judge in the catch-up round, so you won't lose a score.",
+      },
+      idle: {
+        title: "Idle this round",
+        body: "Not every team has a judge every round. Stay at your table anyway: your next judge comes in a later round.",
+      },
+      judgeThis: {
+        title: "Judge this team",
+        body: "Press this when you reach the table. It opens the score screen.",
+      },
+      here: {
+        title: "No presentations. Just demos.",
+        body: "No slides. Hackers show the project working for 3 minutes, then the judge asks questions for 2 minutes.",
+      },
+      criteria: {
+        title: "The 5 criteria",
+        body: "Innovation + Impact, Creativity, Technical Complexity, Design/Polish, Adventurous. Each from 1 to 10: 5 is an average project, 9 is one you see as winning. Adventurous also feeds the Most Adventurous track. Show descriptions explains each one.",
+      },
+      superLike: {
+        title: "Super like",
+        body: "For a team that really stood out. We take super likes into account when picking winners.",
+      },
+      notHere: {
+        title: "Team not here",
+        body: "Only if nobody is at the table. Look around first: it disqualifies the team for every judge, like the hacker screen shows.",
+      },
+      nextTeam: {
+        title: "Send your score",
+        body: "Score all 5, add a note if you like, then press Next team. Don't worry about completeness: the web team marks it, plus an extra mark for each team's GitHub and LinkedIn.",
+      },
+      buffer: {
+        title: "Buffer: move on",
+        body: "With 1:30 left the timer says Buffer and names your next table. Send your score and start walking.",
+      },
+      over: {
+        title: "Time's up",
+        body: "At 0:00 the round closes. Hackers stay at their table, judges wait for the next round.",
+      },
+      catchup: {
+        title: "Stay a little longer",
+        body: "After your last table, stay in the hall for the catch-up round. Any team that missed a judge gets one now. No table for you? Stay close in case we need you.",
+      },
+      rescore: {
+        title: "Re-score",
+        body: "Go back through every team once, now that you've seen them all, and adjust any score.",
+      },
+      submit: {
+        title: "Submit",
+        body: "Scores lock after this, and you'll see how yours compare with other judges.",
+      },
+      judged: {
+        title: "Done. Walk around.",
+        body: "Once your page says this, walk around and see other projects until 1:00 PM. Entered an MLH track? Someone from MLH comes by your table to judge it separately.",
+      },
+      done: {
+        title: "You're done judging",
+        body: "Walk the room and see any demo you like until 1:00 PM. These visits don't count toward scores. Closing ceremony is at 2:00 PM.",
+      },
+    },
+    sponsor: {
+      welcome: {
+        title: "Your morning",
+        body: "Shortlist up to 10 teams by 9:45. About 10 teams present to you from 10:00 to 11:30, 3 minutes plus 2 minutes of Q&A. Then you rank your top 3. A Hack Western sponsor rep is with you the whole way.",
+      },
+      score: {
+        title: "Score each project",
+        body: "Go through the projects in your track with your sponsor rep and give each a score from 1 to 10. Everything saves as you go.",
+      },
+      save: {
+        title: "Save as finalist",
+        body: "Save any team you want to hear present. You can save more than 10 while browsing.",
+      },
+      send: {
+        title: "Submit your shortlist by 9:45",
+        body: "Trim it to 10 or fewer, then submit. You can only submit once. We build the schedule and tell every team when and where to come.",
+      },
+      present: {
+        title: "Presentations, 10:00 to 11:30",
+        body: "Your sponsor rep walks you to your room right after this meeting, keeps time, and lets each team in and out. Teams show up here in the order they present.",
+      },
+      presentScore: {
+        title: "Score as they finish",
+        body: "3 minute presentation, 2 minutes of Q&A, then score the team here.",
+      },
+      rank: {
+        title: "Rank your top 3",
+        body: "After the last team, rank your top 3 from the teams that presented, best first.",
+      },
+      rankSubmit: {
+        title: "Submit your top 3",
+        body: "It's final, and Hack Western uses it for your prize. The web team runs a cheat check, and winners are announced at closing at 2:00 PM.",
       },
     },
   },

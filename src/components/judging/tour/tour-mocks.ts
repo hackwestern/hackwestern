@@ -13,10 +13,10 @@ import {
   type UpcomingTeam,
 } from "~/components/judging/judge-app/judge-teams";
 
-/** Rounds in the sample plan (about 7 on the day); this judge has 6 tables. */
-export const TOUR_ROUNDS = 7;
-/** 3 min demo + 2 min Q&A + 1:30 to move (the judge app's buffer). */
-const ROUND_SECONDS = 390;
+/** Rounds on the day; this sample judge has 6 tables in them. */
+export const TOUR_ROUNDS = 9;
+/** 3 min demo + 2 min Q&A. Judges get about 1:30 to move between rounds. */
+const ROUND_SECONDS = 300;
 
 /** The sample judge's route, in walking order. */
 export const TOUR_TEAMS = [
