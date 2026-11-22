@@ -34,8 +34,8 @@ export function sponsorNameKey(name: string): string {
   return nameKey(withoutAsides(name));
 }
 
-export const QNX_JUDGING_ROOM = "Rm 2235";
-export const PCBWAY_JUDGING_ROOM = "Rm 2242";
+export const QNX_JUDGING_ROOM = "Rm 2110";
+export const PCBWAY_JUDGING_ROOM = "Rm 2235";
 
 export function fixedSponsorJudgingRoom(name: string): string | null {
   switch (sponsorNameKey(name)) {

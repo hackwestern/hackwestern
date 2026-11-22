@@ -700,12 +700,12 @@ describe("sponsorPresentations.schedule and notices", () => {
     const hacker = await member(t);
     await db
       .insert(sponsorJudgingRooms)
-      .values({ sponsorId: qnx!.id, room: "Rm 2110" });
+      .values({ sponsorId: qnx!.id, room: "Rm 2235" });
     await send(qnx!.id, [t]);
     await setRound2Open(true);
     await organizer.sponsorPresentations.schedule();
     expect(await hacker.caller.sponsorPresentations.mine()).toEqual([
-      { sponsorName: "QNX", room: "Rm 2235", start: 600 },
+      { sponsorName: "QNX", room: "Rm 2110", start: 600 },
     ]);
     await expect(
       organizer.sponsorPresentations.setRoom({
@@ -713,16 +713,16 @@ describe("sponsorPresentations.schedule and notices", () => {
         room: "Rm 2230",
       }),
     ).rejects.toMatchObject({ code: "CONFLICT" });
-    // A previously saved slot with a different room also reads as 2235.
+    // A previously saved slot with a different room also reads as 2110.
     await db
       .update(sponsorPresentations)
-      .set({ room: "Rm 2110" })
+      .set({ room: "Rm 2235" })
       .where(eq(sponsorPresentations.teamId, t));
     expect(await hacker.caller.sponsorPresentations.mine()).toEqual([
-      { sponsorName: "QNX", room: "Rm 2235", start: 600 },
+      { sponsorName: "QNX", room: "Rm 2110", start: 600 },
     ]);
     expect((await organizer.sponsorPresentations.board()).slots).toContainEqual(
-      expect.objectContaining({ teamId: t, room: "Rm 2235" }),
+      expect.objectContaining({ teamId: t, room: "Rm 2110" }),
     );
     await db
       .delete(sponsorJudgingSponsors)
@@ -871,7 +871,7 @@ describe("presentationDmMessage", () => {
     const email = presentationEmail({ name: "Avery" }, "Team", slots);
     for (const message of [JSON.stringify(slack), email.text, email.html]) {
       expect(message).toContain("10:00am – 11:00am");
-      expect(message).toContain("Location: Rm 2242");
+      expect(message).toContain("Location: Rm 2235");
       expect(message).toContain("No time slots. Judges will come to you");
       expect(message).not.toContain("10:24 AM");
       expect(message).not.toContain("1 minute to set up");
@@ -889,12 +889,12 @@ describe("presentationDmMessage", () => {
       presentationEmail({ name: "Avery" }, "Team", slots).text,
     ]) {
       expect(message).toContain("10:00am – 11:00am");
-      expect(message).toContain("10:30 AM – 10:36 AM: QNX, Rm 2235");
+      expect(message).toContain("10:30 AM – 10:36 AM: QNX, Rm 2110");
       expect(message).toContain("1 minute to set up and 5 minutes to present");
       expect(message).toContain(
         "Go to each of your scheduled sponsor presentations first",
       );
-      expect(message).toContain("head to PCBWay in Rm 2242");
+      expect(message).toContain("head to PCBWay in Rm 2235");
       expect(message).not.toContain("stay at your station the entire time");
     }
   });
