@@ -399,7 +399,7 @@ describe("sponsorPresentations.notify", () => {
       .set({ teamId: t })
       .where(eq(users.id, hackerSession.user.id));
     await send(s.id, [t]);
-    rooms.mockResolvedValue(new Map([[s.id, "Rm 2235"]]));
+    rooms.mockResolvedValue(new Map([[s.id, "Rm 2140"]]));
     await organizer.sponsorPresentations.schedule();
 
     const hacker = createCaller(
@@ -418,7 +418,7 @@ describe("sponsorPresentations.notify", () => {
     await setRound2Open(true);
     // The saved schedule is visible before anyone is notified.
     expect(await hacker.sponsorPresentations.mine()).toEqual([
-      { sponsorName: s.name, room: "Rm 2235", start: 600 },
+      { sponsorName: s.name, room: "Rm 2140", start: 600 },
     ]);
 
     const res = await organizer.sponsorPresentations.notify();
@@ -427,7 +427,7 @@ describe("sponsorPresentations.notify", () => {
       "xoxb-test",
       expect.objectContaining({ email: hackerSession.user.email }),
       expect.any(String),
-      [{ sponsorName: s.name, room: "Rm 2235", start: 600 }],
+      [{ sponsorName: s.name, room: "Rm 2140", start: 600 }],
       undefined,
       // The Confirm button carries the team and the times it was sent.
       {
@@ -436,7 +436,7 @@ describe("sponsorPresentations.notify", () => {
       },
     );
     expect(await hacker.sponsorPresentations.mine()).toEqual([
-      { sponsorName: s.name, room: "Rm 2235", start: 600 },
+      { sponsorName: s.name, room: "Rm 2140", start: 600 },
     ]);
     const view = await organizer.sponsorPresentations.overview();
     expect(view.notices).toMatchObject({
@@ -475,7 +475,7 @@ describe("sponsorPresentations.notify", () => {
   test("a shortlist send tells only that sponsor's teams, every member, once", async () => {
     slackToken = "xoxb-test";
     const { t } = await scheduledTeam("Rm 2130");
-    const other = await scheduledTeam("Rm 2235");
+    const other = await scheduledTeam("Rm 2140");
     const a = await member(t);
     const b = await member(t);
     await member(other.t);
@@ -700,7 +700,7 @@ describe("sponsorPresentations.schedule and notices", () => {
     const hacker = await member(t);
     await db
       .insert(sponsorJudgingRooms)
-      .values({ sponsorId: qnx!.id, room: "Rm 2235" });
+      .values({ sponsorId: qnx!.id, room: "Rm 2140" });
     await send(qnx!.id, [t]);
     await setRound2Open(true);
     await organizer.sponsorPresentations.schedule();
@@ -716,7 +716,7 @@ describe("sponsorPresentations.schedule and notices", () => {
     // A previously saved slot with a different room also reads as 2110.
     await db
       .update(sponsorPresentations)
-      .set({ room: "Rm 2235" })
+      .set({ room: "Rm 2140" })
       .where(eq(sponsorPresentations.teamId, t));
     expect(await hacker.caller.sponsorPresentations.mine()).toEqual([
       { sponsorName: "QNX", room: "Rm 2110", start: 600 },
@@ -741,10 +741,10 @@ describe("sponsorPresentations.schedule and notices", () => {
 
     await organizer.sponsorPresentations.setRoom({
       sponsorId: s.id,
-      room: "Rm 2235",
+      room: "Rm 2140",
     });
     expect(await hacker.caller.sponsorPresentations.mine()).toEqual([
-      { sponsorName: s.name, room: "Rm 2235", start: 600 },
+      { sponsorName: s.name, room: "Rm 2140", start: 600 },
     ]);
     expect(await other.caller.sponsorPresentations.mine()).toEqual([]);
   });
@@ -871,7 +871,7 @@ describe("presentationDmMessage", () => {
     const email = presentationEmail({ name: "Avery" }, "Team", slots);
     for (const message of [JSON.stringify(slack), email.text, email.html]) {
       expect(message).toContain("10:00am – 11:00am");
-      expect(message).toContain("Location: Rm 2235");
+      expect(message).toContain("Location: Rm 2140");
       expect(message).toContain("No time slots. Judges will come to you");
       expect(message).not.toContain("10:24 AM");
       expect(message).not.toContain("1 minute to set up");
@@ -894,7 +894,7 @@ describe("presentationDmMessage", () => {
       expect(message).toContain(
         "Go to each of your scheduled sponsor presentations first",
       );
-      expect(message).toContain("head to PCBWay in Rm 2235");
+      expect(message).toContain("head to PCBWay in Rm 2140");
       expect(message).not.toContain("stay at your station the entire time");
     }
   });
@@ -958,7 +958,7 @@ describe("sponsorPresentations judging board", () => {
     const b = await named("Scotiabank");
     rooms.mockResolvedValue(
       new Map([
-        [a.id, "Rm 2235"],
+        [a.id, "Rm 2140"],
         [b.id, "Rm 2130"],
       ]),
     );
@@ -980,7 +980,7 @@ describe("sponsorPresentations judging board", () => {
     const roomOf = (id: string) =>
       board.sponsors.find((x) => x.sponsorId === id)?.room;
     expect(roomOf(a.id)).toBe("Rm 2130");
-    expect(roomOf(b.id)).toBe("Rm 2235");
+    expect(roomOf(b.id)).toBe("Rm 2140");
   });
 
   test("remote sponsors never present: no slots, no room", async () => {
