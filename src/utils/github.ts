@@ -125,7 +125,8 @@ function trimCommit(raw: GithubCommit): GithubCommit {
         name: raw.commit.author.name,
         date: raw.commit.author.date,
       },
-      message: raw.commit.message,
+      // Co-authored-by / Signed-off-by trailers carry emails
+      message: raw.commit.message.replace(/\s*<[^<>\s]+@[^<>\s]+>/g, ""),
     },
     author: raw.author ? { login: raw.author.login } : null,
   };
@@ -153,17 +154,12 @@ export function commitsInWindow(
 export async function fetchAllCommits(
   owner: string,
   repo: string,
-  opts: { since?: Date; until?: Date } = {},
 ): Promise<GithubCommit[]> {
   const commits: GithubCommit[] = [];
   let page = 1;
   while (true) {
-    const query = new URLSearchParams({ per_page: "100", page: String(page) });
-    if (opts.since) query.set("since", opts.since.toISOString());
-    if (opts.until) query.set("until", opts.until.toISOString());
-
     const data = (await githubFetch(
-      `/repos/${owner}/${repo}/commits?${query.toString()}`,
+      `/repos/${owner}/${repo}/commits?per_page=100&page=${page}`,
     )) as GithubCommit[];
     commits.push(...data.map(trimCommit));
     if (data.length < 100) break;
@@ -172,6 +168,10 @@ export async function fetchAllCommits(
   return commits;
 }
 
+/**
+ * Fetches all contributors for a repo.
+ * Note: GitHub links at most 500 email addresses to accounts; the rest are anonymous (login absent).
+ */
 export async function fetchContributors(
   owner: string,
   repo: string,

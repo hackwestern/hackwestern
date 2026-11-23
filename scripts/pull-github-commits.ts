@@ -1,17 +1,18 @@
-// Github commits -> team.commit_log, for every team with a Github URL.
+// Github commits -> team.commit_log, for every submitted team with a Github URL.
 //
 //   npx dotenv -e <env file> -- tsx scripts/pull-github-commits.ts           # skip teams already pulled
 //   npx dotenv -e <env file> -- tsx scripts/pull-github-commits.ts --force   # pull every team again
 //
 // Needs HACK_START, HACK_END and GITHUB_TOKEN. Only commits inside the hack
 // window are stored. A failed team is reported and left unchanged, so a
-// re-run picks it up.
-import { eq, isNotNull, sql } from "drizzle-orm";
+// re-run picks it up. On a Github rate limit it stops and prints when to re-run.
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 
 import { env } from "~/env";
 import { db } from "~/server/db";
 import { teams } from "~/server/db/schema";
 import {
+  GithubRateLimitError,
   commitsInWindow,
   fetchAllCommits,
   parseGithubUrl,
@@ -26,8 +27,10 @@ async function pullTeam(
   const parsed = parseGithubUrl(team.githubUrl);
   if (!parsed) throw new Error(`Can't parse Github URL ${team.githubUrl}`);
 
+  // Filter by author date here, not with Github's since/until: those use the
+  // commit date, which a rebase after the deadline moves out of the window.
   const commitLog = commitsInWindow(
-    await fetchAllCommits(parsed.owner, parsed.repo, window),
+    await fetchAllCommits(parsed.owner, parsed.repo),
     window,
   );
   await db.update(teams).set({ commitLog }).where(eq(teams.id, team.id));
@@ -55,24 +58,36 @@ async function main() {
       pulled: sql<boolean>`${teams.commitLog} is not null`,
     })
     .from(teams)
-    .where(isNotNull(teams.githubUrl));
+    .where(
+      and(
+        isNotNull(teams.githubUrl),
+        inArray(teams.submissionStatus, ["submitted", "late"]),
+      ),
+    );
   const todo = all.filter((t) => force || !t.pulled);
   console.log(
-    `${all.length} teams with a Github URL, ${all.length - todo.length} already pulled, ${todo.length} to pull.`,
+    `${all.length} submitted teams with a Github URL, ${all.length - todo.length} already pulled, ${todo.length} to pull.`,
   );
 
   const failed: string[] = [];
+  let pulled = 0;
+  let rateLimitedUntil = null as Date | null;
   let next = 0;
   const worker = async () => {
-    while (next < todo.length) {
+    while (next < todo.length && !rateLimitedUntil) {
       const team = todo[next++]!;
       try {
         const n = await pullTeam(
           { id: team.id, githubUrl: team.githubUrl! },
           window,
         );
+        pulled++;
         console.log(`  ${team.name}: ${n} commits`);
       } catch (e) {
+        if (e instanceof GithubRateLimitError) {
+          rateLimitedUntil = e.resetAt;
+          break;
+        }
         const msg = e instanceof Error ? e.message : String(e);
         failed.push(`${team.name} (${team.id}): ${msg}`);
       }
@@ -80,11 +95,14 @@ async function main() {
   };
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
 
-  console.log(
-    `\nDone: ${todo.length - failed.length} pulled, ${failed.length} failed.`,
-  );
+  console.log(`\nDone: ${pulled} pulled, ${failed.length} failed.`);
   for (const f of failed) console.log(`  failed ${f}`);
-  if (failed.length > 0) process.exitCode = 1;
+  if (rateLimitedUntil) {
+    console.log(
+      `Github rate limit hit, stopped early. Re-run after ${rateLimitedUntil.toLocaleString()} to pull the rest.`,
+    );
+  }
+  if (failed.length > 0 || rateLimitedUntil) process.exitCode = 1;
 }
 
 main()
