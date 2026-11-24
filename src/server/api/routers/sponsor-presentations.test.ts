@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { faker } from "@faker-js/faker";
 import { eq } from "drizzle-orm";
 import type * as Env from "~/env";
@@ -125,6 +125,18 @@ const dm = vi.mocked(sendPresentationDm);
 
 const anon = createCaller(createInnerTRPCContext({ session: null }));
 let organizer: ReturnType<typeof createCaller>;
+
+// Sponsor presentations only place new teams before or during judging day
+// (newSlotsFrom), so every test runs at a fixed time the day before.
+const TEST_NOW = new Date("2026-11-21T12:00:00-05:00");
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(TEST_NOW);
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 beforeEach(async () => {
   await setRound2Open(false);

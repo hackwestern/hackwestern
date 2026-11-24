@@ -105,11 +105,18 @@ function mockSlack(onSlack: readonly string[]) {
   return { fn: fn as unknown as typeof fetch, lookups, posts };
 }
 
+// Sponsor presentations only place new teams before or during judging day
+// (newSlotsFrom), so every test runs at a fixed time the day before.
+const TEST_NOW = new Date("2026-11-21T12:00:00-05:00");
+
 beforeEach(() => {
   mail.mockClear();
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(TEST_NOW);
 });
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 describe("the rule (pure)", () => {
