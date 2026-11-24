@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { faker } from "@faker-js/faker";
 import { eq } from "drizzle-orm";
 import type * as Env from "~/env";
@@ -69,6 +69,18 @@ const DOWN = { ok: false as const, error: "sheets down" };
 
 // Sponsors aren't logged in: their private UUID is the credential.
 const anon = createCaller(createInnerTRPCContext({ session: null }));
+
+// Sponsor presentations only place new teams before or during judging day
+// (newSlotsFrom), so every test runs at a fixed time the day before.
+const TEST_NOW = new Date("2026-11-21T12:00:00-05:00");
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(TEST_NOW);
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 beforeEach(async () => {
   closesAt = undefined;
@@ -866,12 +878,11 @@ describe("sponsorScoring round 2", () => {
         teamId: added,
         shortlisted: true,
       });
-      vi.useFakeTimers({ toFake: ["Date"] });
       vi.setSystemTime(new Date("2026-11-22T13:40:00-05:00"));
       try {
         await anon.sponsorScoring.sendShortlist({ sponsor: s.id });
       } finally {
-        vi.useRealTimers();
+        vi.setSystemTime(TEST_NOW);
       }
       await expect(
         anon.sponsorScoring.submit({
