@@ -149,23 +149,45 @@ export function commitsInWindow(
 // ---------------------------------------------------------------------------
 
 /**
- * Fetches all commits for a repo (paginates automatically).
+ * Fetches all commits for a repo (paginates automatically). Without `branch`,
+ * Github lists the default branch.
  */
 export async function fetchAllCommits(
   owner: string,
   repo: string,
+  branch?: string,
 ): Promise<GithubCommit[]> {
   const commits: GithubCommit[] = [];
   let page = 1;
   while (true) {
+    const query = new URLSearchParams({ per_page: "100", page: String(page) });
+    if (branch) query.set("sha", branch);
     const data = (await githubFetch(
-      `/repos/${owner}/${repo}/commits?per_page=100&page=${page}`,
+      `/repos/${owner}/${repo}/commits?${query.toString()}`,
     )) as GithubCommit[];
     commits.push(...data.map(trimCommit));
     if (data.length < 100) break;
     page++;
   }
   return commits;
+}
+
+/** Names of every branch in a repo. */
+export async function fetchBranches(
+  owner: string,
+  repo: string,
+): Promise<string[]> {
+  const names: string[] = [];
+  let page = 1;
+  while (true) {
+    const data = (await githubFetch(
+      `/repos/${owner}/${repo}/branches?per_page=100&page=${page}`,
+    )) as { name: string }[];
+    names.push(...data.map((b) => b.name));
+    if (data.length < 100) break;
+    page++;
+  }
+  return names;
 }
 
 /**
