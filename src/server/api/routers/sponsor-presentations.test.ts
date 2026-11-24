@@ -186,7 +186,7 @@ async function member(teamId: string) {
 }
 
 /** One sponsor in `room` with one shortlisted team, scheduled. */
-async function scheduledTeam(room = "Rm 2110") {
+async function scheduledTeam(room = "Rm 2130") {
   const s = await sponsor();
   const t = await team();
   await send(s.id, [t]);
@@ -218,7 +218,7 @@ describe("sponsorPresentations.schedule", () => {
     for (let i = 0; i < PRESENTATION_SLOTS_PER_ROOM + 2; i++)
       ids.push(await team());
     await send(s.id, ids);
-    rooms.mockResolvedValue(new Map([[s.id, "Rm 2110"]]));
+    rooms.mockResolvedValue(new Map([[s.id, "Rm 2130"]]));
 
     const res = await organizer.sponsorPresentations.schedule();
     expect(res).toMatchObject({
@@ -248,7 +248,7 @@ describe("sponsorPresentations.schedule", () => {
     const other = await team();
     await send(a.id, [shared, other]);
     await send(b.id, [shared]);
-    rooms.mockResolvedValue(new Map([[a.id, "Rm 2110"]]));
+    rooms.mockResolvedValue(new Map([[a.id, "Rm 2130"]]));
 
     // B has no room: its team still gets a time, with no room on it.
     const res = await organizer.sponsorPresentations.schedule();
@@ -268,7 +268,7 @@ describe("sponsorPresentations.schedule", () => {
     // B gets a room: the rerun keeps B's time and fills in the room.
     rooms.mockResolvedValue(
       new Map([
-        [a.id, "Rm 2110"],
+        [a.id, "Rm 2130"],
         [b.id, "Rm 2230"],
       ]),
     );
@@ -299,7 +299,7 @@ describe("sponsorPresentations prize track gate", () => {
     await send(none.id, [t]);
     rooms.mockResolvedValue(
       new Map([
-        [track.id, "Rm 2110"],
+        [track.id, "Rm 2130"],
         [none.id, "Rm 2230"],
       ]),
     );
@@ -375,7 +375,7 @@ describe("sponsorPresentations.notify", () => {
     >("~/server/api/utils/judging-board-data");
     const s = await sponsor();
     expect(await sponsorsWithoutRoom()).toContain(s.name);
-    rooms.mockResolvedValue(new Map([[s.id, "Rm 2110"]]));
+    rooms.mockResolvedValue(new Map([[s.id, "Rm 2130"]]));
     expect(await sponsorsWithoutRoom()).not.toContain(s.name);
   });
 
@@ -399,7 +399,7 @@ describe("sponsorPresentations.notify", () => {
       .set({ teamId: t })
       .where(eq(users.id, hackerSession.user.id));
     await send(s.id, [t]);
-    rooms.mockResolvedValue(new Map([[s.id, "Rm 2235"]]));
+    rooms.mockResolvedValue(new Map([[s.id, "Rm 2140"]]));
     await organizer.sponsorPresentations.schedule();
 
     const hacker = createCaller(
@@ -418,7 +418,7 @@ describe("sponsorPresentations.notify", () => {
     await setRound2Open(true);
     // The saved schedule is visible before anyone is notified.
     expect(await hacker.sponsorPresentations.mine()).toEqual([
-      { sponsorName: s.name, room: "Rm 2235", start: 600 },
+      { sponsorName: s.name, room: "Rm 2140", start: 600 },
     ]);
 
     const res = await organizer.sponsorPresentations.notify();
@@ -427,7 +427,7 @@ describe("sponsorPresentations.notify", () => {
       "xoxb-test",
       expect.objectContaining({ email: hackerSession.user.email }),
       expect.any(String),
-      [{ sponsorName: s.name, room: "Rm 2235", start: 600 }],
+      [{ sponsorName: s.name, room: "Rm 2140", start: 600 }],
       undefined,
       // The Confirm button carries the team and the times it was sent.
       {
@@ -436,7 +436,7 @@ describe("sponsorPresentations.notify", () => {
       },
     );
     expect(await hacker.sponsorPresentations.mine()).toEqual([
-      { sponsorName: s.name, room: "Rm 2235", start: 600 },
+      { sponsorName: s.name, room: "Rm 2140", start: 600 },
     ]);
     const view = await organizer.sponsorPresentations.overview();
     expect(view.notices).toMatchObject({
@@ -449,7 +449,7 @@ describe("sponsorPresentations.notify", () => {
 
   test("one member confirming accepts for the team, until the times change", async () => {
     slackToken = "xoxb-test";
-    const { s, t } = await scheduledTeam("Rm 2110");
+    const { s, t } = await scheduledTeam("Rm 2130");
     const a = await member(t);
     const b = await member(t);
 
@@ -474,8 +474,8 @@ describe("sponsorPresentations.notify", () => {
 
   test("a shortlist send tells only that sponsor's teams, every member, once", async () => {
     slackToken = "xoxb-test";
-    const { t } = await scheduledTeam("Rm 2110");
-    const other = await scheduledTeam("Rm 2235");
+    const { t } = await scheduledTeam("Rm 2130");
+    const other = await scheduledTeam("Rm 2140");
     const a = await member(t);
     const b = await member(t);
     await member(other.t);
@@ -497,7 +497,7 @@ describe("sponsorPresentations.notify", () => {
   test("emails members not on Slack, once, and counts them reached", async () => {
     slackToken = "xoxb-test";
     dm.mockResolvedValue("not-found");
-    const { s, t } = await scheduledTeam("Rm 2110");
+    const { s, t } = await scheduledTeam("Rm 2130");
     const hacker = await member(t);
 
     const res = await organizer.sponsorPresentations.notify();
@@ -505,7 +505,7 @@ describe("sponsorPresentations.notify", () => {
     expect(mail).toHaveBeenCalledTimes(1);
     const [msg] = mail.mock.calls[0]!;
     expect(msg.to).toBe(hacker.session.user.email);
-    expect(msg.text).toContain(`10:00 AM – 10:06 AM: ${s.name}, Rm 2110`);
+    expect(msg.text).toContain(`10:00 AM – 10:06 AM: ${s.name}, Rm 2130`);
     const [notice] = await db
       .select()
       .from(sponsorPresentationNotices)
@@ -676,7 +676,7 @@ describe("sponsorPresentations.schedule and notices", () => {
     expect(await hacker.caller.sponsorPresentations.mySchedule()).toMatchObject(
       {
         hasQnxTrack: false,
-        slots: [expect.objectContaining({ room: "Rm 2110" })],
+        slots: [expect.objectContaining({ room: "Rm 2130" })],
       },
     );
     await db
@@ -686,7 +686,7 @@ describe("sponsorPresentations.schedule and notices", () => {
     expect(await hacker.caller.sponsorPresentations.mySchedule()).toMatchObject(
       {
         hasQnxTrack: true,
-        slots: [expect.objectContaining({ room: "Rm 2110" })],
+        slots: [expect.objectContaining({ room: "Rm 2130" })],
       },
     );
   });
@@ -700,7 +700,7 @@ describe("sponsorPresentations.schedule and notices", () => {
     const hacker = await member(t);
     await db
       .insert(sponsorJudgingRooms)
-      .values({ sponsorId: qnx!.id, room: "Rm 2235" });
+      .values({ sponsorId: qnx!.id, room: "Rm 2140" });
     await send(qnx!.id, [t]);
     await setRound2Open(true);
     await organizer.sponsorPresentations.schedule();
@@ -716,7 +716,7 @@ describe("sponsorPresentations.schedule and notices", () => {
     // A previously saved slot with a different room also reads as 2110.
     await db
       .update(sponsorPresentations)
-      .set({ room: "Rm 2235" })
+      .set({ room: "Rm 2140" })
       .where(eq(sponsorPresentations.teamId, t));
     expect(await hacker.caller.sponsorPresentations.mine()).toEqual([
       { sponsorName: "QNX", room: "Rm 2110", start: 600 },
@@ -741,10 +741,10 @@ describe("sponsorPresentations.schedule and notices", () => {
 
     await organizer.sponsorPresentations.setRoom({
       sponsorId: s.id,
-      room: "Rm 2235",
+      room: "Rm 2140",
     });
     expect(await hacker.caller.sponsorPresentations.mine()).toEqual([
-      { sponsorName: s.name, room: "Rm 2235", start: 600 },
+      { sponsorName: s.name, room: "Rm 2140", start: 600 },
     ]);
     expect(await other.caller.sponsorPresentations.mine()).toEqual([]);
   });
@@ -752,7 +752,7 @@ describe("sponsorPresentations.schedule and notices", () => {
   test("rescheduling keeps members notified when their times don't change", async () => {
     await setRound2Open(true);
     slackToken = "xoxb-test";
-    const { s, t } = await scheduledTeam("Rm 2110");
+    const { s, t } = await scheduledTeam("Rm 2130");
     const hacker = await member(t);
     await organizer.sponsorPresentations.notify();
 
@@ -773,7 +773,7 @@ describe("sponsorPresentations.schedule and notices", () => {
       await organizer.sponsorPresentations.schedule({ dryRun: true }),
     ).toMatchObject({ changedTimes: 1 });
     expect(await hacker.caller.sponsorPresentations.mine()).toEqual([
-      expect.objectContaining({ room: "Rm 2110" }),
+      expect.objectContaining({ room: "Rm 2130" }),
     ]);
 
     // The tab shows the new room immediately. Notices still need resending.
@@ -852,7 +852,7 @@ describe("presentationEmail", () => {
   test("lists times in order, greets by first name, escapes the HTML", () => {
     const msg = presentationEmail({ name: "Ada Lovelace" }, "A<b>", [
       { sponsorName: "QNX", room: "Rm 2235", start: 620 },
-      { sponsorName: "Scotia & Co", room: "Rm 2110", start: 600 },
+      { sponsorName: "Scotia & Co", room: "Rm 2130", start: 600 },
     ]);
     expect(msg.subject).toContain("A<b>");
     expect(msg.text).toContain("Hi Ada,");
@@ -860,7 +860,7 @@ describe("presentationEmail", () => {
       msg.text.indexOf("10:20 AM"),
     );
     expect(msg.html).toContain("A&lt;b&gt;");
-    expect(msg.html).toContain("Scotia &amp; Co, Rm 2110");
+    expect(msg.html).toContain("Scotia &amp; Co, Rm 2130");
   });
 });
 
@@ -902,12 +902,12 @@ describe("presentationDmMessage", () => {
   test("lists times in order and escapes names", () => {
     const msg = presentationDmMessage("A<b>", [
       { sponsorName: "QNX", room: "Rm 2235", start: 620 },
-      { sponsorName: "Scotia & Co", room: "Rm 2110", start: 600 },
+      { sponsorName: "Scotia & Co", room: "Rm 2130", start: 600 },
     ]);
     const text = (msg.blocks[0] as { text: { text: string } }).text.text;
     expect(text).toContain("A&lt;b&gt;");
     expect(text.indexOf("10:00 AM")).toBeLessThan(text.indexOf("10:20 AM"));
-    expect(text).toContain("Scotia &amp; Co, Rm 2110");
+    expect(text).toContain("Scotia &amp; Co, Rm 2130");
   });
 });
 
@@ -929,12 +929,12 @@ describe("sponsorPresentations judging board", () => {
   test("sets a room, keeps the team's time and asks to tell them again", async () => {
     await setRound2Open(true);
     slackToken = "xoxb-test";
-    const { s, t } = await scheduledTeam("Rm 2110");
+    const { s, t } = await scheduledTeam("Rm 2130");
     await member(t);
     await organizer.sponsorPresentations.notify();
     let board = await organizer.sponsorPresentations.board();
     expect(board.slots).toMatchObject([
-      { teamId: t, room: "Rm 2110", start: 600, status: "waiting" },
+      { teamId: t, room: "Rm 2130", start: 600, status: "waiting" },
     ]);
     expect(board.teamsNotTold).toBe(0);
 
@@ -958,8 +958,8 @@ describe("sponsorPresentations judging board", () => {
     const b = await named("Scotiabank");
     rooms.mockResolvedValue(
       new Map([
-        [a.id, "Rm 2235"],
-        [b.id, "Rm 2110"],
+        [a.id, "Rm 2140"],
+        [b.id, "Rm 2130"],
       ]),
     );
     await expect(
@@ -969,18 +969,18 @@ describe("sponsorPresentations judging board", () => {
       }),
     ).rejects.toMatchObject({
       code: "CONFLICT",
-      message: `Rm 2110 is ${b.name}'s. Pick another.`,
+      message: `Rm 2130 is ${b.name}'s. Pick another.`,
     });
     await organizer.sponsorPresentations.setRoom({
       sponsorId: a.id,
-      room: "Rm 2110",
+      room: "Rm 2130",
       swap: true,
     });
     const board = await organizer.sponsorPresentations.board();
     const roomOf = (id: string) =>
       board.sponsors.find((x) => x.sponsorId === id)?.room;
-    expect(roomOf(a.id)).toBe("Rm 2110");
-    expect(roomOf(b.id)).toBe("Rm 2235");
+    expect(roomOf(a.id)).toBe("Rm 2130");
+    expect(roomOf(b.id)).toBe("Rm 2140");
   });
 
   test("remote sponsors never present: no slots, no room", async () => {
@@ -998,19 +998,19 @@ describe("sponsorPresentations judging board", () => {
     await expect(
       organizer.sponsorPresentations.setRoom({
         sponsorId: remote.id,
-        room: "Rm 2110",
+        room: "Rm 2130",
       }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   test("the team modal shows check-in, times and status", async () => {
-    const { t } = await scheduledTeam("Rm 2110");
+    const { t } = await scheduledTeam("Rm 2130");
     await member(t);
     const view = await organizer.sponsorPresentations.boardTeam({ teamId: t });
     expect(view).toMatchObject({
       teamId: t,
       status: "not-sent",
-      presentsTo: [{ room: "Rm 2110", start: 600 }],
+      presentsTo: [{ room: "Rm 2130", start: 600 }],
       checkedIn: false,
     });
     expect(view).not.toHaveProperty("scores");
