@@ -94,6 +94,8 @@ export type GithubCommit = {
   author: { login: string } | null; // The Github account associated with the author
 };
 
+export type LoggedCommit = GithubCommit & { branches: string[] };
+
 export interface GithubContributor {
   login: string;
   id: number;
@@ -132,10 +134,10 @@ function trimCommit(raw: GithubCommit): GithubCommit {
   };
 }
 
-export function commitsInWindow(
-  commits: GithubCommit[],
+export function commitsInWindow<T extends GithubCommit>(
+  commits: T[],
   opts: { since: Date; until: Date },
-): GithubCommit[] {
+): T[] {
   const since = opts.since.getTime();
   const until = opts.until.getTime();
   return commits.filter((commit) => {

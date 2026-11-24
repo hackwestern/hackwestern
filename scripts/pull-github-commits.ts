@@ -4,16 +4,16 @@
 //   npx dotenv -e <env file> -- tsx scripts/pull-github-commits.ts --force   # pull every team again
 //
 // Needs HACK_START, HACK_END and GITHUB_TOKEN. Commits from every branch are
-// stored once each (by sha), and only those inside the hack window. A failed
-// team is reported and left unchanged, so a re-run picks it up. On a Github
-// rate limit it stops and prints when to re-run.
+// stored once each (by sha) with the branches it is on, and only those inside
+// the hack window. A failed team is reported and left unchanged, so a re-run
+// picks it up. On a Github rate limit it stops and prints when to re-run.
 import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 
 import { env } from "~/env";
 import { db } from "~/server/db";
 import { teams } from "~/server/db/schema";
 import {
-  type GithubCommit,
+  type LoggedCommit,
   GithubRateLimitError,
   commitsInWindow,
   fetchAllCommits,
@@ -31,10 +31,12 @@ async function pullTeam(
   if (!parsed) throw new Error(`Can't parse Github URL ${team.githubUrl}`);
 
   // Branches share history, so the same commit is listed once per branch.
-  const bySha = new Map<string, GithubCommit>();
+  const bySha = new Map<string, LoggedCommit>();
   for (const branch of await fetchBranches(parsed.owner, parsed.repo)) {
     for (const c of await fetchAllCommits(parsed.owner, parsed.repo, branch)) {
-      bySha.set(c.sha, c);
+      const seen = bySha.get(c.sha);
+      if (seen) seen.branches.push(branch);
+      else bySha.set(c.sha, { ...c, branches: [branch] });
     }
   }
 
