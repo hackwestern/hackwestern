@@ -82,18 +82,19 @@ async function githubFetch(path: string): Promise<unknown> {
 // Types
 // ---------------------------------------------------------------------------
 
-export interface GithubCommit {
+export type GithubCommit = {
   sha: string;
   commit: {
     author: {
       name: string;
-      email: string;
       date: string; // ISO 8601
     };
     message: string;
   };
-  author: { login: string } | null; // null for unlinked accounts
-}
+  author: { login: string } | null; // The Github account associated with the author
+};
+
+export type LoggedCommit = GithubCommit & { branches: string[] };
 
 export interface GithubContributor {
   login: string;
@@ -118,28 +119,77 @@ export function parseGithubUrl(
   return { owner: match[1], repo };
 }
 
+function trimCommit(raw: GithubCommit): GithubCommit {
+  return {
+    sha: raw.sha,
+    commit: {
+      author: {
+        name: raw.commit.author.name,
+        date: raw.commit.author.date,
+      },
+      // Co-authored-by / Signed-off-by trailers carry emails
+      message: raw.commit.message.replace(/\s*<[^<>\s]+@[^<>\s]+>/g, ""),
+    },
+    author: raw.author ? { login: raw.author.login } : null,
+  };
+}
+
+export function commitsInWindow<T extends GithubCommit>(
+  commits: T[],
+  opts: { since: Date; until: Date },
+): T[] {
+  const since = opts.since.getTime();
+  const until = opts.until.getTime();
+  return commits.filter((commit) => {
+    const at = new Date(commit.commit.author.date).getTime();
+    return !Number.isNaN(at) && at >= since && at <= until;
+  });
+}
+
 // ---------------------------------------------------------------------------
 // API calls
 // ---------------------------------------------------------------------------
 
 /**
- * Fetches all commits for a repo (paginates automatically).
+ * Fetches all commits for a repo (paginates automatically). Without `branch`,
+ * Github lists the default branch.
  */
 export async function fetchAllCommits(
   owner: string,
   repo: string,
+  branch?: string,
 ): Promise<GithubCommit[]> {
   const commits: GithubCommit[] = [];
   let page = 1;
   while (true) {
+    const query = new URLSearchParams({ per_page: "100", page: String(page) });
+    if (branch) query.set("sha", branch);
     const data = (await githubFetch(
-      `/repos/${owner}/${repo}/commits?per_page=100&page=${page}`,
+      `/repos/${owner}/${repo}/commits?${query.toString()}`,
     )) as GithubCommit[];
-    commits.push(...data);
+    commits.push(...data.map(trimCommit));
     if (data.length < 100) break;
     page++;
   }
   return commits;
+}
+
+/** Names of every branch in a repo. */
+export async function fetchBranches(
+  owner: string,
+  repo: string,
+): Promise<string[]> {
+  const names: string[] = [];
+  let page = 1;
+  while (true) {
+    const data = (await githubFetch(
+      `/repos/${owner}/${repo}/branches?per_page=100&page=${page}`,
+    )) as { name: string }[];
+    names.push(...data.map((b) => b.name));
+    if (data.length < 100) break;
+    page++;
+  }
+  return names;
 }
 
 /**
