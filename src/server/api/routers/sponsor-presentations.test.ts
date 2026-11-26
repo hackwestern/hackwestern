@@ -977,7 +977,7 @@ describe("sponsorPresentations judging board", () => {
     await expect(
       organizer.sponsorPresentations.setRoom({
         sponsorId: a.id,
-        room: "rm 2110",
+        room: "rm 2130",
       }),
     ).rejects.toMatchObject({
       code: "CONFLICT",
