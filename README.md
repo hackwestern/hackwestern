@@ -39,6 +39,14 @@ A separate `Schema drift check` workflow (`.github/workflows/schema-drift.yml`) 
 
 Never apply migrations to prod manually — always go through the CI workflow so the migration history stays in sync with `main`.
 
+## Deploying
+
+Production runs on [Vercel](https://vercel.com) with a [Neon](https://neon.tech) Postgres database. To run your own copy:
+
+1. Create a Neon project and copy its pooled connection string into `DATABASE_URL`.
+2. Run `npm run db:migrate` against it to create the schema.
+3. Deploy to Vercel (or any Node host) with the same environment variables as `.env.example`.
+
 ## Technologies
 
 If you are not familiar with the different technologies used in this project, please refer to their respective docs.
@@ -46,7 +54,7 @@ If you are not familiar with the different technologies used in this project, pl
 - [Next.js](https://nextjs.org)
 - [React.js](https://react.dev)
 - [NextAuth.js](https://next-auth.js.org)
-- [PostgreSQL](https://www.postgresql.org/)
+- [PostgreSQL](https://www.postgresql.org/) on [Neon](https://neon.tech)
 - [Drizzle](https://orm.drizzle.team)
 - [Docker](https://docs.docker.com/)
 - [Tailwind CSS](https://tailwindcss.com)
