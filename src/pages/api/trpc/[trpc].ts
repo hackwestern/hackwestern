@@ -1,3 +1,4 @@
+import type { NextApiRequest, NextApiResponse } from "next";
 import { createNextApiHandler } from "@trpc/server/adapters/next";
 
 import { env } from "~/env";
@@ -8,8 +9,16 @@ import { createTRPCContext } from "~/server/api/trpc";
 // time instead of the platform's short default (same as the sweep route).
 export const config = { maxDuration: 60 };
 
-// export API handler
-export default createNextApiHandler({
+// Procedures that send an email. One batched request may call each at most
+// once, so the firewall's per-request rate limit also limits emails.
+const EMAIL_PROCEDURES = new Set([
+  "auth.reset",
+  "auth.create",
+  "auth.resendEmail",
+  "preregistration.create",
+]);
+
+const handler = createNextApiHandler({
   router: appRouter,
   createContext: createTRPCContext,
   onError:
@@ -21,3 +30,13 @@ export default createNextApiHandler({
         }
       : undefined,
 });
+
+export default function trpcHandler(req: NextApiRequest, res: NextApiResponse) {
+  const paths = String(req.query.trpc ?? "").split(",");
+  const emailPaths = paths.filter((path) => EMAIL_PROCEDURES.has(path));
+  if (emailPaths.length > 1) {
+    res.status(400).json({ error: "Too many email requests in one batch" });
+    return;
+  }
+  return handler(req, res);
+}

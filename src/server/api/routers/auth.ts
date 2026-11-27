@@ -10,7 +10,7 @@ import {
   users,
   verificationTokens,
 } from "~/server/db/schema";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { authOptions } from "~/server/auth";
 import { type AdapterUser } from "next-auth/adapters";
@@ -21,6 +21,18 @@ import {
 } from "~/server/subscribers";
 
 const TOKEN_EXPIRY = 1000 * 60 * 11; // 11 minutes
+// Minimum gap between reset or verification emails to the same account.
+const EMAIL_COOLDOWN = 1000 * 60;
+
+// Tokens store only their expiry, so a token was issued at expires - TOKEN_EXPIRY.
+const sentRecently = (expires: Date | undefined) =>
+  !!expires && expires.getTime() - TOKEN_EXPIRY > Date.now() - EMAIL_COOLDOWN;
+
+const tooManyEmails = () =>
+  new TRPCError({
+    code: "TOO_MANY_REQUESTS",
+    message: "An email was just sent. Please wait a minute and try again.",
+  });
 const passwordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters long")
@@ -84,6 +96,12 @@ export const authRouter = createTRPCRouter({
       }
 
       const uid = user.id;
+
+      const existing = await db.query.resetPasswordTokens.findFirst({
+        columns: { expires: true },
+        where: eq(resetPasswordTokens.userId, uid),
+      });
+      if (sentRecently(existing?.expires)) throw tooManyEmails();
 
       // Generate reset token
       const resetToken = randomBytes(20).toString("hex"); // 20 byte hex string
@@ -244,6 +262,13 @@ export const authRouter = createTRPCRouter({
         message: "User not found",
       });
     }
+
+    const latest = await db.query.verificationTokens.findFirst({
+      columns: { expires: true },
+      where: eq(verificationTokens.identifier, user.id),
+      orderBy: desc(verificationTokens.expires),
+    });
+    if (sentRecently(latest?.expires)) throw tooManyEmails();
 
     const res = await requestVerifyEmail(user);
 
